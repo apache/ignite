@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -30,8 +28,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
@@ -43,19 +39,6 @@ import org.jsr166.LongAdder8;
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private  GridConcurrentSkipListSetEx pendingEntries;
-
-    /** Cleanup worker. */
-    private CleanupWorker cleanupWorker;
-
-    /** Mutex. */
-    private final Object mux = new Object();
-
-    /** Next expire time. */
-    private volatile long nextExpireTime = Long.MAX_VALUE;
-
-    /** Next expire time updater. */
-    private static final AtomicLongFieldUpdater<GridCacheTtlManager> nextExpireTimeUpdater =
-        AtomicLongFieldUpdater.newUpdater(GridCacheTtlManager.class, "nextExpireTime");
 
     /** */
     private final IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> expireC =
@@ -98,30 +81,16 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         if (cleanupDisabled)
             return;
 
-        cleanupWorker = new CleanupWorker();
+        cctx.shared().ttl().register(this);
 
         pendingEntries = cctx.config().getNearConfiguration() != null ? new GridConcurrentSkipListSetEx() : null;
     }
 
-    /**
-     * @return {@code True} if eager expired entries cleanup is enabled for cache.
-     */
-    public boolean eagerTtlEnabled() {
-        assert cctx != null : "Manager not started";
-
-        return cleanupWorker != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (cleanupWorker != null)
-            new IgniteThread(cleanupWorker).start();
-    }
-
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        U.cancel(cleanupWorker);
-        U.join(cleanupWorker, log);
+        pendingEntries.clear();
+
+        cctx.shared().ttl().unregister(this);
     }
 
     /**
@@ -131,13 +100,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     void addTrackedEntry(GridNearCacheEntry entry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null && pendingEntries != null;
 
         EntryWrapper e = new EntryWrapper(entry);
 
         pendingEntries.add(e);
-
-        onPendingEntryAdded(e.expireTime);
     }
 
     /**
@@ -145,7 +111,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     void removeTrackedEntry(GridNearCacheEntry entry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null && pendingEntries != null;
 
         pendingEntries.remove(new EntryWrapper(entry));
     }
@@ -174,95 +139,56 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * Expires entries by TTL.
      */
     public void expire() {
+        expire(-1);
+    }
+
+    /**
+     * Processes specified amount of expired entries.
+     *
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return {@code True} if unprocessed expired entries remains.
+     */
+    public boolean expire(int amount) {
+        long now = U.currentTimeMillis();
+
+        boolean more;
+
         try {
-            long now = U.currentTimeMillis();
+            if (pendingEntries != null) {
+                GridCacheVersion obsoleteVer = null;
 
-            if (nextExpireTime <= now) {
-                if (pendingEntries != null) {
-                    GridCacheVersion obsoleteVer = null;
+                int limit = (-1 != amount) ? amount : pendingEntries.sizex();
 
-                    for (int size = pendingEntries.sizex(); size > 0; size--) {
-                        EntryWrapper e = pendingEntries.firstx();
+                for (int cnt = limit; cnt > 0; cnt--) {
+                    EntryWrapper e = pendingEntries.firstx();
 
-                        if (e == null || e.expireTime > now)
-                            return;
+                    if (e == null || e.expireTime > now)
+                        return false; // All expired entries are processed.
 
-                        if (pendingEntries.remove(e)) {
-                            if (obsoleteVer == null)
-                                obsoleteVer = cctx.versions().next();
+                    if (pendingEntries.remove(e)) {
+                        if (obsoleteVer == null)
+                            obsoleteVer = cctx.versions().next();
 
-                            expireC.apply(e.entry, obsoleteVer);
-                        }
+                        expireC.apply(e.entry, obsoleteVer);
                     }
                 }
-
-                cctx.offheap().expire(expireC);
             }
+
+            more = cctx.offheap().expire(expireC, amount);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process entry expiration: " + e, e);
         }
-    }
 
-    /**
-     * @param expireTime Entry expire time.
-     */
-    void onPendingEntryAdded(long expireTime) {
-        while (true) {
-            long nextExpireTime = this.nextExpireTime;
+        if (amount != -1) {
+            EntryWrapper e = pendingEntries.firstx();
 
-            if (expireTime < nextExpireTime) {
-                if (nextExpireTimeUpdater.compareAndSet(this, nextExpireTime, expireTime)) {
-                    synchronized (mux) {
-                        mux.notifyAll();
-                    }
-
-                    break;
-                }
-            }
-            else
-                break;
-        }
-    }
-
-    /**
-     * Entry cleanup worker.
-     */
-    private class CleanupWorker extends GridWorker {
-        /**
-         * Creates cleanup worker.
-         */
-        CleanupWorker() {
-            super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
+            return e != null && e.expireTime <= now;
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                expire();
-
-                long waitTime;
-
-                while (true) {
-                    long expireTime = nextExpireTime;
-
-                    if (nextExpireTime == Long.MAX_VALUE)
-                        waitTime = 500;
-                    else
-                        waitTime = expireTime - U.currentTimeMillis();
-
-                    if (waitTime > 0) {
-                        synchronized (mux) {
-                            if (expireTime == nextExpireTime)
-                                mux.wait(waitTime);
-                        }
-                    }
-                    else
-                        break;
-                }
-            }
-        }
+        return more;
     }
+
 
     /**
      * @param cctx1 First cache context.
@@ -315,8 +241,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** Entry expire time. */
         private final long expireTime;
 
-        /** Entry. */
-        private final GridCacheMapEntry entry;
+        /** Cache Object Context */
+        private final GridCacheContext ctx;
+
+        /** Cache Object Key */
+        private final KeyCacheObject key;
 
         /**
          * @param entry Cache entry to create wrapper for.
@@ -326,7 +255,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             assert expireTime != 0;
 
-            this.entry = entry;
+            this.ctx = entry.context();
+            this.key = entry.key();
         }
 
         /** {@inheritDoc} */
@@ -334,7 +264,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             int res = Long.compare(expireTime, o.expireTime);
 
             if (res == 0)
-                res = compareKeys(entry.context(), entry.key(), o.entry.context(), o.entry.key());
+                res = compareKeys(ctx, key, o.ctx, o.key);
 
             return res;
         }
@@ -349,15 +279,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             EntryWrapper that = (EntryWrapper)o;
 
-            return expireTime == that.expireTime &&
-                compareKeys(entry.context(), entry.key(), that.entry.context(), that.entry.key()) == 0;
+            return expireTime == that.expireTime && compareKeys(ctx, key, that.ctx, that.key) == 0;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int res = (int)(expireTime ^ (expireTime >>> 32));
 
-            res = 31 * res + entry.key().hashCode();
+            res = 31 * res + key.hashCode();
 
             return res;
         }

@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -453,7 +455,25 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
+                GridCacheReturnCompletableWrapper wrapper = null;
+
                 if (!F.isEmpty(writeMap)) {
+                    GridCacheReturn ret = null;
+
+                    if (!near() && !local() && onePhaseCommit()) {
+                        if (needReturnValue()) {
+                            ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true);
+
+                            UUID origNodeId = otherNodeId(); // Originating node.
+
+                            cctx.tm().addCommittedTxReturn(this,
+                                wrapper = new GridCacheReturnCompletableWrapper(
+                                    !cctx.localNodeId().equals(origNodeId) ? origNodeId : null));
+                        }
+                        else
+                            cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
+                    }
+
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
@@ -471,7 +491,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         batchStoreCommit(writeMap().values());
 
-                        // Note that for near transactions we grab all entries.
+                    try {
+                        // Node that for near transactions we grab all entries.
                         for (IgniteTxEntry txEntry : entries) {
                             GridCacheContext cacheCtx = txEntry.context();
 
@@ -500,7 +521,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             txEntry.cached().unswap(false);
 
                                         IgniteBiTuple<GridCacheOperation, CacheObject> res =
-                                            applyTransformClosures(txEntry, false);
+                                            applyTransformClosures(txEntry, false, ret);
 
                                         GridCacheOperation op = res.get1();
                                         CacheObject val = res.get2();
@@ -575,6 +596,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     true,
                                                     true,
                                                     txEntry.keepBinary(),
+                                                    txEntry.hasOldValue(),
+                                                    txEntry.oldValue(),
                                                     topVer,
                                                     null,
                                                     replicate ? DR_BACKUP : DR_NONE,
@@ -594,6 +617,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     true,
                                                     true,
                                                     txEntry.keepBinary(),
+                                                    txEntry.hasOldValue(),
+                                                    txEntry.oldValue(),
                                                     topVer,
                                                     null,
                                                     replicate ? DR_BACKUP : DR_NONE,
@@ -625,6 +650,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 true,
                                                 true,
                                                 txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
                                                 topVer,
                                                 null,
                                                 replicate ? DR_BACKUP : DR_NONE,
@@ -729,6 +756,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     finally {
                         cctx.database().checkpointReadUnlock();
                     }
+                }
+                finally {
+                    if (wrapper != null)
+                        wrapper.initialize(ret);
                 }
 
                 if (err != null) {

@@ -121,6 +121,7 @@ struct QueriesTestSuiteFixture
         cfg.jvmOpts.push_back("-Djava.compiler=NONE");
         cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
         cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -173,8 +174,11 @@ struct QueriesTestSuiteFixture
 
         SQLRETURN ret;
 
-        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
-        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12), BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
+        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+            BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+
+        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
+            BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
 
         testCache.Put(1, in1);
         testCache.Put(2, in2);
@@ -192,10 +196,12 @@ struct QueriesTestSuiteFixture
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
         }
 
-        SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        char request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
             "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
-        ret = SQLExecDirect(stmt, request, SQL_NTS);
+        ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(request), SQL_NTS);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -244,14 +250,14 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columns[9], 0);
         BOOST_CHECK_EQUAL(columns[10], 0);
 
-        BOOST_CHECK_EQUAL(columnLens[0], 0);
-        BOOST_CHECK_EQUAL(columnLens[1], 0);
-        BOOST_CHECK_EQUAL(columnLens[2], 0);
-        BOOST_CHECK_EQUAL(columnLens[3], 0);
-        BOOST_CHECK_EQUAL(columnLens[4], 0);
-        BOOST_CHECK_EQUAL(columnLens[5], 0);
-        BOOST_CHECK_EQUAL(columnLens[6], 0);
-        BOOST_CHECK_EQUAL(columnLens[7], 0);
+        BOOST_CHECK_EQUAL(columnLens[0], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[1], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[2], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[3], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[4], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[5], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[6], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[7], static_cast<SQLLEN>(sizeof(T)));
         BOOST_CHECK_EQUAL(columnLens[8], SQL_NO_TOTAL);
         BOOST_CHECK_EQUAL(columnLens[9], SQL_NO_TOTAL);
         BOOST_CHECK_EQUAL(columnLens[10], SQL_NO_TOTAL);
@@ -317,32 +323,32 @@ BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_8_0)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
 {
-    CheckTwoRowsInt<int8_t>(SQL_C_STINYINT);
+    CheckTwoRowsInt<signed char>(SQL_C_STINYINT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint8)
 {
-    CheckTwoRowsInt<uint8_t>(SQL_C_UTINYINT);
+    CheckTwoRowsInt<unsigned char>(SQL_C_UTINYINT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt16)
 {
-    CheckTwoRowsInt<int16_t>(SQL_C_SSHORT);
+    CheckTwoRowsInt<signed short>(SQL_C_SSHORT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint16)
 {
-    CheckTwoRowsInt<uint16_t>(SQL_C_USHORT);
+    CheckTwoRowsInt<unsigned short>(SQL_C_USHORT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt32)
 {
-    CheckTwoRowsInt<int32_t>(SQL_C_SLONG);
+    CheckTwoRowsInt<signed long>(SQL_C_SLONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint32)
 {
-    CheckTwoRowsInt<uint32_t>(SQL_C_ULONG);
+    CheckTwoRowsInt<unsigned long>(SQL_C_ULONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt64)
@@ -361,8 +367,11 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12), BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
+        BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     testCache.Put(1, in1);
     testCache.Put(2, in2);
@@ -384,6 +393,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
         "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -456,7 +467,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     testCache.Put(1, in);
 
@@ -479,6 +491,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
         "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
@@ -519,7 +533,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     testCache.Put(1, in);
 
@@ -540,6 +555,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
         "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
@@ -560,6 +577,241 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
+
+BOOST_AUTO_TEST_CASE(TestDataAtExecution)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    SQLRETURN ret;
+
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
+        BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+
+    testCache.Put(1, in1);
+    testCache.Put(2, in2);
+
+    const size_t columnsCnt = 11;
+
+    SQLLEN columnLens[columnsCnt] = { 0 };
+    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
+
+    // Binding columns.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType "
+        "WHERE i32Field = ? AND strField = ?";
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    SQLLEN ind1 = 1;
+    SQLLEN ind2 = 2;
+
+    SQLLEN len1 = SQL_DATA_AT_EXEC;
+    SQLLEN len2 = SQL_LEN_DATA_AT_EXEC(static_cast<SQLLEN>(in1.strField.size()));
+
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 100, &ind2, sizeof(ind2), &len2);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NEED_DATA);
+
+    void* oind;
+
+    ret = SQLParamData(stmt, &oind);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NEED_DATA);
+
+    if (oind == &ind1)
+        ret = SQLPutData(stmt, &in1.i32Field, 0);
+    else if (oind == &ind2)
+        ret = SQLPutData(stmt, (SQLPOINTER)in1.strField.c_str(), (SQLLEN)in1.strField.size());
+    else
+        BOOST_FAIL("Unknown indicator value");
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLParamData(stmt, &oind);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NEED_DATA);
+
+    if (oind == &ind1)
+        ret = SQLPutData(stmt, &in1.i32Field, 0);
+    else if (oind == &ind2)
+        ret = SQLPutData(stmt, (SQLPOINTER)in1.strField.c_str(), (SQLLEN)in1.strField.size());
+    else
+        BOOST_FAIL("Unknown indicator value");
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLParamData(stmt, &oind);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[0])), "1");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[1])), "2");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[2])), "3");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[3])), "4");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[4])), "5");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[5])), "6");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "7");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "1");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
+    // Such format is used because Date returned as Timestamp.
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05 00:00:00");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
+
+    BOOST_CHECK_EQUAL(columnLens[0], 1);
+    BOOST_CHECK_EQUAL(columnLens[1], 1);
+    BOOST_CHECK_EQUAL(columnLens[2], 1);
+    BOOST_CHECK_EQUAL(columnLens[3], 1);
+    BOOST_CHECK_EQUAL(columnLens[4], 1);
+    BOOST_CHECK_EQUAL(columnLens[5], 1);
+    BOOST_CHECK_EQUAL(columnLens[6], 1);
+    BOOST_CHECK_EQUAL(columnLens[7], 1);
+    BOOST_CHECK_EQUAL(columnLens[8], 36);
+    BOOST_CHECK_EQUAL(columnLens[9], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 19);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestNullFields)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    SQLRETURN ret;
+
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+
+    TestType inNull;
+
+    inNull.allNulls = true;
+
+    testCache.Put(1, in);
+    testCache.Put(2, inNull);
+    testCache.Put(3, in);
+
+    const size_t columnsCnt = 10;
+
+    SQLLEN columnLens[columnsCnt] = { 0 };
+
+    int8_t i8Column;
+    int16_t i16Column;
+    int32_t i32Column;
+    int64_t i64Column;
+    char strColumn[ODBC_BUFFER_SIZE];
+    float floatColumn;
+    double doubleColumn;
+    bool boolColumn;
+    SQL_DATE_STRUCT dateColumn;
+    SQL_TIMESTAMP_STRUCT timestampColumn;
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 1, SQL_C_STINYINT, &i8Column, 0, &columnLens[0]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 2, SQL_C_SSHORT, &i16Column, 0, &columnLens[1]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 3, SQL_C_SLONG, &i32Column, 0, &columnLens[2]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 4, SQL_C_SBIGINT, &i64Column, 0, &columnLens[3]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 5, SQL_C_CHAR, &strColumn, ODBC_BUFFER_SIZE, &columnLens[4]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 6, SQL_C_FLOAT, &floatColumn, 0, &columnLens[5]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 7, SQL_C_DOUBLE, &doubleColumn, 0, &columnLens[6]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 8, SQL_C_BIT, &boolColumn, 0, &columnLens[7]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 9, SQL_C_DATE, &dateColumn, 0, &columnLens[8]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 10, SQL_C_TIMESTAMP, &timestampColumn, 0, &columnLens[9]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        "floatField, doubleField, boolField, dateField, timestampField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Fetching the first non-null row.
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Checking that columns are not null.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+        BOOST_CHECK_NE(columnLens[i], SQL_NULL_DATA);
+
+    // Fetching null row.
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Checking that columns are null.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+        BOOST_CHECK_EQUAL(columnLens[i], SQL_NULL_DATA);
+
+    // Fetching the last non-null row.
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Checking that columns are not null.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+        BOOST_CHECK_NE(columnLens[i], SQL_NULL_DATA);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
 
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
@@ -686,6 +938,5 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
     BOOST_CHECK_GT(rowsNum, 0);
     BOOST_CHECK_LT(rowsNum, entriesNum);
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()

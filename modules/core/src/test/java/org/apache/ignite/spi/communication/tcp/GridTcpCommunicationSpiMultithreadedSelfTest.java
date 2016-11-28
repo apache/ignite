@@ -468,8 +468,6 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         spis.clear();
         nodes.clear();
         spiRsrcs.clear();

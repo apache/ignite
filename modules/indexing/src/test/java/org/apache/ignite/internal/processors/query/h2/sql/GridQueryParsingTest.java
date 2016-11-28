@@ -95,11 +95,20 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         return cc;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ignite = startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        ignite = null;
+
+        super.afterTestsStopped();
     }
 
     /**

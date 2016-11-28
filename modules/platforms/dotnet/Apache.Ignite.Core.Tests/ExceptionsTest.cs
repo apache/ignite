@@ -65,6 +65,8 @@ namespace Apache.Ignite.Core.Tests
 
             var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
+            Assert.IsNotNull(e.InnerException);
+
             Assert.IsTrue(e.InnerException.Message.StartsWith(
                 "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
@@ -163,6 +165,7 @@ namespace Apache.Ignite.Core.Tests
 
                 ex = (Exception) msgCauseCtor.Invoke(new object[] {"myMessage", new Exception("innerEx")});
                 Assert.AreEqual("myMessage", ex.Message);
+                Assert.IsNotNull(ex.InnerException);
                 Assert.AreEqual("innerEx", ex.InnerException.Message);
             }
         }

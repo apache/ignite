@@ -34,6 +34,7 @@ namespace ignite
         cfg.jvmOpts.push_back("-Djava.compiler=NONE");
         cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
         cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -117,20 +118,20 @@ namespace ignite
         ret = SQLBindCol(stmt, 1, type, column, bufSize, resSize);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(const_cast<char*>(request)), SQL_NTS);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
-        BOOST_CHECK(ret == SQL_NO_DATA) ;
+        BOOST_CHECK(ret == SQL_NO_DATA);
     }
 
     template<>
@@ -267,5 +268,21 @@ namespace ignite
         SQLDOUBLE res = 0;
 
         CheckSingleResult0(request, SQL_C_DOUBLE, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request)
+    {
+        SQL_DATE_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request)
+    {
+        SQL_TIMESTAMP_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
     }
 }

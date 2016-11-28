@@ -621,7 +621,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         shouldBeRenting = true;
 
         if ((reservations & 0xFFFF) == 0 && casState(reservations, RENTING)) {
-                shouldBeRenting = false;
+            shouldBeRenting = false;
 
             if (log.isDebugEnabled())
                 log.debug("Moved partition to RENTING state: " + this);

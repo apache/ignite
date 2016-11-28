@@ -41,7 +41,9 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -115,6 +117,9 @@ public class BinaryClassDescriptor {
     private final boolean excluded;
 
     /** */
+    private final boolean overridesHashCode;
+
+    /** */
     private final Class<?>[] intfs;
 
     /** Whether stable schema was published. */
@@ -152,7 +157,7 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null;
+        useOptMarshaller = serializer == null || GridQueryProcessor.isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -167,6 +172,8 @@ public class BinaryClassDescriptor {
         this.serializer = serializer;
         this.mapper = mapper;
         this.registered = registered;
+
+        overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
 
         schemaReg = ctx.schemaRegistry(typeId);
 
@@ -183,7 +190,8 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) &&
+            !GridQueryProcessor.isGeometryClass(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
@@ -868,7 +876,15 @@ public class BinaryClassDescriptor {
      * @param obj Object.
      */
     private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        writer.postWrite(userType, registered, obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
+        if (obj instanceof CacheObjectImpl)
+            writer.postWrite(userType, registered, 0, false);
+        else if (obj instanceof BinaryObjectEx) {
+            boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
+
+            writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
+        }
+        else
+            writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
     }
 
     /**

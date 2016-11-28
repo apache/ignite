@@ -622,7 +622,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         if (cacheMode() == LOCAL)
             return;
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkEmpty();
 
