@@ -57,6 +57,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PAR
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_FLUSH_THRESHOLD;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
 /**
@@ -146,6 +147,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** Whether to strip mappers for remote execution. */
     private final boolean stripeMappers;
 
+    /** Striped mapper message flush threshold. */
+    private final int stripedFlushThreshold;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -167,6 +171,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         // No stripes for combiner.
         stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false) && !job.info().hasCombiner();
+        stripedFlushThreshold = get(job.info(), SHUFFLE_STRIPED_FLUSH_THRESHOLD, 1024);
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
         locReducersCtx = new HadoopTaskContext[totalReducerCnt];
@@ -363,82 +368,105 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * Sends map updates to remote reducers.
+     * Send updates to remote reducers.
+     *
+     * @param flush Flush flag.
+     * @throws IgniteCheckedException If failed.
      */
     private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
-        for (int i = 0; i < rmtMaps.length(); i++) {
-            // Deduce mapper and reducer indexes.
-            final int rmtMapIdx = i;
-            final int rmtRdcIdx = stripeMappers ? rmtMapIdx % locMappersCnt : rmtMapIdx;
+        for (int rmtMapIdx = 0; rmtMapIdx < rmtMaps.length(); rmtMapIdx++)
+            collectUpdatesAndSend(rmtMapIdx, flush);
+    }
 
-            HadoopMultimap map = rmtMaps.get(rmtMapIdx);
+    /**
+     * Send updates to concrete remote reducer.
+     *
+     * @param rmtMapIdx Remote map index.
+     * @param flush Flush flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void collectUpdatesAndSend(int rmtMapIdx, boolean flush) throws IgniteCheckedException {
+        final int rmtRdcIdx = stripeMappers ? rmtMapIdx % locMappersCnt : rmtMapIdx;
 
-            if (map == null)
-                continue; // Skip empty map and local node.
+        HadoopMultimap map = rmtMaps.get(rmtMapIdx);
 
-            if (msgs[rmtMapIdx] == null)
-                msgs[rmtMapIdx] = new HadoopShuffleMessage(job.id(), rmtRdcIdx, msgSize);
+        if (map == null)
+            return;
 
-            map.visit(false, new HadoopMultimap.Visitor() {
-                /** */
-                private long keyPtr;
+        if (msgs[rmtMapIdx] == null)
+            msgs[rmtMapIdx] = new HadoopShuffleMessage(job.id(), rmtRdcIdx, msgSize);
 
-                /** */
-                private int keySize;
+        visit(map, rmtMapIdx, rmtRdcIdx);
 
-                /** */
-                private boolean keyAdded;
+        if (flush && msgs[rmtMapIdx].offset() != 0)
+            send(rmtMapIdx, rmtRdcIdx, 0);
+    }
 
-                /** {@inheritDoc} */
-                @Override public void onKey(long keyPtr, int keySize) {
-                    this.keyPtr = keyPtr;
-                    this.keySize = keySize;
+    /**
+     * Visit output map.
+     *
+     * @param map Map.
+     * @param rmtMapIdx Remote map index.
+     * @param rmtRdcIdx Remote reducer index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void visit(HadoopMultimap map, final int rmtMapIdx, final int rmtRdcIdx) throws IgniteCheckedException {
+        map.visit(false, new HadoopMultimap.Visitor() {
+            /** */
+            private long keyPtr;
 
-                    keyAdded = false;
-                }
+            /** */
+            private int keySize;
 
-                private boolean tryAdd(long valPtr, int valSize) {
-                    HadoopShuffleMessage msg = msgs[rmtMapIdx];
+            /** */
+            private boolean keyAdded;
 
-                    if (!keyAdded) { // Add key and value.
-                        int size = keySize + valSize;
+            /** {@inheritDoc} */
+            @Override public void onKey(long keyPtr, int keySize) {
+                this.keyPtr = keyPtr;
+                this.keySize = keySize;
 
-                        if (!msg.available(size, false))
-                            return false;
+                keyAdded = false;
+            }
 
-                        msg.addKey(keyPtr, keySize);
-                        msg.addValue(valPtr, valSize);
+            private boolean tryAdd(long valPtr, int valSize) {
+                HadoopShuffleMessage msg = msgs[rmtMapIdx];
 
-                        keyAdded = true;
+                if (!keyAdded) { // Add key and value.
+                    int size = keySize + valSize;
 
-                        return true;
-                    }
-
-                    if (!msg.available(valSize, true))
+                    if (!msg.available(size, false))
                         return false;
 
+                    msg.addKey(keyPtr, keySize);
                     msg.addValue(valPtr, valSize);
+
+                    keyAdded = true;
 
                     return true;
                 }
 
-                /** {@inheritDoc} */
-                @Override public void onValue(long valPtr, int valSize) {
-                    if (tryAdd(valPtr, valSize))
-                        return;
+                if (!msg.available(valSize, true))
+                    return false;
 
-                    send(rmtMapIdx, rmtRdcIdx, keySize + valSize);
+                msg.addValue(valPtr, valSize);
 
-                    keyAdded = false;
+                return true;
+            }
 
-                    if (!tryAdd(valPtr, valSize))
-                        throw new IllegalStateException();
-                }
-            });
+            /** {@inheritDoc} */
+            @Override public void onValue(long valPtr, int valSize) {
+                if (tryAdd(valPtr, valSize))
+                    return;
 
-            if (flush && msgs[rmtMapIdx].offset() != 0)
-                send(rmtMapIdx, rmtRdcIdx, 0);
-        }
+                send(rmtMapIdx, rmtRdcIdx, keySize + valSize);
+
+                keyAdded = false;
+
+                if (!tryAdd(valPtr, valSize))
+                    throw new IllegalStateException();
+            }
+        });
     }
 
     /**
@@ -643,12 +671,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Partitioned output.
      */
-    private class PartitionedOutput implements HadoopTaskOutput {
+    public class PartitionedOutput implements HadoopTaskOutput {
         /** */
         private final HadoopTaskOutput[] locAdders = new HadoopTaskOutput[locMaps.length()];
 
         /** */
         private final HadoopTaskOutput[] rmtAdders = new HadoopTaskOutput[rmtMaps.length()];
+
+        /** Remote keys count per mapper. */
+        private final int[] rmtKeyCnt = new int[rmtMaps.length()];
 
         /** */
         private HadoopPartitioner partitioner;
@@ -698,6 +729,18 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
                     if (out == null)
                         rmtAdders[idx] = out = getOrCreateMap(rmtMaps, part).startAdding(taskCtx);
+
+                    out.write(key, val);
+
+                    rmtKeyCnt[idx] += 1;
+
+                    if (rmtKeyCnt[idx] >= stripedFlushThreshold) {
+                        collectUpdatesAndSend(idx, false);
+
+                        rmtKeyCnt[idx] = 0;
+                    }
+
+                    return;
                 }
                 else {
                     out = rmtAdders[part];
@@ -708,6 +751,25 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
 
             out.write(key, val);
+        }
+
+        /**
+         * Flush striped mapper.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        public void flushStripedMapper() throws IgniteCheckedException {
+            if (stripeMappers) {
+                int mapperIdx = mapperIndex();
+
+                assert mapperIdx >= 0;
+
+                for (int i = 0; i < totalReducerCnt; i++) {
+                    int idx = locMappersCnt * mapperIdx + i;
+
+                    collectUpdatesAndSend(idx, true);
+                }
+            }
         }
 
         /** {@inheritDoc} */

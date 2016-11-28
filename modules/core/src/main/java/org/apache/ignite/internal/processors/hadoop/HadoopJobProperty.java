@@ -95,7 +95,12 @@ public enum HadoopJobProperty {
      * <p>
      * Defaults to {@code false}.
      */
-    SHUFFLE_MAPPER_STRIPE_OUTPUT("ignite.shuffle.mapper.stripe.output");
+    SHUFFLE_MAPPER_STRIPE_OUTPUT("ignite.shuffle.mapper.stripe.output"),
+
+    /**
+     * Striped mapper flush threshold.
+     */
+    SHUFFLE_STRIPED_FLUSH_THRESHOLD("ignite.shuffle.striped.flush.threshold");
 
     /** Property name. */
     private final String propName;

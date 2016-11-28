@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleJob;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -151,6 +152,16 @@ public class HadoopV2Context extends JobContextImpl implements MapContext, Reduc
                 throw new IOException(e);
             }
         }
+    }
+
+    /**
+     * Flush striped mapper.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void flushStripedMapper() throws IgniteCheckedException {
+        if (output instanceof HadoopShuffleJob.PartitionedOutput)
+            ((HadoopShuffleJob.PartitionedOutput)output).flushStripedMapper();
     }
 
     /** {@inheritDoc} */
