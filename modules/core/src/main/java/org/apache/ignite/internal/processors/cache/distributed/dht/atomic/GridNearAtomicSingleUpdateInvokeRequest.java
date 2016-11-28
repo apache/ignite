@@ -203,7 +203,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             addDepInfo = true;
 
         if (entryProcessor != null && entryProcessorBytes == null) {
-            prepareObject(entryProcessor, cctx);
+            if (addDepInfo)
+                prepareObject(entryProcessor, cctx);
             entryProcessorBytes = CU.marshal(cctx, entryProcessor);
         }
 
