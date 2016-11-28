@@ -11,7 +11,34 @@
 #    limitations under the License.
 
 # Apache Ignite.NET build script
+# Requires PowerShell 3
 # TODO: Describe arguments
+
+param (
+    [switch]$skipJava,
+    [switch]$skipNuGet,
+    [switch]$skipDocs,
+    [string]$platform="Any CPU",
+    [string]$configuration="Release"
+ )
+
+
+# 1) Build Java (Maven)
+if (!$skipJava)
+{
+    # change to home directory
+    cd $PSScriptRoot\..
+
+    while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
+    { cd .. }
+
+    # run Maven
+    cmd /c "mvn clean package -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
+
+    # restore directory
+    cd $PSScriptRoot
+}
+
 
 # TODO:
 # build java (skippable)
