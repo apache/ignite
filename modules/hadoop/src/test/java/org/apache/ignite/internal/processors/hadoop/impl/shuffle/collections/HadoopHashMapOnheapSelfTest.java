@@ -19,16 +19,13 @@ package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.heap.HeapMemoryManager;
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
  *
  */
-public  class HadoopHashMapOnheapSelfTest extends AbstractHadoopHashMapSelfTest {
+public  class HadoopHashMapOnheapSelfTest extends HadoopHashMapAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected MemoryManager memoryManager() {
         return new HeapMemoryManager(32 * 1024);
     }
-
 }

@@ -22,9 +22,9 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapM
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
- *
+ * Skip list tests.
  */
-public  class HadoopHashMapOffheapSelfTest extends HadoopHashMapAbstractSelfTest {
+public class HadoopSkipListOffheapSelfTest extends HadoopSkipListAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected MemoryManager memoryManager() {
         return new OffheapMemoryManager(new GridUnsafeMemory(0), 32 * 1024);

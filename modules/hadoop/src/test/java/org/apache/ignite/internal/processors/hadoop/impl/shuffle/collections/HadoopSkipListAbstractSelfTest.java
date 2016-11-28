@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -53,7 +54,12 @@ import static java.lang.Math.max;
 /**
  * Skip list tests.
  */
-public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
+public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTest {
+    /**
+     * @return Memory manager to use by map.
+     */
+    protected abstract MemoryManager memoryManager();
+
     /**
      *
      */
@@ -86,9 +92,10 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testMapSimple() throws Exception {
-        GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
 //        mem.listen(new GridOffHeapEventListener() {
 //            @Override public void onEvent(GridOffHeapEvent evt) {
 //                if (evt == GridOffHeapEvent.ALLOCATE)
@@ -104,7 +111,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        HadoopMultimap m = new HadoopSkipList(job, new OffheapMemoryManager(mem, 32 * 1024));
+        HadoopMultimap m = new HadoopSkipList(job, memoryManager());
 
         HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -133,14 +140,18 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         a.close();
 
-        X.println("Alloc: " + mem.allocatedSize());
-
         m.close();
-
-        assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(HadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx)
+    /**
+     * @param m Hadoop multimap.
+     * @param mm Golden multimap.
+     * @param vis Multimap for visitor.
+     * @param taskCtx Task context.
+     * @throws Exception If failed.
+     */
+    private void check(HadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis,
+        HadoopTaskContext taskCtx)
         throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
 
@@ -227,8 +238,6 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
      * @throws Exception if failed.
      */
     public void testMultiThreaded() throws Exception {
-        GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
         X.println("___ Started");
 
         Random rnd = new GridRandom();
@@ -238,7 +247,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
             final HadoopTaskContext taskCtx = new TaskContext();
 
-            final HadoopMultimap m = new HadoopSkipList(job, new OffheapMemoryManager(mem, 32 * 1024));
+            final HadoopMultimap m = new HadoopSkipList(job, memoryManager());
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 
@@ -314,8 +323,6 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
             in.close();
             m.close();
-
-            assertEquals(0, mem.allocatedSize());
         }
     }
 }

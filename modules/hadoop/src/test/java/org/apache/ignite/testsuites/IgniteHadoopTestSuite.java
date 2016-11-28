@@ -28,6 +28,13 @@ import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProt
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOffheapSelftest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOnheapSelftest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapAbstractSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapOnheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListOnheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.KerberosUserNameMapperSelfTest;
@@ -74,9 +81,8 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopV2JobSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopValidationSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedMapReducePlannerTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedPlannerMapReduceTest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.AbstractHadoopHashMapSelfTest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapAbstractSelftest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataStreamSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -162,11 +168,16 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(AbstractHadoopHashMapSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapOnheapSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOffheapSelftest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOnheapSelftest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListOnheapSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionSelfTest.class.getName())));
 

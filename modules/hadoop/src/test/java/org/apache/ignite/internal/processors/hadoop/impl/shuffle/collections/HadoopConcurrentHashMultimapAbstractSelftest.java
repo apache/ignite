@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -48,11 +49,14 @@ import org.apache.ignite.internal.util.typedef.X;
 /**
  *
  */
-public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest {
+public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends HadoopAbstractMapTest {
+    /**
+     * @return Memory manager to use by map.
+     */
+    protected abstract MemoryManager memoryManager();
+
     /** */
     public void testMapSimple() throws Exception {
-        GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
 //        mem.listen(new GridOffHeapEventListener() {
 //            @Override public void onEvent(GridOffHeapEvent evt) {
 //                if (evt == GridOffHeapEvent.ALLOCATE)
@@ -69,7 +73,7 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
         HadoopTaskContext taskCtx = new TaskContext();
 
         HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
-            new OffheapMemoryManager(mem, 32 * 1024), mapSize);
+            memoryManager(), mapSize);
 
         HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -97,14 +101,16 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
 //        check(m, mm);
 
         a.close();
-
-        X.println("Alloc: " + mem.allocatedSize());
-
         m.close();
-
-        assertEquals(0, mem.allocatedSize());
     }
 
+    /**
+     * @param m Hadoop multimap.
+     * @param mm Golden multimap.
+     * @param vis Multimap for visitor.
+     * @param taskCtx Task context.
+     * @throws Exception If failed.
+     */
     private void check(HadoopConcurrentHashMultimap m, Multimap<Integer, Integer> mm,
         final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx) throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
@@ -200,7 +206,7 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
             final HadoopTaskContext taskCtx = new TaskContext();
 
             final HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
-                new OffheapMemoryManager(mem, 32 * 1024), 16);
+                memoryManager(), 16);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 

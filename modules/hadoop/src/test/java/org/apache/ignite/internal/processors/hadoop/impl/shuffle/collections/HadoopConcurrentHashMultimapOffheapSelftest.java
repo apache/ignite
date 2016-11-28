@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 /**
  *
  */
-public  class HadoopHashMapOffheapSelfTest extends HadoopHashMapAbstractSelfTest {
+public class HadoopConcurrentHashMultimapOffheapSelftest extends HadoopConcurrentHashMultimapAbstractSelftest {
     /** {@inheritDoc} */
     @Override protected MemoryManager memoryManager() {
         return new OffheapMemoryManager(new GridUnsafeMemory(0), 32 * 1024);

@@ -40,7 +40,7 @@ import java.util.Random;
 /**
  *
  */
-public abstract class AbstractHadoopHashMapSelfTest extends HadoopAbstractMapTest {
+public abstract class HadoopHashMapAbstractSelfTest extends HadoopAbstractMapTest {
     /**
      * @return Memory manager to use by map.
      */
@@ -52,8 +52,6 @@ public abstract class AbstractHadoopHashMapSelfTest extends HadoopAbstractMapTes
      * @throws Exception If failed.
      */
     public void testMapSimple() throws Exception {
-        GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
         Random rnd = new Random();
 
         int mapSize = 16 << rnd.nextInt(3);
@@ -67,7 +65,7 @@ public abstract class AbstractHadoopHashMapSelfTest extends HadoopAbstractMapTes
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
 
-        for (int i = 0, vals = 400 * mapSize + rnd.nextInt(25); i < vals; i++) {
+        for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
             int key = rnd.nextInt(mapSize);
             int val = rnd.nextInt();
 
@@ -89,12 +87,7 @@ public abstract class AbstractHadoopHashMapSelfTest extends HadoopAbstractMapTes
 //        check(m, mm);
 
         a.close();
-
-        X.println("Alloc: " + mem.allocatedSize());
-
         m.close();
-
-        assertEquals(0, mem.allocatedSize());
     }
 
     /**
