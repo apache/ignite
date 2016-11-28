@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -52,14 +55,21 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     /** Value position in Redis message. */
     private static final int VAL_POS = 2;
 
+    /** Grid context. */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param log Logger.
      * @param hnd Handler.
+     * @param ctx Context.
      */
-    public GridRedisSetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
+    public GridRedisSetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
+        GridKernalContext ctx) {
         super(log, hnd);
+
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -70,6 +80,18 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
+
+        // check if an atomic long with the key exists (related to incr/decr).
+        IgniteAtomicLong l = ctx.grid().atomicLong(msg.key(), 0, false);
+
+        if (l != null) {
+            try {
+                l.close();
+            }
+            catch (IgniteException e) {
+                U.warn(log, "Failed to remove atomic long for key [" + msg.key() + "]");
+            }
+        }
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
