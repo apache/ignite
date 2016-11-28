@@ -260,21 +260,21 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      */
     public void testIncrDecr() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals(1, (long) jedis.incr("newKeyIncr"));
-            Assert.assertEquals(-1, (long) jedis.decr("newKeyDecr"));
+            Assert.assertEquals(1, (long)jedis.incr("newKeyIncr"));
+            Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
 
             Assert.assertEquals("1", jedis.get("newKeyIncr"));
             Assert.assertEquals("-1", jedis.get("newKeyDecr"));
 
-            Assert.assertEquals(1, (long) jedis.incr("incrKey1"));
+            Assert.assertEquals(1, (long)jedis.incr("incrKey1"));
 
             jedis.set("incrKey1", "10");
 
-            Assert.assertEquals(11L, (long) jedis.incr("incrKey1"));
+            Assert.assertEquals(11L, (long)jedis.incr("incrKey1"));
 
             jedis.set("decrKey1", "10");
 
-            Assert.assertEquals(9L, (long) jedis.decr("decrKey1"));
+            Assert.assertEquals(9L, (long)jedis.decr("decrKey1"));
 
             jedis.set("nonInt", "abc");
 
@@ -343,14 +343,14 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      */
     public void testIncrDecrBy() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals(2, (long) jedis.incrBy("newKeyIncrBy", 2));
-            Assert.assertEquals(-2, (long) jedis.decrBy("newKeyDecrBy", 2));
+            Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncrBy", 2));
+            Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecrBy", 2));
 
             jedis.set("incrDecrKeyBy", "1");
 
-            Assert.assertEquals(11L, (long) jedis.incrBy("incrDecrKeyBy", 10));
+            Assert.assertEquals(11L, (long)jedis.incrBy("incrDecrKeyBy", 10));
 
-            Assert.assertEquals(9L, (long) jedis.decrBy("incrDecrKeyBy", 2));
+            Assert.assertEquals(9L, (long)jedis.decrBy("incrDecrKeyBy", 2));
         }
     }
 

@@ -90,7 +90,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
                 Long init;
 
                 try {
-                    init = Long.parseLong((String) getResp.getResponse());
+                    init = Long.parseLong((String)getResp.getResponse());
 
                     restReq.initial(init);
                 }
@@ -101,9 +101,10 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
                 }
 
                 if ((init == Long.MAX_VALUE && (msg.command() == INCR || msg.command() == INCRBY))
-                        || (init == Long.MIN_VALUE && (msg.command() == DECR || msg.command() == DECRBY)))
+                    || (init == Long.MIN_VALUE && (msg.command() == DECR || msg.command() == DECRBY)))
                     throw new GridRedisGenericException("Increment or decrement would overflow");
-            } else
+            }
+            else
                 throw new GridRedisTypeException("Operation against a key holding the wrong kind of value");
 
             // remove from cache.
