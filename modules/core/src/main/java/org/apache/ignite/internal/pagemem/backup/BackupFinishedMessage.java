@@ -78,11 +78,13 @@ public class BackupFinishedMessage implements Message {
                     return false;
 
                 writer.incrementState();
+
             case 1:
                 if (!writer.writeBoolean("success", success))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -111,6 +113,7 @@ public class BackupFinishedMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(BackupFinishedMessage.class);

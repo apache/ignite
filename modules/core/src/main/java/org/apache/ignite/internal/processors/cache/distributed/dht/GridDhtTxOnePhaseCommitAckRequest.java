@@ -124,7 +124,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -27;
+        return -28;
     }
 
     /** {@inheritDoc} */

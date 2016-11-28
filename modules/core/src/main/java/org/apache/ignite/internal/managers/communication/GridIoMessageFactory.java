@@ -172,7 +172,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -36:
-                msg = new TcpCommunicationSpi.HandshakeMessage2();
+                msg = new GridNearAtomicSingleUpdateRequest();
 
                 break;
 
@@ -182,12 +182,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -28:
-                msg = new BackupFinishedMessage();
+                msg = new GridDhtTxOnePhaseCommitAckRequest();
 
                 break;
 
             case -27:
-                msg = new GridDhtTxOnePhaseCommitAckRequest();
+                msg = new BackupFinishedMessage();
 
                 break;
 
@@ -782,7 +782,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 125:
-                msg = new GridNearAtomicSingleUpdateRequest();
+                msg = new TcpCommunicationSpi.HandshakeMessage2();
 
                 break;
 
@@ -796,7 +796,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124-126] [] - this
+            // [-3..119] [124-127] [-23..-29] [-36..-37] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:
