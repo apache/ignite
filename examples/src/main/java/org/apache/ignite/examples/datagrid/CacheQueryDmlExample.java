@@ -60,15 +60,14 @@ public class CacheQueryDmlExample {
                 IgniteCache<Long, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
                 IgniteCache<AffinityKey<Long>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
             ) {
-                // Populate cache.
-                initialize(orgCache, personCache);
-                queryData(personCache, "Insert data data:");
+                insert(orgCache, personCache);
+                queryData(personCache, "Insert data:");
 
                 update(personCache);
                 queryData(personCache, "Update salary for Master degrees:");
 
                 delete(personCache);
-                queryData(personCache, "Leave only Apache employees:");
+                queryData(personCache, "Delete non-Apache employees:");
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -86,7 +85,7 @@ public class CacheQueryDmlExample {
      * @param orgCache Organization cache,
      * @param personCache Person cache.
      */
-    private static void initialize(IgniteCache<Long, Organization> orgCache,
+    private static void insert(IgniteCache<Long, Organization> orgCache,
         IgniteCache<AffinityKey<Long>, Person> personCache) {
         // Organizations.
         Organization org1 = new Organization("Apache");
@@ -96,8 +95,8 @@ public class CacheQueryDmlExample {
         orgCache.put(org2.id(), org2);
 
         // Insert persons by key/value.
-        Person p1 = new Person(org1, "John", "Doe", 4000, "Master");
-        Person p2 = new Person(org1, "Jane", "Roe", 2000, "Bachelor");
+        Person p1 = new Person(1L, org1.id(), "John", "Doe", 4000, "Master");
+        Person p2 = new Person(2L, org1.id(), "Jane", "Roe", 2000, "Bachelor");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("insert into Person (_key, _val) values (?, ?)");
 
@@ -105,22 +104,18 @@ public class CacheQueryDmlExample {
         personCache.query(qry.setArgs(p2.key(), p2));
 
         // Insert persons via field values.
-        long id3 = Person.ID_GEN.incrementAndGet();
-        long id4 = Person.ID_GEN.incrementAndGet();
-
-        AffinityKey<Long> key3 = new AffinityKey<>(id3, org2.id());
-        AffinityKey<Long> key4 = new AffinityKey<>(id4, org2.id());
+        AffinityKey<Long> key3 = new AffinityKey<>(3L, org2.id());
+        AffinityKey<Long> key4 = new AffinityKey<>(4L, org2.id());
 
         qry = new SqlFieldsQuery(
             "insert into Person (_key, id, orgId, firstName, lastName, salary, resume) values (?, ?, ?, ?, ?, ?, ?)");
 
-        personCache.query(qry.setArgs(key3, id3, org2.id(), "Mary", "Major", 6000, "Master"));
-        personCache.query(qry.setArgs(key4, id4, org2.id(), "Richard", "Miles", 3000, "Bachelor"));
+        personCache.query(qry.setArgs(key3, 3L, org2.id(), "Mary", "Major", 5000, "Master"));
+        personCache.query(qry.setArgs(key4, 4L, org2.id(), "Richard", "Miles", 3000, "Bachelor"));
     }
 
     /**
-     * Example of conditional UPDATE query - raise salary by 10% to everyone that has Master's degree
-     * and works on Ignite.
+     * Example of conditional UPDATE query: raise salary by 10% to everyone who has Master degree.
      *
      * @param personCache Person cache.
      */
@@ -133,7 +128,7 @@ public class CacheQueryDmlExample {
     }
 
     /**
-     * Example of conditional DELETE query - delete everyone working at 'Other' company.
+     * Example of conditional DELETE query: delete non-Apache employees.
      *
      * @param personCache Person cache.
      */
@@ -143,10 +138,10 @@ public class CacheQueryDmlExample {
             "where id in (" +
                 "select p.id " +
                 "from Person p, \"Organizations\".Organization as o " +
-                "where o.name = ? and p.orgId = o.id" +
+                "where o.name != ? and p.orgId = o.id" +
             ")";
 
-        personCache.query(new SqlFieldsQuery(sql).setArgs("Other")).getAll();
+        personCache.query(new SqlFieldsQuery(sql).setArgs("Apache")).getAll();
     }
 
     /**
