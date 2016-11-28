@@ -552,37 +552,35 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         flushed = true;
 
-        if (stripeMappers)
-            return new GridFinishedFuture<>();
-
         if (totalReducerCnt == 0)
             return new GridFinishedFuture<>();
 
-        U.await(ioInitLatch);
+        if (!stripeMappers) {
+            U.await(ioInitLatch);
 
-        GridWorker snd0 = snd;
+            GridWorker snd0 = snd;
 
-        if (snd0 != null) {
-            if (log.isDebugEnabled())
-                log.debug("Cancelling sender thread.");
-
-            snd0.cancel();
-
-            try {
-                snd0.join();
-
+            if (snd0 != null) {
                 if (log.isDebugEnabled())
-                    log.debug("Finished waiting for sending thread to complete on shuffle job flush: " + job.id());
+                    log.debug("Cancelling sender thread.");
+
+                snd0.cancel();
+
+                try {
+                    snd0.join();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Finished waiting for sending thread to complete on shuffle job flush: " + job.id());
+                } catch (InterruptedException e) {
+                    throw new IgniteInterruptedCheckedException(e);
+                }
             }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedCheckedException(e);
-            }
+
+            collectUpdatesAndSend(true); // With flush.
+
+            if (log.isDebugEnabled())
+                log.debug("Finished sending collected updates to remote reducers: " + job.id());
         }
-
-        collectUpdatesAndSend(true); // With flush.
-
-        if (log.isDebugEnabled())
-            log.debug("Finished sending collected updates to remote reducers: " + job.id());
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
