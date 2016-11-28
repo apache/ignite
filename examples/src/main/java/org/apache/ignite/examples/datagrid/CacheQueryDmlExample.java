@@ -61,14 +61,14 @@ public class CacheQueryDmlExample {
                 IgniteCache<AffinityKey<Long>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
             ) {
                 // Populate cache.
-                initialize();
-                queryData(personCache, "Original data:");
+                initialize(orgCache, personCache);
+                queryData(personCache, "Insert data data:");
 
                 update(personCache);
-                queryData(personCache, "Update salary for Apache employees:");
+                queryData(personCache, "Update salary for Master degrees:");
 
                 delete(personCache);
-                queryData(personCache, "Remove non-Apache employees:");
+                queryData(personCache, "Leave only Apache employees:");
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -76,16 +76,18 @@ public class CacheQueryDmlExample {
                 ignite.destroyCache(ORG_CACHE);
             }
 
-            print("Cache query example finished.");
+            print("Cache query DML example finished.");
         }
     }
 
     /**
      * Populate cache with test data.
+     *
+     * @param orgCache Organization cache,
+     * @param personCache Person cache.
      */
-    private static void initialize() {
-        IgniteCache<Long, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
-
+    private static void initialize(IgniteCache<Long, Organization> orgCache,
+        IgniteCache<AffinityKey<Long>, Person> personCache) {
         // Organizations.
         Organization org1 = new Organization("Apache");
         Organization org2 = new Organization("Other");
@@ -94,10 +96,8 @@ public class CacheQueryDmlExample {
         orgCache.put(org2.id(), org2);
 
         // Insert persons by key/value.
-        IgniteCache<Long, Person> personCache = Ignition.ignite().cache(PERSON_CACHE);
-
-        Person p1 = new Person(org1, "John", "Doe", 2000, "Master");
-        Person p2 = new Person(org1, "Jane", "Doe", 1000, "Bachelor");
+        Person p1 = new Person(org1, "John", "Doe", 4000, "Master");
+        Person p2 = new Person(org1, "Jane", "Roe", 2000, "Bachelor");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("insert into Person (_key, _val) values (?, ?)");
 
@@ -114,8 +114,8 @@ public class CacheQueryDmlExample {
         qry = new SqlFieldsQuery(
             "insert into Person (_key, id, orgId, firstName, lastName, salary, resume) values (?, ?, ?, ?, ?, ?, ?)");
 
-        personCache.query(qry.setArgs(key3, id3, org2.id(), "John", "Smith", 1000, "Bachelor"));
-        personCache.query(qry.setArgs(key4, id4, org2.id(), "Jane", "Smith", 2000, "Master"));
+        personCache.query(qry.setArgs(key3, id3, org2.id(), "Mary", "Major", 6000, "Master"));
+        personCache.query(qry.setArgs(key4, id4, org2.id(), "Richard", "Miles", 3000, "Bachelor"));
     }
 
     /**
@@ -125,9 +125,11 @@ public class CacheQueryDmlExample {
      * @param personCache Person cache.
      */
     private static void update(IgniteCache<AffinityKey<Long>, Person> personCache) {
-        personCache.query(new SqlFieldsQuery("update Person set salary = salary * 1.1 where resume like '%Master%' and " +
-            "id in (select p.id from Person p, \"Organizations\".Organization as o where o.name = ? " +
-            "and p.orgId = o.id)").setArgs("Apache"));
+        String sql =
+            "update Person set salary = salary * 1.1 " +
+            "where resume = ?";
+
+        personCache.query(new SqlFieldsQuery(sql).setArgs("Master"));
     }
 
     /**
