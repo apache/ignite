@@ -19,8 +19,8 @@
 # * JDK 7+
 
 # Examples:
-# 'build -clean': Full rebuild of Java, .NET and NuGet packages.
-# 'build -skipJava -skipCodeAnalysis -skipNuGet -configuration Debug -platform x64': Quick build of .NET code only.
+# 'powershell -file build.ps1 -clean': Full rebuild of Java, .NET and NuGet packages.
+# 'powershell -file build.ps1 -skipJava -skipCodeAnalysis -skipNuGet -configuration Debug -platform x64': Quick build of .NET code only.
 
 param (
     [switch]$skipJava,
