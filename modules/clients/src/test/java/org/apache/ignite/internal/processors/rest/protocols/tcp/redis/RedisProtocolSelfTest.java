@@ -351,6 +351,46 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(11L, (long)jedis.incrBy("incrDecrKeyBy", 10));
 
             Assert.assertEquals(9L, (long)jedis.decrBy("incrDecrKeyBy", 2));
+
+            jedis.set("outOfRangeIncrBy", "1");
+            try {
+                jedis.incrBy("outOfRangeIncrBy", Long.MAX_VALUE);
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            jedis.set("outOfRangeDecrBy", "-1");
+            try {
+                jedis.decrBy("outOfRangeDecrBy", Long.MIN_VALUE);
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            jedis.set("outOfRangeIncBy2", String.valueOf(Long.MAX_VALUE));
+            try {
+                jedis.incrBy("outOfRangeIncBy2", Long.MAX_VALUE);
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            jedis.set("outOfRangeDecrBy2", String.valueOf(Long.MIN_VALUE));
+            try {
+                jedis.decrBy("outOfRangeDecrBy2", Long.MIN_VALUE);
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
         }
     }
 

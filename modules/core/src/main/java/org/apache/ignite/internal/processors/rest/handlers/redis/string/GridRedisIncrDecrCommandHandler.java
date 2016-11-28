@@ -117,7 +117,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             Object rmResp = hnd.handle(rmReq).getResponse();
 
             if (rmResp == null || !(boolean)rmResp)
-                throw new GridRedisGenericException("Cannot incr/decr on the non-atomiclong key!");
+                throw new GridRedisGenericException("Cannot incr/decr on the non-atomiclong key");
         }
 
         restReq.clientId(msg.clientId());
@@ -126,10 +126,15 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
 
         if (msg.messageSize() > 2) {
             try {
-                restReq.delta(Long.valueOf(msg.aux(DELTA_POS)));
+                Long delta = Long.valueOf(msg.aux(DELTA_POS));
+
+                // check if it can be safely added.
+                safeAdd(restReq.initial(), delta);
+
+                restReq.delta(delta);
             }
-            catch (NumberFormatException e) {
-                U.error(log, "Wrong increment delta", e);
+            catch (NumberFormatException | ArithmeticException e) {
+                U.error(log, "An increment value must be numeric and in range", e);
 
                 throw new GridRedisGenericException("An increment value must be numeric and in range");
             }
@@ -164,5 +169,20 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             return GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse()));
         else
             return GridRedisProtocolParser.toTypeError("Value is non-numeric or out of range");
+    }
+
+    /**
+     * Safely add long values.
+     *
+     * @param left A long value.
+     * @param right A long value.
+     * @return An addition result or an exception is thrown when overflow occurs.
+     */
+    private static long safeAdd(long left, long right) {
+        if (right > 0 ? left > Long.MAX_VALUE - right
+            : left < Long.MIN_VALUE - right) {
+            throw new ArithmeticException("Long overflow");
+        }
+        return left + right;
     }
 }
