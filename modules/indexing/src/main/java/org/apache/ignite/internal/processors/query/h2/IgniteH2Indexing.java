@@ -1057,7 +1057,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             throw new CacheException("Failed to find SQL table for type: " + type.name());
 
-        String sql = generateQuery(qry, tbl);
+        String sql = generateQuery(qry, null, tbl);
 
         Connection conn = connectionForThread(tbl.schemaName());
 
@@ -1105,7 +1105,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql;
 
         try {
-            sql = generateQuery(qry.getSql(), tblDesc);
+            sql = generateQuery(qry.getSql(), qry.getTableAlias(), tblDesc);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1306,7 +1306,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement.
      * @throws IgniteCheckedException In case of error.
      */
-    private String generateQuery(String qry, TableDescriptor tbl) throws IgniteCheckedException {
+    private String generateQuery(String qry, String alias, TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
         final String qry0 = qry;
@@ -1343,9 +1343,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (!upper.startsWith("FROM"))
-            from = " FROM " + t +
+            from = " FROM " + t + (alias != null ? " as " + alias : "") +
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
+
+        if(alias != null)
+            t = alias;
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 

@@ -37,6 +37,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private String type;
 
+    /** */
+    private String tableAlias;
+
     /** SQL clause. */
     private String sql;
 
@@ -70,6 +73,18 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public SqlQuery(Class<?> type, String sql) {
         setType(type);
         setSql(sql);
+    }
+
+    /**
+     * Constructs query for the given type and SQL query.
+     *
+     * @param type Type.
+     * @param sql SQL Query.
+     */
+    public SqlQuery(Class<?> type, String tableAlias, String sql) {
+        setType(type);
+        setSql(sql);
+        setTableAlias(tableAlias);
     }
 
     /**
@@ -138,6 +153,23 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
+     * Type alias
+     */
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+    /**
+     * @param tableAlias type alias
+     * @return
+     */
+    public SqlQuery<K, V> setTableAlias(String tableAlias) {
+        this.tableAlias = tableAlias;
+
+        return this;
+    }
+
+    /**
      * Gets the query execution timeout in milliseconds.
      *
      * @return Timeout value.
@@ -148,6 +180,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     *
      * @param timeout Timeout value. Zero value disables timeout.
      * @param timeUnit Time granularity.
      * @return {@code this} For chaining.

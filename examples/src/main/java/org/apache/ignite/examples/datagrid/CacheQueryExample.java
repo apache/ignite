@@ -170,15 +170,15 @@ public class CacheQueryExample {
         IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         // SQL clause which selects salaries based on range.
-        String sql = "salary > ? and salary <= ?";
+        String sql = "FROM Person as p WHERE p.salary > ? and p.salary <= ?";
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000 (queried with SQL query): ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, sql).
+            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, "p", sql).
                 setArgs(0, 1000)).getAll());
 
         print("People with salaries between 1000 and 2000 (queried with SQL query): ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, sql).
+            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, "p", sql).
                 setArgs(1000, 2000)).getAll());
     }
 
