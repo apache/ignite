@@ -50,6 +50,8 @@ Install-Module .\Invoke-MsBuild
 # Build
 Invoke-MsBuild Apache.Ignite.sln
 
+# Remove module dir
+Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
 
 # TODO:
 # build java (skippable)
