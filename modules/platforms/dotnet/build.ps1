@@ -22,9 +22,6 @@ param (
     [string]$configuration="Release"
  )
 
- $skipJava = $true
-
-
 # 1) Build Java (Maven)
 if (!$skipJava)
 {
@@ -40,15 +37,21 @@ if (!$skipJava)
     # restore directory
     cd $PSScriptRoot
 }
+else
+{
+    echo "Java (Maven) build skipped."
+}
 
 # 2) Build .NET
 
 # Download and install Invoke-MsBuild module
+echo "Installing MsBuild module..."
 Save-Module -Name Invoke-MsBuild -Path .
 Import-Module .\Invoke-MsBuild
 
 # Build
-Invoke-MsBuild Apache.Ignite.sln
+echo "Starting MsBuild..."
+Invoke-MsBuild Apache.Ignite.sln -Params "/p:Configuration=$configuration /p:Platform=$platform" -ShowBuildOutputInCurrentWindow
 
 # Remove module dir
 Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
