@@ -50,7 +50,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        allocationPath = U.resolveWorkDirectory("pagemem", false);
+        allocationPath = U.resolveWorkDirectory(null, "pagemem", false);
     }
 
     /**

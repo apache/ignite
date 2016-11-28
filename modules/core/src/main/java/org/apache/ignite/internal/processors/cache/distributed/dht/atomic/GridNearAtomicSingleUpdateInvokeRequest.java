@@ -108,6 +108,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean clientReq,
         boolean addDepInfo
     ) {
@@ -126,6 +127,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             taskNameHash,
             skipStore,
             keepBinary,
+            recovery,
             clientReq,
             addDepInfo
         );

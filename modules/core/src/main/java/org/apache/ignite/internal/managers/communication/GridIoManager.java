@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -135,7 +134,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Pool processor. */
-    private PoolProcessor pools;
+    private final PoolProcessor pools;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -311,8 +310,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (log.isDebugEnabled())
             log.debug(startInfo());
 
-        registerIoPoolExtensions();
-
         addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 ClusterNode node = ctx.discovery().node(nodeId);
@@ -420,39 +417,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         return map;
-    }
-
-    /**
-     * Processes IO messaging pool extensions.
-     * @throws IgniteCheckedException On error.
-     */
-    private void registerIoPoolExtensions() throws IgniteCheckedException {
-        // Process custom IO messaging pool extensions:
-        final IoPool[] executorExtensions = ctx.plugins().extensions(IoPool.class);
-
-        if (executorExtensions != null) {
-            // Store it into the map and check for duplicates:
-            for (IoPool ex : executorExtensions) {
-                final byte id = ex.id();
-
-                // 1. Check the pool id is non-negative:
-                if (id < 0)
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id is negative " +
-                        "[id=" + id + ']');
-
-                // 2. Check the pool id is in allowed range:
-                if (isReservedGridIoPolicy(id))
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id in in the " +
-                        "reserved range (0-31) [id=" + id + ']');
-
-                // 3. Check the pool for duplicates:
-                if (ioPools[id] != null)
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its " +
-                        "Id as already used [id=" + id + ']');
-
-                ioPools[id] = ex;
-            }
-        }
     }
 
     /** {@inheritDoc} */

@@ -836,17 +836,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 lastVer,
                 exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
 
-        boolean useOldApi = false;
-
         if (nodes != null) {
             for (ClusterNode node : nodes) {
-                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0) {
-                    useOldApi = true;
-                    compress = false;
-
-                    break;
-                }
-                else if (node.version().compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) < 0)
+                if (node.version().compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) < 0)
                     compress = false;
             }
         }
@@ -869,13 +861,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (ready) {
                     GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
-
-                    if (useOldApi) {
-                        locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
-                            locMap.nodeOrder(),
-                            locMap.updateSequence(),
-                            locMap);
-                    }
 
                     addFullPartitionsMap(m,
                         dupData,
@@ -997,9 +982,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
-
-                if (targetNode.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                    locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 addPartitionMap(m,
                     dupData,

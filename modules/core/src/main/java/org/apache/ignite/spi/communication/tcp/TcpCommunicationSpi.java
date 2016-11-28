@@ -2764,7 +2764,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     try {
-                        meta.put(NODE_ID_META, node.id());
                         meta.put(CONN_IDX_META, connKey);
 
                         if (recoveryDesc != null) {

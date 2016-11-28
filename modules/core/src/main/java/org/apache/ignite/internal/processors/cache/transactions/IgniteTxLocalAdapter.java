@@ -2454,9 +2454,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     final GridCacheOperation op = lockOnly ? NOOP : rmv ? DELETE :
                         entryProcessor != null ? TRANSFORM : old != null ? UPDATE : CREATE;
 
-                    final GridCacheOperation op = lockOnly ? NOOP : rmv ? DELETE :
-                        entryProcessor != null ? TRANSFORM : old != null ? UPDATE : CREATE;
-
                     if (old != null && hasFilters && !filter(entry.context(), cacheKey, old, filter)) {
                         ret.set(cacheCtx, old, false, keepBinary);
 

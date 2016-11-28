@@ -80,7 +80,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReplicatedTxStoreExc
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStorePutxSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreValueBytesSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapCleanupTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
@@ -229,7 +228,6 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
-        suite.addTestSuite(GridCacheSwapCleanupTest.class);
 
         // Common tests.
         suite.addTestSuite(CacheNamesSelfTest.class);

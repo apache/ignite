@@ -114,6 +114,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     public abstract boolean keepBinary();
 
     /**
+     * @return Recovery flag.
+     */
+    public abstract boolean recovery();
+
+    /**
      * @return Update operation.
      */
     public abstract GridCacheOperation operation();

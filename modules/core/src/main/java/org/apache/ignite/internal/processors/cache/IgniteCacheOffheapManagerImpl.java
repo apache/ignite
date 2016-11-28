@@ -126,7 +126,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     protected void initDataStructures() throws IgniteCheckedException {
-        if (cctx.ttl().eagerTtlEnabled()) {
+        if (cctx.shared().ttl().eagerTtlEnabled()) {
             String name = "PendingEntries";
 
             long rootPage = allocateForTree();
@@ -704,8 +704,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void expire(
-        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException {
+    @Override public boolean expire(
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+        int amount
+    ) throws IgniteCheckedException {
         if (pendingEntries != null) {
             GridCacheVersion obsoleteVer = null;
 
@@ -713,8 +715,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
 
+            int cleared = 0;
+
             while (cur.next()) {
                 PendingRow row = cur.get();
+
+                if (amount != -1 && cleared > amount)
+                    return true;
 
                 assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
@@ -724,8 +731,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                     c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
                 }
+
+                cleared++;
             }
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -851,11 +862,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 rowStore.removeRow(old.link());
             }
 
-            if (pendingEntries != null && expireTime != 0) {
+            if (pendingEntries != null && expireTime != 0)
                 pendingEntries.put(new PendingRow(expireTime, dataRow.link()));
-
-                cctx.ttl().onPendingEntryAdded(expireTime);
-            }
         }
 
         /** {@inheritDoc} */

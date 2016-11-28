@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -163,6 +162,9 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
     private int initSize;
+
+    /** */
+    private boolean recovery;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -518,6 +520,11 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery;
     }
 
     /** {@inheritDoc} */
@@ -952,8 +959,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 if (!reader.isLastRead())
                     return false;
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
 
                 reader.incrementState();
 

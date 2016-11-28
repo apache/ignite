@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -43,8 +44,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** */
     private final IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> expireC =
         new IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion>() {
-            @Override public void applyx(GridCacheEntryEx entry, GridCacheVersion obsoleteVer)
-                throws IgniteCheckedException {
+            @Override public void applyx(GridCacheEntryEx entry, GridCacheVersion obsoleteVer) {
                 boolean touch = !entry.isNear();
 
                 while (true) {
@@ -57,7 +57,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                         break;
                     }
-                    catch (GridCacheEntryRemovedException e0) {
+                    catch (GridCacheEntryRemovedException ignore) {
                         entry = entry.context().cache().entryEx(entry.key());
 
                         touch = true;
@@ -151,10 +151,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     public boolean expire(int amount) {
         long now = U.currentTimeMillis();
 
-        boolean more;
 
         try {
             if (pendingEntries != null) {
+                GridNearCacheAdapter nearCache = cctx.near();
+
                 GridCacheVersion obsoleteVer = null;
 
                 int limit = (-1 != amount) ? amount : pendingEntries.sizex();
@@ -169,24 +170,30 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                         if (obsoleteVer == null)
                             obsoleteVer = cctx.versions().next();
 
-                        expireC.apply(e.entry, obsoleteVer);
+                        GridNearCacheEntry nearEntry = nearCache.peekExx(e.key);
+
+                        if (nearEntry != null)
+                            expireC.apply(nearEntry, obsoleteVer);
                     }
                 }
             }
 
-            more = cctx.offheap().expire(expireC, amount);
+            boolean more = cctx.offheap().expire(expireC, amount);
+
+            if (more)
+                return more;
+
+            if (amount != -1) {
+                EntryWrapper e = pendingEntries.firstx();
+
+                return e != null && e.expireTime <= now;
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process entry expiration: " + e, e);
         }
 
-        if (amount != -1) {
-            EntryWrapper e = pendingEntries.firstx();
-
-            return e != null && e.expireTime <= now;
-        }
-
-        return more;
+        return false;
     }
 
 

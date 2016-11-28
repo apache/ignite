@@ -3339,7 +3339,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
-                    if (peek(jcache(i), key) != null)
+                    if (jcache(i).localPeek(key) != null)
                         return false;
                 }
 

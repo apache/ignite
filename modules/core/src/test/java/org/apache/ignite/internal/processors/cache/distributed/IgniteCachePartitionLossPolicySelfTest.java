@@ -202,7 +202,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         ignite(0).cache(CACHE_NAME).resetLostPartitions();
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);

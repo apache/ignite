@@ -91,7 +91,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public void expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException;
+    public boolean expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount) throws IgniteCheckedException;
 
     /**
      * Gets the number of entries pending expire.

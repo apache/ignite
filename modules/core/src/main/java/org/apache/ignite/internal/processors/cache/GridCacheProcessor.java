@@ -71,7 +71,6 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -2475,7 +2474,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
-            DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+            DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
             t.stop(true);
 
@@ -3700,7 +3699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.failIfExists(failIfExists);
 
@@ -3744,7 +3743,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
-                initialize(false, cfg, cacheObjCtx);
+                initialize(cfg, cacheObjCtx);
 
                 req.startCacheConfiguration(cfg);
             }
@@ -3767,15 +3766,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.deploymentId(desc.deploymentId());
             req.startCacheConfiguration(ccfg);
         }
-
-        // Fail cache with swap enabled creation on grid without swap space SPI.
-        if (ccfg.isSwapEnabled())
-            for (ClusterNode n : ctx.discovery().allNodes())
-                if (!GridCacheUtils.clientNode(n) && !GridCacheUtils.isSwapEnabled(n)) {
-                    throw new IgniteCheckedException("Failed to start cache " +
-                        cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
-                        " has not swap SPI configured");
-                }
 
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
