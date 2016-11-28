@@ -39,6 +39,8 @@
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
+        <property name="localHost" value="127.0.0.1" />
+
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">
             <list>

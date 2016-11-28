@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -32,7 +31,7 @@ import org.apache.ignite.examples.model.Person;
 /**
  * Example to showcase DML capabilities of Ignite's SQL engine.
  */
-public class CacheDmlQueryExample {
+public class CacheQueryDmlExample {
     /** Organizations cache name. */
     private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
 
@@ -48,17 +47,12 @@ public class CacheDmlQueryExample {
     @SuppressWarnings({"unused", "ThrowFromFinallyBlock"})
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println();
-            System.out.println(">>> Cache query example started.");
+            print(">>> Cache query DML example started.");
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
-
-            orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
 
             CacheConfiguration<AffinityKey<Long>, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
-
-            personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             // Auto-close cache at the end of the example.
@@ -68,26 +62,16 @@ public class CacheDmlQueryExample {
             ) {
                 // Populate cache.
                 initialize();
-
-                sqlFieldsQueryWithJoin();
+                queryData("Initial state:");
 
                 update();
-
-                print("Names and salaries after salary raise for Masters:");
-
-                sqlFieldsQueryWithJoin();
-
-                print("Names and salaries after shift and hire:");
+                queryData("Raised salary for Apache employees:");
 
                 merge();
-
-                sqlFieldsQueryWithJoin();
-
-                print("Names and salaries after removing non-Igniters:");
+                queryData("Names and salaries after shift and hire:");
 
                 delete();
-
-                sqlFieldsQueryWithJoin();
+                queryData("Removing non-Apache persons:");
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -105,90 +89,36 @@ public class CacheDmlQueryExample {
     private static void initialize() {
         IgniteCache<Long, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
 
-        // Clear cache before running the example.
-        orgCache.clear();
-
         // Organizations.
-        Organization org1 = new Organization("ApacheIgnite");
+        Organization org1 = new Organization("Apache");
         Organization org2 = new Organization("Other");
 
         orgCache.put(org1.id(), org1);
         orgCache.put(org2.id(), org2);
 
+        // Insert persons by key/value.
         IgniteCache<Long, Person> personCache = Ignition.ignite().cache(PERSON_CACHE);
 
-        // Clear cache before running the example.
-        personCache.clear();
+        Person p1 = new Person(org1, "John", "Doe", 2000, "Master");
+        Person p2 = new Person(org1, "Jane", "Doe", 1000, "Bachelor");
 
-        // People.
-        Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
-        Person p2 = new Person(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
+        SqlFieldsQuery qry = new SqlFieldsQuery("insert into Person (_key, _val) values (?, ?)");
 
-        Person[] people = new Person[] { p1, p2 };
+        personCache.query(qry.setArgs(p1.key(), p1));
+        personCache.query(qry.setArgs(p2.key(), p2));
 
-        // 2 keys and 2 Persons - total 8 arguments.
-        Object[] insertQryArgs = new Object[4];
-
-        for (int i = 0; i < 2; i++) {
-            insertQryArgs[i * 2] = people[i].key();
-            insertQryArgs[i * 2 + 1] = people[i];
-        }
-
-        personCache.query(new SqlFieldsQuery("insert into Person (_key, _val) values (?, ?), (?, ?)")
-            .setArgs(insertQryArgs));
-
-        // And now let's insert people from 2nd organization via field values
-
-        // 2 Persons, 7 arguments for each - total 14 arguments.
-        insertQryArgs = new Object[14];
-
+        // Insert persons via field values.
         long id3 = Person.ID_GEN.incrementAndGet();
-
         long id4 = Person.ID_GEN.incrementAndGet();
 
         AffinityKey<Long> key3 = new AffinityKey<>(id3, org2.id());
         AffinityKey<Long> key4 = new AffinityKey<>(id4, org2.id());
 
-        insertQryArgs[0] = key3;
-        insertQryArgs[1] = id3;
-        insertQryArgs[2] = org2.id();
-        insertQryArgs[3] = "John";
-        insertQryArgs[4] = "Smith";
-        insertQryArgs[5] = 1000;
-        insertQryArgs[6] = "John Smith has Bachelor Degree.";
+        qry = new SqlFieldsQuery(
+            "insert into Person (_key, id, orgId, firstName, lastName, salary, resume) values (?, ?, ?, ?, ?, ?, ?)");
 
-        insertQryArgs[7] = key4;
-        insertQryArgs[8] = id4;
-        insertQryArgs[9] = org2.id();
-        insertQryArgs[10] = "Jane";
-        insertQryArgs[11] = "Smith";
-        insertQryArgs[12] = 2000;
-        insertQryArgs[13] = "Jane Smith has Master Degree.";
-
-        personCache.query(new SqlFieldsQuery("insert into Person (_key, id, orgId, firstName, lastName, salary, resume) " +
-            "values (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)").setArgs(insertQryArgs));
-    }
-
-    /**
-     * Example for SQL-based fields queries that return only required
-     * fields instead of whole key-value pairs.
-     */
-    private static void sqlFieldsQueryWithJoin() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-
-        // Execute query to get names of all employees.
-        String sql =
-            "select Person.id, concat(firstName, ' ', lastName), salary, org.name " +
-                "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-                "where Person.orgId = org.id";
-
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql));
-
-        // In this particular case each row will have one element with full name of an employees.
-        List<List<?>> res = cursor.getAll();
-
-        // Print persons' names and organizations' names.
-        print("Ids and names of all employees, their salaries, and organizations they belong to: ", res);
+        personCache.query(qry.setArgs(key3, id3, org2.id(), "John", "Smith", 1000, "Bachelor"));
+        personCache.query(qry.setArgs(key4, id4, org2.id(), "Jane", "Smith", 2000, "Master"));
     }
 
     /**
@@ -199,8 +129,8 @@ public class CacheDmlQueryExample {
         IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         cache.query(new SqlFieldsQuery("update Person set salary = salary * 1.1 where resume like '%Master%' and " +
-            "id in (select p.id from Person p, \"" + ORG_CACHE + "\".Organization as o where o.name like '%Ignite%' " +
-            "and p.orgId = o.id)"));
+            "id in (select p.id from Person p, \"" + ORG_CACHE + "\".Organization as o where o.name = ? " +
+            "and p.orgId = o.id)").setArgs("Apache"));
     }
 
     /**
@@ -237,6 +167,28 @@ public class CacheDmlQueryExample {
 
         cache.query(new SqlFieldsQuery("delete from Person where id in (select p.id from Person p, \"" +
             ORG_CACHE + "\".Organization as o where o.name = 'Other' and p.orgId = o.id)")).getAll();
+    }
+
+    /**
+     * Query current data.
+     *
+     * @param msg Message.
+     */
+    private static void queryData(String msg) {
+        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+
+        // Execute query to get names of all employees.
+        String sql =
+            "select p.id, concat(p.firstName, ' ', p.lastName), o.name, p.resume, p.salary " +
+            "from Person as p, \"" + ORG_CACHE + "\".Organization as o " +
+            "where p.orgId = o.id";
+
+        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql));
+
+        // Print person and organization names.
+        List<List<?>> res = cursor.getAll();
+
+        print(msg, res);
     }
 
     /**
