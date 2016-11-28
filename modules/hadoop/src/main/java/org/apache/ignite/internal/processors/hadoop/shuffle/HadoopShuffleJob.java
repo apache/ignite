@@ -515,15 +515,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
-        if (!stripeMappers) {
-            if (snd != null) {
-                snd.cancel();
+        if (snd != null) {
+            snd.cancel();
 
-                try {
-                    snd.join();
-                } catch (InterruptedException e) {
-                    throw new IgniteInterruptedCheckedException(e);
-                }
+            try {
+                snd.join();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 
