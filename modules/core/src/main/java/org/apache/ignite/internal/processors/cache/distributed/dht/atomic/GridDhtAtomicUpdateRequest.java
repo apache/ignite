@@ -601,12 +601,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return CU.TTL_NOT_CHANGED;
     }
 
-    /**
-     * Get single partition for that message.
-     *
-     * @return Partition.
-     */
-    public int partition() {
+    /** {@inheritDoc} */
+    @Override public int partition() {
         return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
     }
 

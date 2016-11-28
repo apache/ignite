@@ -1892,7 +1892,6 @@ public class GridNioServer<T> {
                 if ((key.interestOps() & SelectionKey.OP_WRITE) == 0)
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 
-
                 // Update timestamp to protected against false write timeout.
                 ses.bytesSent(0);
             }
