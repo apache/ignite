@@ -45,6 +45,7 @@ if (!$skipJava)
     # run Maven
     if ($clean)
     {
+        # TODO: combine with main command line
         echo "Executing Maven cleanup..."
         cmd /c "mvn clean"        
     }
@@ -63,6 +64,7 @@ else
 # 2) Build .NET
 
 # Download and install Invoke-MsBuild module
+# TODO: Get rid of this module, do it yourself.
 if (!(Test-Path Invoke-MsBuild))
 {
     echo "Installing MsBuild module..."
@@ -72,6 +74,8 @@ if (!(Test-Path Invoke-MsBuild))
 Import-Module .\Invoke-MsBuild
 
 # Build
+
+# TODO: NuGet restore - msbuild does not do this?
 echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
