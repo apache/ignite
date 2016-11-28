@@ -17,26 +17,26 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
+
+import java.util.List;
 
 /**
  * Example to showcase DML capabilities of Ignite's SQL engine.
  */
 public class CacheQueryDmlExample {
     /** Organizations cache name. */
-    private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
+    private static final String ORG_CACHE = "Organizations";
 
     /** Persons cache name. */
-    private static final String PERSON_CACHE = CacheQueryExample.class.getSimpleName() + "Persons";
+    private static final String PERSON_CACHE = "Persons";
 
     /**
      * Executes example.
@@ -62,16 +62,13 @@ public class CacheQueryDmlExample {
             ) {
                 // Populate cache.
                 initialize();
-                queryData("Initial state:");
+                queryData(personCache, "Original data:");
 
-                update();
-                queryData("Raised salary for Apache employees:");
+                update(personCache);
+                queryData(personCache, "Update salary for Apache employees:");
 
-                merge();
-                queryData("Names and salaries after shift and hire:");
-
-                delete();
-                queryData("Removing non-Apache persons:");
+                delete(personCache);
+                queryData(personCache, "Remove non-Apache employees:");
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -124,69 +121,45 @@ public class CacheQueryDmlExample {
     /**
      * Example of conditional UPDATE query - raise salary by 10% to everyone that has Master's degree
      * and works on Ignite.
+     *
+     * @param personCache Person cache.
      */
-    private static void update() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-
-        cache.query(new SqlFieldsQuery("update Person set salary = salary * 1.1 where resume like '%Master%' and " +
-            "id in (select p.id from Person p, \"" + ORG_CACHE + "\".Organization as o where o.name = ? " +
+    private static void update(IgniteCache<AffinityKey<Long>, Person> personCache) {
+        personCache.query(new SqlFieldsQuery("update Person set salary = salary * 1.1 where resume like '%Master%' and " +
+            "id in (select p.id from Person p, \"Organizations\".Organization as o where o.name = ? " +
             "and p.orgId = o.id)").setArgs("Apache"));
     }
 
     /**
-     * Example of MERGE query - insert one new employee and replace an old one.
-     */
-    private static void merge() {
-        IgniteCache<Long, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
-
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-
-        // Let's find some guy we'll base the new one upon...
-        List<List<?>> res = cache.query(new SqlFieldsQuery("select _val from Person where concat(firstName, ' ', " +
-            "lastName) = ?").setArgs("John Smith")).getAll();
-
-        Person p = (Person) res.get(0).get(0);
-
-        // Now let's change some fields and put him back together with completely new one.
-        p.firstName = "Sam";
-        p.lastName = "Lewitt";
-        p.salary = 3000;
-        p.resume = "Sam Levitt has PhD degree.";
-
-        Person newPerson = new Person(orgCache.get(p.orgId), "Mike", "Rose", 800, "Mike Rose is a college graduate.");
-
-        cache.query(new SqlFieldsQuery("merge into Person(_key, _val) values (?, ?), (?, ?)").setArgs(p.key(),
-            p, newPerson.key(), newPerson));
-    }
-
-    /**
      * Example of conditional DELETE query - delete everyone working at 'Other' company.
+     *
+     * @param personCache Person cache.
      */
-    private static void delete() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+    private static void delete(IgniteCache<AffinityKey<Long>, Person> personCache) {
+        String sql =
+            "delete from Person " +
+            "where id in (" +
+                "select p.id " +
+                "from Person p, \"Organizations\".Organization as o " +
+                "where o.name = ? and p.orgId = o.id" +
+            ")";
 
-        cache.query(new SqlFieldsQuery("delete from Person where id in (select p.id from Person p, \"" +
-            ORG_CACHE + "\".Organization as o where o.name = 'Other' and p.orgId = o.id)")).getAll();
+        personCache.query(new SqlFieldsQuery(sql).setArgs("Other")).getAll();
     }
 
     /**
      * Query current data.
      *
+     * @param personCache Person cache.
      * @param msg Message.
      */
-    private static void queryData(String msg) {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-
-        // Execute query to get names of all employees.
+    private static void queryData(IgniteCache<AffinityKey<Long>, Person> personCache, String msg) {
         String sql =
             "select p.id, concat(p.firstName, ' ', p.lastName), o.name, p.resume, p.salary " +
-            "from Person as p, \"" + ORG_CACHE + "\".Organization as o " +
+            "from Person as p, \"Organizations\".Organization as o " +
             "where p.orgId = o.id";
 
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql));
-
-        // Print person and organization names.
-        List<List<?>> res = cursor.getAll();
+        List<List<?>> res = personCache.query(new SqlFieldsQuery(sql)).getAll();
 
         print(msg, res);
     }
