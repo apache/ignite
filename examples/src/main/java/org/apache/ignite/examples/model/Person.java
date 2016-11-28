@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
  */
 public class Person implements Serializable {
     /** */
-    public static final AtomicLong ID_GEN = new AtomicLong();
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** Person ID (indexed). */
     @QuerySqlField(index = true)
