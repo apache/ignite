@@ -60,13 +60,13 @@ public class CacheQueryDmlExample {
                 IgniteCache<Long, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
             ) {
                 insert(orgCache, personCache);
-                queryData(personCache, "Insert data:");
+                select(personCache, "Insert data");
 
                 update(personCache);
-                queryData(personCache, "Update salary for Master degrees:");
+                select(personCache, "Update salary for Master degrees");
 
                 delete(personCache);
-                queryData(personCache, "Delete non-Apache employees:");
+                select(personCache, "Delete non-Apache employees");
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -137,7 +137,7 @@ public class CacheQueryDmlExample {
      * @param personCache Person cache.
      * @param msg Message.
      */
-    private static void queryData(IgniteCache<Long, Person> personCache, String msg) {
+    private static void select(IgniteCache<Long, Person> personCache, String msg) {
         String sql =
             "select p.id, concat(p.firstName, ' ', p.lastName), o.name, p.resume, p.salary " +
             "from Person as p, \"Organizations\".Organization as o " +
@@ -145,18 +145,10 @@ public class CacheQueryDmlExample {
 
         List<List<?>> res = personCache.query(new SqlFieldsQuery(sql).setDistributedJoins(true)).getAll();
 
-        print(msg, res);
-    }
-
-    /**
-     * Prints message and query results.
-     *
-     * @param msg Message to print before all objects are printed.
-     * @param col Query results.
-     */
-    private static void print(String msg, Iterable<?> col) {
         print(msg);
-        print(col);
+
+        for (Object next : res)
+            System.out.println(">>>     " + next);
     }
 
     /**
@@ -167,15 +159,5 @@ public class CacheQueryDmlExample {
     private static void print(String msg) {
         System.out.println();
         System.out.println(">>> " + msg);
-    }
-
-    /**
-     * Prints query results.
-     *
-     * @param col Query results.
-     */
-    private static void print(Iterable<?> col) {
-        for (Object next : col)
-            System.out.println(">>>     " + next);
     }
 }
