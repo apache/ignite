@@ -25,17 +25,17 @@ param (
 # 1) Build Java (Maven)
 if (!$skipJava)
 {
-    echo "Starting Java (Maven) build..."
-
     # change to home directory
     cd $PSScriptRoot\..
 
     while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
     { cd .. }
 
-    echo "Ignite home detected at $pwd"
+    echo "Ignite home detected at '$pwd'."
 
     # run Maven
+    echo "Starting Java (Maven) build..."
+
     cmd /c "mvn clean package -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
     # restore directory
