@@ -77,11 +77,11 @@ public abstract class AbstractHadoopHashMapSelfTest extends HadoopAbstractMapTes
 
             mm.put(key, val);
 
-//            a.close();
+            a.close();
 
             check(m, mm, taskCtx);
 
-//            a = m.startAdding(taskCtx);
+            a = m.startAdding(taskCtx);
         }
 
 //        a.add(new IntWritable(10), new IntWritable(2));
