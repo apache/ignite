@@ -229,29 +229,28 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("BusyWait")
     public void startSending(String gridName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
-        if (stripeMappers)
-            return;
-
         assert snd == null;
         assert io != null;
 
         this.io = io;
 
-        if (!flushed) {
-            snd = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
-                @Override protected void body() throws InterruptedException {
-                    try {
-                        while (!isCancelled()) {
-                            collectUpdatesAndSend(false);
+        if (!stripeMappers) {
+            if (!flushed) {
+                snd = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
+                    @Override protected void body() throws InterruptedException {
+                        try {
+                            while (!isCancelled()) {
+                                collectUpdatesAndSend(false);
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IllegalStateException(e);
                         }
                     }
-                    catch (IgniteCheckedException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }
-            };
+                };
 
-            new IgniteThread(snd).start();
+                new IgniteThread(snd).start();
+            }
         }
 
         ioInitLatch.countDown();
@@ -516,17 +515,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
-        if (stripeMappers)
-            return;
+        if (!stripeMappers) {
+            if (snd != null) {
+                snd.cancel();
 
-        if (snd != null) {
-            snd.cancel();
-
-            try {
-                snd.join();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedCheckedException(e);
+                try {
+                    snd.join();
+                } catch (InterruptedException e) {
+                    throw new IgniteInterruptedCheckedException(e);
+                }
             }
         }
 
@@ -551,13 +548,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
-        if (stripeMappers)
-            return new GridFinishedFuture<>();
-
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 
         flushed = true;
+
+        if (stripeMappers)
+            return new GridFinishedFuture<>();
 
         if (totalReducerCnt == 0)
             return new GridFinishedFuture<>();
