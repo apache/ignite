@@ -32,10 +32,10 @@ import java.util.List;
  */
 public class CacheQueryDmlExample {
     /** Organizations cache name. */
-    private static final String ORG_CACHE = "Organizations";
+    private static final String ORG_CACHE = CacheQueryDmlExample.class.getSimpleName() + "Organizations";
 
     /** Persons cache name. */
-    private static final String PERSON_CACHE = "Persons";
+    private static final String PERSON_CACHE = CacheQueryDmlExample.class.getSimpleName() + "Persons";
 
     /**
      * Executes example.
@@ -124,7 +124,7 @@ public class CacheQueryDmlExample {
             "delete from Person " +
             "where id in (" +
                 "select p.id " +
-                "from Person p, \"Organizations\".Organization as o " +
+                "from Person p, \"" + ORG_CACHE + "\".Organization as o " +
                 "where o.name != ? and p.orgId = o.id" +
             ")";
 
@@ -140,7 +140,7 @@ public class CacheQueryDmlExample {
     private static void select(IgniteCache<Long, Person> personCache, String msg) {
         String sql =
             "select p.id, concat(p.firstName, ' ', p.lastName), o.name, p.resume, p.salary " +
-            "from Person as p, \"Organizations\".Organization as o " +
+            "from Person as p, \"" + ORG_CACHE + "\".Organization as o " +
             "where p.orgId = o.id";
 
         List<List<?>> res = personCache.query(new SqlFieldsQuery(sql).setDistributedJoins(true)).getAll();
