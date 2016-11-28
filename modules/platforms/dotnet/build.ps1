@@ -70,10 +70,9 @@ Import-Module .\Invoke-MsBuild
 echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis" -ShowBuildOutputInCurrentWindow
+Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false" -ShowBuildOutputInCurrentWindow
 
 # 3) Pack NuGet
-
 if (!$skipNuGet)
 {
     # Check parameters
