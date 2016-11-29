@@ -22,6 +22,8 @@
 # 'powershell -file build.ps1 -clean': Full rebuild of Java, .NET and NuGet packages.
 # 'powershell -file build.ps1 -skipJava -skipCodeAnalysis -skipNuGet -configuration Debug -platform x64': Quick build of .NET code only.
 
+# TODO: Reimplement with CAKE? Powershell sucks.
+
 param (
     [switch]$skipJava,
     [switch]$skipNuGet,
