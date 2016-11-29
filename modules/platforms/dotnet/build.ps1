@@ -33,7 +33,7 @@ param (
 
 # 1) Build Java (Maven)
 if (!$skipJava) {
-    # change to home directory
+    # Detect Ignite root directory
     cd $PSScriptRoot\..
 
     while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
@@ -41,16 +41,16 @@ if (!$skipJava) {
 
     echo "Ignite home detected at '$pwd'."
 
-    # run Maven
+    # Run Maven
     echo "Starting Java (Maven) build..."
     
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
     cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
-    # restore directory
+    # Restore directory
     cd $PSScriptRoot
 
-    # check result
+    # Check result
     if ($LastExitCode -ne 0)
     {
         echo "Java (Maven) build failed."
