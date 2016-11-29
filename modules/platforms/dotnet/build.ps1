@@ -47,6 +47,9 @@ if (!$skipJava) {
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
     cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
+    # Copy Libs
+    # TODO!
+
     # Restore directory
     cd $PSScriptRoot
 
