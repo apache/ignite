@@ -125,9 +125,16 @@ if (!(Test-Path $regKey)) {
 $msbuildExe = join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe"
 echo "MSBuild detected at '$msbuildExe'."
 
+# Detect NuGet
+$ng = "nuget"
+if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
+    echo "Downloading NuGet..."
+    (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "nuget.exe");
+    $ng = ".\nuget.exe"
+}
+
 # Restore NuGet packages
 echo "Restoring NuGet..."
-$ng = 'nuget'
 & $ng restore
 
 # Build
