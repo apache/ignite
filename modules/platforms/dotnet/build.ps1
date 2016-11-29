@@ -116,13 +116,13 @@ if (!$skipNuGet)
         exit -1
     }
 
-    Remove-Item nupkg -Force -Recurse -ErrorAction SilentlyContinue
+    rmdir nupkg -Force -Recurse -ErrorAction SilentlyContinue
     mkdir nupkg
 
     # Detect version
     $ver = (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
 
-    # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present).
+    # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
     ls *.nuspec -Recurse  `
         | % { If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
         | % { 
