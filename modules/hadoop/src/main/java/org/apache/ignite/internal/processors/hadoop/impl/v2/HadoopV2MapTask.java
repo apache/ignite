@@ -78,15 +78,11 @@ public class HadoopV2MapTask extends HadoopV2Task {
 
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
 
-                long mapFinish = System.currentTimeMillis();
-
-                System.out.println(taskCtx.taskInfo().mapperIndex() +  ": Finished mapping: " + (mapFinish - start));
-
                 hadoopContext().flushStripedMapper();
 
                 long finish = System.currentTimeMillis();
 
-                System.out.println(taskCtx.taskInfo().mapperIndex() +  ": Finished: " + (mapFinish - start) + ", " + (finish - mapFinish) + "]");
+                System.out.println(taskCtx.taskInfo().mapperIndex() +  ": Finished: " + (finish - start));
             }
             finally {
                 closeWriter();
