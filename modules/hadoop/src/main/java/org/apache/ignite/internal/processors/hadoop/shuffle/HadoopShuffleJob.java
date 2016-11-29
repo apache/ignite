@@ -719,7 +719,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
                     assert mapperIdx >= 0;
 
-                    int idx = locMappersCnt * mapperIdx + part;
+                    int idx = totalReducerCnt * mapperIdx + part;
 
                     out = rmtAdders[idx];
 
@@ -761,7 +761,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 assert mapperIdx >= 0;
 
                 for (int i = 0; i < totalReducerCnt; i++) {
-                    int idx = locMappersCnt * mapperIdx + i;
+                    int idx = totalReducerCnt * mapperIdx + i;
 
                     collectUpdatesAndSend(idx, true);
                 }
