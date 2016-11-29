@@ -340,7 +340,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     public void onShuffleMessage(HadoopShuffleMessage2 msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
-        assert msg.offset() > 0;
 
         HadoopTaskContext taskCtx = locReducersCtx[msg.reducer()];
 

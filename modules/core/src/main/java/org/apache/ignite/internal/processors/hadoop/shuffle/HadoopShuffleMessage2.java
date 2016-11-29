@@ -171,7 +171,7 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("buf", this.buf))
+                if (!writer.writeByteArray("buf", this.buf, 0, off))
                     return false;
 
                 writer.incrementState();
