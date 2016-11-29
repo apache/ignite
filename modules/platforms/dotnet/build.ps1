@@ -71,28 +71,25 @@ else {
     echo "Java (Maven) build skipped."
 }
 
+
 # 2) Build .NET
-
-# Prepare paths
-$ng = (Get-Item .).FullName + '\nuget.exe'
-if (!(Test-Path $ng)) { $ng = 'nuget' }
-
+# Detect MSBuild 4.0+
 for ($i=4; $i -le 20; $i++) {
     $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
     if (Test-Path $regKey) { break }
 }
 
 if (!(Test-Path $regKey)) {
-    echo "Failed to detect msbuild path, exiting."
+    echo "Failed to detect MSBuild path, exiting."
     exit -1
 }
 
 $msbuildExe = join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe"
-
 echo "MSBuild detected at '$msbuildExe'."
 
 # Restore NuGet packages
 echo "Restoring NuGet..."
+$ng = 'nuget'
 & $ng restore
 
 # Build
@@ -122,6 +119,7 @@ ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
     
     xcopy /s /y $dir\*.* bin
 }
+
 
 # 3) Pack NuGet
 if (!$skipNuGet) {
