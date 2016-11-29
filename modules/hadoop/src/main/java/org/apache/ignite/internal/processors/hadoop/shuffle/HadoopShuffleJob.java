@@ -702,13 +702,24 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
-            fut.add(tup.get2());
+        if (stripedDirect) {
+            for (IgniteBiTuple<HadoopShuffleMessage2, GridFutureAdapter<?>> tup : sentDirectMsgs.values())
+                fut.add(tup.get2());
 
-        fut.markInitialized();
+            fut.markInitialized();
 
-        if (log.isDebugEnabled())
-            log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
+            if (log.isDebugEnabled())
+                log.debug("Collected futures to compound futures for flush: " + sentDirectMsgs.size());
+        }
+        else {
+            for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
+                fut.add(tup.get2());
+
+            fut.markInitialized();
+
+            if (log.isDebugEnabled())
+                log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
+        }
 
         return fut;
     }
