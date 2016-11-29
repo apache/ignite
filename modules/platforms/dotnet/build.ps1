@@ -63,19 +63,23 @@ else
 
 # 2) Build .NET
 
-# Download and install Invoke-MsBuild module
-# TODO: Get rid of this module, do it yourself.
-if (!(Test-Path Invoke-MsBuild))
-{
-    echo "Installing MsBuild module..."
-    Save-Module -Name Invoke-MsBuild -Path .
-}
-
-Import-Module .\Invoke-MsBuild
-
 # Prepare paths
 $ng = (Get-Item .).FullName + '\nuget.exe'
 if (!(Test-Path $ng)) { $ng = 'nuget' }
+
+for($i=4; $i -le 20; $i++) 
+{
+    $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
+    if (Test-Path $regKey) { break }
+}
+
+if (!(Test-Path $regKey))
+{
+    echo "Failed to detect msbuild path, exiting."
+    exit -1
+}
+
+$msbuildExe = join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe"
 
 # Restore NuGet packages
 echo "Restoring NuGet..."
@@ -85,7 +89,7 @@ echo "Restoring NuGet..."
 echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false" -ShowBuildOutputInCurrentWindow
+& $msbuildExe Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false
 
 # 3) Pack NuGet
 if (!$skipNuGet)
