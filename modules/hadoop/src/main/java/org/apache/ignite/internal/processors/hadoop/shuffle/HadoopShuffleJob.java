@@ -724,7 +724,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     out = rmtAdders[idx];
 
                     if (out == null)
-                        rmtAdders[idx] = out = getOrCreateMap(rmtMaps, part).startAdding(taskCtx);
+                        rmtAdders[idx] = out = getOrCreateMap(rmtMaps, idx).startAdding(taskCtx);
 
                     out.write(key, val);
 
