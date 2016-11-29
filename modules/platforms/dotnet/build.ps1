@@ -73,9 +73,15 @@ if (!(Test-Path Invoke-MsBuild))
 
 Import-Module .\Invoke-MsBuild
 
-# Build
+# Prepare paths
+$ng = (Get-Item .).FullName + '\nuget.exe'
+if (!(Test-Path $ng)) { $ng = 'nuget' }
 
-# TODO: NuGet restore - msbuild does not do this?
+# Restore NuGet packages
+echo "Restoring NuGet..."
+& $ng restore
+
+# Build
 echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
@@ -90,10 +96,6 @@ if (!$skipNuGet)
         echo "NuGet can only package 'Release' 'Any CPU' builds; you have specified '$configuration' '$platform'."
         exit -1
     }
-
-    # Prepare paths
-    $ng = (Get-Item .).FullName + '\nuget.exe'
-    if (!(Test-Path $ng)) { $ng = 'nuget' }
 
     rmdir nupkg -Force -Recurse
     mkdir nupkg
