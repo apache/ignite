@@ -87,10 +87,8 @@ if (!$skipJava) {
     cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
     # Check result
-    if ($LastExitCode -ne 0)
-    {
-        echo "Java (Maven) build failed."
-        exit -1
+    if ($LastExitCode -ne 0) {
+        echo "Java (Maven) build failed."; exit -1
     }
 
     # Copy (relevant) jars
@@ -157,10 +155,7 @@ ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Benchmarks*" | % {
     $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj")) `
                 {"bin\$configuration"} else {"bin\$platform\$configuration"}
-
-
-    $dir = join-path (split-path -parent $_) $binDir
-    
+    $dir = join-path (split-path -parent $_) $binDir    
     xcopy /s /y $dir\*.* bin
 }
 
@@ -191,8 +186,7 @@ if (!$skipNuGet) {
             # check result
             if ($LastExitCode -ne 0)
             {
-                echo "NuGet pack failed."
-                exit -1
+                echo "NuGet pack failed."; exit -1
             }
         }
 
