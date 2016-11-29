@@ -168,7 +168,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-//        gen.generateAndWrite(GridActivationMessageResponse.class);
+//        gen.generateAndWrite(GridChangeGlobalStateMessageResponse.class);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 

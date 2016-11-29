@@ -262,11 +262,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (qryId == null) {
             synchronized (this) {
                 if (qryId == null) {
-                    qryId = dsCacheCtx.continuousQueries().executeInternalQuery(new DataStructuresEntryListener(),
+                    qryId = dsCacheCtx.continuousQueries().executeInternalQuery(
+                        new DataStructuresEntryListener(),
                         new DataStructuresEntryFilter(),
                         dsCacheCtx.isReplicated() && dsCacheCtx.affinityNode(),
                         false,
-                        false);
+                        false
+                    );
                 }
             }
         }
@@ -299,6 +301,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onActivate() throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Activate data structure processor [nodeId=" + ctx.localNodeId() +
+                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
         this.initFailed = false;
 
         start();
@@ -315,6 +321,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onDeActivate() throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("DeActivate data structure processor [nodeId=" + ctx.localNodeId() +
+                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         onKernalStop(false);

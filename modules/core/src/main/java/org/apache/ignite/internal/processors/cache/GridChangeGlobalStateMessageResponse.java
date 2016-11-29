@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class GridActivationMessageResponse extends GridCacheMessage{
+public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,14 +50,14 @@ public class GridActivationMessageResponse extends GridCacheMessage{
     /**
      * Default constructor.
      */
-    public GridActivationMessageResponse() {
+    public GridChangeGlobalStateMessageResponse() {
          /* No-op. */
     }
 
     /**
      * @param nodeId Node id.
      */
-    public GridActivationMessageResponse(
+    public GridChangeGlobalStateMessageResponse(
         UUID requestId,
         UUID nodeId,
         Throwable err
@@ -181,7 +181,7 @@ public class GridActivationMessageResponse extends GridCacheMessage{
 
         }
 
-        return reader.afterMessageRead(GridActivationMessageResponse.class);
+        return reader.afterMessageRead(GridChangeGlobalStateMessageResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -201,6 +201,6 @@ public class GridActivationMessageResponse extends GridCacheMessage{
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridActivationMessageResponse.class, this, super.toString());
+        return S.toString(GridChangeGlobalStateMessageResponse.class, this, super.toString());
     }
 }

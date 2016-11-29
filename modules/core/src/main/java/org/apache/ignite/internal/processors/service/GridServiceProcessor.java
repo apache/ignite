@@ -333,6 +333,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void onActivate() throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Activate service processor [nodeId=" + ctx.localNodeId() +
+                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
         start();
 
         onKernalStart();
@@ -340,6 +344,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void onDeActivate() {
+        if (log.isDebugEnabled())
+            log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
+                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
         busyLock.block();
 
         try {
