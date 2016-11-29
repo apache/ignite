@@ -128,8 +128,11 @@ public class StripedExecutor implements ExecutorService {
     public void execute(int idx, Runnable cmd) {
         if (idx == -1)
             execute(cmd);
-        else
+        else {
+            assert idx >= 0 : idx;
+
             stripes[idx % stripes.length].execute(cmd);
+        }
     }
 
     /** {@inheritDoc} */
@@ -238,7 +241,7 @@ public class StripedExecutor implements ExecutorService {
      */
     @NotNull @Override public <T> Future<T> submit(
         @NotNull Runnable task,
-        T result
+        T res
     ) {
         throw new UnsupportedOperationException();
     }

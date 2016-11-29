@@ -502,6 +502,7 @@ public abstract class IgniteUtils {
         }
     };
 
+    /** */
     private static final boolean assertionsEnabled;
 
     /**
