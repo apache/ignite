@@ -47,6 +47,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
@@ -64,7 +65,7 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
 /**
  * Tests map-reduce task execution basics.
  */
-public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
+public abstract class HadoopTaskExecutionAbstractSelfTest extends HadoopAbstractSelfTest {
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
 
@@ -114,6 +115,11 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     }
 
     /**
+     * @return 'offheap' to use off-heap memory manager and 'onheap' to use on-heap memory manager.
+     */
+    protected abstract String memoryManagerProperty();
+
+    /**
      * @throws Exception If failed.
      */
     public void testMapRun() throws Exception {
@@ -128,6 +134,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         Configuration cfg = new Configuration();
 
         cfg.setStrings("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -170,6 +177,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         cfg.setStrings("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
         cfg.setBoolean(MAP_WRITE, true);
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -211,6 +219,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         Configuration cfg = new Configuration();
 
         cfg.setStrings("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -273,6 +282,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         Configuration cfg = new Configuration();
 
         setupFileSystems(cfg);
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -357,6 +368,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     public void testJobKill() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+
         Hadoop hadoop = grid(0).hadoop();
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
@@ -411,7 +424,11 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         assertFalse(killRes);
     }
 
+    /**
+     *
+     */
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
+        /** */
         private int mapperId;
 
         /** {@inheritDoc} */

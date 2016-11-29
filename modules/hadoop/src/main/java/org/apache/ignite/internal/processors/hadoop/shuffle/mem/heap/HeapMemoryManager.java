@@ -81,11 +81,27 @@ public class HeapMemoryManager extends MemoryManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMemory(long srcPtr, long destPtr, long len) {
+    @Override public void copyMemory(long srcPtr, long dstPtr, long len) {
         HeapPage src = ptrToPage(srcPtr);
-        HeapPage dst = ptrToPage(srcPtr);
+        HeapPage dst = ptrToPage(dstPtr);
 
-        GridUnsafe.copyMemory(src.buf(), (int)srcPtr, dst.buf(), (int)destPtr, len);
+        GridUnsafe.copyMemory(src.buf(), (int)srcPtr, dst.buf(), (int)dstPtr, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void copyMemory(byte[] srcBuf, int srcOff, long dstPtr, long len) {
+        HeapPage dst = ptrToPage(dstPtr);
+
+        GridUnsafe.copyMemory(srcBuf, GridUnsafe.BYTE_ARR_OFF + srcOff,
+            dst.buf(), dstPtr & 0xffffffffL, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void copyMemory(long srcPtr, byte[] dstBuf, int dstOff, long len) {
+        HeapPage src = ptrToPage(srcPtr);
+
+        GridUnsafe.copyMemory(src.buf(), srcPtr & 0xffffffffL,
+            dstBuf, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
     }
 
     /** {@inheritDoc} */

@@ -81,6 +81,26 @@ public abstract class MemoryManager {
     public abstract void copyMemory(long srcPtr, long destPtr, long len);
 
     /**
+     * Copy memory.
+     *
+     * @param srcBuf Source buffer.
+     * @param srcOff Offset at the sources buffer.
+     * @param destPtr Destination pointer.
+     * @param len Length in bytes.
+     */
+    public abstract void copyMemory(byte[] srcBuf, int srcOff, long destPtr, long len);
+
+    /**
+     * Copy memory.
+     *
+     * @param srcPtr Source pointer.
+     * @param dstBuf Destination byte array buffer.
+     * @param dstOff Destination offset.
+     * @param len Length in bytes.
+     */
+    public abstract void copyMemory(long srcPtr, byte[] dstBuf, int dstOff, long len);
+
+    /**
      * Get bytes array.
      *
      * @param ptr Pointer.

@@ -81,7 +81,16 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code false}.
      */
-    SHUFFLE_REDUCER_NO_SORTING;
+    SHUFFLE_REDUCER_NO_SORTING,
+
+    /**
+     * Memory manager for the shuffle collections.
+     * Possible values: 'offheap' and 'onheap'
+     * <p>
+     * By default is {@code offheap}.
+     */
+    SHUFFLE_MEM_MANAGER;
+
 
     /** */
     private final String ptyName;

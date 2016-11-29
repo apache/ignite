@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.Page;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
@@ -80,6 +81,16 @@ public class OffheapMemoryManager extends MemoryManager {
     /** {@inheritDoc} */
     @Override public void copyMemory(long srcPtr, long destPtr, long len) {
         mem.copyMemory(srcPtr, destPtr, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void copyMemory(byte[] srcBuf, int srcOff, long destPtr, long len) {
+        GridUnsafe.copyMemory(srcBuf, GridUnsafe.BYTE_ARR_OFF + srcOff, null, destPtr, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void copyMemory(long srcPtr, byte[] dstBuf, int dstOff, long len) {
+        GridUnsafe.copyMemory(null, srcPtr, dstBuf, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
     }
 
     /** {@inheritDoc} */

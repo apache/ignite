@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
  * Base class for hash multimaps.

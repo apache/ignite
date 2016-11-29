@@ -41,8 +41,8 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopCo
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.heap.HeapMemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -58,6 +58,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MEM_MANAGER;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_OFFHEAP_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
@@ -144,8 +145,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         maps = new AtomicReferenceArray<>(totalReducerCnt);
         msgs = new HadoopShuffleMessage[totalReducerCnt];
 
-        memMgr = new OffheapMemoryManager(mem,
-            HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024));
+        String memMgrStr = HadoopJobProperty.get(job.info(), SHUFFLE_MEM_MANAGER, "offheap");
+
+        int pageSize = HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024);
+
+        if ("onheap".equalsIgnoreCase(memMgrStr))
+            memMgr = new HeapMemoryManager(pageSize);
+        else
+            memMgr = new OffheapMemoryManager(mem, pageSize);
     }
 
     /**
@@ -244,7 +251,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
             final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
-            final UnsafeValue val = new UnsafeValue(msg.buffer());
+            final UnsafeValue val = new UnsafeValue(msg.buffer(), memMgr);
 
             msg.visit(new HadoopShuffleMessage.Visitor() {
                 /** */
@@ -292,13 +299,19 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         /** */
         private int size;
 
+        /** */
+        private MemoryManager mem;
+
         /**
          * @param buf Buffer.
+         * @param mem Memory manager.
          */
-        private UnsafeValue(byte[] buf) {
+        private UnsafeValue(byte[] buf, MemoryManager mem) {
             assert buf != null;
+            assert mem != null;
 
             this.buf = buf;
+            this.mem = mem;
         }
 
         /** */
@@ -308,7 +321,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         /** */
         @Override public void copyTo(long ptr) {
-            GridUnsafe.copyMemory(buf, GridUnsafe.BYTE_ARR_OFF + off, null, ptr, size);
+            mem.copyMemory(buf, off, ptr, size);
         }
     }
 
@@ -347,6 +360,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     keyAdded = false;
                 }
 
+                /**
+                 * @param valPtr Pointer to value.
+                 * @param valSize Value size.
+                 * @return {@code true} if the add passes successful. Otherwise returns {@code false}.
+                 */
                 private boolean tryAdd(long valPtr, int valSize) {
                     HadoopShuffleMessage msg = msgs[idx];
 
@@ -356,8 +374,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                         if (!msg.available(size, false))
                             return false;
 
-                        msg.addKey(keyPtr, keySize);
-                        msg.addValue(valPtr, valSize);
+                        msg.addKey(memMgr, keyPtr, keySize);
+                        msg.addValue(memMgr, valPtr, valSize);
 
                         keyAdded = true;
 
@@ -367,7 +385,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     if (!msg.available(valSize, true))
                         return false;
 
-                    msg.addValue(valPtr, valSize);
+                    msg.addValue(memMgr, valPtr, valSize);
 
                     return true;
                 }
@@ -463,6 +481,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /**
      * @return Future.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
@@ -586,6 +605,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         /**
          * Constructor.
          * @param taskCtx Task context.
+         * @throws IgniteCheckedException If failed.
          */
         private PartitionedOutput(HadoopTaskContext taskCtx) throws IgniteCheckedException {
             this.taskCtx = taskCtx;
