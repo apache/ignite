@@ -99,8 +99,18 @@ if ($LastExitCode -ne 0) {
 
 # Copy binaries
 rmdir bin -Force -Recurse -ErrorAction SilentlyContinue; mkdir bin
-# TODO
 
+ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
+                     | where Name -NotLike "*Tests*" `
+                     | where Name -NotLike "*Benchmarks*" | % {
+    $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj")) `
+                {"bin\$configuration"} else {"bin\$platform\$configuration"}
+
+
+    $dir = join-path (split-path -parent $_) $binDir
+    
+    xcopy /s /y $dir\*.* bin
+}
 
 # 3) Pack NuGet
 if (!$skipNuGet) {
