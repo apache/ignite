@@ -14,6 +14,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite", "Apache.Ignite\Apache.Ignite.csproj", "{27F7F3C6-BDDE-43A9-B565-856F8395A04B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Examples", "Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj", "{069FA680-3C4D-43A9-B84F-E67513B87827}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6} = {4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}
+		{5B571661-17F4-4F29-8C7D-0EDB38CA9B55} = {5B571661-17F4-4F29-8C7D-0EDB38CA9B55}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.ExamplesDll", "Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj", "{DFB08363-202E-412D-8812-349EF10A8702}"
 	ProjectSection(ProjectDependencies) = postProject
