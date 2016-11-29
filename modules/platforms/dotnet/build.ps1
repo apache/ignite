@@ -116,7 +116,7 @@ if (!$skipNuGet)
         exit -1
     }
 
-    rmdir nupkg -Force -Recurse
+    Remove-Item nupkg -Force -Recurse -ErrorAction SilentlyContinue
     mkdir nupkg
 
     # Detect version
