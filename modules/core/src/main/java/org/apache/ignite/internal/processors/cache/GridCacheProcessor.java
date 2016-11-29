@@ -119,7 +119,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -4025,7 +4024,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private volatile boolean changeStateInProgress;
 
         /** Cache ready future. */
-        private GridFutureAdapter<?> cacheReadyFut;
+        private GridFutureAdapter<?> initFut;
 
         /** Action future. */
         private volatile GridActivateFuture actFut;
@@ -4079,7 +4078,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          *
          */
         private CacheState globalState(){
-            if (changeStateInProgress || cacheReadyFut != null && !cacheReadyFut.isDone())
+            if (changeStateInProgress || initFut != null && !initFut.isDone())
                 return INACTIVE;
 
             return globalState;
@@ -4105,8 +4104,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private IgniteInternalFuture<?> changeGlobalState(CacheState state) {
             cacheProc.checkEmptyTransactions();
 
-            glStLock.lock();
-
             GridCacheSharedContext<?, ?> sharedCtx = cacheProc.sharedCtx;
 
             if ((this.globalState == ACTIVE && state == ACTIVE) || (this.globalState == INACTIVE && state == INACTIVE)
@@ -4121,6 +4118,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             final GridActivateFuture actFut = new GridActivateFuture(requestId, ctx);
 
             this.actFut = actFut;
+
+            glStLock.lock();
 
             try {
                 //if call on client node, then send compute to server node for activate
@@ -4308,7 +4307,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 failed = true;
 
-                cacheReadyFut.onDone(e);
+                initFut.onDone(e);
 
                 globalState = INACTIVE;
 
@@ -4334,7 +4333,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (isServerNode)
                                 shCtx.database().afterActivate();
 
-                            cacheReadyFut.onDone();
+                            initFut.onDone();
 
                             //send ok status
                             sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), null);
@@ -4342,7 +4341,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         catch (Exception e) {
                             U.error(log, e);
 
-                            cacheReadyFut.onDone(e);
+                            initFut.onDone(e);
 
                             globalState = INACTIVE;
 
@@ -4350,7 +4349,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), e);
                         }
                         finally {
-                            cacheReadyFut = null;
+                            initFut = null;
 
                             changeStateInProgress = false;
 
@@ -4391,7 +4390,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), e);
             }
             finally {
-                cacheReadyFut = null;
+                initFut = null;
 
                 changeStateInProgress = false;
 
@@ -4455,7 +4454,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (req != null) {
                 if (changeStateInProgress) {
-                    cacheReadyFut.listen(new CI1<IgniteInternalFuture>() {
+                    initFut.listen(new CI1<IgniteInternalFuture>() {
                         @Override public void apply(IgniteInternalFuture fut) {
                             try {
                                 fut.get();
@@ -4471,7 +4470,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return false;
                 }
                 else {
-                    cacheReadyFut = new GridFutureAdapter<>();
+                    initFut = new GridFutureAdapter<>();
 
                     changeStateInProgress = true;
                 }
