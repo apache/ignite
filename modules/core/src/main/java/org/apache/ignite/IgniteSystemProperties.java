@@ -383,6 +383,10 @@ public final class IgniteSystemProperties {
     /** Maximum size for discovery messages history. */
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
+    /** Maximum number of discovery message history used to support client reconnect. */
+    public static final String IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE =
+        "IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE";
+
     /** Number of cache operation retries in case of topology exceptions. */
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
 
@@ -472,6 +476,15 @@ public final class IgniteSystemProperties {
      */
     @Deprecated
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
+
+    /**
+     * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
+     * the natural order is used.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    @Deprecated
+    public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
 
     /**
      * Enforces singleton.
