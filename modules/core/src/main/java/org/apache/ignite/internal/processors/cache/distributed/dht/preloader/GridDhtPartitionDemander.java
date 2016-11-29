@@ -262,6 +262,15 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * Sets last exchange future.
+     *
+     * @param lastFut Last future to set.
+     */
+    void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
+        lastExchangeFut = lastFut;
+    }
+
+    /**
      * @param assigns Assignments.
      * @param force {@code True} if dummy reassign.
      * @param cnt Counter.
@@ -770,15 +779,6 @@ public class GridDhtPartitionDemander {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionDemander.class, this);
-    }
-
-    /**
-     * Sets last exchange future.
-     *
-     * @param lastFut Last future to set.
-     */
-    void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
-        lastExchangeFut = lastFut;
     }
 
     /**
