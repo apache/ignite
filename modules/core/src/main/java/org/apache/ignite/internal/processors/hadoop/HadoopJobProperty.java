@@ -105,7 +105,12 @@ public enum HadoopJobProperty {
     /**
      * Whether data should be written directly.
      */
-    SHUFFLE_STRIPED_DIRECT("ignite.shuffle.striped.direct");
+    SHUFFLE_STRIPED_DIRECT("ignite.shuffle.striped.direct"),
+
+    /**
+     * Whether data should be written directly.
+     */
+    SHUFFLE_STRIPED_GZIP("ignite.shuffle.striped.gzip");
 
     /** Property name. */
     private final String propName;

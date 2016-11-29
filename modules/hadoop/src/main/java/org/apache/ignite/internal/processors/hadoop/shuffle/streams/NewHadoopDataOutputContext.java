@@ -1,8 +1,12 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+
+import java.io.IOException;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Hadoop data output context.
@@ -10,6 +14,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 public class NewHadoopDataOutputContext {
     /** Flush size. */
     private final int flushSize;
+
+    /** GZIP data output. */
+    private final boolean gzip;
 
     /** Key serialization. */
     private final HadoopSerialization keySer;
@@ -27,11 +34,14 @@ public class NewHadoopDataOutputContext {
      * Constructor.
      *
      * @param flushSize Flush size.
+     * @param gzip Whether to use GZIP.
      * @param taskCtx Task context.
      * @throws IgniteCheckedException If failed.
      */
-    public NewHadoopDataOutputContext(int flushSize, HadoopTaskContext taskCtx) throws IgniteCheckedException {
+    public NewHadoopDataOutputContext(int flushSize, boolean gzip, HadoopTaskContext taskCtx)
+        throws IgniteCheckedException {
         this.flushSize = flushSize;
+        this.gzip = gzip;
 
         keySer = taskCtx.keySerialization();
         valSer = taskCtx.valueSerialization();
@@ -64,17 +74,28 @@ public class NewHadoopDataOutputContext {
     }
 
     /**
-     * @return Buffer.
+     * @return State.
      */
-    public byte[] buffer() {
-        return out.buffer();
-    }
+    public NewHadoopDataOutputState state() {
+        if (gzip) {
+            try {
+                NewHadoopDataOutput gzipOut = new NewHadoopDataOutput(out.position());
 
-    /**
-     * @return Position.
-     */
-    public int position() {
-        return out.position();
+                // TODO: Buf size to config.
+                try (GZIPOutputStream gzip = new GZIPOutputStream(gzipOut, 8192)) {
+                    gzip.write(out.buffer(), 0, out.position());
+                }
+
+                System.out.println("COMPRESSED [" + out.position() + ", " + gzipOut.position() + ']');
+
+                return new NewHadoopDataOutputState(gzipOut.buffer(), gzipOut.position(), out.position());
+            }
+            catch (IOException e) {
+                throw new IgniteException("Failed to compress.", e);
+            }
+        }
+        else
+            return new NewHadoopDataOutputState(out.buffer(), out.position(), out.position());
     }
 
     /**

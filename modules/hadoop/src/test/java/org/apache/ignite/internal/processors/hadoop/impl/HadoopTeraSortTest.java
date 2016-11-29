@@ -90,6 +90,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         // TODO: !!! INVESTIGATION: Test new impl:
         jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
         jobConf.set("ignite.shuffle.striped.direct", "true");
+        jobConf.set("ignite.shuffle.striped.gzip", "true");
         jobConf.set("mapreduce.job.reduces", "24");
         jobConf.set("mapred.min.split.size", "1000000");
         jobConf.set("mapred.max.split.size", "1000000");

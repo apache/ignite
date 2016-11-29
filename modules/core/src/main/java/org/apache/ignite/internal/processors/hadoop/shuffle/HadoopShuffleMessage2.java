@@ -62,7 +62,10 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
 
     /** */
     @GridToStringInclude
-    private int off;
+    private int bufLen;
+
+    /** Original data length. */
+    private int dataLen;
 
     /**
      * Default constructor.
@@ -78,16 +81,18 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
      * @param reducer Reducer.
      * @param cnt Count.
      * @param buf Buffer.
-     * @param off Offset.
+     * @param bufLen Buffer length.
+     * @param dataLen Original data length.
      */
-    public HadoopShuffleMessage2(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int off) {
+    public HadoopShuffleMessage2(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen, int dataLen) {
         assert jobId != null;
 
         this.jobId = jobId;
         this.reducer = reducer;
         this.cnt = cnt;
         this.buf = buf;
-        this.off = off;
+        this.bufLen = bufLen;
+        this.dataLen = dataLen;
 
         msgId = ID_GEN.incrementAndGet();
     }
@@ -128,10 +133,17 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
     }
 
     /**
-     * @return Offset.
+     * @return Buffer length.
      */
-    public int offset() {
-        return off;
+    public int bufferLength() {
+        return bufLen;
+    }
+
+    /**
+     * @return Original data length.
+     */
+    public int dataLength() {
+        return dataLen;
     }
 
     /** {@inheritDoc} */
@@ -171,13 +183,19 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("buf", this.buf, 0, off))
+                if (!writer.writeByteArray("buf", this.buf, 0, bufLen))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeInt("off", off))
+                if (!writer.writeInt("bufLen", bufLen))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeInt("dataLen", dataLen))
                     return false;
 
                 writer.incrementState();
@@ -236,7 +254,15 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 5:
-                off = reader.readInt("off");
+                bufLen = reader.readInt("bufLen");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                dataLen = reader.readInt("dataLen");
 
                 if (!reader.isLastRead())
                     return false;
@@ -255,7 +281,7 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /** {@inheritDoc} */
@@ -269,7 +295,8 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
         out.writeLong(msgId);
         out.writeInt(reducer);
         out.writeInt(cnt);
-        out.writeInt(off);
+        out.writeInt(bufLen);
+        out.writeInt(dataLen);
         U.writeByteArray(out, buf);
     }
 
@@ -281,7 +308,8 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
         msgId = in.readLong();
         reducer = in.readInt();
         cnt = in.readInt();
-        off = in.readInt();
+        bufLen = in.readInt();
+        dataLen = in.readInt();
         buf = U.readByteArray(in);
     }
 
