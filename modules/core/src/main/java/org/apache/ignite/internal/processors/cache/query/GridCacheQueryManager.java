@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -1631,12 +1632,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (rdc != null || trans != null) {
-                        Cache.Entry<K, V> entry;
-
-                        if (qry.keepBinary())
-                            entry = cache.<K, V>keepBinary().getEntry(key);
-                        else
-                            entry = cache.<K, V>getEntry(key);
+                        Cache.Entry<K, V> entry = new CacheEntryImpl(cctx.unwrapBinaryIfNeeded(key, qry.keepBinary()),
+                            cctx.unwrapBinaryIfNeeded(val, qry.keepBinary()));
 
                         // Reduce.
                         if (rdc != null) {
