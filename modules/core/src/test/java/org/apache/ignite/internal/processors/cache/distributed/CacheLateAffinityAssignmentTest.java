@@ -1809,6 +1809,49 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Wait for rebalance, coordinator leaves, new coordinator doesn't have cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCoordinatorLeaveSecondNodeNoCache() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
+                if (gridName.equals(getTestGridName(0)) || gridName.equals(getTestGridName(1)))
+                    return null;
+
+                return new CacheConfiguration[] {cacheConfiguration()};
+            }
+        };
+
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0), getTestGridName(1)));
+
+        final int NUM_NODES = 3;
+        int topVer = 0;
+
+        for (int i = 0; i < NUM_NODES; i++)
+            startServer(i, ++topVer);
+
+        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+
+        TestRecordingCommunicationSpi spi1 =
+            (TestRecordingCommunicationSpi)ignite(1).configuration().getCommunicationSpi();
+
+        // Prevent exchange finish while node0 is coordinator.
+        spi1.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(0).name());
+        spi1.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(1).name());
+
+        stopNode(0, ++topVer);
+        startServer(NUM_NODES, ++topVer);
+
+        spi1.stopBlock();
+
+        awaitPartitionMapExchange();
+
+        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal)ignite(NUM_NODES)).context().cache().internalCache(CACHE_NAME1));
+    }
+
+    /**
      * @param cache Cache
      */
     private void cacheOperations(IgniteCache<Object, Object> cache) {
