@@ -47,6 +47,13 @@ if (!$skipJava) {
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
     cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
+    # Check result
+    if ($LastExitCode -ne 0)
+    {
+        echo "Java (Maven) build failed."
+        exit -1
+    }
+
     # Copy Libs
     $libsDir = "$PSScriptRoot\bin\Libs"
     mkdir $libsDir
@@ -59,13 +66,6 @@ if (!$skipJava) {
 
     # Restore directory
     cd $PSScriptRoot
-
-    # Check result
-    if ($LastExitCode -ne 0)
-    {
-        echo "Java (Maven) build failed."
-        exit -1
-    }
 }
 else {
     echo "Java (Maven) build skipped."
