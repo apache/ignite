@@ -37,8 +37,8 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityMultiAssignmentRequest;
@@ -130,20 +130,23 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         cctx.kernalContext().event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        if (!cctx.kernalContext().clientNode())
-            cctx.io().addHandler(0, GridDhtAffinityMultiAssignmentRequest.class,
+        if (!cctx.kernalContext().clientNode()) {
+            cctx.io()
+                .addHandler(GridDhtAssignmentMultiFetchFuture.NO_CACHE, GridDhtAffinityMultiAssignmentRequest.class,
                 new CI2<UUID, GridDhtAffinityMultiAssignmentRequest>() {
                     @Override public void apply(UUID uuid, GridDhtAffinityMultiAssignmentRequest msg) {
-                        processMultiRequest(uuid, msg);
+                        processMultiAssignmentRequest(uuid, msg);
                     }
                 });
 
-        cctx.io().addHandler(0, GridDhtAffinityMultiAssignmentResponse.class,
-            new CI2<UUID, GridDhtAffinityMultiAssignmentResponse>() {
-                @Override public void apply(UUID uuid, GridDhtAffinityMultiAssignmentResponse msg) {
-                    processAffinityMultiAssignmentResponse(uuid, msg);
-                }
-            });
+            cctx.io()
+                .addHandler(GridDhtAssignmentMultiFetchFuture.NO_CACHE, GridDhtAffinityMultiAssignmentResponse.class,
+                    new CI2<UUID, GridDhtAffinityMultiAssignmentResponse>() {
+                        @Override public void apply(UUID uuid, GridDhtAffinityMultiAssignmentResponse msg) {
+                            processAffinityMultiAssignmentResponse(uuid, msg);
+                        }
+                    });
+        }
     }
 
     /**
@@ -1667,7 +1670,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param nodeId Node ID.
      * @param msg request.
      */
-    private void processMultiRequest(UUID nodeId,
+    private void processMultiAssignmentRequest(UUID nodeId,
         GridDhtAffinityMultiAssignmentRequest msg) {
         assert nodeId != null;
 
@@ -1735,7 +1738,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         CacheHolder cacheHolder) {
         List<List<ClusterNode>> idealAssignment = null;
 
-        GridAffinityAssignment assignment = cacheHolder.affinity().cachedAffinity(topVer);
+        AffinityAssignment assignment = cacheHolder.affinity().cachedAffinity(topVer);
 
         if (cacheHolder.affinity().centralizedAffinityFunction()) {
             assert assignment.idealAssignment() != null;

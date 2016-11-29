@@ -27,6 +27,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
@@ -36,10 +37,14 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
 public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstractFetchFuture<GridDhtAffinityMultiAssignmentResponse> {
 
     /** */
-    public static final int NO_CACHE = 0;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    private static final long serialVersionUID = 0L;
+    public static final IgniteProductVersion MULTI_MESSAGE_SINCE = IgniteProductVersion.fromString("1.8.0");
+
+    /** */
+    public static final int NO_CACHE = 0;
+
 
     /** */
     private final List<Integer> cacheIds;
@@ -143,7 +148,7 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
      * @return {@code True} if node supports multi request.
      */
     private boolean canUseMultiRequest(ClusterNode node) {
-        return true;
+        return node.version().compareToIgnoreTimestamp(MULTI_MESSAGE_SINCE) >= 0;
     }
 
 }
