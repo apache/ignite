@@ -70,12 +70,12 @@ public class StripedExecutor implements ExecutorService {
             // TODO
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
-                    for (;;) {
+                    for (; !isShutdown();) {
                         try {
                             Thread.sleep(10000);
                         }
                         catch (InterruptedException e) {
-                            e.printStackTrace();
+                            return;
                         }
 
                         for (Stripe stripe : stripes) {
