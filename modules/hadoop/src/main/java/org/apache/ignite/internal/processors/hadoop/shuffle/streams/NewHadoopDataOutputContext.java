@@ -47,7 +47,7 @@ public class NewHadoopDataOutputContext {
      * @return Whether flush is needed.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean write(Object key, Object val) throws IgniteCheckedException {
+    public boolean write(Object key, Object val) throws IgniteCheckedException {
         keySer.write(out, key);
         valSer.write(out, val);
 
@@ -68,6 +68,13 @@ public class NewHadoopDataOutputContext {
      */
     public byte[] buffer() {
         return out.buffer();
+    }
+
+    /**
+     * @return Position.
+     */
+    public int position() {
+        return out.position();
     }
 
     /**

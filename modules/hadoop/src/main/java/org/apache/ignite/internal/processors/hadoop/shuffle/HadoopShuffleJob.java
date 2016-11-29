@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
+import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -32,6 +33,8 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCou
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataOutputContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -47,6 +50,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -126,6 +130,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** */
     protected ConcurrentMap<Long, IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>> sentMsgs =
+        new ConcurrentHashMap<>();
+
+    /** */
+    protected ConcurrentMap<Long, IgniteBiTuple<HadoopShuffleMessage2, GridFutureAdapter<?>>> sentDirectMsgs =
         new ConcurrentHashMap<>();
 
     /** */
@@ -327,6 +335,38 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param msg Message.
+     * @throws IgniteCheckedException Exception.
+     */
+    public void onShuffleMessage(HadoopShuffleMessage2 msg) throws IgniteCheckedException {
+        assert msg.buffer() != null;
+        assert msg.offset() > 0;
+
+        HadoopTaskContext taskCtx = locReducersCtx[msg.reducer()];
+
+        HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
+
+        perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
+
+        HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
+
+        HadoopSerialization keySer = taskCtx.keySerialization();
+        HadoopSerialization valSer = taskCtx.valueSerialization();
+
+        // Add data from message to the map.
+        try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
+            NewHadoopDataInput in = new NewHadoopDataInput(msg.buffer());
+
+            for (int i = 0; i < msg.count(); i++) {
+                Object key = keySer.read(in, null);
+                Object val = valSer.read(in, null);
+
+                adder.write(key, val);
+            }
+        }
+    }
+
+    /**
      * @param ack Shuffle ack.
      */
     @SuppressWarnings("ConstantConditions")
@@ -405,6 +445,63 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (flush && msgs[rmtMapIdx].offset() != 0)
             send(rmtMapIdx, rmtRdcIdx, 0);
+    }
+
+    /**
+     * Flush remote direct context.
+     *
+     * @param rmtMapIdx Remote map index.
+     * @param rmtDirectCtx Remote direct context.
+     * @param reset Whether to perform reset.
+     */
+    private void flush(int rmtMapIdx, @Nullable NewHadoopDataOutputContext rmtDirectCtx, boolean reset) {
+        if (rmtDirectCtx == null)
+            return;
+
+        int cnt = rmtDirectCtx.count();
+
+        if (cnt == 0)
+            return;
+
+        int rmtRdcIdx = stripeMappers ? rmtMapIdx % totalReducerCnt : rmtMapIdx;
+        byte[] buf = rmtDirectCtx.buffer();
+        int pos = rmtDirectCtx.position();
+
+        if (reset)
+            rmtDirectCtx.reset();
+
+        HadoopShuffleMessage2 msg = new HadoopShuffleMessage2(job.id(), rmtRdcIdx, cnt, buf, pos);
+
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+
+        final long msgId = msg.id();
+
+        IgniteBiTuple<HadoopShuffleMessage2, GridFutureAdapter<?>> old = sentDirectMsgs.putIfAbsent(msgId,
+            new IgniteBiTuple<HadoopShuffleMessage2, GridFutureAdapter<?>>(msg, fut));
+
+        assert old == null;
+
+        try {
+            io.apply(reduceAddrs[rmtRdcIdx], msg);
+        }
+        catch (GridClosureException e) {
+            fut.onDone(U.unwrap(e));
+        }
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                try {
+                    f.get();
+
+                    // Clean up the future from map only if there was no exception.
+                    // Otherwise flush() should fail.
+                    sentDirectMsgs.remove(msgId);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to send message.", e);
+                }
+            }
+        });
     }
 
     /**
@@ -680,6 +777,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         /** */
         private final HadoopTaskOutput[] rmtAdders = new HadoopTaskOutput[rmtMaps.length()];
 
+        /** Remote direct contexts. */
+        private final NewHadoopDataOutputContext[] rmtDirectCtxs = new NewHadoopDataOutputContext[rmtMaps.length()];
+
         /** Remote keys count per mapper. */
         private final int[] rmtKeyCnt = new int[rmtMaps.length()];
 
@@ -728,7 +828,16 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     int idx = totalReducerCnt * mapperIdx + part;
 
                     if (stripedDirect) {
-                        // TODO.
+                        NewHadoopDataOutputContext rmtDirectCtx = rmtDirectCtxs[idx];
+
+                        if (rmtDirectCtx == null) {
+                            rmtDirectCtx = new NewHadoopDataOutputContext(msgSize, taskCtx);
+
+                            rmtDirectCtxs[idx] = rmtDirectCtx;
+                        }
+
+                        if (rmtDirectCtx.write(key, val))
+                            flush(idx, rmtDirectCtx, true);
                     }
                     else {
                         out = rmtAdders[idx];
@@ -768,7 +877,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         public void flushStripedMapper() throws IgniteCheckedException {
             if (stripeMappers) {
                 if (stripedDirect) {
-                    // TODO
+                    int mapperIdx = mapperIndex();
+
+                    assert mapperIdx >= 0;
+
+                    for (int i = 0; i < totalReducerCnt; i++) {
+                        int idx = totalReducerCnt * mapperIdx + i;
+
+                        flush(idx, rmtDirectCtxs[idx], false);
+                    }
                 }
                 else {
                     int mapperIdx = mapperIndex();
