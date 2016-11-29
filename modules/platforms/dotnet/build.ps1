@@ -67,7 +67,7 @@ else {
 $ng = (Get-Item .).FullName + '\nuget.exe'
 if (!(Test-Path $ng)) { $ng = 'nuget' }
 
-for($i=4; $i -le 20; $i++) {
+for ($i=4; $i -le 20; $i++) {
     $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
     if (Test-Path $regKey) { break }
 }
