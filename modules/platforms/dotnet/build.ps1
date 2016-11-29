@@ -32,8 +32,7 @@ param (
  )
 
 # 1) Build Java (Maven)
-if (!$skipJava)
-{
+if (!$skipJava) {
     # change to home directory
     cd $PSScriptRoot\..
 
@@ -58,8 +57,7 @@ if (!$skipJava)
         exit -1
     }
 }
-else
-{
+else {
     echo "Java (Maven) build skipped."
 }
 
@@ -69,14 +67,12 @@ else
 $ng = (Get-Item .).FullName + '\nuget.exe'
 if (!(Test-Path $ng)) { $ng = 'nuget' }
 
-for($i=4; $i -le 20; $i++) 
-{
+for($i=4; $i -le 20; $i++) {
     $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
     if (Test-Path $regKey) { break }
 }
 
-if (!(Test-Path $regKey))
-{
+if (!(Test-Path $regKey)) {
     echo "Failed to detect msbuild path, exiting."
     exit -1
 }
@@ -96,19 +92,16 @@ $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
 & $msbuildExe Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false
 
 # check result
-if ($LastExitCode -ne 0)
-{
+if ($LastExitCode -ne 0) {
     echo ".NET build failed."
     exit -1
 }
 
 
 # 3) Pack NuGet
-if (!$skipNuGet)
-{
+if (!$skipNuGet) {
     # Check parameters
-    if (($platform -ne "Any CPU") -or ($configuration -ne "Release"))
-    {
+    if (($platform -ne "Any CPU") -or ($configuration -ne "Release")) {
         echo "NuGet can only package 'Release' 'Any CPU' builds; you have specified '$configuration' '$platform'."
         exit -1
     }
@@ -121,8 +114,11 @@ if (!$skipNuGet)
 
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
     ls *.nuspec -Recurse  `
-        | % { If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
         | % { 
+            If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){
+                [io.path]::ChangeExtension($_.FullName, ".csproj")
+            } Else { $_.FullName }
+        } | % { 
             & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory nupkg 
 
             # check result
@@ -133,5 +129,5 @@ if (!$skipNuGet)
             }
         }
 
-    echo "NuGet packages created in $pwd\nupkg"
+    echo "NuGet packages created in '$pwd\nupkg'."
 }
