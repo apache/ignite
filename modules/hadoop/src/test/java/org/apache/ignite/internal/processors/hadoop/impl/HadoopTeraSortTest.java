@@ -72,7 +72,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 2;
     } // initial was 3
 
     /**
@@ -89,9 +89,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         jobConf.set("fs.defaultFS", FS_BASE);
         // TODO: !!! INVESTIGATION: Test new impl:
         jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
+        jobConf.set("ignite.shuffle.striped.direct", "true");
         jobConf.set("mapreduce.job.reduces", "24");
-        jobConf.set("mapred.min.split.size", "100000");
-        jobConf.set("mapred.max.split.size", "100000");
+        jobConf.set("mapred.min.split.size", "1000000");
+        jobConf.set("mapred.max.split.size", "1000000");
 
         Job job = setupConfig(jobConf); //Job.getInstance(jobConf);
 
