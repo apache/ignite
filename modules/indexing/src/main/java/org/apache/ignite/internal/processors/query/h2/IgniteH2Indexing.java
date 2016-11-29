@@ -2380,6 +2380,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final String fullTblName;
 
         /** */
+        private final String tableName;
+
+        /** */
         private final GridQueryTypeDescriptor type;
 
         /** */
@@ -2399,7 +2402,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.type = type;
             this.schema = schema;
 
-            fullTblName = schema.schemaName + "." + escapeName(type.name(), schema.escapeAll());
+            this.tableName = escapeName(type.name(), schema.escapeAll());
+
+            fullTblName = schema.schemaName + "." + this.tableName;
         }
 
         /**
@@ -2420,7 +2425,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @return Database table name.
          */
         String name() {
-            return type.name();
+            return tableName;
         }
 
         /**
