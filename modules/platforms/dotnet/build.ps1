@@ -54,10 +54,9 @@ if (!$skipJava) {
         exit -1
     }
 
-    # Copy Libs
+    # Copy (relevant) jars
     $libsDir = "$PSScriptRoot\bin\Libs"
-    mkdir $libsDir
-    del /F /Q $libsDir\*.*
+    mkdir -Force $libsDir; del -Force $libsDir\*.*
     
     xcopy /y release-package\libs\*.jar $libsDir
     xcopy /y release-package\libs\ignite-spring\*.jar $libsDir
@@ -105,8 +104,7 @@ if ($LastExitCode -ne 0) {
 }
 
 # Copy binaries
-mkdir bin
-del /F /Q bin\*.*
+mkdir -Force bin; del -Force bin\*.*
 
 ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
