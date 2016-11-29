@@ -17,6 +17,34 @@
 
  #>
 
+ <#
+
+.SYNOPSIS
+Apache Ignite.NET build script.
+
+.DESCRIPTION
+Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin' and 'nupkg' folders.
+
+.PARAMETER skipJava
+Skip Java build.
+
+.PARAMETER skipNuGet
+Skip NuGet packaging.
+
+.PARAMETER skipCodeAnalysis
+Skip code analysis.
+
+.PARAMETER clean
+Perform a clean rebuild.
+
+.PARAMETER platform
+Build platform ("Any CPU", "x86", "x64").
+
+.PARAMETER configuration
+Build configuration ("Release", "Debug").
+
+#>
+
 # Apache Ignite.NET build script
 
 # Requirements:
