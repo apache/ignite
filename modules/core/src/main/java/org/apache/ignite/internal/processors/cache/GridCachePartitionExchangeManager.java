@@ -1778,6 +1778,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
+                                // Sends previous rebalancing stopped event.
+                                // Cancels previous rebalancing future if necessary.
+                                // Creates new rebalancing future.
+                                // Finishes cache Sync future on empty assignments.
                                 Runnable cur = cacheCtx.preloader().addAssignments(assigns,
                                     forcePreload,
                                     cnt,

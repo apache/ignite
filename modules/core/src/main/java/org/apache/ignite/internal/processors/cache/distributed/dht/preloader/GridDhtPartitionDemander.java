@@ -290,9 +290,9 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
 
-                rebalanceFut.onDone(false);
+                fut.onDone(false);
 
-                rebalanceFut.sendRebalanceFinishedEvent();
+                fut.sendRebalanceFinishedEvent();
 
                 return null;
             }
@@ -301,11 +301,11 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to empty assignments.");
 
-                rebalanceFut.onDone(true);
+                fut.onDone(true);
 
                 ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
 
-                rebalanceFut.sendRebalanceFinishedEvent();
+                fut.sendRebalanceFinishedEvent();
 
                 return null;
             }
@@ -314,13 +314,20 @@ public class GridDhtPartitionDemander {
                 @Override public void run() {
                     try {
                         if (next != null)
-                            rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                                    next.run(); // Starts next cache rebalancing (according to the order).
+                            fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                                @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                                    try {
+                                        if (f.get()) // Not cancelled.
+                                            next.run(); // Starts next cache rebalancing (according to the order).
+                                    }
+                                    catch (IgniteCheckedException ignored) {
+                                        if (log.isDebugEnabled())
+                                            log.debug(ignored.getMessage());
+                                    }
                                 }
                             });
 
-                        requestPartitions(rebalanceFut, assigns);
+                        requestPartitions(fut, assigns);
                     }
                     catch (IgniteCheckedException e) {
                         ClusterTopologyCheckedException cause = e.getCause(ClusterTopologyCheckedException.class);
@@ -330,12 +337,12 @@ public class GridDhtPartitionDemander {
                         else
                             log.error("Failed to send initial demand request to node.", e);
 
-                        rebalanceFut.cancel();
+                        fut.cancel();
                     }
                     catch (Throwable th) {
                         log.error("Runtime error caught during initial demand request sending.", th);
 
-                        rebalanceFut.cancel();
+                        fut.cancel();
 
                         if (th instanceof Error)
                             throw th;
@@ -771,9 +778,7 @@ public class GridDhtPartitionDemander {
         /** */
         private static final long serialVersionUID = 1L;
 
-        /**
-         * Should EVT_CACHE_REBALANCE_STOPPED event be sent of not.
-         */
+        /** Should EVT_CACHE_REBALANCE_STOPPED event be sent of not. */
         private final AtomicBoolean stoppedEvtSent;
 
         /** */
