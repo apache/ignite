@@ -105,5 +105,6 @@ public class NewHadoopDataOutputContext {
         int allocSize = Math.max(flushSize, out.position());
 
         out = new NewHadoopDataOutput(flushSize, allocSize);
+        cnt = 0;
     }
 }
