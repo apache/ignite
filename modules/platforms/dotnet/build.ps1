@@ -25,6 +25,12 @@ Apache Ignite.NET build script.
 .DESCRIPTION
 Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin' and 'nupkg' folders.
 
+Requirements:
+* PowerShell 3
+* NuGet in PATH
+* Apache Maven in PATH
+* JDK 7+
+
 .PARAMETER skipJava
 Skip Java build.
 
@@ -43,16 +49,13 @@ Build platform ("Any CPU", "x86", "x64").
 .PARAMETER configuration
 Build configuration ("Release", "Debug").
 
-.NOTES
-Requirements:
-* PowerShell 3
-* NuGet in PATH
-* Apache Maven in PATH
-* JDK 7+
+.EXAMPLE
+.\build.ps1 -clean  
+# Full rebuild of Java, .NET and NuGet packages.
 
 .EXAMPLE
-'powershell -file build.ps1 -clean': Full rebuild of Java, .NET and NuGet packages.
-'powershell -file build.ps1 -skipJava -skipCodeAnalysis -skipNuGet -configuration Debug -platform x64': Quick build of .NET code only.
+.\build.ps1 -skipJava -skipCodeAnalysis -skipNuGet -configuration Debug -platform x64
+# Quick build of .NET code only.
 
 #>
 
