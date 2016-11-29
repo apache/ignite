@@ -53,6 +53,13 @@ if (!$skipJava)
     echo "Starting Java (Maven) build..."
     cmd /c "mvn package -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
+    # check result
+    if ($LastExitCode -ne 0)
+    {
+        echo "Java (Maven) build failed."
+        exit -1
+    }
+
     # restore directory
     cd $PSScriptRoot
 }
@@ -90,6 +97,14 @@ echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
 & $msbuildExe Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false
+
+# check result
+if ($LastExitCode -ne 0)
+{
+    echo ".NET build failed."
+    exit -1
+}
+
 
 # 3) Pack NuGet
 if (!$skipNuGet)
