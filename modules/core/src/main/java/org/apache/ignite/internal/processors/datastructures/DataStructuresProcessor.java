@@ -205,7 +205,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE)
+        if (ctx.cache().realGlobalState() == CacheState.ACTIVE)
             return;
 
         super.start();
@@ -216,7 +216,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.cache().internalGlobalState() != CacheState.ACTIVE)
+        if (ctx.cache().realGlobalState() != CacheState.ACTIVE)
             return;
 
         if (ctx.config().isDaemon())
@@ -274,7 +274,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE)
+        if (ctx.cache().realGlobalState() == CacheState.ACTIVE)
             return;
 
         super.onKernalStop(cancel);
@@ -299,6 +299,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onActivate() throws IgniteCheckedException {
+        this.initFailed = false;
+
         start();
 
         onKernalStart();
@@ -312,16 +314,21 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate() {
+    @Override public void onDeActivate() throws IgniteCheckedException {
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         onKernalStop(false);
 
         this.initLatch = new CountDownLatch(1);
 
-        this.initFailed = false;
-
         this.qryId = null;
+
+        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
+            GridCacheRemovable v = e.getValue();
+
+            if (v instanceof IgniteActivationSupport)
+                ((IgniteActivationSupport)v).onDeActivate();
+        }
     }
 
     /**

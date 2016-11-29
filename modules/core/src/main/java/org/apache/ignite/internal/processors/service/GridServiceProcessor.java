@@ -196,143 +196,99 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
-            ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
+        if (ctx.cache().realGlobalState() != CacheState.ACTIVE)
+            return;
 
-            if (ctx.isDaemon())
-                return;
+        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
 
-            IgniteConfiguration cfg = ctx.config();
+        if (ctx.isDaemon())
+            return;
 
-            DeploymentMode depMode = cfg.getDeploymentMode();
+        IgniteConfiguration cfg = ctx.config();
 
-            if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
-                !F.isEmpty(cfg.getServiceConfiguration()))
-                throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
-        }
+        DeploymentMode depMode = cfg.getDeploymentMode();
+
+        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+            !F.isEmpty(cfg.getServiceConfiguration()))
+            throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
-            if (ctx.isDaemon())
-                return;
+        if (ctx.cache().realGlobalState() != CacheState.ACTIVE)
+            return;
 
-            cache = ctx.cache().utilityCache();
+        if (ctx.isDaemon())
+            return;
 
-            if (!ctx.clientNode())
-                ctx.event().addLocalEventListener(topLsnr, EVTS);
+        cache = ctx.cache().utilityCache();
 
-            try {
-                if (ctx.deploy().enabled())
-                    ctx.cache().context().deploy().ignoreOwnership(true);
+        if (!ctx.clientNode())
+            ctx.event().addLocalEventListener(topLsnr, EVTS);
 
-                if (!ctx.clientNode()) {
-                    assert cache.context().affinityNode();
+        try {
+            if (ctx.deploy().enabled())
+                ctx.cache().context().deploy().ignoreOwnership(true);
 
-                    cache.context().continuousQueries().executeInternalQuery(
-                        new ServiceEntriesListener(), null, true, true, false
-                    );
-                }
-                else {
-                    assert !ctx.isDaemon();
+            if (!ctx.clientNode()) {
+                assert cache.context().affinityNode();
 
-                    ctx.closure().runLocalSafe(new Runnable() {
-                        @Override public void run() {
-                            try {
-                                Iterable<CacheEntryEvent<?, ?>> entries =
-                                    cache.context().continuousQueries().existingEntries(false, null);
+                cache.context().continuousQueries().executeInternalQuery(
+                    new ServiceEntriesListener(), null, true, true, false
+                );
+            }
+            else {
+                assert !ctx.isDaemon();
 
-                                onSystemCacheUpdated(entries);
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to load service entries: " + e, e);
-                            }
+                ctx.closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            Iterable<CacheEntryEvent<?, ?>> entries =
+                                cache.context().continuousQueries().existingEntries(false, null);
+
+                            onSystemCacheUpdated(entries);
                         }
-                    });
-                }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to load service entries: " + e, e);
+                        }
+                    }
+                });
             }
-            finally {
-                if (ctx.deploy().enabled())
-                    ctx.cache().context().deploy().ignoreOwnership(false);
-            }
-
-            ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
-
-            if (cfgs != null) {
-                Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
-                for (ServiceConfiguration c : ctx.config().getServiceConfiguration())
-                    futs.add(deploy(c));
-
-                // Await for services to deploy.
-                for (IgniteInternalFuture<?> f : futs)
-                    f.get();
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Started service processor.");
         }
+        finally {
+            if (ctx.deploy().enabled())
+                ctx.cache().context().deploy().ignoreOwnership(false);
+        }
+
+        ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
+
+        if (cfgs != null) {
+            Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+            for (ServiceConfiguration c : ctx.config().getServiceConfiguration())
+                futs.add(deploy(c));
+
+            // Await for services to deploy.
+            for (IgniteInternalFuture<?> f : futs)
+                f.get();
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Started service processor.");
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
-            busyLock.block();
+        busyLock.block();
 
-            try {
-                if (ctx.isDaemon())
-                    return;
+        try {
+            if (ctx.isDaemon())
+                return;
 
-                if (!ctx.clientNode())
-                    ctx.event().removeLocalEventListener(topLsnr);
+            if (!ctx.clientNode())
+                ctx.event().removeLocalEventListener(topLsnr);
 
-                Collection<ServiceContextImpl> ctxs = new ArrayList<>();
-
-                synchronized (locSvcs) {
-                    for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
-                        ctxs.addAll(ctxs0);
-                }
-
-                for (ServiceContextImpl ctx : ctxs) {
-                    ctx.setCancelled(true);
-
-                    Service svc = ctx.service();
-
-                    if (svc != null)
-                        svc.cancel(ctx);
-
-                    ctx.executor().shutdownNow();
-                }
-
-                for (ServiceContextImpl ctx : ctxs) {
-                    try {
-                        if (log.isInfoEnabled() && !ctxs.isEmpty())
-                            log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
-                                U.id8(ctx.executionId()) + ']');
-
-                        ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-                    }
-                    catch (InterruptedException ignore) {
-                        Thread.currentThread().interrupt();
-
-                        U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
-                            ctx.name());
-                    }
-                }
-
-                U.shutdownNow(GridServiceProcessor.class, depExe, log);
-
-                Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
-
-                cancelFutures(depFuts, err);
-                cancelFutures(undepFuts, err);
-            }finally {
-                busyLock.unblock();
-            }
-        }
-        else if (ctx.cache().internalGlobalState() == CacheState.INACTIVE) {
             Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
             synchronized (locSvcs) {
@@ -340,9 +296,16 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                     ctxs.addAll(ctxs0);
             }
 
-            for (ServiceContextImpl ctx : ctxs)
-                ctx.executor().shutdownNow();
+            for (ServiceContextImpl ctx : ctxs) {
+                ctx.setCancelled(true);
 
+                Service svc = ctx.service();
+
+                if (svc != null)
+                    svc.cancel(ctx);
+
+                ctx.executor().shutdownNow();
+            }
 
             for (ServiceContextImpl ctx : ctxs) {
                 try {
@@ -361,6 +324,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             }
 
             U.shutdownNow(GridServiceProcessor.class, depExe, log);
+
+            Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+            cancelFutures(depFuts, err);
+            cancelFutures(undepFuts, err);
+        }finally {
+            busyLock.unblock();
         }
 
         if (log.isDebugEnabled())
@@ -369,8 +339,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void onActivate() throws IgniteCheckedException {
-        assert ctx.cache().globalState() == CacheState.INACTIVE;
-
         start();
 
         onKernalStart();

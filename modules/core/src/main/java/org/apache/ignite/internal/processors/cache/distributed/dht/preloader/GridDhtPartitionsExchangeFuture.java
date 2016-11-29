@@ -610,27 +610,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        for (DynamicCacheChangeRequest r : reqs)
-            if (r.globalStateChange()) {
-                cctx.cache().changeStateUpdateTopology(topologyVersion());
-
-                if (r.globalStateDeActivate()) {
-                    cctx.kernalContext().dataStructures().onDeActivate();
-
-                    cctx.kernalContext().service().onDeActivate();
-
-                    cctx.database().onDeActivate();
-
-                    if (cctx.pageStore() != null)
-                        cctx.pageStore().onDeActivate();
-
-                    cctx.wal().onDeActivate();
-
-                    if (!cctx.kernalContext().clientNode())
-                        cctx.database().unLock();
-                }
-                break;
-            }
+        cctx.kernalContext().cache().stateManger().onCacheChangeRequest(reqs, topologyVersion(), crd);
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
@@ -1202,7 +1182,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (err != null)
             return err;
 
-        if (cctx.shared().cache().internalGlobalState() == CacheState.INACTIVE)
+        if (cctx.shared().cache().realGlobalState() == CacheState.INACTIVE)
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 

@@ -1527,7 +1527,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!exchFut.skipPreload() && cctx.cache().internalGlobalState() == CacheState.ACTIVE) {
+                        if (!exchFut.skipPreload() && cctx.cache().realGlobalState() == CacheState.ACTIVE) {
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
