@@ -10,16 +10,5 @@
 :: See the License for the specific language governing permissions and
 :: limitations under the License.
 
-:: Apache Ignite.NET build script
-
-:: Requirements:
-:: * PowerShell 3
-:: * NuGet in PATH
-:: * Apache Maven in PATH
-:: * JDK 7+
-
-:: Examples:
-:: 'build -clean': Full rebuild of Java, .NET and NuGet packages.
-:: 'build -skipJava -skipCodeAnalysis -skipNuGet -configuration Debug -platform x64': Quick build of .NET code only.
-
+:: Apache Ignite.NET build script runner, see build.ps1 for more details.
 powershell -executionpolicy remotesigned -file build.ps1 %*
