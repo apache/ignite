@@ -385,7 +385,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     private void collectUpdatesAndSend(int rmtMapIdx, boolean flush) throws IgniteCheckedException {
-        final int rmtRdcIdx = stripeMappers ? rmtMapIdx % locMappersCnt : rmtMapIdx;
+        final int rmtRdcIdx = stripeMappers ? rmtMapIdx % totalReducerCnt : rmtMapIdx;
 
         HadoopMultimap map = rmtMaps.get(rmtMapIdx);
 
