@@ -80,7 +80,8 @@ public class StripedExecutor implements ExecutorService {
 
                         for (Stripe stripe : stripes) {
                             if (stripe.queueSize() > 0)
-                                System.out.println(stripe.thread.getName() + " - " + stripe.queueToString());
+                                System.out.println(">>> Possible starvation in striped pool: " +
+                                    stripe.thread.getName() + " - " + stripe.queueToString());
                         }
                     }
                 }
