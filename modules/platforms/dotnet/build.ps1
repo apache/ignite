@@ -60,10 +60,10 @@ if (!$skipJava) {
     $libsDir = "$PSScriptRoot\bin\Libs"
     mkdir -Force $libsDir; del -Force $libsDir\*.*
     
-    xcopy /y release-package\libs\*.jar $libsDir
-    xcopy /y release-package\libs\ignite-spring\*.jar $libsDir
-    xcopy /y release-package\libs\ignite-indexing\*.jar $libsDir
-    xcopy /y release-package\libs\licenses\*.jar $libsDir
+    copy -Force target\release-package\libs\*.jar $libsDir
+    copy -Force target\release-package\libs\ignite-spring\*.jar $libsDir
+    copy -Force target\release-package\libs\ignite-indexing\*.jar $libsDir
+    copy -Force target\release-package\libs\licenses\*.jar $libsDir
 
     # Restore directory
     cd $PSScriptRoot
