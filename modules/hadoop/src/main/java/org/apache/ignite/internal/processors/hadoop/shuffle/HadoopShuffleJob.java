@@ -380,6 +380,19 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param ack Shuffle ack.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void onShuffleAck(HadoopShuffleAck2 ack) {
+        IgniteBiTuple<HadoopShuffleMessage2, GridFutureAdapter<?>> tup = sentDirectMsgs.get(ack.id());
+
+        if (tup != null)
+            tup.get2().onDone();
+        else
+            log.warning("Received shuffle ack 2 for not registered shuffle id: " + ack);
+    }
+
+    /**
      * Unsafe value.
      */
     private static class UnsafeValue implements HadoopMultimap.Value {
