@@ -55,7 +55,9 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends Hadoo
      */
     protected abstract MemoryManager memoryManager();
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testMapSimple() throws Exception {
 //        mem.listen(new GridOffHeapEventListener() {
 //            @Override public void onEvent(GridOffHeapEvent evt) {
@@ -72,8 +74,10 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends Hadoo
 
         HadoopTaskContext taskCtx = new TaskContext();
 
+        MemoryManager mem = memoryManager();
+
         HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
-            memoryManager(), mapSize);
+            mem, mapSize);
 
         HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -91,7 +95,7 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends Hadoo
 
             a.close();
 
-            check(m, mm, vis, taskCtx);
+            check(m, mm, vis, taskCtx, mem);
 
             a = m.startAdding(taskCtx);
         }
@@ -109,10 +113,11 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends Hadoo
      * @param mm Golden multimap.
      * @param vis Multimap for visitor.
      * @param taskCtx Task context.
+     * @param mem Memory manager.
      * @throws Exception If failed.
      */
     private void check(HadoopConcurrentHashMultimap m, Multimap<Integer, Integer> mm,
-        final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx) throws Exception {
+        final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx, final MemoryManager mem) throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
@@ -167,12 +172,17 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends Hadoo
                 vis.put(key.get(), val.get());
             }
 
+            /**
+             * @param ptr Pointer.
+             * @param size Size.
+             * @param w Writable.
+             */
             private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
-                GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
+                MemoryManager.Bytes bytes = mem.bytes(ptr, size);
 
-                dataInput.bytes(buf, size);
+                dataInput.bytes(bytes.buf(), bytes.off(), bytes.buf().length);
 
                 try {
                     w.readFields(dataInput);

@@ -90,7 +90,7 @@ public class HeapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public Bytes bytes(long ptr, long len) {
-        return new Bytes(ptrToPage(ptr).buf(), (int)GridUnsafe.BYTE_ARR_OFF + (int)ptr, (int)len);
+        return new Bytes(ptrToPage(ptr).buf(), (int)ptr, (int)len);
     }
 
     /** {@inheritDoc} */

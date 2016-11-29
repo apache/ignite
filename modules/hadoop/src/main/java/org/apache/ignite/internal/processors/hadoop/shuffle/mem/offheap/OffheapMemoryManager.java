@@ -84,7 +84,9 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public Bytes bytes(long ptr, long len) {
-        return null;
+        byte [] buf = new byte[(int)len];
+
+        return new Bytes(mem.readBytes(ptr, buf, 0, (int)len), 0, (int)len);
     }
 
     /** {@inheritDoc} */

@@ -111,7 +111,9 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        HadoopMultimap m = new HadoopSkipList(job, memoryManager());
+        MemoryManager mem = memoryManager();
+
+        HadoopMultimap m = new HadoopSkipList(job, mem);
 
         HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -129,7 +131,7 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
 
             a.close();
 
-            check(m, mm, vis, taskCtx);
+            check(m, mm, vis, taskCtx, mem);
 
             a = m.startAdding(taskCtx);
         }
@@ -148,10 +150,11 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
      * @param mm Golden multimap.
      * @param vis Multimap for visitor.
      * @param taskCtx Task context.
+     * @param mem Memory manager.
      * @throws Exception If failed.
      */
     private void check(HadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis,
-        HadoopTaskContext taskCtx)
+        HadoopTaskContext taskCtx, final MemoryManager mem)
         throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
 
@@ -186,11 +189,7 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
 
         assertEquals(mmm.size(), keys);
 
-//!        assertEquals(m.keys(), keys);
-
         // Check visitor.
-
-        final byte[] buf = new byte[4];
 
         final GridDataInput dataInput = new GridUnsafeDataInput();
 
@@ -211,12 +210,17 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
                 vis.put(key.get(), val.get());
             }
 
+            /**
+             * @param ptr Pointer.
+             * @param size Size.
+             * @param w Writable.
+             */
             private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
-                GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
+                MemoryManager.Bytes bytes = mem.bytes(ptr, size);
 
-                dataInput.bytes(buf, size);
+                dataInput.bytes(bytes.buf(), bytes.off(), bytes.buf().length);
 
                 try {
                     w.readFields(dataInput);
