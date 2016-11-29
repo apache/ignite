@@ -128,7 +128,7 @@ if (!$skipNuGet) {
     }
 
     $nupkgDir = "nupkg"
-    rmdir $nupkgDir -Force -Recurse -ErrorAction SilentlyContinue; mkdir $nupkgDir
+    mkdir -Force $nupkgDir; del -Force $nupkgDir\*.*
 
     # Detect version
     $ver = (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
