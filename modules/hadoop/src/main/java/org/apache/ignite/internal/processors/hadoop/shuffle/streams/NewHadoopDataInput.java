@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -29,7 +30,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 /**
  * New Hadoop data output.
  */
-public class NewHadoopDataInput implements DataInput {
+public class NewHadoopDataInput extends InputStream implements DataInput {
     /** Data buffer. */
     private final byte[] buf;
 
@@ -43,6 +44,11 @@ public class NewHadoopDataInput implements DataInput {
      */
     public NewHadoopDataInput(byte[] buf) {
         this.buf = buf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read() throws IOException {
+        return readByte();
     }
 
     /** {@inheritDoc} */
