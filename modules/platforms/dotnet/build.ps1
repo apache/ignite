@@ -48,7 +48,14 @@ if (!$skipJava) {
     cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
     # Copy Libs
-    # TODO!
+    $libsDir = "$PSScriptRoot\bin\Libs"
+    mkdir $libsDir
+    del /F /Q $libsDir\*.*
+    
+    xcopy /y release-package\libs\*.jar $libsDir
+    xcopy /y release-package\libs\ignite-spring\*.jar $libsDir
+    xcopy /y release-package\libs\ignite-indexing\*.jar $libsDir
+    xcopy /y release-package\libs\licenses\*.jar $libsDir
 
     # Restore directory
     cd $PSScriptRoot
@@ -101,7 +108,8 @@ if ($LastExitCode -ne 0) {
 }
 
 # Copy binaries
-rmdir bin -Force -Recurse -ErrorAction SilentlyContinue; mkdir bin
+mkdir bin
+del /F /Q bin\*.*
 
 ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
@@ -123,9 +131,8 @@ if (!$skipNuGet) {
         exit -1
     }
 
-    $nupkgDir = "bin\NuGet"
-
-    mkdir $nupkgDir
+    $nupkgDir = "nupkg"
+    rmdir $nupkgDir -Force -Recurse -ErrorAction SilentlyContinue; mkdir $nupkgDir
 
     # Detect version
     $ver = (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
