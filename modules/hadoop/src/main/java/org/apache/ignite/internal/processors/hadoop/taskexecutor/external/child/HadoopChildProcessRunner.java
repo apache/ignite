@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE;
@@ -260,10 +261,10 @@ public class HadoopChildProcessRunner {
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
                         shuffleJob.startSending("external",
-                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopShuffleMessage>() {
-                                @Override public void applyx(HadoopProcessDescriptor dest,
-                                    HadoopShuffleMessage msg) throws IgniteCheckedException {
-                                    comm.sendMessage(dest, msg);
+                            new IgniteInClosure2X<HadoopProcessDescriptor, Message>() {
+                                @Override public void applyx(HadoopProcessDescriptor dest, Message msg)
+                                    throws IgniteCheckedException {
+                                    comm.sendMessage(dest, (HadoopShuffleMessage)msg);
                                 }
                             });
                     }

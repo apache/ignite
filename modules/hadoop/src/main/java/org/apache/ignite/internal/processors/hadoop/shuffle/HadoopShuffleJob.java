@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 
 import java.util.Iterator;
@@ -57,6 +58,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PAR
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_DIRECT;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_FLUSH_THRESHOLD;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
@@ -120,7 +122,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final AtomicReferenceArray<HadoopMultimap> rmtMaps;
 
     /** */
-    private volatile IgniteInClosure2X<T, HadoopShuffleMessage> io;
+    private volatile IgniteInClosure2X<T, Message> io;
 
     /** */
     protected ConcurrentMap<Long, IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>> sentMsgs =
@@ -150,6 +152,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** Striped mapper message flush threshold. */
     private final int stripedFlushThreshold;
 
+    /** Whether remote data should be written directly. */
+    private final boolean stripedDirect;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -172,6 +177,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         // No stripes for combiner.
         stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false) && !job.info().hasCombiner();
         stripedFlushThreshold = get(job.info(), SHUFFLE_STRIPED_FLUSH_THRESHOLD, 1024);
+        stripedDirect = get(job.info(), SHUFFLE_STRIPED_DIRECT, false);
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
         locReducersCtx = new HadoopTaskContext[totalReducerCnt];
@@ -228,7 +234,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param io IO Closure for sending messages.
      */
     @SuppressWarnings("BusyWait")
-    public void startSending(String gridName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
+    public void startSending(String gridName, IgniteInClosure2X<T, Message> io) {
         assert snd == null;
         assert io != null;
 
@@ -721,19 +727,24 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
                     int idx = totalReducerCnt * mapperIdx + part;
 
-                    out = rmtAdders[idx];
+                    if (stripedDirect) {
+                        // TODO.
+                    }
+                    else {
+                        out = rmtAdders[idx];
 
-                    if (out == null)
-                        rmtAdders[idx] = out = getOrCreateMap(rmtMaps, idx).startAdding(taskCtx);
+                        if (out == null)
+                            rmtAdders[idx] = out = getOrCreateMap(rmtMaps, idx).startAdding(taskCtx);
 
-                    out.write(key, val);
+                        out.write(key, val);
 
-                    rmtKeyCnt[idx] += 1;
+                        rmtKeyCnt[idx] += 1;
 
-                    if (rmtKeyCnt[idx] >= stripedFlushThreshold) {
-                        collectUpdatesAndSend(idx, false);
+                        if (rmtKeyCnt[idx] >= stripedFlushThreshold) {
+                            collectUpdatesAndSend(idx, false);
 
-                        rmtKeyCnt[idx] = 0;
+                            rmtKeyCnt[idx] = 0;
+                        }
                     }
 
                     return;
@@ -756,14 +767,19 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
          */
         public void flushStripedMapper() throws IgniteCheckedException {
             if (stripeMappers) {
-                int mapperIdx = mapperIndex();
+                if (stripedDirect) {
+                    // TODO
+                }
+                else {
+                    int mapperIdx = mapperIndex();
 
-                assert mapperIdx >= 0;
+                    assert mapperIdx >= 0;
 
-                for (int i = 0; i < totalReducerCnt; i++) {
-                    int idx = totalReducerCnt * mapperIdx + i;
+                    for (int i = 0; i < totalReducerCnt; i++) {
+                        int idx = totalReducerCnt * mapperIdx + i;
 
-                    collectUpdatesAndSend(idx, true);
+                        collectUpdatesAndSend(idx, true);
+                    }
                 }
             }
         }

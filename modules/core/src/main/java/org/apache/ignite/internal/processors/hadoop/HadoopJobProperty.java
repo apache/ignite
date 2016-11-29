@@ -100,7 +100,12 @@ public enum HadoopJobProperty {
     /**
      * Striped mapper flush threshold.
      */
-    SHUFFLE_STRIPED_FLUSH_THRESHOLD("ignite.shuffle.striped.flush.threshold");
+    SHUFFLE_STRIPED_FLUSH_THRESHOLD("ignite.shuffle.striped.flush.threshold"),
+
+    /**
+     * Whether data should be written directly.
+     */
+    SHUFFLE_STRIPED_DIRECT("ignite.shuffle.striped.direct");
 
     /** Property name. */
     private final String propName;

@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UTFDataFormatException;
 import java.nio.charset.StandardCharsets;
 
@@ -30,7 +31,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 /**
  * New Hadoop data output.
  */
-public class NewHadoopDataOutput implements DataOutput {
+public class NewHadoopDataOutput extends OutputStream implements DataOutput {
     /** Flush size. */
     private final int flushSize;
 
