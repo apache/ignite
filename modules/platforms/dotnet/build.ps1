@@ -43,15 +43,10 @@ if (!$skipJava)
     echo "Ignite home detected at '$pwd'."
 
     # run Maven
-    if ($clean)
-    {
-        # TODO: combine with main command line
-        echo "Executing Maven cleanup..."
-        cmd /c "mvn clean"        
-    }
-
     echo "Starting Java (Maven) build..."
-    cmd /c "mvn package -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
+    
+    $mvnTargets = if ($clean)  { "clean package" } else { "package" }
+    cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
     # check result
     if ($LastExitCode -ne 0)
@@ -87,6 +82,8 @@ if (!(Test-Path $regKey))
 }
 
 $msbuildExe = join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe"
+
+echo "MSBuild detected at '$msbuildExe'."
 
 # Restore NuGet packages
 echo "Restoring NuGet..."
