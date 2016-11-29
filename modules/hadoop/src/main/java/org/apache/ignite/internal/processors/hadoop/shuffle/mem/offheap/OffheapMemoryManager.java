@@ -70,7 +70,7 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public long allocate(long size) {
-        long ptr = mem.allocate(size);
+        long ptr = mem.allocate(size, true);
 
         allPages.add(new OffheapPage(ptr, size));
 
