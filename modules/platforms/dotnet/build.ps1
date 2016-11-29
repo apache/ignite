@@ -27,7 +27,9 @@ param (
     [switch]$skipNuGet,
     [switch]$skipCodeAnalysis,  
     [switch]$clean,
+    [ValidateSet("Any CPU", "x64", "x86")]
     [string]$platform="Any CPU",
+    [ValidateSet("Release", "Debug")]
     [string]$configuration="Release"
  )
 
