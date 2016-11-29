@@ -72,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -121,7 +122,14 @@ public class GridDhtPartitionDemander {
     /** Cached rebalance topics. */
     private final Map<Integer, Object> rebalanceTopics;
 
-    /** Stopped event sent.
+    /**
+     * Started event sent.
+     * Make sense for replicated cache only.
+     */
+    private final AtomicBoolean startedEvtSent = new AtomicBoolean();
+
+    /**
+     * Stopped event sent.
      * Make sense for replicated cache only.
      */
     private final AtomicBoolean stoppedEvtSent = new AtomicBoolean();
@@ -272,7 +280,7 @@ public class GridDhtPartitionDemander {
         if (delay == 0 || force) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            final RebalanceFuture fut = new RebalanceFuture(assigns, cctx, log, stoppedEvtSent, cnt);
+            final RebalanceFuture fut = new RebalanceFuture(assigns, cctx, log, startedEvtSent, stoppedEvtSent, cnt);
 
             if (!oldFut.isInitial())
                 oldFut.cancel();
@@ -285,6 +293,8 @@ public class GridDhtPartitionDemander {
             }
 
             rebalanceFut = fut;
+
+            fut.sendRebalanceStartedEvent();
 
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -778,6 +788,9 @@ public class GridDhtPartitionDemander {
         /** */
         private static final long serialVersionUID = 1L;
 
+        /** Should EVT_CACHE_REBALANCE_STARTED event be sent of not. */
+        private final AtomicBoolean startedEvtSent;
+
         /** Should EVT_CACHE_REBALANCE_STOPPED event be sent of not. */
         private final AtomicBoolean stoppedEvtSent;
 
@@ -807,12 +820,14 @@ public class GridDhtPartitionDemander {
          * @param assigns Assigns.
          * @param cctx Context.
          * @param log Logger.
-         * @param stoppedEvtSent Stop event flag.
+         * @param startedEvtSent Start event sent flag.
+         * @param stoppedEvtSent Stop event sent flag.
          * @param updateSeq Update sequence.
          */
         RebalanceFuture(GridDhtPreloaderAssignments assigns,
             GridCacheContext<?, ?> cctx,
             IgniteLogger log,
+            AtomicBoolean startedEvtSent,
             AtomicBoolean stoppedEvtSent,
             long updateSeq) {
             assert assigns != null;
@@ -821,6 +836,7 @@ public class GridDhtPartitionDemander {
             this.topVer = assigns.topologyVersion();
             this.cctx = cctx;
             this.log = log;
+            this.startedEvtSent = startedEvtSent;
             this.stoppedEvtSent = stoppedEvtSent;
             this.updateSeq = updateSeq;
         }
@@ -833,6 +849,7 @@ public class GridDhtPartitionDemander {
             this.topVer = null;
             this.cctx = null;
             this.log = null;
+            this.startedEvtSent = null;
             this.stoppedEvtSent = null;
             this.updateSeq = -1;
         }
@@ -1062,6 +1079,18 @@ public class GridDhtPartitionDemander {
                     ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
 
                 onDone(!cancelled);
+            }
+        }
+
+        /**
+         *
+         */
+        private void sendRebalanceStartedEvent() {
+            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED) &&
+                (!cctx.isReplicated() || !startedEvtSent.get())) {
+                preloadEvent(EVT_CACHE_REBALANCE_STARTED, exchFut.discoveryEvent());
+
+                startedEvtSent.set(true);
             }
         }
 

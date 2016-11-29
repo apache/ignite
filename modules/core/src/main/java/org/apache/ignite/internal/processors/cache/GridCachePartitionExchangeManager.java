@@ -1591,8 +1591,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
-            boolean startEvtFired = false;
-
             int cnt = 0;
 
             while (!isCancelled()) {
@@ -1696,19 +1694,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     continue;
 
                                 changed |= cacheCtx.topology().afterExchange(exchFut);
-
-                                // Preload event notification.
-                                if (!exchFut.skipPreload() && cacheCtx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED)) {
-                                    if (!cacheCtx.isReplicated() || !startEvtFired) {
-                                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                                        cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_REBALANCE_STARTED,
-                                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
-                                    }
-                                }
                             }
-
-                            startEvtFired = true;
 
                             if (!cctx.kernalContext().clientNode() && changed && futQ.isEmpty())
                                 refreshPartitions();
