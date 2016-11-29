@@ -91,11 +91,15 @@ $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
 & $msbuildExe Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false
 
-# check result
+# Check result
 if ($LastExitCode -ne 0) {
     echo ".NET build failed."
     exit -1
 }
+
+# Copy binaries
+rmdir bin -Force -Recurse -ErrorAction SilentlyContinue; mkdir bin
+# TODO
 
 
 # 3) Pack NuGet
@@ -106,8 +110,9 @@ if (!$skipNuGet) {
         exit -1
     }
 
-    rmdir nupkg -Force -Recurse -ErrorAction SilentlyContinue
-    mkdir nupkg
+    $nupkgDir = "bin\NuGet"
+
+    mkdir $nupkgDir
 
     # Detect version
     $ver = (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
@@ -119,7 +124,7 @@ if (!$skipNuGet) {
                 [io.path]::ChangeExtension($_.FullName, ".csproj")
             } Else { $_.FullName }
         } | % { 
-            & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory nupkg 
+            & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir
 
             # check result
             if ($LastExitCode -ne 0)
@@ -129,5 +134,5 @@ if (!$skipNuGet) {
             }
         }
 
-    echo "NuGet packages created in '$pwd\nupkg'."
+    echo "NuGet packages created in '$pwd\$nupkgDir'."
 }
