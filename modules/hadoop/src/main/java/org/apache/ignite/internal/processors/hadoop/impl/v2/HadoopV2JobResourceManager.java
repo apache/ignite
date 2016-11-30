@@ -121,10 +121,6 @@ class HadoopV2JobResourceManager {
             if (jobLocDir.exists())
                 throw new IgniteCheckedException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
 
-            if (!jobLocDir.mkdirs())
-                throw new IgniteCheckedException("Failed to create local job directory: "
-                    + jobLocDir.getAbsolutePath());
-
             final JobConf cfg = ctx.getJobConf();
 
             final Collection<URL> clsPathUrls = new ArrayList<>();
@@ -155,6 +151,9 @@ class HadoopV2JobResourceManager {
                 rsrcSet.add(jarJobFile);
                 rsrcSet.add(new File(jobLocDir, "job.xml"));
             }
+            else if (!jobLocDir.mkdirs())
+                throw new IgniteCheckedException("Failed to create local job directory: "
+                    + jobLocDir.getAbsolutePath());
 
             processFiles(jobLocDir, ctx.getCacheFiles(), download, false, null, MRJobConfig.CACHE_LOCALFILES);
             processFiles(jobLocDir, ctx.getCacheArchives(), download, true, null, MRJobConfig.CACHE_LOCALARCHIVES);

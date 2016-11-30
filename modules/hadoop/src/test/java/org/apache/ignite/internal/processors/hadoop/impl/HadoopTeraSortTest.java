@@ -38,10 +38,11 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /**
      * Gets base directory.
+     * Note that this directory will be completely deleted in the and of the test.
      * @return The base directory.
      */
     protected String getFsBase() {
-        return "file:///tmp/" + getUser() + "/hadoop-test";
+        return "file:///tmp/" + getUser() + "/hadoop-terasort-test";
     }
 
     /**
@@ -78,6 +79,8 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
+
+        getFileSystem().delete(new Path(getFsBase()), true);
     }
 
     /** {@inheritDoc} */
