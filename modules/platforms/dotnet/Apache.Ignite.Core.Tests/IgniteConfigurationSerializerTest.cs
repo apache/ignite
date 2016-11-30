@@ -335,12 +335,12 @@ namespace Apache.Ignite.Core.Tests
             };
 
             Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<igniteConfiguration gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+<igniteConfiguration clientMode=""true"" gridName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
   <cacheConfiguration>
-    <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+    <cacheConfiguration cacheMode=""Replicated"" name=""myCache"">
       <queryEntities>
-        <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
-        <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+        <queryEntity valueType=""System.Int32"" valueTypeName=""java.lang.Integer"" />
+        <queryEntity keyType=""System.Int32"" keyTypeName=""java.lang.Integer"" valueType=""System.String"" valueTypeName=""java.lang.String"" />
       </queryEntities>
     </cacheConfiguration>
   </cacheConfiguration>
@@ -365,12 +365,12 @@ namespace Apache.Ignite.Core.Tests
             }
 
             Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<igCfg gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+<igCfg clientMode=""true"" gridName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
  <cacheConfiguration>
-  <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+  <cacheConfiguration cacheMode=""Replicated"" name=""myCache"">
    <queryEntities>
-    <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
-    <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+    <queryEntity valueType=""System.Int32"" valueTypeName=""java.lang.Integer"" />
+    <queryEntity keyType=""System.Int32"" keyTypeName=""java.lang.Integer"" valueType=""System.String"" valueTypeName=""java.lang.String"" />
    </queryEntities>
   </cacheConfiguration>
  </cacheConfiguration>
