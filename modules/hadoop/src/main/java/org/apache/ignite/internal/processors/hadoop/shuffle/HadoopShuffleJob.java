@@ -370,7 +370,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 throw new IgniteCheckedException("Failed to uncompress.", e);
             }
 
-            System.out.println("DECOMPRESSED [" + out.position() + ", " + buf.length + ']');
+            //System.out.println("DECOMPRESSED [" + out.position() + ", " + buf.length + ']');
 
             buf = out.buffer();
         }

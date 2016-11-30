@@ -86,7 +86,7 @@ public class NewHadoopDataOutputContext {
                     gzip.write(out.buffer(), 0, out.position());
                 }
 
-                System.out.println("COMPRESSED [" + out.position() + ", " + gzipOut.position() + ']');
+                //System.out.println("COMPRESSED [" + out.position() + ", " + gzipOut.position() + ']');
 
                 return new NewHadoopDataOutputState(gzipOut.buffer(), gzipOut.position(), out.position());
             }
