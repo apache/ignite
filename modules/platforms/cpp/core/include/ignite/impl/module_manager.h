@@ -22,7 +22,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/dynamic_load_os.h>
-#include "ignite/impl/invoke_manager.h"
+#include "ignite/invoke_manager.h"
 
 /**
  * @def IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME
@@ -52,7 +52,7 @@ namespace ignite
              *
              * @param invokeMgr Invoke manager to use.
              */
-            ModuleManager(InvokeManager* invokeMgr) :
+            ModuleManager(ignite::InvokeManager invokeMgr) :
                 loadedModules(),
                 invokeMgr(invokeMgr)
             {
@@ -103,13 +103,12 @@ namespace ignite
             {
                 loadedModules.push_back(module);
 
-                if (invokeMgr)
-                {
-                    ModuleInitCallback* callback = GetModuleInitCallback(module);
+                assert(invokeMgr.IsValid());
 
-                    if (callback)
-                        callback(*invokeMgr);
-                }
+                ModuleInitCallback* callback = GetModuleInitCallback(module);
+
+                if (callback)
+                    callback(invokeMgr);
             }
 
             /**
@@ -128,7 +127,7 @@ namespace ignite
             std::vector<Module> loadedModules;
 
             /** Invoke manager reference. */
-            InvokeManager* invokeMgr;
+            InvokeManager invokeMgr;
         };
     }
 }

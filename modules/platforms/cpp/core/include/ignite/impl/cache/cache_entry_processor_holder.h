@@ -208,16 +208,51 @@ namespace ignite
 
             int32_t GetTypeId()
             {
-                return GetBinaryStringHashCode(GetTypeName().c_str());
+                static bool typeIdInited = false;
+                static int32_t typeId;
+                static common::concurrent::CriticalSection initLock;
+
+                if (typeIdInited)
+                    return typeId;
+
+                common::concurrent::CsLockGuard guard(initLock);
+
+                if (typeIdInited)
+                    return typeId;
+
+                typeId = GetBinaryStringHashCode(GetTypeName().c_str());
+                typeIdInited = true;
+
+                return typeId;
             }
 
             std::string GetTypeName()
             {
+                // Using static variable and only initialize it once for better
+                // performance. Type name can't change in the course of the
+                // program flow.
+                static std::string name;
+                static common::concurrent::CriticalSection initLock;
+
+                if (!name.empty())
+                    return name;
+
+                common::concurrent::CsLockGuard guard(initLock);
+
+                if (!name.empty())
+                    return name;
+
                 BinaryType<P> p;
+
+                std::string procName = p.GetTypeName();
+
+                // -1 is for unnessecary null byte at the end.
+                name.reserve(sizeof("CacheEntryProcessorHolder<>") - 1 + procName.size());
 
                 // Processor name is enough for identification as it is forbidden to
                 // register the same processor type several times.
-                std::string name = "CacheEntryProcessorHolder<" + p.GetTypeName() + '>';
+                name.append("CacheEntryProcessorHolder<").append(procName).push_back('>');
+
                 return name;
             }
 

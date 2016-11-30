@@ -150,14 +150,17 @@
     <ClInclude Include="..\..\include\ignite\impl\module_manager.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\invoke_manager.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h">
       <Filter>Code\impl\cluster</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h">
       <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\invoke_manager_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\invoke_manager.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

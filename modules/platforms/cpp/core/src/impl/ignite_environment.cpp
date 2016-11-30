@@ -20,6 +20,7 @@
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/binary/binary.h"
 #include "ignite/impl/module_manager.h"
+#include "ignite/invoke_manager.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -89,12 +90,12 @@ namespace ignite
 
         IgniteEnvironment::IgniteEnvironment() :
             ctx(SharedPointer<JniContext>()),
-            latch(new SingleLatch),
+            latch(),
             name(0),
             proc(),
             metaMgr(new BinaryTypeManager()),
-            invokeMgr(new InvokeManager()),
-            moduleMgr(new ModuleManager(invokeMgr))
+            invokeMgr(new InvokeManagerImpl()),
+            moduleMgr(new ModuleManager(ignite::InvokeManager(invokeMgr)))
         {
             // No-op.
         }
@@ -102,10 +103,8 @@ namespace ignite
         IgniteEnvironment::~IgniteEnvironment()
         {
             delete moduleMgr;
-            delete invokeMgr;
             delete metaMgr;
             delete name;
-            delete latch;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -133,7 +132,7 @@ namespace ignite
 
         void IgniteEnvironment::Initialize()
         {
-            latch->CountDown();
+            latch.CountDown();
         }
 
         const char* IgniteEnvironment::InstanceName() const
@@ -223,7 +222,7 @@ namespace ignite
 
         void IgniteEnvironment::CacheInvokeCallback(long long inMemPtr, long long outMemPtr)
         {
-            if (!invokeMgr)
+            if (!invokeMgr.Get())
                 throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "InvokeManager is not initialized.");
 
             InteropExternalMemory inMem(reinterpret_cast<int8_t*>(inMemPtr));
@@ -239,7 +238,7 @@ namespace ignite
             if (!reader.TryReadObject<int64_t>(procId))
                 throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
 
-            bool invoked = invokeMgr->InvokeCacheEntryProcessorById(procId, reader, writer);
+            bool invoked = invokeMgr.Get()->InvokeCacheEntryProcessorById(procId, reader, writer);
 
             if (!invoked)
                 throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,

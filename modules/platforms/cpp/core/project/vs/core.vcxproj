@@ -220,11 +220,12 @@
     <ClInclude Include="..\..\include\ignite\impl\handle_registry.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h" />
-    <ClInclude Include="..\..\include\ignite\impl\invoke_manager.h" />
+    <ClInclude Include="..\..\include\ignite\impl\invoke_manager_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\module_manager.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
     <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
+    <ClInclude Include="..\..\include\ignite\invoke_manager.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h" />

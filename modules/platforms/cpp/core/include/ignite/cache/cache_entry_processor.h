@@ -30,22 +30,21 @@
 
 namespace ignite
 {
-    namespace impl
-    {
-        class InvokeManager;
-    }
+    class InvokeManager;
 
     namespace cache
     {
         /**
-         * %Cache entry class template.
+         * %Cache entry processor class template.
          *
-         * Both key and value types should be default-constructable,
+         * All templated types should be default-constructable,
          * copy-constructable and assignable.
          */
         template<typename P, typename K, typename V, typename R, typename A>
         class CacheEntryProcessor
         {
+            friend class InvokeManager;
+
         public:
             /**
              * Destructor.
@@ -65,8 +64,6 @@ namespace ignite
             virtual R Process(MutableCacheEntry<K, V>& entry, const A& arg) = 0;
 
         private:
-            friend class impl::InvokeManager;
-
             /**
              * Process input streaming data to produce output streaming data.
              *

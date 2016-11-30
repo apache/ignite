@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INVOKE_MANAGER
-#define _IGNITE_IMPL_INVOKE_MANAGER
+#ifndef _IGNITE_IMPL_INVOKE_MANAGER_IMPL
+#define _IGNITE_IMPL_INVOKE_MANAGER_IMPL
 
 #include <map>
 
@@ -32,22 +32,18 @@ namespace ignite
     namespace impl
     {
         /**
-         * Invoke manager.
+         * Invoke manager implementation.
          * Used to register and invoke cache entry processors.
          */
-        class InvokeManager
+        class InvokeManagerImpl
         {
-            typedef common::dynamic::Module Module;
-            typedef impl::binary::BinaryReaderImpl BinaryReaderImpl;
-            typedef impl::binary::BinaryWriterImpl BinaryWriterImpl;
-            typedef bool (JobInvoker)(int64_t, BinaryReaderImpl&, BinaryWriterImpl&);
-            typedef void (EntryProcessor)(BinaryReaderImpl&, BinaryWriterImpl&);
+            typedef void (EntryProcessor)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
 
         public:
             /**
              * Default constructor.
              */
-            InvokeManager() : processors()
+            InvokeManagerImpl() : processors()
             {
                 // No-op.
             }
@@ -63,11 +59,11 @@ namespace ignite
              * @param writer Writer.
              * @return True if processor is registered and false otherwise.
              */
-            bool InvokeCacheEntryProcessorById(int64_t id, BinaryReaderImpl& reader, BinaryWriterImpl& writer)
+            bool InvokeCacheEntryProcessorById(int64_t id, binary::BinaryReaderImpl& reader,
+                binary::BinaryWriterImpl& writer)
             {
-                typedef std::map<int64_t, EntryProcessor*> Processors;
+                std::map<int64_t, EntryProcessor*>::iterator it = processors.find(id);
 
-                Processors::iterator it = processors.find(id);
                 if (it != processors.end())
                 {
                     it->second(reader, writer);
@@ -87,23 +83,17 @@ namespace ignite
              * @param id Identifier for processor to be associated with.
              * @param proc Processor.
              */
-            void RegisterProcessor(int64_t id, EntryProcessor* proc)
+            void RegisterCacheEntryProcessor(int64_t id, EntryProcessor* proc, IgniteError& err)
             {
                 if (processors.find(id) != processors.end())
-                    throw IgniteError(IgniteError::IGNITE_ERR_ENTRY_PROCESSOR,
+                    err = IgniteError(IgniteError::IGNITE_ERR_ENTRY_PROCESSOR,
                         "Entry processor with the specified id is already registred.");
 
                 processors[id] = proc;
             }
 
-            template<typename P>
-            void RegisterProcessor()
-            {
-                RegisterProcessor(P::GetJobId(), &P::CacheEntryProcessor::InternalProcess);
-            }
-
         private:
-            IGNITE_NO_COPY_ASSIGNMENT(InvokeManager);
+            IGNITE_NO_COPY_ASSIGNMENT(InvokeManagerImpl);
 
             /** Registered cache entry processors. */
             std::map<int64_t, EntryProcessor*> processors;
@@ -111,4 +101,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_IMPL_INVOKE_MANAGER
+#endif //_IGNITE_IMPL_INVOKE_MANAGER_IMPL

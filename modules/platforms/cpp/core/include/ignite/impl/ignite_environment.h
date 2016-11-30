@@ -25,6 +25,7 @@
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/module_manager.h"
+#include "ignite/impl/invoke_manager_impl.h"
 
 namespace ignite 
 {
@@ -150,7 +151,7 @@ namespace ignite
             ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx;
 
             /** Startup latch. */
-            ignite::common::concurrent::SingleLatch* latch;
+            ignite::common::concurrent::SingleLatch latch;
 
             /** Ignite name. */
             char* name;
@@ -162,7 +163,7 @@ namespace ignite
             binary::BinaryTypeManager* metaMgr;
 
             /** Invoke manager */
-            InvokeManager* invokeMgr;
+            ignite::common::concurrent::SharedPointer<InvokeManagerImpl> invokeMgr;
 
             /** Module manager. */
             ModuleManager* moduleMgr;
