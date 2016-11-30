@@ -178,8 +178,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ValueTypeName = reader.ReadString();
 
             var count = reader.ReadInt();
-            Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
-                    new QueryField(reader.ReadString(), reader.ReadString())).ToList();
+            Fields = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x =>
+                    new QueryField(reader.ReadString(), reader.ReadString()) {IsKeyField = reader.ReadBoolean()})
+                    .ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
