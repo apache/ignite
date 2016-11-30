@@ -36,7 +36,7 @@
                 .details-row(ng-show='agentLoad.showToken')
                     label.labelField Security token: {{user.token}}
                     i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
-                    i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+                    i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
             .agent-download(ng-if='hasAgents')
                 p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
                 p Please check the following:
