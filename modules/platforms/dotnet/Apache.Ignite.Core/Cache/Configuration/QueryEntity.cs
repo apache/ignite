@@ -205,6 +205,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     writer.WriteString(field.Name);
                     writer.WriteString(field.FieldTypeName);
+                    writer.WriteBoolean(field.IsKeyField);
                 }
             }
             else

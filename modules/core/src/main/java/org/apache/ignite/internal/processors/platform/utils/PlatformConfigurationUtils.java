@@ -62,12 +62,7 @@ import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Configuration utils.
@@ -428,14 +423,25 @@ public class PlatformConfigurationUtils {
 
         // Fields
         int cnt = in.readInt();
+        Set<String> keyFields = new HashSet<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
 
-            for (int i = 0; i < cnt; i++)
-                fields.put(in.readString(), in.readString());
+            for (int i = 0; i < cnt; i++) {
+                String fieldName = in.readString();
+                String fieldType = in.readString();
+
+                fields.put(fieldName, fieldType);
+
+                if (in.readBoolean())
+                    keyFields.add(fieldName);
+            }
 
             res.setFields(fields);
+
+            if (keyFields.size() > 0)
+                res.setKeyFields(keyFields);
         }
 
         // Aliases
