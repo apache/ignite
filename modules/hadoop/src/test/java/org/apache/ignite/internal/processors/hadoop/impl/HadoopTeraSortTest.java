@@ -15,7 +15,6 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraGen;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraInputFormat;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraOutputFormat;
@@ -174,38 +173,47 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         Path outputDir = new Path(sortOutDir);
 
         boolean useSimplePartitioner = TeraSort.getUseSimplePartitioner(job);
+
         TeraInputFormat.setInputPaths(job, inputDir);
         FileOutputFormat.setOutputPath(job, outputDir);
+
         job.setJobName("TeraSort");
-        //job.setJarByClass(TeraSort.class);
+
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
+
         job.setInputFormatClass(TeraInputFormat.class);
         job.setOutputFormatClass(TeraOutputFormat.class);
+
         if (useSimplePartitioner)
             job.setPartitionerClass(TeraSort.SimplePartitioner.class);
         else {
             long start = System.currentTimeMillis();
-            Path partitionFile = new Path(outputDir, TeraInputFormat.PARTITION_FILENAME);
-            URI partitionUri = new URI(partitionFile.toString() +
+
+            Path partFile = new Path(outputDir, TeraInputFormat.PARTITION_FILENAME);
+
+            URI partUri = new URI(partFile.toString() +
                 "#" + TeraInputFormat.PARTITION_FILENAME);
+
             try {
-                TeraInputFormat.writePartitionFile(job, partitionFile);
-            }
-            catch (Throwable e) {
-                //                    LOG.error(e.getMessage());
-                //                    return -1;
+                TeraInputFormat.writePartitionFile(job, partFile);
+            } catch (Throwable e) {
                 throw new RuntimeException(e);
             }
-            job.addCacheFile(partitionUri);
+
+            job.addCacheFile(partUri);
+
             long end = System.currentTimeMillis();
-            System.out.println("Spent " + (end - start) + "ms computing partitions.");
+
+            System.out.println("Spent " + (end - start) + "ms computing partitions. " +
+                "Partition file added to distributed cache: " + partUri);
+
             job.setPartitionerClass(TeraSort.TotalOrderPartitioner.class);
         }
 
         job.getConfiguration().setInt("dfs.replication", TeraSort.getOutputReplication(job));
+
         TeraOutputFormat.setFinalSync(job, true);
-        // int ret = job.waitForCompletion(true) ? 0 : 1;
 
         return job;
     }
