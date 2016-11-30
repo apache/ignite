@@ -42,18 +42,9 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Topology version. */
-    // TODO: remove.
-    protected AffinityTopologyVersion topVer;
-
     /** */
     @GridDirectCollection(int.class)
     private List<Integer> cacheIds;
-
-    /** Affinity assignment. */
-    @GridDirectTransient
-    // TODO remove.
-    private List<List<List<ClusterNode>>> affAssignments;
 
     /** */
     @GridDirectTransient
@@ -75,15 +66,6 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
      * Empty constructor.
      */
     public GridDhtAffinityMultiAssignmentResponse() {
-        // No-op.
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public GridDhtAffinityMultiAssignmentResponse(
-        AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
         this.cacheId = 0;
 
         cacheIds = new ArrayList<>();
@@ -94,13 +76,6 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public boolean partitionExchangeMessage() {
         return true;
-    }
-
-    /**
-     * @return Topology version.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -117,31 +92,25 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
 
     /**
      * @param idx index.
+     * @param topVer Topology version.
      * @param disco Discovery manager.
      * @return Affinity assignment.
      */
-    public List<List<ClusterNode>> affinityAssignment(int idx, GridDiscoveryManager disco) {
+    public List<List<ClusterNode>> affinityAssignment(int idx, GridDiscoveryManager disco,
+        AffinityTopologyVersion topVer) {
         assert affAssignmentIds != null;
-
-        if (affAssignments == null) {
-            affAssignments = new ArrayList<>();
-            for (List<List<UUID>> affAssignmentId : affAssignmentIds) {
-                List<List<ClusterNode>> aff = nodes(disco, affAssignmentId);
-                affAssignments.add(aff);
-
-            }
-        }
-
-        return affAssignments.get(idx);
+        return nodes(disco, topVer, affAssignmentIds.get(idx));
     }
 
     /**
      * @param idx index.
+     * @param topVer Topology version.
      * @param disco Discovery manager.
      * @return Ideal affinity assignment.
      */
-    public List<List<ClusterNode>> idealAffinityAssignment(int idx, GridDiscoveryManager disco) {
-        return nodes(disco, idealAffAssignment.get(idx));
+    public List<List<ClusterNode>> idealAffinityAssignment(int idx, GridDiscoveryManager disco,
+        AffinityTopologyVersion topVer) {
+        return nodes(disco, topVer, idealAffAssignment.get(idx));
     }
 
     /**
@@ -165,10 +134,13 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
 
     /**
      * @param disco Discovery manager.
+     * @param topVer Topology version.
      * @param assignmentIds Assignment node IDs.
      * @return Assignment nodes.
      */
-    private List<List<ClusterNode>> nodes(GridDiscoveryManager disco, List<List<UUID>> assignmentIds) {
+    private List<List<ClusterNode>> nodes(GridDiscoveryManager disco,
+        AffinityTopologyVersion topVer,
+        List<List<UUID>> assignmentIds) {
         if (assignmentIds != null) {
             List<List<ClusterNode>> assignment = new ArrayList<>(assignmentIds.size());
 
@@ -263,7 +235,7 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
     }
 
     /** {@inheritDoc} */
@@ -295,12 +267,6 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
 
             case 5:
                 if (!writer.writeCollection("idealAffAssignmentBytes", idealAffAssignmentBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -339,14 +305,6 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
 
             case 5:
                 idealAffAssignmentBytes = reader.readCollection("idealAffAssignmentBytes", MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

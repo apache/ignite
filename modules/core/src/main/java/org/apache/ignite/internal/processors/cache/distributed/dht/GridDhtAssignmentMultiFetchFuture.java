@@ -20,16 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
  *
@@ -69,7 +64,7 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
     @Override public void onResponse(UUID nodeId, GridDhtAffinityMultiAssignmentResponse res) {
         GridDhtAffinityMultiAssignmentResponse res0 = null;
 
-        synchronized (this) {
+        synchronized (mux) {
             if (pendingNode != null && pendingNode.id().equals(nodeId))
                 res0 = res;
         }
@@ -86,44 +81,28 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
 
         IgniteLogger log0 = log;
 
-        while (!availableNodes.isEmpty()) {
-            ClusterNode node = availableNodes.poll();
+        synchronized (mux) {
+            while (!availableNodes.isEmpty()) {
+                ClusterNode node = availableNodes.poll();
 
-            if (node.isLocal()) {
-                if (log0.isDebugEnabled())
-                    log0.debug("Now I am coordinator");
-                pendingNode = null;
-                break;
-            }
+                if (node.isLocal()) {
+                    if (log0.isDebugEnabled())
+                        log0.debug("Now I am coordinator");
+                    pendingNode = null;
+                    break;
+                }
 
-            if (!canUseMultiRequest(node)) {
-                if (log0.isDebugEnabled())
-                    log0.debug("Node is too old, fallback");
-                pendingNode = null;
-                break;
-            }
+                if (!canUseMultiRequest(node)) {
+                    if (log0.isDebugEnabled())
+                        log0.debug("Node is too old, fallback");
+                    pendingNode = null;
+                    break;
+                }
 
-            // TODO: reuse code from existing fetch future.
-
-            try {
-                if (log0.isDebugEnabled())
-                    log0.debug("Sending affinity fetch request to coordinator node [locNodeId=" + ctx.localNodeId() +
-                        ", node=" + node + ']');
-
-                ctx.io().send(node, new GridDhtAffinityMultiAssignmentRequest(key.get2(), cacheIds),
-                    AFFINITY_POOL);
-
-                pendingNode = node;
-
-                break;
-            }
-            catch (ClusterTopologyCheckedException ignored) {
-                U.warn(log0, "Failed to request affinity assignment from coordinator node (node left grid, will " +
-                    "try again): " + node);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log0, "Failed to request affinity assignment from coordinator node" + node, e);
-                break;
+                if (sendRequest(node, new GridDhtAffinityMultiAssignmentRequest(key.get2(), cacheIds))) {
+                    pendingNode = node;
+                    break;
+                }
             }
         }
 

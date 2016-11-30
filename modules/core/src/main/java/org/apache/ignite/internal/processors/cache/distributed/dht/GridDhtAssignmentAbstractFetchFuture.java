@@ -20,15 +20,20 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
  */
@@ -52,6 +57,9 @@ public abstract class GridDhtAssignmentAbstractFetchFuture<R> extends GridFuture
     /** */
     @GridToStringInclude
     protected final T2<Integer, AffinityTopologyVersion> key;
+
+    /** */
+    protected final Object mux = new Object();
 
     /**
      * @param ctx
@@ -93,10 +101,9 @@ public abstract class GridDhtAssignmentAbstractFetchFuture<R> extends GridFuture
      * @param leftNodeId Left node ID.
      */
     public void onNodeLeft(UUID leftNodeId) {
-        synchronized (this) {
+        synchronized (mux) {
             if (pendingNode != null && pendingNode.id().equals(leftNodeId)) {
                 availableNodes.remove(pendingNode);
-
                 pendingNode = null;
             }
         }
@@ -121,4 +128,42 @@ public abstract class GridDhtAssignmentAbstractFetchFuture<R> extends GridFuture
         return false;
     }
 
+    /**
+     * Sends message to node.
+     *
+     * @param node Node.
+     * @param msg Message.
+     * @return @code{True} in case of success
+     */
+    protected boolean sendRequest(ClusterNode node, GridCacheMessage msg) {
+        // Avoid 'protected field is accessed in synchronized context' warning.
+        IgniteLogger log0 = log;
+
+        try {
+            if (log0.isDebugEnabled())
+                log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
+                    ", node=" + node + ']');
+
+            ctx.io().send(node, msg, AFFINITY_POOL);
+
+            // Close window for listener notification.
+            if (ctx.discovery().node(node.id()) == null) {
+                U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
+                    "continue to another node): " + node);
+
+                return false;
+            }
+
+            return true;
+        }
+        catch (ClusterTopologyCheckedException ignored) {
+            U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
+                "continue to another node): " + node);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log0, "Failed to request affinity assignment from remote node (will " +
+                "continue to another node): " + node, e);
+        }
+        return false;
+    }
 }

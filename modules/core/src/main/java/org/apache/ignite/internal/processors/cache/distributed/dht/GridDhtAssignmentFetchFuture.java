@@ -21,18 +21,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridNodeOrderComparator;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
  * Future that fetches affinity assignment from remote cache nodes.
@@ -83,7 +77,7 @@ public class GridDhtAssignmentFetchFuture extends GridDhtAssignmentAbstractFetch
 
         GridDhtAffinityAssignmentResponse res0 = null;
 
-        synchronized (this) {
+        synchronized (mux) {
             if (pendingNode != null && pendingNode.id().equals(nodeId))
                 res0 = res;
         }
@@ -98,40 +92,12 @@ public class GridDhtAssignmentFetchFuture extends GridDhtAssignmentAbstractFetch
     @Override protected void requestFromNextNode() {
         boolean complete;
 
-        // Avoid 'protected field is accessed in synchronized context' warning.
-        IgniteLogger log0 = log;
-
-        synchronized (this) {
+        synchronized (mux) {
             while (!availableNodes.isEmpty()) {
                 ClusterNode node = availableNodes.poll();
-
-                try {
-                    if (log0.isDebugEnabled())
-                        log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
-                            ", node=" + node + ']');
-
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(key.get1(), key.get2()),
-                        AFFINITY_POOL);
-
-                    // Close window for listener notification.
-                    if (ctx.discovery().node(node.id()) == null) {
-                        U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
-                            "continue to another node): " + node);
-
-                        continue;
-                    }
-
+                if (sendRequest(node, new GridDhtAffinityAssignmentRequest(key.get1(), key.get2()))) {
                     pendingNode = node;
-
                     break;
-                }
-                catch (ClusterTopologyCheckedException ignored) {
-                    U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
-                        "continue to another node): " + node);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log0, "Failed to request affinity assignment from remote node (will " +
-                        "continue to another node): " + node, e);
                 }
             }
 

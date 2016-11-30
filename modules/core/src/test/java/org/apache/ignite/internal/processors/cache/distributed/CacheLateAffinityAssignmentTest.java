@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityMultiAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
@@ -1833,27 +1834,28 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
 
-        TestRecordingCommunicationSpi spi1 =
-            (TestRecordingCommunicationSpi)ignite(1).configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi0 =
+            (TestRecordingCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
-        // TODO: block multi response from node0.
+        spi0.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage message) {
+                return message.message() instanceof GridDhtAffinityMultiAssignmentResponse;
+            }
+        });
 
-        // Prevent exchange finish while node0 is coordinator.
-        spi1.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(0).name());
-
+        final int newTopVer = ++topVer;
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startServer(NUM_NODES, ++topVer);
-
+                startServer(NUM_NODES, newTopVer);
                 return null;
             }
         });
 
-        U.sleep(1000);
+        U.sleep(500);
 
         assertFalse(fut.isDone());
 
-        stopNode(0, ++topVer);
+        stopGrid(0);
 
         fut.get();
 
@@ -1862,8 +1864,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
         assertNotNull(((IgniteKernal)ignite(NUM_NODES)).context().cache().internalCache(CACHE_NAME1));
 
-        // TODO
-        checkAffinity()
+        checkAffinity(NUM_NODES, topVer(topVer, 0), false);
     }
 
     /**
