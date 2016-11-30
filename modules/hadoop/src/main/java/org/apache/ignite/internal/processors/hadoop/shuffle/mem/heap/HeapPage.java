@@ -1,11 +1,9 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.mem.heap;
 
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.Page;
-
 /**
  * Page.
  */
-public class HeapPage implements Page {
+public class HeapPage {
     /** Pointer. */
     private byte [] buf;
 
@@ -21,7 +19,7 @@ public class HeapPage implements Page {
      * @param order Page order.
      * @param size Size.
      */
-    public HeapPage(int order, int size) {
+    HeapPage(int order, int size) {
         this.order = order;
         this.size = size;
 
@@ -31,21 +29,21 @@ public class HeapPage implements Page {
     /**
      * @return Pointer.
      */
-    public long ptr() {
+    long ptr() {
         return ((long)order) << 32;
     }
 
     /**
      * @return Page size.
      */
-    @Override public long size() {
+    long size() {
         return size;
     }
 
     /**
      * @return Page buffer.
      */
-    public byte[] buf() {
+    byte[] buf() {
         return buf;
     }
 }

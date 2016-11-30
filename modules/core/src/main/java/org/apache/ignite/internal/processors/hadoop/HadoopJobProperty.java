@@ -91,7 +91,6 @@ public enum HadoopJobProperty {
      */
     SHUFFLE_MEM_MANAGER;
 
-
     /** */
     private final String ptyName;
 
