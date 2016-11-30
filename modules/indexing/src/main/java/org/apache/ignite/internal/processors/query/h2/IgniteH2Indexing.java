@@ -1073,6 +1073,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
+        final SqlQuery<K, V> qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
+        final IndexingQueryFilter filter) throws IgniteCheckedException {
+        final TableDescriptor tbl = tableDescriptor(spaceName, type);
+
+        if (tbl == null)
+            throw new CacheException("Failed to find SQL table for type: " + type.name());
+
+        String sql = generateQuery(qry.getSql(), qry.getAlias(), tbl);
+
+        Connection conn = connectionForThread(tbl.schemaName());
+
+        initLocalQueryContext(conn, false, filter);
+
+        try {
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, null);
+
+            return new KeyValIterator(rs);
+        }
+        finally {
+            GridH2QueryContext.clearThreadLocal();
+        }
+    }
+
     /**
      * @param cctx Cache context.
      * @param qry Query.
@@ -1105,7 +1131,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql;
 
         try {
-            sql = generateQuery(qry.getSql(), qry.getTableAlias(), tblDesc);
+            sql = generateQuery(qry.getSql(), qry.getAlias(), tblDesc);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1302,11 +1328,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Prepares statement for query.
      *
      * @param qry Query string.
+     * @param tableAlias table alias.
      * @param tbl Table to use.
      * @return Prepared statement.
      * @throws IgniteCheckedException In case of error.
      */
-    private String generateQuery(String qry, String alias, TableDescriptor tbl) throws IgniteCheckedException {
+    private String generateQuery(String qry, String tableAlias, TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
         final String qry0 = qry;
@@ -1343,12 +1370,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (!upper.startsWith("FROM"))
-            from = " FROM " + t + (alias != null ? " as " + alias : "") +
+            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
 
-        if(alias != null)
-            t = alias;
+        if(tableAlias != null)
+            t = tableAlias;
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 

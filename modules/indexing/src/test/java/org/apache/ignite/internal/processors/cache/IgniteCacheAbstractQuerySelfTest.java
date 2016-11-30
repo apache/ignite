@@ -66,7 +66,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -317,11 +316,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Test table alias in query.
+     * Test table alias in SqlQuery.
      *
      * @throws Exception In case of error.
      */
-    public void testTableAlias() throws Exception {
+    public void testTableAliasInSqlQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite().cache(null);
 
         int key = 898;
@@ -330,10 +329,22 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cache.put(key, val);
 
-        QueryCursor<Cache.Entry<Integer, Integer>> qry =
-            cache.query(new SqlQuery<Integer, Integer>(Integer.class,"t1", "t1._key = ? and t1._val > 1").setArgs(key));
+        SqlQuery<Integer, Integer> sqlQry = new SqlQuery<>(Integer.class, "t1._key = ? and t1._val > 1");
+
+        QueryCursor<Cache.Entry<Integer, Integer>> qry = cache.query(sqlQry.setAlias("t1").setArgs(key));
 
         Cache.Entry<Integer, Integer> entry = F.first(qry.getAll());
+
+        assert entry != null;
+
+        assertEquals(key, entry.getKey().intValue());
+        assertEquals(val, entry.getValue().intValue());
+
+        sqlQry = new SqlQuery<>(Integer.class, "FROM Integer as t1 WHERE t1._key = ? and t1._val > 1");
+
+        qry = cache.query(sqlQry.setAlias("t1").setArgs(key));
+
+        entry = F.first(qry.getAll());
 
         assert entry != null;
 

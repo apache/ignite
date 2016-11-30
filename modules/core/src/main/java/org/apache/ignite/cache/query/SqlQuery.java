@@ -37,8 +37,8 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private String type;
 
-    /** */
-    private String tableAlias;
+    /** Table alias */
+    private String alias;
 
     /** SQL clause. */
     private String sql;
@@ -73,18 +73,6 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public SqlQuery(Class<?> type, String sql) {
         setType(type);
         setSql(sql);
-    }
-
-    /**
-     * Constructs query for the given type and SQL query.
-     *
-     * @param type Type.
-     * @param sql SQL Query.
-     */
-    public SqlQuery(Class<?> type, String tableAlias, String sql) {
-        setType(type);
-        setSql(sql);
-        setTableAlias(tableAlias);
     }
 
     /**
@@ -153,18 +141,18 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
-     * Type alias
+     * Table alias for type
      */
-    public String getTableAlias() {
-        return tableAlias;
+    public String getAlias() {
+        return alias;
     }
 
     /**
-     * @param tableAlias type alias
+     * @param alias table alias for type that is used in query.
      * @return
      */
-    public SqlQuery<K, V> setTableAlias(String tableAlias) {
-        this.tableAlias = tableAlias;
+    public SqlQuery<K, V> setAlias(String alias) {
+        this.alias = alias;
 
         return this;
     }
