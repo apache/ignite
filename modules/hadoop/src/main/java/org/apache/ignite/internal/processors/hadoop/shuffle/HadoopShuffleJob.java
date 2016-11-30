@@ -697,7 +697,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
-        System.out.println("Performing final flush: " + Thread.currentThread().getName());
+        System.out.println(Thread.currentThread().getName() + ": Final flush started: " + System.currentTimeMillis());
 
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
