@@ -138,15 +138,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         processMultiAssignmentRequest(uuid, msg);
                     }
                 });
-
-            cctx.io()
-                .addHandler(GridDhtAssignmentMultiFetchFuture.NO_CACHE, GridDhtAffinityMultiAssignmentResponse.class,
-                    new CI2<UUID, GridDhtAffinityMultiAssignmentResponse>() {
-                        @Override public void apply(UUID uuid, GridDhtAffinityMultiAssignmentResponse msg) {
-                            processAffinityMultiAssignmentResponse(uuid, msg);
-                        }
-                    });
         }
+
+        cctx.io()
+            .addHandler(GridDhtAssignmentMultiFetchFuture.NO_CACHE, GridDhtAffinityMultiAssignmentResponse.class,
+                new CI2<UUID, GridDhtAffinityMultiAssignmentResponse>() {
+                    @Override public void apply(UUID uuid, GridDhtAffinityMultiAssignmentResponse msg) {
+                        processAffinityMultiAssignmentResponse(uuid, msg);
+                    }
+                });
     }
 
     /**
@@ -721,6 +721,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 break;
             }
         }
+        // TODO: warning if future not found.
     }
 
     /**
@@ -737,6 +738,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 break;
             }
         }
+        // TODO: warning if future not found.
     }
 
     /**
@@ -978,25 +980,29 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     private void fetchAffinityOnJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
-
         List<Integer> cacheIds = new ArrayList<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
                 continue;
+
             cacheIds.add(cacheCtx.cacheId());
         }
 
         GridDhtAssignmentMultiFetchFuture multiFetchFut = new GridDhtAssignmentMultiFetchFuture(cctx,
-            fut.topologyVersion(), cacheIds);
+            fut.topologyVersion(),
+            cacheIds);
+
         multiFetchFut.init();
 
         if (multiFetchFut.get() != null && multiFetchFut.get().size() == cacheIds.size()) {
             fetchAffinityfromMultiResult(fut, multiFetchFut);
+
             return;
         }
 
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
                 continue;
@@ -1077,34 +1083,41 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void fetchAffinityfromMultiResult(GridDhtPartitionsExchangeFuture fut,
         GridDhtAssignmentMultiFetchFuture fetchFut)
         throws IgniteCheckedException {
-
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         GridDhtAffinityMultiAssignmentResponse res = fetchFut.get();
 
-        if (res != null) {
-            GridDiscoveryManager disco = cctx.discovery();
+        assert res != null;
 
-            for (int i = 0; i < res.size(); i++) {
-                int cacheId = res.getCacheId(i);
-                GridAffinityAssignmentCache affCache = cctx.cacheContext(cacheId).affinity().affinityCache();
+        GridDiscoveryManager disco = cctx.discovery();
 
-                List<List<ClusterNode>> idealAff = res.idealAffinityAssignment(i, disco);
+        // TODO:
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
 
-                if (idealAff != null)
-                    affCache.idealAssignment(idealAff);
-                else {
-                    assert !affCache.centralizedAffinityFunction() || !lateAffAssign;
+            // assert res contains data for cacheCtx.
+        }
 
-                    affCache.calculate(topVer, fut.discoveryEvent());
-                }
+        for (int i = 0; i < res.size(); i++) {
+            int cacheId = res.getCacheId(i);
+            GridAffinityAssignmentCache affCache = cctx.cacheContext(cacheId).affinity().affinityCache();
 
-                List<List<ClusterNode>> aff = res.affinityAssignment(i, disco);
+            List<List<ClusterNode>> idealAff = res.idealAffinityAssignment(i, disco);
 
-                assert aff != null : res;
+            if (idealAff != null)
+                affCache.idealAssignment(idealAff);
+            else {
+                assert !affCache.centralizedAffinityFunction() || !lateAffAssign;
 
-                affCache.initialize(topVer, aff);
+                affCache.calculate(topVer, fut.discoveryEvent());
             }
+
+            List<List<ClusterNode>> aff = res.affinityAssignment(i, disco);
+
+            assert aff != null : res;
+
+            affCache.initialize(topVer, aff);
         }
     }
 
@@ -1670,8 +1683,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param nodeId Node ID.
      * @param msg request.
      */
-    private void processMultiAssignmentRequest(UUID nodeId,
-        GridDhtAffinityMultiAssignmentRequest msg) {
+    private void processMultiAssignmentRequest(UUID nodeId, GridDhtAffinityMultiAssignmentRequest msg) {
         assert nodeId != null;
 
         final AffinityTopologyVersion topVer = msg.topologyVersion();
@@ -1682,9 +1694,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (Integer cacheId : msg.cacheIds()) {
             final CacheHolder cacheHolder = caches.get(cacheId);
 
+            // TODO: wait when cacheHolder initialized.
             if (cacheHolder != null) {
                 IgniteInternalFuture<T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>>> fut;
                 IgniteInternalFuture<AffinityTopologyVersion> fut0 = cacheHolder.affinity().readyFuture(topVer);
+
                 if (fut0 != null) {
                     fut = fut0.chain(new CX1<IgniteInternalFuture<AffinityTopologyVersion>, T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>>>() {
                         @Override public T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>> applyx(
@@ -1702,6 +1716,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         GridCompoundFuture<T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>>, Object> compoundFut = new GridCompoundFuture<>();
+
         for (int i = 0; i < futs.size(); i++)
             compoundFut.add(futs.get(i));
 
@@ -1711,21 +1726,25 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 for (int i = 0; i < futs.size(); i++) {
                     try {
                         T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>> futRes = futs.get(i).get();
-                        if (futRes != null)
-                            res.addResult(futRes.get1(), futRes.get2(), futRes.get3());
+
+                        assert futRes != null;
+
+                        res.addResult(futRes.get1(), futRes.get2(), futRes.get3());
                     }
                     catch (IgniteCheckedException e) {
-                        log.error("error", e);
+                        U.error(log, "Failed to get cache affinity", e);
                     }
                 }
+
                 try {
                     cctx.io().send(node, res, AFFINITY_POOL);
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("error on send", e);
+                    U.error(log, "Failed to send response", e);
                 }
             }
         });
+
         compoundFut.markInitialized();
     }
 
@@ -1745,6 +1764,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             idealAssignment = assignment.idealAssignment();
         }
+
         return new T3<>(cacheHolder.cacheId(), assignment.assignment(), idealAssignment);
     }
 

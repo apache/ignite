@@ -1836,19 +1836,34 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi1 =
             (TestRecordingCommunicationSpi)ignite(1).configuration().getCommunicationSpi();
 
+        // TODO: block multi response from node0.
+
         // Prevent exchange finish while node0 is coordinator.
         spi1.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(0).name());
-        spi1.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(1).name());
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startServer(NUM_NODES, ++topVer);
+
+                return null;
+            }
+        });
+
+        U.sleep(1000);
+
+        assertFalse(fut.isDone());
 
         stopNode(0, ++topVer);
-        startServer(NUM_NODES, ++topVer);
 
-        spi1.stopBlock();
+        fut.get();
 
         awaitPartitionMapExchange();
 
         assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
         assertNotNull(((IgniteKernal)ignite(NUM_NODES)).context().cache().internalCache(CACHE_NAME1));
+
+        // TODO
+        checkAffinity()
     }
 
     /**

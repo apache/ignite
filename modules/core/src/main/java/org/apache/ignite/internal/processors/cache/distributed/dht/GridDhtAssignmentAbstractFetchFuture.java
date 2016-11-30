@@ -33,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  */
 public abstract class GridDhtAssignmentAbstractFetchFuture<R> extends GridFutureAdapter<R> {
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -60,7 +59,8 @@ public abstract class GridDhtAssignmentAbstractFetchFuture<R> extends GridFuture
      * @param cacheId
      */
     public GridDhtAssignmentAbstractFetchFuture(GridCacheSharedContext ctx,
-        AffinityTopologyVersion topVer, int cacheId) {
+        AffinityTopologyVersion topVer,
+        int cacheId) {
         this.ctx = ctx;
         this.key = new T2<>(cacheId, topVer);
 

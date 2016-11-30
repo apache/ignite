@@ -35,11 +35,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/**
+ *
+ */
 public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
+    // TODO: remove.
     protected AffinityTopologyVersion topVer;
 
     /** */
@@ -48,6 +52,7 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
 
     /** Affinity assignment. */
     @GridDirectTransient
+    // TODO remove.
     private List<List<List<ClusterNode>>> affAssignments;
 
     /** */

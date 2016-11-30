@@ -35,7 +35,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  *
  */
 public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstractFetchFuture<GridDhtAffinityMultiAssignmentResponse> {
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +43,6 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
 
     /** */
     public static final int NO_CACHE = 0;
-
 
     /** */
     private final List<Integer> cacheIds;
@@ -69,15 +67,6 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
      * @param res Response.
      */
     @Override public void onResponse(UUID nodeId, GridDhtAffinityMultiAssignmentResponse res) {
-
-        if (!res.topologyVersion().equals(key.get2())) {
-            if (log.isDebugEnabled())
-                log.debug("Received affinity assignment for wrong topology version (will ignore) " +
-                    "[node=" + nodeId + ", res=" + res + ", topVer=" + key.get2() + ']');
-
-            return;
-        }
-
         GridDhtAffinityMultiAssignmentResponse res0 = null;
 
         synchronized (this) {
@@ -97,46 +86,48 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
 
         IgniteLogger log0 = log;
 
-            while (!availableNodes.isEmpty()) {
-                ClusterNode node = availableNodes.poll();
+        while (!availableNodes.isEmpty()) {
+            ClusterNode node = availableNodes.poll();
 
-                if (node.isLocal()) {
-                    if (log0.isDebugEnabled())
-                        log0.debug("Now I am coordinator");
-                    pendingNode = null;
-                    break;
-                }
-
-                if (!canUseMultiRequest(node)) {
-                    if (log0.isDebugEnabled())
-                        log0.debug("Node is too old, fallback");
-                    pendingNode = null;
-                    break;
-                }
-
-                try {
-                    if (log0.isDebugEnabled())
-                        log0.debug("Sending affinity fetch request to coordinator node [locNodeId=" + ctx.localNodeId() +
-                            ", node=" + node + ']');
-
-                    ctx.io().send(node, new GridDhtAffinityMultiAssignmentRequest(key.get2(), cacheIds),
-                        AFFINITY_POOL);
-
-                    pendingNode = node;
-
-                    break;
-                }
-                catch (ClusterTopologyCheckedException ignored) {
-                    U.warn(log0, "Failed to request affinity assignment from coordinator node (node left grid, will " +
-                        "try again): " + node);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log0, "Failed to request affinity assignment from coordinator node" + node, e);
-                    break;
-                }
+            if (node.isLocal()) {
+                if (log0.isDebugEnabled())
+                    log0.debug("Now I am coordinator");
+                pendingNode = null;
+                break;
             }
 
-            complete = pendingNode == null;
+            if (!canUseMultiRequest(node)) {
+                if (log0.isDebugEnabled())
+                    log0.debug("Node is too old, fallback");
+                pendingNode = null;
+                break;
+            }
+
+            // TODO: reuse code from existing fetch future.
+
+            try {
+                if (log0.isDebugEnabled())
+                    log0.debug("Sending affinity fetch request to coordinator node [locNodeId=" + ctx.localNodeId() +
+                        ", node=" + node + ']');
+
+                ctx.io().send(node, new GridDhtAffinityMultiAssignmentRequest(key.get2(), cacheIds),
+                    AFFINITY_POOL);
+
+                pendingNode = node;
+
+                break;
+            }
+            catch (ClusterTopologyCheckedException ignored) {
+                U.warn(log0, "Failed to request affinity assignment from coordinator node (node left grid, will " +
+                    "try again): " + node);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log0, "Failed to request affinity assignment from coordinator node" + node, e);
+                break;
+            }
+        }
+
+        complete = pendingNode == null;
 
         // Failed getting affinity from coordinator
         if (complete)
