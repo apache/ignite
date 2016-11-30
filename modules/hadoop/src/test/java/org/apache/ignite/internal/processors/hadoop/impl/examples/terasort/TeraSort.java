@@ -209,7 +209,6 @@ public class TeraSort extends Configured implements Tool {
       try {
         FileSystem fs = FileSystem.getLocal(conf);
         this.conf = conf;
-          // TODO: find more correct fix. Local caching in tests does not work:
         Path partFile = new Path(TeraInputFormat.PARTITION_FILENAME);
         splitPoints = readPartitions(fs, partFile, conf);
         trie = buildTrie(splitPoints, 0, splitPoints.length, new Text(), 2);
