@@ -297,6 +297,11 @@
                                                                                             <xs:documentation>Java field type name.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
+                                                                                    <xs:attribute name="isKeyField" type="xs:boolean">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Indicates whether this field belongs to the cache key.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>
