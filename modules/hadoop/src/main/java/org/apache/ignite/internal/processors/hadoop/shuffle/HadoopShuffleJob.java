@@ -146,17 +146,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         maps = new AtomicReferenceArray<>(totalReducerCnt);
         msgs = new HadoopShuffleMessage[totalReducerCnt];
 
-        String memMgrStr = HadoopJobProperty.get(job.info(), SHUFFLE_MEM_MANAGER, "offheap");
-
         int pageSize = HadoopJobProperty.get(job.info(), SHUFFLE_PAGE_SIZE, 0);
 
         if (pageSize == 0)
             pageSize = HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024);
 
-        if ("onheap".equalsIgnoreCase(memMgrStr))
-            memMgr = new HeapMemoryManager(pageSize);
-        else
-            memMgr = new OffheapMemoryManager(mem, pageSize);
+        String memMgrStr = HadoopJobProperty.get(job.info(), SHUFFLE_MEM_MANAGER, "offheap");
+
+        memMgr = "onheap".equalsIgnoreCase(memMgrStr) ? new HeapMemoryManager(pageSize)
+            : new OffheapMemoryManager(mem, pageSize);
     }
 
     /**

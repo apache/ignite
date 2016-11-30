@@ -64,12 +64,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             @Override public Void call() throws Exception {
                 while (!stopRestartThread.get() && System.currentTimeMillis() < endTime) {
                     log.info("Restart nodes");
-
                     for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
                         stopGrid(i);
-
                     Thread.sleep(500);
-
                     for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
                         startGrid(i);
 

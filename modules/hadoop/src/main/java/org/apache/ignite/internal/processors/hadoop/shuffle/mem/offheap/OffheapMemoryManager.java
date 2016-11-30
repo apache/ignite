@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.Page;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
@@ -35,7 +34,7 @@ public class OffheapMemoryManager extends MemoryManager {
     private final int pageSize;
 
     /** */
-    private final Collection<Page> allPages = new ConcurrentLinkedQueue<>();
+    private final Collection<OffheapPage> allPages = new ConcurrentLinkedQueue<>();
 
     /**
      * @param mem Memory.
@@ -60,8 +59,8 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        for (Page page : allPages)
-            deallocate((OffheapPage)page);
+        for (OffheapPage page : allPages)
+            deallocate(page);
     }
 
     /** {@inheritDoc} */

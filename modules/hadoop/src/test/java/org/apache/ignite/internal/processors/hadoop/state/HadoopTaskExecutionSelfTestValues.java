@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Shared state for HadoopTaskExecutionAbstractSelfTest.
+ * Shared state for HadoopTaskExecutionSelfTest.
  */
 public class HadoopTaskExecutionSelfTestValues {
     /** */

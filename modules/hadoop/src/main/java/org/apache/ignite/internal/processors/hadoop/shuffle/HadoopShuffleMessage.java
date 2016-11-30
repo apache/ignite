@@ -73,6 +73,8 @@ public class HadoopShuffleMessage implements HadoopMessage {
     }
 
     /**
+     * @param jobId Job ID.
+     * @param reducer Reducer.
      * @param size Size.
      */
     public HadoopShuffleMessage(HadoopJobId jobId, int reducer, int size) {

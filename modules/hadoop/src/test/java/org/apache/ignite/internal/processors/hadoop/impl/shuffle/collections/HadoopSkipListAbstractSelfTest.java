@@ -39,12 +39,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridRandom;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 
 import static java.lang.Math.abs;
@@ -96,13 +93,6 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
      * @throws Exception If failed.
      */
     public void testMapSimple() throws Exception {
-//        mem.listen(new GridOffHeapEventListener() {
-//            @Override public void onEvent(GridOffHeapEvent evt) {
-//                if (evt == GridOffHeapEvent.ALLOCATE)
-//                    U.dumpStack();
-//            }
-//        });
-
         Random rnd = new Random();
 
         int mapSize = 16 << rnd.nextInt(6);
@@ -135,10 +125,6 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
 
             a = m.startAdding(taskCtx);
         }
-
-//        a.add(new IntWritable(10), new IntWritable(2));
-//        mm.put(10, 2);
-//        check(m, mm);
 
         a.close();
 
@@ -230,8 +216,6 @@ public abstract class HadoopSkipListAbstractSelfTest extends HadoopAbstractMapTe
                 }
             }
         });
-
-//        X.println("vis: " + vis);
 
         assertEquals(mm, vis);
 

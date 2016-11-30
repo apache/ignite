@@ -23,7 +23,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
-import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionOffheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionOnheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;

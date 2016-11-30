@@ -33,13 +33,16 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHa
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.heap.HeapMemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.COMBINER_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_COMBINER_NO_SORTING;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MEM_MANAGER;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_OFFHEAP_PAGE_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.COMBINE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
@@ -99,8 +102,15 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
         this.mem = mem;
         this.info = info;
 
-        memMgr = new OffheapMemoryManager(mem,
-            HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024));
+        int pageSize = HadoopJobProperty.get(job.info(), SHUFFLE_PAGE_SIZE, 0);
+
+        if (pageSize == 0)
+            pageSize = HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024);
+
+        String memMgrStr = HadoopJobProperty.get(job.info(), SHUFFLE_MEM_MANAGER, "offheap");
+
+        memMgr = "onheap".equalsIgnoreCase(memMgrStr) ? new HeapMemoryManager(pageSize)
+            : new OffheapMemoryManager(mem, pageSize);
     }
 
     /**
