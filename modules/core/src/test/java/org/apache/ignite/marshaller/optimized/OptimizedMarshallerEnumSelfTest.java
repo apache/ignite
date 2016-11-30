@@ -43,7 +43,7 @@ public class OptimizedMarshallerEnumSelfTest extends TestCase {
 
         MarshallerContextTestImpl context = new MarshallerContextTestImpl();
 
-        context.onMarshallerProcessorStarted(newContext());
+        context.onMarshallerProcessorStarted(newContext(), null);
 
         marsh.setContext(context);
 

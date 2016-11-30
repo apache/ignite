@@ -63,7 +63,6 @@ public class CacheClientBinaryPutGetExample {
             System.out.println();
             System.out.println(">>> Binary objects cache put-get example started.");
 
-
             CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>();
 
             cfg.setCacheMode(CacheMode.PARTITIONED);
@@ -83,13 +82,10 @@ public class CacheClientBinaryPutGetExample {
 
                 putGet(cache);
                 putGetBinary(cache);
-                Thread.sleep(500L);
                 putGetAll(cache);
                 putGetAllBinary(cache);
 
                 System.out.println();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             } finally {
                 // Delete cache with its content completely.
                 ignite.destroyCache(CACHE_NAME);

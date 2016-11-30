@@ -28,11 +28,12 @@ class MissingMappingRequestMessage implements DiscoveryCustomMessage {
 
     private final UUID origNodeId;
 
-    private MarshallerMappingItem mappingItem;
+    private final MarshallerMappingItem mappingItem;
 
     private boolean resolved;
 
-    public MissingMappingRequestMessage(UUID origNodeId) {
+    public MissingMappingRequestMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+        this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
     }
 
@@ -62,9 +63,5 @@ class MissingMappingRequestMessage implements DiscoveryCustomMessage {
 
     public MarshallerMappingItem getMappingItem() {
         return mappingItem;
-    }
-
-    public void setMappingItem(MarshallerMappingItem mappingItem) {
-        this.mappingItem = mappingItem;
     }
 }

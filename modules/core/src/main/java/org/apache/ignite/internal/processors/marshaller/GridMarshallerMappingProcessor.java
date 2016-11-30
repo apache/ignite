@@ -28,9 +28,11 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
 
@@ -53,6 +55,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     private final MarshallerContextImpl marshallerContext;
 
+    private ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchangeSyncMap = new ConcurrentHashMap8<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -65,12 +69,14 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     @Override
     public void start() throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
-
-        marshallerContext.onMarshallerProcessorStarted(ctx);
+        MarshallerMappingTransport transport = new MarshallerMappingTransport(discoMgr, mappingExchangeSyncMap);
+        marshallerContext.onMarshallerProcessorStarted(ctx, transport);
 
         discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
 
         discoMgr.setCustomEventListener(MappingAcceptedMessage.class, new MappingAcceptedListener());
+
+        discoMgr.setCustomEventListener(MappingRejectedMessage.class, new MappingRejectedListener());
 
         discoMgr.setCustomEventListener(MissingMappingRequestMessage.class, new MissingMappingRequestListener());
 
@@ -84,8 +90,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             if (!ctx.isStopping())
                 if (!msg.isInConflict()) {
                     MarshallerMappingItem item = msg.getMappingItem();
-                    if (!marshallerContext.onMappingProposed(item))
+                    String conflictingName = marshallerContext.handleProposedMapping(item);
+                    if (conflictingName != null) {
                         msg.setInConflict(true);
+                        msg.setConflictingClassName(conflictingName);
+                    }
                 }
         }
     }
@@ -93,8 +102,17 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     private final class MappingAcceptedListener implements CustomEventListener<MappingAcceptedMessage> {
         @Override
         public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingAcceptedMessage msg) {
-            if (!ctx.isStopping())
-                marshallerContext.onMappingAccepted(msg.getMappingItem());
+            if (!ctx.isStopping()) {
+                MarshallerMappingItem item = msg.getMappingItem();
+                marshallerContext.acceptMapping(item);
+
+                GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
+
+                if (fut != null) {
+                    fut.onDone(new MappingExchangeResult(false, null));
+                    mappingExchangeSyncMap.remove(item, fut);
+                }
+            }
         }
     }
 
@@ -115,6 +133,23 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             UUID locNodeId = ctx.localNodeId();
             if (!ctx.isStopping() && ctx.clientNode() && locNodeId.equals(msg.getOrigNodeId()))
                 marshallerContext.onMissedMappingResolved(msg.getMarshallerMappingItem());
+        }
+    }
+
+    private final class MappingRejectedListener implements CustomEventListener<MappingRejectedMessage> {
+
+        @Override
+        public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingRejectedMessage msg) {
+            UUID origNodeId = msg.origNodeId();
+            UUID locNodeId = ctx.localNodeId();
+
+            if (locNodeId.equals(origNodeId)) {
+                GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.getOrigMappingItem());
+
+                if (fut != null) {
+                    fut.onDone(new MappingExchangeResult(true, msg.getConflictingClassName()));
+                }
+            }
         }
     }
 

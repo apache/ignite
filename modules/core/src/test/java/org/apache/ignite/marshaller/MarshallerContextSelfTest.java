@@ -48,15 +48,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     public void testClassName() throws Exception {
         MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
 
-        marshallerContext.onMarshallerProcessorStarted(ctx);
+        marshallerContext.onMarshallerProcessorStarted(ctx, null);
 
-        MarshallerMappingItem item = new MarshallerMappingItem();
+        MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-        item.setPlatformId(JAVA_ID);
-        item.setTypeId(1);
-        item.setClassName(String.class.getName());
-
-        marshallerContext.onMappingAccepted(item);
+        marshallerContext.acceptMapping(item);
 
         try (Ignite g1 = startGrid(1)) {
             MarshallerContextImpl marshCtx = ((IgniteKernal)g1).context().marshallerContext();
@@ -73,14 +69,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
         MarshallerContextImpl context = new MarshallerContextImpl(null);
 
-        context.onMarshallerProcessorStarted(ctx);
+        context.onMarshallerProcessorStarted(ctx, null);
 
-        MarshallerMappingItem item = new MarshallerMappingItem();
-        item.setTypeId(1);
-        item.setPlatformId(JAVA_ID);
-        item.setClassName(String.class.getName());
+        MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-        context.onMappingAccepted(item);
+        context.acceptMapping(item);
 
         String fileName = "1.classname0";
 

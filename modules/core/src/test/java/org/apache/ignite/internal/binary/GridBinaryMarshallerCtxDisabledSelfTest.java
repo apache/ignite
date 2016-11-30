@@ -17,27 +17,21 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -47,9 +41,10 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testObjectExchange() throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+        BinaryMarshaller marsh = new BinaryMarshaller();
+        marsh.setContext(new MarshallerContextWithNoStorage());
 
-        BinaryMarshaller marsh = createMarshaller(cfg);
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 
@@ -87,35 +82,36 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         assertEquals(simpleExtr, marsh.unmarshal(marsh.marshal(simpleExtr), null));
     }
-
-    private BinaryMarshaller createMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
-        cfg.setClientMode(false);
-        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override
-            public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                // No-op.
-            }
-        });
-
-        GridTestKernalContext ctx = new GridTestKernalContext(log, cfg);
-        ctx.add(new GridDiscoveryManager(ctx));
-
-        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null);
-        marshCtx.onMarshallerProcessorStarted(ctx);
-
-        BinaryMarshaller marsh = new BinaryMarshaller();
-        marsh.setContext(marshCtx);
-
-        return marsh;
-    }
     /**
      * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name of
      * a binary object.
      */
-    private static class MarshallerContextWithNoStorage extends MarshallerContextImpl {
-        /** */
-        public MarshallerContextWithNoStorage() {
-            super(null);
+    private static class MarshallerContextWithNoStorage implements MarshallerContext {
+
+
+        @Override
+        public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+            return false;
+        }
+
+        @Override
+        public boolean registerMappingForPlatform(byte newPlatformId) {
+            return false;
+        }
+
+        @Override
+        public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+            return null;
+        }
+
+        @Override
+        public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+            return null;
+        }
+
+        @Override
+        public boolean isSystemType(String typeName) {
+            return false;
         }
     }
 

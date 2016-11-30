@@ -31,7 +31,13 @@ public final class MarshallerMappingItem implements Serializable {
 
     private int typeId;
 
-    private String className;
+    private String clsName;
+
+    public MarshallerMappingItem(byte platformId, int typeId, String clsName) {
+        this.platformId = platformId;
+        this.typeId = typeId;
+        this.clsName = clsName;
+    }
 
     public void setTypeId(int typeId) {
         this.typeId = typeId;
@@ -49,11 +55,35 @@ public final class MarshallerMappingItem implements Serializable {
         this.platformId = platformId;
     }
 
-    public String getClassName() {
-        return className;
+    public String getClsName() {
+        return clsName;
     }
 
-    public void setClassName(String className) {
-        this.className = className;
+    public void setClsName(String clsName) {
+        this.clsName = clsName;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this)
+            return true;
+
+        if (!(obj instanceof MarshallerMappingItem))
+            return false;
+
+        MarshallerMappingItem that = (MarshallerMappingItem) obj;
+        return platformId == that.platformId && typeId == that.typeId && clsName.equals(that.clsName);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * 31 * ((int) platformId) + 31 * typeId + clsName.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "[platformId=" + platformId
+                + ", typeId=" + typeId
+                + ", clsName=" + clsName + "]";
     }
 }

@@ -3317,7 +3317,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, excludedClasses);
         GridTestKernalContext kernCtx = new GridTestKernalContext(log, iCfg);
         kernCtx.add(new GridDiscoveryManager(kernCtx));
-        marshCtx.onMarshallerProcessorStarted(kernCtx);
+        marshCtx.onMarshallerProcessorStarted(kernCtx, null);
 
         marsh.setContext(marshCtx);
 

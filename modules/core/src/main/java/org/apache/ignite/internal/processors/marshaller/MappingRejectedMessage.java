@@ -14,23 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.marshaller;
 
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-class MappingAcceptedMessage implements DiscoveryCustomMessage {
-
+/**
+ *
+ */
+class MappingRejectedMessage implements DiscoveryCustomMessage {
     private static final long serialVersionUID = 0L;
 
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    private final MarshallerMappingItem item;
+    private final UUID origNodeId;
 
-    public MappingAcceptedMessage(MarshallerMappingItem item) {
-        this.item = item;
+    private final String conflictingClassName;
+
+    private final MarshallerMappingItem origMappingItem;
+
+    public MappingRejectedMessage(MarshallerMappingItem origMappingItem, String conflictingClassName, UUID origNodeId) {
+        this.origMappingItem = origMappingItem;
+        this.conflictingClassName = conflictingClassName;
+        this.origNodeId = origNodeId;
     }
 
     @Override
@@ -49,7 +57,15 @@ class MappingAcceptedMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-    public MarshallerMappingItem getMappingItem() {
-        return item;
+    public MarshallerMappingItem getOrigMappingItem() {
+        return origMappingItem;
+    }
+
+    public String getConflictingClassName() {
+        return conflictingClassName;
+    }
+
+    public UUID origNodeId() {
+        return origNodeId;
     }
 }

@@ -16,34 +16,21 @@
  */
 package org.apache.ignite.internal.processors.marshaller;
 
-import java.util.UUID;
+public class MappingExchangeResult {
+    private boolean inConflict;
 
-public class MissingMappingRequestMessageBuilder {
-    private UUID origNodeId;
-    private MarshallerMappingItem item;
+    private String conflictingClassName;
 
-    public MissingMappingRequestMessageBuilder() {
-        item = new MarshallerMappingItem();
+    MappingExchangeResult(boolean inConflict, String conflictingClassName) {
+        this.inConflict = inConflict;
+        this.conflictingClassName = conflictingClassName;
     }
 
-    public MissingMappingRequestMessageBuilder fromNode(UUID nodeId) {
-        origNodeId = nodeId;
-        return this;
+    public boolean isInConflict() {
+        return inConflict;
     }
 
-    public MissingMappingRequestMessageBuilder forType(int typeId) {
-        item.setTypeId(typeId);
-        return this;
-    }
-
-    public MissingMappingRequestMessageBuilder addPlatform(byte platformId) {
-        item.setPlatformId(platformId);
-        return this;
-    }
-
-    public MissingMappingRequestMessage build() {
-        MissingMappingRequestMessage msg = new MissingMappingRequestMessage(origNodeId);
-        msg.setMappingItem(item);
-        return msg;
+    public String getConflictingClassName() {
+        return conflictingClassName;
     }
 }

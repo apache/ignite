@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,18 +42,6 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
     private GridKernalContext ctx;
 
-    private class GridTestKernalContextV1 extends GridTestKernalContext {
-
-        public GridTestKernalContextV1(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
-            super(log, cfg);
-        }
-
-        @Override
-        public IgniteLogger log(Class<?> cls) {
-            return innerLog;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         innerLog = new InnerLogger();
@@ -60,7 +49,12 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration iCfg = new IgniteConfiguration();
         iCfg.setClientMode(false);
 
-        ctx = new GridTestKernalContextV1(innerLog, iCfg);
+        ctx = new GridTestKernalContext(innerLog, iCfg) {
+            @Override
+            public IgniteLogger log(Class<?> cls) {
+                return innerLog;
+            }
+        };
     }
 
     /**
@@ -109,15 +103,12 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             counter.incrementAndGet();
 
             MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
-            marshallerContext.onMarshallerProcessorStarted(ctx);
+            marshallerContext.onMarshallerProcessorStarted(ctx, null);
 
-            MarshallerMappingItem item = new MarshallerMappingItem();
-            item.setPlatformId(JAVA_ID);
-            item.setTypeId(1);
-            item.setClassName(String.class.getName());
+            MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
             for (int i = 0; i < 100; i++)
-                marshallerContext.onMappingAccepted(item);
+                marshallerContext.acceptMapping(item);
         }
     }
 

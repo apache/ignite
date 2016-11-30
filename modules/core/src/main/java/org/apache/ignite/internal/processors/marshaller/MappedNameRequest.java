@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
  *
  * Upon receiving a response all threads blocked on the instance get unblocked and are provided with mapping from that response.
  */
-public final class MappingRequestFuture implements MappedName {
+public final class MappedNameRequest implements MappedName {
 
     private CountDownLatch latch = new CountDownLatch(1);
 
@@ -41,13 +41,21 @@ public final class MappingRequestFuture implements MappedName {
                 latch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                Thread.currentThread().interrupt();
             }
         return resolutionSuccessful ? mappedName.className() : null;
     }
 
     @Override
     public boolean isAccepted() {
-        throw new UnsupportedOperationException("Operation is not supported by MappingRequestFuture");
+        if (mappedName == null)
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                Thread.currentThread().interrupt();
+            }
+        return resolutionSuccessful ? mappedName.isAccepted() : false;
     }
 
     public void onMappingResolved(MappedName mappedName) {

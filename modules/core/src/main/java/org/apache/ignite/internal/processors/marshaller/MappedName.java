@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.marshaller;
  * It is needed as local cache managed by {@link org.apache.ignite.internal.MarshallerContextImpl} may contain instances of two types:
  * <ul>
  *     <li>Regular {@link MappedNameImpl} with name itself and information whether this name was accepted by other nodes in the grid on not.</li>
- *     <li>{@link MappingRequestFuture} object representing situation when clients requests missing mapping from other nodes of grid (see {@link GridMarshallerMappingProcessor} for more information.)</li>
+ *     <li>{@link MappedNameRequest} object representing situation when clients requests missing mapping from other nodes of grid (see {@link GridMarshallerMappingProcessor} for more information.)</li>
  * </ul>
  */
 public interface MappedName {

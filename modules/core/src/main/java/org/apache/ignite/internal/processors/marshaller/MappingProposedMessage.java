@@ -17,19 +17,29 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 class MappingProposedMessage implements DiscoveryCustomMessage {
 
-    private static final long serialVersionUID = -2816238952447923439L;
+    private static final long serialVersionUID = 0L;
 
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    private MarshallerMappingItem mappingItem;
+    private final UUID origNodeId;
+
+    private final MarshallerMappingItem mappingItem;
 
     private boolean inConflict;
+
+    private String conflictingClassName;
+
+    public MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+        this.mappingItem = mappingItem;
+        this.origNodeId = origNodeId;
+    }
 
     @Override
     public IgniteUuid id() {
@@ -39,18 +49,15 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
     @Nullable
     @Override
     public DiscoveryCustomMessage ackMessage() {
-        if (!inConflict)
+        if (!inConflict) {
             return new MappingAcceptedMessage(mappingItem);
-        else return null;
+        } else
+            return new MappingRejectedMessage(mappingItem, conflictingClassName, origNodeId);
     }
 
     @Override
     public boolean isMutable() {
         return true;
-    }
-
-    void setMappingItem(MarshallerMappingItem mappingItem) {
-        this.mappingItem = mappingItem;
     }
 
     public MarshallerMappingItem getMappingItem() {
@@ -63,5 +70,9 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
 
     public void setInConflict(boolean inConflict) {
         this.inConflict = inConflict;
+    }
+
+    public void setConflictingClassName(String conflictingClassName) {
+        this.conflictingClassName = conflictingClassName;
     }
 }
