@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
-import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -325,6 +324,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public void onPartitionCounterUpdated(int part, long cntr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onPartitionInitialCounterUpdated(int part, long cntr) {
         // No-op.
     }
 
@@ -918,6 +922,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public long initialUpdateCounter() {
             return initCntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateInitialCounter(long cntr) {
+            if (updateCounter() < cntr)
+                updateCounter(cntr);
+
+            initCntr = cntr;
         }
 
         /** {@inheritDoc} */

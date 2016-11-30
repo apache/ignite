@@ -137,6 +137,13 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     public void sync(int cacheId, int partId) throws IgniteCheckedException;
 
     /**
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void ensure(int cacheId, int partId) throws IgniteCheckedException;
+
+    /**
      * Allocates a page for the given page space.
      *
      * @param cacheId Cache ID.

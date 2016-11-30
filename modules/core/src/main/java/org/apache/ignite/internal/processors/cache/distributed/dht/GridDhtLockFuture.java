@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1248,9 +1250,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
                 boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
+                GridCacheAdapter<?, ?> cache0 = cctx.cache();
+
+                if (cache0.isNear())
+                    cache0 = ((GridNearCacheAdapter)cache0).dht();
+
                 for (GridCacheEntryInfo info : res.preloadEntries()) {
                     try {
-                        GridCacheEntryEx entry = cctx.cache().entryEx(info.key(), topVer);
+                        GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 
                         if (entry.initialValue(info.value(),
                             info.version(),

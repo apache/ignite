@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -132,16 +131,16 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                 if (ignite(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(locNode)) {
                     info("Node is reported as affinity node for key [key=" + key + ", nodeId=" + locNode.id() + ']');
 
-                    assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
+                    assertEquals((Integer)i, cache0.localPeek(key));
                 }
                 else {
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
                     if (nearEnabled() && cache == cache0)
-                        assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
+                        assertEquals((Integer)i, cache0.localPeek(key));
                     else
-                        assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
+                        assertNull(cache0.localPeek(key));
                 }
 
                 assertEquals((Integer)i, cache0.get(key));
@@ -159,7 +158,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
+                assertNull(cache0.localPeek(key));
 
                 assertNull(cache0.get(key));
             }
@@ -192,16 +191,16 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                 if (ignite(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
                     info("Node is reported as affinity node for key [key=" + key + ", nodeId=" + locNode.id() + ']');
 
-                    assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
+                    assertEquals((Integer)i, cache0.localPeek(key));
                 }
                 else {
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
                     if (nearEnabled() && cache == cache0)
-                        assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
+                        assertEquals((Integer)i, cache0.localPeek(key));
                     else
-                        assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
+                        assertNull(cache0.localPeek(key));
                 }
 
                 assertEquals((Integer)i, cache0.get(key));
@@ -222,7 +221,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
+                assertNull(cache0.localPeek(key));
                 assertNull(cache0.get(key));
             }
         }
@@ -358,7 +357,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             for (int g = 0; g < gridCount(); g++) {
                 Ignite ignite = grid(g);
 
-                Long val = (Long)ignite.cache(null).localPeek(i, CachePeekMode.ONHEAP);
+                Long val = (Long)ignite.cache(null).localPeek(i);
 
                 if (firstVal == null && val != null)
                     firstVal = val;
@@ -413,7 +412,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             boolean primary = aff.isPrimary(ignite.cluster().localNode(), key);
             boolean backup = aff.isBackup(ignite.cluster().localNode(), key);
 
-            Object val = ignite.cache(null).localPeek(key, CachePeekMode.ONHEAP);
+            Object val = ignite.cache(null).localPeek(key);
 
             log.error("Node value [key=" + key +
                 ", val=" + val +

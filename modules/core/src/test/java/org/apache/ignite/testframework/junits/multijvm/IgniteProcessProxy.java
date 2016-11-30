@@ -125,6 +125,8 @@ public class IgniteProcessProxy implements IgniteEx {
 
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
+        filteredJvmArgs.add("-ea");
+
         Marshaller marsh = cfg.getMarshaller();
 
         if (marsh != null)

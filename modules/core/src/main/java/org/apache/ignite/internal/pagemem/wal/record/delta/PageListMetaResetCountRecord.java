@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.record;
+package org.apache.ignite.internal.pagemem.wal.record.delta;
+
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 
 /**
- * Marker that we start memory recovering
+ * Delta record for page-list meta count reset
  */
-public class MemoryRecoveryRecord extends WALRecord {
-    /** Time. */
-    private long time;
-
-
+public class PageListMetaResetCountRecord extends PageDeltaRecord  {
     /**
-     * Default constructor.
-     * @param time
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      */
-    public MemoryRecoveryRecord(long time) {
-        this.time = time;
+    public PageListMetaResetCountRecord(int cacheId, long pageId) {
+        super(cacheId, pageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
+        PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
+
+        io.resetCount(buf);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.MEMORY_RECOVERY;
-    }
-
-    public long time() {
-        return time;
+        return RecordType.PAGE_LIST_META_RESET_COUNT_RECORD;
     }
 }

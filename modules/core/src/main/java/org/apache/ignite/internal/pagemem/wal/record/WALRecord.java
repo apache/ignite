@@ -151,7 +151,10 @@ public abstract class WALRecord {
         META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX,
 
         /** Partition meta update state. */
-        PART_META_UPDATE_STATE
+        PART_META_UPDATE_STATE,
+
+        /** Page list meta reset count record. */
+        PAGE_LIST_META_RESET_COUNT_RECORD
         ;
 
         /** */

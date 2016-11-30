@@ -675,7 +675,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (locPart != null) {
                         GridDhtPartitionState state = locPart.state();
 
-                        if (state == MOVING) {
+                        if (state == MOVING && cctx.shared().cache().globalState() == CacheState.ACTIVE) {
                             locPart.rent(false);
 
                             updateLocal(p, loc.id(), locPart.state(), updateSeq);
@@ -1594,6 +1594,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @return Checks if any of the local partitions need to be evicted.
      */
     private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
+        if (cctx.shared().cache().globalState() == CacheState.INACTIVE)
+            return false;
+
         boolean changed = false;
 
         UUID locId = cctx.nodeId();
@@ -1835,7 +1838,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     continue;
 
                 Long cntr0 = res.get(part.id());
-                Long cntr1 = part.updateCounter();
+                Long cntr1 = part.initialUpdateCounter();
 
                 if (cntr0 == null || cntr1 > cntr0)
                     res.put(part.id(), cntr1);

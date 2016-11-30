@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
@@ -263,6 +264,9 @@ public abstract class PagesList extends DataStructure {
                     PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
 
                     io.resetCount(buf);
+
+                    if (PageHandler.isWalDeltaRecordNeeded(wal, page))
+                        wal.log(new PageListMetaResetCountRecord(cacheId, nextPageId));
 
                     nextPageId = io.getNextMetaPageId(buf);
                 }

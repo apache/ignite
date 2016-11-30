@@ -1182,9 +1182,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheValidRes = m;
         }
 
-        cctx.exchange().onExchangeDone(this, err);
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
+
+        cctx.exchange().onExchangeDone(this, err);
+
+        if (!F.isEmpty(reqs) && err == null)
+            for (DynamicCacheChangeRequest req : reqs)
+                cctx.cache().completeStartFuture(req);
+
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
@@ -1240,7 +1246,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (validation == null)
                 return null;
 
-            if (!validation.valid)
+            if (!validation.valid && !read)
                 return new IgniteCheckedException("Failed to perform cache operation " +
                     "(cache topology is not valid): " + cctx.name());
 
@@ -1545,8 +1551,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (discoEvt.type() == EVT_NODE_JOINED)
-                assignPartitionsStates();
+            if (discoEvt.type() == EVT_NODE_JOINED) {
+                if (cctx.cache().globalState() == CacheState.ACTIVE)
+                    assignPartitionsStates();
+            }
             else if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert discoEvt instanceof DiscoveryCustomEvent;
 
