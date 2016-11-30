@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'collision'
 -var model = 'backupItem.collision'
@@ -48,15 +48,15 @@ include ../../../../../app/helpers/jade/mixins.jade
                             <li>Custom - custom CollisionSpi implementation</li>\
                             <li>Default - jobs are activated immediately on arrival to mapped node</li>\
                         </ul>')
-                .settings-row(ng-if='#{modelCollisionKind} !== "Noop"')
+                .settings-row(ng-show='#{modelCollisionKind} !== "Noop"')
                     .panel-details
-                        div(ng-if='#{modelCollisionKind} === "JobStealing"')
+                        div(ng-show='#{modelCollisionKind} === "JobStealing"')
                             include ./collision/job-stealing.jade
-                        div(ng-if='#{modelCollisionKind} === "FifoQueue"')
+                        div(ng-show='#{modelCollisionKind} === "FifoQueue"')
                             include ./collision/fifo-queue.jade
-                        div(ng-if='#{modelCollisionKind} === "PriorityQueue"')
+                        div(ng-show='#{modelCollisionKind} === "PriorityQueue"')
                             include ./collision/priority-queue.jade
-                        div(ng-if='#{modelCollisionKind} === "Custom"')
+                        div(ng-show='#{modelCollisionKind} === "Custom"')
                             include ./collision/custom.jade
             .col-sm-6
                 -var model = 'backupItem.collision'
