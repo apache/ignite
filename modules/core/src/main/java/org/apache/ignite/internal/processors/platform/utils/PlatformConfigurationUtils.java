@@ -818,11 +818,14 @@ public class PlatformConfigurationUtils {
         LinkedHashMap<String, String> fields = queryEntity.getFields();
 
         if (fields != null) {
+            Set<String> keyFields = queryEntity.getKeyFields();
+
             writer.writeInt(fields.size());
 
             for (Map.Entry<String, String> field : fields.entrySet()) {
                 writer.writeString(field.getKey());
                 writer.writeString(field.getValue());
+                writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
             }
         }
         else
