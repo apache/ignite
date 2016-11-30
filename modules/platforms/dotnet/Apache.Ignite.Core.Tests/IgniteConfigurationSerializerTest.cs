@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String'>    
                                             <fields>
-                                                <queryField name='length' fieldType='System.Int32' />
+                                                <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
                                             <aliases>
                                                 <queryAlias fullName='somefield.field' alias='shortField' />
@@ -159,6 +159,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(string), queryEntity.ValueType);
             Assert.AreEqual("length", queryEntity.Fields.Single().Name);
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
+            Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
             Assert.AreEqual(QueryIndexType.Geospatial, queryEntity.Indexes.Single().IndexType);
@@ -595,7 +596,7 @@ namespace Apache.Ignite.Core.Tests
                             {
                                 Fields = new[]
                                 {
-                                    new QueryField("field", typeof (int))
+                                    new QueryField("field", typeof (int)) { IsKeyField = true }
                                 },
                                 Indexes = new[]
                                 {
