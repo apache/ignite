@@ -161,22 +161,30 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.length];
 
-        for (int i = 0; i < cols.length; i++) {
-            colNames[i] = cols[i].columnName();
+        int[] colTypes = new int[cols.length];
 
-            if (isKeyColumn(cols[i].columnName(), desc)) {
+        for (int i = 0; i < cols.length; i++) {
+            GridSqlColumn col = cols[i];
+
+            String colName = col.columnName();
+
+            colNames[i] = colName;
+
+            colTypes[i] = col.resultType().type();
+
+            if (isKeyColumn(colName, desc)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (isValColumn(cols[i].columnName(), desc)) {
+            if (isValColumn(colName, desc)) {
                 valColIdx = i;
                 continue;
             }
 
-            GridQueryProperty prop = desc.type().property(cols[i].columnName());
+            GridQueryProperty prop = desc.type().property(colName);
 
-            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
+            assert prop != null : "Property '" + colName + "' not found.";
 
             if (prop.key())
                 hasKeyProps = true;
@@ -188,11 +196,11 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), !isTwoStepSubqry, rowsNum);
+            return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
+                valColIdx, sel.getSQL(), !isTwoStepSubqry, rowsNum);
         else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), !isTwoStepSubqry, rowsNum);
+            return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
+                valColIdx, sel.getSQL(), !isTwoStepSubqry, rowsNum);
     }
 
     /**
@@ -253,8 +261,12 @@ public final class UpdatePlanBuilder {
 
                 String[] colNames = new String[updatedCols.size()];
 
+                int[] colTypes = new int[updatedCols.size()];
+
                 for (int i = 0; i < updatedCols.size(); i++) {
                     colNames[i] = updatedCols.get(i).columnName();
+
+                    colTypes[i] = updatedCols.get(i).resultType().type();
 
                     if (isValColumn(colNames[i], desc))
                         valColIdx = i;
@@ -287,7 +299,7 @@ public final class UpdatePlanBuilder {
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, newValSupplier, valColIdx, sel.getSQL());
+                return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, sel.getSQL());
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);

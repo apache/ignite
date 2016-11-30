@@ -73,6 +73,8 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
+import org.h2.value.DataType;
+import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -487,7 +489,7 @@ public class DmlStatementsProcessor {
                 if (hasNewVal && i == valColIdx - 2)
                     continue;
 
-                newColVals.put(plan.colNames[i], e.get(i + 2));
+                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.tbl.rowDescriptor(), plan.colTypes[i]));
             }
 
             newVal = plan.valSupplier.apply(e);
@@ -572,6 +574,29 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Convert value to column's expected type by means of H2.
+     *
+     * @param val Source value.
+     * @param desc Row descriptor.
+     * @param type Expected column type to convert to.
+     * @return Converted object.
+     * @throws IgniteCheckedException if failed.
+     */
+    private static Object convert(Object val, GridH2RowDescriptor desc, int type) throws IgniteCheckedException {
+        if (val == null)
+            return null;
+
+        int objType = DataType.getTypeFromClass(val.getClass());
+
+        if (objType == type)
+            return val;
+
+        Value h2Val = desc.wrap(val, objType);
+
+        return h2Val.convertTo(type).getObject();
+    }
+
+    /**
      * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
      * processing yielded an exception.
      *
@@ -630,8 +655,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
@@ -643,8 +668,8 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier, plan.valSupplier,
-                    plan.keyColIdx, plan.valColIdx, desc.type());
+                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier, plan.valSupplier,
+                    plan.keyColIdx, plan.valColIdx, desc);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -676,8 +701,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes,
+                plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -702,8 +727,8 @@ public class DmlStatementsProcessor {
             while (it.hasNext()) {
                 List<?> row = it.next();
 
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier,
-                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
@@ -769,22 +794,21 @@ public class DmlStatementsProcessor {
 
     /**
      * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
-     *
-     * @param cctx Cache context.
+     *  @param cctx Cache context.
      * @param row Row to process.
      * @param cols Query cols.
+     * @param colTypes
      * @param keySupplier Key instantiation method.
      * @param valSupplier Key instantiation method.
      * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
      * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param desc Table descriptor.
-     * @return Key-value pair.
+     * @param rowDesc
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
-        KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
-        GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+        int[] colTypes, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
+        GridH2RowDescriptor rowDesc) throws IgniteCheckedException {
         Object key = keySupplier.apply(F.asList(row));
         Object val = valSupplier.apply(F.asList(row));
 
@@ -794,11 +818,13 @@ public class DmlStatementsProcessor {
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
+        GridQueryTypeDescriptor desc = rowDesc.type();
+
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
-            desc.setValue(cols[i], key, val, row[i]);
+            desc.setValue(cols[i], key, val, convert(row[i], rowDesc, colTypes[i]));
         }
 
         if (cctx.binaryMarshaller()) {
