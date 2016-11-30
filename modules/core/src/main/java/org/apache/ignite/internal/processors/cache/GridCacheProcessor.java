@@ -4042,7 +4042,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private volatile boolean changeStateInProgress;
 
         /** Cache ready future. */
-        private GridFutureAdapter<?> concurrentActFut;
+        private volatile GridFutureAdapter<?> concurrentActFut;
 
         /** Action future. */
         private volatile GridActivateFuture actFut;
@@ -4100,10 +4100,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          *
          */
         private CacheState globalState(){
-            if (changeStateInProgress || concurrentActFut != null && !concurrentActFut.isDone())
+            if (changeStateInProgress || (concurrentActFut != null && !concurrentActFut.isDone()))
                 return INACTIVE;
 
             return globalState;
+        }
+
+        /**
+         * @param reqs Reqs.
+         */
+        private boolean isActivationRequest(Collection<DynamicCacheChangeRequest> reqs) {
+            return needChangeGlobalState(reqs, ACTIVE);
+        }
+
+        /**
+         * @param reqs Reqs.
+         */
+        private boolean isDeActivationRequest(Collection<DynamicCacheChangeRequest> reqs) {
+            return needChangeGlobalState(reqs, INACTIVE);
+        }
+
+        /**
+         * @param reqs Reqs.
+         * @param state State.
+         */
+        private boolean needChangeGlobalState(Collection<DynamicCacheChangeRequest> reqs,CacheState state) {
+            DynamicCacheChangeRequest req = request(reqs);
+
+            return req != null && req.globalStateActivate() && this.globalState == state;
         }
 
         /**
@@ -4313,12 +4337,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (isServerNode)
                     sharedCtx.database().lock();
 
-                sharedCtx.wal().onActivate();
+                sharedCtx.wal().onActivate(ctx);
 
-                sharedCtx.database().onActivate();
+                sharedCtx.database().onActivate(ctx);
 
                 if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onActivate();
+                    sharedCtx.pageStore().onActivate(ctx);
 
                 ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
@@ -4351,9 +4375,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         glStLock.lock();
 
                         try {
-                            ctx.service().onActivate();
+                            ctx.service().onActivate(ctx);
 
-                            ctx.dataStructures().onActivate();
+                            ctx.dataStructures().onActivate(ctx);
 
                             if (isServerNode)
                                 sharedCtx.database().afterActivate();
@@ -4452,16 +4476,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     glStLock.lock();
 
                     try {
-                        ctx.dataStructures().onDeActivate();
+                        ctx.dataStructures().onDeActivate(ctx);
 
-                        ctx.service().onDeActivate();
+                        ctx.service().onDeActivate(ctx);
 
-                        sharedCtx.database().onDeActivate();
+                        sharedCtx.database().onDeActivate(ctx);
 
                         if (sharedCtx.pageStore() != null)
-                            sharedCtx.pageStore().onDeActivate();
+                            sharedCtx.pageStore().onDeActivate(ctx);
 
-                        sharedCtx.wal().onDeActivate();
+                        sharedCtx.wal().onDeActivate(ctx);
                     }
                     catch (IgniteCheckedException e) {
                         U.log(log, e);
@@ -4627,17 +4651,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (fut != null && !fut.isDone() && requestId.equals(fut.requestId)) {
                 if (ctx.localNodeId().equals(msg.getNodeId())) {
-                    fut.onResponse(msg);
-
                     fut.initFut.onDone();
+
+                    fut.onResponse(msg);
                 }
-                else
+                else {
                     fut.initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> f) {
                             fut.onResponse(msg);
                         }
                     });
-
+                }
             }
         }
 

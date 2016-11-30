@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -257,12 +258,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate() throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
 
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate() throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
 
     }
 }

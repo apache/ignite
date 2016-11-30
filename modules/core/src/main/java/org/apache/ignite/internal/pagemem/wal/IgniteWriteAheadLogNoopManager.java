@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 
@@ -58,12 +59,12 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate() {
+    @Override public void onActivate(GridKernalContext kctx) {
 
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate() {
+    @Override public void onDeActivate(GridKernalContext kctx) {
 
     }
 }

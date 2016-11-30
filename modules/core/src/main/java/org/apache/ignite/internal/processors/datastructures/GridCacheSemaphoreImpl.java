@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteActivationSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
@@ -58,7 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * acquired by the failing node. In case this parameter is false, IgniteInterruptedException is called on every node
  * waiting on this semaphore.
  */
-public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Externalizable {
+public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, IgniteActivationSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -907,6 +908,17 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.semView = kctx.cache().atomicsCache();
+        this.ctx = semView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 
     /** {@inheritDoc} */

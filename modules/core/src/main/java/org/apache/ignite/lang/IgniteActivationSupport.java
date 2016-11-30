@@ -18,6 +18,7 @@
 package org.apache.ignite.lang;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
  *
@@ -26,10 +27,10 @@ public interface IgniteActivationSupport {
     /**
      *
      */
-    public void onActivate() throws IgniteCheckedException;
+    public void onActivate(GridKernalContext kctx) throws IgniteCheckedException;
 
     /**
      *
      */
-    public void onDeActivate() throws IgniteCheckedException;
+    public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException;
 }

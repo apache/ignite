@@ -563,12 +563,13 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate() throws IgniteCheckedException {
-        atomicView = ctx.kernalContext().cache().atomicsCache();
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.atomicView = kctx.cache().atomicsCache();
+        this.ctx = atomicView.context();
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate() throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
 
     }
 

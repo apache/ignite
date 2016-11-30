@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteActivationSupport;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache reentrant lock implementation based on AbstractQueuedSynchronizer.
  */
-public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable {
+public final class GridCacheLockImpl implements GridCacheLockEx, IgniteActivationSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -88,7 +90,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView;
 
     /** Cache context. */
-    private final GridCacheContext ctx;
+    private GridCacheContext ctx;
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -1473,6 +1475,17 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
     /** {@inheritDoc} */
     @Override public void needCheckNotRemoved() {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.lockView = kctx.cache().atomicsCache();
+        this.ctx = lockView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
 
     }
 

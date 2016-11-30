@@ -300,7 +300,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate() throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext ctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Activate data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
@@ -315,12 +315,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             GridCacheRemovable v = e.getValue();
 
             if (v instanceof IgniteActivationSupport)
-                ((IgniteActivationSupport)v).onActivate();
+                ((IgniteActivationSupport)v).onActivate(ctx);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate() throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext ctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("DeActivate data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
@@ -337,7 +337,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             GridCacheRemovable v = e.getValue();
 
             if (v instanceof IgniteActivationSupport)
-                ((IgniteActivationSupport)v).onDeActivate();
+                ((IgniteActivationSupport)v).onDeActivate(ctx);
         }
     }
 
