@@ -1561,9 +1561,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
+                    K key0 = null;
+                    V val0 = null;
+
                     if (readEvt) {
-                        K key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
-                        V val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
+                        key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
 
                         switch (type) {
                             case SQL:
@@ -1632,8 +1635,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (rdc != null || trans != null) {
-                        Cache.Entry<K, V> entry = new CacheEntryImpl(cctx.unwrapBinaryIfNeeded(key, qry.keepBinary()),
-                            cctx.unwrapBinaryIfNeeded(val, qry.keepBinary()));
+                        if (key0 == null)
+                            key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        if (val0 == null)
+                            val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
+
+                        Cache.Entry<K, V> entry = new CacheEntryImpl(key0, val0);
 
                         // Reduce.
                         if (rdc != null) {
