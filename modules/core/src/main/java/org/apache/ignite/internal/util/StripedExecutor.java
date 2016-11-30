@@ -51,7 +51,7 @@ public class StripedExecutor implements ExecutorService {
      *
      * @param cnt Count.
      */
-    public StripedExecutor(int cnt, String gridName, String poolName, IgniteLogger log) {
+    public StripedExecutor(int cnt, String gridName, String poolName, final IgniteLogger log) {
         boolean success = false;
 
         stripes = new Stripe[cnt];
@@ -72,16 +72,30 @@ public class StripedExecutor implements ExecutorService {
                 @Override public void run() {
                     for (; !isShutdown();) {
                         try {
-                            Thread.sleep(10000);
+                            Thread.sleep(10_000);
                         }
                         catch (InterruptedException e) {
                             return;
                         }
 
                         for (Stripe stripe : stripes) {
-                            if (stripe.queueSize() > 0)
-                                System.out.println(">>> Possible starvation in striped pool: " +
-                                    stripe.thread.getName() + " - " + stripe.queueToString());
+                            if (stripe.queueSize() > 0) {
+                                boolean deadlockPresent = U.deadlockPresent();
+
+                                GridStringBuilder sb = new GridStringBuilder();
+
+                                sb.a(">>> Possible starvation in striped pool: ")
+                                    .a(stripe.thread.getName()).a(U.nl())
+                                    .a(stripe.queueToString()).a(U.nl())
+                                    .a("deadlock: ").a(deadlockPresent).a(U.nl());
+
+                                U.printStackTrace(stripe.thread.getId(), sb);
+
+                                String msg = sb.toString();
+
+                                U.warn(log, msg);
+                                U.warn(null, msg);
+                            }
                         }
                     }
                 }
