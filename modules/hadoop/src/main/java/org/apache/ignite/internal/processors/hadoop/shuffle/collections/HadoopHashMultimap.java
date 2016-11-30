@@ -139,9 +139,7 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
             int keyHash = U.hash(key.hashCode());
 
             // Write value.
-            System.out.println(">W val");
             long valPtr = write(12, val, valSer);
-            System.out.println("<W val");
             int valSize = writtenSize() - 12;
 
             mem.valueSize(valPtr, valSize);
@@ -165,9 +163,7 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
             }
 
             // Write key.
-            System.out.println(">W key");
             long keyPtr = write(0, key, keySer);
-            System.out.println("<W key");
             int keySize = writtenSize();
 
             mem.nextValue(valPtr, 0);

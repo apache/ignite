@@ -180,6 +180,7 @@ public class HadoopShuffleMessage implements HadoopMessage {
 
     /**
      * @param v Visitor.
+     * @throws IgniteCheckedException If failed.
      */
     public void visit(Visitor v) throws IgniteCheckedException {
         for (int i = 0; i < off;) {

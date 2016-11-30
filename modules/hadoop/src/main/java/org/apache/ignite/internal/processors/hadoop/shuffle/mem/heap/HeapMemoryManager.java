@@ -85,7 +85,8 @@ public class HeapMemoryManager extends MemoryManager {
         HeapPage src = ptrToPage(srcPtr);
         HeapPage dst = ptrToPage(dstPtr);
 
-        GridUnsafe.copyMemory(src.buf(), (int)srcPtr, dst.buf(), (int)dstPtr, len);
+        GridUnsafe.copyMemory(src.buf(), GridUnsafe.BYTE_ARR_OFF + dstPtr & 0xffffffffL,
+            dst.buf(), GridUnsafe.BYTE_ARR_OFF + dstPtr & 0xffffffffL, len);
     }
 
     /** {@inheritDoc} */
@@ -93,14 +94,14 @@ public class HeapMemoryManager extends MemoryManager {
         HeapPage dst = ptrToPage(dstPtr);
 
         GridUnsafe.copyMemory(srcBuf, GridUnsafe.BYTE_ARR_OFF + srcOff,
-            dst.buf(), dstPtr & 0xffffffffL, len);
+            dst.buf(), GridUnsafe.BYTE_ARR_OFF + dstPtr & 0xffffffffL, len);
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(long srcPtr, byte[] dstBuf, int dstOff, long len) {
         HeapPage src = ptrToPage(srcPtr);
 
-        GridUnsafe.copyMemory(src.buf(), srcPtr & 0xffffffffL,
+        GridUnsafe.copyMemory(src.buf(), GridUnsafe.BYTE_ARR_OFF + srcPtr & 0xffffffffL,
             dstBuf, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
     }
 
