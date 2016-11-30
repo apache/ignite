@@ -57,10 +57,12 @@ public enum HadoopJobProperty {
     JOB_STATUS_POLL_DELAY,
 
     /**
+     * Please use SHUFFLE_PAGE_SIZE.
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
      * By default is {@code 32 * 1024}.
      */
+    @Deprecated
     SHUFFLE_OFFHEAP_PAGE_SIZE,
 
     /**
@@ -89,7 +91,15 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code offheap}.
      */
-    SHUFFLE_MEM_MANAGER;
+    SHUFFLE_MEM_MANAGER,
+
+    /**
+     * Size in bytes of single memory page which will be allocated for data structures in shuffle.
+     * <p>
+     * By default is {@code 32 * 1024}.
+     */
+    SHUFFLE_PAGE_SIZE;
+
 
     /** */
     private final String ptyName;
