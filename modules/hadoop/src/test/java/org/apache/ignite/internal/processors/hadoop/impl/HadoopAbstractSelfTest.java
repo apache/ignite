@@ -130,6 +130,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         if (restEnabled()) {
             ConnectorConfiguration clnCfg = new ConnectorConfiguration();
 
+            clnCfg.setHost("127.0.0.1");
+
             clnCfg.setPort(restPort++);
 
             cfg.setConnectorConfiguration(clnCfg);

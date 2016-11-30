@@ -260,6 +260,8 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        getFileSystem().delete(new Path(getFsBase()), true);
+
         startGrids(gridCount());
     }
 
