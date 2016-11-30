@@ -413,6 +413,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the modification query.
+        /// </summary>
+        [Test]
+        public void TestSqlDmlQUery()
+        {
+            // TODO:
+        }
+
+        /// <summary>
         /// Check text query.
         /// </summary>
         [Test]
