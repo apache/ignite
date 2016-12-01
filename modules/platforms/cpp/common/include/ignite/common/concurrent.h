@@ -19,6 +19,7 @@
 #define _IGNITE_COMMON_CONCURRENT
 
 #include <cassert>
+#include <utility>
 
 #include "ignite/common/concurrent_os.h"
 
@@ -205,17 +206,15 @@ namespace ignite
                 {
                     if (this != &other)
                     {
-                        ptr = other.ptr;
-                        impl = other.impl;
+                        SharedPointer tmp(other);
 
-                        if (impl)
-                            impl->Increment();
+                        Swap(tmp);
                     }
 
                     return *this;
                 }
 
-                /**
+                /** 
                  * Assignment operator.
                  *
                  * @param other Other instance.
@@ -223,11 +222,12 @@ namespace ignite
                 template<typename T2>
                 SharedPointer& operator=(const SharedPointer<T2>& other)
                 {
-                    ptr = other.ptr;
-                    impl = other.impl;
+                    if (this != &other)
+                    {
+                        SharedPointer<T> tmp(other);
 
-                    if (impl)
-                        impl->Increment();
+                        Swap(tmp);
+                    }
 
                     return *this;
                 }
@@ -285,6 +285,26 @@ namespace ignite
                 bool IsValid() const
                 {
                     return impl != 0;
+                }
+
+                /**
+                 * Swap pointer content with another instance.
+                 *
+                 * @param other Other instance.
+                 */
+                void Swap(SharedPointer& other)
+                {
+                    if (this != &other)
+                    {
+                        T* ptrTmp = ptr;
+                        SharedPointerImpl* implTmp = impl;
+
+                        ptr = other.ptr;
+                        impl = other.impl;
+
+                        other.ptr = ptrTmp;
+                        other.impl = implTmp;
+                    }
                 }
 
             private:

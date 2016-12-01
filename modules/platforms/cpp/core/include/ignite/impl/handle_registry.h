@@ -28,18 +28,6 @@ namespace ignite
     namespace impl
     {
         /**
-         * Something what can be registered inside handle registry.
-         */
-        class IGNITE_IMPORT_EXPORT HandleRegistryEntry
-        {
-        public:
-            /**
-             * Destructor.
-             */
-            virtual ~HandleRegistryEntry();
-        };
-
-        /**
          * Handle registry segment containing thread-specific data for slow-path access.
          */
         class HandleRegistrySegment
@@ -61,7 +49,7 @@ namespace ignite
              * @param hnd Handle.
              * @return Associated entry or NULL if it doesn't exists.
              */
-            common::concurrent::SharedPointer<HandleRegistryEntry> Get(int64_t hnd);
+            common::concurrent::SharedPointer<void> Get(int64_t hnd);
 
             /**
              * Put entry into segment.
@@ -69,7 +57,7 @@ namespace ignite
              * @param hnd Handle.
              * @param entry Associated entry (cannot be NULL).
              */
-            void Put(int64_t hnd, const common::concurrent::SharedPointer<HandleRegistryEntry>& entry);
+            void Put(int64_t hnd, const common::concurrent::SharedPointer<void>& entry);
 
             /**
              * Remove entry from the segment.
@@ -84,7 +72,7 @@ namespace ignite
             void Clear();
         private:
             /** Map with data. */
-            std::map<int64_t, common::concurrent::SharedPointer<HandleRegistryEntry>> map;
+            std::map<int64_t, common::concurrent::SharedPointer<void>> map;
 
             /** Mutex. */
             common::concurrent::CriticalSection mux;
@@ -117,7 +105,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t Allocate(const common::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t Allocate(const common::concurrent::SharedPointer<void>& target);
 
             /**
              * Allocate handle in critical mode.
@@ -125,7 +113,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t AllocateCritical(const common::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t AllocateCritical(const common::concurrent::SharedPointer<void>& target);
 
             /**
              * Allocate handle in safe mode.
@@ -133,7 +121,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t AllocateSafe(const common::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t AllocateSafe(const common::concurrent::SharedPointer<void>& target);
 
             /**
              * Allocate handle in critical and safe modes.
@@ -141,7 +129,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t AllocateCriticalSafe(const common::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t AllocateCriticalSafe(const common::concurrent::SharedPointer<void>& target);
 
             /**
              * Release handle.
@@ -156,12 +144,13 @@ namespace ignite
              * @param hnd Handle.
              * @return Target.
              */
-            common::concurrent::SharedPointer<HandleRegistryEntry> Get(int64_t hnd);
+            common::concurrent::SharedPointer<void> Get(int64_t hnd);
 
             /**
              * Close the registry.
              */
             void Close();
+
         private:
             /** Fast-path container capacity. */
             int32_t fastCap;
@@ -170,7 +159,7 @@ namespace ignite
             int32_t fastCtr;
 
             /** Fast-path container. */
-            common::concurrent::SharedPointer<HandleRegistryEntry>* fast;
+            common::concurrent::SharedPointer<void>* fast;
 
             /** Amount of slow-path segments. */
             int32_t slowSegmentCnt;
@@ -193,8 +182,7 @@ namespace ignite
              * @param critical mode flag.
              * @param safe mode flag.
              */
-            int64_t Allocate0(const common::concurrent::SharedPointer<HandleRegistryEntry>& target,
-                bool critical, bool safe);
+            int64_t Allocate0(const common::concurrent::SharedPointer<void>& target, bool critical, bool safe);
         };
     }
 }
