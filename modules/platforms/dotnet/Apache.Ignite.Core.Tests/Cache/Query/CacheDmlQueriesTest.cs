@@ -80,6 +80,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(3, foos[1].Key);
             Assert.AreEqual(4, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
+
+            // Test key existence.
+            Assert.IsTrue(cache.ContainsKey(1));
+            Assert.IsTrue(cache.ContainsKey(3));
         }
 
         /// <summary>
@@ -111,6 +115,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(5, foos[1].Key.Hi);
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
+
+            // Test key existence
+            // TODO:
         }
 
         /// <summary>
@@ -179,10 +186,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Key.
         /// </summary>
-        private class Key
+        private struct Key
         {
-            [QuerySqlField] public int Lo { get; set; }
-            [QuerySqlField] public int Hi { get; set; }
+            public Key(int lo, int hi) : this()
+            {
+                Lo = lo;
+                Hi = hi;
+            }
+
+            [QuerySqlField] public int Lo { get; private set; }
+            [QuerySqlField] public int Hi { get; private set; }
+
+            private bool Equals(Key other)
+            {
+                return Lo == other.Lo && Hi == other.Hi;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is Key && Equals((Key) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (Lo*397) ^ Hi;
+                }
+            }
         }
 
         /// <summary>
