@@ -18,12 +18,17 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingSingleTypeTest;
+import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsDistributedSelfTest;
+import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryNewClientSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryOffheapEvictDataLostTest;
+import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMetricsDistributedSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
@@ -93,6 +98,13 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(CachePartitionedQueryMetricsLocalSelfTest.class);
         suite.addTestSuite(CacheReplicatedQueryMetricsDistributedSelfTest.class);
         suite.addTestSuite(CacheReplicatedQueryMetricsLocalSelfTest.class);
+
+        // Cache query metrics.
+        suite.addTestSuite(CacheLocalQueryDetailMetricsSelfTest.class);
+        suite.addTestSuite(CachePartitionedQueryDetailMetricsDistributedSelfTest.class);
+        suite.addTestSuite(CachePartitionedQueryDetailMetricsLocalSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryDetailMetricsDistributedSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryDetailMetricsLocalSelfTest.class);
 
         // Unmarshalling query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);

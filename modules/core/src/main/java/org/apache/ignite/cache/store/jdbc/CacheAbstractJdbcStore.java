@@ -1982,7 +1982,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 Map<String, Integer> colIdxs = U.newHashMap(meta.getColumnCount());
 
                 for (int i = 1; i <= meta.getColumnCount(); i++)
-                    colIdxs.put(meta.getColumnLabel(i), i);
+                    colIdxs.put(meta.getColumnLabel(i).toUpperCase(), i);
 
                 while (rs.next()) {
                     K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.keyCols, colIdxs, rs);
