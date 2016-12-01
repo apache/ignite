@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -111,6 +112,12 @@ namespace Apache.Ignite.Core.Binary
         /// Gets or sets a value indicating whether this instance describes an enum type.
         /// </summary>
         public bool IsEnum { get; set; }
+
+        /// <summary>
+        /// Gets or sets the equality comparer to compute hash codes and compare objects
+        /// in <see cref="IBinaryObject"/> form.
+        /// </summary>
+        public IEqualityComparer<IBinaryObject> EqualityComparer { get; set; }
 
         /// <summary>
         /// Returns a string that represents the current object.
