@@ -90,13 +90,13 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String gridName, String id8) {
         assert impl != null;
-        if (testSensitive)
-            logSensitive("Test sensitive mode is enabled");
 
         this.impl = impl;
         this.ctgr = ctgr;
         this.gridName = gridName;
         this.id8 = id8;
+        if (testSensitive)
+            logSensitive("Test sensitive mode is enabled");
     }
 
     /** {@inheritDoc} */
