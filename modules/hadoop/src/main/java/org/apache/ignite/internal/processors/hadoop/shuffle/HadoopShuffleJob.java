@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -56,10 +57,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.zip.GZIPInputStream;
 
@@ -171,6 +176,12 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** Whether remote data should be compressed w/ GZIP. */
     private final boolean stripedGzip;
+
+    /** Map with per-node shuffle states. */
+    private volatile HashMap<UUID, ShuffleState> shuffleStates;
+
+    /** Mutex for internal synchronization. */
+    private final Object mux = new Object();
 
     /**
      * @param locReduceAddr Local reducer address.
@@ -345,10 +356,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * Process shuffle message.
+     *
+     * @param nodeId Source Node ID.
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(HadoopShuffleMessage2 msg) throws IgniteCheckedException {
+    public void onShuffleMessage(UUID nodeId, HadoopShuffleMessage2 msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
 
         byte[] buf = msg.buffer();
@@ -397,6 +411,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 adder.write(key, val);
             }
         }
+
+        if (shuffleState(nodeId).onShuffleMessage())
+            sendFinishResponse(nodeId, msg.jobId());
     }
 
     /**
@@ -426,10 +443,88 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * Process shuffle finish request.
+     *
+     * @param nodeId Source node ID.
      * @param msg Shuffle finish message.
      */
-    public void onShuffleFinish(HadoopShuffleFinishMessage msg) {
-        // TODO
+    public void onShuffleFinishRequest(UUID nodeId, HadoopShuffleFinishRequest msg) {
+        ShuffleState state = shuffleState(nodeId);
+
+        if (state.onShuffleFinishMessage(msg.messageCount()))
+            sendFinishResponse(nodeId, msg.jobId());
+    }
+
+    /**
+     * Process shuffle finish response.
+     *
+     * @param nodeId Source node ID.
+     * @param msg Shuffle finish message.
+     */
+    public void onShuffleFinishResponse(UUID nodeId, HadoopShuffleFinishResponse msg) {
+        // TODO.
+    }
+
+    /**
+     * Send finish response.
+     *
+     * @param nodeId Node ID.
+     * @param jobId Job ID.
+     */
+    @SuppressWarnings("unchecked")
+    private void sendFinishResponse(UUID nodeId, HadoopJobId jobId) {
+        HadoopShuffleFinishResponse msg = new HadoopShuffleFinishResponse(jobId);
+
+        io.apply((T)nodeId, msg);
+    }
+
+    /**
+     * Get shuffle state for node.
+     *
+     * @param nodeId Node ID.
+     * @return Shuffle state for node.
+     */
+    private ShuffleState shuffleState(UUID nodeId) {
+        HashMap<UUID, ShuffleState> shuffleStates0 = shuffleStates;
+
+        if (shuffleStates0 == null) {
+            synchronized (mux) {
+                shuffleStates0 = shuffleStates;
+
+                if (shuffleStates0 == null) {
+                    // Create new map.
+                    ShuffleState res = new ShuffleState();
+
+                    shuffleStates0 = new HashMap<>();
+
+                    shuffleStates0.put(nodeId, res);
+
+                    shuffleStates = shuffleStates0;
+
+                    return res;
+                }
+            }
+        }
+
+        ShuffleState res = shuffleStates0.get(nodeId);
+
+        if (res == null) {
+            synchronized (mux) {
+                res = shuffleStates.get(nodeId);
+
+                if (res == null) {
+                    res = new ShuffleState();
+
+                    shuffleStates0 = new HashMap<>(shuffleStates);
+
+                    shuffleStates0.put(nodeId, res);
+
+                    shuffleStates = shuffleStates0;
+                }
+            }
+        }
+
+        return res;
     }
 
     /**
@@ -977,6 +1072,52 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 if (adder != null)
                     adder.close();
             }
+        }
+    }
+
+    /**
+     * Encapsulated shuffle state.
+     */
+    private static class ShuffleState {
+        /** Message counter. */
+        private final AtomicLong msgCnt = new AtomicLong();
+
+        /** Reply guard. */
+        private final AtomicBoolean replyGuard = new AtomicBoolean();
+
+        /** Total message count.*/
+        private volatile long totalMsgCnt;
+
+        /**
+         * Callback invoked when shuffle message arrived.
+         *
+         * @return Whether to perform reply.
+         */
+        public boolean onShuffleMessage() {
+            long msgCnt0 = msgCnt.incrementAndGet();
+
+            return msgCnt0 == totalMsgCnt && reserve();
+        }
+
+        /**
+         * Callback invoked when shuffle is finished.
+         *
+         * @param totalMsgCnt Message count.
+         * @return Whether to perform reply.
+         */
+        public boolean onShuffleFinishMessage(long totalMsgCnt) {
+            this.totalMsgCnt = totalMsgCnt;
+
+            return msgCnt.get() == totalMsgCnt && reserve();
+        }
+
+        /**
+         * Reserve reply.
+         *
+         * @return {@code True} if reserved.
+         */
+        private boolean reserve() {
+            return replyGuard.compareAndSet(false, true);
         }
     }
 }

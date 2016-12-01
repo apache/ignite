@@ -208,18 +208,10 @@ public class HadoopShuffle extends HadoopComponent {
             HadoopShuffleMessage2 m = (HadoopShuffleMessage2)msg;
 
             try {
-                job(m.jobId()).onShuffleMessage(m);
+                job(m.jobId()).onShuffleMessage(src, m);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);
-            }
-
-            try {
-                // Reply with ack.
-                send0(src, new HadoopShuffleAck2(m.id(), m.jobId()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to reply back to shuffle message sender [snd=" + src + ", msg=" + msg + ']', e);
             }
         }
         else if (msg instanceof HadoopShuffleAck) {
@@ -242,11 +234,21 @@ public class HadoopShuffle extends HadoopComponent {
                 U.error(log, "Message handling failed.", e);
             }
         }
-        else if (msg instanceof HadoopShuffleFinishMessage) {
-            HadoopShuffleFinishMessage m = (HadoopShuffleFinishMessage)msg;
+        else if (msg instanceof HadoopShuffleFinishRequest) {
+            HadoopShuffleFinishRequest m = (HadoopShuffleFinishRequest)msg;
 
             try {
-                job(m.jobId()).onShuffleFinish(m);
+                job(m.jobId()).onShuffleFinishRequest(src, m);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Message handling failed.", e);
+            }
+        }
+        else if (msg instanceof HadoopShuffleFinishResponse) {
+            HadoopShuffleFinishResponse m = (HadoopShuffleFinishResponse)msg;
+
+            try {
+                job(m.jobId()).onShuffleFinishResponse(src, m);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);

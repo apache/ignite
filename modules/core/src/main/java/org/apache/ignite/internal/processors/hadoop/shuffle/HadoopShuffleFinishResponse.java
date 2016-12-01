@@ -31,9 +31,9 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 
 /**
- * Shuffle finish message.
+ * Shuffle finish response.
  */
-public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
+public class HadoopShuffleFinishResponse implements Message, HadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,25 +41,20 @@ public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
     @GridToStringInclude
     private HadoopJobId jobId;
 
-    /** Total message count. */
-    private long msgCnt;
-
     /**
      * Default constructor.
      */
-    public HadoopShuffleFinishMessage() {
+    public HadoopShuffleFinishResponse() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param jobId Job
-     * @param msgCnt Message count.
+     * @param jobId Job.
      */
-    public HadoopShuffleFinishMessage(HadoopJobId jobId, int msgCnt) {
+    public HadoopShuffleFinishResponse(HadoopJobId jobId) {
         this.jobId = jobId;
-        this.msgCnt = msgCnt;
     }
 
     /**
@@ -67,13 +62,6 @@ public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
      */
     public HadoopJobId jobId() {
         return jobId;
-    }
-
-    /**
-     * @return Message count.
-     */
-    public long messageCount() {
-        return msgCnt;
     }
 
     /** {@inheritDoc} */
@@ -90,12 +78,6 @@ public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeMessage("jobId", jobId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("msgCnt", msgCnt))
                     return false;
 
                 writer.incrementState();
@@ -121,27 +103,19 @@ public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
 
                 reader.incrementState();
 
-            case 1:
-                msgCnt = reader.readLong("msgCnt");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
-        return reader.afterMessageRead(HadoopShuffleFinishMessage.class);
+        return reader.afterMessageRead(HadoopShuffleFinishResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -33;
+        return -34;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -152,8 +126,6 @@ public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         jobId.writeExternal(out);
-
-        out.writeLong(msgCnt);
     }
 
     /** {@inheritDoc} */
@@ -161,12 +133,10 @@ public class HadoopShuffleFinishMessage implements Message, HadoopMessage {
         jobId = new HadoopJobId();
 
         jobId.readExternal(in);
-
-        msgCnt = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HadoopShuffleFinishMessage.class, this);
+        return S.toString(HadoopShuffleFinishResponse.class, this);
     }
 }
