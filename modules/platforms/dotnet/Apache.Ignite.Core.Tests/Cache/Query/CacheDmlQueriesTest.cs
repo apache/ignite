@@ -31,8 +31,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            //Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof(Foo))
@@ -44,8 +42,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            //Thread.Sleep(Timeout.Infinite);
-
             Ignition.StopAll(true);
         }
 
@@ -59,11 +55,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
-                                                           "values (1, 2, 'John'), (2, 3, 'Mary')")).GetAll();
-
-            //var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
-            //                                               "values (?, ?, ?), (?, ?, ?)",
-            //    1, 2, "John", 3, 4, "Mary")).GetAll();
+                                                           "values (?, ?, ?), (?, ?, ?)",
+                1, 2, "John", 3, 4, "Mary")).GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
@@ -72,6 +65,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var foos = cache.OrderBy(x => x.Key).ToArray();
 
             Assert.AreEqual(2, foos.Length);
+
+            Assert.AreEqual(1, foos[0].Key);
+            Assert.AreEqual(2, foos[0].Value.Id);
+            Assert.AreEqual("John", foos[0].Value.Name);
+
+            Assert.AreEqual(3, foos[1].Key);
+            Assert.AreEqual(4, foos[1].Value.Id);
+            Assert.AreEqual("Mary", foos[1].Value.Name);
         }
 
         /// <summary>
@@ -93,6 +94,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var foos = cache.OrderBy(x => x.Key.Lo).ToArray();
 
             Assert.AreEqual(2, foos.Length);
+
+            Assert.AreEqual(1, foos[0].Key.Lo);
+            Assert.AreEqual(2, foos[0].Key.Hi);
+            Assert.AreEqual(3, foos[0].Value.Id);
+            Assert.AreEqual("John", foos[0].Value.Name);
+
+            Assert.AreEqual(4, foos[1].Key.Lo);
+            Assert.AreEqual(5, foos[1].Key.Hi);
+            Assert.AreEqual(6, foos[1].Value.Id);
+            Assert.AreEqual("Mary", foos[1].Value.Name);
         }
 
         [Test]
