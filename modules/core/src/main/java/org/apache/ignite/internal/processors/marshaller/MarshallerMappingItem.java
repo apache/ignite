@@ -72,12 +72,15 @@ public final class MarshallerMappingItem implements Serializable {
             return false;
 
         MarshallerMappingItem that = (MarshallerMappingItem) obj;
-        return platformId == that.platformId && typeId == that.typeId && clsName.equals(that.clsName);
+
+        return platformId == that.platformId
+                && typeId == that.typeId
+                && (clsName != null ? clsName.equals(that.clsName) : that.clsName == null);
     }
 
     @Override
     public int hashCode() {
-        return 31 * 31 * ((int) platformId) + 31 * typeId + clsName.hashCode();
+        return 31 * 31 * ((int) platformId) + 31 * typeId + (clsName != null ? clsName.hashCode() : 0) ;
     }
 
     @Override

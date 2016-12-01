@@ -24,6 +24,10 @@ import org.jetbrains.annotations.Nullable;
 
 class MappingProposedMessage implements DiscoveryCustomMessage {
 
+    private enum ProposalStatus {
+        SUCCESSFUL, IN_CONFLICT, DUPLICATED
+    }
+
     private static final long serialVersionUID = 0L;
 
     private final IgniteUuid id = IgniteUuid.randomUuid();
@@ -32,7 +36,7 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
 
     private final MarshallerMappingItem mappingItem;
 
-    private boolean inConflict;
+    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
 
     private String conflictingClassName;
 
@@ -49,10 +53,11 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
     @Nullable
     @Override
     public DiscoveryCustomMessage ackMessage() {
-        if (!inConflict) {
+        if (status == ProposalStatus.SUCCESSFUL)
             return new MappingAcceptedMessage(mappingItem);
-        } else
+        else if (status == ProposalStatus.IN_CONFLICT)
             return new MappingRejectedMessage(mappingItem, conflictingClassName, origNodeId);
+        else return null;
     }
 
     @Override
@@ -65,11 +70,19 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
     }
 
     public boolean isInConflict() {
-        return inConflict;
+        return status == ProposalStatus.IN_CONFLICT;
     }
 
-    public void setInConflict(boolean inConflict) {
-        this.inConflict = inConflict;
+    public boolean isDuplicated() {
+        return status == ProposalStatus.DUPLICATED;
+    }
+
+    public void markInConflict() {
+        status = ProposalStatus.IN_CONFLICT;
+    }
+
+    public void markDuplicated() {
+        status = ProposalStatus.DUPLICATED;
     }
 
     public void setConflictingClassName(String conflictingClassName) {

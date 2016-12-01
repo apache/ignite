@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Provides capabilities of sending custom discovery events to propose new mapping or request missing mapping to {@link MarshallerContextImpl}.
@@ -58,41 +59,58 @@ public final class MarshallerMappingTransport {
     }
 
     public GridFutureAdapter<MappingExchangeResult> proposeMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
-        boolean sendMsg = true;
-
         GridFutureAdapter<MappingExchangeResult> fut = new GridFutureAdapter<>();
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
-        if (oldFut == null) {
+
+        if (oldFut != null)
+            return oldFut;
+        else {
             //double check, first check was in caller: MarshallerContextImpl::registerClassName
             MappedName mapping = cache.get(item.getTypeId());
 
-            if (mapping != null && mapping.isAccepted()) {
-                MappingExchangeResult res;
-                if (mapping.className().equals(item.getClsName()))
-                    res = new MappingExchangeResult(false, null);
-                else
-                    res = new MappingExchangeResult(true, mapping.className());
-                fut.onDone(res);
-                mappingExchSyncMap.remove(item, fut);
+            if (mapping != null) {
+                if (!mapping.className().equals(item.getClsName())) {
+                    fut.onDone(new MappingExchangeResult(true, mapping.className()));
+                    mappingExchSyncMap.remove(item, fut);
+                } else if (mapping.isAccepted()) {
+                    fut.onDone(new MappingExchangeResult(false, null));
+                    mappingExchSyncMap.remove(item, fut);
+                }
 
-                sendMsg = false;
+                return fut;
             }
         }
 
-        if (sendMsg) {
-            MappingProposedMessage msg = new MappingProposedMessage(item, discoMgr.localNode().id());
-            discoMgr.sendCustomEvent(msg);
-        }
+        MappingProposedMessage msg = new MappingProposedMessage(item, discoMgr.localNode().id());
+        discoMgr.sendCustomEvent(msg);
 
-        return oldFut != null ? oldFut : fut;
+        return fut;
     }
 
-    public MappedName requestMapping(byte platformId, int typeId) throws IgniteCheckedException {
-        discoMgr.sendCustomEvent(
-                new MissingMappingRequestMessage(
-                        new MarshallerMappingItem(platformId, typeId, null),
-                        discoMgr.localNode().id()));
+    public GridFutureAdapter<MappingExchangeResult> requestMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
+        GridFutureAdapter<MappingExchangeResult> newFut = new GridFutureAdapter<>();
 
-        return new MappedNameRequest();
+        GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, newFut);
+
+        if (oldFut != null)
+            return oldFut;
+
+        if (oldFut == null) {
+            MappedName mappedName = cache.get(item.getTypeId());
+            if (item.getTypeId() == 1397763919)
+                mappedName = null;
+
+            if (mappedName != null) {
+                newFut.onDone(new MappingExchangeResult(false, mappedName.className()));
+                mappingExchSyncMap.remove(item, newFut);
+
+                return newFut;
+            }
+        }
+
+        discoMgr.sendCustomEvent(
+                new MissingMappingRequestMessage(item, discoMgr.localNode().id()));
+
+        return newFut;
     }
 }

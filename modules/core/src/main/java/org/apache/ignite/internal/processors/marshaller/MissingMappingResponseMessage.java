@@ -26,16 +26,16 @@ class MissingMappingResponseMessage implements DiscoveryCustomMessage {
 
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    private boolean resolved;
+    private String resolvedClsName;
 
     private MarshallerMappingItem item;
 
     private UUID origNodeId;
 
-    public MissingMappingResponseMessage(UUID origNodeId, boolean resolved, MarshallerMappingItem item) {
+    public MissingMappingResponseMessage(UUID origNodeId, MarshallerMappingItem item, String resolvedClsName) {
         this.origNodeId = origNodeId;
-        this.resolved = resolved;
         this.item = item;
+        this.resolvedClsName = resolvedClsName;
     }
 
     @Override
@@ -54,8 +54,8 @@ class MissingMappingResponseMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-    public boolean isResolved() {
-        return resolved;
+    public String getResolvedClsName() {
+        return resolvedClsName;
     }
 
     public UUID getOrigNodeId() {

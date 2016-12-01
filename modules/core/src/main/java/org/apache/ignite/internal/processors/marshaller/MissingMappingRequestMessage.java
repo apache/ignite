@@ -30,7 +30,7 @@ class MissingMappingRequestMessage implements DiscoveryCustomMessage {
 
     private final MarshallerMappingItem mappingItem;
 
-    private boolean resolved;
+    private String resolvedClsName;
 
     public MissingMappingRequestMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
         this.mappingItem = mappingItem;
@@ -45,7 +45,7 @@ class MissingMappingRequestMessage implements DiscoveryCustomMessage {
     @Nullable
     @Override
     public DiscoveryCustomMessage ackMessage() {
-        return new MissingMappingResponseMessage(origNodeId, resolved, mappingItem);
+        return new MissingMappingResponseMessage(origNodeId, mappingItem, resolvedClsName);
     }
 
     @Override
@@ -53,15 +53,15 @@ class MissingMappingRequestMessage implements DiscoveryCustomMessage {
         return true;
     }
 
-    public void setResolved(boolean resolved) {
-        this.resolved = resolved;
-    }
-
     public boolean isResolved() {
-        return resolved;
+        return resolvedClsName != null;
     }
 
     public MarshallerMappingItem getMappingItem() {
         return mappingItem;
+    }
+
+    public void setResolvedClsName(String resolvedClsName) {
+        this.resolvedClsName = resolvedClsName;
     }
 }

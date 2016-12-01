@@ -34,11 +34,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
-import org.apache.ignite.internal.processors.marshaller.MappedNameImpl;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
-import org.apache.ignite.internal.processors.marshaller.MappedNameRequest;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -190,12 +189,11 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                 int typeId = clsName.hashCode();
 
-                MappedNameImpl oldClsName;
+                MappedName oldClsName;
 
-                if ((oldClsName = (MappedNameImpl) defaultCache.put(typeId, new MappedNameImpl(clsName, true))) != null) {
+                if ((oldClsName = defaultCache.put(typeId, new MappedName(clsName, true))) != null) {
                     if (!oldClsName.className().equals(clsName))
-                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", clsName=" + clsName +
-                        ", oldClsName=" + oldClsName + ']');
+                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", oldClsName=" + oldClsName + ", clsName=" + clsName + ']');
                 }
 
                 registeredSystemTypes.add(clsName);
@@ -210,9 +208,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         MappedName mappedName = cache.get(typeId);
 
         if (mappedName != null)
-            if (mappedName instanceof MappedNameRequest)
-                return mappedName.isAccepted();
-            else if (!mappedName.className().equals(clsName))
+            if (!mappedName.className().equals(clsName))
                 throw duplicateIdException(platformId, typeId, mappedName.className(), clsName);
             else {
                 if (mappedName.isAccepted())
@@ -228,7 +224,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     private boolean convertFutureResult(MappingExchangeResult res, byte platformId, int typeId, String clsName) throws IgniteCheckedException {
         if (res.isInConflict())
-            throw duplicateIdException(platformId, typeId, res.getConflictingClassName(), clsName);
+            throw duplicateIdException(platformId, typeId, res.getAcceptedClsName(), clsName);
         else
             return true;
     }
@@ -262,7 +258,7 @@ public class MarshallerContextImpl implements MarshallerContext {
     public String handleProposedMapping(MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
-        MappedName newName = new MappedNameImpl(item.getClsName(), false);
+        MappedName newName = new MappedName(item.getClsName(), false);
         MappedName oldName;
         if ((oldName = cache.putIfAbsent(item.getTypeId(), newName)) == null)
             return null;
@@ -273,7 +269,7 @@ public class MarshallerContextImpl implements MarshallerContext {
     public void acceptMapping(MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
-        cache.replace(item.getTypeId(), new MappedNameImpl(item.getClsName(), true));
+        cache.replace(item.getTypeId(), new MappedName(item.getClsName(), true));
 
         persistence.onMappingAccepted(item.getPlatformId(), item.getTypeId(), item.getClsName());
     }
@@ -302,62 +298,54 @@ public class MarshallerContextImpl implements MarshallerContext {
         else {
             clsName = persistence.onMappingMiss(platformId, typeId);
             if (clsName != null)
-                cache.putIfAbsent(typeId, new MappedNameImpl(clsName, true));
+                cache.putIfAbsent(typeId, new MappedName(clsName, true));
             else
                 if (isClientNode) {
                     mappedName = cache.get(typeId);
                     if (mappedName == null) {
-                        mappedName = transport.requestMapping(platformId, typeId);
-                        cache.putIfAbsent(typeId, mappedName);
-                    }
-
-                    clsName = cache.get(typeId).className();
+                        GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(new MarshallerMappingItem(platformId, typeId, null), cache);
+                        clsName = fut.get().getAcceptedClsName();
+                    } else
+                        clsName = cache.get(typeId).className();
 
                     if (clsName == null)
-                        throw new ClassNotFoundException("Requesting mapping from grid failed for type ID: " + typeId);
+                        throw new ClassNotFoundException("Requesting mapping from grid failed for [platformId=" + platformId + ", typeId=" + typeId + "]");
 
                     return clsName;
-
-                    //also take into account that Future objects should never be serialized and sent across the ring
                 } else
-                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
+                    throw new ClassNotFoundException("Unknown pair [platformId= " + platformId + ", typeId=" + typeId + "]");
         }
 
         return clsName;
     }
 
-    public boolean resolveMissedMapping(MarshallerMappingItem item) {
+    public String resolveMissedMapping(MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
         if (cache != null) {
             MappedName mappedName = cache.get(item.getTypeId());
 
             if (mappedName != null && mappedName.className() != null) {
-                item.setClsName(mappedName.className());
-                return true;
+                return mappedName.className();
             }
         }
 
-        return false;
+        return null;
     }
 
-    public void onMissedMappingResolved(MarshallerMappingItem item) {
+    public void onMissedMappingResolved(MarshallerMappingItem item, String resolvedClsName) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
         if (cache != null) {
             int typeId = item.getTypeId();
             MappedName mappedName = cache.get(typeId);
 
-            if (mappedName instanceof MappedNameRequest) {
-                String clsName = item.getClsName();
-                if (clsName != null) {
-                    MappedName newMappedName = new MappedNameImpl(clsName, true);
-
-                    cache.replace(typeId, newMappedName);
-
-                    ((MappedNameRequest) mappedName).onMappingResolved(newMappedName);
-                } else
-                    ((MappedNameRequest) mappedName).onMappingResolutionFailed();
+            if (mappedName != null) {
+                assert mappedName.className() != null;
+                assert mappedName.className().equals(resolvedClsName);
+            } else {
+                mappedName = new MappedName(resolvedClsName, true);
+                cache.putIfAbsent(typeId, mappedName);
             }
         }
     }
