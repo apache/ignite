@@ -25,21 +25,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class CacheDmlQueriesTest
     {
         /// <summary>
-        /// Tests the modification query.
+        /// Tests primitive key.
         /// </summary>
         [Test]
-        public void TestSqlDmlQuery()
+        public void TestPrimitiveKey()
         {
-            // TODO: What if class has never been used before?
-            // This does not matter because QueryEntity defines tables, not class itself.
-            // However, we still should be able to get classes back?
         }
 
         /// <summary>
-        /// Tests the modification query with a new cache and new query entity config.
+        /// Tests composite key (which requires QueryField.IsKeyField).
         /// </summary>
         [Test]
-        public void TestSqlDmlQueryDynamicCache()
+        public void TestCompositeKey()
+        {
+        }
+
+        [Test]
+        public void TestInvalidCompositeKey()
+        {
+            // TODO: Misconfigured key
+        }
+
+        [Test]
+        public void TestBinaryMode()
         {
             // TODO: Create new cache, use binary-only mode?
         }
