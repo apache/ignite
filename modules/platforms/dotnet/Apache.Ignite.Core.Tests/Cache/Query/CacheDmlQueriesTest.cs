@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestPrimitiveKey()
         {
-            var cfg = new CacheConfiguration("primitive_key", typeof(Foo));
+            var cfg = new CacheConfiguration("primitive_key", new QueryEntity(typeof(int), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
