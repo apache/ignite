@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -36,6 +37,8 @@ public class OffheapMemoryManager extends MemoryManager {
     /** */
     private final Collection<OffheapPage> allPages = new ConcurrentLinkedQueue<>();
 
+    private AtomicBoolean closed = new AtomicBoolean();
+
     /**
      * @param mem Memory.
      * @param pageSize Page size.
@@ -46,6 +49,8 @@ public class OffheapMemoryManager extends MemoryManager {
 
         this.mem = mem;
         this.pageSize = pageSize;
+
+        System.out.println("Create manager. mem=#" + Integer.toHexString(System.identityHashCode(this)));
     }
 
     /**
@@ -59,8 +64,18 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        for (OffheapPage page : allPages)
-            deallocate(page);
+        if (closed.compareAndSet(false, true)) {
+
+            System.out.println("Begin close manager. mem=#" + Integer.toHexString(System.identityHashCode(this)));
+
+            for (OffheapPage page : allPages)
+                deallocate(page);
+
+            System.out.println("Manager is closed. mem=#" + Integer.toHexString(System.identityHashCode(this)));
+        }
+        else
+            assert false : "Already closed";
+
     }
 
     /** {@inheritDoc} */

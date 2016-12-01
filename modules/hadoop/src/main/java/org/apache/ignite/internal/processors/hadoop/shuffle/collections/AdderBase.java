@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class AdderBase implements HadoopMultimap.Adder {
     /** */
-    protected final MemoryManager memMgr;
+    protected final MemoryManager mem;
     
     /** */
     protected final HadoopSerialization keySer;
@@ -30,16 +30,16 @@ public abstract class AdderBase implements HadoopMultimap.Adder {
 
     /**
      * @param ctx Task context.
-     * @param memMgr Memory manager.
+     * @param mem Memory manager.
      * @throws IgniteCheckedException If failed.
      */
-    protected AdderBase(HadoopTaskContext ctx, MemoryManager memMgr) throws IgniteCheckedException {
-        this.memMgr = memMgr;
+    protected AdderBase(HadoopTaskContext ctx, MemoryManager mem) throws IgniteCheckedException {
+        this.mem = mem;
 
         valSer = ctx.valueSerialization();
         keySer = ctx.keySerialization();
 
-        out = new HadoopDataOutStream(memMgr) {
+        out = new HadoopDataOutStream(mem) {
             @Override public long move(long size) {
                 long ptr = super.move(size);
 
@@ -61,14 +61,14 @@ public abstract class AdderBase implements HadoopMultimap.Adder {
         int writtenSize = writtenSize();
 
         long newPageSize = nextPageSize(writtenSize + requestedSize);
-        long newPagePtr = memMgr.allocate(newPageSize);
+        long newPagePtr = mem.allocate(newPageSize);
 
         HadoopOffheapBuffer b = out.buffer();
 
         b.set(newPagePtr, newPageSize);
 
         if (writtenSize != 0) {
-            memMgr.copyMemory(writeStart, newPagePtr, writtenSize);
+            mem.copyMemory(writeStart, newPagePtr, writtenSize);
 
             b.move(writtenSize);
         }
@@ -85,11 +85,11 @@ public abstract class AdderBase implements HadoopMultimap.Adder {
      * @return Next page size.
      */
     private long nextPageSize(long required) {
-        long pages = (required / memMgr.pageSize()) + 1;
+        long pages = (required / mem.pageSize()) + 1;
 
         long pagesPow2 = nextPowerOfTwo(pages);
 
-        return pagesPow2 * memMgr.pageSize();
+        return pagesPow2 * mem.pageSize();
     }
 
     /**
@@ -185,6 +185,7 @@ public abstract class AdderBase implements HadoopMultimap.Adder {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
+        System.out.println("Close adder. mem=#" + Integer.toHexString(System.identityHashCode(mem)));
         keySer.close();
         valSer.close();
     }

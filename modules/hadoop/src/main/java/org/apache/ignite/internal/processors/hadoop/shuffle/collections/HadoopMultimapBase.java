@@ -29,7 +29,7 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
     /**
      * @param jobInfo Job info.
-     * @param mem Memory manager.
+     * @param mem Memory manager.n
      */
     protected HadoopMultimapBase(HadoopJobInfo jobInfo, MemoryManager mem) {
         assert jobInfo != null;
