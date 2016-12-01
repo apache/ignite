@@ -120,8 +120,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
-            // Test key existence
-            // TODO:
+            // Existence tests fail because IdentityResolver is not set:
+            Assert.IsFalse(cache.ContainsKey(new Key(1, 2)));
+            Assert.IsFalse(cache.ContainsKey(foos[0].Key));
+
+            Assert.IsFalse(cache.ContainsKey(new Key(4, 5)));
+            Assert.IsFalse(cache.ContainsKey(foos[1].Key));
 
             // Test update.
         }
