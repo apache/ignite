@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -57,19 +56,7 @@ namespace Apache.Ignite.Core.Binary
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length, 
             BinaryObjectSchemaHolder schema, Marshaller marshaller)
         {
-            // Preserve original stream position.
-            var pos = stream.Position;
-            stream.Seek(startPos, SeekOrigin.Begin);
-
-            // Compute hash.
-            int hash = 1;
-
-            for (int i = 0; i < length; i++)
-                hash = 31 * hash + stream.ReadByte();
-
-            // Restore position and return.
-            stream.Seek(pos, SeekOrigin.Begin);
-            return hash;
+            return stream.ComputeHashCode(startPos, length);
         }
     }
 }

@@ -732,6 +732,20 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
+        /// Returns a hash code for the specified byte range.
+        /// </summary>
+        public int ComputeHashCode(int offset, int count)
+        {
+            var hash = 1;
+            var ptr = _data + offset;
+
+            for (var i = 0; i < count; i++)
+                hash = 31 * hash + *(ptr + i);
+
+            return hash;
+        }
+
+        /// <summary>
         /// Ensure capacity for write and shift position.
         /// </summary>
         /// <param name="cnt">Bytes count.</param>

@@ -318,5 +318,10 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// <param name="origin">Seek origin.</param>
         /// <returns>Position.</returns>
         int Seek(int offset, SeekOrigin origin);
+
+        /// <summary>
+        /// Computes a hash code for the specified byte range.
+        /// </summary>
+        int ComputeHashCode(int offset, int count);
     }
 }
