@@ -419,6 +419,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlDmlQuery()
         {
             // TODO: What if class has never been used before?
+            // This does not matter because QueryEntity defines tables, not class itself.
             var cache = Cache();
         }
 
