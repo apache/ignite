@@ -82,9 +82,9 @@ namespace ignite
          * @param lsnrPtr Listener pointer.
          * @param memPtr Memory pointer.
          */
-        void IGNITE_CALL ContinuousQueryListenerApply(void* target, long long lsnrPtr, long long memPtr)
+        void IGNITE_CALL ContinuousQueryListenerApply(void* target, long long qryHandle, long long memPtr)
         {
-            assert(lsnrPtr != 0);
+            assert(qryHandle != -1);
             assert(memPtr != 0);
             assert(target != 0);
 
@@ -92,13 +92,7 @@ namespace ignite
 
             SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
 
-            ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(lsnrPtr);
-
-            InteropInputStream stream(mem.Get());
-            BinaryReaderImpl reader(&stream);
-            BinaryRawReader rawReader(&reader);
-
-            contQry->ReadAndProcessEvents(rawReader);
+            env->Get()->OnContinuousQueryListenerApply(qryHandle, mem);
         }
 
         /**
@@ -114,8 +108,14 @@ namespace ignite
             // No-op.
         }
 
-        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(0),
-            proc(), metaMgr(new BinaryTypeManager()), metaUpdater(0)
+        IgniteEnvironment::IgniteEnvironment() :
+            ctx(SharedPointer<JniContext>()),
+            latch(new SingleLatch),
+            name(0),
+            proc(),
+            metaMgr(new BinaryTypeManager()),
+            metaUpdater(0),
+            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP)
         {
             // No-op.
         }
@@ -221,6 +221,11 @@ namespace ignite
                 ctx.Get()->ProcessorReleaseStart(proc.Get());
         }
 
+        HandleRegistry& IgniteEnvironment::GetHandleRegistry()
+        {
+            return registry;
+        }
+
         void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
         {
             this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
@@ -239,6 +244,17 @@ namespace ignite
             }
             else
                 name = 0;
+        }
+
+        void IgniteEnvironment::OnContinuousQueryListenerApply(int64_t qryHandle, SharedPointer<InteropMemory>& mem)
+        {
+            ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(registry.Get(qryHandle).Get());
+
+            InteropInputStream stream(mem.Get());
+            BinaryReaderImpl reader(&stream);
+            BinaryRawReader rawReader(&reader);
+
+            contQry->ReadAndProcessEvents(rawReader);
         }
     }
 }

@@ -214,7 +214,7 @@ namespace ignite
                     return *this;
                 }
 
-                /** 
+                /**
                  * Assignment operator.
                  *
                  * @param other Other instance.

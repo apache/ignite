@@ -422,7 +422,9 @@ namespace ignite
 
                     const query::continuous::ContinuousQueryImplBase& qry0 = *qry.Get();
 
-                    rawWriter.WriteInt64(reinterpret_cast<int64_t>(&qry0));
+                    int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
+
+                    rawWriter.WriteInt64(handle);
                     rawWriter.WriteBool(qry0.GetLocal());
 
                     // Filters are not supported for now.
