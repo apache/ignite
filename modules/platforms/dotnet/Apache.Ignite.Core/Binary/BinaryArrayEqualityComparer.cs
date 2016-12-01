@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -56,6 +57,9 @@ namespace Apache.Ignite.Core.Binary
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length, 
             BinaryObjectSchemaHolder schema, Marshaller marshaller)
         {
+            Debug.Assert(stream != null);
+            Debug.Assert(startPos > 0);
+
             return stream.ComputeHashCode(startPos, length);
         }
     }
