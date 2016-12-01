@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
                                                "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
@@ -120,13 +120,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(2, foos.Length);
 
-            Assert.AreEqual(1, foos[0].Key.Lo);
-            Assert.AreEqual(2, foos[0].Key.Hi);
+            Assert.AreEqual(1, foos[0].Key.Hi);
+            Assert.AreEqual(2, foos[0].Key.Lo);
             Assert.AreEqual(3, foos[0].Value.Id);
             Assert.AreEqual("John", foos[0].Value.Name);
 
-            Assert.AreEqual(4, foos[1].Key.Lo);
-            Assert.AreEqual(5, foos[1].Key.Hi);
+            Assert.AreEqual(4, foos[1].Key.Hi);
+            Assert.AreEqual(5, foos[1].Key.Lo);
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
