@@ -88,6 +88,12 @@ namespace ignite
              */
             void OnStartCallback(long long memPtr, jobject proc);
 
+            /**
+             * Continuous query listener apply callback.
+             *
+             * @param qryHandle Query handle.
+             * @param mem Memory with data.
+             */
             void OnContinuousQueryListenerApply(int64_t qryHandle,
                 common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 

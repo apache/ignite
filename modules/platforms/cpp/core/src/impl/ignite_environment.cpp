@@ -250,11 +250,14 @@ namespace ignite
         {
             ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(registry.Get(qryHandle).Get());
 
-            InteropInputStream stream(mem.Get());
-            BinaryReaderImpl reader(&stream);
-            BinaryRawReader rawReader(&reader);
+            if (contQry)
+            {
+                InteropInputStream stream(mem.Get());
+                BinaryReaderImpl reader(&stream);
+                BinaryRawReader rawReader(&reader);
 
-            contQry->ReadAndProcessEvents(rawReader);
+                contQry->ReadAndProcessEvents(rawReader);
+            }
         }
     }
 }

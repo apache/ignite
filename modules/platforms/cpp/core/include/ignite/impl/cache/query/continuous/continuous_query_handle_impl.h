@@ -50,7 +50,7 @@ namespace ignite
                          * @param env Environment.
                          * @param javaRef Java reference.
                          */
-                        ContinuousQueryHandleImpl(SP_IgniteEnvironment env, jobject javaRef);
+                        ContinuousQueryHandleImpl(SP_IgniteEnvironment env, int64_t handle, jobject javaRef);
 
                         /**
                          * Destructor.
@@ -76,6 +76,9 @@ namespace ignite
                     private:
                         /** Environment. */
                         SP_IgniteEnvironment env;
+
+                        /** Local handle for handle registry. */
+                        int64_t handle;
 
                         /** Handle to Java object. */
                         jobject javaRef;

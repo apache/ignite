@@ -40,8 +40,9 @@ namespace ignite
                         CLOSE = 1
                     };
 
-                    ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(SP_IgniteEnvironment env, jobject javaRef) :
+                    ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(SP_IgniteEnvironment env, int64_t handle, jobject javaRef) :
                         env(env),
+                        handle(handle),
                         javaRef(javaRef),
                         extracted(false)
                     {
@@ -53,6 +54,8 @@ namespace ignite
                         env.Get()->Context()->TargetInLongOutLong(javaRef, CLOSE, 0);
 
                         JniContext::Release(javaRef);
+
+                        env.Get()->GetHandleRegistry().Release(handle);
                     }
 
                     QueryCursorImpl* ContinuousQueryHandleImpl::GetInitialQueryCursor(IgniteError& err)
