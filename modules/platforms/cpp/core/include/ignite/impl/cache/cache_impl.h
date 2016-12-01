@@ -321,7 +321,8 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const query::continuous::ContinuousQueryImplBase &qry, IgniteError& err);
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    IgniteError& err);
 
                 /**
                  * Start continuous query execution with initial query.
@@ -332,7 +333,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const query::continuous::ContinuousQueryImplBase &qry,
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
                     const ignite::cache::query::SqlQuery& initialQry, IgniteError& err);
 
                 /**
@@ -344,7 +345,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const query::continuous::ContinuousQueryImplBase &qry,
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
                     const ignite::cache::query::TextQuery& initialQry, IgniteError& err);
 
                 /**
@@ -356,7 +357,7 @@ namespace ignite
                  * @return Continuous query handle.
                  */
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const query::continuous::ContinuousQueryImplBase &qry,
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
                     const ignite::cache::query::ScanQuery& initialQry, IgniteError& err);
 
             private:
@@ -408,7 +409,7 @@ namespace ignite
                  */
                 template<typename T>
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
-                    const query::continuous::ContinuousQueryImplBase &qry,
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
                     const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
                 {
                     jni::java::JniErrorInfo jniErr;
@@ -419,15 +420,17 @@ namespace ignite
                     binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
                     ignite::binary::BinaryRawWriter rawWriter(&writer);
 
-                    rawWriter.WriteInt64(reinterpret_cast<int64_t>(&qry));
-                    rawWriter.WriteBool(qry.GetLocal());
+                    const query::continuous::ContinuousQueryImplBase& qry0 = *qry.Get();
+
+                    rawWriter.WriteInt64(reinterpret_cast<int64_t>(&qry0));
+                    rawWriter.WriteBool(qry0.GetLocal());
 
                     // Filters are not supported for now.
                     rawWriter.WriteBool(false);
                     rawWriter.WriteNull();
 
-                    rawWriter.WriteInt32(qry.GetBufferSize());
-                    rawWriter.WriteInt64(qry.GetTimeInterval());
+                    rawWriter.WriteInt32(qry0.GetBufferSize());
+                    rawWriter.WriteInt64(qry0.GetTimeInterval());
 
                     // Autounsubscribe is a filter feature.
                     rawWriter.WriteBool(false);

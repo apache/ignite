@@ -121,13 +121,15 @@ namespace ignite
             public:
                 friend class EnableSharedFromThis<T>;
 
-                template<typename To, typename From>
-                friend SharedPointer<To> StaticPointerCast(const SharedPointer<From>& sp);
+                template<typename T2>
+                friend class SharedPointer;
 
                 /**
                  * Constructor.
                  */
-                SharedPointer() : impl(0)
+                SharedPointer() :
+                    ptr(0),
+                    impl(0)
                 {
                     // No-op.
                 }
@@ -138,15 +140,15 @@ namespace ignite
                  * @param ptr Raw pointer.
                  * @param deleter Delete function.
                  */
-                SharedPointer(T* ptr, void(*deleter)(T*) = &SharedPointerDefaultDeleter<T>)
+                SharedPointer(T* ptr, void(*deleter)(T*) = &SharedPointerDefaultDeleter<T>) :
+                    ptr(ptr),
+                    impl(0)
                 {
                     if (ptr)
                     {
                         impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
                         ImplEnableShared(ptr, impl);
                     }
-                    else
-                        impl = 0;
                 }
 
                 /**
@@ -156,17 +158,15 @@ namespace ignite
                  * @param deleter Delete function.
                  */
                 template<typename T2>
-                SharedPointer(T2* ptr, void(*deleter)(T2*) = &SharedPointerDefaultDeleter<T2>)
+                SharedPointer(T2* ptr, void(*deleter)(T2*) = &SharedPointerDefaultDeleter<T2>) :
+                    ptr(ptr),
+                    impl(0)
                 {
-                    static_cast<T*>(ptr);
-
                     if (ptr)
                     {
                         impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
                         ImplEnableShared(ptr, impl);
                     }
-                    else
-                        impl = 0;
                 }
 
                 /**
@@ -175,6 +175,21 @@ namespace ignite
                  * @param other Instance to copy.
                  */
                 SharedPointer(const SharedPointer& other) :
+                    ptr(other.ptr),
+                    impl(other.impl)
+                {
+                    if (impl)
+                        impl->Increment();
+                }
+
+                /**
+                 * Copy constructor.
+                 *
+                 * @param other Instance to copy.
+                 */
+                template<typename T2>
+                SharedPointer(const SharedPointer<T2>& other) :
+                    ptr(other.ptr),
                     impl(other.impl)
                 {
                     if (impl)
@@ -190,10 +205,29 @@ namespace ignite
                 {
                     if (this != &other)
                     {
-                        SharedPointer tmp(other);
+                        ptr = other.ptr;
+                        impl = other.impl;
 
-                        std::swap(impl, tmp.impl);
+                        if (impl)
+                            impl->Increment();
                     }
+
+                    return *this;
+                }
+
+                /**
+                 * Assignment operator.
+                 *
+                 * @param other Other instance.
+                 */
+                template<typename T2>
+                SharedPointer& operator=(const SharedPointer<T2>& other)
+                {
+                    ptr = other.ptr;
+                    impl = other.impl;
+
+                    if (impl)
+                        impl->Increment();
 
                     return *this;
                 }
@@ -205,13 +239,15 @@ namespace ignite
                 {
                     if (impl && impl->Decrement())
                     {
-                        void* ptr = impl->Pointer();
+                        void* ptr0 = impl->Pointer();
 
                         void(*deleter)(void*) = impl->Deleter();
 
-                        deleter(ptr);
+                        deleter(ptr0);
 
                         delete impl;
+
+                        ptr = 0;
                     }
                 }
 
@@ -222,7 +258,7 @@ namespace ignite
                  */
                 T* Get()
                 {
-                    return impl ? static_cast<T*>(impl->Pointer()) : 0;
+                    return ptr;
                 }
 
                 /**
@@ -232,7 +268,7 @@ namespace ignite
                  */
                 const T* Get() const
                 {
-                    return impl ? static_cast<T*>(impl->Pointer()) : 0;
+                    return ptr;
                 }
 
                 /**
@@ -252,31 +288,12 @@ namespace ignite
                 }
 
             private:
+                /* Pointer. */
+                T* ptr;
+
                 /** Implementation. */
                 SharedPointerImpl* impl;
             };
-
-            /**
-             * Returns a copy of sp of the proper type with its stored pointer
-             * casted statically to desired type.
-             *
-             * @param sp A shared pointer instance.
-             * @return A SharedPointer object that owns the same pointer as sp
-             *     (if any) and has a shared pointer that points to the same
-             *     object as sp with a potentially different type.
-             */
-            template<typename To, typename From>
-            SharedPointer<To> StaticPointerCast(const SharedPointer<From>& sp)
-            {
-                SharedPointer<To> res(static_cast<To*>(static_cast<From*>(0)));
-
-                res.impl = sp.impl;
-
-                if (res.impl)
-                    res.impl->Increment();
-
-                return res;
-            }
 
             /**
              * The class provides functionality that allows objects of derived

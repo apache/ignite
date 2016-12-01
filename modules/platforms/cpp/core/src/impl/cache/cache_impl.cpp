@@ -307,25 +307,26 @@ namespace ignite
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
             }
 
-            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryImplBase& qry,
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 const SqlQuery& initialQry, IgniteError& err)
             {
                 return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
             }
 
-            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryImplBase& qry,
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 const TextQuery& initialQry, IgniteError& err)
             {
                 return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
             }
 
-            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryImplBase& qry,
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 const ScanQuery& initialQry, IgniteError& err)
             {
                 return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
             }
 
-            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryImplBase& qry, IgniteError& err)
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                IgniteError& err)
             {
                 struct { void Write(BinaryRawWriter&) const { }} dummy;
 
