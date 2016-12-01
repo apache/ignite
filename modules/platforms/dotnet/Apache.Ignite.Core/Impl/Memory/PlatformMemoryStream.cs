@@ -641,9 +641,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Synchronize stream write opeartions with underlying memory and return current memory pointer.
-        /// <returns>Memory pointer.</returns>
+        /// Synchronize stream write operations with underlying memory and return current memory pointer.
         /// </summary>
+        /// <returns>Memory pointer.</returns>
         public long SynchronizeOutput()
         {
             if (_pos > _len)
@@ -776,8 +776,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             int curPos = _pos;
 
             if (_len - _pos < cnt)
-                throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
-                    ", remaining=" + (_len - _pos) + ']');
+            {
+                SynchronizeOutput();
+
+                if (_len - _pos < cnt)
+                    throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
+                                                   ", remaining=" + (_len - _pos) + ']');
+            }
 
             _pos += cnt;
 
