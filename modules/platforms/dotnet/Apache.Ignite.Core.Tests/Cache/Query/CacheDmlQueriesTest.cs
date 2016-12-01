@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cfg = new CacheConfiguration("primitive_key", typeof(Foo));
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, int, string) " +
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
                                                            "values (1, 2, 'John'), (2, 3, 'Mary')"))
                 .GetAll();
 
@@ -83,10 +83,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private class Foo
         {
             [QuerySqlField]
-            public int Int { get; set; }
+            public int Id { get; set; }
 
             [QuerySqlField]
-            public string String { get; set; }
+            public string Name { get; set; }
         }
     }
 }
