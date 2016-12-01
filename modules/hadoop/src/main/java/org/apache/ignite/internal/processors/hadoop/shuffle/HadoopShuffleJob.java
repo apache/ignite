@@ -177,8 +177,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** Whether remote data should be compressed w/ GZIP. */
     private final boolean stripedGzip;
 
-    /** Map with per-node shuffle states. */
-    private volatile HashMap<UUID, ShuffleState> shuffleStates;
+    /** Local shuffle states. */
+    private volatile HashMap<UUID, ShuffleState> locShuffleStates;
 
     /** Mutex for internal synchronization. */
     private final Object mux = new Object();
@@ -485,11 +485,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @return Shuffle state for node.
      */
     private ShuffleState shuffleState(UUID nodeId) {
-        HashMap<UUID, ShuffleState> shuffleStates0 = shuffleStates;
+        HashMap<UUID, ShuffleState> shuffleStates0 = locShuffleStates;
 
         if (shuffleStates0 == null) {
             synchronized (mux) {
-                shuffleStates0 = shuffleStates;
+                shuffleStates0 = locShuffleStates;
 
                 if (shuffleStates0 == null) {
                     // Create new map.
@@ -499,7 +499,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
                     shuffleStates0.put(nodeId, res);
 
-                    shuffleStates = shuffleStates0;
+                    locShuffleStates = shuffleStates0;
 
                     return res;
                 }
@@ -510,16 +510,16 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (res == null) {
             synchronized (mux) {
-                res = shuffleStates.get(nodeId);
+                res = locShuffleStates.get(nodeId);
 
                 if (res == null) {
                     res = new ShuffleState();
 
-                    shuffleStates0 = new HashMap<>(shuffleStates);
+                    shuffleStates0 = new HashMap<>(locShuffleStates);
 
                     shuffleStates0.put(nodeId, res);
 
-                    shuffleStates = shuffleStates0;
+                    locShuffleStates = shuffleStates0;
                 }
             }
         }
@@ -602,7 +602,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param rmtDirectCtx Remote direct context.
      * @param reset Whether to perform reset.
      */
-    private void flush(int rmtMapIdx, @Nullable NewHadoopDataOutputContext rmtDirectCtx, boolean reset) {
+    private void sendShuffleMessage(int rmtMapIdx, @Nullable NewHadoopDataOutputContext rmtDirectCtx, boolean reset) {
         if (rmtDirectCtx == null)
             return;
 
@@ -997,7 +997,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                         }
 
                         if (rmtDirectCtx.write(key, val))
-                            flush(idx, rmtDirectCtx, true);
+                            sendShuffleMessage(idx, rmtDirectCtx, true);
                     }
                     else {
                         out = rmtAdders[idx];
@@ -1044,7 +1044,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     for (int i = 0; i < totalReducerCnt; i++) {
                         int idx = totalReducerCnt * mapperIdx + i;
 
-                        flush(idx, rmtDirectCtxs[idx], false);
+                        sendShuffleMessage(idx, rmtDirectCtxs[idx], false);
                     }
                 }
                 else {
