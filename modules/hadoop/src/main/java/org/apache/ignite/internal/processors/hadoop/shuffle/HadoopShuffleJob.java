@@ -823,14 +823,25 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
         if (stripedDirect) {
+            boolean sent = false;
+
             for (Map.Entry<UUID, RemoteShuffleState> rmtStateEntry : remoteShuffleStates().entrySet()) {
                 UUID nodeId = rmtStateEntry.getKey();
                 RemoteShuffleState rmtState = rmtStateEntry.getValue();
 
                 io.apply((T)nodeId, new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount()));
 
+                System.out.println("Sent shuffle finish request: " + nodeId);
+
                 fut.add(rmtState.future());
+
+                sent = true;
             }
+
+            if (sent)
+                fut.markInitialized();
+            else
+                return new GridFinishedFuture<>();
         }
         else {
             for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
