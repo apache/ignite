@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -49,6 +50,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -66,7 +69,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -98,6 +100,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.FULL_TEXT;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Various tests for cache queries.
@@ -179,6 +182,17 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class,
                     Long.class, EnumObject.class
                 );
+
+                QueryEntity qryEntity = new QueryEntity();
+
+                qryEntity.setKeyType(Integer.class.getName());
+                qryEntity.setValueType(PersonOther.class.getName());
+                qryEntity.addQueryField("name", String.class.getName(), null);
+                qryEntity.addQueryField("salary", Integer.class.getName(), null);
+                qryEntity.setTableName("MyTableName");
+                qryEntity.setIndexes(Arrays.asList(new QueryIndex("salary")));
+
+                cc.setQueryEntities(Arrays.asList(qryEntity));
 
                 if (cacheMode() != CacheMode.LOCAL)
                     cc.setAffinity(new RendezvousAffinityFunction());
@@ -541,6 +555,30 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assert iter != null;
         assert iter.next() != null;
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testCustomTableName() throws Exception {
+        IgniteCache<Integer, PersonOther> cache = ignite().cache(null);
+
+        cache.put(10, new PersonOther("John Doe",100));
+        cache.put(20, new PersonOther("Jane Doe",100));
+        cache.put(30, new PersonOther("Janie Doe",50));
+        cache.put(40, new PersonOther("Johnie Doe",50));
+
+        QueryCursor<Cache.Entry<Integer, PersonOther>> qry =
+            cache.query(new SqlQuery<>(PersonOther.class, "FROM MyTableName WHERE salary > 70" ));
+
+        assertEquals(2, qry.getAll().size());
+
+        QueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("SELECT * FROM MyTableName WHERE salary > 70"));
+
+        assertEquals(2, query.getAll().size());
+
     }
 
     /**
@@ -1650,6 +1688,85 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Person.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class PersonOther implements Externalizable {
+        /** */
+        private String name;
+
+        /** */
+        private int salary;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public PersonOther() {
+            // No-op.
+        }
+
+        /**
+         * @param name Name.
+         * @param salary Salary.
+         */
+        public PersonOther(String name, int salary) {
+            assert name != null;
+            assert salary > 0;
+
+            this.name = name;
+            this.salary = salary;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @return Salary.
+         */
+        public int salary() {
+            return salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, name);
+            out.writeInt(salary);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            name = U.readString(in);
+            salary = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return name.hashCode() + 31 * salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof PersonOther))
+                return false;
+
+            PersonOther that = (PersonOther)obj;
+
+            return that.name.equals(name) && that.salary == salary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PersonOther.class, this);
         }
     }
 

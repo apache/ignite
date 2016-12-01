@@ -250,10 +250,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (keyCls == null)
                         keyCls = Object.class;
 
-                    String simpleValType = (qryEntity.getTableName() != null) ? qryEntity.getTableName() :
-                        ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
+                    String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
-                    desc.name(simpleValType);
+                    if(qryEntity.getTableName()!=null) {
+                        desc.alias(simpleValType);
+                        desc.name(qryEntity.getTableName());
+                    }
+                    else
+                        desc.name(simpleValType);
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -468,6 +472,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
+        else if (desc.alias() != null)
+            typesByName.put(new TypeName(ccfg.getName(), desc.alias()), desc);
     }
 
     /** {@inheritDoc} */
@@ -547,6 +553,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     it.remove();
 
                     typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
+
+                    if(entry.getValue().alias() != null)
+                        typesByName.remove(new TypeName(cctx.name(), entry.getValue().alias()));
+
                 }
             }
         }
@@ -2091,6 +2101,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private String name;
 
+        /** */
+        private String alias;
+
         /** Value field names and types with preserved order. */
         @GridToStringInclude
         private final Map<String, Class<?>> fields = new LinkedHashMap<>();
@@ -2147,6 +2160,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         void name(String name) {
             this.name = name;
+        }
+
+        public String alias() {
+            return alias;
+        }
+
+        public void alias(String alias) {
+            this.alias = alias;
         }
 
         /** {@inheritDoc} */
