@@ -51,8 +51,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
-                                                           "values (1, 2, 'John'), (2, 3, 'Mary')"))
-                .GetAll();
+                                                           "values (1, 2, 'John'), (2, 3, 'Mary')")).GetAll();
+
+            //var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
+            //                                               "values (?, ?, ?), (?, ?, ?)",
+            //    1, 2, "John", 3, 4, "Mary")).GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(2, res[0]);  // 2 affected rows
