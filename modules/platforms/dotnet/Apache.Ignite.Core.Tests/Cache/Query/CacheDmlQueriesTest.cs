@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using NUnit.Framework;
@@ -30,12 +32,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
+            Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
             Ignition.Start(TestUtils.GetTestConfiguration());
         }
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
+            Thread.Sleep(Timeout.Infinite);
             Ignition.StopAll(true);
         }
 
