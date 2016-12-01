@@ -35,7 +35,7 @@ public class OffheapMemoryManager extends MemoryManager {
     private final int pageSize;
 
     /** */
-    private final Collection<OffheapPage> allPages = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<OffheapPage> allPages = new ConcurrentLinkedQueue<>();
 
     private AtomicBoolean closed = new AtomicBoolean();
 
@@ -50,28 +50,25 @@ public class OffheapMemoryManager extends MemoryManager {
         this.mem = mem;
         this.pageSize = pageSize;
 
-        System.out.println("Create manager. mem=#" + Integer.toHexString(System.identityHashCode(this)));
-    }
-
-    /**
-     * @param page Page.
-     */
-    private void deallocate(OffheapPage page) {
-        assert page != null;
-
-        mem.release(page.ptr(), page.size());
+//        System.out.println("Create manager. mem=#" + Integer.toHexString(System.identityHashCode(this)));
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
 
-            System.out.println("Begin close manager. mem=#" + Integer.toHexString(System.identityHashCode(this)));
+            int last = allPages.size() - 1;
+            int i = 0;
 
-            for (OffheapPage page : allPages)
-                deallocate(page);
+            for (OffheapPage page : allPages) {
+                if (i == last)
+                    break;
 
-            System.out.println("Manager is closed. mem=#" + Integer.toHexString(System.identityHashCode(this)));
+                mem.release(page.ptr(), page.size());
+                i++;
+            }
+
+            allPages.clear();
         }
         else
             assert false : "Already closed";
