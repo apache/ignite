@@ -172,6 +172,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res[0][0]);
 
             var car = cache.Single();
+            Assert.AreEqual("CarKey", car.Key.GetBinaryType().TypeName);
+            Assert.AreEqual("Car", car.Value.GetBinaryType().TypeName);
         }
 
         /// <summary>
