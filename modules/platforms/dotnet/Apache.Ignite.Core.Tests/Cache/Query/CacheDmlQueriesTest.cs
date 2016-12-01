@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                                                "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
-            Assert.AreEqual(2, res[0]);  // 2 affected rows
+            Assert.AreEqual(2, res[0][0]);  // 2 affected rows
 
             var foos = cache.OrderBy(x => x.Key).ToArray();
 
