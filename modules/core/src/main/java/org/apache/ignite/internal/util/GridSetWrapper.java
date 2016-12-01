@@ -133,6 +133,8 @@ public class GridSetWrapper<E> extends GridSerializableSet<E> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSetWrapper.class, this, "elements", map.keySet());
+        return S.INCLUDE_SENSITIVE ?
+            S.toString(GridSetWrapper.class, this, "elements", map.keySet()) :
+            S.toString(GridSetWrapper.class, this);
     }
 }

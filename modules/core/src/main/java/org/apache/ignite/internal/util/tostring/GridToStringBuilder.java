@@ -35,6 +35,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,6 +85,9 @@ public class GridToStringBuilder {
 
     /** Maximum number of collection (map) entries to print. */
     public static final int MAX_COL_SIZE = 100;
+
+    /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
+    public static final boolean INCLUDE_SENSITIVE = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, false);
 
     /** */
     private static ThreadLocal<Queue<GridToStringThreadLocal>> threadCache = new ThreadLocal<Queue<GridToStringThreadLocal>>() {
@@ -475,15 +479,24 @@ public class GridToStringBuilder {
                 }
             }
 
-            if (addLen > 0)
+            if (addLen > 0) {
+                Object addVal;
+                GridToStringInclude incAnn;
                 for (int i = 0; i < addLen; i++) {
+                    addVal = addVals[i];
+                    if (addVal != null) {
+                        incAnn = addVal.getClass().getAnnotation(GridToStringInclude.class);
+                        if (incAnn != null && incAnn.sensitive() && !INCLUDE_SENSITIVE)
+                            continue;
+                    }
                     if (!first)
-                       buf.a(", ");
+                        buf.a(", ");
                     else
                         first = false;
 
-                    buf.a(addNames[i]).a('=').a(addVals[i]);
+                    buf.a(addNames[i]).a('=').a(addVal);
                 }
+            }
 
             buf.a(']');
 
@@ -537,9 +550,14 @@ public class GridToStringBuilder {
 
                 Class<?> type = f.getType();
 
-                if (f.isAnnotationPresent(GridToStringInclude.class) ||
-                    type.isAnnotationPresent(GridToStringInclude.class))
-                    add = true;
+                final GridToStringInclude incFld = f.getAnnotation(GridToStringInclude.class);
+                final GridToStringInclude incType = type.getAnnotation(GridToStringInclude.class);
+                if (incFld != null || incType != null) {
+                    // Information is not sensitive when both the field and the field type are not sensitive.
+                    // When @GridToStringInclude is not present then the flag is false by default for that attribute.
+                    final boolean notSens = (incFld == null || !incFld.sensitive()) && (incType == null || !incType.sensitive());
+                    add = notSens || INCLUDE_SENSITIVE;
+                }
                 else if (!f.isAnnotationPresent(GridToStringExclude.class) &&
                     !f.getType().isAnnotationPresent(GridToStringExclude.class)) {
                     if (
@@ -573,8 +591,9 @@ public class GridToStringBuilder {
                     GridToStringFieldDescriptor fd = new GridToStringFieldDescriptor(f.getName());
 
                     // Get order, if any.
-                    if (f.isAnnotationPresent(GridToStringOrder.class))
-                        fd.setOrder(f.getAnnotation(GridToStringOrder.class).value());
+                    final GridToStringOrder annOrder = f.getAnnotation(GridToStringOrder.class);
+                    if (annOrder != null)
+                        fd.setOrder(annOrder.value());
 
                     cd.addField(fd);
                 }

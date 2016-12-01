@@ -121,6 +121,8 @@ public class GridConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridConcurrentLinkedHashSet.class, this, "elements", map().keySet());
+        return S.INCLUDE_SENSITIVE ?
+            S.toString(GridConcurrentLinkedHashSet.class, this, "elements", map().keySet()) :
+            S.toString(GridConcurrentLinkedHashSet.class, this);
     }
 }

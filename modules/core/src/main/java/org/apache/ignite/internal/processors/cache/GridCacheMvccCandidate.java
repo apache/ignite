@@ -679,11 +679,16 @@ public class GridCacheMvccCandidate implements Externalizable,
         GridCacheMvccCandidate prev = previous();
         GridCacheMvccCandidate next = next();
 
-        return S.toString(GridCacheMvccCandidate.class, this,
-            "key", parent == null ? null : parent.key(),
-            "masks", Mask.toString(flags()),
-            "prevVer", (prev == null ? null : prev.version()),
-            "nextVer", (next == null ? null : next.version()));
+        return S.INCLUDE_SENSITIVE ?
+            S.toString(GridCacheMvccCandidate.class, this,
+                "key", parent == null ? null : parent.key(),
+                "masks", Mask.toString(flags()),
+                "prevVer", (prev == null ? null : prev.version()),
+                "nextVer", (next == null ? null : next.version())) :
+            S.toString(GridCacheMvccCandidate.class, this,
+                "masks", Mask.toString(flags()),
+                "prevVer", (prev == null ? null : prev.version()),
+                "nextVer", (next == null ? null : next.version()));
     }
 
     /**

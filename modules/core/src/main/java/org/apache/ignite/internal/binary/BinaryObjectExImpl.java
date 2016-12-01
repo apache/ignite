@@ -29,6 +29,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -230,13 +231,14 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         if (meta.fieldNames() != null) {
             buf.a(" [idHash=").a(idHash).a(", hash=").a(hash);
 
-            for (String name : meta.fieldNames()) {
-                Object val = field(ctx, name);
+            if (S.INCLUDE_SENSITIVE)
+                for (String name : meta.fieldNames()) {
+                    Object val = field(ctx, name);
 
-                buf.a(", ").a(name).a('=');
+                    buf.a(", ").a(name).a('=');
 
-                appendValue(val, buf, ctx, handles);
-            }
+                    appendValue(val, buf, ctx, handles);
+                }
 
             buf.a(']');
         }

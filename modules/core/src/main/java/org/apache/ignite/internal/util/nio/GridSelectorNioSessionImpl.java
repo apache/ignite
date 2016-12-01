@@ -54,9 +54,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final Semaphore sem;
 
     /** Write buffer. */
+    @GridToStringExclude
     private ByteBuffer writeBuf;
 
     /** Read buffer. */
+    @GridToStringExclude
     private ByteBuffer readBuf;
 
     /** Recovery data. */

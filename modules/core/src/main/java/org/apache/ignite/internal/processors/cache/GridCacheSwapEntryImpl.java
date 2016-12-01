@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -47,6 +48,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     static final int GUID_SIZE = 24;
 
     /** Value bytes. */
+    @GridToStringExclude
     private ByteBuffer valBytes;
 
     /** Value. */

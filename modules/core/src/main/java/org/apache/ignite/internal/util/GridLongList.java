@@ -417,18 +417,21 @@ public class GridLongList implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        SB b = new SB("[");
+        if (S.INCLUDE_SENSITIVE) {
+            SB b = new SB("[");
 
-        for (int i = 0; i < idx; i++) {
-            if (i != 0)
-                b.a(',');
+            for (int i = 0; i < idx; i++) {
+                if (i != 0)
+                    b.a(',');
 
-            b.a(arr[i]);
-        }
+                b.a(arr[i]);
+            }
 
-        b.a(']');
+            b.a(']');
 
-        return S.toString(GridLongList.class, this, "arr", b);
+            return S.toString(GridLongList.class, this, "arr", b);
+        } else
+            return getClass().getSimpleName() + " [size=" + size() + "]";
     }
 
     /**

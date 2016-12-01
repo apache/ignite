@@ -79,6 +79,8 @@ public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridLeanSet.class, this, "elements", map.keySet());
+        return S.INCLUDE_SENSITIVE ?
+            S.toString(GridLeanSet.class, this, "elements", map.keySet()) :
+            S.toString(GridLeanSet.class, this);
     }
 }

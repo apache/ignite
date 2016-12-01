@@ -15,6 +15,8 @@
 
 package org.jsr166;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -3098,6 +3100,8 @@ public class ConcurrentHashMap8<K, V>
      * @return a string representation of this map
      */
     public String toString() {
+        if (!S.INCLUDE_SENSITIVE)
+            return getClass().getSimpleName() + "[size=" + size() + "]";
         Traverser<K,V,Object> it = new Traverser<K,V,Object>(this);
         StringBuilder sb = new StringBuilder();
         sb.append('{');

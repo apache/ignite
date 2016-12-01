@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +32,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     private final String cacheName;
 
     /** Sql query. */
+    @GridToStringInclude(sensitive = true)
     private final String sqlQry;
 
     /** Sql query arguments. */
@@ -73,6 +75,8 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcQueryExecuteRequest.class, this, "args", Arrays.toString(args));
+        return S.INCLUDE_SENSITIVE ?
+            S.toString(OdbcQueryExecuteRequest.class, this, "args", Arrays.toString(args)) :
+            S.toString(OdbcQueryExecuteRequest.class, this);
     }
 }

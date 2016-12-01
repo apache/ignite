@@ -48,7 +48,7 @@ public class BinaryMetadata implements Externalizable {
     private String typeName;
 
     /** Recorded object fields. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Map<String, Integer> fields;
 
     /** Affinity key field name. */
