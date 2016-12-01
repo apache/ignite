@@ -58,7 +58,6 @@ public class CacheClientBinaryPutGetExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        Ignition.setClientMode(true);
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects cache put-get example started.");
