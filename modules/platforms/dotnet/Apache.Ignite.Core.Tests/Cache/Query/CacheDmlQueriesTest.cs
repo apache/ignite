@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using NUnit.Framework;
@@ -31,13 +32,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void FixtureSetUp()
         {
             //Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
-            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof(Foo))
+            };
+
+            Ignition.Start(cfg);
         }
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             //Thread.Sleep(Timeout.Infinite);
+
             Ignition.StopAll(true);
         }
 
@@ -71,6 +79,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCompositeKey()
         {
+            var cfg = new CacheConfiguration("composite_key", new QueryEntity(typeof(Key), typeof(Foo)));
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
+                                               "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(2, res[0]);  // 2 affected rows
+
+            var foos = cache.OrderBy(x => x.Key).ToArray();
+
+            Assert.AreEqual(2, foos.Length);
         }
 
         [Test]
@@ -84,14 +104,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // TODO: Create new cache, use binary-only mode?
         }
-        
+
+        private class Key
+        {
+            [QuerySqlField] public int Lo { get; set; }
+            [QuerySqlField] public int Hi { get; set; }
+        }
+
         private class Foo
         {
-            [QuerySqlField]
-            public int Id { get; set; }
-
-            [QuerySqlField]
-            public string Name { get; set; }
+            [QuerySqlField] public int Id { get; set; }
+            [QuerySqlField] public string Name { get; set; }
         }
     }
 }
