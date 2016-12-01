@@ -420,6 +420,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // TODO: What if class has never been used before?
             // This does not matter because QueryEntity defines tables, not class itself.
+            // However, we still should be able to get classes back?
             var cache = Cache();
         }
 
