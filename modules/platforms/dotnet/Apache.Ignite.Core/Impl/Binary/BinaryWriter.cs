@@ -1230,8 +1230,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     var len = _stream.Position - pos;
 
-                    var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
-                        schemaId, schemaOffset, flags);
+                    // TODO: call comparer for hash code.
+                    var hashCode = obj.GetHashCode();
+                    var header = new BinaryObjectHeader(desc.TypeId, hashCode, len, schemaId, schemaOffset, flags);
 
                     BinaryObjectHeader.Write(header, _stream, pos);
 
