@@ -57,7 +57,7 @@ public class HadoopShuffleFinishRequest implements Message, HadoopMessage {
      * @param jobId Job.
      * @param msgCnt Message count.
      */
-    public HadoopShuffleFinishRequest(HadoopJobId jobId, int msgCnt) {
+    public HadoopShuffleFinishRequest(HadoopJobId jobId, long msgCnt) {
         this.jobId = jobId;
         this.msgCnt = msgCnt;
     }

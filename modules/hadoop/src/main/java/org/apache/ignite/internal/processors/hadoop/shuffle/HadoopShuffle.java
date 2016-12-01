@@ -238,7 +238,7 @@ public class HadoopShuffle extends HadoopComponent {
             HadoopShuffleFinishResponse m = (HadoopShuffleFinishResponse)msg;
 
             try {
-                job(m.jobId()).onShuffleFinishResponse(src, m);
+                job(m.jobId()).onShuffleFinishResponse(src);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);

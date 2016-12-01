@@ -446,10 +446,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * Process shuffle finish response.
      *
      * @param nodeId Source node ID.
-     * @param msg Shuffle finish message.
      */
-    public void onShuffleFinishResponse(UUID nodeId, HadoopShuffleFinishResponse msg) {
-        // TODO.
+    public void onShuffleFinishResponse(UUID nodeId) {
+        remoteShuffleState(nodeId).onShuffleFinishResponse();
     }
 
     /**
@@ -634,7 +633,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         io.apply(nodeId, msg);
 
-        remoteShuffleState((UUID)nodeId).onShuffleMessageSent();
+        remoteShuffleState((UUID)nodeId).onShuffleMessage();
     }
 
     /**
@@ -824,8 +823,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
         if (stripedDirect) {
-            for (RemoteShuffleState rmtState : remoteShuffleStates().values())
+            for (Map.Entry<UUID, RemoteShuffleState> rmtStateEntry : remoteShuffleStates().entrySet()) {
+                UUID nodeId = rmtStateEntry.getKey();
+                RemoteShuffleState rmtState = rmtStateEntry.getValue();
+
+                io.apply((T)nodeId, new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount()));
+
                 fut.add(rmtState.future());
+            }
         }
         else {
             for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
@@ -1105,9 +1110,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * Remote shuffle state.
      */
     private static class RemoteShuffleState {
-        /** Node ID. */
-        private final UUID nodeId;
-
         /** Message count. */
         private final AtomicLong msgCnt = new AtomicLong();
 
@@ -1121,8 +1123,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
          */
         @SuppressWarnings("unchecked")
         public RemoteShuffleState(final UUID nodeId) {
-            this.nodeId = nodeId;
-
             fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 @Override public void apply(IgniteInternalFuture igniteInternalFuture) {
                     System.out.println("Shuffle ack received for node: " + nodeId);
@@ -1133,8 +1133,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         /**
          * Callback invoked when shuffle message is sent.
          */
-        public void onShuffleMessageSent() {
+        public void onShuffleMessage() {
             msgCnt.incrementAndGet();
+        }
+
+        /**
+         * Callback invoked on shuffle finish response.
+         */
+        public void onShuffleFinishResponse() {
+            fut.onDone();
         }
 
         /**
