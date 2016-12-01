@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collections;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,6 +34,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_TEST_SENSITIVE;
 
 /**
  *
@@ -40,29 +42,37 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
 public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
+    /** Whether or not to log grid name. */
+    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
+    /** Test sensitive mode. */
+    private static final boolean testSensitive = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
+    /** Prefix for all suspicious sensitive data */
+    private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
+    private static final Pattern[] SENSITIVE_PS = {
+        Pattern.compile(("\\bkey\\w*\\b")),
+        Pattern.compile(("\\bval\\w*\\b"))
+    };
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
             return new IgniteBiTuple<>();
         }
     };
-
+    /** */
+    private static ThreadLocal<StringBuilder> sbLocal = new ThreadLocal<StringBuilder>() {
+        @Override protected StringBuilder initialValue() {
+            return new StringBuilder(SENSITIVE_PREFIX);
+        }
+    };
     /** */
     private IgniteLogger impl;
-
     /** */
     private String gridName;
-
     /** */
     private String id8;
-
     /** */
     @GridToStringExclude
     private Object ctgr;
-
-    /** Whether or not to log grid name. */
-    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /**
      * No-arg constructor is required by externalization.
@@ -72,7 +82,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
-     *
      * @param impl Logger implementation to proxy to.
      * @param ctgr Optional logger category.
      * @param gridName Grid name (can be {@code null} for default grid).
@@ -81,6 +90,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String gridName, String id8) {
         assert impl != null;
+        if (testSensitive)
+            logSensitive("Test sensitive mode is enabled");
 
         this.impl = impl;
         this.ctgr = ctgr;
@@ -113,57 +124,83 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
-        impl.trace(enrich(msg));
+        if (testSensitive) {
+            testSensitive(msg);
+            if (impl.isTraceEnabled())
+                impl.trace(enrich(msg));
+        }
+        else
+            impl.trace(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
-        impl.debug(enrich(msg));
+        if (testSensitive) {
+            testSensitive(msg);
+            if (impl.isDebugEnabled())
+                impl.debug(enrich(msg));
+        }
+        else
+            impl.debug(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
-        impl.info(enrich(msg));
+        if (testSensitive) {
+            testSensitive(msg);
+            if (impl.isInfoEnabled())
+                impl.info(enrich(msg));
+        }
+        else
+            impl.info(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
+        if (testSensitive)
+            testSensitive(msg);
         impl.warning(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg, Throwable e) {
+        if (testSensitive)
+            testSensitive(msg, e);
         impl.warning(enrich(msg), e);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg) {
+        if (testSensitive)
+            testSensitive(msg);
         impl.error(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, Throwable e) {
+        if (testSensitive)
+            testSensitive(msg, e);
         impl.error(enrich(msg), e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
-        return impl.isTraceEnabled();
+        return testSensitive || impl.isTraceEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return impl.isDebugEnabled();
+        return testSensitive || impl.isDebugEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
-        return impl.isInfoEnabled();
+        return testSensitive || impl.isInfoEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return impl.isQuiet();
+        return !testSensitive && impl.isQuiet();
     }
 
     /**
@@ -175,6 +212,44 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      */
     private String enrich(@Nullable String m) {
         return logGridName && m != null ? "<" + gridName + '-' + id8 + "> " + m : m;
+    }
+
+    private void testSensitive(String m) {
+        if (isSensitive(m))
+            logSensitive(m);
+    }
+
+    private void testSensitive(String m, Throwable e) {
+        if (isSensitive(m))
+            logSensitive(m, e);
+        while (e != null) {
+            if (isSensitive(e.getMessage()))
+                logSensitive(m, e);
+            e = e.getCause();
+        }
+    }
+
+    private boolean isSensitive(String m) {
+        if (m == null || m.isEmpty())
+            return false;
+        for (Pattern p : SENSITIVE_PS) {
+            if (p.matcher(m).find())
+                return true;
+        }
+        return false;
+    }
+
+    private void logSensitive(String m) {
+        logSensitive(m, null);
+    }
+
+    private void logSensitive(String m, Throwable e) {
+        StringBuilder sb = sbLocal.get();
+        sb.setLength(SENSITIVE_PREFIX.length());
+        sb.append(m);
+        if (e != null)
+            sb.append(". ").append(e.getClass()).append(": ").append(e.getMessage());
+        impl.error(sb.toString());
     }
 
     /** {@inheritDoc} */

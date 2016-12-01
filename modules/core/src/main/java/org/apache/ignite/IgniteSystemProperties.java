@@ -37,6 +37,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
 
     /**
+     * If this system property is present the Ignite will test all strings passed into log.
+     * It's a special mode for testing purposes. All debug information will be generated,
+     * but only suspicious will be written into log with "error" level and special prefix SENSITIVE>
+     */
+    public static final String IGNITE_LOG_TEST_SENSITIVE = "IGNITE_LOG_TEST_SENSITIVE";
+
+    /**
      * This property is used internally to pass an exit code to loader when
      * Ignite instance is being restarted.
      */
