@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Binary
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -29,14 +30,14 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Determines whether the specified objects are equal.
         /// </summary>
-        /// <param name="x">The first object of type <paramref name="T" /> to compare.</param>
-        /// <param name="y">The second object of type <paramref name="T" /> to compare.</param>
+        /// <param name="x">The first object to compare.</param>
+        /// <param name="y">The second object to compare.</param>
         /// <returns>
         /// true if the specified objects are equal; otherwise, false.
         /// </returns>
         public bool Equals(IBinaryObject x, IBinaryObject y)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException(GetType() + "is not intended for direct usage.");
         }
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Core.Binary
         /// </returns>
         public int GetHashCode(IBinaryObject obj)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException(GetType() + "is not intended for direct usage.");
         }
 
         /** <inheritdoc /> */
