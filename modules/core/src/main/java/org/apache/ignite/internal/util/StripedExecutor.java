@@ -67,9 +67,11 @@ public class StripedExecutor implements ExecutorService {
                 stripes[i].start();
             }
 
-            // TODO
+            // TODO - move to starvation checker
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
+                    long[] cntrs = new long[stripes.length];
+
                     for (; !isShutdown();) {
                         try {
                             Thread.sleep(10_000);
@@ -78,8 +80,13 @@ public class StripedExecutor implements ExecutorService {
                             return;
                         }
 
-                        for (Stripe stripe : stripes) {
-                            if (stripe.queueSize() > 0) {
+                        for (int i = 0; i < stripes.length; i++) {
+                            Stripe stripe = stripes[i];
+
+                            long completedCnt = stripe.completedCnt;
+
+                            if (cntrs[i] == completedCnt &&
+                                stripe.active) {
                                 boolean deadlockPresent = U.deadlockPresent();
 
                                 GridStringBuilder sb = new GridStringBuilder();
@@ -87,15 +94,24 @@ public class StripedExecutor implements ExecutorService {
                                 sb.a(">>> Possible starvation in striped pool: ")
                                     .a(stripe.thread.getName()).a(U.nl())
                                     .a(stripe.queueToString()).a(U.nl())
-                                    .a("deadlock: ").a(deadlockPresent).a(U.nl());
+                                    .a("deadlock: ").a(deadlockPresent).a(U.nl())
+                                    .a("completed: ").a(completedCnt).a(U.nl());
 
-                                U.printStackTrace(stripe.thread.getId(), sb);
+                                U.printStackTrace(
+                                    stripe.thread.getId(),
+                                    sb);
 
                                 String msg = sb.toString();
 
-                                U.warn(log, msg);
-                                U.warn(null, msg);
+                                U.warn(
+                                    log,
+                                    msg);
+                                U.warn(
+                                    null,
+                                    msg);
                             }
+                            else
+                                cntrs[i] = completedCnt;
                         }
                     }
                 }
@@ -337,6 +353,12 @@ public class StripedExecutor implements ExecutorService {
         /** Stopping flag. */
         private volatile boolean stopping;
 
+        /** */
+        private volatile long completedCnt;
+
+        /** */
+        private volatile boolean active;
+
         /** Thread executing the loop. */
         protected Thread thread;
 
@@ -399,8 +421,17 @@ public class StripedExecutor implements ExecutorService {
                 try {
                     cmd = take();
 
-                    if (cmd != null)
-                        cmd.run();
+                    if (cmd != null) {
+                        active = true;
+
+                        try {
+                            cmd.run();
+                        }
+                        finally {
+                            active = false;
+                            completedCnt++;
+                        }
+                    }
                 }
                 catch (InterruptedException e) {
                     stopping = true;
@@ -433,6 +464,9 @@ public class StripedExecutor implements ExecutorService {
          */
         abstract int queueSize();
 
+        /**
+         * @return Stripe's queue to string presentation.
+         */
         abstract String queueToString();
 
         /** {@inheritDoc} */

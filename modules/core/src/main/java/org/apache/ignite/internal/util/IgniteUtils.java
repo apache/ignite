@@ -1302,7 +1302,7 @@ public abstract class IgniteUtils {
     public static void printStackTrace(long threadId, GridStringBuilder sb) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
-        ThreadInfo threadInfo = mxBean.getThreadInfo(threadId);
+        ThreadInfo threadInfo = mxBean.getThreadInfo(threadId, Integer.MAX_VALUE);
 
         printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
     }
