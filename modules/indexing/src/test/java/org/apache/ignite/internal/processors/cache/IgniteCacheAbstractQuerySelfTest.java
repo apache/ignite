@@ -571,7 +571,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(40, new PersonOther("Johnie Doe",50));
 
         QueryCursor<Cache.Entry<Integer, PersonOther>> qry =
-            cache.query(new SqlQuery<>(PersonOther.class, "FROM MyTableName WHERE salary > 70" ));
+            cache.query(new SqlQuery<Integer, PersonOther>(PersonOther.class, "FROM MyTableName WHERE salary > 70" ));
 
         assertEquals(2, qry.getAll().size());
 
