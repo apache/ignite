@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using NUnit.Framework;
 
     /// <summary>
@@ -24,12 +27,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// </summary>
     public class CacheDmlQueriesTest
     {
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// Tests primitive key.
         /// </summary>
         [Test]
         public void TestPrimitiveKey()
         {
+            var cfg = new CacheConfiguration("primitive_key", typeof(Foo));
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, int, string) " +
+                                                           "values (1, 2, 'John'), (2, 3, 'Mary')"))
+                .GetAll();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(2, res[0]);  // 2 affected rows
+
+            var foos = cache.OrderBy(x => x.Key).ToArray();
+
+            Assert.AreEqual(2, foos.Length);
         }
 
         /// <summary>
@@ -50,6 +78,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestBinaryMode()
         {
             // TODO: Create new cache, use binary-only mode?
+        }
+        
+        private class Foo
+        {
+            [QuerySqlField]
+            public int Int { get; set; }
+
+            [QuerySqlField]
+            public string String { get; set; }
         }
     }
 }
