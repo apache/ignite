@@ -416,9 +416,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests the modification query.
         /// </summary>
         [Test]
-        public void TestSqlDmlQUery()
+        public void TestSqlDmlQuery()
         {
-            // TODO:
+            // TODO: What if class has never been used before?
+            var cache = Cache();
         }
 
         /// <summary>
