@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// </summary>
     public class CacheDmlQueriesTest
     {
+        /// <summary>
+        /// Sets up test fixture.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -40,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Ignition.Start(cfg);
         }
 
+        /// <summary>
+        /// Tears down test fixture.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -168,12 +174,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var car = cache.Single();
         }
 
+        /// <summary>
+        /// Key.
+        /// </summary>
         private class Key
         {
             [QuerySqlField] public int Lo { get; set; }
             [QuerySqlField] public int Hi { get; set; }
         }
 
+        /// <summary>
+        /// Value.
+        /// </summary>
         private class Foo
         {
             [QuerySqlField] public int Id { get; set; }
