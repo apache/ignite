@@ -61,6 +61,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cfg = new CacheConfiguration("primitive_key", new QueryEntity(typeof(int), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
+            // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
                                                            "values (?, ?, ?), (?, ?, ?)",
                 1, 2, "John", 3, 4, "Mary")).GetAll();
@@ -84,6 +85,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test key existence.
             Assert.IsTrue(cache.ContainsKey(1));
             Assert.IsTrue(cache.ContainsKey(3));
+
+            // Test update.
         }
 
         /// <summary>
@@ -95,6 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cfg = new CacheConfiguration("composite_key", new QueryEntity(typeof(Key), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
+            // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
                                                "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
 
@@ -118,6 +122,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test key existence
             // TODO:
+
+            // Test update.
         }
 
         /// <summary>
