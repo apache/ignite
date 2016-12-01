@@ -575,7 +575,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(2, qry.getAll().size());
 
-        QueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("SELECT * FROM MyTableName WHERE salary > 70"));
+        QueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("SELECT name FROM MyTableName WHERE salary > 70"));
 
         assertEquals(2, query.getAll().size());
 

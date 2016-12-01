@@ -252,12 +252,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
-                    if(qryEntity.getTableName()!=null) {
-                        desc.alias(simpleValType);
-                        desc.name(qryEntity.getTableName());
-                    }
-                    else
-                        desc.name(simpleValType);
+                    desc.name(simpleValType);
+                    desc.alias(qryEntity.getTableName());
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
