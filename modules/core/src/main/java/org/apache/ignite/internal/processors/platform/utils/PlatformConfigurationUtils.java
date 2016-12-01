@@ -440,7 +440,7 @@ public class PlatformConfigurationUtils {
 
             res.setFields(fields);
 
-            if (keyFields.size() > 0)
+            if (!keyFields.isEmpty())
                 res.setKeyFields(keyFields);
         }
 
