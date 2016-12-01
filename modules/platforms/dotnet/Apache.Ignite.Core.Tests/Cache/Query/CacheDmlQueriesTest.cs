@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Linq;
@@ -37,7 +38,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof(Foo))
+                BinaryConfiguration = new BinaryConfiguration(typeof(Foo))
+                {
+                    TypeConfigurations =
+                    {
+                        new BinaryTypeConfiguration(typeof(Key))
+                        {
+                            EqualityComparer = new BinaryArrayEqualityComparer()
+                        }
+                    }
+                }
             };
 
             Ignition.Start(cfg);
@@ -121,12 +131,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
             // Existence tests fail because IdentityResolver is not set:
-            // TODO: Set resolver and change this
-            Assert.IsFalse(cache.ContainsKey(new Key(1, 2)));
-            Assert.IsFalse(cache.ContainsKey(foos[0].Key));
+            Assert.IsTrue(cache.ContainsKey(new Key(1, 2)));
+            Assert.IsTrue(cache.ContainsKey(foos[0].Key));
 
-            Assert.IsFalse(cache.ContainsKey(new Key(4, 5)));
-            Assert.IsFalse(cache.ContainsKey(foos[1].Key));
+            Assert.IsTrue(cache.ContainsKey(new Key(4, 5)));
+            Assert.IsTrue(cache.ContainsKey(foos[1].Key));
 
             // Test update.
         }
