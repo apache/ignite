@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
@@ -67,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly bool _isEnum;
 
         /** Comparer. */
-        private readonly IEqualityComparer<IBinaryObject> _equalityComparer;
+        private readonly IBinaryEqualityComparer _equalityComparer;
 
         /// <summary>
         /// Constructor.
@@ -106,7 +107,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
-            _equalityComparer = comparer;
+
+            _equalityComparer = comparer as IBinaryEqualityComparer;
+
+            if (comparer != null && _equalityComparer == null)
+                throw new IgniteException(string.Format("Unsupported IEqualityComparer<IBinaryObject> " +
+                                                        "implementation: {0}. Only predefined implementations " +
+                                                        "are supported.", comparer.GetType()));
         }
 
         /// <summary>
@@ -188,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc/> */
-        public IEqualityComparer<IBinaryObject> EqualityComparer
+        public IBinaryEqualityComparer EqualityComparer
         {
             get { return _equalityComparer; }
         }

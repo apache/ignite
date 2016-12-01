@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the equality comparer.
         /// </summary>
-        IEqualityComparer<IBinaryObject> EqualityComparer { get; }
+        IBinaryEqualityComparer EqualityComparer { get; }
 
         /// <summary>
         /// Write type structure.

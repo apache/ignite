@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc/> */
-        public IEqualityComparer<IBinaryObject> EqualityComparer
+        public IBinaryEqualityComparer EqualityComparer
         {
             get { return null; }
         }

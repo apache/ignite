@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Uses a set of binary object fields to calculate hash code and check equality.
     /// </summary>
-    public class BinaryFieldEqualityComparer : IEqualityComparer<IBinaryObject>
+    public class BinaryFieldEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer
     {
         /// <summary>
         /// Determines whether the specified objects are equal.
@@ -47,6 +49,13 @@ namespace Apache.Ignite.Core.Binary
         public int GetHashCode(IBinaryObject obj)
         {
             throw new System.NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length,
+            BinaryObjectSchemaHolder schema, Marshaller marshaller)
+        {
+            return 0; // TODO
         }
     }
 }
