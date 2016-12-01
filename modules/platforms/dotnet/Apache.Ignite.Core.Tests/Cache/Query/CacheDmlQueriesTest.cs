@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -106,16 +107,39 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("Mary", foos[1].Value.Name);
         }
 
+        /// <summary>
+        /// Tests the composite key without IsKeyField configuration.
+        /// </summary>
         [Test]
         public void TestInvalidCompositeKey()
         {
-            // TODO: Misconfigured key
+            var cfg = new CacheConfiguration("invalid_composite_key", new QueryEntity
+            {
+                KeyTypeName = "Key",
+                ValueTypeName = "Foo",
+                Fields = new[]
+                {
+                    new QueryField("Lo", typeof(int)),
+                    new QueryField("Hi", typeof(int)),
+                    new QueryField("Id", typeof(int)),
+                    new QueryField("Name", typeof(string))
+                }
+            });
+
+            var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
+
+            var ex = Assert.Throws<IgniteException>(
+                () => cache.QueryFields(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
+                                                           "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")));
+
+            Assert.AreEqual("Ownership flag not set for binary property. Have you set 'keyFields' " +
+                            "property of QueryEntity in programmatic or XML configuration?", ex.Message);
         }
 
         [Test]
         public void TestBinaryMode()
         {
-            // TODO: Create new cache, use binary-only mode?
+            // TODO: Create new cache, use binary-only mode with nonexistent class
         }
 
         private class Key
