@@ -492,6 +492,9 @@ public class DmlStatementsProcessor {
 
             newVal = plan.valSupplier.apply(e);
 
+            if (newVal == null)
+                throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
+
             if (bin && !(val instanceof BinaryObject))
                 val = cctx.grid().binary().toBinary(val);
 
@@ -858,7 +861,7 @@ public class DmlStatementsProcessor {
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
-            if (entry.getValue() != null)
+            if (entry.exists())
                 return false;
 
             entry.setValue(val);
@@ -878,14 +881,26 @@ public class DmlStatementsProcessor {
 
         /** */
         private ModifyingEntryProcessor(Object val, IgniteInClosure<MutableEntry<Object, Object>> entryModifier) {
+            assert val != null;
+
             this.val = val;
             this.entryModifier = entryModifier;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+            if (!entry.exists())
+                return null; // Someone got ahead of us and removed this entry, let's skip it.
+
+            Object entryVal = entry.getValue();
+
+            if (entryVal == null)
+                return null;
+
+            assert (entryVal instanceof BinaryObject) == (val instanceof BinaryObject);
+
             // Something happened to the cache while we were performing map-reduce.
-            if (!F.eq(entry.getValue(), val))
+            if (!F.eq(entryVal, val))
                 return false;
 
             entryModifier.apply(entry);
@@ -910,6 +925,8 @@ public class DmlStatementsProcessor {
 
         /** */
         private EntryValueUpdater(Object val) {
+            assert val != null;
+
             this.val = val;
         }
 
