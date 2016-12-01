@@ -242,7 +242,16 @@ public class HadoopShuffle extends HadoopComponent {
                 U.error(log, "Message handling failed.", e);
             }
         }
+        else if (msg instanceof HadoopShuffleFinishMessage) {
+            HadoopShuffleFinishMessage m = (HadoopShuffleFinishMessage)msg;
 
+            try {
+                job(m.jobId()).onShuffleFinish(m);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Message handling failed.", e);
+            }
+        }
         else
             throw new IllegalStateException("Unknown message type received to Hadoop shuffle [src=" + src +
                 ", msg=" + msg + ']');

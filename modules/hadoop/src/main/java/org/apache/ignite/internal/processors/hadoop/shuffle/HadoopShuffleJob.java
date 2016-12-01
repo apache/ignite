@@ -426,6 +426,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param msg Shuffle finish message.
+     */
+    public void onShuffleFinish(HadoopShuffleFinishMessage msg) {
+        // TODO
+    }
+
+    /**
      * Unsafe value.
      */
     private static class UnsafeValue implements HadoopMultimap.Value {
