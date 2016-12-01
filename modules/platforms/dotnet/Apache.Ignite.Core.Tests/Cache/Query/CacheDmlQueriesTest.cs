@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestCompositeKey()
         {
             var cfg = new CacheConfiguration("composite_key", new QueryEntity(typeof(Key), typeof(Foo)));
-            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+            var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
                                                "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res[0].Count);
             Assert.AreEqual(2, res[0][0]);  // 2 affected rows
 
-            var foos = cache.OrderBy(x => x.Key).ToArray();
+            var foos = cache.OrderBy(x => x.Key.Lo).ToArray();
 
             Assert.AreEqual(2, foos.Length);
         }
