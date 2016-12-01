@@ -136,10 +136,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             "property of QueryEntity in programmatic or XML configuration?", ex.Message);
         }
 
+        /// <summary>
+        /// Tests DML with pure binary cache mode, without classes.
+        /// </summary>
         [Test]
         public void TestBinaryMode()
         {
-            // TODO: Create new cache, use binary-only mode with nonexistent class
+            var cfg = new CacheConfiguration("binary_only", new QueryEntity
+            {
+                KeyTypeName = "CarKey",
+                ValueTypeName = "Car",
+                Fields = new[]
+                {
+                    new QueryField("VIN", typeof(string)) {IsKeyField = true},
+                    new QueryField("Id", typeof(int)) {IsKeyField = true},
+                    new QueryField("Make", typeof(string)),
+                    new QueryField("Year", typeof(int))
+                }
+            });
+
+            var cache = Ignition.GetIgnite().CreateCache<object, object>(cfg)
+                .WithKeepBinary<IBinaryObject, IBinaryObject>();
+
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into car(VIN, Id, Make, Year) " +
+                                                           "values ('DLRDMC', 88, 'DeLorean', 1982)")).GetAll();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(1, res[0].Count);
+            Assert.AreEqual(1, res[0][0]);
+
+            var car = cache.Single();
         }
 
         private class Key
