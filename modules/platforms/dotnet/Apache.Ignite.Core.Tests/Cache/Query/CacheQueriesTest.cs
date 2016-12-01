@@ -413,27 +413,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Tests the modification query.
-        /// </summary>
-        [Test]
-        public void TestSqlDmlQuery()
-        {
-            // TODO: What if class has never been used before?
-            // This does not matter because QueryEntity defines tables, not class itself.
-            // However, we still should be able to get classes back?
-            var cache = Cache();
-        }
-
-        /// <summary>
-        /// Tests the modification query with a new cache and new query entity config.
-        /// </summary>
-        [Test]
-        public void TestSqlDmlQueryDynamicCache()
-        {
-            // TODO: Create new cache, use binary-only mode?
-        }
-
-        /// <summary>
         /// Check text query.
         /// </summary>
         [Test]
