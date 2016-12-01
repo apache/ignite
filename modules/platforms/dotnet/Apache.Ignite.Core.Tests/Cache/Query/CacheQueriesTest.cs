@@ -425,6 +425,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the modification query with a new cache and new query entity config.
+        /// </summary>
+        [Test]
+        public void TestSqlDmlQueryDynamicCache()
+        {
+            // TODO: Create new cache, use binary-only mode?
+        }
+
+        /// <summary>
         /// Check text query.
         /// </summary>
         [Test]
