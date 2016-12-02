@@ -255,12 +255,26 @@
                 writer.WriteBoolean(false);
 
             // Binary config
-            var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
+            if (BinaryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
 
-            writer.WriteBoolean(isCompactFooterSet);
+                if (BinaryConfiguration.CompactFooterInternal != null)
+                {
+                    writer.WriteBoolean(true);
+                    writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);
+                }
 
-            if (isCompactFooterSet)
-                writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+                // TODO: Write identity resolver
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
 
             // User attributes
             var attrs = UserAttributes;
