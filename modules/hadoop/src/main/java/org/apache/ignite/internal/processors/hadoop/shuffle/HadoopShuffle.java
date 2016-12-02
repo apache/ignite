@@ -128,17 +128,21 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
-            res = newJob(jobId);
+            synchronized (jobs) {
+                res = jobs.get(jobId);
 
-            HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
+                if (res == null) {
+                    res = newJob(jobId);
 
-            if (old != null) {
-                res.close();
+                    HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
 
-                res = old;
+                    assert old == null;
+
+                    res.reducersInitialized();
+
+                    startSending(res);
+                }
             }
-            else if (res.reducersInitialized())
-                startSending(res);
         }
 
         return res;
