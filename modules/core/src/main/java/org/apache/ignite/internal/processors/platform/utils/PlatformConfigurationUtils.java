@@ -1183,6 +1183,34 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Writes the resolver.
+     *
+     * @param w Writer.
+     * @param resolver Resolver.
+     */
+    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
+        if (resolver instanceof BinaryArrayIdentityResolver)
+            w.writeByte((byte)1);
+        else if (resolver instanceof BinaryFieldIdentityResolver) {
+            w.writeByte((byte)2);
+
+            String[] fields = ((BinaryFieldIdentityResolver)resolver).getFieldNames();
+
+            if (fields != null) {
+                w.writeInt(fields.length);
+
+                for (String field : fields)
+                    w.writeString(field);
+            }
+            else
+                w.writeInt(0);
+        }
+        else {
+            w.writeByte((byte)0);
+        }
+    }
+
+    /**
      * Private constructor.
      */
     private PlatformConfigurationUtils() {
