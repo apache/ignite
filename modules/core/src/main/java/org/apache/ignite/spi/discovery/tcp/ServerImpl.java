@@ -208,9 +208,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Node ID in GridNioSession. */
     private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Size of the send queue. */
-    private static final int MSG_QUEUE_SIZE_META = GridNioSessionMetaKey.nextUniqueKey();
-
     /**
      * Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
      * <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
@@ -427,7 +424,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         nioSem = new Semaphore(spi.getClientNioThreads());
 
-        clientNioSrv = createClientNioServer();
+        clientNioSrv = createClientNioServer(gridName);
         clientNioSrv.start();
 
         nioClientProcessingPool = new IgniteThreadPoolExecutor(
@@ -479,7 +476,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * @return New NIO server.
      */
-    private GridNioServer<byte[]> createClientNioServer() {
+    private GridNioServer<byte[]> createClientNioServer(String gridName) {
         final GridNioServer<byte[]> srv;
 
         final ArrayList<GridNioFilter> filters = new ArrayList<>();
@@ -493,9 +490,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length) : ByteBuffer.wrap(msg0);
 
-                res.put(msg0);
+                if (directBuf) {
+                    res.put(msg0);
 
-                res.flip();
+                    res.flip();
+                }
 
                 return res;
             }
@@ -520,11 +519,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             final long writeTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                 spi.getSocketTimeout();
 
-            String gridName = "client";
-
-            if (Thread.currentThread() instanceof IgniteThread)
-                gridName = ((IgniteThread)Thread.currentThread()).getGridName();
-
             srv = GridNioServer.<byte[]>builder().address(U.getLocalHost())
                 .port(-1)
                 .listener(clientLsnr)
@@ -542,11 +536,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 .gridName(gridName)
                 .daemon(false)
                 .writeTimeout(writeTimeout)
-                .messageQueueSizeListener(new IgniteBiInClosure<GridNioSession, Integer>() {
-                    @Override public void apply(GridNioSession ses, Integer size) {
-                        ses.addMeta(MSG_QUEUE_SIZE_META, size);
-                    }
-                })
                 .build();
         }
         catch (Exception e) {
@@ -5703,8 +5692,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (state == WorkerState.STOPPED)
                 return new GridFinishedFuture<>();
 
-            log.warning("== " + ses);
-
             final IgniteInternalFuture<Object> res = ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
                 @Override public Object apply(final IgniteInternalFuture<Boolean> fut) {
                     try {
@@ -5856,16 +5843,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         public WorkerState state() {
             return state;
-        }
-
-        /**
-         * @return Send queue size after adding message, in other words it may return 0
-         * only when no messages were sent after creation.
-         */
-        int queueSize() {
-            Integer size = ses.meta(MSG_QUEUE_SIZE_META);
-
-            return size == null ? 0 : size;
         }
 
         /** {@inheritDoc} */
@@ -6081,7 +6058,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ack.verify(locNodeId);
 
-            clientMsgWrk.sendMessage(ack, null);
+            clientMsgWrk.addMessage(ack, null);
 
             if (heartbeatMsg != null)
                 clientMsgWrk.metrics(heartbeatMsg.metrics());
@@ -7780,16 +7757,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            boolean skipWait = false;
-            final int batchSize = 50;
-
             while (!isCancelled()) {
                 for (final ClientNioMessageWorker worker : nioWorkers) {
                     if (worker.state == WorkerState.JOINED && worker.sending.compareAndSet(false, true)) {
                         T2<TcpDiscoveryAbstractMessage, byte[]> msg;
-
-                        if (worker.queueSize() < 2) {
-                            int cnt = batchSize;
 
                             do {
                                 msg = worker.msgQueue.poll();
@@ -7797,10 +7768,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (msg != null)
                                     worker.sendMessage(msg.get1(), msg.get2());
 
-                                skipWait = msg != null;
                             }
-                            while (msg != null && --cnt > 0);
-                        }
+                            while (msg != null);
 
                         boolean res = worker.sending.compareAndSet(true, false);
 
@@ -7808,8 +7777,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (!skipWait)
-                    nioSem.tryAcquire(1000, TimeUnit.MILLISECONDS);
+                nioSem.tryAcquire(1000, TimeUnit.MILLISECONDS);
             }
         }
     }
