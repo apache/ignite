@@ -199,6 +199,8 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
 
             if (ctx != null)
                 ctx.cleanupTaskEnvironment();
+
+            memMgr.close();
         }
     }
 

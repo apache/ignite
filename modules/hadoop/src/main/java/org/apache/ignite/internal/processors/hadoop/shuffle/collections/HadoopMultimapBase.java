@@ -40,7 +40,7 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        mem.close();
+//        mem.close();
     }
 
     /**

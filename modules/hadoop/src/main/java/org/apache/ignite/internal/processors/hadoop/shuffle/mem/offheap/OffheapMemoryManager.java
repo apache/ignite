@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap;
 
-import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
@@ -49,12 +48,13 @@ public class OffheapMemoryManager extends MemoryManager {
 
         this.mem = mem;
         this.pageSize = pageSize;
-
-//        System.out.println("Create manager. mem=#" + Integer.toHexString(System.identityHashCode(this)));
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
+//        new Exception("Close OFF-mem").printStackTrace();
+//        System.out.println("+++ Close mem=" + Integer.toHexString(System.identityHashCode(this)));
+
         if (closed.compareAndSet(false, true)) {
 
             for (OffheapPage page : allPages)
@@ -78,51 +78,59 @@ public class OffheapMemoryManager extends MemoryManager {
 
         allPages.add(new OffheapPage(ptr, size));
 
+//        System.out.println("+++ allocate mem=" + Integer.toHexString(System.identityHashCode(this)) + " : ptr=" + ptr + ", size=" + size);
         return ptr;
     }
 
     /**
      * @param ptr Pointer.
      */
-    private void check(long ptr) {
+    private boolean check(long ptr) {
+        assert closed.get() : "Memory manager already closed " + Integer.toHexString(System.identityHashCode(this));
+
         for (OffheapPage page : allPages) {
-            if (ptr >= page.ptr() && ptr < page.ptr() + page.size())
-                return;
+            if ((ptr >= page.ptr()) && (ptr < page.ptr() + page.size()))
+                return true;
         }
 
         assert false : "Invalid ptr=" + ptr + ", pages=" + allPages.size();
+//        System.out.println("mem=" + Integer.toHexString(System.identityHashCode(this)) + " Invalid ptr=" + ptr + ", pages=" + allPages.size());
+//
+//        for (OffheapPage page : allPages)
+//            System.out.println("    page: ptr=" + page.ptr() + ", size=" + page.size() + ", mem=" + Integer.toHexString(System.identityHashCode(this)) );
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(long srcPtr, long destPtr, long len) {
-        check(srcPtr);
-        check(destPtr);
-        check(srcPtr + len);
-        check(destPtr + len);
+        assert check(srcPtr);
+        assert check(destPtr);
+        assert check(srcPtr + len);
+        assert check(destPtr + len);
 
         mem.copyMemory(srcPtr, destPtr, len);
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(byte[] srcBuf, int srcOff, long destPtr, long len) {
-        check(destPtr);
-        check(destPtr + len);
+        assert check(destPtr);
+        assert check(destPtr + len);
 
         GridUnsafe.copyMemory(srcBuf, GridUnsafe.BYTE_ARR_OFF + srcOff, null, destPtr, len);
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(long srcPtr, byte[] dstBuf, int dstOff, long len) {
-        check(srcPtr);
-        check(srcPtr + len);
+        assert check(srcPtr);
+        assert check(srcPtr + len);
 
         GridUnsafe.copyMemory(null, srcPtr, dstBuf, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
     }
 
     /** {@inheritDoc} */
     @Override public Bytes bytes(long ptr, long len) {
-        check(ptr);
-        check(ptr + len);
+        assert check(ptr);
+        assert check(ptr + len);
 
         byte [] buf = new byte[(int)len];
 
@@ -131,121 +139,121 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public long readLongVolatile(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readLongVolatile(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLongVolatile(long ptr, long v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeLongVolatile(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public boolean casLong(long ptr, long exp, long v) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.casLong(ptr, exp, v);
     }
 
     /** {@inheritDoc} */
     @Override public long readLong(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readLong(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long ptr, long v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeLong(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public int readInt(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readInt(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(long ptr, int v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeInt(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public float readFloat(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readFloat(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(long ptr, float v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeFloat(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public double readDouble(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readDouble(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(long ptr, double v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeDouble(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public short readShort(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readShort(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(long ptr, short v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeShort(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public byte readByte(long ptr) {
-        check(ptr);
+        assert check(ptr);
 
         return mem.readByte(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByte(long ptr, byte v) {
-        check(ptr);
+        assert check(ptr);
 
         mem.writeByte(ptr, v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBytes(long ptr, byte[] arr, int off, int len) {
-        check(ptr);
-        check(ptr + len);
+        assert check(ptr);
+        assert check(ptr + len);
 
         mem.writeBytes(ptr, arr, off, len);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
-        check(ptr);
-        check(ptr + len);
+        assert check(ptr);
+        assert check(ptr + len);
 
         return mem.readBytes(ptr, arr, off, len);
     }

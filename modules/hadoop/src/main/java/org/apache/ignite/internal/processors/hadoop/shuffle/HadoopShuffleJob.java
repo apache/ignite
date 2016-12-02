@@ -467,6 +467,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         }
 
         close(maps);
+        memMgr.close();
     }
 
     /**
