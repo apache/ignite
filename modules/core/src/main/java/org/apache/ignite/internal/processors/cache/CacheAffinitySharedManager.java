@@ -1032,16 +1032,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         multiFetchFut.init();
 
-        if (multiFetchFut.get() != null && multiFetchFut.get().size() == cacheIds.size()) {
-            fetchAffinityfromMultiResult(fut, multiFetchFut);
+        Set<Integer> processedCacheIds = null;
 
-            return;
+        if (multiFetchFut.get() != null) {
+            processedCacheIds = fetchAffinityfromMultiResult(fut, multiFetchFut);
+
+            if (multiFetchFut.get().size() == cacheIds.size())
+                return;
         }
 
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
+                continue;
+
+            if (processedCacheIds != null && processedCacheIds.contains(cacheCtx.cacheId()))
                 continue;
 
             DynamicCacheDescriptor cacheDesc = registeredCaches.get(cacheCtx.cacheId());
@@ -1115,9 +1121,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param fut Exchange future.
      * @param fetchFut Affinity fetch future.
+     * @return Set of processed cache ids.
      * @throws IgniteCheckedException If failed.
      */
-    private void fetchAffinityfromMultiResult(GridDhtPartitionsExchangeFuture fut,
+    private Set<Integer> fetchAffinityfromMultiResult(GridDhtPartitionsExchangeFuture fut,
         GridDhtAssignmentMultiFetchFuture fetchFut)
         throws IgniteCheckedException {
         AffinityTopologyVersion topVer = fut.topologyVersion();
@@ -1152,12 +1159,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             affCache.initialize(topVer, aff);
         }
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
-                continue;
-            assert resCacheId.contains(cacheCtx.cacheId()) : "not all caches found in result";
-        }
-
+        return resCacheId;
     }
 
     /**
