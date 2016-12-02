@@ -253,7 +253,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 
     /**  */
-    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4; //TODO: change to 1 and move to config
+    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 1; //TODO: move to config
 
     /** Logger. */
     @LoggerResource
