@@ -676,49 +676,57 @@ namespace ignite
             template <>
             int8_t BinaryReaderImpl::ReadTopObject<int8_t>()
             {
-                return ReadTopObject0(IGNITE_TYPE_BYTE, BinaryUtils::ReadInt8, static_cast<int8_t>(0));
+                return ReadTopObject0(IGNITE_TYPE_BYTE, BinaryUtils::ReadInt8,
+                    BinaryUtils::GetDefaultValue<int8_t>());
             }
 
             template <>
             bool BinaryReaderImpl::ReadTopObject<bool>()
             {
-                return ReadTopObject0(IGNITE_TYPE_BOOL, BinaryUtils::ReadBool, static_cast<bool>(0));
+                return ReadTopObject0(IGNITE_TYPE_BOOL, BinaryUtils::ReadBool,
+                    BinaryUtils::GetDefaultValue<bool>());
             }
 
             template <>
             int16_t BinaryReaderImpl::ReadTopObject<int16_t>()
             {
-                return ReadTopObject0(IGNITE_TYPE_SHORT, BinaryUtils::ReadInt16, static_cast<int16_t>(0));
+                return ReadTopObject0(IGNITE_TYPE_SHORT, BinaryUtils::ReadInt16,
+                    BinaryUtils::GetDefaultValue<int16_t>());
             }
 
             template <>
             uint16_t BinaryReaderImpl::ReadTopObject<uint16_t>()
             {
-                return ReadTopObject0(IGNITE_TYPE_CHAR, BinaryUtils::ReadUInt16, static_cast<uint16_t>(0));
+                return ReadTopObject0(IGNITE_TYPE_CHAR, BinaryUtils::ReadUInt16,
+                    BinaryUtils::GetDefaultValue<uint16_t>());
             }
 
             template <>
             int32_t BinaryReaderImpl::ReadTopObject<int32_t>()
             {
-                return ReadTopObject0(IGNITE_TYPE_INT, BinaryUtils::ReadInt32, static_cast<int32_t>(0));
+                return ReadTopObject0(IGNITE_TYPE_INT, BinaryUtils::ReadInt32,
+                    BinaryUtils::GetDefaultValue<int32_t>());
             }
 
             template <>
             int64_t BinaryReaderImpl::ReadTopObject<int64_t>()
             {
-                return ReadTopObject0(IGNITE_TYPE_LONG, BinaryUtils::ReadInt64, static_cast<int64_t>(0));
+                return ReadTopObject0(IGNITE_TYPE_LONG, BinaryUtils::ReadInt64,
+                    BinaryUtils::GetDefaultValue<int64_t>());
             }
 
             template <>
             float BinaryReaderImpl::ReadTopObject<float>()
             {
-                return ReadTopObject0(IGNITE_TYPE_FLOAT, BinaryUtils::ReadFloat, static_cast<float>(0));
+                return ReadTopObject0(IGNITE_TYPE_FLOAT, BinaryUtils::ReadFloat,
+                    BinaryUtils::GetDefaultValue<float>());
             }
 
             template <>
             double BinaryReaderImpl::ReadTopObject<double>()
             {
-                return ReadTopObject0(IGNITE_TYPE_DOUBLE, BinaryUtils::ReadDouble, static_cast<double>(0));
+                return ReadTopObject0(IGNITE_TYPE_DOUBLE, BinaryUtils::ReadDouble,
+                    BinaryUtils::GetDefaultValue<double>());
             }
 
             template <>
@@ -729,7 +737,7 @@ namespace ignite
                 if (typeId == IGNITE_TYPE_UUID)
                     return BinaryUtils::ReadGuid(stream);
                 else if (typeId == IGNITE_HDR_NULL)
-                    return Guid();
+                    return BinaryUtils::GetDefaultValue<Guid>();
                 else {
                     int32_t pos = stream->Position() - 1;
 
@@ -747,7 +755,7 @@ namespace ignite
                 else if (typeId == IGNITE_TYPE_TIMESTAMP)
                     return Date(BinaryUtils::ReadTimestamp(stream).GetMilliseconds());
                 else if (typeId == IGNITE_HDR_NULL)
-                    return Date();
+                    return BinaryUtils::GetDefaultValue<Date>();
                 else {
                     int32_t pos = stream->Position() - 1;
 
@@ -763,7 +771,7 @@ namespace ignite
                 if (typeId == IGNITE_TYPE_TIMESTAMP)
                     return BinaryUtils::ReadTimestamp(stream);
                 else if (typeId == IGNITE_HDR_NULL)
-                    return Timestamp();
+                    return BinaryUtils::GetDefaultValue<Timestamp>();
                 else {
                     int32_t pos = stream->Position() - 1;
 

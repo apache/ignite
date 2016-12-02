@@ -389,10 +389,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      *
      * @param task Task.
      * @param cb Optional callback.
-     * @return Result.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    protected int doInvoke(IgniteInClosureX<BinaryRawWriterEx> task, @Nullable PlatformCacheStoreCallback cb)
+    protected void doInvoke(IgniteInClosureX<BinaryRawWriterEx> task, @Nullable PlatformCacheStoreCallback cb)
         throws IgniteCheckedException{
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
@@ -403,7 +402,14 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             out.synchronize();
 
-            return platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer(), cb);
+            int res = platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer(), cb);
+
+            if (res != 0) {
+                // Read error
+                Object nativeErr = platformCtx.reader(mem.input()).readObjectDetached();
+
+                throw platformCtx.createNativeException(nativeErr);
+            }
         }
     }
 

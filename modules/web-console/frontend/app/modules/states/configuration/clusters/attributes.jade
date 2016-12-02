@@ -1,0 +1,57 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'attributes'
+-var model = 'backupItem'
+-var userAttributes = model + '.attributes'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label User attributes
+        ignite-form-field-tooltip.tipLabel
+            | Configuration for Ignite user attributes
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +ignite-form-group(ng-model='#{userAttributes}' ng-form='#{form}')
+                        ignite-form-field-label
+                            | User attributes
+                        ignite-form-group-tooltip
+                            | User-defined attributes to add to node
+                        ignite-form-group-add(ng-click='tableNewItem(attributesTbl)')
+                            | Add user attribute
+                        .group-content-empty(ng-if='!((#{userAttributes} && #{userAttributes}.length > 0) || tableNewItemActive(attributesTbl))')
+                            | Not defined
+                        .group-content(ng-show='(#{userAttributes} && #{userAttributes}.length > 0) || tableNewItemActive(attributesTbl)')
+                            table.links-edit(id='attributes' st-table=userAttributes)
+                                tbody
+                                    tr(ng-repeat='item in #{userAttributes}')
+                                        td.col-sm-12(ng-show='!tableEditing(attributesTbl, $index)')
+                                            a.labelFormField(ng-click='tableStartEdit(backupItem, attributesTbl, $index)') {{item.name}} = {{item.value}}
+                                            +btn-remove('tableRemove(backupItem, attributesTbl, $index)', '"Remove attribute"')
+                                        td.col-sm-12(ng-show='tableEditing(attributesTbl, $index)')
+                                            +table-pair-edit('attributesTbl', 'cur', 'Attribute name', 'Attribute value', false, false, '{{::attributesTbl.focusId + $index}}', '$index', '=')
+                                tfoot(ng-show='tableNewItemActive(attributesTbl)')
+                                    tr
+                                        td.col-sm-12
+                                            +table-pair-edit('attributesTbl', 'new', 'Attribute name', 'Attribute value', false, false, '{{::attributesTbl.focusId + $index}}', '-1', '=')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterUserAttributes')

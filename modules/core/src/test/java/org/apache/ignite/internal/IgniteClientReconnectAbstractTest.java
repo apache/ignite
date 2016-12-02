@@ -412,7 +412,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
                     try {
                         U.await(writeLatch0);
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e.getMessage(), e);
                     }
                 }

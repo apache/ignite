@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// Non-resizeable raw memory chunk without metadata header.
     /// </summary>
     [CLSCompliant(false)]
+    [ExcludeFromCodeCoverage]
     public class PlatformRawMemory : IPlatformMemory
     {
         /** */

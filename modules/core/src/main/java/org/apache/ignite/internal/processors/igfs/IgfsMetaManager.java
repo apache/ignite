@@ -1919,7 +1919,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         IgfsEntryInfo newInfo = IgfsUtils.createFile(
             IgniteUuid.randomUuid(),
-            status.blockSize(),
+            igfsCtx.configuration().getBlockSize(),
             status.length(),
             affKey,
             createFileLockId(false),

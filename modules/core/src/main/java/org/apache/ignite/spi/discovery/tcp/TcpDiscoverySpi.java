@@ -30,6 +30,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +56,8 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -66,6 +69,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -282,6 +286,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default value for TCP_NODELAY flag (value is <tt>true</tt>). */
+    public static final boolean DFLT_TCP_NODELAY = true;
+
+    /** Default number of threads for nio selector for client connections (value is <tt>1</tt>). */
+    public static final int DFLT_CLIENT_NIO_THREADS = 1;
+
+    /** Default max number of messages that could be queued to send to client. (value is <tt>0</tt>).  */
+    public static final int DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT = 0;
+
+    /** Default value for use direct or heap buffer. (value is <tt>false</tt>) */
+    public static final boolean DFLT_CLIENT_NIO_DIRECT_BUF = false;
+
+    /** Default byte order for nio client buffers. (value is <tt>ByteOrder.nativeOrder()</tt>) */
+    public static final ByteOrder DFLT_CLIENT_NIO_BYTE_ORDER = ByteOrder.nativeOrder();
+
     /** Local address. */
     protected String locAddr;
 
@@ -344,7 +363,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh = new JdkMarshaller();
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -375,6 +394,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** IP finder clean frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
+
+    /** TCP_NODELAY flag that is passed to each newly created socket. */
+    protected boolean tcpNoDelay = DFLT_TCP_NODELAY;
+
+    /** Number of threads for nio selector for client connections. */
+    protected int clientNioThreads = DFLT_CLIENT_NIO_THREADS;
+
+    /** Max number of messages that could be queued to send to client. */
+    protected int clientSndMsgQueueLimit = DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT;
+
+    /** Use direct or heap buffer flag. */
+    protected boolean clientNioDirectBuf = DFLT_CLIENT_NIO_DIRECT_BUF;
+
+    /** Byte order for nio client buffers. */
+    protected ByteOrder clientNioByteOrder = DFLT_CLIENT_NIO_BYTE_ORDER;
 
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
@@ -785,6 +819,137 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         this.ipFinderCleanFreq = ipFinderCleanFreq;
 
         return this;
+    }
+
+    /**
+     * Gets TCP_NODELAY flag.
+     * <p>
+     *     Defaults to {@link #DFLT_TCP_NODELAY}.
+     * </p>
+     *
+     * @return TCP_NODELAY flag.
+     */
+    public boolean getTcpNodelay() {
+        return tcpNoDelay;
+    }
+
+    /**
+     * Sets TCP_NODELAY flag.
+     * <p>
+     *     Defaults to {@link #DFLT_TCP_NODELAY}.
+     * </p>
+     *
+     * @param tcpNoDelay TCP_NODELAY flag.
+     * @return TCP_NODELAY flag.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setTcpNodelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
+
+        return this;
+    }
+
+    /**
+     * Gets number of threads for nio selector for client connections.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_THREADS}
+     * </p>
+     *
+     * @return Number of threads for nio selector for client connections.
+     */
+    public int getClientNioThreads() {
+        return clientNioThreads;
+    }
+
+    /**
+     * Sets number of threads for nio selector for client connections.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_THREADS}
+     * </p>
+     *
+     * @param clientNioThreads Number of threads for nio selector for client connections.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientNioThreads(final int clientNioThreads) {
+        this.clientNioThreads = clientNioThreads;
+    }
+
+    /**
+     * Gets max number of messages that could be queued to send to client.
+     * When number of queued messages before send reaches that value no new messages will be sent.
+     * {@code 0} means unlimited.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT}
+     * </p>
+     *
+     * @return max number of messages that could be queued to send to client.
+     */
+    public int getClientSendMessageQueueLimit() {
+        return clientSndMsgQueueLimit;
+    }
+
+    /**
+     * Sets max number of messages that could be queued to send to client.
+     * When number of queued messages before send reaches that value no new messages will be sent.
+     * {@code 0} means unlimited.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT}
+     * </p>
+     *
+     * @param clientMsgQueueLimit max number of messages that could be queued to send to client.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientSendMessageQueueLimit(final int clientMsgQueueLimit) {
+        this.clientSndMsgQueueLimit = clientMsgQueueLimit;
+    }
+
+    /**
+     * Gets flag that indicates whether use direct buffer or heap buffer for nio client
+     * connections.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_DIRECT_BUF}
+     * </p>
+     *
+     * @return {@code True} if use direct buffer.
+     */
+    public boolean isClientDirectBuffer() {
+        return clientNioDirectBuf;
+    }
+
+    /**
+     * Sets flag that indicates whether use direct buffer or heap buffer for nio client
+     * connections.
+     *
+     * @param directBuf Direct buffer flag.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientDirectBuffer(boolean directBuf) {
+        this.clientNioDirectBuf = directBuf;
+    }
+
+    /**
+     * Gets byte order that is used in client nio buffers.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_BYTE_ORDER}
+     * </p>
+     *
+     * @return Client nio buffers byte order.
+     */
+    public ByteOrder getClientByteOrder() {
+        return clientNioByteOrder;
+    }
+
+    /**
+     * Sets byte order that is used in client nio buffers.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_BYTE_ORDER}
+     * </p>
+     *
+     * @param order Client nio buffers byte order.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientByteOrder(ByteOrder order) {
+        this.clientNioByteOrder = order;
     }
 
     /**
@@ -1324,7 +1489,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             // Use channel directly as a workaround, because output stream
             // from NIO socket may block infinitely.
-            if (ch != null && !(sock instanceof ServerImpl.NioSSLSocket))
+            if (ch != null && !(sock instanceof ServerImpl.NioSslSocket))
                 ch.write(ByteBuffer.wrap(data));
             else {
                 OutputStream out = sock.getOutputStream();
@@ -1392,7 +1557,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IgniteCheckedException err = null;
 
         try {
-            marsh.marshal(msg, out);
+            marshaller().marshal(msg, out);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -1458,6 +1623,28 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * Adds discovery message to NIO session.
+     *
+     * @param ses NIO session.
+     * @param msg Discovery message to send.
+     * @param msgBytes Bytes to send.
+     * @return Future.
+     */
+    protected GridNioFuture<?> sendMessage(GridNioSession ses, @Nullable TcpDiscoveryAbstractMessage msg,
+        @Nullable byte[] msgBytes) throws IgniteCheckedException {
+        assert msg != null || msgBytes != null : "Null message to send";
+
+        final GridNioFuture<?> fut;
+
+        if (msgBytes != null)
+            fut = ses.send(msgBytes);
+        else
+            fut = ses.send(marshaller().marshal(msg));
+
+        return fut;
+    }
+
+    /**
      * Reads message from the socket limiting read time.
      *
      * @param sock Socket.
@@ -1476,14 +1663,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in,
+            T res = marshaller().unmarshal(in == null ? sock.getInputStream() : in,
                 U.resolveClassLoader(ignite.configuration()));
 
             return res;
         }
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
-                LT.warn(log, null, "Timed out waiting for message to be read (most probably, the reason is " +
+                LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
                     "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
 
             throw e;
@@ -1523,7 +1710,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             return res;
         }
         catch (SocketTimeoutException e) {
-            LT.warn(log, null, "Timed out waiting for message delivery receipt (most probably, the reason is " +
+            LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
                 "configuration property). Will retry to send message with increased timeout. " +
                 "Current timeout: " + timeout + '.');
@@ -1587,7 +1774,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                     res.add(resolved);
             }
             catch (UnknownHostException ignored) {
-                LT.warn(log, null, "Failed to resolve address from IP finder (host is unknown): " + addr);
+                LT.warn(log, "Failed to resolve address from IP finder (host is unknown): " + addr);
 
                 // Add address in any case.
                 res.add(addr);
@@ -1694,7 +1881,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
             try {
-                byte[] bytes = marsh.marshal(entry.getValue());
+                byte[] bytes = marshaller().marshal(entry.getValue());
 
                 data0.put(entry.getKey(), bytes);
             }
@@ -1725,7 +1912,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
-                Serializable compData = marsh.unmarshal(entry.getValue(), clsLdr);
+                Serializable compData = marshaller().unmarshal(entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }
@@ -2004,6 +2191,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         impl.brakeConnection();
     }
 
+    /**
+     * @return Marshaller.
+     */
+    protected Marshaller marshaller() {
+        MarshallerUtils.setNodeName(marsh, gridName);
+
+        return marsh;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoverySpi.class, this);
@@ -2050,7 +2246,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                 // Close socket - timeout occurred.
                 U.closeQuiet(sock);
 
-                LT.warn(log, null, "Socket write has timed out (consider increasing " +
+                LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
                     "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
                     "failureDetectionTimeout=" + failureDetectionTimeout() + ']' :

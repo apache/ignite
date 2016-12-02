@@ -145,6 +145,11 @@ namespace ignite
                     val = TransactionMetrics(commitTime, rollbackTime, commits, rollbacks);
                 }
 
+                virtual void SetNull()
+                {
+                    // No-op.
+                }
+
                 /**
                  * Get value.
                  *

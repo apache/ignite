@@ -110,7 +110,7 @@ public interface IgfsSecondaryFileSystem {
      * Lists file paths under the specified path.
      *
      * @param path Path to list files under.
-     * @return List of files under the specified path.
+     * @return List of paths under the specified path.
      * @throws IgniteException In case of error.
      * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If path doesn't exist.
      */

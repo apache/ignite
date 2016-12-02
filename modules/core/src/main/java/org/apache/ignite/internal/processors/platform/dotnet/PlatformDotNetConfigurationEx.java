@@ -19,12 +19,16 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionCacheExtension;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Extended .Net configuration.
@@ -81,6 +85,11 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     /** {@inheritDoc} */
     @Override public PlatformLogger logger() {
         return logger;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<PlatformCacheExtension> cacheExtensions() {
+        return Collections.<PlatformCacheExtension>singleton(new PlatformDotNetSessionCacheExtension());
     }
 
     /**

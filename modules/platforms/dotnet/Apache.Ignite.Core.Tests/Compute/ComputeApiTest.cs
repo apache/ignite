@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -524,6 +523,32 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, prj.GetNodes().Count);
             Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(0)));
             Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(1)));
+        }
+
+        /// <summary>
+        /// Test for daemon nodes projection.
+        /// </summary>
+        [Test]
+        public void TestForDaemons()
+        {
+            Assert.AreEqual(0, _grid1.GetCluster().ForDaemons().GetNodes().Count);
+
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    SpringConfigUrl = GetConfigs().Item1,
+                    GridName = "daemonGrid",
+                    IsDaemon = true
+                })
+            )
+            {
+                var prj = _grid1.GetCluster().ForDaemons();
+
+                Assert.AreEqual(1, prj.GetNodes().Count);
+                Assert.AreEqual(ignite.GetCluster().GetLocalNode().Id, prj.GetNode().Id);
+
+                Assert.IsTrue(prj.GetNode().IsDaemon);
+                Assert.IsTrue(ignite.GetCluster().GetLocalNode().IsDaemon);
+            }
         }
 
         /// <summary>
@@ -1208,33 +1233,23 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Create configuration.
         /// </summary>
         /// <param name="path">XML config path.</param>
-        private IgniteConfiguration Configuration(string path)
+        private static IgniteConfiguration Configuration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            var portTypeCfgs = new List<BinaryTypeConfiguration>
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
-                new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
-                new BinaryTypeConfiguration(JavaBinaryCls),
-                new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
-                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)),
+                        new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)),
+                        new BinaryTypeConfiguration(JavaBinaryCls),
+                        new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
+                        new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                    }
+                },
+                SpringConfigUrl = path
             };
-
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-
-            cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
         }
     }
 

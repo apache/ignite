@@ -1,0 +1,63 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../../app/helpers/jade/mixins.jade
+
+-var model = 'backupItem.collision.JobStealing'
+-var stealingAttributes = model + '.stealingAttributes'
+
+div
+    .details-row
+        +number('Active jobs threshold:', model + '.activeJobsThreshold', '"jsActiveJobsThreshold"', 'true', '95', '0',
+            'Number of jobs that can be executed in parallel')
+    .details-row
+        +number('Wait jobs threshold:', model + '.waitJobsThreshold', '"jsWaitJobsThreshold"', 'true', '0', '0',
+            'Job count threshold at which this node will start stealing jobs from other nodes')
+    .details-row
+        +number('Message expire time:', model + '.messageExpireTime', '"jsMessageExpireTime"', 'true', '1000', '1',
+            'Message expire time in ms')
+    .details-row
+        +number('Maximum stealing attempts:', model + '.maximumStealingAttempts', '"jsMaximumStealingAttempts"', 'true', '5', '1',
+            'Maximum number of attempts to steal job by another node')
+    .details-row
+        +checkbox('Stealing enabled', model + '.stealingEnabled', '"jsStealingEnabled"',
+            'Node should attempt to steal jobs from other nodes')
+    .details-row
+        +java-class('External listener:', model + '.externalCollisionListener', '"jsExternalCollisionListener"', 'true', 'false',
+            'Listener to be set for notification of external collision events')
+    .details-row
+        +ignite-form-group(ng-model='#{stealingAttributes}' ng-form='#{form}')
+            ignite-form-field-label
+                | Stealing attributes
+            ignite-form-group-tooltip
+                | Configuration parameter to enable stealing to/from only nodes that have these attributes set
+            ignite-form-group-add(ng-click='tableNewItem(stealingAttributesTbl)')
+                | Add stealing attribute
+            .group-content-empty(ng-if='!((#{stealingAttributes} && #{stealingAttributes}.length > 0) || tableNewItemActive(stealingAttributesTbl))')
+                | Not defined
+            .group-content(ng-show='(#{stealingAttributes} && #{stealingAttributes}.length > 0) || tableNewItemActive(stealingAttributesTbl)')
+                table.links-edit(id='attributes' st-table=stealingAttributes)
+                    tbody
+                        tr(ng-repeat='item in #{stealingAttributes} track by $index')
+                            td.col-sm-12(ng-show='!tableEditing(stealingAttributesTbl, $index)')
+                                a.labelFormField(ng-click='tableStartEdit(backupItem, stealingAttributesTbl, $index)') {{item.name}} = {{item.value}}
+                                +btn-remove('tableRemove(backupItem, stealingAttributesTbl, $index)', '"Remove attribute"')
+                            td.col-sm-12(ng-show='tableEditing(stealingAttributesTbl, $index)')
+                                +table-pair-edit('stealingAttributesTbl', 'cur', 'Attribute name', 'Attribute value', false, false, '{{::stealingAttributesTbl.focusId + $index}}', '$index', '=')
+                    tfoot(ng-show='tableNewItemActive(stealingAttributesTbl)')
+                        tr
+                            td.col-sm-12
+                                +table-pair-edit('stealingAttributesTbl', 'new', 'Attribute name', 'Attribute value', false, false, '{{::stealingAttributesTbl.focusId + $index}}', '-1', '=')

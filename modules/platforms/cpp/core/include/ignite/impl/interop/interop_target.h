@@ -68,14 +68,25 @@ namespace ignite
 
                 /**
                  * Internal out-in operation.
+                 * Uses two independent memory pieces to write and read data.
                  *
                  * @param opType Operation type.
                  * @param inOp Input.
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp,
-                    IgniteError* err);
+                void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+
+                /**
+                 * Internal out-in operation.
+                 * Uses single memory piece to write and read data.
+                 *
+                 * @param opType Operation type.
+                 * @param inOp Input.
+                 * @param outOp Output.
+                 * @param err Error.
+                 */
+                void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
 
                 /**
                  * Get environment shared pointer.

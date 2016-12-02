@@ -156,17 +156,17 @@ namespace ignite
 
             void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError* err)
             {
-                OutInOp(OP_LOCAL_PEEK, inOp, outOp, err);
+                OutInOpX(OP_LOCAL_PEEK, inOp, outOp, err);
             }
 
             void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET, inOp, outOp, err);
+                OutInOpX(OP_GET, inOp, outOp, err);
             }
 
             void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_ALL, inOp, outOp, err);
+                OutInOpX(OP_GET_ALL, inOp, outOp, err);
             }
 
             void CacheImpl::Put(InputOperation& inOp, IgniteError* err)
@@ -181,17 +181,17 @@ namespace ignite
 
             void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_PUT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_REPLACE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REPLACE, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_REMOVE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REMOVE, inOp, outOp, err);
             }
 
             bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError* err)
@@ -201,7 +201,7 @@ namespace ignite
 
             void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
             }
 
             bool CacheImpl::Replace(InputOperation& inOp, IgniteError* err)

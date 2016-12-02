@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +49,10 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -148,6 +154,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean reconnectDisabled;
 
+    /** */
+    private static ExecutorService pool;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -241,6 +250,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         clientNodeIds = new GridConcurrentHashSet<>();
 
         clientsPerSrv = 2;
+
+        pool = Executors.newSingleThreadExecutor();
     }
 
     /** {@inheritDoc} */
@@ -253,6 +264,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         joinTimeout = TcpDiscoverySpi.DFLT_JOIN_TIMEOUT;
         netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
         longSockTimeouts = false;
+
+        pool.shutdownNow();
 
         assert G.allGrids().isEmpty();
     }
@@ -461,8 +474,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(new IgniteInClosure
-            <Socket>() {
+        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(
+            new IgniteInClosure<Socket>() {
             @Override public void apply(Socket sock) {
                 try {
                     latch.await();
@@ -2157,13 +2170,65 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override protected GridNioFuture<?> sendMessage(final GridNioSession ses, final TcpDiscoveryAbstractMessage msg,
+            @Nullable final byte[] msgBytes) {
+            final GridNioFutureImpl fut = new GridNioFutureImpl();
+
+            final Runnable task = new Runnable() {
+                @Override public void run() {
+                    waitFor(writeLock);
+
+                    try {
+                        if (!onMessage(null, ses, msg)) {
+                            fut.onDone(null);
+
+                            return;
+                        }
+                    }
+                    catch (IOException e) {
+                        fut.onDone(e);
+                    }
+
+                    try {
+                        TestTcpDiscoverySpi.super.sendMessage(ses, msg, msgBytes).chain(new C1<IgniteInternalFuture<?>, Object>() {
+                            private static final long serialVersionUID = 0L;
+
+                            @Override public Object apply(final IgniteInternalFuture<?> igniteInternalFut) {
+                                try {
+                                    final Object obj = igniteInternalFut.get();
+
+                                    fut.onDone(obj, null);
+
+                                    return obj;
+                                }
+                                catch (IgniteCheckedException e) {
+                                    fut.onDone(e);
+                                }
+
+                                return null;
+                            }
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onDone(e);
+                    }
+                }
+            };
+
+            // We need to process messages in correct order, so it must be a single thread pool
+            pool.submit(task);
+
+            return fut;
+        }
+
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock,
             OutputStream out,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(sock, null, msg))
                 return;
 
             super.writeToSocket(sock, out, msg, timeout);
@@ -2177,7 +2242,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException {
             waitFor(writeLock);
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(sock, null, msg))
                 return;
 
             super.writeToSocket(sock, msg, msgBytes, timeout);
@@ -2192,7 +2257,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
          * @return {@code False} if should not further process message.
          * @throws IOException If failed.
          */
-        private boolean onMessage(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException {
+        private boolean onMessage(Socket sock, GridNioSession ses, TcpDiscoveryAbstractMessage msg) throws IOException {
+            assert sock != null || ses != null;
+
             boolean fail = false;
 
             if (skipNodeAdded &&
@@ -2210,9 +2277,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 fail = failClientReconnect.getAndDecrement() > 0;
 
             if (fail) {
-                log.info("Close socket on message write [msg=" + msg + "]");
+                if (sock != null) {
+                    log.info("Close socket on message write [msg=" + msg + "]");
 
-                sock.close();
+                    sock.close();
+                }
+                else {
+                    log.info("Close nio session on message write [msg=" + msg + "]");
+
+                    ses.close();
+                }
             }
 
             return true;
