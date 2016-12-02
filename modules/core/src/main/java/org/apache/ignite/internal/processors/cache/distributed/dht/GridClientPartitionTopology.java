@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -96,7 +97,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Partition update counters. */
-    private Map<Integer, Long> cntrMap = new HashMap<>();
+    private Map<Integer, T2<Long, Long>> cntrMap = new HashMap<>();
 
     /**
      * @param cctx Context.
@@ -534,7 +535,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
-        Map<Integer, Long> cntrMap) {
+        Map<Integer, T2<Long, Long>> cntrMap) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchId=" + exchId + ", parts=" + fullMapString() + ']');
 
@@ -628,7 +629,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        Map<Integer, Long> cntrMap) {
+        Map<Integer, T2<Long, Long>> cntrMap) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
 
@@ -707,10 +708,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             }
 
             if (cntrMap != null) {
-                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
-                    Long cntr = this.cntrMap.get(e.getKey());
+                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
+                    T2<Long, Long> cntr = this.cntrMap.get(e.getKey());
 
-                    if (cntr == null || cntr < e.getValue())
+                    if (cntr == null || cntr.get2() < e.getValue().get2())
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
             }
@@ -888,7 +889,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setOwners(int p, Set<UUID> owners, boolean skipUpdateSeq) {
+    @Override public void setOwners(int p, Set<UUID> owners, boolean updateSeq) {
         lock.writeLock().lock();
 
         try {
@@ -896,22 +897,16 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 if (!e.getValue().containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
                     e.getValue().put(p, MOVING);
-
-                    if (!skipUpdateSeq) {
-                        updateSeq.incrementAndGet();
-
-                        skipUpdateSeq = true;
-                    }
-                }
                 else if (owners.contains(e.getKey()))
                     e.getValue().put(p, OWNING);
             }
 
             part2node.put(p, owners);
 
-            return skipUpdateSeq;
+            if (updateSeq)
+                this.updateSeq.incrementAndGet();
         }
         finally {
             lock.writeLock().unlock();
@@ -919,7 +914,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Long> updateCounters() {
+    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
         lock.readLock().lock();
 
         try {
