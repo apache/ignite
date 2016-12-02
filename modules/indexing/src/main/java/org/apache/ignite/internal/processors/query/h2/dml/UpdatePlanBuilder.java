@@ -60,14 +60,6 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VA
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
  */
 public final class UpdatePlanBuilder {
-    // At the end of the day, column names for both key and value are uppercased - see
-    // org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.createTable
-    /** */
-    private final static String KEY_COL_NAME = KEY_FIELD_NAME.toUpperCase();
-
-    /** */
-    private final static String VAL_COL_NAME = VAL_FIELD_NAME.toUpperCase();
-
     /** */
     private UpdatePlanBuilder() {
         // No-op.
@@ -140,7 +132,7 @@ public final class UpdatePlanBuilder {
             // not for updates, and hence will allow putting new pairs only.
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
+            if (keys.length != 1 || !IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -180,12 +172,12 @@ public final class UpdatePlanBuilder {
 
             colTypes[i] = col.resultType().type();
 
-            if (KEY_COL_NAME.equals(colName)) {
+            if (KEY_FIELD_NAME.equals(colName)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (VAL_COL_NAME.equals(colName)) {
+            if (VAL_FIELD_NAME.equals(colName)) {
                 valColIdx = i;
                 continue;
             }
@@ -276,7 +268,7 @@ public final class UpdatePlanBuilder {
 
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
-                    if (VAL_COL_NAME.equals(colNames[i]))
+                    if (VAL_FIELD_NAME.equals(colNames[i]))
                         valColIdx = i;
                 }
 

@@ -212,10 +212,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
 
     /** Field name for key. */
-    public static final String KEY_FIELD_NAME = "_key";
+    public static final String KEY_FIELD_NAME = "_KEY";
 
     /** Field name for value. */
-    public static final String VAL_FIELD_NAME = "_val";
+    public static final String VAL_FIELD_NAME = "_VAL";
 
     /** */
     private static final Field COMMAND_FIELD;
@@ -1459,7 +1459,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
-            if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
+            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
 
