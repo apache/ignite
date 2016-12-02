@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -72,6 +73,8 @@ public class HadoopShuffleMessage implements HadoopMessage {
     }
 
     /**
+     * @param jobId Job ID.
+     * @param reducer Reducer.
      * @param size Size.
      */
     public HadoopShuffleMessage(HadoopJobId jobId, int reducer, int size) {
@@ -142,40 +145,44 @@ public class HadoopShuffleMessage implements HadoopMessage {
     }
 
     /**
+     * @param mem Mamory manager.
      * @param keyPtr Key pointer.
      * @param keySize Key size.
      */
-    public void addKey(long keyPtr, int keySize) {
-        add(MARKER_KEY, keyPtr, keySize);
+    public void addKey(MemoryManager mem, long keyPtr, int keySize) {
+        add(mem, MARKER_KEY, keyPtr, keySize);
     }
 
     /**
+     * @param mem Mamory manager.
      * @param valPtr Value pointer.
      * @param valSize Value size.
      */
-    public void addValue(long valPtr, int valSize) {
-        add(MARKER_VALUE, valPtr, valSize);
+    public void addValue(MemoryManager mem, long valPtr, int valSize) {
+        add(mem, MARKER_VALUE, valPtr, valSize);
     }
 
     /**
+     * @param mem Mamory manager.
      * @param marker Marker.
      * @param ptr Pointer.
      * @param size Size.
      */
-    private void add(byte marker, long ptr, int size) {
+    private void add(MemoryManager mem, byte marker, long ptr, int size) {
         buf[off++] = marker;
 
         GridUnsafe.putInt(buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += 4;
 
-        GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
+        mem.copyMemory(ptr, buf, off, size);
 
         off += size;
     }
 
     /**
      * @param v Visitor.
+     * @throws IgniteCheckedException If failed.
      */
     public void visit(Visitor v) throws IgniteCheckedException {
         for (int i = 0; i < off;) {
@@ -229,6 +236,7 @@ public class HadoopShuffleMessage implements HadoopMessage {
          * @param buf Buffer.
          * @param off Offset.
          * @param len Length.
+         * @throws IgniteCheckedException If failed.
          */
         public void onKey(byte[] buf, int off, int len) throws IgniteCheckedException;
 
@@ -236,6 +244,7 @@ public class HadoopShuffleMessage implements HadoopMessage {
          * @param buf Buffer.
          * @param off Offset.
          * @param len Length.
+         * @throws IgniteCheckedException If failed.
          */
         public void onValue(byte[] buf, int off, int len) throws IgniteCheckedException;
     }

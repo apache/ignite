@@ -15,31 +15,52 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
-
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+package org.apache.ignite.internal.processors.hadoop.shuffle.mem.heap;
 
 /**
- * Base class for all multimaps.
+ * Page.
  */
-public abstract class HadoopMultimapBase implements HadoopMultimap {
-    /** */
-    protected final MemoryManager mem;
+public class HeapPage {
+    /** Pointer. */
+    private byte [] buf;
+
+    /** Size. */
+    private final int order;
+
+    /** Size. */
+    private final long size;
 
     /**
-     * @param jobInfo Job info.
-     * @param mem Memory manager.n
+     * Constructor.
+     *
+     * @param order Page order.
+     * @param size Size.
      */
-    protected HadoopMultimapBase(HadoopJobInfo jobInfo, MemoryManager mem) {
-        assert jobInfo != null;
-        assert mem != null;
+    HeapPage(int order, int size) {
+        this.order = order;
+        this.size = size;
 
-        this.mem = mem;
+        buf = new byte[size];
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
+    /**
+     * @return Pointer.
+     */
+    long ptr() {
+        return ((long)order) << 32;
+    }
+
+    /**
+     * @return Page size.
+     */
+    long size() {
+        return size;
+    }
+
+    /**
+     * @return Page buffer.
+     */
+    byte[] buf() {
+        return buf;
     }
 }

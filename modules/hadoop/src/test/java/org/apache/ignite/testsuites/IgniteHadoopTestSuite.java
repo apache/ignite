@@ -23,11 +23,19 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionOnheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolMultipleServersSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOnheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapOnheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListOnheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.KerberosUserNameMapperSelfTest;
@@ -66,7 +74,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopSnappyFullMapRedu
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSnappyTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSortingTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSplitWrapperSelfTest;
-import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTasksV1Test;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTasksV2Test;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUserLibsSelfTest;
@@ -74,9 +81,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopV2JobSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopValidationSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedMapReducePlannerTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedPlannerMapReduceTest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapSelfTest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataStreamSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -162,13 +166,19 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapOnheapSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOnheapSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListOnheapSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionOnheapSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopV2JobSelfTest.class.getName())));
 

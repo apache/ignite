@@ -29,9 +29,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,17 +55,10 @@ public class HadoopSkipList extends HadoopMultimapBase {
      * @param jobInfo Job info.
      * @param mem Memory.
      */
-    public HadoopSkipList(HadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+    public HadoopSkipList(HadoopJobInfo jobInfo, MemoryManager mem) {
         super(jobInfo, mem);
 
-        heads = mem.allocate(HEADS_SIZE, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        super.close();
-
-        mem.release(heads, HEADS_SIZE);
+        heads = mem.allocate(HEADS_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -86,9 +79,9 @@ public class HadoopSkipList extends HadoopMultimapBase {
                 lastVisitedValue(meta, valPtr); // Set it to the first value in chain.
 
                 do {
-                    v.onValue(valPtr + 12, valueSize(valPtr));
+                    v.onValue(valPtr + 12, mem.valueSize(valPtr));
 
-                    valPtr = nextValue(valPtr);
+                    valPtr = mem.nextValue(valPtr);
                 }
                 while (valPtr != lastVisited);
             }
@@ -101,7 +94,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
     /** {@inheritDoc} */
     @Override public Adder startAdding(HadoopTaskContext ctx) throws IgniteCheckedException {
-        return new AdderImpl(ctx);
+        return new AdderImpl(ctx, mem);
     }
 
     /** {@inheritDoc} */
@@ -249,9 +242,10 @@ public class HadoopSkipList extends HadoopMultimapBase {
     private class Reader extends ReaderBase {
         /**
          * @param ser Serialization.
+         * @param mem Memory manager.
          */
-        protected Reader(HadoopSerialization ser) {
-            super(ser);
+        protected Reader(HadoopSerialization ser, MemoryManager mem) {
+            super(ser, mem);
         }
 
         /**
@@ -290,12 +284,13 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
         /**
          * @param ctx Task context.
+         * @param mem Memory manager.
          * @throws IgniteCheckedException If failed.
          */
-        protected AdderImpl(HadoopTaskContext ctx) throws IgniteCheckedException {
-            super(ctx);
+        protected AdderImpl(HadoopTaskContext ctx, MemoryManager mem) throws IgniteCheckedException {
+            super(ctx, mem);
 
-            keyReader = new Reader(keySer);
+            keyReader = new Reader(keySer, mem);
 
             cmp = ctx.sortComparator();
         }
@@ -386,8 +381,8 @@ public class HadoopSkipList extends HadoopMultimapBase {
                 valPtr = write(12, val, valSer);
                 int valSize = writtenSize() - 12;
 
-                nextValue(valPtr, 0);
-                valueSize(valPtr, valSize);
+                mem.nextValue(valPtr, 0);
+                mem.valueSize(valPtr, valSize);
             }
 
             long keyPtr = 0;
@@ -433,7 +428,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
                     for (;;) { // Add value for the key found.
                         long nextVal = value(meta);
 
-                        nextValue(valPtr, nextVal);
+                        mem.nextValue(valPtr, nextVal);
 
                         if (casValue(meta, nextVal, valPtr))
                             return meta;
@@ -481,6 +476,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
         /**
          * Adds appropriate index links between metas.
          *
+         * @param key Key.
          * @param newMeta Just added meta.
          * @param newMetaLevel New level.
          */
@@ -560,14 +556,14 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
                 val.copyTo(valPtr + 12);
 
-                valueSize(valPtr, size);
+                mem.valueSize(valPtr, size);
 
                 long nextVal;
 
                 do {
                     nextVal = value(meta);
 
-                    nextValue(valPtr, nextVal);
+                    mem.nextValue(valPtr, nextVal);
                 }
                 while(!casValue(meta, nextVal, valPtr));
             }
@@ -592,8 +588,8 @@ public class HadoopSkipList extends HadoopMultimapBase {
          * @throws IgniteCheckedException If failed.
          */
         private Input(HadoopTaskContext taskCtx) throws IgniteCheckedException {
-            keyReader = new Reader(taskCtx.keySerialization());
-            valReader = new Reader(taskCtx.valueSerialization());
+            keyReader = new Reader(taskCtx.keySerialization(), mem);
+            valReader = new Reader(taskCtx.valueSerialization(), mem);
         }
 
         /** {@inheritDoc} */
@@ -610,7 +606,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
-            return new ValueIterator(value(metaPtr), valReader);
+            return new ValueIterator(value(metaPtr), valReader, mem);
         }
 
         /** {@inheritDoc} */
@@ -696,7 +692,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
         @Override public Iterator<?> values() {
             assert !vals.isEmpty();
 
-            final ValueIterator valIter = new ValueIterator(vals.get(0), in.valReader);
+            final ValueIterator valIter = new ValueIterator(vals.get(0), in.valReader, mem);
 
             return new Iterator<Object>() {
                 /** */

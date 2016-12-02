@@ -15,31 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
-
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+package org.apache.ignite.internal.processors.hadoop.impl;
 
 /**
- * Base class for all multimaps.
+ * Tests map-reduce task execution basics.
  */
-public abstract class HadoopMultimapBase implements HadoopMultimap {
-    /** */
-    protected final MemoryManager mem;
-
+public class HadoopTaskExecutionOffheapSelfTest extends HadoopTaskExecutionAbstractSelfTest {
     /**
-     * @param jobInfo Job info.
-     * @param mem Memory manager.n
+     * @return 'offheap' to use off-heap memory manager and 'onheap' to use on-heap memory manager.
      */
-    protected HadoopMultimapBase(HadoopJobInfo jobInfo, MemoryManager mem) {
-        assert jobInfo != null;
-        assert mem != null;
-
-        this.mem = mem;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
+    @Override protected String memoryManagerProperty() {
+        return "offheap";
     }
 }

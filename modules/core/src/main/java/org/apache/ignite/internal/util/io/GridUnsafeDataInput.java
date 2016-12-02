@@ -98,7 +98,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
      * @param off Offset.
      * @param len Length.
      */
-    public void bytes(byte[] bytes, int off, int len) {
+    @Override public void bytes(byte[] bytes, int off, int len) {
         buf = bytes;
 
         max = len;
