@@ -70,6 +70,7 @@ namespace Apache.Ignite.Core.Binary
             TypeName = cfg.TypeName;
             KeepDeserialized = cfg.KeepDeserialized;
             IsEnum = cfg.IsEnum;
+            EqualityComparer = cfg.EqualityComparer;
         }
 
         /// <summary>

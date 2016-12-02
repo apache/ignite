@@ -269,7 +269,19 @@
                     writer.WriteBoolean(false);
                 }
 
-                // TODO: Write identity resolver
+                var types = BinaryConfiguration.TypeConfigurations;
+                if (types != null && types.Count > 0)
+                {
+                    writer.WriteInt(types.Count);
+
+                    foreach (var type in types)
+                    {
+                        writer.WriteString(type.TypeName);
+                        writer.WriteString(type.AffinityKeyFieldName);
+                        writer.WriteBoolean(type.IsEnum);
+                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
+                    }
+                }
             }
             else
             {
@@ -379,7 +391,7 @@
                 if (r.ReadBoolean())
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
 
-                // TODO: Read resolver
+                // TODO: Read types
             }
 
             // User attributes
