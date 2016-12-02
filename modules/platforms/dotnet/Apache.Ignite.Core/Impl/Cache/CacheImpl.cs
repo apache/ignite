@@ -28,10 +28,13 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
@@ -41,15 +44,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>, ICacheInternal, ICacheLockInternal
     {
-        /** Duration: unchanged. */
-        private const long DurUnchanged = -2;
-
-        /** Duration: eternal. */
-        private const long DurEternal = -1;
-
-        /** Duration: zero. */
-        private const long DurZero = 0;
-
         /** Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -193,38 +187,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(plc, "plc");
 
-            long create = ConvertDuration(plc.GetExpiryForCreate());
-            long update = ConvertDuration(plc.GetExpiryForUpdate());
-            long access = ConvertDuration(plc.GetExpiryForAccess());
-
-            IUnmanagedTarget cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w =>
-            {
-                w.WriteLong(create);
-                w.WriteLong(update);
-                w.WriteLong(access);
-            });
+            var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
             return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagNoRetries);
-        }
-
-        /// <summary>
-        /// Convert TimeSpan to duration recognizable by Java.
-        /// </summary>
-        /// <param name="dur">.Net duration.</param>
-        /// <returns>Java duration in milliseconds.</returns>
-        private static long ConvertDuration(TimeSpan? dur)
-        {
-            if (dur.HasValue)
-            {
-                if (dur.Value == TimeSpan.MaxValue)
-                    return DurEternal;
-
-                long dur0 = (long)dur.Value.TotalMilliseconds;
-
-                return dur0 > 0 ? dur0 : DurZero;
-            }
-            
-            return DurUnchanged;
         }
 
         /** <inheritDoc /> */
@@ -931,7 +896,31 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics()
         {
-            return DoInOp((int)CacheOp.Metrics, stream =>
+            return DoInOp((int) CacheOp.GlobalMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                return new CacheMetricsImpl(reader);
+            });
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
+        {
+            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
+
+            var prj = clusterGroup as ClusterGroupImpl;
+
+            if (prj == null)
+                throw new ArgumentException("Unexpected IClusterGroup implementation: " + clusterGroup.GetType());
+
+            return prj.GetCacheMetrics(Name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetLocalMetrics()
+        {
+            return DoInOp((int) CacheOp.LocalMetrics, stream =>
             {
                 IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
