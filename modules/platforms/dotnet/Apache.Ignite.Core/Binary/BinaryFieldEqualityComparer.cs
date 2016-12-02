@@ -82,14 +82,14 @@ namespace Apache.Ignite.Core.Binary
 
         /** <inheritdoc /> */
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length,
-            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller, IBinaryTypeDescriptor type)
+            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(stream != null);
             Debug.Assert(startPos >= 0);
             Debug.Assert(length >= 0);
             Debug.Assert(schema != null);
             Debug.Assert(marshaller != null);
-            Debug.Assert(type != null);
+            Debug.Assert(desc != null);
 
             if (FieldNames == null || FieldNames.Count == 0)
                 throw new IgniteException("BinaryFieldEqualityComparer.FieldNames can not be null or empty.");
@@ -99,18 +99,31 @@ namespace Apache.Ignite.Core.Binary
             // Preserve stream position.
             var pos = stream.Position;
 
-            var reader = marshaller.StartUnmarshal(stream);
+            var reader = marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
             var fields = schema.GetFullSchema(schemaId);
+
+            int hash = 1;
 
             foreach (var fieldName in FieldNames)
             {
-                //var fieldId = BinaryUtils.FieldId()
+                int fieldId = BinaryUtils.FieldId(desc.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
+                int fieldHash = 0;  // Null (missing) field hash code is 0.
+                int fieldPos;
+
+                if (fields.TryGetValue(fieldId, out fieldPos))
+                {
+                    stream.Seek(startPos + fieldPos - BinaryObjectHeader.Size, SeekOrigin.Begin);
+                    var fieldVal = reader.Deserialize<object>();
+                    fieldHash = fieldVal != null ? fieldVal.GetHashCode() : 0;
+                }
+
+                hash = 31 * hash + fieldHash;
             }
 
             // Restore stream position.
             stream.Seek(pos, SeekOrigin.Begin);
 
-            return 0; // TODO
+            return hash;
         }
     }
 }
