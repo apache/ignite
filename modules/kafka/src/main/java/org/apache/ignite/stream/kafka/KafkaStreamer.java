@@ -6,34 +6,35 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.stream.StreamAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
-import kafka.serializer.Decoder;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.stream.StreamAdapter;
 
 /**
  * Server that subscribes to topic messages from Kafka broker and streams its to key-value pairs into
  * {@link IgniteDataStreamer} instance.
  * <p>
- * Uses Kafka's High Level Consumer API to read messages from Kafka.
+ * Uses Kafka's High Level Consumer API to read messages from Kafka. 
  *
  * @see <a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example">Consumer Consumer Group
  * Example</a>
  */
-public class KafkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
-    /** Retry timeout. */
-    private static final long DFLT_RETRY_TIMEOUT = 10000;
 
-    /** Logger. */
-    private IgniteLogger log;
+public class KafkaStreamer<K, V> extends StreamAdapter<MessageAndMetadata<byte[], byte[]>, K, V> {
+
+	private static Logger log = LoggerFactory.getLogger(KafkaStreamer.class);
+	/** Retry timeout. */
+    private static final long DFLT_RETRY_TIMEOUT = 10000;
 
     /** Executor used to submit kafka streams. */
     private ExecutorService executor;
@@ -46,22 +47,16 @@ public class KafkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
 
     /** Kafka consumer config. */
     private ConsumerConfig consumerCfg;
-
-    /** Key decoder. */
-    private Decoder<K> keyDecoder;
-
-    /** Value decoder. */
-    private Decoder<V> valDecoder;
-
+    
     /** Kafka consumer connector. */
     private ConsumerConnector consumer;
-
+   
     /** Retry timeout. */
     private long retryTimeout = DFLT_RETRY_TIMEOUT;
 
     /** Stopped. */
     private volatile boolean stopped;
-
+    
     /**
      * Sets the topic name.
      *
@@ -90,31 +85,15 @@ public class KafkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
     }
 
     /**
-     * Sets the key decoder.
-     *
-     * @param keyDecoder Key decoder.
-     */
-    public void setKeyDecoder(Decoder<K> keyDecoder) {
-        this.keyDecoder = keyDecoder;
-    }
-
-    /**
-     * Sets the value decoder.
-     *
-     * @param valDecoder Value decoder.
-     */
-    public void setValueDecoder(Decoder<V> valDecoder) {
-        this.valDecoder = valDecoder;
-    }
-
-    /**
      * Sets the retry timeout.
      *
      * @param retryTimeout Retry timeout.
      */
     public void setRetryTimeout(long retryTimeout) {
-        A.ensure(retryTimeout > 0, "retryTimeout > 0");
-
+       A.ensure(retryTimeout > 0, "retryTimeout > 0");
+    	if (retryTimeout <= 0){
+    		throw new IllegalArgumentException("retryTimeout must be greater than 0");
+    	}
         this.retryTimeout = retryTimeout;
     }
 
@@ -124,52 +103,49 @@ public class KafkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      * @throws IgniteException If failed.
      */
     public void start() {
-        A.notNull(getStreamer(), "streamer");
-        A.notNull(getIgnite(), "ignite");
-        A.notNull(topic, "topic");
-        A.notNull(keyDecoder, "key decoder");
-        A.notNull(valDecoder, "value decoder");
-        A.notNull(consumerCfg, "kafka consumer config");
-        A.ensure(threads > 0, "threads > 0");
-
-        log = getIgnite().log();
+    	 A.notNull(getStreamer(), "streamer");
+         A.notNull(getIgnite(), "ignite");
+         A.notNull(topic, "topic");
+         A.notNull(consumerCfg, "kafka consumer config");
+         A.ensure(threads > 0, "threads > 0");
+         A.ensure(null != getSingleTupleExtractor() || null != getMultipleTupleExtractor() , "Extractor must be configured");
 
         consumer = kafka.consumer.Consumer.createJavaConsumerConnector(consumerCfg);
+//        kafka.javaapi.consumer.ConsumerConnector createJavaConsumerConnector = kafka.consumer.Consumer.createJavaConsumerConnector(consumerCfg);
 
         Map<String, Integer> topicCntMap = new HashMap<>();
 
         topicCntMap.put(topic, threads);
 
-        Map<String, List<KafkaStream<K, V>>> consumerMap =
-            consumer.createMessageStreams(topicCntMap, keyDecoder, valDecoder);
+        Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCntMap);
 
-        List<KafkaStream<K, V>> streams = consumerMap.get(topic);
-
+        List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
+        
+        log.info("Kafka is connected successfully");        
         // Now launch all the consumer threads.
         executor = Executors.newFixedThreadPool(threads);
 
         stopped = false;
 
         // Now create an object to consume the messages.
-        for (final KafkaStream<K, V> stream : streams) {
+        for (final KafkaStream<byte[], byte[]> stream : streams) {
             executor.submit(new Runnable() {
                 @Override public void run() {
                     while (!stopped) {
                         try {
-                            for (ConsumerIterator<K, V> it = stream.iterator(); it.hasNext() && !stopped; ) {
-                                MessageAndMetadata<K, V> msg = it.next();
-
+                        	MessageAndMetadata<byte[], byte[]> msg = null;
+                            for (ConsumerIterator<byte[], byte[]> it = stream.iterator(); it.hasNext() && !stopped; ) {
+                                msg = it.next();
                                 try {
-                                    getStreamer().addData(msg.key(), msg.message());
+                                	addMessage(msg);
                                 }
                                 catch (Exception e) {
-                                    U.error(log, "Message is ignored due to an error [msg=" + msg + ']', e);
+                                    log.error("Message is ignored due to an error [msg=" + msg + ']', e);
                                 }
                             }
                         }
                         catch (Exception e) {
-                            U.error(log, "Message can't be consumed from stream. Retry after " +
-                                retryTimeout + " ms.", e);
+                            log.error("Message can't be consumed from stream. Retry after " + retryTimeout + " ms.", e);
 
                             try {
                                 Thread.sleep(retryTimeout);
@@ -207,4 +183,5 @@ public class KafkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
             }
         }
     }
+    
 }

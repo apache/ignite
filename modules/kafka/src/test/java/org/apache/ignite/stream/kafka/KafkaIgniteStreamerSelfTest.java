@@ -46,7 +46,7 @@ import kafka.message.MessageAndMetadata;
 /**
  * Tests {@link KafkaStreamer}.
  */
-public class KafkaIgniteDataStreamerSelfTest extends GridCommonAbstractTest {
+public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Embedded Kafka. */
     private TestKafkaBroker embeddedBroker;
 
@@ -69,7 +69,7 @@ public class KafkaIgniteDataStreamerSelfTest extends GridCommonAbstractTest {
     private static final String VALUE_URL = ",www.example.com,";
 
     /** Constructor. */
-    public KafkaIgniteDataStreamerSelfTest() {
+    public KafkaIgniteStreamerSelfTest() {
         super(true);
     }
 
@@ -148,7 +148,7 @@ public class KafkaIgniteDataStreamerSelfTest extends GridCommonAbstractTest {
      */
     private void consumerStream(String topic, Map<String, String> keyValMap)
         throws TimeoutException, InterruptedException {
-    	KafkaDataStreamer<String, String> kafkaStmr = null;
+    	KafkaStreamer<String, String> kafkaStmr = null;
 
         Ignite ignite = grid();
 
@@ -157,7 +157,7 @@ public class KafkaIgniteDataStreamerSelfTest extends GridCommonAbstractTest {
             stmr.autoFlushFrequency(10);
 
             // Configure Kafka streamer.
-            kafkaStmr = new KafkaDataStreamer<>();
+            kafkaStmr = new KafkaStreamer<>();
 
             // Get the cache.
             IgniteCache<String, String> cache = ignite.cache(null);
