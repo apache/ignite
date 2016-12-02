@@ -22,70 +22,110 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 class MappingProposedMessage implements DiscoveryCustomMessage {
 
+    /**
+     *
+     */
     private enum ProposalStatus {
-        SUCCESSFUL, IN_CONFLICT, DUPLICATED
+        /** */
+        SUCCESSFUL,
+        /** */
+        IN_CONFLICT,
+        /** */
+        DUPLICATED
     }
 
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private final UUID origNodeId;
 
+    /** */
     private final MarshallerMappingItem mappingItem;
 
+    /** */
     private ProposalStatus status = ProposalStatus.SUCCESSFUL;
 
-    private String conflictingClassName;
+    /** */
+    private String conflictingClsName;
 
-    public MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+    /**
+     * @param mappingItem Mapping item.
+     * @param origNodeId Orig node id.
+     */
+    MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
         this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
     }
 
-    @Override
-    public IgniteUuid id() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
         return id;
     }
 
-    @Nullable
-    @Override
-    public DiscoveryCustomMessage ackMessage() {
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         if (status == ProposalStatus.SUCCESSFUL)
             return new MappingAcceptedMessage(mappingItem);
         else if (status == ProposalStatus.IN_CONFLICT)
-            return new MappingRejectedMessage(mappingItem, conflictingClassName, origNodeId);
+            return new MappingRejectedMessage(mappingItem, conflictingClsName, origNodeId);
         else return null;
     }
 
-    @Override
-    public boolean isMutable() {
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
         return true;
     }
 
-    public MarshallerMappingItem getMappingItem() {
+    /**
+     *
+     */
+    MarshallerMappingItem mappingItem() {
         return mappingItem;
     }
 
-    public boolean isInConflict() {
+    /**
+     *
+     */
+    boolean inConflict() {
         return status == ProposalStatus.IN_CONFLICT;
     }
 
-    public boolean isDuplicated() {
+    /**
+     *
+     */
+    public boolean duplicated() {
         return status == ProposalStatus.DUPLICATED;
     }
 
-    public void markInConflict() {
+    /**
+     *
+     */
+    void markInConflict() {
         status = ProposalStatus.IN_CONFLICT;
     }
 
-    public void markDuplicated() {
+    /**
+     *
+     */
+    void markDuplicated() {
         status = ProposalStatus.DUPLICATED;
     }
 
-    public void setConflictingClassName(String conflictingClassName) {
-        this.conflictingClassName = conflictingClassName;
+    /**
+     * @param conflictingClsName Conflicting class name.
+     */
+    void conflictingClassName(String conflictingClsName) {
+        this.conflictingClsName = conflictingClsName;
     }
 }

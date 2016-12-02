@@ -153,11 +153,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             @Override public boolean isSystemType(String typeName) {
                 return false;
             }
-
-            @Override
-            public boolean registerMappingForPlatform(byte newPlatformId) {
-                return false;
-            }
         });
 
         return marsh;

@@ -24,47 +24,73 @@ import java.io.Serializable;
  *  For more information see {@link GridMarshallerMappingProcessor}
  */
 public final class MarshallerMappingItem implements Serializable {
-
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private byte platformId;
 
+    /** */
     private int typeId;
 
+    /** */
     private String clsName;
 
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param clsName Class name.
+     */
     public MarshallerMappingItem(byte platformId, int typeId, String clsName) {
         this.platformId = platformId;
         this.typeId = typeId;
         this.clsName = clsName;
     }
 
-    public void setTypeId(int typeId) {
+    /**
+     * @param typeId Type id.
+     */
+    public void typeId(int typeId) {
         this.typeId = typeId;
     }
 
-    public int getTypeId() {
+    /**
+     *
+     */
+    public int typeId() {
         return typeId;
     }
 
-    public byte getPlatformId() {
+    /**
+     *
+     */
+    public byte platformId() {
         return platformId;
     }
 
-    public void setPlatformId(byte platformId) {
+    /**
+     * @param platformId Platform id.
+     */
+    public void platformId(byte platformId) {
         this.platformId = platformId;
     }
 
-    public String getClsName() {
+    /**
+     *
+     */
+    public String className() {
         return clsName;
     }
 
-    public void setClsName(String clsName) {
+    /**
+     * @param clsName Class name.
+     */
+    public void className(String clsName) {
         this.clsName = clsName;
     }
 
-    @Override
-    public boolean equals(Object obj) {
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
         if (obj == this)
             return true;
 
@@ -78,15 +104,8 @@ public final class MarshallerMappingItem implements Serializable {
                 && (clsName != null ? clsName.equals(that.clsName) : that.clsName == null);
     }
 
-    @Override
-    public int hashCode() {
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
         return 31 * 31 * ((int) platformId) + 31 * typeId + (clsName != null ? clsName.hashCode() : 0) ;
-    }
-
-    @Override
-    public String toString() {
-        return "[platformId=" + platformId
-                + ", typeId=" + typeId
-                + ", clsName=" + clsName + "]";
     }
 }

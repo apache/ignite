@@ -52,7 +52,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-        marshallerContext.acceptMapping(item);
+        marshallerContext.onMappingAccepted(item);
 
         try (Ignite g1 = startGrid(1)) {
             MarshallerContextImpl marshCtx = ((IgniteKernal)g1).context().marshallerContext();
@@ -73,7 +73,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-        context.acceptMapping(item);
+        context.onMappingAccepted(item);
 
         String fileName = "1.classname0";
 

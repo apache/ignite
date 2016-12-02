@@ -16,21 +16,33 @@
  */
 package org.apache.ignite.internal.processors.marshaller;
 
+/**
+ *
+ */
 public class MappingExchangeResult {
+    /** */
     private boolean inConflict;
 
+    /** */
     private String acceptedClsName;
 
+    /**
+     * @param inConflict In conflict.
+     * @param acceptedClsName Accepted class name.
+     */
     MappingExchangeResult(boolean inConflict, String acceptedClsName) {
         this.inConflict = inConflict;
         this.acceptedClsName = acceptedClsName;
     }
 
-    public boolean isInConflict() {
+    /**
+     *
+     */
+    public boolean inConflict() {
         return inConflict;
     }
 
-    public String getAcceptedClsName() {
+    public String acceptedClassName() {
         return acceptedClsName;
     }
 }

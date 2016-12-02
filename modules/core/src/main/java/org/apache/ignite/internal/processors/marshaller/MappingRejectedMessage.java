@@ -25,47 +25,65 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 class MappingRejectedMessage implements DiscoveryCustomMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private final UUID origNodeId;
 
-    private final String conflictingClassName;
+    /** */
+    private final String conflictingClsName;
 
+    /** */
     private final MarshallerMappingItem origMappingItem;
 
-    public MappingRejectedMessage(MarshallerMappingItem origMappingItem, String conflictingClassName, UUID origNodeId) {
+    /**
+     * @param origMappingItem Orig mapping item.
+     * @param conflictingClsName Conflicting class name.
+     * @param origNodeId Orig node id.
+     */
+    MappingRejectedMessage(MarshallerMappingItem origMappingItem, String conflictingClsName, UUID origNodeId) {
         this.origMappingItem = origMappingItem;
-        this.conflictingClassName = conflictingClassName;
+        this.conflictingClsName = conflictingClsName;
         this.origNodeId = origNodeId;
     }
 
-    @Override
-    public IgniteUuid id() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
         return id;
     }
 
-    @Nullable
-    @Override
-    public DiscoveryCustomMessage ackMessage() {
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
-    @Override
-    public boolean isMutable() {
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
         return false;
     }
 
-    public MarshallerMappingItem getOrigMappingItem() {
+    /**
+     *
+     */
+    MarshallerMappingItem getOrigMappingItem() {
         return origMappingItem;
     }
 
-    public String getConflictingClassName() {
-        return conflictingClassName;
+    /**
+     *
+     */
+    String getConflictingClsName() {
+        return conflictingClsName;
     }
 
-    public UUID origNodeId() {
+    /**
+     *
+     */
+    UUID origNodeId() {
         return origNodeId;
     }
 }

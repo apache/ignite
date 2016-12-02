@@ -23,22 +23,35 @@ import java.io.Serializable;
  * Contains mapped class name and boolean flag showing whether this mapping was accepted by other nodes or not.
  */
 public final class MappedName implements Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final String clsName;
 
+    /** */
     private final boolean accepted;
 
+    /**
+     * @param clsName Class name.
+     * @param accepted Accepted.
+     */
     public MappedName(String clsName, boolean accepted) {
         this.clsName = clsName;
         this.accepted = accepted;
     }
 
+    /**
+     *
+     */
     public String className() {
         return clsName;
     }
 
-    public boolean isAccepted() {
+    /**
+     *
+     */
+    public boolean accepted() {
         return accepted;
     }
 }

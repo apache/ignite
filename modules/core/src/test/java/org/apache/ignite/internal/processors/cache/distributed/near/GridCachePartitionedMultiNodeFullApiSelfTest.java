@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -156,12 +157,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         final int size = 10;
 
-        IgniteCache<Object, Object> chache0 = grid(0).cache(null);
+        IgniteCache<Object, Object> cache0 = grid(0).cache(null);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
 
-            chache0.put(i, i);
+            cache0.put(i, i + 10);
 
             info("Finished putting value [i=" + i + ']');
         }
@@ -172,13 +173,13 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++) {
             info("Putting value 2 [i=" + i + ']');
 
-            assertEquals(i, chache0.getAndPutIfAbsent(i, i * i));
+            assertEquals(i, cache0.getAndPutIfAbsent(i, i * i));
 
             info("Finished putting value 2 [i=" + i + ']');
         }
 
         for (int i = 0; i < size; i++)
-            assertEquals(i, chache0.get(i));
+            assertEquals(i, cache0.get(i));
     }
 
     /**
@@ -493,6 +494,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
+            Thread.sleep(10000);
             assertEquals(0, ((IgniteKernal)ignite).<String, Integer>internalCache().context().tm().idMapSize());
 
             IgniteCache<Object, Object> cache = ignite.cache(null);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.marshaller;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -28,15 +29,25 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
  * For more information about particular events see documentation of {@link GridMarshallerMappingProcessor}.
  */
 public final class MarshallerMappingTransport {
+    /** */
     private final GridDiscoveryManager discoMgr;
 
+    /** */
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap;
 
-    public MarshallerMappingTransport(GridDiscoveryManager discoMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
+    /**
+     * @param discoMgr Disco manager.
+     * @param mappingExchSyncMap Mapping exch sync map.
+     */
+    MarshallerMappingTransport(GridDiscoveryManager discoMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
         this.discoMgr = discoMgr;
         this.mappingExchSyncMap = mappingExchSyncMap;
     }
 
+    /**
+     * @param item Item.
+     * @param cache Cache.
+     */
     public GridFutureAdapter<MappingExchangeResult> awaitMappingAcceptance(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) {
         GridFutureAdapter<MappingExchangeResult> fut = new GridFutureAdapter<>();
 
@@ -44,12 +55,12 @@ public final class MarshallerMappingTransport {
         if (oldFut != null)
             return oldFut;
 
-        MappedName mappedName = cache.get(item.getTypeId());
+        MappedName mappedName = cache.get(item.typeId());
 
         assert mappedName != null;
 
         //double check whether mapping is accepted, first check was in MarshallerContextImpl::registerClassName
-        if (mappedName.isAccepted()) {
+        if (mappedName.accepted()) {
             fut.onDone(new MappingExchangeResult(false, null));
             mappingExchSyncMap.remove(item, fut);
         }
@@ -57,6 +68,10 @@ public final class MarshallerMappingTransport {
         return fut;
     }
 
+    /**
+     * @param item Item.
+     * @param cache Cache.
+     */
     public GridFutureAdapter<MappingExchangeResult> proposeMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
         GridFutureAdapter<MappingExchangeResult> fut = new GridFutureAdapter<>();
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
@@ -65,13 +80,13 @@ public final class MarshallerMappingTransport {
             return oldFut;
         else {
             //double check, first check was in caller: MarshallerContextImpl::registerClassName
-            MappedName mapping = cache.get(item.getTypeId());
+            MappedName mapping = cache.get(item.typeId());
 
             if (mapping != null) {
-                if (!mapping.className().equals(item.getClsName())) {
+                if (!mapping.className().equals(item.className())) {
                     fut.onDone(new MappingExchangeResult(true, mapping.className()));
                     mappingExchSyncMap.remove(item, fut);
-                } else if (mapping.isAccepted()) {
+                } else if (mapping.accepted()) {
                     fut.onDone(new MappingExchangeResult(false, null));
                     mappingExchSyncMap.remove(item, fut);
                 }
@@ -80,12 +95,16 @@ public final class MarshallerMappingTransport {
             }
         }
 
-        MappingProposedMessage msg = new MappingProposedMessage(item, discoMgr.localNode().id());
+        DiscoveryCustomMessage msg = new MappingProposedMessage(item, discoMgr.localNode().id());
         discoMgr.sendCustomEvent(msg);
 
         return fut;
     }
 
+    /**
+     * @param item Item.
+     * @param cache Cache.
+     */
     public GridFutureAdapter<MappingExchangeResult> requestMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
         GridFutureAdapter<MappingExchangeResult> newFut = new GridFutureAdapter<>();
 
@@ -95,8 +114,8 @@ public final class MarshallerMappingTransport {
             return oldFut;
 
         if (oldFut == null) {
-            MappedName mappedName = cache.get(item.getTypeId());
-            if (item.getTypeId() == 1397763919)
+            MappedName mappedName = cache.get(item.typeId());
+            if (item.typeId() == 1397763919)
                 mappedName = null;
 
             if (mappedName != null) {

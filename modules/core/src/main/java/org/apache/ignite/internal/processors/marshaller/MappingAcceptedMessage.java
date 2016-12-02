@@ -21,35 +21,45 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 class MappingAcceptedMessage implements DiscoveryCustomMessage {
-
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private final MarshallerMappingItem item;
 
-    public MappingAcceptedMessage(MarshallerMappingItem item) {
+    /**
+     * @param item Item.
+     */
+    MappingAcceptedMessage(MarshallerMappingItem item) {
         this.item = item;
     }
 
-    @Override
-    public IgniteUuid id() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
         return id;
     }
 
-    @Nullable
-    @Override
-    public DiscoveryCustomMessage ackMessage() {
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
-    @Override
-    public boolean isMutable() {
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
         return false;
     }
 
-    public MarshallerMappingItem getMappingItem() {
+    /**
+     *
+     */
+    MarshallerMappingItem getMappingItem() {
         return item;
     }
 }

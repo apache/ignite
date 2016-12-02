@@ -21,47 +21,67 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 class MissingMappingRequestMessage implements DiscoveryCustomMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private final UUID origNodeId;
 
+    /** */
     private final MarshallerMappingItem mappingItem;
 
+    /** */
     private String resolvedClsName;
 
-    public MissingMappingRequestMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+    /**
+     * @param mappingItem Mapping item.
+     * @param origNodeId Orig node id.
+     */
+    MissingMappingRequestMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
         this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
     }
 
-    @Override
-    public IgniteUuid id() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
         return id;
     }
 
-    @Nullable
-    @Override
-    public DiscoveryCustomMessage ackMessage() {
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return new MissingMappingResponseMessage(origNodeId, mappingItem, resolvedClsName);
     }
 
-    @Override
-    public boolean isMutable() {
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
         return true;
     }
 
-    public boolean isResolved() {
+    /**
+     *
+     */
+    public boolean resolved() {
         return resolvedClsName != null;
     }
 
-    public MarshallerMappingItem getMappingItem() {
+    /**
+     *
+     */
+    MarshallerMappingItem mappingItem() {
         return mappingItem;
     }
 
-    public void setResolvedClsName(String resolvedClsName) {
+    /**
+     * @param resolvedClsName Resolved class name.
+     */
+    void resolvedClsName(String resolvedClsName) {
         this.resolvedClsName = resolvedClsName;
     }
 }

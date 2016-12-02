@@ -95,11 +95,6 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         }
 
         @Override
-        public boolean registerMappingForPlatform(byte newPlatformId) {
-            return false;
-        }
-
-        @Override
         public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
             return null;
         }

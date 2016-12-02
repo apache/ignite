@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -108,7 +107,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
             for (int i = 0; i < 100; i++)
-                marshallerContext.acceptMapping(item);
+                marshallerContext.onMappingAccepted(item);
         }
     }
 

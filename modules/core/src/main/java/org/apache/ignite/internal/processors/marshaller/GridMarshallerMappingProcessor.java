@@ -52,9 +52,10 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * </ul>
  */
 public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
+    /** */
+    private final MarshallerContextImpl marshallerCtx;
 
-    private final MarshallerContextImpl marshallerContext;
-
+    /** */
     private ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchangeSyncMap = new ConcurrentHashMap8<>();
 
     /**
@@ -63,14 +64,14 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     public GridMarshallerMappingProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        marshallerContext = ctx.marshallerContext();
+        marshallerCtx = ctx.marshallerContext();
     }
 
-    @Override
-    public void start() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
         MarshallerMappingTransport transport = new MarshallerMappingTransport(discoMgr, mappingExchangeSyncMap);
-        marshallerContext.onMarshallerProcessorStarted(ctx, transport);
+        marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
         discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
 
@@ -83,31 +84,38 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         discoMgr.setCustomEventListener(MissingMappingResponseMessage.class, new MissingMappingResponseListener());
     }
 
+    /**
+     *
+     */
     private final class MarshallerMappingExchangeListener implements CustomEventListener<MappingProposedMessage> {
 
-        @Override
-        public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingProposedMessage msg) {
+        /** {@inheritDoc} */
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingProposedMessage msg) {
             if (!ctx.isStopping())
-                if (!msg.isInConflict() && !msg.isDuplicated()) {
-                    MarshallerMappingItem item = msg.getMappingItem();
-                    String conflictingName = marshallerContext.handleProposedMapping(item);
+                if (!msg.inConflict() && !msg.duplicated()) {
+                    MarshallerMappingItem item = msg.mappingItem();
+                    String conflictingName = marshallerCtx.onMappingProposed(item);
 
                     if (conflictingName != null)
-                        if (conflictingName.equals(item.getClsName()))
+                        if (conflictingName.equals(item.className()))
                             msg.markDuplicated();
                         else {
                             msg.markInConflict();
-                            msg.setConflictingClassName(conflictingName);
+                            msg.conflictingClassName(conflictingName);
                         }
                 }
         }
     }
 
+    /**
+     *
+     */
     private final class MappingAcceptedListener implements CustomEventListener<MappingAcceptedMessage> {
-        @Override
-        public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingAcceptedMessage msg) {
+
+        /** {@inheritDoc} */
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingAcceptedMessage msg) {
             MarshallerMappingItem item = msg.getMappingItem();
-            marshallerContext.acceptMapping(item);
+            marshallerCtx.onMappingAccepted(item);
 
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 
@@ -118,42 +126,50 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     *
+     */
     private final class MappingRejectedListener implements CustomEventListener<MappingRejectedMessage> {
-        @Override
-        public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingRejectedMessage msg) {
+        /** {@inheritDoc} */
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingRejectedMessage msg) {
             UUID origNodeId = msg.origNodeId();
             UUID locNodeId = ctx.localNodeId();
 
             if (locNodeId.equals(origNodeId)) {
                 GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.getOrigMappingItem());
 
-                if (fut != null) {
-                    fut.onDone(new MappingExchangeResult(true, msg.getConflictingClassName()));
-                }
+                if (fut != null)
+                    fut.onDone(new MappingExchangeResult(true, msg.getConflictingClsName()));
             }
         }
     }
 
+    /**
+     *
+     */
     private final class MissingMappingRequestListener implements CustomEventListener<MissingMappingRequestMessage> {
-        @Override
-        public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MissingMappingRequestMessage msg) {
+        /** {@inheritDoc} */
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MissingMappingRequestMessage msg) {
             if (!ctx.clientNode()
-                    && !msg.isResolved())
-                msg.setResolvedClsName(
-                        marshallerContext.resolveMissedMapping(msg.getMappingItem()));
+                    && !msg.resolved())
+                msg.resolvedClsName(
+                        marshallerCtx.resolveMissedMapping(msg.mappingItem()));
         }
     }
 
+    /**
+     *
+     */
     private final class MissingMappingResponseListener implements CustomEventListener<MissingMappingResponseMessage> {
-        @Override
-        public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MissingMappingResponseMessage msg) {
+        /** {@inheritDoc} */
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MissingMappingResponseMessage msg) {
             UUID locNodeId = ctx.localNodeId();
-            if (ctx.clientNode() && locNodeId.equals(msg.getOrigNodeId())) {
-                marshallerContext.onMissedMappingResolved(msg.getMarshallerMappingItem(), msg.getResolvedClsName());
+            if (ctx.clientNode() && locNodeId.equals(msg.origNodeId())) {
+                marshallerCtx.onMissedMappingResolved(msg.marshallerMappingItem(), msg.resolvedClassName());
 
-                GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.getMarshallerMappingItem());
+                GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.marshallerMappingItem());
                 if (fut != null) {
-                    String resolvedClsName = msg.getResolvedClsName();
+                    String resolvedClsName = msg.resolvedClassName();
                     boolean resolutionFailed = resolvedClsName == null;
                     fut.onDone(new MappingExchangeResult(resolutionFailed, resolvedClsName));
                 }
@@ -163,26 +179,23 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         if (!ctx.localNodeId().equals(dataContainer.getJoiningNodeId()))
             if (!dataContainer.isCommonDataCollectedFor(MARSHALLER_PROC.ordinal()))
-                dataContainer.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerContext.getCachedMappings());
+                dataContainer.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<Byte, ConcurrentMap<Integer, MappedName>> marshallerMappings = (Map<Byte, ConcurrentMap<Integer, MappedName>>) data.commonData();
 
         if (marshallerMappings != null)
             for (Map.Entry<Byte, ConcurrentMap<Integer, MappedName>> e : marshallerMappings.entrySet())
-                marshallerContext.applyPlatformMapping(e.getKey(), e.getValue());
+                marshallerCtx.applyPlatformMapping(e.getKey(), e.getValue());
     }
 
-    @Nullable
-    @Override
-    public DiscoveryDataExchangeType discoveryDataType() {
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return MARSHALLER_PROC;
     }
 }

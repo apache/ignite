@@ -21,48 +21,69 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 class MissingMappingResponseMessage implements DiscoveryCustomMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private String resolvedClsName;
 
+    /** */
     private MarshallerMappingItem item;
 
+    /** */
     private UUID origNodeId;
 
-    public MissingMappingResponseMessage(UUID origNodeId, MarshallerMappingItem item, String resolvedClsName) {
+    /**
+     * @param origNodeId Orig node id.
+     * @param item Item.
+     * @param resolvedClsName Resolved class name.
+     */
+    MissingMappingResponseMessage(UUID origNodeId, MarshallerMappingItem item, String resolvedClsName) {
         this.origNodeId = origNodeId;
         this.item = item;
         this.resolvedClsName = resolvedClsName;
     }
 
-    @Override
-    public IgniteUuid id() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
         return id;
     }
 
-    @Nullable
-    @Override
-    public DiscoveryCustomMessage ackMessage() {
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
-    @Override
-    public boolean isMutable() {
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
         return false;
     }
 
-    public String getResolvedClsName() {
+    /**
+     *
+     */
+    String resolvedClassName() {
         return resolvedClsName;
     }
 
-    public UUID getOrigNodeId() {
+    /**
+     *
+     */
+    UUID origNodeId() {
         return origNodeId;
     }
 
-    public MarshallerMappingItem getMarshallerMappingItem() {
+    /**
+     *
+     */
+    MarshallerMappingItem marshallerMappingItem() {
         return item;
     }
 }
