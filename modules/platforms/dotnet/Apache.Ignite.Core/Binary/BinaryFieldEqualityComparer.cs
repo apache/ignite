@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -91,6 +92,16 @@ namespace Apache.Ignite.Core.Binary
 
             if (FieldNames == null || FieldNames.Count == 0)
                 throw new IgniteException("BinaryFieldEqualityComparer.FieldNames can not be null or empty.");
+
+            stream.Flush();
+
+            // Preserve stream position.
+            var pos = stream.Position;
+
+            var reader = marshaller.StartUnmarshal(stream);
+
+            // Restore stream position.
+            stream.Seek(pos, SeekOrigin.Begin);
 
             return 0; // TODO
         }

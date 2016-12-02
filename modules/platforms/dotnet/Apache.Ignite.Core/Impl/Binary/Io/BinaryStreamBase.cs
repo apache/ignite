@@ -1124,6 +1124,14 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// </summary>
         public abstract int ComputeHashCode(int offset, int count);
 
+        /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        public void Flush()
+        {
+            // No-op.
+        }
+
         /** <inheritdoc /> */
         public void Dispose()
         {

@@ -323,5 +323,10 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// Computes a hash code for the specified byte range.
         /// </summary>
         int ComputeHashCode(int offset, int count);
+
+        /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        void Flush();
     }
 }

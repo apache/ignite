@@ -746,6 +746,14 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        public void Flush()
+        {
+            SynchronizeOutput();
+        }
+
+        /// <summary>
         /// Ensure capacity for write and shift position.
         /// </summary>
         /// <param name="cnt">Bytes count.</param>
