@@ -86,7 +86,7 @@ public class OffheapMemoryManager extends MemoryManager {
      * @param ptr Pointer.
      */
     private boolean check(long ptr) {
-        assert closed.get() : "Memory manager already closed " + Integer.toHexString(System.identityHashCode(this));
+        assert !closed.get() : "Memory manager already closed " + Integer.toHexString(System.identityHashCode(this));
 
         for (OffheapPage page : allPages) {
             if ((ptr >= page.ptr()) && (ptr < page.ptr() + page.size()))
