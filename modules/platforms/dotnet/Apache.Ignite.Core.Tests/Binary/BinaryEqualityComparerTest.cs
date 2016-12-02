@@ -60,13 +60,13 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var ms = new BinaryHeapStream(10);
 
-            Assert.AreEqual(1, cmp.GetHashCode(ms, 0, 0, null, null));
+            Assert.AreEqual(1, cmp.GetHashCode(ms, 0, 0, null, 0, null));
 
             ms.WriteByte(1);
-            Assert.AreEqual(31 + 1, cmp.GetHashCode(ms, 0, 1, null, null));
+            Assert.AreEqual(31 + 1, cmp.GetHashCode(ms, 0, 1, null, 0, null));
 
             ms.WriteByte(3);
-            Assert.AreEqual((31 + 1) * 31 + 3, cmp.GetHashCode(ms, 0, 2, null, null));
+            Assert.AreEqual((31 + 1) * 31 + 3, cmp.GetHashCode(ms, 0, 2, null, 0, null));
         }
 
         /// <summary>

@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Binary
 
         /** <inheritdoc /> */
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length,
-            BinaryObjectSchemaHolder schema, Marshaller marshaller)
+            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller)
         {
             Debug.Assert(stream != null);
             Debug.Assert(startPos >= 0);
@@ -99,6 +99,12 @@ namespace Apache.Ignite.Core.Binary
             var pos = stream.Position;
 
             var reader = marshaller.StartUnmarshal(stream);
+            var fields = schema.GetFullSchema(schemaId);
+
+            foreach (var fieldName in FieldNames)
+            {
+                var fieldId = BinaryUtils.FieldId()
+            }
 
             // Restore stream position.
             stream.Seek(pos, SeekOrigin.Begin);

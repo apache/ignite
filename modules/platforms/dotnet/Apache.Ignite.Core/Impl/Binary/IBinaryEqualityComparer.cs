@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Returns a hash code for the binary object in specified stream at specified position.
         /// </summary>
-        int GetHashCode(IBinaryStream stream, int startPos, int length, BinaryObjectSchemaHolder schema,
+        int GetHashCode(IBinaryStream stream, int startPos, int length, BinaryObjectSchemaHolder schema, int schemaId,
             Marshaller marshaller);
     }
 }
