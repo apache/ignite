@@ -125,6 +125,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     w.WriteBoolean(meta.IsEnum);
 
+                    // TODO: Write identity resolver
+
                     // Send schemas
                     var desc = meta.Descriptor;
                     Debug.Assert(desc != null);

@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     {
         /** Empty metadata. */
         public static readonly BinaryType Empty =
-            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
+            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false, null);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
@@ -57,6 +57,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
         /** Type descriptor. */
         private readonly IBinaryTypeDescriptor _descriptor;
+
+        /** Equality comparer. */
+        private IBinaryEqualityComparer _equalityComparer;
 
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
@@ -131,7 +134,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="desc">Descriptor.</param>
         /// <param name="fields">Fields.</param>
         public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
-            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
+            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum, desc.EqualityComparer)
         {
             _descriptor = desc;
         }
@@ -144,14 +147,16 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
-            string affKeyFieldName, bool isEnum)
+        /// <param name="equalityComparer">Equality comparer.</param>
+        public BinaryType(int typeId, string typeName, IDictionary<string, int> fields, string affKeyFieldName, 
+            bool isEnum, IBinaryEqualityComparer equalityComparer)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affinityKeyFieldName = affKeyFieldName;
             _fields = fields;
             _isEnum = isEnum;
+            _equalityComparer = equalityComparer;
         }
 
         /// <summary>
