@@ -102,7 +102,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
                 return idxs;
             }
-        }, null, 4);
+        }, null);
     }
 
     /** {@inheritDoc} */

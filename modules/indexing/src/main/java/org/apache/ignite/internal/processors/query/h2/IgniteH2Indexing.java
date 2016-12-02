@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2StripedTreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -252,10 +253,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 
     /**  */
-    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4;
-
-    /** */
-    private final int queryLocalParallelismLevel = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL;
+    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4; //TODO: change to 1 and move to config
 
     /** Logger. */
     @LoggerResource
@@ -1509,7 +1507,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2RowDescriptor desc = new RowDescriptor(tbl.type(), schema);
 
-        GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName, queryLocalParallelismLevel);
+        GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
 
         if (dataTables.putIfAbsent(res.identifier(), res) != null)
             throw new IllegalStateException("Table already exists: " + res.identifier());
@@ -1747,7 +1745,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             marshaller = ctx.config().getMarshaller();
 
             mapQryExec = new GridMapQueryExecutor(busyLock);
-            rdcQryExec = new GridReduceQueryExecutor(busyLock, queryLocalParallelismLevel);
+            rdcQryExec = new GridReduceQueryExecutor(busyLock, DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL);
 
             mapQryExec.start(ctx, this);
             rdcQryExec.start(ctx, this);
@@ -2455,7 +2453,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 affCol = null;
 
             // Add primary key index.
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true,
+            idxs.add(createTreeIndex("_key_PK", tbl, true,
                 treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
 
             if (type().valueClass() == String.class) {
@@ -2501,7 +2499,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         cols = treeIndexColumns(cols, keyCol, affCol);
 
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
+                        idxs.add(createTreeIndex(name, tbl, false, cols));
                     }
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
@@ -2512,7 +2510,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             // Add explicit affinity key index if nothing alike was found.
             if (affCol != null && !affIdxFound) {
-                idxs.add(new GridH2TreeIndex("AFFINITY_KEY", tbl, false,
+                idxs.add(createTreeIndex("AFFINITY_KEY", tbl, false,
                     treeIndexColumns(new ArrayList<IndexColumn>(2), affCol, keyCol)));
             }
 
@@ -2558,6 +2556,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (Exception e) {
                 throw new IgniteException("Failed to instantiate: " + className, e);
             }
+        }
+
+        /**
+         * @param idxName Index name.
+         * @param tbl Table.
+         * @param pk Primary key flag.
+         * @param columns Index column list.
+         * @return
+         */
+        private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
+//            int segments = schema.ccfg.getQueryLocalParallelismLevel();
+            int segments = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL; //TODO: get from config
+
+            if (segments > 1)
+                return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, segments);
+            else
+                return new GridH2TreeIndex(idxName, tbl, pk, columns);
         }
     }
 
