@@ -126,6 +126,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     w.WriteBoolean(meta.IsEnum);
 
                     // TODO: Write identity resolver
+                    // We don't need to read it back.
                     var cmp = meta.EqualityComparer;
 
                     // Send schemas

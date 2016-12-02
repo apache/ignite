@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         private readonly IBinaryTypeDescriptor _descriptor;
 
         /** Equality comparer. */
-        private IBinaryEqualityComparer _equalityComparer;
+        private readonly IBinaryEqualityComparer _equalityComparer;
 
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
