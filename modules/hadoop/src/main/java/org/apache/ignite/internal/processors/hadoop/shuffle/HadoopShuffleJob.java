@@ -404,9 +404,12 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
             NewHadoopDataInput in = new NewHadoopDataInput(buf);
 
+            Object key = null;
+            Object val = null;
+
             for (int i = 0; i < msg.count(); i++) {
-                Object key = keySer.read(in, null);
-                Object val = valSer.read(in, null);
+                key = keySer.read(in, key);
+                val = valSer.read(in, val);
 
                 adder.write(key, val);
             }
