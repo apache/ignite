@@ -414,8 +414,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload, Collection<String> caches, int cnt) {
-        return demander.addAssignments(assignments, forcePreload, caches, cnt);
+        boolean forcePreload, Collection<String> caches, int cnt, @Nullable GridFutureAdapter<Boolean> preloadFut) {
+        return demander.addAssignments(assignments, forcePreload, caches, cnt, preloadFut);
     }
 
     /**
@@ -729,8 +729,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void forcePreload() {
-        demander.forcePreload();
+    @Override public IgniteInternalFuture<Boolean> forcePreload() {
+        return demander.forcePreload();
     }
 
     /** {@inheritDoc} */

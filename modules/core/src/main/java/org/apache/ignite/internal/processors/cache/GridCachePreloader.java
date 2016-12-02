@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -91,7 +92,8 @@ public interface GridCachePreloader {
     public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
         Collection<String> caches,
-        int cnt);
+        int cnt,
+        @Nullable GridFutureAdapter<Boolean> preloadFut);
 
     /**
      * @param p Preload predicate.
@@ -153,7 +155,7 @@ public interface GridCachePreloader {
     /**
      * Force preload process.
      */
-    public void forcePreload();
+    public IgniteInternalFuture<Boolean> forcePreload();
 
     /**
      * Unwinds undeploys.

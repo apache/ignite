@@ -190,6 +190,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean centralizedAff;
 
+    /** */
+    private GridFutureAdapter<Boolean> preloadFut;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -223,15 +226,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param cctx Cache context.
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
+     * @param preloadFut Preloading future.
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext cctx, DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId) {
+        GridDhtPartitionExchangeId exchId, GridFutureAdapter<Boolean> preloadFut) {
         dummy = false;
         forcePreload = true;
 
         this.exchId = exchId;
         this.discoEvt = discoEvt;
         this.cctx = cctx;
+        this.preloadFut = preloadFut;
 
         reassign = true;
 
@@ -391,6 +396,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
+    }
+
+    /**
+     * @return Preloading future.
+     */
+    @Nullable public GridFutureAdapter<Boolean> preloadFut() {
+        return preloadFut;
     }
 
     /**

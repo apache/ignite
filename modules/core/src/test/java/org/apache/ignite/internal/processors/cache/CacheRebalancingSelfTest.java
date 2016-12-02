@@ -61,10 +61,6 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         assert internalFuture(fut2) != internalFuture(fut1);
 
         fut2.get();
-
-        IgniteFuture fut3 = cache.rebalance();
-
-        assert internalFuture(fut3) == internalFuture(fut2);
     }
 
     /**

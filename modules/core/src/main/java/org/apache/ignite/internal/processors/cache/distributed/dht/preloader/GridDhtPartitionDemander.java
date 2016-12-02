@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -205,7 +207,7 @@ public class GridDhtPartitionDemander {
     /**
      * Force preload.
      */
-    void forcePreload() {
+    IgniteInternalFuture<Boolean> forcePreload() {
         GridTimeoutObject obj = lastTimeoutObj.getAndSet(null);
 
         if (obj != null)
@@ -217,14 +219,31 @@ public class GridDhtPartitionDemander {
             if (log.isDebugEnabled())
                 log.debug("Forcing rebalance event for future: " + exchFut);
 
+            final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
             exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                    cctx.shared().exchange().forcePreloadExchange(exchFut);
+                    IgniteInternalFuture<Boolean> fut0 = cctx.shared().exchange().forcePreloadExchange(exchFut);
+
+                    fut0.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> future) {
+                            try {
+                                fut.onDone(future.get());
+                            }
+                            catch (Exception e) {
+                                fut.onDone(e);
+                            }
+                        }
+                    });
                 }
             });
+
+            return fut;
         }
         else if (log.isDebugEnabled())
             log.debug("Ignoring force rebalance request (no topology event happened yet).");
+
+        return new GridFinishedFuture<>(true);
     }
 
     /**
@@ -287,9 +306,11 @@ public class GridDhtPartitionDemander {
      * @return Rebalancing closure.
      */
     Callable<Boolean> addAssignments(final GridDhtPreloaderAssignments assigns, boolean force,
-        final Collection<String> caches, int cnt) {
+        final Collection<String> caches, int cnt, @Nullable final GridFutureAdapter<Boolean> preloadFut) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
+
+        assert force == (preloadFut != null);
 
         long delay = cctx.config().getRebalanceDelay();
 
@@ -304,6 +325,19 @@ public class GridDhtPartitionDemander {
                 fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                         oldFut.onDone(fut.result());
+                    }
+                });
+            }
+
+            if (preloadFut != null) {
+                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> future) {
+                        try {
+                            preloadFut.onDone(future.get());
+                        }
+                        catch (Exception e) {
+                            preloadFut.onDone(e);
+                        }
                     }
                 });
             }
