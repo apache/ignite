@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -489,7 +490,8 @@ public class DmlStatementsProcessor {
                 if (hasNewVal && i == valColIdx - 2)
                     continue;
 
-                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.tbl.rowDescriptor(), plan.colTypes[i]));
+                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.colNames[i],
+                    plan.tbl.rowDescriptor(), plan.colTypes[i]));
             }
 
             newVal = plan.valSupplier.apply(e);
@@ -577,14 +579,26 @@ public class DmlStatementsProcessor {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
+     * @param colName Column name to search for property.
      * @param desc Row descriptor.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    private static Object convert(Object val, GridH2RowDescriptor desc, int type) throws IgniteCheckedException {
+    private static Object convert(Object val, String colName, GridH2RowDescriptor desc, int type)
+        throws IgniteCheckedException {
         if (val == null)
             return null;
+
+        GridQueryProperty prop = desc.type().property(colName);
+
+        assert prop != null;
+
+        if (val instanceof Date && val.getClass() != Date.class && prop.type() == Date.class) {
+            // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
+            // precise Date instance. Let's satisfy it.
+            return new Date(((Date) val).getTime());
+        }
 
         int objType = DataType.getTypeFromClass(val.getClass());
 
@@ -794,15 +808,15 @@ public class DmlStatementsProcessor {
 
     /**
      * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
-     *  @param cctx Cache context.
+     * @param cctx Cache context.
      * @param row Row to process.
      * @param cols Query cols.
-     * @param colTypes
+     * @param colTypes Column types to convert data from {@code row} to.
      * @param keySupplier Key instantiation method.
      * @param valSupplier Key instantiation method.
      * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
      * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param rowDesc
+     * @param rowDesc Row descriptor.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
@@ -824,7 +838,7 @@ public class DmlStatementsProcessor {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
-            desc.setValue(cols[i], key, val, convert(row[i], rowDesc, colTypes[i]));
+            desc.setValue(cols[i], key, val, convert(row[i], cols[i], rowDesc, colTypes[i]));
         }
 
         if (cctx.binaryMarshaller()) {

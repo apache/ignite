@@ -60,6 +60,14 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VA
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
  */
 public final class UpdatePlanBuilder {
+    // At the end of the day, column names for both key and value are uppercased - see
+    // org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.createTable
+    /** */
+    private final static String KEY_COL_NAME = KEY_FIELD_NAME.toUpperCase();
+
+    /** */
+    private final static String VAL_COL_NAME = VAL_FIELD_NAME.toUpperCase();
+
     /** */
     private UpdatePlanBuilder() {
         // No-op.
@@ -172,12 +180,12 @@ public final class UpdatePlanBuilder {
 
             colTypes[i] = col.resultType().type();
 
-            if (isKeyColumn(colName, desc)) {
+            if (KEY_COL_NAME.equals(colName)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (isValColumn(colName, desc)) {
+            if (VAL_COL_NAME.equals(colName)) {
                 valColIdx = i;
                 continue;
             }
@@ -268,7 +276,7 @@ public final class UpdatePlanBuilder {
 
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
-                    if (isValColumn(colNames[i], desc))
+                    if (VAL_COL_NAME.equals(colNames[i]))
                         valColIdx = i;
                 }
 
@@ -482,33 +490,5 @@ public final class UpdatePlanBuilder {
                 return true;
 
         return false;
-    }
-
-    /**
-     * Check that given column corresponds to the key with respect to case sensitivity, if needed (should be considered
-     * when the schema escapes all identifiers on table creation).
-     * @param colName Column name.
-     * @param desc Row descriptor.
-     * @return {@code true} if column name corresponds to _key with respect to case sensitivity depending on schema.
-     */
-    private static boolean isKeyColumn(String colName, GridH2RowDescriptor desc) {
-        if (desc.quoteAllIdentifiers())
-            return KEY_FIELD_NAME.equals(colName);
-        else
-            return KEY_FIELD_NAME.equalsIgnoreCase(colName);
-    }
-
-    /**
-     * Check that given column corresponds to the key with respect to case sensitivity, if needed (should be considered
-     * when the schema escapes all identifiers on table creation).
-     * @param colName Column name.
-     * @param desc Row descriptor.
-     * @return {@code true} if column name corresponds to _key with respect to case sensitivity depending on schema.
-     */
-    private static boolean isValColumn(String colName, GridH2RowDescriptor desc) {
-        if (desc.quoteAllIdentifiers())
-            return VAL_FIELD_NAME.equals(colName);
-        else
-            return VAL_FIELD_NAME.equalsIgnoreCase(colName);
     }
 }
