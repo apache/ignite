@@ -950,6 +950,12 @@ public class PlatformConfigurationUtils {
         else
             w.writeBoolean(false);
 
+        BinaryConfiguration bc = cfg.getBinaryConfiguration();
+        w.writeBoolean(bc != null);
+
+        if (bc != null)
+            w.writeBoolean(bc.isCompactFooter());
+
         Map<String, ?> attrs = cfg.getUserAttributes();
 
         if (attrs != null) {

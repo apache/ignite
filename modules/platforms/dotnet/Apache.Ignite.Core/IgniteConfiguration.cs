@@ -371,6 +371,17 @@
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
 
+            // Binary config
+            if (r.ReadBoolean())
+            {
+                BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
+
+                if (r.ReadBoolean())
+                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
+
+                // TODO: Read resolver
+            }
+
             // User attributes
             UserAttributes = Enumerable.Range(0, r.ReadInt())
                 .ToDictionary(x => r.ReadString(), x => r.ReadObject<object>());
