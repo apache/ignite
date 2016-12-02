@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.binary.BinaryFieldIdentityResolver;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -551,6 +555,20 @@ public class PlatformConfigurationUtils {
 
             if (in.readBoolean())  // compact footer is set
                 cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+
+            int typeCnt = in.readInt();
+
+            if (typeCnt > 0) {
+                Collection<BinaryTypeConfiguration> types = new ArrayList<>(typeCnt);
+
+                for (int i = 0; i < typeCnt; i++) {
+                    BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
+                    type.setEnum(in.readBoolean());
+                    //type.setIdentityResolver();
+                }
+
+                cfg.getBinaryConfiguration().setTypeConfigurations(types);
+            }
         }
 
         int attrCnt = in.readInt();
@@ -1130,6 +1148,31 @@ public class PlatformConfigurationUtils {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
+    }
+
+    /**
+     * Reads resolver
+     *
+     * @param r Reader.
+     * @return Resolver.
+     */
+    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
+        int type = r.readByte();
+
+        switch (type) {
+            case 0:
+                return null;
+
+            case 1:
+                return new BinaryArrayIdentityResolver();
+
+            case 2:
+                return new BinaryFieldIdentityResolver();
+
+            default:
+                assert false;
+                return null;
+        }
     }
 
     /**

@@ -277,7 +277,6 @@
                     foreach (var type in types)
                     {
                         writer.WriteString(type.TypeName);
-                        writer.WriteString(type.AffinityKeyFieldName);
                         writer.WriteBoolean(type.IsEnum);
                         BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
                     }
@@ -406,7 +405,6 @@
                         types.Add(new BinaryTypeConfiguration
                         {
                             TypeName = r.ReadString(),
-                            AffinityKeyFieldName = r.ReadString(),
                             IsEnum = r.ReadBoolean(),
                             EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
                         });
