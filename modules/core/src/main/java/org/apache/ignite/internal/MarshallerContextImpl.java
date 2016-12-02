@@ -156,7 +156,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         for (Map.Entry<Integer, MappedName> e : marshallerMapping.entrySet())
-            platformCache.putIfAbsent(e.getKey(), e.getValue());
+            platformCache.putIfAbsent(e.getKey(), new MappedName(e.getValue().className(), true));
     }
 
     /**
