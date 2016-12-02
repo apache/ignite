@@ -316,8 +316,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                         IDictionary<int, BinaryTypeHolder> metas0 =
                             new Dictionary<int, BinaryTypeHolder>(_metas);
 
-                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, 
-                            desc.IsEnum, desc.EqualityComparer);
+                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName,
+                            desc.IsEnum);
 
                         metas0[desc.TypeId] = holder;
 

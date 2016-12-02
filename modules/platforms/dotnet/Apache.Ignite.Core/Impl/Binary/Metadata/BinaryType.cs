@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     {
         /** Empty metadata. */
         public static readonly BinaryType Empty =
-            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false, null);
+            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
@@ -57,9 +57,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
         /** Type descriptor. */
         private readonly IBinaryTypeDescriptor _descriptor;
-
-        /** Equality comparer. */
-        private readonly IBinaryEqualityComparer _equalityComparer;
 
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
@@ -134,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="desc">Descriptor.</param>
         /// <param name="fields">Fields.</param>
         public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
-            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum, desc.EqualityComparer)
+            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
         {
             _descriptor = desc;
         }
@@ -147,16 +144,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        /// <param name="equalityComparer">Equality comparer.</param>
-        public BinaryType(int typeId, string typeName, IDictionary<string, int> fields, string affKeyFieldName, 
-            bool isEnum, IBinaryEqualityComparer equalityComparer)
+        public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
+            string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affinityKeyFieldName = affKeyFieldName;
             _fields = fields;
             _isEnum = isEnum;
-            _equalityComparer = equalityComparer;
         }
 
         /// <summary>
@@ -217,14 +212,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public bool IsEnum
         {
             get { return _isEnum; }
-        }
-
-        /// <summary>
-        /// Gets the equality comparer.
-        /// </summary>
-        public IBinaryEqualityComparer EqualityComparer
-        {
-            get { return _equalityComparer; }
         }
 
         /// <summary>
