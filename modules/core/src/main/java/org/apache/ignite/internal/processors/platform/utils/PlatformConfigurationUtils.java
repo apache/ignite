@@ -545,11 +545,12 @@ public class PlatformConfigurationUtils {
             cfg.setCommunicationSpi(comm);
         }
 
-        if (in.readBoolean()) {
+        if (in.readBoolean()) {  // binary config is present
             if (cfg.getBinaryConfiguration() == null)
                 cfg.setBinaryConfiguration(new BinaryConfiguration());
 
-            cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+            if (in.readBoolean())  // compact footer is set
+                cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
         }
 
         int attrCnt = in.readInt();
@@ -948,12 +949,6 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
-
-        BinaryConfiguration bc = cfg.getBinaryConfiguration();
-        w.writeBoolean(bc != null);
-
-        if (bc != null)
-            w.writeBoolean(bc.isCompactFooter());
 
         Map<String, ?> attrs = cfg.getUserAttributes();
 
