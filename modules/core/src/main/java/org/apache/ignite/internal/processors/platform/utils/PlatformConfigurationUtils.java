@@ -1167,7 +1167,14 @@ public class PlatformConfigurationUtils {
                 return new BinaryArrayIdentityResolver();
 
             case 2:
-                return new BinaryFieldIdentityResolver();
+                int cnt = r.readInt();
+
+                String[] fields = new String[cnt];
+
+                for (int i = 0; i < cnt; i++)
+                    fields[i] = r.readString();
+
+                return new BinaryFieldIdentityResolver().setFieldNames(fields);
 
             default:
                 assert false;
