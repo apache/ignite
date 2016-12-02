@@ -5662,7 +5662,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 assert sock instanceof NioSslSocket;
 
                 // Put the engine to the meta map to allow nio server to use it:
-                meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), ((NioSslSocket)sock).sslEngine);
+                meta.put(GridNioSessionMetaKey.SSL_META.ordinal(), ((NioSslSocket)sock).sslEngine);
             }
 
             ses = clientNioSrv.createSession(ch, meta).get();
