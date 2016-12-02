@@ -1246,8 +1246,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             cachesCreated = true;
                         }
                         else
-                            throw new IgniteSQLException("Failed to parse query: " + sqlQry, e.getSQLState(),
-                                IgniteQueryErrorCode.PARSING);
+                            throw new IgniteSQLException("Failed to parse query: " + sqlQry,
+                                IgniteQueryErrorCode.PARSING, e);
                     }
                 }
             }

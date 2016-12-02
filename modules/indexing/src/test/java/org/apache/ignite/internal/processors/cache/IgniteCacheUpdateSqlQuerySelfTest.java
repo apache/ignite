@@ -184,7 +184,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = CAST('50' as INT)," +
             " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
             "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
-            "\"sqlDateCol\"=TRUNC('2016-12-02 13:47:00')").setArgs(new AllTypes.InnerType(80L)));
+            "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00'").setArgs(new AllTypes.InnerType(80L)));
 
         AllTypes res = (AllTypes) cache.get(2L);
 
