@@ -82,13 +82,14 @@ namespace Apache.Ignite.Core.Binary
 
         /** <inheritdoc /> */
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length,
-            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller)
+            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller, IBinaryTypeDescriptor type)
         {
             Debug.Assert(stream != null);
             Debug.Assert(startPos >= 0);
             Debug.Assert(length >= 0);
             Debug.Assert(schema != null);
             Debug.Assert(marshaller != null);
+            Debug.Assert(type != null);
 
             if (FieldNames == null || FieldNames.Count == 0)
                 throw new IgniteException("BinaryFieldEqualityComparer.FieldNames can not be null or empty.");
@@ -103,7 +104,7 @@ namespace Apache.Ignite.Core.Binary
 
             foreach (var fieldName in FieldNames)
             {
-                var fieldId = BinaryUtils.FieldId()
+                //var fieldId = BinaryUtils.FieldId()
             }
 
             // Restore stream position.
