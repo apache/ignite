@@ -15,27 +15,28 @@
  * limitations under the License.
  */
 
-export default ['duration', [() => {
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
+/**
+ *
+ */
+public interface CacheLockCandidates {
     /**
-     * @param {Number} t Time in ms.
+     * @param idx Candidate index.
+     * @return Candidate.
      */
-    return (t) => {
-        if (t === 9223372036854775807)
-            return 'Infinite';
+    public GridCacheMvccCandidate candidate(int idx);
 
-        const a = (i, suffix) => i && i !== '00' ? i + suffix + ' ' : '';
+    /**
+     * @return Number of candidates.
+     */
+    public int size();
 
-        const cd = 24 * 60 * 60 * 1000;
-        const ch = 60 * 60 * 1000;
-        const cm = 60 * 1000;
-        const cs = 1000;
-
-        const d = Math.floor(t / cd);
-        const h = Math.floor((t - d * cd) / ch);
-        const m = Math.floor((t - d * cd - h * ch) / cm);
-        const s = Math.floor((t - d * cd - h * ch - m * cm) / cs);
-        const ms = t % 1000;
-
-        return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t < cm ? ms + 'ms' : '');
-    };
-}]];
+    /**
+     * @param ver Candidate version.
+     * @return {@code True} if contains candidate with given version.
+     */
+    public boolean hasCandidate(GridCacheVersion ver);
+}

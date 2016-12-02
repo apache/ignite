@@ -202,8 +202,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         if (!addDepInfo && ctx.deploymentEnabled())
             addDepInfo = true;
 
-        if (entryProcessor != null && entryProcessorBytes == null)
+        if (entryProcessor != null && entryProcessorBytes == null) {
+            if (addDepInfo)
+                prepareObject(entryProcessor, cctx);
             entryProcessorBytes = CU.marshal(cctx, entryProcessor);
+        }
 
         if (invokeArgsBytes == null)
             invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
