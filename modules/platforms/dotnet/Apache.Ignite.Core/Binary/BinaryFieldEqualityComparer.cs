@@ -91,8 +91,7 @@ namespace Apache.Ignite.Core.Binary
             Debug.Assert(marshaller != null);
             Debug.Assert(desc != null);
 
-            if (FieldNames == null || FieldNames.Count == 0)
-                throw new IgniteException("BinaryFieldEqualityComparer.FieldNames can not be null or empty.");
+            Validate();
 
             stream.Flush();
 
@@ -124,6 +123,15 @@ namespace Apache.Ignite.Core.Binary
             stream.Seek(pos, SeekOrigin.Begin);
 
             return hash;
+        }
+
+        /// <summary>
+        /// Validates this instance.
+        /// </summary>
+        public void Validate()
+        {
+            if (FieldNames == null || FieldNames.Count == 0)
+                throw new IgniteException("BinaryFieldEqualityComparer.FieldNames can not be null or empty.");
         }
     }
 }
