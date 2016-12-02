@@ -134,7 +134,7 @@ public abstract class HadoopTaskExecutionAbstractSelfTest extends HadoopAbstract
         Configuration cfg = new Configuration();
 
         cfg.setStrings("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
-        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEMORY_MANAGER.propertyName(), memoryManagerProperty());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -177,7 +177,7 @@ public abstract class HadoopTaskExecutionAbstractSelfTest extends HadoopAbstract
 
         cfg.setStrings("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
         cfg.setBoolean(MAP_WRITE, true);
-        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEMORY_MANAGER.propertyName(), memoryManagerProperty());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -219,7 +219,7 @@ public abstract class HadoopTaskExecutionAbstractSelfTest extends HadoopAbstract
         Configuration cfg = new Configuration();
 
         cfg.setStrings("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
-        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEMORY_MANAGER.propertyName(), memoryManagerProperty());
 
         Job job = Job.getInstance(cfg);
         job.setOutputKeyClass(Text.class);
@@ -282,7 +282,7 @@ public abstract class HadoopTaskExecutionAbstractSelfTest extends HadoopAbstract
         Configuration cfg = new Configuration();
 
         setupFileSystems(cfg);
-        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEMORY_MANAGER.propertyName(), memoryManagerProperty());
 
 
         Job job = Job.getInstance(cfg);
@@ -368,7 +368,7 @@ public abstract class HadoopTaskExecutionAbstractSelfTest extends HadoopAbstract
     public void testJobKill() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
-        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEM_MANAGER.propertyName(), memoryManagerProperty());
+        cfg.setStrings(HadoopJobProperty.SHUFFLE_MEMORY_MANAGER.propertyName(), memoryManagerProperty());
 
         Hadoop hadoop = grid(0).hadoop();
 

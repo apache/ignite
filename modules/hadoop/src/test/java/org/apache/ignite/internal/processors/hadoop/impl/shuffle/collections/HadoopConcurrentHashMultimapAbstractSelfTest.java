@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 
 /**

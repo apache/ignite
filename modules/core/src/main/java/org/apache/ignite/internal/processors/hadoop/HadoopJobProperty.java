@@ -91,7 +91,7 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code offheap}.
      */
-    SHUFFLE_MEM_MANAGER,
+    SHUFFLE_MEMORY_MANAGER,
 
     /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
@@ -99,7 +99,6 @@ public enum HadoopJobProperty {
      * By default is {@code 32 * 1024}.
      */
     SHUFFLE_PAGE_SIZE;
-
 
     /** */
     private final String ptyName;

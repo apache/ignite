@@ -58,7 +58,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MEM_MANAGER;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MEMORY_MANAGER;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_OFFHEAP_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
@@ -151,7 +151,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         if (pageSize == 0)
             pageSize = HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024);
 
-        String memMgrStr = HadoopJobProperty.get(job.info(), SHUFFLE_MEM_MANAGER, "offheap");
+        String memMgrStr = HadoopJobProperty.get(job.info(), SHUFFLE_MEMORY_MANAGER, "offheap");
 
         memMgr = "onheap".equalsIgnoreCase(memMgrStr) ? new HeapMemoryManager(pageSize)
             : new OffheapMemoryManager(mem, pageSize);
@@ -467,6 +467,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         }
 
         close(maps);
+
         memMgr.close();
     }
 
