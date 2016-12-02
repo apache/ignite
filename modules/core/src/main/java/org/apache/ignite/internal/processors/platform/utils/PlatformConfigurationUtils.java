@@ -951,10 +951,16 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(false);
 
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
-        w.writeBoolean(bc != null);
 
-        if (bc != null)
+        if (bc != null) {
+            w.writeBoolean(true);  // binary config exists
+            w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
+
+            // TODO: Write identity resolver
+        }
+        else
+            w.writeBoolean(false);
 
         Map<String, ?> attrs = cfg.getUserAttributes();
 
