@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -178,13 +179,15 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     public void testTypeConversions() throws ParseException {
         IgniteCache cache = ignite(0).cache("L2AT");
 
-        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\") values(2, ?," +
-            "'2016-11-30 12:00:00', false)").setArgs(new AllTypes(2L)));
+        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
+            "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
 
         cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = CAST('50' as INT)," +
             " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
             "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
-            "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00'").setArgs(new AllTypes.InnerType(80L)));
+            "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
+            "DATEADD('DAY', 2, \"tsCol\"))")
+            .setArgs(new AllTypes.InnerType(80L)));
 
         AllTypes res = (AllTypes) cache.get(2L);
 
@@ -196,6 +199,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
         assertEquals(new AllTypes.InnerType(80L), res.innerTypeCol);
         assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
+        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
         assertEquals(2, res.intCol);
         assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
         assertEquals(new java.sql.Date(new SimpleDateFormat("yyyy-MM-dd").parse("2016-12-02").getTime()), res.sqlDateCol);
@@ -239,10 +243,16 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         Date dateCol;
 
         /**
-         * Date.
+         * SQL date (non timestamp).
          */
         @QuerySqlField
         java.sql.Date sqlDateCol;
+
+        /**
+         * Timestamp.
+         */
+        @QuerySqlField
+        Timestamp tsCol;
 
         /**
          * Data int.
@@ -398,6 +408,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             if (strCol != null ? !strCol.equals(allTypes.strCol) : allTypes.strCol != null) return false;
             if (dateCol != null ? !dateCol.equals(allTypes.dateCol) : allTypes.dateCol != null) return false;
             if (sqlDateCol != null ? !sqlDateCol.equals(allTypes.sqlDateCol) : allTypes.sqlDateCol != null) return false;
+            if (tsCol != null ? !tsCol.equals(allTypes.tsCol) : allTypes.tsCol != null) return false;
             if (bigDecimalCol != null ? !bigDecimalCol.equals(allTypes.bigDecimalCol) : allTypes.bigDecimalCol != null)
                 return false;
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
@@ -419,6 +430,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             res = 31 * res + (booleanCol ? 1 : 0);
             res = 31 * res + (dateCol != null ? dateCol.hashCode() : 0);
             res = 31 * res + (sqlDateCol != null ? sqlDateCol.hashCode() : 0);
+            res = 31 * res + (tsCol != null ? tsCol.hashCode() : 0);
             res = 31 * res + intCol;
             res = 31 * res + (bigDecimalCol != null ? bigDecimalCol.hashCode() : 0);
             res = 31 * res + Arrays.hashCode(bytesCol);
