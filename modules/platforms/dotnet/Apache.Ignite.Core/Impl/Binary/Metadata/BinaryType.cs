@@ -220,6 +220,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         }
 
         /// <summary>
+        /// Gets the equality comparer.
+        /// </summary>
+        public IBinaryEqualityComparer EqualityComparer
+        {
+            get { return _equalityComparer; }
+        }
+
+        /// <summary>
         /// Gets the descriptor.
         /// </summary>
         public IBinaryTypeDescriptor Descriptor
