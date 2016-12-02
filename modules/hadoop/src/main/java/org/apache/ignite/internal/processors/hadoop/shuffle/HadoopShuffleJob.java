@@ -117,7 +117,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final boolean needPartitioner;
 
     /** Task contexts for each reduce task. */
-    private final HadoopTaskContext[] locReducersCtx;
+    private final AtomicReferenceArray<LocalTaskContextProxy> locReducersCtx;
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
@@ -209,13 +209,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         stripedGzip = get(job.info(), SHUFFLE_STRIPED_GZIP, false);
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
-        locReducersCtx = new HadoopTaskContext[totalReducerCnt];
+        locReducersCtx = new AtomicReferenceArray<>(totalReducerCnt);
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
                 HadoopTaskInfo taskInfo = new HadoopTaskInfo(HadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
-                locReducersCtx[rdc] = job.getTaskContext(taskInfo);
+                locReducersCtx.set(rdc, new LocalTaskContextProxy(taskInfo));
             }
         }
 
@@ -322,7 +322,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
-        HadoopTaskContext taskCtx = locReducersCtx[msg.reducer()];
+        HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
@@ -389,7 +389,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             buf = out.buffer();
         }
 
-        HadoopTaskContext taskCtx = locReducersCtx[msg.reducer()];
+        HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
@@ -920,7 +920,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @return {@code True} if local.
      */
     private boolean isLocalPartition(int part) {
-        return locReducersCtx[part] != null;
+        return locReducersCtx.get(part) != null;
     }
 
     /**
@@ -1167,6 +1167,53 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
          */
         public GridFutureAdapter future() {
             return fut;
+        }
+    }
+
+    /**
+     * Local task context proxy with delayed initialization.
+     */
+    private class LocalTaskContextProxy {
+        /** Mutex for synchronization. */
+        private final Object mux = new Object();
+
+        /** Task info. */
+        private final HadoopTaskInfo taskInfo;
+
+        /** Task context. */
+        private volatile HadoopTaskContext ctx;
+
+        /**
+         * Constructor.
+         *
+         * @param taskInfo Task info.
+         */
+        public LocalTaskContextProxy(HadoopTaskInfo taskInfo) {
+            this.taskInfo = taskInfo;
+        }
+
+        /**
+         * Get task context.
+         *
+         * @return Task context.
+         * @throws IgniteCheckedException If failed.
+         */
+        public HadoopTaskContext get() throws IgniteCheckedException {
+            HadoopTaskContext ctx0 = ctx;
+
+            if (ctx0 == null) {
+                synchronized (mux) {
+                    ctx0 = ctx;
+
+                    if (ctx0 == null) {
+                        ctx0 = job.getTaskContext(taskInfo);
+
+                        ctx = ctx0;
+                    }
+                }
+            }
+
+            return ctx0;
         }
     }
 }

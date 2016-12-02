@@ -139,6 +139,9 @@ public class HadoopShuffle extends HadoopComponent {
             ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }
 
+    /** Mгtex. */
+    private final Object mux = new Object();
+
     /**
      * @param jobId Task info.
      * @return Shuffle job.
@@ -147,17 +150,23 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
-            res = newJob(jobId);
+            synchronized (mux) {
+                res = jobs.get(jobId);
 
-            HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
+                if (res == null) {
+                    res = newJob(jobId);
 
-            if (old != null) {
-                res.close();
+                    HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
 
-                res = old;
+                    if (old != null) {
+                        res.close();
+
+                        res = old;
+                    }
+                    else if (res.reducersInitialized())
+                        startSending(res);
+                }
             }
-            else if (res.reducersInitialized())
-                startSending(res);
         }
 
         return res;
