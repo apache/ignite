@@ -58,7 +58,8 @@ namespace Apache.Ignite.Core.Binary
             BinaryObjectSchemaHolder schema, Marshaller marshaller)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(startPos > 0);
+            Debug.Assert(startPos >= 0);
+            Debug.Assert(length >= 0);
 
             return stream.ComputeHashCode(startPos, length);
         }
