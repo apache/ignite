@@ -47,7 +47,7 @@ import org.apache.ignite.internal.util.typedef.X;
 /**
  *
  */
-public abstract class HadoopConcurrentHashMultimapAbstractSelftest extends HadoopAbstractMapTest {
+public abstract class HadoopConcurrentHashMultimapAbstractSelfTest extends HadoopAbstractMapTest {
     /**
      * @return Memory manager to use by map.
      */

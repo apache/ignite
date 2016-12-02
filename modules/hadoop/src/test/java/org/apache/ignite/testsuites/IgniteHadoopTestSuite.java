@@ -30,8 +30,8 @@ import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProt
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOffheapSelftest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOnheapSelftest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOffheapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapOnheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapOffheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapOnheapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListOffheapSelfTest;
@@ -171,8 +171,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapOffheapSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapOnheapSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOffheapSelftest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOnheapSelftest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOffheapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapOnheapSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListOffheapSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListOnheapSelfTest.class.getName())));

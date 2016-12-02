@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
-import org.apache.ignite.internal.processors.hadoop.shuffle.mem.heap.HeapMemoryManager;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
  *
  */
-public class HadoopConcurrentHashMultimapOnheapSelftest extends HadoopConcurrentHashMultimapAbstractSelftest {
+public class HadoopConcurrentHashMultimapOffheapSelfTest extends HadoopConcurrentHashMultimapAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected MemoryManager memoryManager() {
-        return new HeapMemoryManager(32 * 1024);
+        return new OffheapMemoryManager(new GridUnsafeMemory(0), 32 * 1024);
     }
 }
