@@ -182,12 +182,14 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
             "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
 
+        List<?> ll = cache.query(new SqlFieldsQuery("select \"primitiveIntsCol\" from \"AllTypes\"")).getAll();
+
         cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = CAST('50' as INT)," +
             " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
             "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
             "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
-            "DATEADD('DAY', 2, \"tsCol\"))")
-            .setArgs(new AllTypes.InnerType(80L)));
+            "DATEADD('DAY', 2, \"tsCol\")), \"primitiveIntsCol\" = ?, \"bytesCol\" = ?")
+            .setArgs(new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6}));
 
         AllTypes res = (AllTypes) cache.get(2L);
 
@@ -196,7 +198,10 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         assertEquals(2L, (long) res.longCol);
         assertTrue(res.booleanCol);
         assertEquals("3.141592653589793", res.strCol);
-        assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
+        assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
+        assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
+        assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
+        assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
         assertEquals(new AllTypes.InnerType(80L), res.innerTypeCol);
         assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
         assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
@@ -271,6 +276,24 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
          */
         @QuerySqlField
         Byte[] bytesCol;
+
+        /**
+         * Data bytes primitive array.
+         */
+        @QuerySqlField
+        byte[] primitiveBytesCol;
+
+        /**
+         * Data bytes array.
+         */
+        @QuerySqlField
+        Integer[] intsCol;
+
+        /**
+         * Data bytes primitive array.
+         */
+        @QuerySqlField
+        int[] primitiveIntsCol;
 
         /**
          * Data bytes array.
@@ -375,12 +398,18 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             }
             this.intCol = key.intValue();
             this.bytesCol = new Byte[(int) (key % 10)];
+            this.intsCol = new Integer[(int) (key % 10)];
+            this.primitiveBytesCol = new byte[(int) (key % 10)];
+            this.primitiveIntsCol = new int[(int) (key % 10)];
             //this.bytesCol = new Byte[10];
             int b = 0;
             for (int j = 0; j < bytesCol.length; j++) {
                 if (b == 256)
                     b = 0;
                 bytesCol[j] = (byte) b;
+                primitiveBytesCol[j] = (byte) b;
+                intsCol[j] = b;
+                primitiveIntsCol[j] = b;
                 b++;
             }
             this.shortCol = (short) (((1000 * key) % 50000) - 25000);

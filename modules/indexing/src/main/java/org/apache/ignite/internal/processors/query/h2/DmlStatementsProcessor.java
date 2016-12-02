@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -585,6 +586,7 @@ public class DmlStatementsProcessor {
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
+    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
     private static Object convert(Object val, String colName, GridH2RowDescriptor desc, int type)
         throws IgniteCheckedException {
         if (val == null)
@@ -594,10 +596,32 @@ public class DmlStatementsProcessor {
 
         assert prop != null;
 
-        if (val instanceof Date && val.getClass() != Date.class && prop.type() == Date.class) {
+        Class<?> expCls = prop.type();
+
+        Class<?> currCls = val.getClass();
+
+        if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
             // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
             // precise Date instance. Let's satisfy it.
             return new Date(((Date) val).getTime());
+        }
+
+        // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
+        // Still, we only can convert from Object[] to something more precise.
+        if (type == Value.ARRAY && currCls != expCls) {
+            if (currCls != Object[].class)
+                throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
+
+            // Why would otherwise type be Value.ARRAY?
+            assert expCls.isArray();
+
+            Object[] curr = (Object[]) val;
+
+            Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
+
+            System.arraycopy(curr, 0, newArr, 0, curr.length);
+
+            return newArr;
         }
 
         int objType = DataType.getTypeFromClass(val.getClass());
