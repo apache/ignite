@@ -50,6 +50,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
             };
 
+            // TODO: Test with Field comparer as well.
+
             Ignition.Start(cfg);
         }
 
