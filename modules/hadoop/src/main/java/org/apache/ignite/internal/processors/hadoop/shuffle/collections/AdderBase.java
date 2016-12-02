@@ -185,7 +185,6 @@ public abstract class AdderBase implements HadoopMultimap.Adder {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
-//        System.out.println("Close adder. mem=#" + Integer.toHexString(System.identityHashCode(mem)));
         keySer.close();
         valSer.close();
     }

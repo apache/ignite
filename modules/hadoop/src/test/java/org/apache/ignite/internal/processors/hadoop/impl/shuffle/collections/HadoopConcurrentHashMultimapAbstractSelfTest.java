@@ -67,32 +67,37 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelfTest extends Hadoo
 
         MemoryManager mem = memoryManager();
 
-        HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
-            mem, mapSize);
+        try {
+            HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
+                    mem, mapSize);
 
-        HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
+            HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
-        Multimap<Integer, Integer> mm = ArrayListMultimap.create();
-        Multimap<Integer, Integer> vis = ArrayListMultimap.create();
+            Multimap<Integer, Integer> mm = ArrayListMultimap.create();
+            Multimap<Integer, Integer> vis = ArrayListMultimap.create();
 
-        for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
-            int key = rnd.nextInt(mapSize);
-            int val = rnd.nextInt();
+            for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
+                int key = rnd.nextInt(mapSize);
+                int val = rnd.nextInt();
 
-            a.write(new IntWritable(key), new IntWritable(val));
-            mm.put(key, val);
+                a.write(new IntWritable(key), new IntWritable(val));
+                mm.put(key, val);
 
-            X.println("k: " + key + " v: " + val);
+                X.println("k: " + key + " v: " + val);
+
+                a.close();
+
+                check(m, mm, vis, taskCtx, mem);
+
+                a = m.startAdding(taskCtx);
+            }
 
             a.close();
-
-            check(m, mm, vis, taskCtx, mem);
-
-            a = m.startAdding(taskCtx);
+            m.close();
         }
-
-        a.close();
-        m.close();
+        finally {
+            mem.close();
+        }
     }
 
     /**
@@ -189,8 +194,6 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelfTest extends Hadoo
      * @throws Exception if failed.
      */
     public void testMultiThreaded() throws Exception {
-        GridUnsafeMemory mem = new GridUnsafeMemory(0);
-
         X.println("___ Started");
 
         Random rnd = new GridRandom();
@@ -200,85 +203,91 @@ public abstract class HadoopConcurrentHashMultimapAbstractSelfTest extends Hadoo
 
             final HadoopTaskContext taskCtx = new TaskContext();
 
-            final HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
-                memoryManager(), 16);
+            MemoryManager mem = memoryManager();
 
-            final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
+            try {
+                final HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
+                        mem, 16);
 
-            X.println("___ MT");
+                final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 
-            multithreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    X.println("___ TH in");
+                X.println("___ MT");
 
-                    Random rnd = new GridRandom();
+                multithreaded(new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        X.println("___ TH in");
 
-                    IntWritable key = new IntWritable();
-                    IntWritable val = new IntWritable();
+                        Random rnd = new GridRandom();
 
-                    HadoopMultimap.Adder a = m.startAdding(taskCtx);
+                        IntWritable key = new IntWritable();
+                        IntWritable val = new IntWritable();
 
-                    for (int i = 0; i < 50000; i++) {
-                        int k = rnd.nextInt(32000);
-                        int v = rnd.nextInt();
+                        HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
-                        key.set(k);
-                        val.set(v);
+                        for (int i = 0; i < 50000; i++) {
+                            int k = rnd.nextInt(32000);
+                            int v = rnd.nextInt();
 
-                        a.write(key, val);
+                            key.set(k);
+                            val.set(v);
 
-                        Collection<Integer> list = mm.get(k);
+                            a.write(key, val);
 
-                        if (list == null) {
-                            list = new ConcurrentLinkedQueue<>();
+                            Collection<Integer> list = mm.get(k);
 
-                            Collection<Integer> old = mm.putIfAbsent(k, list);
+                            if (list == null) {
+                                list = new ConcurrentLinkedQueue<>();
 
-                            if (old != null)
-                                list = old;
+                                Collection<Integer> old = mm.putIfAbsent(k, list);
+
+                                if (old != null)
+                                    list = old;
+                            }
+
+                            list.add(v);
                         }
 
-                        list.add(v);
+                        a.close();
+
+                        X.println("___ TH out");
+
+                        return null;
+                    }
+                }, 3 + rnd.nextInt(27));
+
+                X.println("___ Check: " + m.capacity());
+
+                assertEquals(mm.size(), m.keys());
+
+                assertTrue(m.capacity() > 32000);
+
+                HadoopTaskInput in = m.input(taskCtx);
+
+                while (in.next()) {
+                    IntWritable key = (IntWritable) in.key();
+
+                    Iterator<?> valsIter = in.values();
+
+                    Collection<Integer> vals = mm.remove(key.get());
+
+                    assertNotNull(vals);
+
+                    while (valsIter.hasNext()) {
+                        IntWritable val = (IntWritable) valsIter.next();
+
+                        assertTrue(vals.remove(val.get()));
                     }
 
-                    a.close();
-
-                    X.println("___ TH out");
-
-                    return null;
-                }
-            }, 3 + rnd.nextInt(27));
-
-            X.println("___ Check: " + m.capacity());
-
-            assertEquals(mm.size(), m.keys());
-
-            assertTrue(m.capacity() > 32000);
-
-            HadoopTaskInput in = m.input(taskCtx);
-
-            while (in.next()) {
-                IntWritable key = (IntWritable) in.key();
-
-                Iterator<?> valsIter = in.values();
-
-                Collection<Integer> vals = mm.remove(key.get());
-
-                assertNotNull(vals);
-
-                while (valsIter.hasNext()) {
-                    IntWritable val = (IntWritable) valsIter.next();
-
-                    assertTrue(vals.remove(val.get()));
+                    assertTrue(vals.isEmpty());
                 }
 
-                assertTrue(vals.isEmpty());
+                in.close();
+                m.close();
             }
-
-            in.close();
-            m.close();
-
-            assertEquals(0, mem.allocatedSize());
+            finally {
+                mem.close();
+            }
         }
     }
 }

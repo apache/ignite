@@ -52,9 +52,6 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public void close() {
-//        new Exception("Close OFF-mem").printStackTrace();
-//        System.out.println("+++ Close mem=" + Integer.toHexString(System.identityHashCode(this)));
-
         if (closed.compareAndSet(false, true)) {
 
             for (OffheapPage page : allPages)
@@ -78,59 +75,34 @@ public class OffheapMemoryManager extends MemoryManager {
 
         allPages.add(new OffheapPage(ptr, size));
 
-//        System.out.println("+++ allocate mem=" + Integer.toHexString(System.identityHashCode(this)) + " : ptr=" + ptr + ", size=" + size);
         return ptr;
-    }
-
-    /**
-     * @param ptr Pointer.
-     */
-    private boolean check(long ptr) {
-        assert !closed.get() : "Memory manager already closed " + Integer.toHexString(System.identityHashCode(this));
-
-        for (OffheapPage page : allPages) {
-            if ((ptr >= page.ptr()) && (ptr < page.ptr() + page.size()))
-                return true;
-        }
-
-        assert false : "Invalid ptr=" + ptr + ", pages=" + allPages.size();
-//        System.out.println("mem=" + Integer.toHexString(System.identityHashCode(this)) + " Invalid ptr=" + ptr + ", pages=" + allPages.size());
-//
-//        for (OffheapPage page : allPages)
-//            System.out.println("    page: ptr=" + page.ptr() + ", size=" + page.size() + ", mem=" + Integer.toHexString(System.identityHashCode(this)) );
-        return false;
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(long srcPtr, long destPtr, long len) {
-        assert check(srcPtr);
-        assert check(destPtr);
-        assert check(srcPtr + len);
-        assert check(destPtr + len);
+        assert check(srcPtr, len);
+        assert check(destPtr, len);
 
         mem.copyMemory(srcPtr, destPtr, len);
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(byte[] srcBuf, int srcOff, long destPtr, long len) {
-        assert check(destPtr);
-        assert check(destPtr + len);
+        assert check(destPtr, len);
 
         GridUnsafe.copyMemory(srcBuf, GridUnsafe.BYTE_ARR_OFF + srcOff, null, destPtr, len);
     }
 
     /** {@inheritDoc} */
     @Override public void copyMemory(long srcPtr, byte[] dstBuf, int dstOff, long len) {
-        assert check(srcPtr);
-        assert check(srcPtr + len);
+        assert check(srcPtr, len);
 
         GridUnsafe.copyMemory(null, srcPtr, dstBuf, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
     }
 
     /** {@inheritDoc} */
     @Override public Bytes bytes(long ptr, long len) {
-        assert check(ptr);
-        assert check(ptr + len);
+        assert check(ptr, len);
 
         byte [] buf = new byte[(int)len];
 
@@ -244,17 +216,49 @@ public class OffheapMemoryManager extends MemoryManager {
 
     /** {@inheritDoc} */
     @Override public void writeBytes(long ptr, byte[] arr, int off, int len) {
-        assert check(ptr);
-        assert check(ptr + len);
+        assert check(ptr, len);
 
         mem.writeBytes(ptr, arr, off, len);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
-        assert check(ptr);
-        assert check(ptr + len);
+        assert check(ptr, len);
 
         return mem.readBytes(ptr, arr, off, len);
+    }
+
+    /**
+     * @param ptr Pointer.
+     */
+    private boolean check(long ptr) {
+        assert !closed.get() : "Memory manager already closed " + Integer.toHexString(System.identityHashCode(this));
+
+        for (OffheapPage page : allPages) {
+            if ((ptr >= page.ptr()) && (ptr < page.ptr() + page.size()))
+                return true;
+        }
+
+        assert false : "Invalid ptr=" + ptr + ", pages=" + allPages.size();
+
+        return false;
+    }
+
+    /**
+     * @param ptr Pointer.
+     */
+    private boolean check(long ptr, long size) {
+        check(ptr);
+
+        long ptrEnd = ptr + size;
+
+        for (OffheapPage page : allPages) {
+            if (ptrEnd <= page.ptr() + page.size())
+                return true;
+        }
+
+        assert false : "Invalid ptr=" + ptr + ", pages=" + allPages.size();
+
+        return false;
     }
 }

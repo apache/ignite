@@ -55,32 +55,39 @@ public abstract class HadoopHashMapAbstractSelfTest extends HadoopAbstractMapTes
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        final HadoopHashMultimap m = new HadoopHashMultimap(new JobInfo(),
-            memoryManager(), mapSize);
+        MemoryManager mem = memoryManager();
 
-        HadoopMultimap.Adder a = m.startAdding(taskCtx);
+        try {
+            final HadoopHashMultimap m = new HadoopHashMultimap(new JobInfo(),
+                    mem, mapSize);
 
-        Multimap<Integer, Integer> mm = ArrayListMultimap.create();
+            HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
-        for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
-            int key = rnd.nextInt(mapSize);
-            int val = rnd.nextInt();
+            Multimap<Integer, Integer> mm = ArrayListMultimap.create();
 
-            X.println("k: " + key + " v: " + val);
+            for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
+                int key = rnd.nextInt(mapSize);
+                int val = rnd.nextInt();
 
-            a.write(new IntWritable(key), new IntWritable(val));
+                X.println("k: " + key + " v: " + val);
 
-            mm.put(key, val);
+                a.write(new IntWritable(key), new IntWritable(val));
+
+                mm.put(key, val);
+
+                a.close();
+
+                check(m, mm, taskCtx);
+
+                a = m.startAdding(taskCtx);
+            }
 
             a.close();
-
-            check(m, mm, taskCtx);
-
-            a = m.startAdding(taskCtx);
+            m.close();
         }
-
-        a.close();
-        m.close();
+        finally {
+            mem.close();
+        }
     }
 
     /**
