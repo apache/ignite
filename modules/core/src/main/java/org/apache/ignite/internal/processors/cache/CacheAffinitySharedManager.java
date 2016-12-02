@@ -463,7 +463,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             cache = caches.remove(cacheId);
                             CacheHolderReadyFuture cacheFut = cacheFuts.get(cacheId);
                             if (cacheFut != null)
-                                cacheFut.onDone(null, new IgniteCheckedException("cache removed"));
+                                cacheFut.onDone(new IgniteCheckedException("cache removed"));
                         }
 
                         if (cache != null) {
@@ -529,7 +529,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             CacheHolder old = caches.put(cacheId, cache);
             CacheHolderReadyFuture fut = cacheFuts.get(cacheId);
             if (fut != null)
-                fut.onDone(cache, null);
+                fut.onDone(cache);
             return old;
         }
     }
@@ -545,7 +545,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 return new GridFinishedFuture<>();
         }
     }
-
 
     /**
      * Called when received {@link CacheAffinityChangeMessage} which should complete exchange.
@@ -1831,6 +1830,23 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return new CacheAffinityInfo(cacheHolder.cacheId(), assignment.assignment(), idealAssignment);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        super.onKernalStop0(cancel);
+        cancelFutures();
+    }
+
+    /**
+     * Cancel all cache futures.
+     */
+    public void cancelFutures() {
+        IgniteCheckedException err =
+            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        for (CacheHolderReadyFuture future : cacheFuts.values())
+            future.onDone(err);
     }
 
     /**

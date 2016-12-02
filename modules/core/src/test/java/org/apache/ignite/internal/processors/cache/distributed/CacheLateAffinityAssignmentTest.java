@@ -1834,6 +1834,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
 
+        awaitPartitionMapExchange();
+
         TestRecordingCommunicationSpi spi0 =
             (TestRecordingCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
@@ -1849,15 +1851,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 startServer(NUM_NODES, newTopVer);
                 return null;
             }
-        });
+        }, "node start");
 
-        U.sleep(500);
+        U.sleep(1000);
 
         assertFalse(fut.isDone());
 
-        stopGrid(0);
+        stopGrid(0, true);
 
-        fut.get();
+        fut.get(600000);
 
         awaitPartitionMapExchange();
 
