@@ -564,7 +564,7 @@ public class PlatformConfigurationUtils {
                 for (int i = 0; i < typeCnt; i++) {
                     BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
                     type.setEnum(in.readBoolean());
-                    //type.setIdentityResolver();
+                    type.setIdentityResolver(readBinaryIdentityResolver(in));
                 }
 
                 cfg.getBinaryConfiguration().setTypeConfigurations(types);
@@ -975,7 +975,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
 
-            // TODO: Write identity resolver
+            // TODO
         }
         else
             w.writeBoolean(false);
