@@ -173,6 +173,12 @@
             <directory>modules/clients/target/cppdoc/html</directory>
             <outputDirectory>/platforms/cpp/docs</outputDirectory>
         </fileSet>
+		
+        <!-- Move CPP binaries. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/bin</directory>
+            <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
 
         <!-- Other files. -->
         <fileSet>
