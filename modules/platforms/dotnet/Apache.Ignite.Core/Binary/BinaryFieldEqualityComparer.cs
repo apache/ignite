@@ -19,14 +19,41 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Uses a set of binary object fields to calculate hash code and check equality.
     /// </summary>
     public class BinaryFieldEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryFieldEqualityComparer"/> class.
+        /// </summary>
+        public BinaryFieldEqualityComparer()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryFieldEqualityComparer"/> class.
+        /// </summary>
+        /// <param name="fieldNames">The field names for comparison.</param>
+        public BinaryFieldEqualityComparer(params string[] fieldNames)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldNames, "fieldNames");
+
+            FieldNames = fieldNames;
+        }
+
+        /// <summary>
+        /// Gets or sets the field names to be used for equality comparison.
+        /// </summary>
+        public ICollection<string> FieldNames { get; set; }
+
         /// <summary>
         /// Determines whether the specified objects are equal.
         /// </summary>
@@ -56,6 +83,15 @@ namespace Apache.Ignite.Core.Binary
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length,
             BinaryObjectSchemaHolder schema, Marshaller marshaller)
         {
+            Debug.Assert(stream != null);
+            Debug.Assert(startPos >= 0);
+            Debug.Assert(length >= 0);
+            Debug.Assert(schema != null);
+            Debug.Assert(marshaller != null);
+
+            if (FieldNames == null || FieldNames.Count == 0)
+                throw new IgniteException("BinaryFieldEqualityComparer.FieldNames can not be null or empty.");
+
             return 0; // TODO
         }
     }

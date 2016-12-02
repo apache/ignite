@@ -60,11 +60,22 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var ms = new BinaryHeapStream(10);
 
+            Assert.AreEqual(1, cmp.GetHashCode(ms, 0, 0, null, null));
+
             ms.WriteByte(1);
             Assert.AreEqual(31 + 1, cmp.GetHashCode(ms, 0, 1, null, null));
 
             ms.WriteByte(3);
             Assert.AreEqual((31 + 1) * 31 + 3, cmp.GetHashCode(ms, 0, 2, null, null));
+        }
+
+        /// <summary>
+        /// Tests the field comparer.
+        /// </summary>
+        [Test]
+        public void TestFieldComparer()
+        {
+            
         }
     }
 }
