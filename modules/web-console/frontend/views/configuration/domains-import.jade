@@ -28,8 +28,10 @@ mixin td-ellipses-lbl(w, lbl)
         .modal-content(ignite-loading='importDomainFromDb' ignite-loading-text='{{importDomain.loadingOptions.text}}')
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
-                h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
-                h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
+                h4.modal-title() 
+                    i.fa.fa-database
+                    span(ng-if='!importDomain.demo') Import domain models from database
+                    span(ng-if='importDomain.demo') Import domain models from demo database
             .modal-body
                 .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && !importDomain.jdbcDriversNotFound')
                 .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && importDomain.jdbcDriversNotFound')
@@ -144,14 +146,16 @@ mixin td-ellipses-lbl(w, lbl)
                     -var form = 'optionsForm'
 
                     form.form-horizontal(name=form novalidate)
-                        .settings-row.settings-row_small-label
-                            +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')(data-container='.modal-domain-import')
                         .settings-row
                             +checkbox('Use Java built-in types for keys', 'ui.builtinKeys', '"domainBuiltinKeys"', 'Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
                         .settings-row
                             +checkbox('Use primitive types for NOT NULL table columns', 'ui.usePrimitives', '"domainUsePrimitives"', 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
                         .settings-row
                             +checkbox('Generate aliases for query fields', 'ui.generateAliases', '"domainGenerateAliases"', 'Generate aliases for query fields with database field names when database field name differ from Java field name')
+                        .settings-row
+                            +checkbox('Generate POJO classes', 'ui.generatePojo', '"domainGeneratePojo"', 'If selected then POJO classes will be generated from database tables')
+                        .settings-row.settings-row_small-label(ng-show='ui.generatePojo')
+                            +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')(data-container='.modal-domain-import')
                         .settings-row.settings-row_small-label
                             +ignite-form-field-dropdown('Clusters:', 'ui.generatedCachesClusters', '"generatedCachesClusters"', false, false, true,
                                 'Choose clusters for generated caches', '', 'clusters',
@@ -160,4 +164,4 @@ mixin td-ellipses-lbl(w, lbl)
             .modal-footer
                 label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
                 a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
-                a.btn.btn-primary(ng-click='importDomainNext()' ng-disabled='!importDomainNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importDomain.button}}
+                a.btn.btn-primary(ng-click='importDomainNext(optionsForm)' ng-disabled='!importDomainNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importDomain.button}}

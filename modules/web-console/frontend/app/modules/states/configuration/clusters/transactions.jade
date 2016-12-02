@@ -24,7 +24,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label Transactions
         ignite-form-field-tooltip.tipLabel
-            | Settings for transactions
+            | Settings for transactions#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/transactions" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -39,8 +40,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                         <ul>\
                             <li>OPTIMISTIC - All cache operations are not distributed to other nodes until commit is called</li>\
                             <li>PESSIMISTIC - A lock is acquired on all cache operations with exception of read operations in READ_COMMITTED mode</li>\
-                        </ul>\
-                        ')
+                        </ul>')
                 .settings-row
                     +dropdown('Isolation:', model + '.defaultTxIsolation', '"defaultTxIsolation"', 'true', 'REPEATABLE_READ',
                         '[\

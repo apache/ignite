@@ -264,6 +264,43 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether callable throws an exception with specified cause.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.call();
+        }
+        catch (Throwable e) {
+            Throwable t = e;
+
+            while (t != null) {
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                    log.info("Caught expected exception: " + t.getMessage());
+
+                    return t;
+                }
+
+                t = t.getCause();
+            }
+
+            fail("Unexpected exception", e);
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
      * Checks whether callable throws expected exception or its child or not.
      *
      * @param log Logger (optional).

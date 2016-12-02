@@ -86,6 +86,11 @@ namespace Apache.Ignite.AspNet.Impl
                         "Could not find {0} with name '{1}'", typeof(IgniteConfigurationSection).Name, sectionName));
 
                 config = section.IgniteConfiguration;
+
+                if (config == null)
+                    throw new ConfigurationErrorsException(string.Format(CultureInfo.InvariantCulture,
+                        "{0} with name '{1}' is defined in <configSections>, but not present in configuration.", 
+                        typeof(IgniteConfigurationSection).Name, sectionName));
             }
             else
                 config = new IgniteConfiguration {GridName = gridName};

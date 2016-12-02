@@ -250,8 +250,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        HadoopIgfsProperties props0 =
-            new HadoopIgfsProperties(props != null ? props : Collections.<String, String>emptyMap());
+        HadoopIgfsProperties props0 = new HadoopIgfsProperties(props);
 
         try {
             return fileSystemForUser().create(convert(path), props0.permission(), overwrite, bufSize,

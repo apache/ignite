@@ -17,7 +17,7 @@
 
 export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) => {
     function ensureActivePanel(ui, pnl, focusId) {
-        if (ui) {
+        if (ui && ui.loadPanel) {
             const collapses = $('div.panel-collapse');
 
             ui.loadPanel(pnl);
@@ -430,6 +430,10 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) =
                     return _.includes(this.loadedPanels, pnl);
                 }
             };
+        },
+        markPristineInvalidAsDirty(ngModelCtrl) {
+            if (ngModelCtrl && ngModelCtrl.$invalid && ngModelCtrl.$pristine)
+                ngModelCtrl.$setDirty();
         }
     };
 }]];
