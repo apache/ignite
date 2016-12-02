@@ -270,7 +270,7 @@
                 }
 
                 var types = BinaryConfiguration.TypeConfigurations;
-                if (types != null && types.Count > 0)
+                if (types != null)
                 {
                     writer.WriteInt(types.Count);
 
@@ -281,6 +281,10 @@
                         writer.WriteBoolean(type.IsEnum);
                         BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
                     }
+                }
+                else
+                {
+                    writer.WriteInt(0);
                 }
             }
             else
@@ -391,7 +395,25 @@
                 if (r.ReadBoolean())
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
 
-                // TODO: Read types
+                var typeCount = r.ReadInt();
+
+                if (typeCount > 0)
+                {
+                    var types = new List<BinaryTypeConfiguration>(typeCount);
+
+                    for (var i = 0; i < typeCount; i++)
+                    {
+                        types.Add(new BinaryTypeConfiguration
+                        {
+                            TypeName = r.ReadString(),
+                            AffinityKeyFieldName = r.ReadString(),
+                            IsEnum = r.ReadBoolean(),
+                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
+                        });
+                    }
+
+                    BinaryConfiguration.TypeConfigurations = types;
+                }
             }
 
             // User attributes
