@@ -36,6 +36,7 @@ public class OffheapMemoryManager extends MemoryManager {
     /** */
     private final ConcurrentLinkedQueue<OffheapPage> allPages = new ConcurrentLinkedQueue<>();
 
+    /** */
     private AtomicBoolean closed = new AtomicBoolean();
 
     /**
