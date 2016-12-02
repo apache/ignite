@@ -1507,7 +1507,7 @@ public class IgniteTxHandler {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                    entry.cached(null);
+                                    entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                 }
                             }
                         }
