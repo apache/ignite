@@ -55,7 +55,7 @@ namespace ignite
             /**
              * Populate callback handlers.
              *
-             * @param Target (current env wrapped into a shared pointer).
+             * @param target (current env wrapped into a shared pointer).
              * @return JNI handlers.
              */
             ignite::jni::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
@@ -135,10 +135,15 @@ namespace ignite
             /**
              * Get type manager.
              *
-             * @param Type manager.
+             * @return Type manager.
              */
             binary::BinaryTypeManager* GetTypeManager();
 
+            /**
+             * Acquire ownership for the object.
+             *
+             * @param obj Java object to acquire.
+             */
             void* Acquire(void* obj);
 
             /**

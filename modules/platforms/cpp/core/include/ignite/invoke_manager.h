@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INVOKE_MANAGER
-#define _IGNITE_IMPL_INVOKE_MANAGER
+#ifndef _IGNITE_INVOKE_MANAGER
+#define _IGNITE_INVOKE_MANAGER
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
@@ -29,23 +29,25 @@ namespace ignite
      * Invoke manager.
      * Used to register invokable classes.
      */
-    class InvokeManager
+    class IGNITE_IMPORT_EXPORT InvokeManager
     {
     public:
         /**
          * Default constructor.
          */
-        InvokeManager(common::concurrent::SharedPointer<impl::InvokeManagerImpl> impl) :
-            impl(impl)
+        InvokeManager() :
+            impl()
         {
             // No-op.
         }
 
         /**
          * Constructor.
+         *
+         * @param impl Implementation.
          */
-        InvokeManager() :
-            impl()
+        InvokeManager(common::concurrent::SharedPointer<impl::InvokeManagerImpl> impl) :
+            impl(impl)
         {
             // No-op.
         }
@@ -113,4 +115,4 @@ namespace ignite
     };
 }
 
-#endif //_IGNITE_IMPL_INVOKE_MANAGER
+#endif //_IGNITE_INVOKE_MANAGER
