@@ -67,6 +67,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             ms.WriteByte(3);
             Assert.AreEqual((31 + 1) * 31 + 3, cmp.GetHashCode(ms, 0, 2, null, 0, null, null));
+
+            // TODO: Integration test? Can we do this? At least in DML..
         }
 
         /// <summary>
