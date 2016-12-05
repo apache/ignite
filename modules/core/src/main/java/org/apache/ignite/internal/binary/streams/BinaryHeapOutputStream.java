@@ -75,7 +75,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[pos];
 
-        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, res, GridUnsafe.BYTE_ARR_OFF, pos);
+        System.arraycopy(data, 0, res, 0, pos);
 
         return res;
     }
