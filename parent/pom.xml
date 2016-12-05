@@ -65,7 +65,7 @@
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
-        <flume.ng.version>1.6.0</flume.ng.version>
+        <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>18.0</guava.version>
         <guava14.version>14.0.1</guava14.version>
@@ -86,9 +86,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.bundle.version>0.9.0.0_1</kafka.bundle.version>
-        <kafka.clients.bundle.version>0.9.0.0_1</kafka.clients.bundle.version>
-        <kafka.version>0.9.0.0</kafka.version>
+        <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
         <lucene.version>3.5.0</lucene.version>

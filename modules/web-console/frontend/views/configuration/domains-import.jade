@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 mixin chk(mdl, change, tip)
     input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-trigger='hover' data-placement='top')
@@ -133,7 +133,7 @@ mixin td-ellipses-lbl(w, lbl)
                                                     td
                     .settings-row
                         label Defaults to be applied for filtered tables
-                        i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Select and apply options for caches generation')
+                        i.tipLabel.icon-help(bs-tooltip='' data-title='Select and apply options for caches generation')
                     .settings-row
                         .col-sm-11
                             .col-sm-6(style='padding-right: 5px')

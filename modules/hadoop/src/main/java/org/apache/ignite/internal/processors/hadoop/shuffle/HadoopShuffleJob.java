@@ -71,6 +71,7 @@ import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_DIRECT;
@@ -183,6 +184,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** Mutex for internal synchronization. */
     private final Object mux = new Object();
 
+    /** */
+    private final long throttle;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -235,6 +239,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         rmtMaps = new AtomicReferenceArray<>(rmtMapsSize);
         msgs = new HadoopShuffleMessage[rmtMapsSize];
+
+        throttle = get(job.info(), SHUFFLE_JOB_THROTTLE, 0);
     }
 
     /**
@@ -275,6 +281,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     @Override protected void body() throws InterruptedException {
                         try {
                             while (!isCancelled()) {
+                                if (throttle > 0)
+                                    Thread.sleep(throttle);
+
                                 collectUpdatesAndSend(false);
                             }
                         }

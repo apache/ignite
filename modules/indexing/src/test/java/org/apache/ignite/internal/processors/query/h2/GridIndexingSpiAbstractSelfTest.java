@@ -463,7 +463,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
             F.println(res);
 
-            assert res.contains("/* PUBLIC.RANGE_INDEX */");
+            assertTrue(res.contains("/* PUBLIC.RANGE_INDEX */"));
         }
         finally {
             GridTestUtils.setFieldValue(spi, "log", oldLog);
