@@ -16,33 +16,31 @@
  */
 package org.apache.ignite.internal.processors.marshaller;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
  *
  */
 public class MappingExchangeResult {
-    /** */
-    private boolean inConflict;
+    /**  */
+    private final String acceptedClsName;
 
     /** */
-    private String acceptedClsName;
+    private final IgniteCheckedException error;
 
     /**
-     * @param inConflict In conflict.
-     * @param acceptedClsName Accepted class name.
      */
-    MappingExchangeResult(boolean inConflict, String acceptedClsName) {
-        this.inConflict = inConflict;
+    MappingExchangeResult(String acceptedClsName, IgniteCheckedException error) {
         this.acceptedClsName = acceptedClsName;
+        this.error = error;
     }
 
-    /**
-     *
-     */
-    public boolean inConflict() {
-        return inConflict;
-    }
-
-    public String acceptedClassName() {
+    public String className() {
         return acceptedClsName;
+    }
+
+    /**  */
+    public IgniteCheckedException error() {
+        return error;
     }
 }

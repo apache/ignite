@@ -225,25 +225,22 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (mappedName.accepted())
                     return true;
                 IgniteInternalFuture<MappingExchangeResult> fut = transport.awaitMappingAcceptance(new MarshallerMappingItem(platformId, typeId, clsName), cache);
-                return convertFutureResult(fut.get(), platformId, typeId, clsName);
+                MappingExchangeResult res = fut.get();
+
+                if (res.error() == null)
+                    return true;
+                else
+                    throw res.error();
             }
         else {
             IgniteInternalFuture<MappingExchangeResult> fut = transport.proposeMapping(new MarshallerMappingItem(platformId, typeId, clsName), cache);
-            return convertFutureResult(fut.get(), platformId, typeId, clsName);
-        }
-    }
+            MappingExchangeResult res = fut.get();
 
-    /**
-     * @param res Response.
-     * @param platformId Platform id.
-     * @param typeId Type id.
-     * @param clsName Class name.
-     */
-    private boolean convertFutureResult(MappingExchangeResult res, byte platformId, int typeId, String clsName) throws IgniteCheckedException {
-        if (res.inConflict())
-            throw duplicateIdException(platformId, typeId, res.acceptedClassName(), clsName);
-        else
-            return true;
+            if (res.error() == null)
+                return true;
+            else
+                throw res.error();
+        }
     }
 
     /**
@@ -321,7 +318,7 @@ public class MarshallerContextImpl implements MarshallerContext {
                     mappedName = cache.get(typeId);
                     if (mappedName == null) {
                         GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(new MarshallerMappingItem(platformId, typeId, null), cache);
-                        clsName = fut.get().acceptedClassName();
+                        clsName = fut.get().className();
                     }
                     else
                         clsName = cache.get(typeId).className();

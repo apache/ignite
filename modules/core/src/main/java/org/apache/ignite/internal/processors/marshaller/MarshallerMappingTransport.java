@@ -61,7 +61,7 @@ public final class MarshallerMappingTransport {
 
         //double check whether mapping is accepted, first check was in MarshallerContextImpl::registerClassName
         if (mappedName.accepted()) {
-            fut.onDone(new MappingExchangeResult(false, null));
+            fut.onDone(new MappingExchangeResult(mappedName.className(), null));
             mappingExchSyncMap.remove(item, fut);
         }
 
@@ -83,11 +83,13 @@ public final class MarshallerMappingTransport {
             MappedName mapping = cache.get(item.typeId());
 
             if (mapping != null) {
-                if (!mapping.className().equals(item.className())) {
-                    fut.onDone(new MappingExchangeResult(true, mapping.className()));
+                String mappedClsName = mapping.className();
+
+                if (!mappedClsName.equals(item.className())) {
+                    fut.onDone(new MappingExchangeResult(null, duplicateMappingException(item, mappedClsName)));
                     mappingExchSyncMap.remove(item, fut);
                 } else if (mapping.accepted()) {
-                    fut.onDone(new MappingExchangeResult(false, null));
+                    fut.onDone(new MappingExchangeResult(mappedClsName, null));
                     mappingExchSyncMap.remove(item, fut);
                 }
 
@@ -115,11 +117,8 @@ public final class MarshallerMappingTransport {
 
         if (oldFut == null) {
             MappedName mappedName = cache.get(item.typeId());
-            if (item.typeId() == 1397763919)
-                mappedName = null;
-
             if (mappedName != null) {
-                newFut.onDone(new MappingExchangeResult(false, mappedName.className()));
+                newFut.onDone(new MappingExchangeResult(mappedName.className(), null));
                 mappingExchSyncMap.remove(item, newFut);
 
                 return newFut;
@@ -130,5 +129,16 @@ public final class MarshallerMappingTransport {
                 new MissingMappingRequestMessage(item, discoMgr.localNode().id()));
 
         return newFut;
+    }
+
+    private IgniteCheckedException duplicateMappingException(MarshallerMappingItem item, String mappedClsName) {
+        return new IgniteCheckedException("Duplicate ID [platformId="
+                + item.platformId()
+                + ", typeId="
+                + item.typeId()
+                + ", oldCls="
+                + mappedClsName
+                + ", newCls="
+                + item.className() + "]");
     }
 }
