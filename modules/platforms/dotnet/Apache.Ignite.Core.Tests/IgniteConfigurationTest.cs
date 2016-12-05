@@ -181,6 +181,18 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
                 Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
                 Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
+
+                var binCfg = cfg.BinaryConfiguration;
+                Assert.IsFalse(binCfg.CompactFooter);
+
+                var typ = binCfg.TypeConfigurations.Single();
+                Assert.AreEqual("myType", typ.TypeName);
+                Assert.IsTrue(typ.IsEnum);
+                Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
+                Assert.AreEqual(false, typ.KeepDeserialized);
+
+                CollectionAssert.AreEqual(new[] {"fld1, fld2"}, 
+                    ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
             }
         }
 
@@ -439,7 +451,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
+                        Endpoints = new[] {"127.0.0.1:49900", "127.0.0.1:49901"}
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
@@ -513,6 +525,21 @@ namespace Apache.Ignite.Core.Tests
                     WriteBufferSize = 9,
                     BaseDirectory = Path.GetTempPath(),
                     MaximumSparsity = 11.22f
+                },
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = false,
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration
+                        {
+                            TypeName = "myType",
+                            IsEnum = true,
+                            AffinityKeyFieldName = "affKey",
+                            KeepDeserialized = false,
+                            EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
+                        }
+                    }
                 }
             };
         }

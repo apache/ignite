@@ -152,6 +152,20 @@
                                                             </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
+                                                    <xs:element name="equalityComparer" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>
+                                                                Equality comparer to compute hash codes and compare objects in IBinaryObject form.
+                                                            </xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
                                                 </xs:all>
                                                 <xs:attribute name="typeName" type="xs:string">
                                                     <xs:annotation>
