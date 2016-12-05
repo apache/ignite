@@ -84,6 +84,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        HadoopFileSystemsUtils.clearFileSystemCache();
+
         // Add surefire classpath to regular classpath.
         initCp = System.getProperty("java.class.path");
 
@@ -130,8 +132,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         if (restEnabled()) {
             ConnectorConfiguration clnCfg = new ConnectorConfiguration();
 
-            clnCfg.setHost("127.0.0.1");
-
             clnCfg.setPort(restPort++);
 
             cfg.setConnectorConfiguration(clnCfg);
@@ -141,6 +141,11 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        HadoopFileSystemsUtils.clearFileSystemCache();
     }
 
     /**

@@ -116,16 +116,16 @@ class HadoopV2JobResourceManager {
      * @param jobLocDir Work directory for the job.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareJobEnvironment(final boolean download, final File jobLocDir) throws IgniteCheckedException {
+    public void prepareJobEnvironment(boolean download, File jobLocDir) throws IgniteCheckedException {
         try {
             if (jobLocDir.exists())
                 throw new IgniteCheckedException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
 
-            final JobConf cfg = ctx.getJobConf();
+            JobConf cfg = ctx.getJobConf();
 
-            final Collection<URL> clsPathUrls = new ArrayList<>();
+            Collection<URL> clsPathUrls = new ArrayList<>();
 
-            final String mrDir = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
+            String mrDir = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
             if (mrDir != null) {
                 stagingDir = new Path(new URI(mrDir));
@@ -160,13 +160,8 @@ class HadoopV2JobResourceManager {
             processFiles(jobLocDir, ctx.getFileClassPaths(), download, false, clsPathUrls, null);
             processFiles(jobLocDir, ctx.getArchiveClassPaths(), download, true, clsPathUrls, null);
 
-            if (!clsPathUrls.isEmpty()) {
-                clsPath = new URL[clsPathUrls.size()];
-
-                URL[] same = clsPathUrls.toArray(clsPath);
-
-                assert same == clsPath;
-            }
+            if (!clsPathUrls.isEmpty())
+                clsPath = clsPathUrls.toArray(new URL[clsPathUrls.size()]);
 
             setLocalFSWorkingDirectory(jobLocDir);
         }

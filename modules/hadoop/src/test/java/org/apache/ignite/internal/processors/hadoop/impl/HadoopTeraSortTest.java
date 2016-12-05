@@ -11,7 +11,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -81,6 +80,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
 
+        // Delete files used:
         getFileSystem().delete(new Path(getFsBase()), true);
     }
 
@@ -117,7 +117,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         jobConf.set("mapred.min.split.size", String.valueOf(splitSize));
         jobConf.set("mapred.max.split.size", String.valueOf(splitSize));
 
-        Job job = setupConfig(jobConf); //Job.getInstance(jobConf);
+        Job job = setupConfig(jobConf);
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
 
@@ -150,7 +150,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
             throw new IllegalStateException("Data size is too small: " + dataSizeBytes());
 
         // Generate input data:
-        int ret = TeraGen.mainImpl(String.valueOf(numLines), generateOutDir);
+        int ret = TeraGen.mainImpl("-Dmapreduce.framework.name=local", String.valueOf(numLines), generateOutDir);
 
         assertEquals(0, ret);
 
@@ -196,8 +196,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
             Path partFile = new Path(outputDir, TeraInputFormat.PARTITION_FILENAME);
 
-            URI partUri = new URI(partFile.toString() +
-                "#" + TeraInputFormat.PARTITION_FILENAME);
+            URI partUri = new URI(partFile.toString() + "#" + TeraInputFormat.PARTITION_FILENAME);
 
             try {
                 TeraInputFormat.writePartitionFile(job, partFile);
@@ -232,7 +231,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         getFileSystem().delete(new Path(validateOutDir), true);
 
         // Generate input data:
-        int ret = TeraValidate.mainImpl(sortOutDir, validateOutDir);
+        int ret = TeraValidate.mainImpl("-Dmapreduce.framework.name=local", sortOutDir, validateOutDir);
 
         assertEquals(0, ret);
 
@@ -255,7 +254,6 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
         assertTrue("TeraValidate length: " + len, len >= 16 && len <= 32);
     }
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -300,19 +298,5 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         hadoopCfg.setMaxTaskQueueSize(30_000);
 
         return hadoopCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        Ignition.stopAll(true);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        Ignition.stopAll(true);
     }
 }

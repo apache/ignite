@@ -101,6 +101,8 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         GridTestUtils.setFieldValue(PLANNER, HadoopAbstractMapReducePlanner.class, "log", log());
 
         BLOCK_MAP.clear();

@@ -124,6 +124,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
+
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
 
@@ -203,8 +205,6 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
-
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
 
         return suite;
     }
