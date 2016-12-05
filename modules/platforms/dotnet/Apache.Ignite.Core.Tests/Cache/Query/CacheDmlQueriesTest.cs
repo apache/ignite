@@ -218,25 +218,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             [QuerySqlField] public int Lo { get; private set; }
             [QuerySqlField] public int Hi { get; private set; }
-
-            private bool Equals(Key other)
-            {
-                return Lo == other.Lo && Hi == other.Hi;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                return obj is Key && Equals((Key) obj);
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return (Lo*397) ^ Hi;
-                }
-            }
         }
 
         /// <summary>
