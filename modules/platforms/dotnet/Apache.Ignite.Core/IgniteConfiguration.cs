@@ -269,22 +269,17 @@
                     writer.WriteBoolean(false);
                 }
 
-                // TODO: Should we ignore types without IdentityResolver?
-                var types = BinaryConfiguration.TypeConfigurations;
-                if (types != null)
-                {
-                    writer.WriteInt(types.Count);
+                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
+                // remote nodes can have no BinaryConfiguration.
+                var types = writer.Marshaller.GetUserTypeDescriptors().Where(x => x.EqualityComparer != null).ToList();
 
-                    foreach (var type in types)
-                    {
-                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
-                        writer.WriteBoolean(type.IsEnum);
-                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
-                    }
-                }
-                else
+                writer.WriteInt(types.Count);
+
+                foreach (var type in types)
                 {
-                    writer.WriteInt(0);
+                    writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
+                    writer.WriteBoolean(type.IsEnum);
+                    BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
                 }
             }
             else

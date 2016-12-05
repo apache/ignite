@@ -420,6 +420,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the user type descriptors.
+        /// </summary>
+        public ICollection<IBinaryTypeDescriptor> GetUserTypeDescriptors()
+        {
+            return _typeNameToDesc.Values;
+        }
+
+        /// <summary>
         /// Add user type.
         /// </summary>
         /// <param name="cfg">Configuration.</param>

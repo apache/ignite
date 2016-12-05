@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Reads and writes <see cref="IBinaryEqualityComparer"/>.
@@ -41,36 +40,32 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes an instance.
         /// </summary>
-        public static void Write(IBinaryRawWriter writer, IEqualityComparer<IBinaryObject> comparer)
+        public static void Write(IBinaryRawWriter writer, IBinaryEqualityComparer comparer)
         {
-            var arrCmp = comparer as BinaryArrayEqualityComparer;
-            var fieldCmp = comparer as BinaryFieldEqualityComparer;
-
             if (comparer == null)
             {
                 writer.WriteByte((byte) Type.None);
+                return;
             }
-            else if (arrCmp != null)
-            {
-                writer.WriteByte((byte)Type.Array);
-            }
-            else if (fieldCmp != null)
-            {
-                writer.WriteByte((byte)Type.Field);
 
-                fieldCmp.Validate();
+            var arrCmp = comparer as BinaryArrayEqualityComparer;
 
-                writer.WriteInt(fieldCmp.FieldNames.Count);
-
-                foreach (var field in fieldCmp.FieldNames)
-                    writer.WriteString(field);
-            }
-            else
+            if (arrCmp != null)
             {
-                throw new IgniteException(string.Format("Unsupported IEqualityComparer<IBinaryObject> " +
-                                                        "implementation: {0}. Only predefined implementations " +
-                                                        "are supported.", comparer.GetType()));
+                writer.WriteByte((byte) Type.Array);
+                return;
             }
+
+            var fieldCmp = (BinaryFieldEqualityComparer) comparer;
+
+            writer.WriteByte((byte) Type.Field);
+
+            fieldCmp.Validate();
+
+            writer.WriteInt(fieldCmp.FieldNames.Count);
+
+            foreach (var field in fieldCmp.FieldNames)
+                writer.WriteString(field);
         }
 
         /// <summary>
