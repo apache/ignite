@@ -200,7 +200,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
 
-        if (ctx.isDaemon() || ctx.cache().realGlobalState() != CacheState.ACTIVE)
+        if (ctx.isDaemon() || ctx.cache().globalState() == CacheState.INACTIVE)
             return;
 
         IgniteConfiguration cfg = ctx.config();
@@ -215,7 +215,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.isDaemon() || ctx.cache().realGlobalState() != CacheState.ACTIVE)
+        if (ctx.isDaemon() || ctx.cache().globalState() == CacheState.INACTIVE)
             return;
 
         cache = ctx.cache().utilityCache();

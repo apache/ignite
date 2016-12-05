@@ -205,7 +205,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.cache().realGlobalState() != CacheState.ACTIVE)
+        if (ctx.cache().globalState() == CacheState.INACTIVE)
             return;
 
         super.start();
@@ -216,7 +216,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.cache().realGlobalState() != CacheState.ACTIVE)
+        if (ctx.cache().globalState()== CacheState.INACTIVE)
             return;
 
         if (ctx.config().isDaemon())
@@ -276,7 +276,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.cache().realGlobalState() != CacheState.ACTIVE)
+        if (ctx.cache().globalState() == CacheState.INACTIVE)
             return;
 
         super.onKernalStop(cancel);
