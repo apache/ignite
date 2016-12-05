@@ -81,7 +81,15 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code false}.
      */
-    SHUFFLE_REDUCER_NO_SORTING;
+    SHUFFLE_REDUCER_NO_SORTING,
+
+    /**
+     * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter
+     * controls sleep duration between iterations through intermediate reducer maps.
+     * <p>
+     * Defaults to {@code 0}.
+     */
+    SHUFFLE_JOB_THROTTLE;
 
     /** */
     private final String ptyName;
