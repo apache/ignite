@@ -25,10 +25,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PageMetaIO extends PageIO {
     /** */
-    private static final int METASTORE_ROOT_OFF = PageIO.COMMON_HEADER_END;
-
-    /** */
-    private static final int TREE_ROOT_OFF = METASTORE_ROOT_OFF + 8;
+    private static final int TREE_ROOT_OFF = PageIO.COMMON_HEADER_END + 8;
 
     /** */
     private static final int REUSE_LIST_ROOT_OFF = TREE_ROOT_OFF + 8;
@@ -101,22 +98,6 @@ public class PageMetaIO extends PageIO {
      */
     public void setTreeRoot(@NotNull ByteBuffer buf, long treeRoot) {
         buf.putLong(TREE_ROOT_OFF, treeRoot);
-    }
-
-    /**
-     * @param buf Buffer.
-     * @return Meta store root page.
-     */
-    public long getMetaStoreRoot(ByteBuffer buf) {
-        return buf.getLong(METASTORE_ROOT_OFF);
-    }
-
-    /**
-     * @param buf Buffer.
-     * @param metastoreRoot metastore root
-     */
-    public void setMetaStoreRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
-        buf.putLong(METASTORE_ROOT_OFF, metastoreRoot);
     }
 
     /**

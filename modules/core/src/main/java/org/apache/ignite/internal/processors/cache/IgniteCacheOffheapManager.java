@@ -228,18 +228,18 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Root page for index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public RootPage rootPageForIndex(String idxName, int partition) throws IgniteCheckedException;
+    public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(String idxName, int partition) throws IgniteCheckedException;
+    public void dropRootPageForIndex(String idxName) throws IgniteCheckedException;
 
     /**
      * @return Reuse list for index tree.
      */
-    public ReuseList reuseListForIndex(String idxName, int partition) throws IgniteCheckedException;
+    public ReuseList reuseListForIndex(String idxName) throws IgniteCheckedException;
 
     /**
      *

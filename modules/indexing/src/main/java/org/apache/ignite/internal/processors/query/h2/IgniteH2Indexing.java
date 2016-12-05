@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.database.H2PartitionedTreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
@@ -2615,22 +2614,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (log.isInfoEnabled())
                 log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
 
-            Index idx;
-
-            if (cctx.isDht() || cctx.isDhtAtomic())
-                idx = new H2PartitionedTreeIndex(
-                    cctx,
-                    tbl,
-                    name,
-                    pk,
-                    cols);
-            else
-                idx = new H2TreeIndex(
-                    cctx,
-                    tbl,
-                    name,
-                    pk,
-                    cols);
+            Index idx = new H2TreeIndex(
+                cctx,
+                tbl,
+                name,
+                pk,
+                cols);
 
             if (pk) {
                 assert pkTreeIdx == null : pkTreeIdx;
