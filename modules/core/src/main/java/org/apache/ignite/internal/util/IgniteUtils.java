@@ -504,8 +504,8 @@ public abstract class IgniteUtils {
     /** */
     private static final boolean assertionsEnabled;
 
-    /**
-     * Initializes enterprise check.
+    /*
+     *
      */
     static {
         boolean assertionsEnabled0 = true;

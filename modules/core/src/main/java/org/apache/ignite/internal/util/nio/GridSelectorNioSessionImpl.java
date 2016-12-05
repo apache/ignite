@@ -129,6 +129,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         }
     }
 
+    /**
+     * @return Worker.
+     */
     GridNioWorker worker() {
         return worker;
     }

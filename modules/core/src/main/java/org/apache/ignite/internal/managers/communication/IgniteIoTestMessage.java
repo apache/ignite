@@ -100,10 +100,16 @@ public class IgniteIoTestMessage implements Message {
         return (flags & mask) != 0;
     }
 
+    /**
+     * @return {@code true} if this is request.
+     */
     public boolean request() {
         return req;
     }
 
+    /**
+     * @return ID.
+     */
     public long id() {
         return id;
     }
