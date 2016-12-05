@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopCo
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataInput;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataOutput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataOutputContext;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataOutputState;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -55,8 +54,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -67,16 +64,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_DIRECT;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_FLUSH_THRESHOLD;
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPED_GZIP;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
 /**
@@ -172,9 +167,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** Whether remote data should be written directly. */
     private final boolean stripedDirect;
 
-    /** Whether remote data should be compressed w/ GZIP. */
-    private final boolean stripedGzip;
-
     /** Local shuffle states. */
     private volatile HashMap<UUID, LocalShuffleState> locShuffleStates = new HashMap<>();
 
@@ -210,7 +202,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false) && !job.info().hasCombiner();
         stripedFlushThreshold = get(job.info(), SHUFFLE_STRIPED_FLUSH_THRESHOLD, 1024);
         stripedDirect = stripeMappers && get(job.info(), SHUFFLE_STRIPED_DIRECT, false);
-        stripedGzip = get(job.info(), SHUFFLE_STRIPED_GZIP, false);
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
         locReducersCtx = new AtomicReferenceArray<>(totalReducerCnt);
@@ -374,30 +365,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     public void onShuffleMessage(UUID nodeId, HadoopShuffleMessage2 msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
 
-        byte[] buf = msg.buffer();
-
-        if (stripedGzip) {
-            NewHadoopDataOutput out = new NewHadoopDataOutput(msg.dataLength());
-
-            // TODO: Buf size to config.
-            byte[] outbuf = new byte[8192];
-
-            try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(buf), 8192)) {
-                int len;
-
-                while((len = in.read(outbuf, 0, outbuf.length)) != -1){
-                    out.write(outbuf, 0, len);
-                }
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to uncompress.", e);
-            }
-
-            //System.out.println("DECOMPRESSED [" + out.position() + ", " + buf.length + ']');
-
-            buf = out.buffer();
-        }
-
         HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
@@ -411,7 +378,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
-            NewHadoopDataInput in = new NewHadoopDataInput(buf);
+            NewHadoopDataInput in = new NewHadoopDataInput(msg.buffer());
 
             Object key = null;
             Object val = null;
@@ -999,7 +966,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                         NewHadoopDataOutputContext rmtDirectCtx = rmtDirectCtxs[idx];
 
                         if (rmtDirectCtx == null) {
-                            rmtDirectCtx = new NewHadoopDataOutputContext(msgSize, stripedGzip, taskCtx);
+                            rmtDirectCtx = new NewHadoopDataOutputContext(msgSize, taskCtx);
 
                             rmtDirectCtxs[idx] = rmtDirectCtx;
                         }

@@ -108,11 +108,6 @@ public enum HadoopJobProperty {
     SHUFFLE_STRIPED_DIRECT("ignite.shuffle.striped.direct"),
 
     /**
-     * Whether data should be written directly.
-     */
-    SHUFFLE_STRIPED_GZIP("ignite.shuffle.striped.gzip"),
-
-    /**
      * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter
      * controls sleep duration between iterations through intermediate reducer maps.
      * <p>
