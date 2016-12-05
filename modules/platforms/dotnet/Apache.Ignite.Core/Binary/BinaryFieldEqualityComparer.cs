@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Binary
             var reader = marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
             var fields = schema.GetFullSchema(schemaId);
 
-            int hash = 1;
+            int hash = 0;
 
             foreach (var fieldName in FieldNames)
             {
