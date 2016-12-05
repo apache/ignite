@@ -57,8 +57,13 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** Prefix for all suspicious sensitive data */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
     private static final Pattern[] SENSITIVE_PS = {
-        Pattern.compile(("\\bkey\\w*\\b")),
-        Pattern.compile(("\\bval\\w*\\b"))
+        Pattern.compile("\\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|" +
+            "rows?|fields?|params?|args?|items?|elements?|" +
+            "data|obj|res|result|err|error|clause|query|qry|sqlQry|ordinal|" +
+            "entrySet|keys?Set|vals?Set)" +
+            "\\b(?!\\s*=\\s*(\\w+)\\s*\\[)(?!\\s*=\\s*null\\s*,)"),
+        Pattern.compile("\\{\\s*\\w+\\s*=\\s*\\w+\\s*(,\\s*\\w+\\s*=\\s*\\w+\\s*)*\\}"),
+        Pattern.compile("\\[\\s*\\w+\\s*(,\\s*\\w+\\s*)*\\]")
     };
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
@@ -103,8 +108,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         this.ctgr = ctgr;
         this.gridName = gridName;
         this.id8 = id8;
-        if (testSensitive && ctgr == null)
-            logSensitive("Test sensitive mode is enabled");
+        if (testSensitive && ctgr == null && gridName == null && id8 == null)
+            impl.warning("Test sensitive mode is enabled");
     }
 
     /** {@inheritDoc} */

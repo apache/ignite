@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryClientEndpoint;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -43,7 +42,6 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     private final IpcSharedMemoryClientEndpoint shmem;
 
     /** */
-    @GridToStringExclude
     private final ByteBuffer writeBuf;
 
     /** */
