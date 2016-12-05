@@ -78,7 +78,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final boolean needPartitioner;
 
     /** Collection of task contexts for each reduce task. */
-    private final Map<Integer, HadoopTaskContext> reducersCtx = new HashMap<>();
+    private final Map<Integer, LocalTaskContextProxy> reducersCtx = new HashMap<>();
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
@@ -139,7 +139,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             for (int rdc : locReducers) {
                 HadoopTaskInfo taskInfo = new HadoopTaskInfo(HadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
-                reducersCtx.put(rdc, job.getTaskContext(taskInfo));
+                reducersCtx.put(rdc, new LocalTaskContextProxy(taskInfo));
             }
         }
 
@@ -237,7 +237,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
-        HadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
+        HadoopTaskContext taskCtx = reducersCtx.get(msg.reducer()).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
@@ -621,6 +621,53 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 if (adder != null)
                     adder.close();
             }
+        }
+    }
+
+    /**
+     * Local task context proxy with delayed initialization.
+     */
+    private class LocalTaskContextProxy {
+        /** Mutex for synchronization. */
+        private final Object mux = new Object();
+
+        /** Task info. */
+        private final HadoopTaskInfo taskInfo;
+
+        /** Task context. */
+        private volatile HadoopTaskContext ctx;
+
+        /**
+         * Constructor.
+         *
+         * @param taskInfo Task info.
+         */
+        public LocalTaskContextProxy(HadoopTaskInfo taskInfo) {
+            this.taskInfo = taskInfo;
+        }
+
+        /**
+         * Get task context.
+         *
+         * @return Task context.
+         * @throws IgniteCheckedException If failed.
+         */
+        public HadoopTaskContext get() throws IgniteCheckedException {
+            HadoopTaskContext ctx0 = ctx;
+
+            if (ctx0 == null) {
+                synchronized (mux) {
+                    ctx0 = ctx;
+
+                    if (ctx0 == null) {
+                        ctx0 = job.getTaskContext(taskInfo);
+
+                        ctx = ctx0;
+                    }
+                }
+            }
+
+            return ctx0;
         }
     }
 }
