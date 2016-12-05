@@ -29,6 +29,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -837,10 +838,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 assert qryMgr.enabled();
 
-                if (old != null)
-                    qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
-                else
-                    qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
+                try {
+                    if (old != null)
+                        qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
+                    else
+                        qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
+                }
+                catch (NodeStoppingException e) {
+                    rowStore.removeRow(dataRow.link());
+
+                    throw e;
+                }
             }
 
             if (old != null) {
