@@ -193,25 +193,27 @@ public class HadoopShuffle extends HadoopComponent {
             HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
 
             try {
-                job(m.jobId()).onShuffleMessage(m);
+                job(m.jobId()).onShuffleMessage(src, m);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);
             }
+        }
+        else if (msg instanceof HadoopShuffleFinishRequest) {
+            HadoopShuffleFinishRequest m = (HadoopShuffleFinishRequest)msg;
 
             try {
-                // Reply with ack.
-                send0(src, new HadoopShuffleAck(m.id(), m.jobId()));
+                job(m.jobId()).onShuffleFinishRequest(src, m);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to reply back to shuffle message sender [snd=" + src + ", msg=" + msg + ']', e);
+                U.error(log, "Message handling failed.", e);
             }
         }
-        else if (msg instanceof HadoopShuffleAck) {
-            HadoopShuffleAck m = (HadoopShuffleAck)msg;
+        else if (msg instanceof HadoopShuffleFinishResponse) {
+            HadoopShuffleFinishResponse m = (HadoopShuffleFinishResponse)msg;
 
             try {
-                job(m.jobId()).onShuffleAck(m);
+                job(m.jobId()).onShuffleFinishResponse(src);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);

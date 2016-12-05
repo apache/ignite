@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -27,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -117,6 +120,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** Message size. */
     private final int msgSize;
+
+    /** Local shuffle states. */
+    private volatile HashMap<UUID, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
+
+    /** Remote shuffle states. */
+    private volatile HashMap<UUID, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
+
+    /** Mutex for internal synchronization. */
+    private final Object mux = new Object();
 
     /** */
     private final long throttle;
@@ -238,10 +250,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param nodeId Node ID.
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(HadoopShuffleMessage msg) throws IgniteCheckedException {
+    public void onShuffleMessage(UUID nodeId, HadoopShuffleMessage msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
@@ -276,19 +289,115 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 }
             });
         }
+
+        if (localShuffleState(nodeId).onShuffleMessage())
+            sendFinishResponse(nodeId, msg.jobId());
     }
 
     /**
-     * @param ack Shuffle ack.
+     * Process shuffle finish request.
+     *
+     * @param nodeId Source node ID.
+     * @param msg Shuffle finish message.
      */
-    @SuppressWarnings("ConstantConditions")
-    public void onShuffleAck(HadoopShuffleAck ack) {
-        IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup = sentMsgs.get(ack.id());
+    public void onShuffleFinishRequest(UUID nodeId, HadoopShuffleFinishRequest msg) {
+        HadoopShuffleLocalState state = localShuffleState(nodeId);
 
-        if (tup != null)
-            tup.get2().onDone();
-        else
-            log.warning("Received shuffle ack for not registered shuffle id: " + ack);
+        if (state.onShuffleFinishMessage(msg.messageCount()))
+            sendFinishResponse(nodeId, msg.jobId());
+    }
+
+    /**
+     * Process shuffle finish response.
+     *
+     * @param nodeId Source node ID.
+     */
+    public void onShuffleFinishResponse(UUID nodeId) {
+        remoteShuffleState(nodeId).onShuffleFinishResponse();
+    }
+
+    /**
+     * Send finish response.
+     *
+     * @param nodeId Node ID.
+     * @param jobId Job ID.
+     */
+    @SuppressWarnings("unchecked")
+    private void sendFinishResponse(UUID nodeId, HadoopJobId jobId) {
+        HadoopShuffleFinishResponse msg = new HadoopShuffleFinishResponse(jobId);
+
+        io.apply((T)nodeId, msg);
+    }
+
+    /**
+     * Get local shuffle state for node.
+     *
+     * @param nodeId Node ID.
+     * @return Local shuffle state.
+     */
+    private HadoopShuffleLocalState localShuffleState(UUID nodeId) {
+        HashMap<UUID, HadoopShuffleLocalState> states = locShuffleStates;
+
+        HadoopShuffleLocalState res = states.get(nodeId);
+
+        if (res == null) {
+            synchronized (mux) {
+                res = locShuffleStates.get(nodeId);
+
+                if (res == null) {
+                    res = new HadoopShuffleLocalState();
+
+                    states = new HashMap<>(locShuffleStates);
+
+                    states.put(nodeId, res);
+
+                    locShuffleStates = states;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Get remote shuffle state for node.
+     *
+     * @param nodeId Node ID.
+     * @return Remote shuffle state.
+     */
+    private HadoopShuffleRemoteState remoteShuffleState(UUID nodeId) {
+        HashMap<UUID, HadoopShuffleRemoteState> states = rmtShuffleStates;
+
+        HadoopShuffleRemoteState res = states.get(nodeId);
+
+        if (res == null) {
+            synchronized (mux) {
+                res = rmtShuffleStates.get(nodeId);
+
+                if (res == null) {
+                    res = new HadoopShuffleRemoteState(nodeId);
+
+                    states = new HashMap<>(rmtShuffleStates);
+
+                    states.put(nodeId, res);
+
+                    rmtShuffleStates = states;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Get all remote shuffle states.
+     *
+     * @return Remote shuffle states.
+     */
+    private HashMap<UUID, HadoopShuffleRemoteState> remoteShuffleStates() {
+        synchronized (mux) {
+            return new HashMap<>(rmtShuffleStates);
+        }
     }
 
     /**
