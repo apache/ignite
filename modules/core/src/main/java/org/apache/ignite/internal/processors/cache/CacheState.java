@@ -29,5 +29,10 @@ public enum CacheState {
     /**
      * Cache is active and operations. There are no lost partitions.
      */
-    ACTIVE
+    ACTIVE,
+
+    /**
+     *
+     */
+    TRANSITION
 }

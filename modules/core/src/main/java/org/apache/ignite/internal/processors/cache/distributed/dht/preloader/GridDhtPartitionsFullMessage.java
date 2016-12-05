@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -60,6 +61,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
+
+    /** Exceptions. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<UUID, Exception> exs;
+
+    /**  */
+    private byte[] exsBytes;
 
     /**
      * Required by {@link Externalizable}.
@@ -131,6 +140,20 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return Collections.emptyMap();
     }
 
+    /**
+     *
+     */
+    public Map<UUID, Exception> getExceptionsMap() {
+        return exs;
+    }
+
+    /**
+     * @param exs Exs.
+     */
+    public void setExceptionsMap(Map<UUID, Exception> exs) {
+        this.exs = exs;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -140,6 +163,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partCntrs != null && partCntrsBytes == null)
             partCntrsBytes = ctx.marshaller().marshal(partCntrs);
+
+        if (exs != null && exsBytes == null)
+            exsBytes = ctx.marshaller().marshal(exs);
     }
 
     /**
@@ -171,6 +197,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();
+
+        if (exsBytes != null && exs == null)
+            exs = ctx.marshaller().unmarshal(exsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -202,6 +231,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             case 7:
                 if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeByteArray("exsBytes", exsBytes))
                     return false;
 
                 writer.incrementState();
@@ -246,6 +281,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
+            case 8:
+                exsBytes = reader.readByteArray("exsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtPartitionsFullMessage.class);
@@ -258,7 +301,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

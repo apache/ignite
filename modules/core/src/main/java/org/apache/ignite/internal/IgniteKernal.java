@@ -3058,7 +3058,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            context().cache().changeGlobalState(active ? CacheState.ACTIVE : CacheState.INACTIVE).get();
+            context().cache().changeGlobalState(active).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

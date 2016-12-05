@@ -56,6 +56,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
 
+    /** Exception. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Exception e;
+
+    /** */
+    private byte[] eBytes;
+
     /** */
     private boolean client;
 
@@ -134,6 +142,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return parts;
     }
 
+    /**
+     * @param e Exception.
+     */
+    public void setException(Exception e) {
+        this.e = e;
+    }
+
+    /**
+     *
+     */
+    public Exception getException() {
+        return e;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -144,6 +166,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         if (partCntrsBytes == null && partCntrs != null)
             partCntrsBytes = ctx.marshaller().marshal(partCntrs);
+
+        if (eBytes == null && e != null)
+            eBytes = ctx.marshaller().marshal(e);
     }
 
     /** {@inheritDoc} */
@@ -155,6 +180,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         if (partCntrsBytes != null && partCntrs == null)
             partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+
+        if (eBytes != null && e == null)
+            e = ctx.marshaller().unmarshal(eBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -186,6 +214,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
             case 7:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeByteArray("eBytes", eBytes))
                     return false;
 
                 writer.incrementState();
@@ -230,6 +264,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
+            case 8:
+                eBytes = reader.readByteArray("eBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
@@ -242,7 +284,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

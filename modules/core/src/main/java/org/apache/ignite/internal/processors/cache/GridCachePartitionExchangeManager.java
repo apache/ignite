@@ -214,14 +214,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
 
-                    assert
-                        e.type() != EVT_NODE_JOINED || n.order() > loc.order() :
+                    assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() :
                         "Node joined with smaller-than-local " +
                             "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
-                    exchId = exchangeId(n.id(),
-                        affinityTopologyVersion(e),
-                        e.type());
+                    exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                     exchFut = exchangeFuture(exchId, e, null, null);
                 }
@@ -809,9 +806,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param id ID.
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
-        GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id,
-            cctx.kernalContext().clientNode(),
-            cctx.versions().last());
+        GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(
+            id, cctx.kernalContext().clientNode(), cctx.versions().last()
+        );
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
@@ -1077,10 +1074,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             else {
                 if (msg.client()) {
-                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
-                        null,
-                        null,
-                        null);
+                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(
+                        msg.exchangeId(), null, null, null
+                    );
 
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
