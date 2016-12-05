@@ -42,6 +42,9 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
     /** */
     private final List<Integer> cacheIds;
 
+    /** */
+    private ClusterNode answeredNode;
+
     /**
      * @param ctx Context.
      * @param topVer Topology version.
@@ -65,8 +68,11 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
         GridDhtAffinityMultiAssignmentResponse res0 = null;
 
         synchronized (mux) {
-            if (pendingNode != null && pendingNode.id().equals(nodeId))
+            if (pendingNode != null && pendingNode.id().equals(nodeId)) {
                 res0 = res;
+                answeredNode = pendingNode;
+            }
+
         }
 
         if (res0 != null)
@@ -121,4 +127,12 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
         return node.version().compareToIgnoreTimestamp(MULTI_MESSAGE_SINCE) >= 0;
     }
 
+    /**
+     * @return Node answered to request.
+     */
+    public ClusterNode answeredNode() {
+        synchronized (mux) {
+            return answeredNode;
+        }
+    }
 }

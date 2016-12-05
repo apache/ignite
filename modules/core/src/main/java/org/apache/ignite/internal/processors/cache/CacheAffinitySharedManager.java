@@ -1026,6 +1026,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             cacheIds.add(cacheCtx.cacheId());
         }
 
+        List<ClusterNode> nodes = cctx.discovery().serverNodes(fut.topologyVersion());
+        ClusterNode crdNode = !nodes.isEmpty() ? nodes.get(0) : null;
+
         GridDhtAssignmentMultiFetchFuture multiFetchFut = new GridDhtAssignmentMultiFetchFuture(cctx,
             fut.topologyVersion(),
             cacheIds);
@@ -1035,7 +1038,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Set<Integer> processedCacheIds = null;
 
         if (multiFetchFut.get() != null) {
-            processedCacheIds = fetchAffinityfromMultiResult(fut, multiFetchFut);
+            processedCacheIds = fetchAffinityFromMultiResult(fut, multiFetchFut);
+
+            if (F.eqNodes(multiFetchFut.answeredNode(), crdNode))
+                assert multiFetchFut.get().size() == cacheIds.size() : "not all caches in crd answer";
 
             if (multiFetchFut.get().size() == cacheIds.size())
                 return;
@@ -1124,7 +1130,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return Set of processed cache ids.
      * @throws IgniteCheckedException If failed.
      */
-    private Set<Integer> fetchAffinityfromMultiResult(GridDhtPartitionsExchangeFuture fut,
+    private Set<Integer> fetchAffinityFromMultiResult(GridDhtPartitionsExchangeFuture fut,
         GridDhtAssignmentMultiFetchFuture fetchFut)
         throws IgniteCheckedException {
         AffinityTopologyVersion topVer = fut.topologyVersion();

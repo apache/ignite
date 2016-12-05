@@ -66,11 +66,9 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
      * Empty constructor.
      */
     public GridDhtAffinityMultiAssignmentResponse() {
-        this.cacheId = 0;
+        this.cacheId = GridDhtAssignmentMultiFetchFuture.NO_CACHE;
 
         cacheIds = new ArrayList<>();
-        affAssignmentIds = new ArrayList<>();
-        idealAffAssignment = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
@@ -128,7 +126,11 @@ public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
      */
     public void addResult(int cacheId, List<List<ClusterNode>> assignment, List<List<ClusterNode>> idealAssignment) {
         cacheIds.add(cacheId);
+        if (affAssignmentIds == null)
+            affAssignmentIds = new ArrayList<>();
         affAssignmentIds.add(ids(assignment));
+        if (idealAffAssignment == null)
+            idealAffAssignment = new ArrayList<>();
         idealAffAssignment.add(ids(idealAssignment));
     }
 
