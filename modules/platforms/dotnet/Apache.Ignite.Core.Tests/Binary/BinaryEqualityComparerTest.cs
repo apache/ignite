@@ -75,9 +75,27 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFieldComparer()
         {
-            var cmp = (IBinaryEqualityComparer)new BinaryFieldEqualityComparer();
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof(Foo))
+                    {
+                        EqualityComparer = new BinaryFieldEqualityComparer("Name", "Id")
+                    }
+                }
+            });
 
-            // TODO: Marshal and unmarshal as binary, check resulting hash code. Should we do the same for Array?
+            var val = new Foo {Id = 58, Name = "John"};
+            var binObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(val), BinaryMode.ForceBinary);
+            var expHash = (31 + val.Name.GetHashCode())*31 + val.Id.GetHashCode();
+            Assert.AreEqual(expHash, binObj.GetHashCode());
+        }
+
+        private class Foo
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
         }
     }
 }
