@@ -264,6 +264,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
 
+    /** */
+    public static final String ATTR_PAIRED_CONN = "comm.tcp.pairedConnection";
+
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
 
@@ -465,7 +468,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 HandshakeMessage msg0 = (HandshakeMessage)msg;
 
-                if (useMultipleConnections(rmtNode)) {
+                if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
                     ConnectClosureNew c = new ConnectClosureNew(ses, recoveryDesc, rmtNode);
@@ -491,9 +494,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 }
                 else {
+                    assert connKey.connectionIndex() >= 0 : connKey;
+
                     GridCommunicationClient[] curClients = clients.get(sndId);
 
-                    GridCommunicationClient oldClient = curClients != null ? curClients[0] : null;
+                    GridCommunicationClient oldClient =
+                        curClients != null && connKey.connectionIndex() < curClients.length ?
+                            curClients[connKey.connectionIndex()] :
+                            null;
 
                     boolean hasShmemClient = false;
 
@@ -524,7 +532,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (oldFut == null) {
                         curClients = clients.get(sndId);
 
-                        oldClient = curClients != null ? curClients[0] : null;
+                        oldClient = curClients != null && connKey.connectionIndex() < curClients.length ?
+                            curClients[0] : null;
 
                         if (oldClient != null) {
                             if (oldClient instanceof GridTcpNioCommunicationClient) {
@@ -689,9 +698,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 long rcvCnt,
                 boolean sndRes,
                 boolean createClient) {
+                ConnectionKey connKey = ses.meta(CONN_IDX_META);
+
+                assert connKey != null && connKey.connectionIndex() >= 0 : connKey;
+                assert !usePairedConnections(node);
+
                 recovery.onHandshake(rcvCnt);
 
                 ses.inRecoveryDescriptor(recovery);
+                ses.outRecoveryDescriptor(recovery);
 
                 nioSrvr.resend(ses);
 
@@ -710,7 +725,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (createClient) {
                     client = new GridTcpNioCommunicationClient(0, ses, log);
 
-                    addNodeClient(node, 0, client);
+                    addNodeClient(node, connKey.connectionIndex(), client);
                 }
 
                 return client;
@@ -962,6 +977,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** */
+    private boolean usePairedConnections = true;
+
+    /** */
     private int connectionsPerNode = DFLT_CONN_PER_NODE;
 
     /** {@code TCP_NODELAY} option value for created sockets. */
@@ -1157,6 +1175,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** {@inheritDoc} */
     @Override public int getLocalPortRange() {
         return locPortRange;
+    }
+
+    /**
+     * TODO
+     *
+     * @return
+     */
+    public boolean isUsePairedConnections() {
+        return usePairedConnections;
+    }
+
+    /**
+     * TODO
+     *
+     * @param usePairedConnections
+     */
+    public void setUsePairedConnections(boolean usePairedConnections) {
+        this.usePairedConnections = usePairedConnections;
     }
 
     /**
@@ -1801,6 +1837,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort);
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+            res.put(createSpiAttributeName(ATTR_PAIRED_CONN), usePairedConnections);
 
             return res;
         }
@@ -2360,7 +2397,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         for (;;) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
-            if (curClients == null || curClients[rmvClient.connectionIndex()] != rmvClient)
+            if (curClients == null || rmvClient.connectionIndex() >= curClients.length || curClients[rmvClient.connectionIndex()] != rmvClient)
                 return false;
 
             GridCommunicationClient[] newClients = Arrays.copyOf(curClients, curClients.length);
@@ -2379,6 +2416,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private void addNodeClient(ClusterNode node, int connIdx, GridCommunicationClient addClient) {
         assert connectionsPerNode > 0 : connectionsPerNode;
+
+        if (connIdx >= connectionsPerNode) {
+            assert !usePairedConnections(node);
+
+            return;
+        }
 
         for (;;) {
             GridCommunicationClient[] curClients = clients.get(node.id());
@@ -2417,14 +2460,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
-        assert connIdx >= 0 && connIdx < connectionsPerNode : connIdx;
+        assert (connIdx >= 0 && connIdx < connectionsPerNode) || !usePairedConnections(node) : connIdx;
 
         UUID nodeId = node.id();
 
         while (true) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
-            GridCommunicationClient client = curClients != null ? curClients[connIdx] : null;
+            GridCommunicationClient client = curClients != null && connIdx < curClients.length ?
+                curClients[connIdx] : null;
 
             if (client == null) {
                 if (stopping)
@@ -2441,7 +2485,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     try {
                         GridCommunicationClient[] curClients0 = clients.get(nodeId);
 
-                        GridCommunicationClient client0 = curClients0 != null ? curClients0[connIdx] : null;
+                        GridCommunicationClient client0 = curClients0 != null && connIdx < curClients0.length ?
+                            curClients0[connIdx] : null;
 
                         if (client0 == null) {
                             client0 = createNioClient(node, connIdx);
@@ -3256,10 +3301,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Recovery descriptor for outgoing connection.
      */
     private GridNioRecoveryDescriptor outRecoveryDescriptor(ClusterNode node, ConnectionKey key) {
-        if (useMultipleConnections(node))
-            return recoveryDescriptor(outRecDescs, node, key);
+        if (usePairedConnections(node))
+            return recoveryDescriptor(outRecDescs, true, node, key);
         else
-            return recoveryDescriptor(recoveryDescs, node, key);
+            return recoveryDescriptor(recoveryDescs, false, node, key);
     }
 
     /**
@@ -3268,10 +3313,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Recovery descriptor for incoming connection.
      */
     private GridNioRecoveryDescriptor inRecoveryDescriptor(ClusterNode node, ConnectionKey key) {
-        if (useMultipleConnections(node))
-            return recoveryDescriptor(inRecDescs, node, key);
+        if (usePairedConnections(node))
+            return recoveryDescriptor(inRecDescs, true, node, key);
         else
-            return recoveryDescriptor(recoveryDescs, node, key);
+            return recoveryDescriptor(recoveryDescs, false, node, key);
     }
 
     /**
@@ -3283,13 +3328,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * @param node Node.
+     * @return {@code True} if can use in/out connection pair for communication.
+     */
+    private boolean usePairedConnections(ClusterNode node) {
+        if (usePairedConnections) {
+            Boolean attr = node.attribute(createSpiAttributeName(ATTR_PAIRED_CONN));
+
+            return attr != null && attr;
+        }
+
+        return false;
+    }
+
+    /**
      * @param recoveryDescs Descriptors map.
+     * @param pairedConnections {@code True} if in/out connections pair is used for communication with node.
      * @param node Node.
      * @param key Connection key.
      * @return Recovery receive data for given node.
      */
     private GridNioRecoveryDescriptor recoveryDescriptor(
         ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs,
+        boolean pairedConnections,
         ClusterNode node,
         ConnectionKey key) {
         GridNioRecoveryDescriptor recovery = recoveryDescs.get(key);
@@ -3299,8 +3360,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 5);
 
-            GridNioRecoveryDescriptor old =
-                recoveryDescs.putIfAbsent(key, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log));
+            GridNioRecoveryDescriptor old = recoveryDescs.putIfAbsent(key,
+                recovery = new GridNioRecoveryDescriptor(pairedConnections, queueLimit, node, log));
 
             if (old != null)
                 recovery = old;
@@ -3562,7 +3623,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     GridNioRecoveryDescriptor recovery = null;
 
-                    if (!useMultipleConnections(node) && client instanceof GridTcpNioCommunicationClient) {
+                    if (!usePairedConnections(node) && client instanceof GridTcpNioCommunicationClient) {
                         recovery = recoveryDescs.get(new ConnectionKey(node.id(), client.connectionIndex(), -1));
 
                         if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
@@ -3588,7 +3649,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     long idleTime = client.getIdleTime();
 
                     if (idleTime >= idleConnTimeout) {
-                        if (recovery == null && useMultipleConnections(node))
+                        if (recovery == null && usePairedConnections(node))
                             recovery = outRecDescs.get(new ConnectionKey(node.id(), client.connectionIndex(), -1));
 
                         if (recovery != null &&
@@ -3613,7 +3674,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             for (GridNioSession ses : nioSrvr.sessions()) {
                 GridNioRecoveryDescriptor recovery = ses.inRecoveryDescriptor();
 
-                if (recovery != null && useMultipleConnections(recovery.node())) {
+                if (recovery != null && usePairedConnections(recovery.node())) {
                     assert ses.accepted() : ses;
 
                     sendAckOnTimeout(recovery, ses);

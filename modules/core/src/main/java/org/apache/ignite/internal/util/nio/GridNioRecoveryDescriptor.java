@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Recovery information for single node.
  */
-@Deprecated // To be splitted into separate classes for in/out data when do not need maintain backward compatibility.
 public class GridNioRecoveryDescriptor {
     /** Number of acknowledged messages. */
     private long acked;
@@ -78,12 +77,17 @@ public class GridNioRecoveryDescriptor {
     /** Number of descriptor reservations (for info purposes). */
     private int reserveCnt;
 
+    /** */
+    private final boolean pairedConnections;
+
     /**
+     * @param pairedConnections {@code True} if in/out connections pair is used for communication with node.
      * @param queueLimit Maximum size of unacknowledged messages queue.
      * @param node Node.
      * @param log Logger.
      */
     public GridNioRecoveryDescriptor(
+        boolean pairedConnections,
         int queueLimit,
         ClusterNode node,
         IgniteLogger log
@@ -93,9 +97,17 @@ public class GridNioRecoveryDescriptor {
 
         msgReqs = new ArrayDeque<>(queueLimit);
 
+        this.pairedConnections = pairedConnections;
         this.queueLimit = queueLimit;
         this.node = node;
         this.log = log;
+    }
+
+    /**
+     * @return {@code True} if in/out connections pair is used for communication with node.
+     */
+    public boolean pairedConnections() {
+        return pairedConnections;
     }
 
     /**

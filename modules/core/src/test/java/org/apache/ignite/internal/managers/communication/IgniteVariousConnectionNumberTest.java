@@ -64,6 +64,7 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
         log.info("Node connections [name=" + gridName + ", connections=" + connections + ']');
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connections);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(rnd.nextBoolean());
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
