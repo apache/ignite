@@ -4510,7 +4510,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
                                 UUID.randomUUID(), cacheName, ctx.localNodeId()
                             );
+                            DynamicCacheDescriptor desc = cacheProc.registeredCaches.get(cacheName);
 
+                            assert desc != null;
+
+                            req.deploymentId(desc.deploymentId());
                             req.stop(true);
                             reqs.add(req);
                         }
@@ -4521,7 +4525,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 " reqs=" + reqs + " ]");
                     }
 
-                    DynamicCacheChangeBatch batch = createBatch(reqs);
+                    DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(reqs);
 
                     ChangeGlobalState msg = new ChangeGlobalState(batch);
                     msg.setInitiatingNodeId(ctx.localNodeId());
@@ -4556,33 +4560,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             return af;
-        }
-
-        /**
-         * @param reqs Reqs.
-         */
-        private DynamicCacheChangeBatch createBatch(List<DynamicCacheChangeRequest> reqs){
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.stop() || req.close()) {
-                    DynamicCacheDescriptor desc = cacheProc.registeredCaches.get(maskNull(req.cacheName()));
-
-                    assert desc.cacheConfiguration() != null : desc;
-
-                    if (req.close() && desc.cacheConfiguration().getCacheMode() == LOCAL) {
-                        req.close(false);
-
-                        req.stop(true);
-                    }
-
-                    IgniteUuid dynamicDeploymentId = desc.deploymentId();
-
-                    assert dynamicDeploymentId != null : desc;
-
-                    req.deploymentId(dynamicDeploymentId);
-                }
-            }
-
-            return new DynamicCacheChangeBatch(reqs);
         }
 
         /**
