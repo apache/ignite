@@ -312,14 +312,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     null,
                     threadId,
                     lockVer,
-                    timeout,
                     true,
                     tx.entry(txKey).locked(),
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
                     false,
-                    null);
+                    null,
+                    false);
 
                 cand.topologyVersion(topVer);
             }
@@ -332,14 +332,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     null,
                     threadId,
                     lockVer,
-                    timeout,
                     true,
                     false,
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
                     false,
-                    null);
+                    null,
+                    false);
 
                 cand.topologyVersion(topVer);
             }
