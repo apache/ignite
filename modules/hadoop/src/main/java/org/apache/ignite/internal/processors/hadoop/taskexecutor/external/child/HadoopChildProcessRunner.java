@@ -259,9 +259,9 @@ public class HadoopChildProcessRunner {
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
                         shuffleJob.startSending("external",
-                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopShuffleMessage>() {
-                                @Override public void applyx(HadoopProcessDescriptor dest,
-                                    HadoopShuffleMessage msg) throws IgniteCheckedException {
+                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopMessage>() {
+                                @Override public void applyx(HadoopProcessDescriptor dest, HadoopMessage msg)
+                                    throws IgniteCheckedException {
                                     comm.sendMessage(dest, msg);
                                 }
                             });
