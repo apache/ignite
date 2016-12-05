@@ -115,12 +115,12 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var val = new Foo {Id = 58, Name = "John"};
             var binObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(val), BinaryMode.ForceBinary);
-            var expHash = (31 + val.Name.GetHashCode()) * 31 + val.Id.GetHashCode();
+            var expHash = val.Name.GetHashCode() * 31 + val.Id.GetHashCode();
             Assert.AreEqual(expHash, binObj.GetHashCode());
 
             val = new Foo {Id = 95};
             binObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(val), BinaryMode.ForceBinary);
-            expHash = (31 + 0) * 31 + val.Id.GetHashCode();
+            expHash = val.Id.GetHashCode();
             Assert.AreEqual(expHash, binObj.GetHashCode());
         }
 
