@@ -269,6 +269,7 @@
                     writer.WriteBoolean(false);
                 }
 
+                // TODO: Should we ignore types without IdentityResolver?
                 var types = BinaryConfiguration.TypeConfigurations;
                 if (types != null)
                 {
@@ -276,7 +277,7 @@
 
                     foreach (var type in types)
                     {
-                        writer.WriteString(type.TypeName);
+                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
                         writer.WriteBoolean(type.IsEnum);
                         BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
                     }
