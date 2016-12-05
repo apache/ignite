@@ -157,8 +157,6 @@
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            CopyLocalProperties(configuration);
-
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
@@ -171,6 +169,8 @@
 
                 ReadCore(marsh.StartUnmarshal(stream));
             }
+
+            CopyLocalProperties(configuration);
         }
 
         /// <summary>
@@ -452,17 +452,15 @@
         /// <param name="binaryReader">The binary reader.</param>
         private void Read(BinaryReader binaryReader)
         {
-            var r = binaryReader;
+            ReadCore(binaryReader);
 
-            CopyLocalProperties(r.Marshaller.Ignite.Configuration);
-
-            ReadCore(r);
+            CopyLocalProperties(binaryReader.Marshaller.Ignite.Configuration);
 
             // Misc
-            IgniteHome = r.ReadString();
+            IgniteHome = binaryReader.ReadString();
 
-            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()

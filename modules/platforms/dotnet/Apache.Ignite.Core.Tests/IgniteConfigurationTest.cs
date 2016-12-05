@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
                 Assert.AreEqual(false, typ.KeepDeserialized);
 
-                CollectionAssert.AreEqual(new[] {"fld1, fld2"}, 
+                CollectionAssert.AreEqual(new[] {"fld1", "fld2"}, 
                     ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
             }
         }
