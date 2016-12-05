@@ -616,35 +616,30 @@ public class GridReduceQueryExecutor {
                 if (oldStyle && distributedJoins)
                     throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
 
-                boolean send = true;
+                if (send(nodes,
+                    oldStyle ?
+                        new GridQueryRequest(qryReqId,
+                            r.pageSize,
+                            space,
+                            mapQrys,
+                            topVer,
+                            extraSpaces(space, qry.spaces()),
+                            null,
+                            timeoutMillis) :
+                        new GridH2QueryRequest()
+                            .requestId(qryReqId)
+                            .topologyVersion(topVer)
+                            .pageSize(r.pageSize)
+                            .caches(qry.caches())
+                            .tables(distributedJoins ? qry.tables() : null)
+                            .partitions(convert(partsMap))
+                            .queries(mapQrys)
+                            .threads(queryLocalParallelismLevel)
+                            .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
+                            .timeout(timeoutMillis),
+                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
+                    distributedJoins)) {
 
-                for (int threadIdx = 0; threadIdx < queryLocalParallelismLevel; threadIdx++) {
-                    send &= send(nodes,
-                        oldStyle ?
-                            new GridQueryRequest(qryReqId,
-                                r.pageSize,
-                                space,
-                                mapQrys,
-                                topVer,
-                                extraSpaces(space, qry.spaces()),
-                                null,
-                                timeoutMillis) :
-                            new GridH2QueryRequest()
-                                .requestId(qryReqId)
-                                .topologyVersion(topVer)
-                                .pageSize(r.pageSize)
-                                .caches(qry.caches())
-                                .tables(distributedJoins ? qry.tables() : null)
-                                .partitions(convert(partsMap))
-                                .queries(mapQrys)
-                                .segmentId(threadIdx)
-                                .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
-                                .timeout(timeoutMillis),
-                        oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
-                        distributedJoins || queryLocalParallelismLevel > 1);
-                }
-
-                if (send) {
                     awaitAllReplies(r, nodes);
 
                     cancel.checkCancelled();

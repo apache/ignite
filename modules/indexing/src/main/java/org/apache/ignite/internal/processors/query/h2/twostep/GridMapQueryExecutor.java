@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
@@ -437,22 +438,49 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Query request.
      */
-    private void onQueryRequest(ClusterNode node, GridH2QueryRequest req) {
-        Map<UUID,int[]> partsMap = req.partitions();
-        int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
+    private void onQueryRequest(ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
+        final Map<UUID,int[]> partsMap = req.partitions();
+        final int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
 
-        onQueryRequest0(node,
-            req.requestId(),
-            req.segmentId(),
-            req.queries(),
-            req.caches(),
-            req.topologyVersion(),
-            partsMap,
-            parts,
-            req.tables(),
-            req.pageSize(),
-            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
-            req.timeout());
+        if(req.threads() > 1) {
+            for (int i = 0; i < req.threads(); i++){
+                final int segment = i;
+
+                ctx.closure().callLocal(
+                    new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            onQueryRequest0(node,
+                                req.requestId(),
+                                segment,
+                                req.queries(),
+                                req.caches(),
+                                req.topologyVersion(),
+                                partsMap,
+                                parts,
+                                req.tables(),
+                                req.pageSize(),
+                                req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+                                req.timeout());
+
+                            return null;
+                        }
+                    }
+                    , QUERY_POOL);
+            }
+        } else {
+            onQueryRequest0(node,
+                req.requestId(),
+                0,
+                req.queries(),
+                req.caches(),
+                req.topologyVersion(),
+                partsMap,
+                parts,
+                req.tables(),
+                req.pageSize(),
+                req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+                req.timeout());
+        }
     }
 
     /**
