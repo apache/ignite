@@ -95,7 +95,7 @@
     "html-loader": "^0.4.3",
     "html-webpack-plugin": "^2.21.0",
     "jade": "^1.11.0",
-    "jade-html-loader": "0.0.3",
+    "jade-html-loader": "git://github.com/courcelan/jade-html-loader",
     "jasmine-core": "^2.4.1",
     "json-loader": "^0.5.4",
     "karma": "^0.13.22",

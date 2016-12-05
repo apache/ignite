@@ -27,7 +27,7 @@ WORK_DIR=`cd "$(dirname "$0")"; pwd`
 BUILD_DIR="$WORK_DIR/build"
 
 IGNITE_WEB_CONSOLE_BACKEND_DIR="$IGNITE_HOME/modules/web-console/backend"
-DOCKER_IMAGE_NAME="ignite/web-console-backend"
+DOCKER_IMAGE_NAME="apacheignite/web-console-backend"
 
 echo "Receiving version..."
 VERSION=`cd $IGNITE_HOME && mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version| grep -Ev '(^\[|Download\w+:)'`
@@ -51,7 +51,7 @@ cp -r $IGNITE_WEB_CONSOLE_BACKEND_DIR/. $BUILD_DIR
 cp $IGNITE_HOME/modules/web-console/web-agent/target/ignite-web-agent*.zip $BUILD_DIR/agent_dists/.
 
 echo "Step 4. Build docker image."
-docker build -f=./Dockerfile -t $DOCKER_IMAGE_NAME:$RELEASE_VERSION .
+docker build -f=./Dockerfile -t $DOCKER_IMAGE_NAME:$RELEASE_VERSION -t $DOCKER_IMAGE_NAME:latest .
 
 echo "Step 5. Cleanup."
 rm -Rf $BUILD_DIR
