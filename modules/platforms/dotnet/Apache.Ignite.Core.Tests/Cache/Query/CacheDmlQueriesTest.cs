@@ -45,12 +45,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         new BinaryTypeConfiguration(typeof(Key))
                         {
                             EqualityComparer = new BinaryArrayEqualityComparer()
+                        },
+                        new BinaryTypeConfiguration(typeof(Key2))
+                        {
+                            EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
                         }
                     }
                 }
             };
-
-            // TODO: Test with Field comparer as well.
 
             Ignition.Start(cfg);
         }
@@ -105,9 +107,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests composite key (which requires QueryField.IsKeyField).
         /// </summary>
         [Test]
-        public void TestCompositeKey()
+        public void TestCompositeKeyArrayEquality()
         {
-            var cfg = new CacheConfiguration("composite_key", new QueryEntity(typeof(Key), typeof(Foo)));
+            var cfg = new CacheConfiguration("composite_key_arr", new QueryEntity(typeof(Key), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
             // Test insert.
@@ -137,6 +139,47 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
 
             Assert.IsTrue(cache.ContainsKey(new Key(5, 4)));
+            Assert.IsTrue(cache.ContainsKey(foos[1].Key));
+
+            // Test update.
+        }
+
+        /// <summary>
+        /// Tests composite key (which requires QueryField.IsKeyField).
+        /// </summary>
+        [Test]
+        public void TestCompositeKeyFieldEquality()
+        {
+            var cfg = new CacheConfiguration("composite_key_fld", new QueryEntity(typeof(Key2), typeof(Foo)));
+            var cache = Ignition.GetIgnite().CreateCache<Key2, Foo>(cfg);
+
+            // Test insert.
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
+                                               "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(1, res[0].Count);
+            Assert.AreEqual(2, res[0][0]);  // 2 affected rows
+
+            var foos = cache.OrderBy(x => x.Key.Lo).ToArray();
+
+            Assert.AreEqual(2, foos.Length);
+
+            Assert.AreEqual(1, foos[0].Key.Hi);
+            Assert.AreEqual(2, foos[0].Key.Lo);
+            Assert.AreEqual(3, foos[0].Value.Id);
+            Assert.AreEqual("John", foos[0].Value.Name);
+
+            Assert.AreEqual(4, foos[1].Key.Hi);
+            Assert.AreEqual(5, foos[1].Key.Lo);
+            Assert.AreEqual(6, foos[1].Value.Id);
+            Assert.AreEqual("Mary", foos[1].Value.Name);
+
+            // Existence tests fail because IdentityResolver is not set:
+            Assert.IsTrue(cache.ContainsKey(new Key2(2, 1)));
+            Assert.IsTrue(cache.ContainsKey(foos[0].Key));
+
+            Assert.IsTrue(cache.ContainsKey(new Key2(5, 4)));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
 
             // Test update.
@@ -211,6 +254,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private struct Key
         {
             public Key(int lo, int hi) : this()
+            {
+                Lo = lo;
+                Hi = hi;
+            }
+
+            [QuerySqlField] public int Lo { get; private set; }
+            [QuerySqlField] public int Hi { get; private set; }
+        }
+
+        /// <summary>
+        /// Key.
+        /// </summary>
+        private struct Key2
+        {
+            public Key2(int lo, int hi) : this()
             {
                 Lo = lo;
                 Hi = hi;
