@@ -133,6 +133,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final long throttle;
 
+    /** Embedded mode flag. */
+    private final boolean embedded;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -140,15 +143,17 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
+     * @param embedded Whether shuffle is running in embedded mode.
      * @throws IgniteCheckedException If error.
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
+        int totalReducerCnt, int[] locReducers, boolean embedded) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.totalReducerCnt = totalReducerCnt;
         this.job = job;
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
+        this.embedded = embedded;
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 

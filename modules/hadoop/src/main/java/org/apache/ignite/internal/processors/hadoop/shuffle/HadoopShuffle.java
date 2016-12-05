@@ -103,7 +103,7 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
         HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()));
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()), true);
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
