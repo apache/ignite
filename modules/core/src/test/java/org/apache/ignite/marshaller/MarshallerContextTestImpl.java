@@ -71,8 +71,8 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
         return map;
     }
 
-    @Override
-    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
         if (excluded != null && excluded.contains(clsName))
             return false;
 
@@ -85,8 +85,8 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
         return true;
     }
 
-    @Override
-    public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
         String clsName = map.get(typeId);
         return (clsName == null) ? super.getClassName(platformId, typeId) : clsName;
     }

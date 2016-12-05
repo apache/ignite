@@ -82,30 +82,29 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         assertEquals(simpleExtr, marsh.unmarshal(marsh.marshal(simpleExtr), null));
     }
+
     /**
      * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name of
      * a binary object.
      */
     private static class MarshallerContextWithNoStorage implements MarshallerContext {
-
-
-        @Override
-        public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
             return false;
         }
 
-        @Override
-        public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
             return null;
         }
 
-        @Override
-        public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
             return null;
         }
 
-        @Override
-        public boolean isSystemType(String typeName) {
+        /** {@inheritDoc} */
+        @Override public boolean isSystemType(String typeName) {
             return false;
         }
     }

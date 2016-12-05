@@ -606,18 +606,18 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         return null;
     }
 
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    /** {@inheritDoc} */
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         // No-op.
     }
 
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         // No-op.
     }
 
-    @Override
-    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         // No-op.
     }
 

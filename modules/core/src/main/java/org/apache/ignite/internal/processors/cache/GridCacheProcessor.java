@@ -1905,7 +1905,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             clientNodesMap = U.newHashMap(caches.size());
 
             collectDataOnReconnectingNode(reqs, clientNodesMap, joiningNodeId);
-        } else {
+        }
+        else {
             reqs = new ArrayList<>(registeredCaches.size() + registeredTemplates.size());
             clientNodesMap = ctx.discovery().clientNodesMap();
 
@@ -2093,12 +2094,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** {@inheritDoc} */
-    /*@Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
-        if (data instanceof DynamicCacheChangeBatch)
-            applyDiscoveryData(joiningNodeId, rmtNodeId, (DynamicCacheChangeBatch) data);
-    }
-*/
     /**
      * @param clientNodeId Client node ID.
      * @param batch Cache change batch.

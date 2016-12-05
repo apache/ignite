@@ -225,8 +225,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                     return data;
                 }
 
-                @Override
-                public void onExchange(DiscoveryDataContainer dataContainer) {}
+                @Override public void onExchange(DiscoveryDataContainer dataContainer) {
+                    // No-op.
+                }
             });
 
             try {

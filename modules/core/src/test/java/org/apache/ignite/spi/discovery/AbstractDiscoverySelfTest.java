@@ -408,8 +408,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                         return data;
                     }
 
-                    @Override
-                    public void onExchange(DiscoveryDataContainer dataContainer) {}
+                    @Override public void onExchange(DiscoveryDataContainer dataContainer) {
+                        // No-op.
+                    }
                 });
 
                 GridSpiTestContext ctx = initSpiContext();

@@ -49,8 +49,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         iCfg.setClientMode(false);
 
         ctx = new GridTestKernalContext(innerLog, iCfg) {
-            @Override
-            public IgniteLogger log(Class<?> cls) {
+            @Override public IgniteLogger log(Class<?> cls) {
                 return innerLog;
             }
         };

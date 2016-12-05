@@ -19,10 +19,6 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Handler for initial data exchange between Ignite nodes. Data exchange
  * is initiated by a new node when it tries to join topology and finishes

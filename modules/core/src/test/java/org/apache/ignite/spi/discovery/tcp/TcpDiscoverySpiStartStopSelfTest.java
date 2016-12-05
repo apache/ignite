@@ -48,8 +48,9 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
                 return data;
             }
 
-            @Override
-            public void onExchange(DiscoveryDataContainer dataContainer) {}
+            @Override public void onExchange(DiscoveryDataContainer dataContainer) {
+                // No-op.
+            }
         };
     }
 }

@@ -1674,20 +1674,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return data;
     }
 
-    private void marshalDiscoveryData(Map<Integer, byte[]> marshalledData, Map<Integer, Serializable> dataToMarshal) {
-        for (Map.Entry<Integer, Serializable> entry : dataToMarshal.entrySet()) {
-            try {
-                byte[] bytes = U.marshal(marshaller(), entry.getValue());
-
-                marshalledData.put(entry.getKey(), bytes);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to marshal discovery data " +
-                        "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
-            }
-        }
-    }
-
     /**
      * @param dataContainer object holding discovery data collected during discovery process.
      * @param clsLdr Class loader.

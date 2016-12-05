@@ -145,8 +145,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 throw new UnsupportedOperationException();
             }
 
-            @Override
-            public String getClassName(byte platformId, int typeId) {
+            @Override public String getClassName(byte platformId, int typeId) {
                 throw new UnsupportedOperationException();
             }
 

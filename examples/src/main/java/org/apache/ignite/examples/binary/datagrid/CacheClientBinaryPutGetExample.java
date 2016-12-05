@@ -85,7 +85,8 @@ public class CacheClientBinaryPutGetExample {
                 putGetAllBinary(cache);
 
                 System.out.println();
-            } finally {
+            }
+            finally {
                 // Delete cache with its content completely.
                 ignite.destroyCache(CACHE_NAME);
             }

@@ -465,8 +465,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setClientMode(false);
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override
-            public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
                 //No-op
             }
         });

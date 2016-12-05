@@ -105,8 +105,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
         return CLUSTER_PROC;
     }
 
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    /** {@inheritDoc} */
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         HashMap<String, Object> map = new HashMap<>();
 
         map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled.get());
@@ -114,8 +114,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
         dataContainer.addNodeSpecificData(CLUSTER_PROC.ordinal(), map);
     }
 
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
@@ -125,6 +125,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**  */
     private Boolean findLastFlag(Collection<Serializable> vals) {
         Boolean flag = null;
         for (Serializable ser : vals) {

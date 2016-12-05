@@ -408,8 +408,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         return CONTINUOUS_PROC;
     }
 
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    /** {@inheritDoc} */
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         UUID joiningNodeId = dataContainer.getJoiningNodeId();
         if (log.isDebugEnabled()) {
             log.debug("collectDiscoveryData [node=" + joiningNodeId +
@@ -471,8 +471,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         return result;
     }
 
-    @Override
-    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         if (log.isDebugEnabled()) {
             log.info("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
                     ", loc=" + ctx.localNodeId() +
@@ -484,14 +484,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             applyDiscoveryData((DiscoveryData) data.joiningNodeData());
     }
 
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
-            for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet()) {
+            for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
                 applyDiscoveryData((DiscoveryData) e.getValue());
-            }
         }
     }
 

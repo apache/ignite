@@ -124,7 +124,7 @@ public interface GridComponent {
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value
-     * if component implements method {@link #collectDiscoveryData(UUID)}.
+     * if component implements method {@link #collectDiscoveryData(DiscoveryDataContainer)}.
      *
      * @return Unique component type for discovery data exchange.
      */

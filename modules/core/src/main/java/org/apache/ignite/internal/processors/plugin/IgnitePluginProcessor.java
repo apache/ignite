@@ -157,8 +157,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    @Override  public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         HashMap<String, Serializable> pluginsData = null;
 
         for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
@@ -180,8 +179,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
             Map<String, Serializable> pluginsData = (Map<String, Serializable>) data.joiningNodeData();
 
@@ -190,8 +188,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<UUID, Serializable> nodeSpecificData = data.nodeSpecificData();
 
         if (nodeSpecificData != null) {

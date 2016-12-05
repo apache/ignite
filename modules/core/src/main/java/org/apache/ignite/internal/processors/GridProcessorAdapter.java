@@ -79,16 +79,17 @@ public abstract class GridProcessorAdapter implements GridProcessor {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
     }
 
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         // No-op.
     }
 
-    @Override
-    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         // No-op.
     }
 
