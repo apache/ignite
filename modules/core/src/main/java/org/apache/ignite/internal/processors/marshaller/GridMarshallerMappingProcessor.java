@@ -230,6 +230,13 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             fut.onDone(new MappingExchangeResult(null, err));
     }
 
+    @Override public void onKernalStop(boolean cancel) {
+        IgniteCheckedException err = new IgniteCheckedException("Node is stopping.");
+
+        for (GridFutureAdapter<MappingExchangeResult> fut : mappingExchangeSyncMap.values())
+            fut.onDone(new MappingExchangeResult(null, err));
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return MARSHALLER_PROC;
