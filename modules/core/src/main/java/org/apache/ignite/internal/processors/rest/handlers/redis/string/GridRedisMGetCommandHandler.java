@@ -47,12 +47,12 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     );
 
     /**
-     * Constructor.
+     * Handler constructor.
      *
-     * @param log Logger.
-     * @param hnd Handler.
+     * @param log Logger to use.
+     * @param hnd Rest handler.
      */
-    public GridRedisMGetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
+    public GridRedisMGetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 

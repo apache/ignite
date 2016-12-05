@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -38,6 +37,11 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Shuffle.
@@ -49,9 +53,18 @@ public class HadoopShuffle extends HadoopComponent {
     /** */
     protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+    /** Mutex for iternal synchronization. */
+    private final Object mux = new Object();
+
     /** {@inheritDoc} */
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
+
+        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP_MSG, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                onMessageReceived(nodeId, (HadoopMessage)msg);
+            }
+        });
 
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
             new IgniteBiPredicate<UUID, Object>() {
@@ -117,7 +130,10 @@ public class HadoopShuffle extends HadoopComponent {
     private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
-        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+        if (msg instanceof Message)
+            ctx.kernalContext().io().send(node, GridTopic.TOPIC_HADOOP_MSG, (Message)msg, GridIoPolicy.PUBLIC_POOL);
+        else
+            ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }
 
     /**
@@ -128,17 +144,23 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
-            res = newJob(jobId);
+            synchronized (mux) {
+                res = jobs.get(jobId);
 
-            HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
+                if (res == null) {
+                    res = newJob(jobId);
 
-            if (old != null) {
-                res.close();
+                    HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
 
-                res = old;
+                    if (old != null) {
+                        res.close();
+
+                        res = old;
+                    }
+                    else if (res.reducersInitialized())
+                        startSending(res);
+                }
             }
-            else if (res.reducersInitialized())
-                startSending(res);
         }
 
         return res;
@@ -151,8 +173,8 @@ public class HadoopShuffle extends HadoopComponent {
      */
     private void startSending(HadoopShuffleJob<UUID> shuffleJob) {
         shuffleJob.startSending(ctx.kernalContext().gridName(),
-            new IgniteInClosure2X<UUID, HadoopShuffleMessage>() {
-                @Override public void applyx(UUID dest, HadoopShuffleMessage msg) throws IgniteCheckedException {
+            new IgniteInClosure2X<UUID, HadoopMessage>() {
+                @Override public void applyx(UUID dest, HadoopMessage msg) throws IgniteCheckedException {
                     send0(dest, msg);
                 }
             }
