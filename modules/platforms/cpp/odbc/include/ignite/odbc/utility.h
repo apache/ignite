@@ -43,7 +43,7 @@ void logInit(const char*);
 #   define LOG_MSG(fmt, ...)                                        \
     do {                                                            \
         logInit(ODBC_LOG_PATH);                                     \
-        fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__);   \
+        fprintf(log_file, "%s: " fmt, __FUNCTION__, ##__VA_ARGS__);   \
         fflush(log_file);                                           \
     } while (false)
 
@@ -135,6 +135,13 @@ namespace ignite
          * @return Length of the resulting string in buffer.
          */
         size_t CopyStringToBuffer(const std::string& str, char* buf, size_t buflen);
+
+        /**
+         * Read array from reader.
+         * @param reader Reader.
+         * @param res Resulting vector.
+         */
+        void ReadByteArray(impl::binary::BinaryReaderImpl& reader, std::vector<int8_t>& res);
 
         /**
          * Read string from reader.

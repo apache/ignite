@@ -259,6 +259,11 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public int capacity() {
+        return len;
+    }
+
+    /** {@inheritDoc} */
     @Override public int position() {
         return pos;
     }
@@ -289,6 +294,11 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
     /** {@inheritDoc} */
     @Override public long offheapPointer() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
         return 0;
     }
 

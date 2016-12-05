@@ -208,6 +208,13 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
+        assert false;
+
+        throw new UnsupportedOperationException("Should not be called.");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasArray() {
         assert false;
 
@@ -330,5 +337,10 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
         GridUnsafe.copyHeapOffheap(src, off, data + pos, len);
 
         shift(len);
+    }
+
+    /** {@inheritDoc} */
+    public int capacity() {
+        return cap;
     }
 }

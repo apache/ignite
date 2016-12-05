@@ -32,7 +32,7 @@ namespace ignite
                 const std::string& primaryCatalog, const std::string& primarySchema,
                 const std::string& primaryTable, const std::string& foreignCatalog,
                 const std::string& foreignSchema, const std::string& foreignTable) :
-                Query(diag),
+                Query(diag, FOREIGN_KEYS),
                 connection(connection),
                 primaryCatalog(primaryCatalog),
                 primarySchema(primarySchema),

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECR;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECRBY;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCR;
@@ -89,10 +91,38 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
         if (getResp.getResponse() == null)
             restReq.initial(0L);
         else {
-            if (getResp.getResponse() instanceof Long && (Long)getResp.getResponse() <= Long.MAX_VALUE)
-                restReq.initial((Long)getResp.getResponse());
+            if (getResp.getResponse() instanceof String) {
+                Long init;
+
+                try {
+                    init = Long.parseLong((String)getResp.getResponse());
+
+                    restReq.initial(init);
+                }
+                catch (Exception e) {
+                    U.error(log, "An initial value must be numeric and in range", e);
+
+                    throw new GridRedisGenericException("An initial value must be numeric and in range");
+                }
+
+                if ((init == Long.MAX_VALUE && (msg.command() == INCR || msg.command() == INCRBY))
+                    || (init == Long.MIN_VALUE && (msg.command() == DECR || msg.command() == DECRBY)))
+                    throw new GridRedisGenericException("Increment or decrement would overflow");
+            }
             else
-                throw new GridRedisGenericException("An initial value must be numeric and in range");
+                throw new GridRedisTypeException("Operation against a key holding the wrong kind of value");
+
+            // remove from cache.
+            GridRestCacheRequest rmReq = new GridRestCacheRequest();
+
+            rmReq.clientId(msg.clientId());
+            rmReq.key(msg.key());
+            rmReq.command(CACHE_REMOVE);
+
+            Object rmResp = hnd.handle(rmReq).getResponse();
+
+            if (rmResp == null || !(boolean)rmResp)
+                throw new GridRedisGenericException("Cannot incr/decr on the non-atomiclong key");
         }
 
         restReq.clientId(msg.clientId());
@@ -101,10 +131,16 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
 
         if (msg.messageSize() > 2) {
             try {
-                restReq.delta(Long.valueOf(msg.aux(DELTA_POS)));
+                Long delta = Long.valueOf(msg.aux(DELTA_POS));
+
+                // check if it can be safely added.
+                safeAdd(restReq.initial(), delta);
+
+                restReq.delta(delta);
             }
-            catch (NumberFormatException e) {
-                U.error(log, "Wrong increment delta", e);
+            catch (NumberFormatException | ArithmeticException e) {
+                U.error(log, "An increment value must be numeric and in range", e);
+
                 throw new GridRedisGenericException("An increment value must be numeric and in range");
             }
         }
@@ -138,5 +174,20 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             return GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse()));
         else
             return GridRedisProtocolParser.toTypeError("Value is non-numeric or out of range");
+    }
+
+    /**
+     * Safely add long values.
+     *
+     * @param left A long value.
+     * @param right A long value.
+     * @return An addition result or an exception is thrown when overflow occurs.
+     */
+    private static long safeAdd(long left, long right) {
+        if (right > 0 ? left > Long.MAX_VALUE - right
+            : left < Long.MIN_VALUE - right) {
+            throw new ArithmeticException("Long overflow");
+        }
+        return left + right;
     }
 }
