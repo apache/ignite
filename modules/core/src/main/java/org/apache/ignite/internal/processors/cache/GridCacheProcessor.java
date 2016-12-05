@@ -4328,6 +4328,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             }
                         }
 
+                        for (String cacheName : cacheProc.stopSeq) {
+                            GridCacheAdapter<?, ?> cache = cacheProc.stoppedCaches.remove(maskNull(cacheName));
+
+                            if (cache != null)
+                                cacheProc.stopCache(cache, true, false);
+                        }
+
+                        for (GridCacheAdapter<?, ?> cache : cacheProc.stoppedCaches.values()) {
+                            if (cache == cacheProc.stoppedCaches.remove(maskNull(cache.name())))
+                                cacheProc.stopCache(cache, true, false);
+                        }
+
                         for (Iterator<Map.Entry<String, IgniteCacheProxy<?, ?>>> it =
                             cacheProc.jCacheProxies.entrySet().iterator(); it.hasNext(); ) {
 
@@ -4342,7 +4354,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         for (Map.Entry<UUID, Exception> entry : exs.entrySet())
                             e.addSuppressed(entry.getValue());
 
-                        log.error("Fail while revert activation request ", e);
+                        log.error("Fail while revert activation request changes", e);
                     }finally {
                         if (!ctx.clientNode())
                             sharedCtx.database().unLock();
