@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             val = new Foo {Id = 95};
             binObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(val), BinaryMode.ForceBinary);
-            expHash = (31 + 1) * 31 + val.Id.GetHashCode();
+            expHash = (31 + 0) * 31 + val.Id.GetHashCode();
             Assert.AreEqual(expHash, binObj.GetHashCode());
         }
 
