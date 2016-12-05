@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
@@ -48,6 +49,29 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.Throws<NotSupportedException>(() => cmp.Equals(null, null));
                 Assert.Throws<NotSupportedException>(() => cmp.GetHashCode(null));
             }
+        }
+
+        /// <summary>
+        /// Tests the custom comparer.
+        /// </summary>
+        [Test]
+        public void TestCustomComparer()
+        {
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(new IgniteConfiguration
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration(typeof(Foo))
+                        {
+                            EqualityComparer = new MyComparer()
+                        }
+                    }
+                }
+            }));
+
+            Assert.AreEqual("", ex.Message);
         }
 
         /// <summary>
@@ -97,10 +121,43 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(expHash, binObj.GetHashCode());
         }
 
+        /// <summary>
+        /// Tests the field comparer validation.
+        /// </summary>
+        [Test]
+        public void TestFieldComparerValidation()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof(Foo))
+                    {
+                        EqualityComparer = new BinaryFieldEqualityComparer()
+                    }
+                }
+            });
+
+            // TODO
+        }
+
         private class Foo
         {
             public int Id { get; set; }
             public string Name { get; set; }
+        }
+
+        private class MyComparer : IEqualityComparer<IBinaryObject>
+        {
+            public bool Equals(IBinaryObject x, IBinaryObject y)
+            {
+                return true;
+            }
+
+            public int GetHashCode(IBinaryObject obj)
+            {
+                return 0;
+            }
         }
     }
 }
