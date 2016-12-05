@@ -55,6 +55,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
@@ -64,7 +65,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  */
 public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
-    private static final int MSG_BUF_SIZE = 128 * 1024;
+    private static final int DFLT_SHUFFLE_MSG_SIZE = 128 * 1024;
 
     /** */
     private final HadoopJob job;
@@ -109,6 +110,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final IgniteLogger log;
 
+    /** Message size. */
+    private final int msgSize;
+
     /** */
     private final long throttle;
 
@@ -127,6 +131,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.job = job;
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
+
+        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
@@ -320,7 +326,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
-                msgs[i] = new HadoopShuffleMessage(job.id(), i, MSG_BUF_SIZE);
+                msgs[i] = new HadoopShuffleMessage(job.id(), i, msgSize);
 
             final int idx = i;
 
@@ -425,7 +431,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         });
 
         msgs[idx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), idx,
-            Math.max(MSG_BUF_SIZE, newBufMinSize));
+            Math.max(msgSize, newBufMinSize));
     }
 
     /** {@inheritDoc} */
