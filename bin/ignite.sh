@@ -128,11 +128,10 @@ if [ "${ENABLE_ASSERTIONS}" = "1" ]; then
 fi
 
 #
-# If this is a Hadoop edition игшдв, and HADOOP_HOME set, add the native library location:
+# If this is a Hadoop edition, and HADOOP_HOME set, add the native library location:
 #
 if [ -d "${IGNITE_HOME}/libs/ignite-hadoop/" ] && [ -n "${HADOOP_HOME}" ] && [ -d "${HADOOP_HOME}/lib/native/" ]; then
    if [[ "${JVM_OPTS}" != *-Djava.library.path=* ]]; then
-      echo " adding -Djava.library.path=${HADOOP_HOME}/lib/native/ :"
       JVM_OPTS="${JVM_OPTS} -Djava.library.path=${HADOOP_HOME}/lib/native/"
    fi
 fi
