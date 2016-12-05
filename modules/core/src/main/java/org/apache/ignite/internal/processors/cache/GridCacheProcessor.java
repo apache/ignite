@@ -4048,6 +4048,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** Request id. */
         private final UUID requestId;
 
+        /** Initiating node id. */
+        private final UUID initiatingNodeId;
+
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
 
@@ -4068,12 +4071,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         public ActivationContext(
             UUID requestId,
+            UUID initiatingNodeId,
             AffinityTopologyVersion topVer,
             boolean activate
         ) {
             this.requestId = requestId;
             this.topVer = topVer;
             this.activate = activate;
+            this.initiatingNodeId = initiatingNodeId;
         }
 
         /**
@@ -4103,6 +4108,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private boolean isFail(){
             return fail;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ActivationContext.class, this);
+        }
     }
 
     /**
@@ -4116,7 +4126,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private final AtomicReference<ActivationContext> actCtx = new AtomicReference<>();
 
         /** Local action future. */
-        private AtomicReference<GridActivateFuture> locFut = new AtomicReference<>();
+        private final AtomicReference<GridActivateFuture> locFut = new AtomicReference<>();
 
         /** Process. */
         @GridToStringExclude
@@ -4154,17 +4164,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             this.ctx.discovery().setCustomEventListener(
                 ChangeGlobalState.class, new CustomEventListener<ChangeGlobalState>() {
-                    @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, ChangeGlobalState msg) {
-                        if (actCtx.get() != null && globalState == TRANSITION) {
-                            //todo send exception concurrent
+                    @Override public void onCustomEvent(
+                        AffinityTopologyVersion topVer,
+                        ClusterNode snd,
+                        ChangeGlobalState msg
+                    ) {
+                        ActivationContext actx = actCtx.get();
+
+                        if (actx != null && globalState == TRANSITION) {
+                            GridActivateFuture f = locFut.get();
+
+                            if (log.isDebugEnabled())
+                                log.debug("concurrent " + map(msg.getActivate()) + " [id=" +
+                                    ctx.localNodeId() + " topVer=" + topVer + " actx=" + actx + ", msg=" + msg + "]");
+
+                            if (f != null && f.requestId.equals(msg.getRequestId()))
+                                f.onDone(new IgniteCheckedException(
+                                    "concurrent change state, now in progress=" + (map(actx.activate))
+                                        + ", initiatingNodeId=" + actx.initiatingNodeId
+                                        + ", you try=" + (map(msg.getActivate())) + ", locNodeId=" + ctx.localNodeId()
+                                ));
+
+                            msg.setConcurrentChangeState();
                         }
                         else {
                             globalState = TRANSITION;
 
-                            actCtx.set(new ActivationContext(msg.getRequestId(), topVer, msg.getActivate()));
+                            if (log.isDebugEnabled())
+                                log.debug("create " + map(msg.getActivate()) + " context [id=" +
+                                    ctx.localNodeId() + " topVer=" + topVer + ", reqId=" +
+                                    msg.getRequestId() + ", initiatingNodeId=" + msg.getInitiatingNodeId() + "]");
+
+                            actCtx.set(new ActivationContext(
+                                msg.getRequestId(), msg.getInitiatingNodeId(), topVer, msg.getActivate())
+                            );
                         }
                     }
                 });
+        }
+
+        /**
+         * @param activate Activate.
+         */
+        private String map(boolean activate){
+            return activate ? "activation" : "deactivation";
         }
 
         /**
@@ -4474,7 +4517,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 log.info("Start activation process [nodeId=" + ctx.localNodeId() + ", client=" + client +
                     ", topVer=" + topVer + "]");
 
-
             try {
                 if (!client) {
                     sharedCtx.database().lock();
@@ -4618,9 +4660,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * Invoke from exchange future.
          *
          */
-        public boolean onChangeRequest(
-            Collection<DynamicCacheChangeRequest> reqs,
-            AffinityTopologyVersion topVer
+        public void onChangeRequest(
+            final Collection<DynamicCacheChangeRequest> reqs,
+            final AffinityTopologyVersion topVer
         ) {
             DynamicCacheChangeRequest req = request(reqs);
 
@@ -4635,8 +4677,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 else if (req.globalStateDeActivate())
                     onDeActivate(req, topVer);
             }
-
-            return true;
         }
 
         /**

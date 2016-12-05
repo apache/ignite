@@ -1053,9 +1053,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (r.globalStateChange()) {
                     Map<UUID, Exception> exs = cctx.kernalContext().cache().stateManger().allExceptions(r.requestId());
 
-                    cctx.kernalContext().cache().stateManger().onFullResponseMessage(r.requestId(), exs);
+                    if (!F.isEmpty(exs)){
+                        cctx.kernalContext().cache().stateManger().onFullResponseMessage(r.requestId(), exs);
 
-                    m.setExceptionsMap(exs);
+                        m.setExceptionsMap(exs);
+                    }
 
                     break;
                 }

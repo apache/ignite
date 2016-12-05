@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +50,9 @@ public class ChangeGlobalState implements DiscoveryCustomMessage {
     /** Exception while file lock. */
     private Map<UUID, Exception> exs = new HashMap<>();
 
+    /** Concurrent change state. */
+    private boolean concurrentChangeState;
+
     /**
      * @param actBatch Action batch.
      */
@@ -63,7 +67,7 @@ public class ChangeGlobalState implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return actBatch;
+        return !concurrentChangeState ? actBatch : null;
     }
 
     /** {@inheritDoc} */
@@ -126,5 +130,23 @@ public class ChangeGlobalState implements DiscoveryCustomMessage {
      */
     public void setRequestId(UUID requestId) {
         this.requestId = requestId;
+    }
+
+    /**
+     *
+     */
+    public boolean isConcurrentChangeState() {
+        return concurrentChangeState;
+    }
+
+    /**
+     */
+    public void setConcurrentChangeState() {
+        this.concurrentChangeState = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ChangeGlobalState.class, this);
     }
 }
