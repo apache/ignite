@@ -53,6 +53,9 @@ public class HadoopShuffle extends HadoopComponent {
     /** */
     protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+    /** Mutex for iternal synchronization. */
+    private final Object mux = new Object();
+
     /** {@inheritDoc} */
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
@@ -141,17 +144,23 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
-            res = newJob(jobId);
+            synchronized (mux) {
+                res = jobs.get(jobId);
 
-            HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
+                if (res == null) {
+                    res = newJob(jobId);
 
-            if (old != null) {
-                res.close();
+                    HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
 
-                res = old;
+                    if (old != null) {
+                        res.close();
+
+                        res = old;
+                    }
+                    else if (res.reducersInitialized())
+                        startSending(res);
+                }
             }
-            else if (res.reducersInitialized())
-                startSending(res);
         }
 
         return res;
