@@ -98,16 +98,6 @@ public enum HadoopJobProperty {
     SHUFFLE_MAPPER_STRIPE_OUTPUT("ignite.shuffle.mapper.stripe.output"),
 
     /**
-     * Striped mapper flush threshold.
-     */
-    SHUFFLE_STRIPED_FLUSH_THRESHOLD("ignite.shuffle.striped.flush.threshold"),
-
-    /**
-     * Whether data should be written directly.
-     */
-    SHUFFLE_STRIPED_DIRECT("ignite.shuffle.striped.direct"),
-
-    /**
      * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter
      * controls sleep duration between iterations through intermediate reducer maps.
      * <p>
