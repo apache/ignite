@@ -72,6 +72,10 @@ namespace Apache.Ignite.Core.Tests
                                 <types>
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
+                                <typeConfigurations>
+                                    <binaryTypeConfiguration>
+                                    </binaryTypeConfiguration>
+                                </typeConfigurations>
                             </binaryConfiguration>
                             <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0' localAddress='192.168.1.1' localPort='6655'>
                                 <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
