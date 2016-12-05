@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'store'
 -var model = 'backupItem'
@@ -43,15 +43,15 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
     .col-xs-3.col-sm-3.col-md-3
         .fieldSep /
         .input-tip
-            input.form-control(id=databaseNameId ignite-on-enter-focus-move=databaseTypeId type='text' ng-model=databaseNameModel placeholder='DB name' ignite-on-enter='#{javaNameModel} = #{javaNameModel} ? #{javaNameModel} : #{databaseNameModel}' ignite-on-escape='tableReset()')
+            input.form-control(id=databaseNameId ignite-on-enter-focus-move=databaseTypeId type='text' ng-model=databaseNameModel placeholder='DB name' ignite-on-enter='#{javaNameModel} = #{javaNameModel} ? #{javaNameModel} : #{databaseNameModel}' ignite-on-escape='tableReset(false)')
     .col-xs-3.col-sm-3.col-md-3
         .fieldSep /
         .input-tip
-            button.select-toggle.form-control(id=databaseTypeId ignite-on-enter-focus-move=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' ignite-on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id=databaseTypeId ignite-on-enter-focus-move=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' ignite-on-escape='tableReset(false)' tabindex='0')
     .col-xs-3.col-sm-3.col-md-3
         .fieldSep /
         .input-tip
-            input.form-control(id=javaNameId ignite-on-enter-focus-move=javaTypeId type='text' ng-model=javaNameModel placeholder='Java name' ignite-on-escape='tableReset()')
+            input.form-control(id=javaNameId ignite-on-enter-focus-move=javaTypeId type='text' ng-model=javaNameModel placeholder='Java name' ignite-on-escape='tableReset(false)')
     .col-xs-3.col-sm-3.col-md-3
         -var btnVisible = 'tableDbFieldSaveVisible(' + tbl + ', ' + index +')'
         -var btnSave = 'tableDbFieldSave(' + tbl + ', ' + index +')'
@@ -59,12 +59,12 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
 
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)' tabindex='0')
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
-        label Domain model for cache store
+        label(id='store-title') Domain model for cache store
         ignite-form-field-tooltip.tipLabel
             | Domain model properties for binding database with cache via POJO cache store#[br]
             | #[a(href="https://apacheignite.readme.io/docs/persistent-store" target="_blank") More info]

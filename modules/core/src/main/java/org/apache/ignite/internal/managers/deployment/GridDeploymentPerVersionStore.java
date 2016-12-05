@@ -317,7 +317,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         if (ctx.localNodeId().equals(e.getKey())) {
                             // Warn only if mode is not CONTINUOUS.
                             if (meta.deploymentMode() != CONTINUOUS)
-                                LT.warn(log, null, "Local node is in participants (most probably, " +
+                                LT.warn(log, "Local node is in participants (most probably, " +
                                     "IgniteConfiguration.getPeerClassLoadingLocalClassPathExclude() " +
                                     "is not used properly " +
                                     "[locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -53,7 +54,8 @@ namespace Apache.Ignite.Core.Tests
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-Xms1g",
                 "-Xmx4g",
-                "-ea"
+                "-ea",
+                "-DIGNITE_QUIET=true"
             }
             : new List<string>
             {
@@ -61,7 +63,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xms512m",
                 "-Xmx512m",
                 "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000"
+                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
+                "-DIGNITE_QUIET=true"
             };
 
         /** */
@@ -345,6 +348,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Runs the test in new process.
         /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         public static void RunTestInNewProcess(string fixtureName, string testName)
         {
             var procStart = new ProcessStartInfo
