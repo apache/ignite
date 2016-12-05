@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
-            // Existence tests fail because IdentityResolver is not set:
+            // Existence tests check that hash codes are consistent.
             Assert.IsTrue(cache.ContainsKey(new Key(2, 1)));
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
 
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
-            // Existence tests fail because IdentityResolver is not set:
+            // Existence tests check that hash codes are consistent.
             Assert.IsTrue(cache.ContainsKey(new Key2(2, 1)));
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
 
