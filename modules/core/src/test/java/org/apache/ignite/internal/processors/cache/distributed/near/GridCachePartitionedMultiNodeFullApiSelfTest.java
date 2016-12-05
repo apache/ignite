@@ -494,7 +494,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
-            Thread.sleep(10000);
             assertEquals(0, ((IgniteKernal)ignite).<String, Integer>internalCache().context().tm().idMapSize());
 
             IgniteCache<Object, Object> cache = ignite.cache(null);
