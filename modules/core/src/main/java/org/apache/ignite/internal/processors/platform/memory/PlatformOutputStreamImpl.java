@@ -334,7 +334,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     private void copyAndShift(Object src, long off, int len) {
         ensureCapacity(pos + len);
 
-        GridUnsafe.copyMemory(src, off, null, data + pos, len);
+        GridUnsafe.copyHeapOffheap(src, off, data + pos, len);
 
         shift(len);
     }

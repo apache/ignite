@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary.streams;
 
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
@@ -72,7 +71,7 @@ public class BinaryMemoryAllocatorChunk {
         if (this.data == data)
             this.data = newData;
 
-        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, newData, GridUnsafe.BYTE_ARR_OFF, data.length);
+        System.arraycopy(data, 0, newData, 0, data.length);
 
         return newData;
     }
