@@ -404,6 +404,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
                 " range (\"-r\", \"--range\").");
 
+        IgniteBenchmarkPreloadLogger logger = new IgniteBenchmarkPreloadLogger(availableCaches, args.preloadLogsInterval());
+
+        logger.start();
+
         Thread[] threads = new Thread[availableCaches.size()];
 
         for (int i = 0; i < availableCaches.size(); i++) {
@@ -423,6 +427,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         for (Thread thread : threads)
             thread.join();
+
+        logger.interrupt();
+
+        logger.join();
     }
 
     /**
