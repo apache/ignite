@@ -130,18 +130,22 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFieldComparerValidation()
         {
-            var marsh = new Marshaller(new BinaryConfiguration
-            {
-                TypeConfigurations = new[]
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(
+                new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    new BinaryTypeConfiguration(typeof(Foo))
+                    BinaryConfiguration = new BinaryConfiguration
                     {
-                        EqualityComparer = new BinaryFieldEqualityComparer()
+                        TypeConfigurations = new[]
+                        {
+                            new BinaryTypeConfiguration(typeof(Foo))
+                            {
+                                EqualityComparer = new BinaryFieldEqualityComparer()
+                            }
+                        }
                     }
-                }
-            });
+                }));
 
-            // TODO
+            Assert.AreEqual("BinaryFieldEqualityComparer.FieldNames can not be null or empty.", ex.Message);
         }
 
         private class Foo
