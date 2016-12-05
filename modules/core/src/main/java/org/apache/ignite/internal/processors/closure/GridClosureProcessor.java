@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -2212,8 +2213,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
+        	Objects.requireNonNull(r, "received null runnable in Grid. Did we serialize only excluded classes? See MarshallerExclusions for the exclusion list.");
             r.run();
-
             return null;
         }
 
