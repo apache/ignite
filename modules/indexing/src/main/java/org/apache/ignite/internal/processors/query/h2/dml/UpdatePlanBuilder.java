@@ -132,7 +132,7 @@ public final class UpdatePlanBuilder {
             // not for updates, and hence will allow putting new pairs only.
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
+            if (keys.length != 1 || !IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -161,22 +161,30 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.length];
 
-        for (int i = 0; i < cols.length; i++) {
-            colNames[i] = cols[i].columnName();
+        int[] colTypes = new int[cols.length];
 
-            if (isKeyColumn(cols[i].columnName(), desc)) {
+        for (int i = 0; i < cols.length; i++) {
+            GridSqlColumn col = cols[i];
+
+            String colName = col.columnName();
+
+            colNames[i] = colName;
+
+            colTypes[i] = col.resultType().type();
+
+            if (KEY_FIELD_NAME.equals(colName)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (isValColumn(cols[i].columnName(), desc)) {
+            if (VAL_FIELD_NAME.equals(colName)) {
                 valColIdx = i;
                 continue;
             }
 
-            GridQueryProperty prop = desc.type().property(cols[i].columnName());
+            GridQueryProperty prop = desc.type().property(colName);
 
-            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
+            assert prop != null : "Property '" + colName + "' not found.";
 
             if (prop.key())
                 hasKeyProps = true;
@@ -188,11 +196,11 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), !isTwoStepSubqry, rowsNum);
+            return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
+                valColIdx, sel.getSQL(), !isTwoStepSubqry, rowsNum);
         else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), !isTwoStepSubqry, rowsNum);
+            return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
+                valColIdx, sel.getSQL(), !isTwoStepSubqry, rowsNum);
     }
 
     /**
@@ -253,10 +261,14 @@ public final class UpdatePlanBuilder {
 
                 String[] colNames = new String[updatedCols.size()];
 
+                int[] colTypes = new int[updatedCols.size()];
+
                 for (int i = 0; i < updatedCols.size(); i++) {
                     colNames[i] = updatedCols.get(i).columnName();
 
-                    if (isValColumn(colNames[i], desc))
+                    colTypes[i] = updatedCols.get(i).resultType().type();
+
+                    if (VAL_FIELD_NAME.equals(colNames[i]))
                         valColIdx = i;
                 }
 
@@ -287,7 +299,7 @@ public final class UpdatePlanBuilder {
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, newValSupplier, valColIdx, sel.getSQL());
+                return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, sel.getSQL());
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
@@ -470,33 +482,5 @@ public final class UpdatePlanBuilder {
                 return true;
 
         return false;
-    }
-
-    /**
-     * Check that given column corresponds to the key with respect to case sensitivity, if needed (should be considered
-     * when the schema escapes all identifiers on table creation).
-     * @param colName Column name.
-     * @param desc Row descriptor.
-     * @return {@code true} if column name corresponds to _key with respect to case sensitivity depending on schema.
-     */
-    private static boolean isKeyColumn(String colName, GridH2RowDescriptor desc) {
-        if (desc.quoteAllIdentifiers())
-            return KEY_FIELD_NAME.equals(colName);
-        else
-            return KEY_FIELD_NAME.equalsIgnoreCase(colName);
-    }
-
-    /**
-     * Check that given column corresponds to the key with respect to case sensitivity, if needed (should be considered
-     * when the schema escapes all identifiers on table creation).
-     * @param colName Column name.
-     * @param desc Row descriptor.
-     * @return {@code true} if column name corresponds to _key with respect to case sensitivity depending on schema.
-     */
-    private static boolean isValColumn(String colName, GridH2RowDescriptor desc) {
-        if (desc.quoteAllIdentifiers())
-            return VAL_FIELD_NAME.equals(colName);
-        else
-            return VAL_FIELD_NAME.equalsIgnoreCase(colName);
     }
 }

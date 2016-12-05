@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -73,6 +75,8 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
+import org.h2.value.DataType;
+import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -487,7 +491,8 @@ public class DmlStatementsProcessor {
                 if (hasNewVal && i == valColIdx - 2)
                     continue;
 
-                newColVals.put(plan.colNames[i], e.get(i + 2));
+                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.colNames[i],
+                    plan.tbl.rowDescriptor(), plan.colTypes[i]));
             }
 
             newVal = plan.valSupplier.apply(e);
@@ -575,6 +580,64 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Convert value to column's expected type by means of H2.
+     *
+     * @param val Source value.
+     * @param colName Column name to search for property.
+     * @param desc Row descriptor.
+     * @param type Expected column type to convert to.
+     * @return Converted object.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
+    private static Object convert(Object val, String colName, GridH2RowDescriptor desc, int type)
+        throws IgniteCheckedException {
+        if (val == null)
+            return null;
+
+        GridQueryProperty prop = desc.type().property(colName);
+
+        assert prop != null;
+
+        Class<?> expCls = prop.type();
+
+        Class<?> currCls = val.getClass();
+
+        if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
+            // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
+            // precise Date instance. Let's satisfy it.
+            return new Date(((Date) val).getTime());
+        }
+
+        // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
+        // Still, we only can convert from Object[] to something more precise.
+        if (type == Value.ARRAY && currCls != expCls) {
+            if (currCls != Object[].class)
+                throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
+
+            // Why would otherwise type be Value.ARRAY?
+            assert expCls.isArray();
+
+            Object[] curr = (Object[]) val;
+
+            Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
+
+            System.arraycopy(curr, 0, newArr, 0, curr.length);
+
+            return newArr;
+        }
+
+        int objType = DataType.getTypeFromClass(val.getClass());
+
+        if (objType == type)
+            return val;
+
+        Value h2Val = desc.wrap(val, objType);
+
+        return h2Val.convertTo(type).getObject();
+    }
+
+    /**
      * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
      * processing yielded an exception.
      *
@@ -633,8 +696,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
@@ -646,8 +709,8 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier, plan.valSupplier,
-                    plan.keyColIdx, plan.valColIdx, desc.type());
+                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier, plan.valSupplier,
+                    plan.keyColIdx, plan.valColIdx, desc);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -679,8 +742,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes,
+                plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -705,8 +768,8 @@ public class DmlStatementsProcessor {
             while (it.hasNext()) {
                 List<?> row = it.next();
 
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier,
-                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
@@ -772,22 +835,21 @@ public class DmlStatementsProcessor {
 
     /**
      * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
-     *
      * @param cctx Cache context.
      * @param row Row to process.
      * @param cols Query cols.
+     * @param colTypes Column types to convert data from {@code row} to.
      * @param keySupplier Key instantiation method.
      * @param valSupplier Key instantiation method.
      * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
      * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param desc Table descriptor.
-     * @return Key-value pair.
+     * @param rowDesc Row descriptor.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
-        KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
-        GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+        int[] colTypes, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
+        GridH2RowDescriptor rowDesc) throws IgniteCheckedException {
         Object key = keySupplier.apply(F.asList(row));
         Object val = valSupplier.apply(F.asList(row));
 
@@ -797,11 +859,13 @@ public class DmlStatementsProcessor {
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
+        GridQueryTypeDescriptor desc = rowDesc.type();
+
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
-            desc.setValue(cols[i], key, val, row[i]);
+            desc.setValue(cols[i], key, val, convert(row[i], cols[i], rowDesc, colTypes[i]));
         }
 
         if (cctx.binaryMarshaller()) {

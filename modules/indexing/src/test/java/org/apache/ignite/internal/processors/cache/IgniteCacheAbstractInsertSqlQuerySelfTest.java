@@ -217,7 +217,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("Id", Integer.class.getName());
             flds.put("id", Integer.class.getName());
             flds.put("name", String.class.getName());
-            flds.put("_Val", Integer.class.getName());
+            flds.put("IntVal", Integer.class.getName());
 
             k22p.setFields(flds);
 
@@ -336,7 +336,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         if (!isBinaryMarshaller()) {
             Person2 p = new Person2(id);
             p.name = name;
-            p._Val = valFld;
+            p.IntVal = valFld;
 
             return p;
         }
@@ -344,7 +344,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             BinaryObjectBuilder o = grid(0).binary().builder("Person2");
             o.setField("id", id);
             o.setField("name", name);
-            o.setField("_Val", valFld);
+            o.setField("IntVal", valFld);
 
             return o.build();
         }
@@ -554,6 +554,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
         /** */
         @QuerySqlField
-        public int _Val;
+        public int IntVal;
     }
 }

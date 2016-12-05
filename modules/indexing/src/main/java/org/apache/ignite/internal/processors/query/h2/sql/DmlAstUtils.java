@@ -280,7 +280,7 @@ public final class DmlAstUtils {
         GridSqlElement right = op.child(1);
 
         return left instanceof GridSqlColumn &&
-            colName.equalsIgnoreCase(((GridSqlColumn) left).columnName()) &&
+            colName.equals(((GridSqlColumn) left).columnName()) &&
             (right instanceof GridSqlConst || right instanceof GridSqlParameter);
     }
 
