@@ -548,7 +548,8 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "typeName",
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
-                            Serializer = new TestSerializer()
+                            Serializer = new TestSerializer(),
+                            EqualityComparer = new BinaryArrayEqualityComparer()
                         },
                         new BinaryTypeConfiguration
                         {
@@ -556,7 +557,8 @@ namespace Apache.Ignite.Core.Tests
                             KeepDeserialized = false,
                             AffinityKeyFieldName = "affKeyFieldName",
                             TypeName = "typeName2",
-                            Serializer = new BinaryReflectiveSerializer()
+                            Serializer = new BinaryReflectiveSerializer(),
+                            EqualityComparer = new BinaryFieldEqualityComparer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
