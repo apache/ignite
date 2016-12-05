@@ -73,7 +73,11 @@ namespace Apache.Ignite.Core.Tests
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
                                 <typeConfigurations>
-                                    <binaryTypeConfiguration>
+                                    <binaryTypeConfiguration affinityKeyFieldName='affKeyFieldName' isEnum='true' keepDeserialized='True' typeName='typeName'>
+                                        <equalityComparer type='BinaryArrayEqualityComparer' />
+                                        <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper, Apache.Ignite.Core.Tests' />
+                                        <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' />
+                                        <serializer type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestSerializer, Apache.Ignite.Core.Tests' />
                                     </binaryTypeConfiguration>
                                 </typeConfigurations>
                             </binaryConfiguration>
