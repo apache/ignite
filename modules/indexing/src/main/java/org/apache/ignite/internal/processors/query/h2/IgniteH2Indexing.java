@@ -251,10 +251,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-
-    /**  */
-    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4; //TODO: change to 1 and move to config
-
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -1745,7 +1741,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             marshaller = ctx.config().getMarshaller();
 
             mapQryExec = new GridMapQueryExecutor(busyLock);
-            rdcQryExec = new GridReduceQueryExecutor(busyLock, DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL);
+            rdcQryExec = new GridReduceQueryExecutor(busyLock);
 
             mapQryExec.start(ctx, this);
             rdcQryExec.start(ctx, this);
@@ -2566,10 +2562,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @return
          */
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
-//            int segments = schema.ccfg.getQueryLocalParallelismLevel();
-            int segments = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL; //TODO: get from config
+            int segments = ctx.config().getSqlQueryParallelismLevel();
 
-            if (segments > 1)
+            GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
+
+            boolean allowIndexSegmentation = !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled();
+
+            if (allowIndexSegmentation && segments > 1)
                 return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, segments);
             else
                 return new GridH2TreeIndex(idxName, tbl, pk, columns);

@@ -112,8 +112,8 @@ public class GridReduceQueryExecutor {
     /** */
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
-    /** TODO: add parametr to configuration */
-    public final int queryLocalParallelismLevel;
+    /** */
+    public int sqlQryParallelismLvl;
 
     /** */
     private GridKernalContext ctx;
@@ -174,9 +174,8 @@ public class GridReduceQueryExecutor {
     /**
      * @param busyLock Busy lock.
      */
-    public GridReduceQueryExecutor(GridSpinBusyLock busyLock, int queryLocalParallelismLevel) {
+    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
         this.busyLock = busyLock;
-        this.queryLocalParallelismLevel = queryLocalParallelismLevel;
     }
 
     /**
@@ -189,6 +188,8 @@ public class GridReduceQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridReduceQueryExecutor.class);
+
+        sqlQryParallelismLvl = ctx.config().getSqlQueryParallelismLevel();
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -573,12 +574,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes, queryLocalParallelismLevel);
+                idx.setSources(nodes, sqlQryParallelismLvl);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * queryLocalParallelismLevel);
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * sqlQryParallelismLvl);
 
             runs.put(qryReqId, r);
 
@@ -634,7 +635,7 @@ public class GridReduceQueryExecutor {
                             .tables(distributedJoins ? qry.tables() : null)
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
-                            .threads(queryLocalParallelismLevel)
+                            .threads(sqlQryParallelismLvl)
                             .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
                             .timeout(timeoutMillis),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
