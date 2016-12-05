@@ -57,21 +57,24 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestCustomComparer()
         {
-            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(new IgniteConfiguration
-            {
-                BinaryConfiguration = new BinaryConfiguration
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(
+                new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    TypeConfigurations = new[]
+                    BinaryConfiguration = new BinaryConfiguration
                     {
-                        new BinaryTypeConfiguration(typeof(Foo))
+                        TypeConfigurations = new[]
                         {
-                            EqualityComparer = new MyComparer()
+                            new BinaryTypeConfiguration(typeof(Foo))
+                            {
+                                EqualityComparer = new MyComparer()
+                            }
                         }
                     }
-                }
-            }));
+                }));
 
-            Assert.AreEqual("", ex.Message);
+            Assert.AreEqual("Unsupported IEqualityComparer<IBinaryObject> implementation: " +
+                            "Apache.Ignite.Core.Tests.Binary.BinaryEqualityComparerTest+MyComparer. " +
+                            "Only predefined implementations are supported.", ex.Message);
         }
 
         /// <summary>
