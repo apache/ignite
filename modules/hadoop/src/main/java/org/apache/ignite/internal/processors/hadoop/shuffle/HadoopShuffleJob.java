@@ -61,8 +61,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
@@ -160,10 +158,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final boolean stripeMappers;
 
     /** Local shuffle states. */
-    private volatile HashMap<UUID, LocalShuffleState> locShuffleStates = new HashMap<>();
+    private volatile HashMap<UUID, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
 
     /** Remote shuffle states. */
-    private volatile HashMap<UUID, RemoteShuffleState> rmtShuffleStates = new HashMap<>();
+    private volatile HashMap<UUID, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
 
     /** Mutex for internal synchronization. */
     private final Object mux = new Object();
@@ -405,7 +403,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param msg Shuffle finish message.
      */
     public void onShuffleFinishRequest(UUID nodeId, HadoopShuffleFinishRequest msg) {
-        LocalShuffleState state = localShuffleState(nodeId);
+        HadoopShuffleLocalState state = localShuffleState(nodeId);
 
         if (state.onShuffleFinishMessage(msg.messageCount()))
             sendFinishResponse(nodeId, msg.jobId());
@@ -439,17 +437,17 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param nodeId Node ID.
      * @return Local shuffle state.
      */
-    private LocalShuffleState localShuffleState(UUID nodeId) {
-        HashMap<UUID, LocalShuffleState> states = locShuffleStates;
+    private HadoopShuffleLocalState localShuffleState(UUID nodeId) {
+        HashMap<UUID, HadoopShuffleLocalState> states = locShuffleStates;
 
-        LocalShuffleState res = states.get(nodeId);
+        HadoopShuffleLocalState res = states.get(nodeId);
 
         if (res == null) {
             synchronized (mux) {
                 res = locShuffleStates.get(nodeId);
 
                 if (res == null) {
-                    res = new LocalShuffleState();
+                    res = new HadoopShuffleLocalState();
 
                     states = new HashMap<>(locShuffleStates);
 
@@ -469,17 +467,17 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param nodeId Node ID.
      * @return Remote shuffle state.
      */
-    private RemoteShuffleState remoteShuffleState(UUID nodeId) {
-        HashMap<UUID, RemoteShuffleState> states = rmtShuffleStates;
+    private HadoopShuffleRemoteState remoteShuffleState(UUID nodeId) {
+        HashMap<UUID, HadoopShuffleRemoteState> states = rmtShuffleStates;
 
-        RemoteShuffleState res = states.get(nodeId);
+        HadoopShuffleRemoteState res = states.get(nodeId);
 
         if (res == null) {
             synchronized (mux) {
                 res = rmtShuffleStates.get(nodeId);
 
                 if (res == null) {
-                    res = new RemoteShuffleState(nodeId);
+                    res = new HadoopShuffleRemoteState(nodeId);
 
                     states = new HashMap<>(rmtShuffleStates);
 
@@ -498,7 +496,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      *
      * @return Remote shuffle states.
      */
-    private HashMap<UUID, RemoteShuffleState> remoteShuffleStates() {
+    private HashMap<UUID, HadoopShuffleRemoteState> remoteShuffleStates() {
         synchronized (mux) {
             return new HashMap<>(rmtShuffleStates);
         }
@@ -794,9 +792,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         if (stripeMappers) {
             boolean sent = false;
 
-            for (Map.Entry<UUID, RemoteShuffleState> rmtStateEntry : remoteShuffleStates().entrySet()) {
+            for (Map.Entry<UUID, HadoopShuffleRemoteState> rmtStateEntry : remoteShuffleStates().entrySet()) {
                 UUID nodeId = rmtStateEntry.getKey();
-                RemoteShuffleState rmtState = rmtStateEntry.getValue();
+                HadoopShuffleRemoteState rmtState = rmtStateEntry.getValue();
 
                 io.apply((T)nodeId, new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount()));
 
@@ -1003,105 +1001,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 if (adder != null)
                     adder.close();
             }
-        }
-    }
-
-    /**
-     * Local shuffle state.
-     */
-    private static class LocalShuffleState {
-        /** Message counter. */
-        private final AtomicLong msgCnt = new AtomicLong();
-
-        /** Reply guard. */
-        private final AtomicBoolean replyGuard = new AtomicBoolean();
-
-        /** Total message count.*/
-        private volatile long totalMsgCnt;
-
-        /**
-         * Callback invoked when shuffle message arrived.
-         *
-         * @return Whether to perform reply.
-         */
-        public boolean onShuffleMessage() {
-            long msgCnt0 = msgCnt.incrementAndGet();
-
-            return msgCnt0 == totalMsgCnt && reserve();
-        }
-
-        /**
-         * Callback invoked when shuffle is finished.
-         *
-         * @param totalMsgCnt Message count.
-         * @return Whether to perform reply.
-         */
-        public boolean onShuffleFinishMessage(long totalMsgCnt) {
-            this.totalMsgCnt = totalMsgCnt;
-
-            return msgCnt.get() == totalMsgCnt && reserve();
-        }
-
-        /**
-         * Reserve reply.
-         *
-         * @return {@code True} if reserved.
-         */
-        private boolean reserve() {
-            return replyGuard.compareAndSet(false, true);
-        }
-    }
-
-    /**
-     * Remote shuffle state.
-     */
-    private static class RemoteShuffleState {
-        /** Message count. */
-        private final AtomicLong msgCnt = new AtomicLong();
-
-        /** Completion future. */
-        private final GridFutureAdapter fut = new GridFutureAdapter();
-
-        /**
-         * Constructor.
-         *
-         * @param nodeId Node ID.
-         */
-        @SuppressWarnings("unchecked")
-        public RemoteShuffleState(final UUID nodeId) {
-            fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture igniteInternalFuture) {
-                    System.out.println("Shuffle ack received for node: " + nodeId);
-                }
-            });
-        }
-
-        /**
-         * Callback invoked when shuffle message is sent.
-         */
-        public void onShuffleMessage() {
-            msgCnt.incrementAndGet();
-        }
-
-        /**
-         * Callback invoked on shuffle finish response.
-         */
-        public void onShuffleFinishResponse() {
-            fut.onDone();
-        }
-
-        /**
-         * @return Message count.
-         */
-        public long messageCount() {
-            return msgCnt.get();
-        }
-
-        /**
-         * @return Completion future.
-         */
-        public GridFutureAdapter future() {
-            return fut;
         }
     }
 
