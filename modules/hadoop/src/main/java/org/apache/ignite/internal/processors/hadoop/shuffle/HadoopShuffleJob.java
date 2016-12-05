@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
@@ -91,7 +92,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final AtomicReferenceArray<HadoopMultimap> maps;
 
     /** */
-    private volatile IgniteInClosure2X<T, HadoopShuffleMessage> io;
+    private volatile IgniteInClosure2X<T, HadoopMessage> io;
 
     /** */
     protected ConcurrentMap<Long, IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>> sentMsgs =
@@ -170,7 +171,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param io IO Closure for sending messages.
      */
     @SuppressWarnings("BusyWait")
-    public void startSending(String gridName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
+    public void startSending(String gridName, IgniteInClosure2X<T, HadoopMessage> io) {
         assert snd == null;
         assert io != null;
 
