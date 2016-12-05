@@ -1394,7 +1394,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (reqs != null) {
                         for (DynamicCacheChangeRequest r : reqs) {
-                            if (r.globalStateChange()) {
+                            if (r.globalStateChange() && msg.getException() != null) {
                                 cctx.kernalContext().cache().stateManger().onSingleResponseMessage(
                                     r.requestId(), r.initiatingNodeId(), msg.getException());
 

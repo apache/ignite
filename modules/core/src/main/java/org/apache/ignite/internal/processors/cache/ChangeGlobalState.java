@@ -60,6 +60,13 @@ public class ChangeGlobalState implements DiscoveryCustomMessage {
         this.actBatch = actBatch;
     }
 
+    /**
+     *
+     */
+    public DynamicCacheChangeBatch getActBatch() {
+        return actBatch;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
