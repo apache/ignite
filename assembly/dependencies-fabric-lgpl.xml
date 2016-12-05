@@ -132,6 +132,7 @@
                 <exclude>org.apache.ignite:ignite-apache-license-gen</exclude>
                 <exclude>org.apache.ignite:ignite-appserver-test</exclude>
                 <exclude>org.apache.ignite:ignite-websphere-test</exclude>
+                <exclude>org.apache.ignite:ignite-cassandra</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

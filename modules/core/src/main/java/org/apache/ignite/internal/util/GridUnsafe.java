@@ -1209,7 +1209,7 @@ public abstract class GridUnsafe {
         boolean res = arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
 
         if (!res)
-            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNALIGNED_MEMORY_ACCESS, false);
+            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS, false);
 
         return res;
     }
