@@ -142,9 +142,6 @@ public class HadoopShuffle extends HadoopComponent {
             ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }
 
-    /** Mгtex. */
-    private final Object mux = new Object();
-
     /**
      * @param jobId Task info.
      * @return Shuffle job.
