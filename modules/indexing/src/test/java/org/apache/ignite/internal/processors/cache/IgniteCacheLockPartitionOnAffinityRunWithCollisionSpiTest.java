@@ -87,7 +87,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
-    public void _testJobFinishing() throws Exception {
+    public void testJobFinishing() throws Exception {
 //        fail("Affinity run / call doesn't receive response where many job rejections happen.");
         final AtomicInteger jobNum = new AtomicInteger(0);
 
