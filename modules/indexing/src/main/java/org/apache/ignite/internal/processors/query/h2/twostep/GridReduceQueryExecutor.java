@@ -58,8 +58,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -383,17 +382,10 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param cctx Cache context.
-     * @return {@code true} If cache context
+     * @return {@code True} If cache has partitions in {@link GridDhtPartitionState#MOVING} state.
      */
     private boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
-        GridDhtPartitionFullMap fullMap = cctx.topology().partitionMap(false);
-
-        for (GridDhtPartitionMap2 map : fullMap.values()) {
-            if (map.hasMovingPartitions())
-                return true;
-        }
-
-        return false;
+        return cctx.topology().hasMovingPartitions();
     }
 
     /**

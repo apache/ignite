@@ -679,14 +679,14 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
+    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
         GridNearTxFinishRequest req) {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
 
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
-        assert req.txState() != null || fut.error() != null ||
+        assert req.txState() != null || (fut != null && fut.error() != null) ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
 
         return fut;
