@@ -55,6 +55,9 @@ public class HadoopShuffle extends HadoopComponent {
     /** */
     protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+    /** Mutex for iternal synchronization. */
+    private final Object mux = new Object();
+
     /** {@inheritDoc} */
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
