@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
@@ -1262,6 +1264,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     extraCaches = null;
                 }
 
+                //Prohibit usage of segmented tables with non-segmented in same query.
+                checkCacheIndexSegmentation(caches);
+
                 twoStepQry.caches(caches);
                 twoStepQry.extraCaches(extraCaches);
 
@@ -1297,6 +1302,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
+    }
+
+    /**
+     * @throws IllegalStateException if segmented index used with non-segmented index
+     */
+    private void checkCacheIndexSegmentation(List<Integer> caches) {
+        final int parallelismLevel = ctx.config().getSqlQueryParallelismLevel();
+
+        if (parallelismLevel <= 1 || caches.isEmpty())
+            return; //Segmentation is disabled or nothing to check
+
+        GridCacheSharedContext sharedContext = ctx.cache().context();
+
+        GridCacheContext cctx = sharedContext.cacheContext(caches.get(0));
+
+        assert cctx != null;
+
+        final boolean isSegmented = cctx.config().isIndexSegmentationEnabled();
+
+        for (int i = 1; i < caches.size(); i++) {
+            cctx = sharedContext.cacheContext(caches.get(i));
+
+            assert cctx !=null;
+
+            if (cctx.config().isIndexSegmentationEnabled() != isSegmented)
+                throw new IllegalStateException("Using segmented and non-segmented index forbidden.");
+        }
     }
 
     /**

@@ -2325,6 +2325,8 @@ public class IgniteConfiguration {
      * @param sqlQryParallelismLvl  Max threads that sql query can be split to.
      */
     public IgniteConfiguration setSqlQueryParallelismLevel(int sqlQryParallelismLvl) {
+        this.sqlQryParallelismLvl = sqlQryParallelismLvl;
+
         return this;
     }
 
