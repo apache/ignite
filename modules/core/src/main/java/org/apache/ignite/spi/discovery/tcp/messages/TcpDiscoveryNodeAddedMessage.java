@@ -17,7 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,6 +44,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
 
     /** Added node. */
     private final TcpDiscoveryNode node;
+
+    /** */
     private DiscoveryDataContainer dataContainer;
 
     /** Pending messages from previous node. */

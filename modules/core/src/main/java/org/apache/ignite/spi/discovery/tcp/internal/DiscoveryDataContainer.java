@@ -18,9 +18,11 @@
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -76,19 +78,15 @@ public final class DiscoveryDataContainer implements Serializable {
 
         private int cmpId;
 
-        @Override
-        public UUID joiningNodeId() {
+        @Override public UUID joiningNodeId() {
             return joiningNodeId;
         }
 
-        @Override
-        public boolean hasJoiningNodeData() {
+        @Override public boolean hasJoiningNodeData() {
             return unmarshJoiningNodeDiscoData.containsKey(cmpId);
         }
 
-        @Override
-        @Nullable
-        public Serializable joiningNodeData() {
+        @Override @Nullable public Serializable joiningNodeData() {
             return unmarshJoiningNodeDiscoData.get(cmpId);
         }
 
@@ -104,19 +102,15 @@ public final class DiscoveryDataContainer implements Serializable {
 
         private Map<UUID, Serializable> nodeSpecificData = new LinkedHashMap<>(unmarshNodeSpecData.size());
 
-        @Override
-        public UUID joiningNodeId() {
+        @Override public UUID joiningNodeId() {
             return joiningNodeId;
         }
 
-        @Override
-        @Nullable
-        public Serializable commonData() {
+        @Override @Nullable public Serializable commonData() {
             return unmarshCmnData.get(cmpId);
         }
 
-        @Override
-        public Map<UUID, Serializable> nodeSpecificData() {
+        @Override public Map<UUID, Serializable> nodeSpecificData() {
             return nodeSpecificData;
         }
 
@@ -137,7 +131,7 @@ public final class DiscoveryDataContainer implements Serializable {
 
     private GridDiscoveryDataImpl gridData;
 
-    private static final long serialVersionUID = -1872955719890073922L;
+    private static final long serialVersionUID = 0L;
 
     private static final UUID DEFAULT_UUID = null;
 
@@ -152,7 +146,7 @@ public final class DiscoveryDataContainer implements Serializable {
     private boolean clientNode;
 
     private Map<Integer, byte[]> joiningNodeDiscoData;
-    private Map<Integer, byte[]> commonData = new HashMap<>();
+    private Map<Integer, byte[]> commonDiscoData = new HashMap<>();
     private Map<UUID, Map<Integer, byte[]>> nodeSpecificDiscoData = new LinkedHashMap<>();
 
     private Map<Integer, Serializable> unmarshJoiningNodeDiscoData = new HashMap<>();
@@ -191,7 +185,7 @@ public final class DiscoveryDataContainer implements Serializable {
     }
 
     public boolean isCommonDataCollectedFor(int cmpId) {
-        return commonData.containsKey(cmpId);
+        return commonDiscoData.containsKey(cmpId);
     }
 
     public void markGridDiscoveryStarted() {
@@ -212,7 +206,7 @@ public final class DiscoveryDataContainer implements Serializable {
             joiningNodeDiscoData = U.newHashMap(joiningNodeData.size());
             marshalFromTo(joiningNodeData, joiningNodeDiscoData, marsh, log);
         } else {
-            marshalFromTo(unmarshCmnData, commonData, marsh, log);
+            marshalFromTo(unmarshCmnData, commonDiscoData, marsh, log);
 
             if (unmarshNodeSpecData.containsKey(DEFAULT_UUID)) {
                 Map<Integer, byte[]> marshalledNodeSpecData = U.newHashMap(unmarshNodeSpecData.size());
@@ -236,7 +230,7 @@ public final class DiscoveryDataContainer implements Serializable {
     }
 
     public void unmarshalGridData(Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
-        unmarshalFromTo(commonData, unmarshCmnData, marsh, clsLdr, log);
+        unmarshalFromTo(commonDiscoData, unmarshCmnData, marsh, clsLdr, log);
 
         for (Map.Entry<UUID, Map<Integer, byte[]>> binDataEntry : nodeSpecificDiscoData.entrySet()) {
             Map<Integer, byte[]> binData = binDataEntry.getValue();
@@ -293,5 +287,70 @@ public final class DiscoveryDataContainer implements Serializable {
             newJoinerData = new NewNodeDiscoveryDataImpl();
         newJoinerData.setComponentId(cmpId);
         return newJoinerData;
+    }
+
+    public boolean mergeDataFrom(DiscoveryDataContainer existingDiscoData, Set<Integer> mrgdCmnDataKeys, Set<UUID> mrgdSpecifDataKeys) {
+        if (commonDiscoData.size() != mrgdCmnDataKeys.size()) {
+            for (Map.Entry<Integer, byte[]> e : commonDiscoData.entrySet()) {
+                if (!mrgdCmnDataKeys.contains(e.getKey())) {
+                    byte[] data = existingDiscoData.commonDiscoData.get(e.getKey());
+
+                    if (data != null && Arrays.equals(e.getValue(), data)) {
+                        e.setValue(data);
+
+                        boolean add = mrgdCmnDataKeys.add(e.getKey());
+
+                        assert add;
+
+                        if (mrgdCmnDataKeys.size() == commonDiscoData.size())
+                            break;
+                    }
+                }
+            }
+        }
+
+        if (nodeSpecificDiscoData.size() != mrgdSpecifDataKeys.size()) {
+            for (Map.Entry<UUID, Map<Integer, byte[]>> e : nodeSpecificDiscoData.entrySet()) {
+                if (!mrgdSpecifDataKeys.contains(e.getKey())) {
+                    Map<Integer, byte[]> data = existingDiscoData.nodeSpecificDiscoData.get(e.getKey());
+
+                    if (data != null && mapsEqual(e.getValue(), data)) {
+                        e.setValue(data);
+
+                        boolean add = mrgdSpecifDataKeys.add(e.getKey());
+
+                        assert add;
+
+                        if (mrgdSpecifDataKeys.size() == nodeSpecificDiscoData.size())
+                            break;
+                    }
+                }
+            }
+        }
+
+        return (mrgdCmnDataKeys.size() == commonDiscoData.size()) && (mrgdSpecifDataKeys.size() == nodeSpecificDiscoData.size());
+    }
+
+    private boolean mapsEqual(Map<Integer, byte[]> m1, Map<Integer, byte[]> m2) {
+        if (m1 == m2)
+            return true;
+
+        if (m1.size() == m2.size()) {
+            for (Map.Entry<Integer, byte[]> e : m1.entrySet()) {
+                byte[] data = m2.get(e.getKey());
+
+                if (!Arrays.equals(e.getValue(), data))
+                    return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void clearGridData() {
+        commonDiscoData.clear();
+        nodeSpecificDiscoData.clear();
     }
 }

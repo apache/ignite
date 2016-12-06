@@ -1284,10 +1284,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         U.startLifecycleAware(lifecycleAwares(cfg, cfgStore));
 
+        boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
+
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL ||
-            !GridCacheUtils.isNearEnabled(cfg));
+        GridCacheSwapManager swapMgr = new GridCacheSwapManager(
+            affNode && (cfg.getCacheMode() == LOCAL || !GridCacheUtils.isNearEnabled(cfg)));
         GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
@@ -1299,8 +1301,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
 
         storeMgr.initialize(cfgStore, sesHolders);
-
-        boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
@@ -1425,7 +1425,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * 7. GridCacheTtlManager.
              * ===============================================
              */
-            swapMgr = new GridCacheSwapManager(true);
+            swapMgr = new GridCacheSwapManager(affNode);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);
@@ -1891,8 +1891,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return CACHE_PROC;
     }
 
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    /** {@inheritDoc} */
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         UUID joiningNodeId = dataContainer.getJoiningNodeId();
         boolean reconnect = ctx.localNodeId().equals(joiningNodeId) && cachesOnDisconnect != null;
 
@@ -1902,6 +1902,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (reconnect) {
             reqs = new ArrayList<>(caches.size());
+
             clientNodesMap = U.newHashMap(caches.size());
 
             collectDataOnReconnectingNode(reqs, clientNodesMap, joiningNodeId);
@@ -1917,6 +1918,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         batch.clientNodes(clientNodesMap);
         batch.clientReconnect(reconnect);
+        // Reset random batch ID so that serialized batches with the same descriptors will be exactly the same.
+        batch.id(null);
 
         dataContainer.addNodeSpecificData(CACHE_PROC.ordinal(), batch);
     }
@@ -1936,13 +1939,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
-            req.startCacheConfiguration(desc.cacheConfiguration());
-            req.template(true);
-            req.deploymentId(desc.deploymentId());
-
-            reqs.add(req);
+                req.startCacheConfiguration(desc.cacheConfiguration());
+                req.template(true);
+                reqs.add(req);
+            }
         }
-    }
 
     private void collectDataOnReconnectingNode(Collection<DynamicCacheChangeRequest> reqs, Map<String, Map<UUID, Boolean>> clientNodesMap, UUID nodeId) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
@@ -1968,8 +1969,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-    @Override
-    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
             if (joiningNodeData instanceof DynamicCacheChangeBatch)
@@ -1977,8 +1977,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-    @Override
-    public void onGridDataReceived(GridDiscoveryData data) {
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null)

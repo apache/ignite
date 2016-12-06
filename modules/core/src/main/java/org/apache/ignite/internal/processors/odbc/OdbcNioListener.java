@@ -137,7 +137,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         catch (Exception e) {
             log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
 
-            ses.send(parser.encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage())));
+            ses.send(parser.encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString())));
         }
     }
 
