@@ -302,7 +302,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -29;
+        return -28;
     }
 
     /** {@inheritDoc} */

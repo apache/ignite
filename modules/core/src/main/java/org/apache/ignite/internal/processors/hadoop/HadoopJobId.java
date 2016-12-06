@@ -126,7 +126,7 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -28;
+        return -30;
     }
 
     /** {@inheritDoc} */

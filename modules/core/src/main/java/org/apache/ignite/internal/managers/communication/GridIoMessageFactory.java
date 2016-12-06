@@ -181,17 +181,17 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -30:
-                msg = new HadoopShuffleAck();
+                msg = new HadoopJobId();
 
                 break;
 
             case -29:
-                msg = new HadoopShuffleMessage();
+                msg = new HadoopShuffleAck();
 
                 break;
 
             case -28:
-                msg = new HadoopJobId();
+                msg = new HadoopShuffleMessage();
 
                 break;
 

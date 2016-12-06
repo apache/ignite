@@ -136,7 +136,7 @@ public class HadoopShuffleAck implements HadoopMessage, Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -30;
+        return -29;
     }
 
     /** {@inheritDoc} */
