@@ -62,6 +62,8 @@ public abstract class HadoopAbstractWordCountTest extends HadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         igfs = (IgfsEx)startGrids(gridCount()).fileSystem(igfsName);
     }
 
