@@ -788,10 +788,10 @@ public class GridDhtPartitionDemander {
         /** */
         private static final long serialVersionUID = 1L;
 
-        /** Should EVT_CACHE_REBALANCE_STARTED event be sent of not. */
+        /** Should EVT_CACHE_REBALANCE_STARTED event be sent or not. */
         private final AtomicBoolean startedEvtSent;
 
-        /** Should EVT_CACHE_REBALANCE_STOPPED event be sent of not. */
+        /** Should EVT_CACHE_REBALANCE_STOPPED event be sent or not. */
         private final AtomicBoolean stoppedEvtSent;
 
         /** */
