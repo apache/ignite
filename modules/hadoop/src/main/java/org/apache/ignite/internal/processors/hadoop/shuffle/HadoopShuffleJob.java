@@ -296,9 +296,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         }
 
         if (embedded) {
+            // No immediate response.
             if (localShuffleState(src).onShuffleMessage())
                 sendFinishResponse(src, msg.jobId());
         }
+        else
+            // Response for every message.
+            io.apply(src, new HadoopShuffleAck(msg.id(), msg.jobId()));
     }
 
     /**

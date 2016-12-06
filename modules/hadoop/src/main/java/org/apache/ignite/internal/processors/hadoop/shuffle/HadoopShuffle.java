@@ -199,6 +199,16 @@ public class HadoopShuffle extends HadoopComponent {
                 U.error(log, "Message handling failed.", e);
             }
         }
+        else if (msg instanceof HadoopShuffleAck) {
+            HadoopShuffleAck m = (HadoopShuffleAck)msg;
+
+            try {
+                job(m.jobId()).onShuffleAck(m);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Message handling failed.", e);
+            }
+        }
         else if (msg instanceof HadoopShuffleFinishRequest) {
             HadoopShuffleFinishRequest m = (HadoopShuffleFinishRequest)msg;
 
