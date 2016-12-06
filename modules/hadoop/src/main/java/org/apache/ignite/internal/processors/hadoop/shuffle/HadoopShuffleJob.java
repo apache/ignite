@@ -325,6 +325,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param msg Shuffle finish message.
      */
     public void onShuffleFinishRequest(T src, HadoopShuffleFinishRequest msg) {
+        if (log.isDebugEnabled())
+            log.debug("Received shuffle finish request [jobId=" + job.id() + ", src=" + src + ", req=" + msg + ']');
+
         HadoopShuffleLocalState state = localShuffleState(src);
 
         if (state.onShuffleFinishMessage(msg.messageCount()))
@@ -337,6 +340,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param src Source.
      */
     public void onShuffleFinishResponse(T src) {
+        if (log.isDebugEnabled())
+            log.debug("Received shuffle finish response [jobId=" + job.id() + ", src=" + src + ']');
+
         remoteShuffleState(src).onShuffleFinishResponse();
     }
 
@@ -348,6 +354,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     private void sendFinishResponse(T dest, HadoopJobId jobId) {
+        if (log.isDebugEnabled())
+            log.debug("Sent shuffle finish response [jobId=" + jobId + ", dest=" + dest + ']');
+
         HadoopShuffleFinishResponse msg = new HadoopShuffleFinishResponse(jobId);
 
         io.apply(dest, msg);
