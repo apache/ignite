@@ -558,6 +558,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         try {
             io.apply(reduceAddrs[idx], msg);
+
+            if (embedded)
+                remoteShuffleState(reduceAddrs[idx]).onShuffleMessage();
         }
         catch (GridClosureException e) {
             if (fut != null)
