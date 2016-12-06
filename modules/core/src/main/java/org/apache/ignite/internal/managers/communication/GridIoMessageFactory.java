@@ -171,33 +171,38 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -34:
-                msg = new HadoopShuffleFinishResponse();
-
-                break;
-
-            case -33:
-                msg = new HadoopShuffleFinishRequest();
-
-                break;
-
-            case -31:
+            case -42:
                 msg = new HadoopShuffleMessage2();
 
                 break;
 
-            case -30:
+            case -41:
+                msg = new HadoopShuffleFinishResponse();
+
+                break;
+
+            case -40:
+                msg = new HadoopShuffleFinishRequest();
+
+                break;
+
+            case -39:
                 msg = new HadoopJobId();
 
                 break;
 
-            case -29:
+            case -38:
                 msg = new HadoopShuffleAck();
 
                 break;
 
-            case -28:
+            case -37:
                 msg = new HadoopShuffleMessage();
+
+                break;
+
+            case -36:
+                msg = new GridDhtAtomicSingleUpdateRequest();
 
                 break;
 
@@ -808,11 +813,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 127:
                 msg = new GridNearAtomicSingleUpdateFilterRequest();
-
-                break;
-
-            case -36:
-                msg = new GridDhtAtomicSingleUpdateRequest();
 
                 break;
 

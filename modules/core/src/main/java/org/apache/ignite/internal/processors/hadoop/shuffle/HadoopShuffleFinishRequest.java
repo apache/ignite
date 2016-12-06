@@ -136,7 +136,7 @@ public class HadoopShuffleFinishRequest implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -33;
+        return -40;
     }
 
     /** {@inheritDoc} */

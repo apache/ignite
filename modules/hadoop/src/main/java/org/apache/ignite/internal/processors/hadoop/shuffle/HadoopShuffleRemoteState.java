@@ -35,20 +35,6 @@ class HadoopShuffleRemoteState {
     private final GridFutureAdapter fut = new GridFutureAdapter();
 
     /**
-     * Constructor.
-     *
-     * @param nodeId Node ID.
-     */
-    @SuppressWarnings("unchecked")
-    public HadoopShuffleRemoteState(final UUID nodeId) {
-        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture igniteInternalFuture) {
-                System.out.println("Shuffle ack received for node: " + nodeId);
-            }
-        });
-    }
-
-    /**
      * Callback invoked when shuffle message is sent.
      */
     public void onShuffleMessage() {

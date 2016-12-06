@@ -158,16 +158,19 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final boolean stripeMappers;
 
     /** Local shuffle states. */
-    private volatile HashMap<UUID, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
+    private volatile HashMap<T, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
 
     /** Remote shuffle states. */
-    private volatile HashMap<UUID, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
+    private volatile HashMap<T, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
 
     /** Mutex for internal synchronization. */
     private final Object mux = new Object();
 
     /** */
     private final long throttle;
+
+    /** Embedded mode flag. */
+    private final boolean embedded;
 
     /**
      * @param locReduceAddr Local reducer address.
@@ -177,16 +180,18 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
      * @param locMappersCnt Amount of mappers running on the given node.
+     * @param embedded Whether shuffle is running in embedded mode.
      * @throws IgniteCheckedException If error.
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers, int locMappersCnt) throws IgniteCheckedException {
+        int totalReducerCnt, int[] locReducers, int locMappersCnt, boolean embedded) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.totalReducerCnt = totalReducerCnt;
         this.job = job;
         this.mem = mem;
         this.locMappersCnt = locMappersCnt;
         this.log = log.getLogger(HadoopShuffleJob.class);
+        this.embedded = embedded;
 
         // No stripes for combiner.
         stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false) && !job.info().hasCombiner();
@@ -303,10 +308,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param src Source.
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(HadoopShuffleMessage msg) throws IgniteCheckedException {
+    public void onShuffleMessage(T src, HadoopShuffleMessage msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
@@ -341,6 +347,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 }
             });
         }
+
+        if (embedded) {
+            // No immediate response.
+            if (localShuffleState(src).onShuffleMessage())
+                sendFinishResponse(src, msg.jobId());
+        }
+        else
+            // Response for every message.
+            io.apply(src, new HadoopShuffleAck(msg.id(), msg.jobId()));
     }
 
     /**
@@ -399,59 +414,68 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Process shuffle finish request.
      *
-     * @param nodeId Source node ID.
+     * @param src Source.
      * @param msg Shuffle finish message.
      */
-    public void onShuffleFinishRequest(UUID nodeId, HadoopShuffleFinishRequest msg) {
-        HadoopShuffleLocalState state = localShuffleState(nodeId);
+    public void onShuffleFinishRequest(T src, HadoopShuffleFinishRequest msg) {
+        if (log.isDebugEnabled())
+            log.debug("Received shuffle finish request [jobId=" + job.id() + ", src=" + src + ", req=" + msg + ']');
+
+        HadoopShuffleLocalState state = localShuffleState(src);
 
         if (state.onShuffleFinishMessage(msg.messageCount()))
-            sendFinishResponse(nodeId, msg.jobId());
+            sendFinishResponse(src, msg.jobId());
     }
 
     /**
      * Process shuffle finish response.
      *
-     * @param nodeId Source node ID.
+     * @param src Source.
      */
-    public void onShuffleFinishResponse(UUID nodeId) {
-        remoteShuffleState(nodeId).onShuffleFinishResponse();
+    public void onShuffleFinishResponse(T src) {
+        if (log.isDebugEnabled())
+            log.debug("Received shuffle finish response [jobId=" + job.id() + ", src=" + src + ']');
+
+        remoteShuffleState(src).onShuffleFinishResponse();
     }
 
     /**
      * Send finish response.
      *
-     * @param nodeId Node ID.
+     * @param dest Destination.
      * @param jobId Job ID.
      */
     @SuppressWarnings("unchecked")
-    private void sendFinishResponse(UUID nodeId, HadoopJobId jobId) {
+    private void sendFinishResponse(T dest, HadoopJobId jobId) {
+        if (log.isDebugEnabled())
+            log.debug("Sent shuffle finish response [jobId=" + jobId + ", dest=" + dest + ']');
+
         HadoopShuffleFinishResponse msg = new HadoopShuffleFinishResponse(jobId);
 
-        io.apply((T)nodeId, msg);
+        io.apply(dest, msg);
     }
 
     /**
      * Get local shuffle state for node.
      *
-     * @param nodeId Node ID.
+     * @param src Source
      * @return Local shuffle state.
      */
-    private HadoopShuffleLocalState localShuffleState(UUID nodeId) {
-        HashMap<UUID, HadoopShuffleLocalState> states = locShuffleStates;
+    private HadoopShuffleLocalState localShuffleState(T src) {
+        HashMap<T, HadoopShuffleLocalState> states = locShuffleStates;
 
-        HadoopShuffleLocalState res = states.get(nodeId);
+        HadoopShuffleLocalState res = states.get(src);
 
         if (res == null) {
             synchronized (mux) {
-                res = locShuffleStates.get(nodeId);
+                res = locShuffleStates.get(src);
 
                 if (res == null) {
                     res = new HadoopShuffleLocalState();
 
                     states = new HashMap<>(locShuffleStates);
 
-                    states.put(nodeId, res);
+                    states.put(src, res);
 
                     locShuffleStates = states;
                 }
@@ -464,24 +488,24 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Get remote shuffle state for node.
      *
-     * @param nodeId Node ID.
+     * @param src Source.
      * @return Remote shuffle state.
      */
-    private HadoopShuffleRemoteState remoteShuffleState(UUID nodeId) {
-        HashMap<UUID, HadoopShuffleRemoteState> states = rmtShuffleStates;
+    private HadoopShuffleRemoteState remoteShuffleState(T src) {
+        HashMap<T, HadoopShuffleRemoteState> states = rmtShuffleStates;
 
-        HadoopShuffleRemoteState res = states.get(nodeId);
+        HadoopShuffleRemoteState res = states.get(src);
 
         if (res == null) {
             synchronized (mux) {
-                res = rmtShuffleStates.get(nodeId);
+                res = rmtShuffleStates.get(src);
 
                 if (res == null) {
-                    res = new HadoopShuffleRemoteState(nodeId);
+                    res = new HadoopShuffleRemoteState();
 
                     states = new HashMap<>(rmtShuffleStates);
 
-                    states.put(nodeId, res);
+                    states.put(src, res);
 
                     rmtShuffleStates = states;
                 }
@@ -496,7 +520,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      *
      * @return Remote shuffle states.
      */
-    private HashMap<UUID, HadoopShuffleRemoteState> remoteShuffleStates() {
+    private HashMap<T, HadoopShuffleRemoteState> remoteShuffleStates() {
         synchronized (mux) {
             return new HashMap<>(rmtShuffleStates);
         }
@@ -678,38 +702,50 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param newBufMinSize Min new buffer size.
      */
     private void send(int rmtMapIdx, int rmtRdcIdx, int newBufMinSize) {
-        final GridFutureAdapter<?> fut = new GridFutureAdapter<>();
-
         HadoopShuffleMessage msg = msgs[rmtMapIdx];
 
         final long msgId = msg.id();
 
-        IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
-            new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+        final GridFutureAdapter<?> fut;
 
-        assert old == null;
+        if (embedded)
+            fut = null;
+        else {
+            fut = new GridFutureAdapter<>();
+
+            IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
+                new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+
+            assert old == null;
+        }
 
         try {
             io.apply(reduceAddrs[rmtRdcIdx], msg);
+
+            if (embedded)
+                remoteShuffleState(reduceAddrs[rmtRdcIdx]).onShuffleMessage();
         }
         catch (GridClosureException e) {
-            fut.onDone(U.unwrap(e));
+            if (fut != null)
+                fut.onDone(U.unwrap(e));
         }
 
-        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                try {
-                    f.get();
+        if (fut != null) {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
+                    try {
+                        f.get();
 
-                    // Clean up the future from map only if there was no exception.
-                    // Otherwise flush() should fail.
-                    sentMsgs.remove(msgId);
+                        // Clean up the future from map only if there was no exception.
+                        // Otherwise flush() should fail.
+                        sentMsgs.remove(msgId);
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Failed to send message.", e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to send message.", e);
-                }
-            }
-        });
+            });
+        }
 
         msgs[rmtMapIdx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), rmtRdcIdx,
             Math.max(msgSize, newBufMinSize));
@@ -749,8 +785,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
-        System.out.println(Thread.currentThread().getName() + ": Final flush started: " + System.currentTimeMillis());
-
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 
@@ -789,16 +823,20 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        if (stripeMappers) {
+        if (embedded) {
             boolean sent = false;
 
-            for (Map.Entry<UUID, HadoopShuffleRemoteState> rmtStateEntry : remoteShuffleStates().entrySet()) {
-                UUID nodeId = rmtStateEntry.getKey();
+            for (Map.Entry<T, HadoopShuffleRemoteState> rmtStateEntry : remoteShuffleStates().entrySet()) {
+                T dest = rmtStateEntry.getKey();
                 HadoopShuffleRemoteState rmtState = rmtStateEntry.getValue();
 
-                io.apply((T)nodeId, new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount()));
+                HadoopShuffleFinishRequest req = new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount());
 
-                System.out.println("Sent shuffle finish request: " + nodeId);
+                io.apply(dest, req);
+
+                if (log.isDebugEnabled())
+                    log.debug("Sent shuffle finish request [jobId=" + job.id() + ", dest=" + dest +
+                        ", req=" + req + ']');
 
                 fut.add(rmtState.future());
 
@@ -820,6 +858,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
         }
 
+        }
         return fut;
     }
 

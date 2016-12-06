@@ -109,7 +109,8 @@ public class HadoopShuffle extends HadoopComponent {
         int locMappersCnt = F.isEmpty(locMappers) ? 0 : locMappers.size();
 
         HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()), locMappersCnt);
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()), locMappersCntб
+            true);
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
@@ -195,67 +196,39 @@ public class HadoopShuffle extends HadoopComponent {
      * @return {@code True}.
      */
     public boolean onMessageReceived(UUID src, HadoopMessage msg) {
-        if (msg instanceof HadoopShuffleMessage) {
-            HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
+        try {
+            if (msg instanceof HadoopShuffleMessage) {
+                HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
 
-            try {
-                job(m.jobId()).onShuffleMessage(m);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
-            }
-
-            try {
-                // Reply with ack.
-                send0(src, new HadoopShuffleAck(m.id(), m.jobId()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to reply back to shuffle message sender [snd=" + src + ", msg=" + msg + ']', e);
-            }
-        }
-        else if (msg instanceof HadoopShuffleMessage2) {
-            HadoopShuffleMessage2 m = (HadoopShuffleMessage2)msg;
-
-            try {
                 job(m.jobId()).onShuffleMessage(src, m);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
-            }
-        }
-        else if (msg instanceof HadoopShuffleAck) {
-            HadoopShuffleAck m = (HadoopShuffleAck)msg;
+            else if (msg instanceof HadoopShuffleMessage2) {
+                HadoopShuffleMessage2 m = (HadoopShuffleMessage2)msg;
 
-            try {
+                job(m.jobId()).onShuffleMessage(src, m);
+            }
+            else if (msg instanceof HadoopShuffleAck) {
+                HadoopShuffleAck m = (HadoopShuffleAck)msg;
+
                 job(m.jobId()).onShuffleAck(m);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
-            }
-        }
-        else if (msg instanceof HadoopShuffleFinishRequest) {
-            HadoopShuffleFinishRequest m = (HadoopShuffleFinishRequest)msg;
+            else if (msg instanceof HadoopShuffleFinishRequest) {
+                HadoopShuffleFinishRequest m = (HadoopShuffleFinishRequest)msg;
 
-            try {
                 job(m.jobId()).onShuffleFinishRequest(src, m);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
-            }
-        }
-        else if (msg instanceof HadoopShuffleFinishResponse) {
-            HadoopShuffleFinishResponse m = (HadoopShuffleFinishResponse)msg;
+            else if (msg instanceof HadoopShuffleFinishResponse) {
+                HadoopShuffleFinishResponse m = (HadoopShuffleFinishResponse)msg;
 
-            try {
                 job(m.jobId()).onShuffleFinishResponse(src);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
-            }
+            else
+                throw new IllegalStateException("Unknown message type received to Hadoop shuffle [src=" + src +
+                    ", msg=" + msg + ']');
         }
-        else
-            throw new IllegalStateException("Unknown message type received to Hadoop shuffle [src=" + src +
-                ", msg=" + msg + ']');
+        catch (IgniteCheckedException e) {
+            U.error(log, "Message handling failed.", e);
+        }
 
         return true;
     }
