@@ -205,7 +205,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.cache().globalState() == CacheState.INACTIVE)
+        if (ctx.cache().globalState() != CacheState.ACTIVE)
             return;
 
         super.start();
@@ -216,10 +216,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.cache().globalState()== CacheState.INACTIVE)
-            return;
-
-        if (ctx.config().isDaemon())
+        if (ctx.config().isDaemon() || ctx.cache().globalState() != CacheState.ACTIVE)
             return;
 
         utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
@@ -276,7 +273,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.cache().globalState() == CacheState.INACTIVE)
+        if (ctx.cache().globalState() != CacheState.ACTIVE)
             return;
 
         super.onKernalStop(cancel);
@@ -307,9 +304,39 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         this.initFailed = false;
 
-        start();
+        ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        onKernalStart();
+        utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
+
+        utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
+
+        assert utilityCache != null;
+
+        if (atomicCfg != null) {
+            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
+
+            assert atomicsCache != null;
+
+            dsView = atomicsCache;
+
+            cntDownLatchView = atomicsCache;
+
+            semView = atomicsCache;
+
+            reentrantLockView = atomicsCache;
+
+            atomicLongView = atomicsCache;
+
+            atomicRefView = atomicsCache;
+
+            atomicStampedView = atomicsCache;
+
+            seqView = atomicsCache;
+
+            dsCacheCtx = atomicsCache.context();
+        }
+
+        initLatch.countDown();
 
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable v = e.getValue();

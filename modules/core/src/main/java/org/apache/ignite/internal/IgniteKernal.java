@@ -3271,7 +3271,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         CacheState curState = ctx.cache().globalState();
 
         if (curState != CacheState.ACTIVE)
-            throw new IgniteException("can not perform operation, because cluster in " + curState + " state");
+            throw new IgniteException("can not perform operation, because cluster inactive");
     }
 
     /**

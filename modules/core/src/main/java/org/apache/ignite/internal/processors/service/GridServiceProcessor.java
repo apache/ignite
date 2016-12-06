@@ -200,7 +200,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
 
-        if (ctx.isDaemon() || ctx.cache().globalState() == CacheState.INACTIVE)
+        if (ctx.isDaemon() || ctx.cache().globalState() != CacheState.ACTIVE)
             return;
 
         IgniteConfiguration cfg = ctx.config();
@@ -215,7 +215,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.isDaemon() || ctx.cache().globalState() == CacheState.INACTIVE)
+        if (ctx.isDaemon() || ctx.cache().globalState() != CacheState.ACTIVE)
             return;
 
         cache = ctx.cache().utilityCache();
@@ -339,9 +339,52 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             log.debug("Activate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
-        start();
+        IgniteConfiguration cfg = ctx.config();
 
-        onKernalStart();
+        DeploymentMode depMode = cfg.getDeploymentMode();
+
+        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+            !F.isEmpty(cfg.getServiceConfiguration()))
+            throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+
+        cache = ctx.cache().utilityCache();
+
+        if (!ctx.clientNode())
+            ctx.event().addLocalEventListener(topLsnr, EVTS);
+
+        try {
+            if (ctx.deploy().enabled())
+                ctx.cache().context().deploy().ignoreOwnership(true);
+
+            if (!ctx.clientNode()) {
+                assert cache.context().affinityNode();
+
+                cache.context().continuousQueries().executeInternalQuery(
+                    new ServiceEntriesListener(), null, true, true, false
+                );
+            }
+            else {
+                assert !ctx.isDaemon();
+
+                ctx.closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            Iterable<CacheEntryEvent<?, ?>> entries =
+                                cache.context().continuousQueries().existingEntries(false, null);
+
+                            onSystemCacheUpdated(entries);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to load service entries: " + e, e);
+                        }
+                    }
+                });
+            }
+        }
+        finally {
+            if (ctx.deploy().enabled())
+                ctx.cache().context().deploy().ignoreOwnership(false);
+        }
     }
 
     /** {@inheritDoc} */

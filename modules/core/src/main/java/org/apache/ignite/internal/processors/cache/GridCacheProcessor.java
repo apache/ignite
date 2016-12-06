@@ -757,15 +757,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             checkConsistency();
 
-            if (stateManger.globalState() == ACTIVE) {
-                if (!ctx.clientNode())
-                    sharedCtx.database().lock();
-
-                sharedCtx.wal().onKernalStart(false);
-
-                sharedCtx.database().onKernalStart(false);
-            }
-
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
@@ -810,6 +801,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         finally {
             cacheStartedLatch.countDown();
         }
+
+        //todo need to refactoring this
+        if (stateManger.globalState() == ACTIVE) {
+            if (!ctx.clientNode())
+                sharedCtx.database().lock();
+
+            sharedCtx.wal().onKernalStart(false);
+
+            sharedCtx.database().onKernalStart(false);
+        }
+
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers()) {
@@ -2545,7 +2547,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> changeGlobalState(boolean activate) {
         if (log.isInfoEnabled())
             log.info("Change global state [nodeId=" + ctx.localNodeId() +
-                " current=" + stateManger.globalState() + ", next=" + activate + "]");
+                " current=" + stateManger.map(stateManger.globalState()==CacheState.ACTIVE)
+                + ", next=" + activate + "]");
 
         return stateManger.changeGlobalState(activate);
     }
@@ -4041,7 +4044,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** Initiating node id. */
         private final UUID initiatingNodeId;
 
+        /** Batch requests. */
         private final DynamicCacheChangeBatch batch;
+
+        /** Activate. */
+        private final boolean activate;
 
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
@@ -4051,9 +4058,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** Local ex. */
         private Exception ex;
-
-        /** Activate. */
-        private final boolean activate;
 
         /** Fail. */
         private boolean fail;
@@ -4117,7 +4121,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private volatile CacheState globalState;
 
         /** Action context. */
-        private final AtomicReference<ActivationContext> actCtx = new AtomicReference<>();
+        private final AtomicReference<ActivationContext> lastActCtx = new AtomicReference<>();
 
         /** Local action future. */
         private final AtomicReference<GridActivateFuture> locFut = new AtomicReference<>();
@@ -4168,18 +4172,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ClusterNode snd,
                         ChangeGlobalState msg
                     ) {
-                        ActivationContext actx = actCtx.get();
+                        ActivationContext actx = lastActCtx.get();
 
                         if (actx != null && globalState == TRANSITION) {
                             GridActivateFuture f = locFut.get();
 
                             if (log.isDebugEnabled())
-                                log.debug("concurrent " + map(msg.getActivate()) + " [id=" +
+                                log.debug("Concurrent " + map(msg.getActivate()) + " [id=" +
                                     ctx.localNodeId() + " topVer=" + topVer + " actx=" + actx + ", msg=" + msg + "]");
 
                             if (f != null && f.requestId.equals(msg.getRequestId()))
                                 f.onDone(new IgniteCheckedException(
-                                    "concurrent change state, now in progress=" + (map(actx.activate))
+                                    "Concurrent change state, now in progress=" + (map(actx.activate))
                                         + ", initiatingNodeId=" + actx.initiatingNodeId
                                         + ", you try=" + (map(msg.getActivate())) + ", locNodeId=" + ctx.localNodeId()
                                 ));
@@ -4190,11 +4194,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             globalState = TRANSITION;
 
                             if (log.isDebugEnabled())
-                                log.debug("create " + map(msg.getActivate()) + " context [id=" +
+                                log.debug("Create " + map(msg.getActivate()) + " context [id=" +
                                     ctx.localNodeId() + " topVer=" + topVer + ", reqId=" +
                                     msg.getRequestId() + ", initiatingNodeId=" + msg.getInitiatingNodeId() + "]");
 
-                            actCtx.set(new ActivationContext(
+                            lastActCtx.set(new ActivationContext(
                                 msg.getRequestId(),
                                 msg.getInitiatingNodeId(),
                                 msg.getActBatch(),
@@ -4210,7 +4214,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param activate Activate.
          */
         private String map(boolean activate){
-            return activate ? "activation" : "deactivation";
+            return activate ? "activate" : "deactivate";
         }
 
         /**
@@ -4235,7 +4239,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         public Exception exception(UUID requestId){
             assert requestId != null;
 
-            ActivationContext c = actCtx.get();
+            ActivationContext c = lastActCtx.get();
 
             assert c != null;
             assert requestId.equals(c.requestId);
@@ -4247,7 +4251,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param requestId Request id.
          */
         public Map<UUID,Exception> allExceptions(UUID requestId){
-            return actCtx.get().allExs;
+            return lastActCtx.get().allExs;
         }
 
         /**
@@ -4265,7 +4269,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         public void onSingleResponseMessage(UUID reqId, UUID nodeId, Exception exs){
             assert reqId != null;
 
-            ActivationContext actx = actCtx.get();
+            ActivationContext actx = lastActCtx.get();
 
             assert actx.requestId.equals(reqId);
 
@@ -4280,7 +4284,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         public void onFullResponseMessage(UUID reqId, Map<UUID, Exception> exs) {
             assert reqId != null;
 
-            ActivationContext actx = actCtx.get();
+            ActivationContext actx = lastActCtx.get();
 
             assert actx.requestId.equals(reqId);
 
@@ -4398,7 +4402,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return locF;
                 else
                     return new GridFinishedFuture<>(new IgniteException(
-                        "fail " + map(activate) + ", because now in progress " + map(locF.activate))
+                        "fail " + map(activate) + ", because now " + map(locF.activate) + " in progress")
                     );
             }
 
@@ -4597,7 +4601,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 log.error("Activation fail [nodeId=" + ctx.localNodeId() + ", client=" + client +
                     ", topVer=" + topVer + "]", e);
 
-                actCtx.get().addException(e);
+                lastActCtx.get().addException(e);
             }
         }
 
@@ -4634,7 +4638,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     catch (Exception ex) {
                         e = ex;
 
-                        log.error("Fail activate finishing [nodeId=" + ctx.localNodeId() + ", client=" + client +
+                        log.error("Fail activate finished [nodeId=" + ctx.localNodeId() + ", client=" + client +
                             ", topVer=" + topVer + "]", ex);
                     }
                     finally {
@@ -4678,7 +4682,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 log.error("DeActivation fail [nodeId=" + ctx.localNodeId() + ", client=" + client +
                     ", topVer=" + topVer + "]", e);
 
-              actCtx.get().addException(e);
+              lastActCtx.get().addException(e);
             }
             finally {
                 if (!client)
@@ -4716,7 +4720,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = request(reqs);
 
             if (req != null) {
-                ActivationContext actx = actCtx.get();
+                ActivationContext actx = lastActCtx.get();
 
                 if (actx != null && !actx.isFail()) {
                     if (req.globalStateActivate())
