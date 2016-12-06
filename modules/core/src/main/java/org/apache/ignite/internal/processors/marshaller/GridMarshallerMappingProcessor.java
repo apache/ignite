@@ -221,6 +221,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 marshallerCtx.applyPlatformMapping(e.getKey(), e.getValue());
     }
 
+    /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
                 ctx.cluster().clientReconnectFuture(),
@@ -230,7 +231,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             fut.onDone(new MappingExchangeResult(null, err));
     }
 
+    /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        marshallerCtx.onMarshallerProcessorStopping();
+
         IgniteCheckedException err = new IgniteCheckedException("Node is stopping.");
 
         for (GridFutureAdapter<MappingExchangeResult> fut : mappingExchangeSyncMap.values())

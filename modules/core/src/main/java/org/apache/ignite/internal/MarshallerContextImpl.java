@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -73,6 +74,8 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private boolean isClientNode;
+
+    private final AtomicBoolean isStopping = new AtomicBoolean();
 
     /**
      * Initializes context.
@@ -214,6 +217,9 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+        if (isStopping.get())
+            throw new IgniteCheckedException("Node is stopping");
+
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -399,5 +405,14 @@ public class MarshallerContextImpl implements MarshallerContext {
         persistence = new MarshallerMappingPersistence(ctx.log(MarshallerMappingPersistence.class));
         this.transport = transport;
         isClientNode = ctx.clientNode();
+
+        isStopping.set(false);
+    }
+
+    /**
+     *
+     */
+    public void onMarshallerProcessorStopping() {
+        isStopping.set(true);
     }
 }
