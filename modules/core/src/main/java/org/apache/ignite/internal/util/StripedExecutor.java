@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
@@ -52,6 +53,8 @@ public class StripedExecutor implements ExecutorService {
      * @param cnt Count.
      */
     public StripedExecutor(int cnt, String gridName, String poolName, final IgniteLogger log) {
+        A.ensure(cnt > 0, "cnt > 0");
+
         boolean success = false;
 
         stripes = new Stripe[cnt];

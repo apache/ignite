@@ -74,7 +74,6 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -231,14 +230,17 @@ public class IgniteConfiguration {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Use striped pool for internal requests processing when possible (e.g. cache requests). */
-    private boolean useStripedPool = true;
-
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
     /** Async Callback pool size. */
     private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /**
+     * Use striped pool for internal requests processing when possible
+     * (e.g. cache requests per-partition striping).
+     */
+    private int stripedPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
     /** System pool size. */
     private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
@@ -557,13 +559,13 @@ public class IgniteConfiguration {
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
+        stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
-        useStripedPool = cfg.isUseStripedPool();
         utilityCacheKeepAliveTime = cfg.getUtilityCacheKeepAliveTime();
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
@@ -717,31 +719,41 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns {@code true} if striped pool should be used for public
-     * pool and system pools. Default is {@code true}. If {@code false} then,
-     * {@link IgniteThreadPoolExecutor} is used.
+     * Returns striped pool size that should be used for cache requests
+     * processing.
      * <p>
-     * Striped pool is better for typical cache operations and short-term
-     * compute jobs.
+     * If set to non-positive value then requests get processed in system pool.
+     * <p>
+     * Striped pool is better for typical cache operations.
      *
-     * @return {@code True} if striped pool should be used for public
-     * pool and system pools.
+     * @return Positive value if striped pool should be initialized
+     *      with configured number of threads (stripes) and used for requests processing
+     *      or non-positive value to process requests in system pool.
      *
      * @see #getPublicThreadPoolSize()
      * @see #getSystemThreadPoolSize()
      */
-    public boolean isUseStripedPool() {
-        return useStripedPool;
+    public int getStripedPoolSize() {
+        return stripedPoolSize;
     }
 
     /**
-     * Enables/disables use of striped pools for public and system pools.
+     * Sets striped pool size that should be used for cache requests
+     * processing.
+     * <p>
+     * If set to non-positive value then requests get processed in system pool.
+     * <p>
+     * Striped pool is better for typical cache operations.
      *
-     * @param useStripedPool {@code True} if striped pool should be used for public
-     * pool and system pools.
+     * @param stripedPoolSize Positive value if striped pool should be initialized
+     *      with passed in number of threads (stripes) and used for requests processing
+     *      or non-positive value to process requests in system pool.
+     *
+     * @see #getPublicThreadPoolSize()
+     * @see #getSystemThreadPoolSize()
      */
-    public void setUseStripedPool(boolean useStripedPool) {
-        this.useStripedPool = useStripedPool;
+    public void setStripedPoolSize(int stripedPoolSize) {
+        this.stripedPoolSize = stripedPoolSize;
     }
 
     /**

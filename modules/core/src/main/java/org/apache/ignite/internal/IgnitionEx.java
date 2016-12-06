@@ -1664,8 +1664,8 @@ public class IgnitionEx {
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
-            if (cfg.isUseStripedPool())
-                stripedExecSvc = new StripedExecutor(cfg.getPublicThreadPoolSize(), cfg.getGridName(), "sys", log);
+            if (cfg.getStripedPoolSize() > 0)
+                stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getGridName(), "sys", log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
