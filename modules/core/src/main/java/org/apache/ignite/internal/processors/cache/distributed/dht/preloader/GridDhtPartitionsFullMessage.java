@@ -123,7 +123,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partCntrs != null) {
             Map<Integer, T2<Long, Long>> res = partCntrs.get(cacheId);
 
-            return res != null ? res : Collections.emptyMap();
+            return res != null ? res : Collections.<Integer, T2<Long, Long>>emptyMap();
         }
 
         return Collections.emptyMap();
