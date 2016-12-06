@@ -188,7 +188,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 						// for now using key as cache entry key and value as cache entry value - for test purpose.
 						entries.put(msgKey, message);
 					}catch (Exception ex){
-						// error 
+						fail("Never happens."); 
 					}
 					
 					return entries;
