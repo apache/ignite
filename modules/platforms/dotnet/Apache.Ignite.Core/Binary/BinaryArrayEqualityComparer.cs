@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Binary
 
         /** <inheritdoc /> */
         int IBinaryEqualityComparer.GetHashCode(IBinaryStream stream, int startPos, int length, 
-            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller, IBinaryTypeDescriptor type)
+            BinaryObjectSchemaHolder schema, int schemaId, Marshaller marshaller, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(stream != null);
             Debug.Assert(startPos >= 0);
