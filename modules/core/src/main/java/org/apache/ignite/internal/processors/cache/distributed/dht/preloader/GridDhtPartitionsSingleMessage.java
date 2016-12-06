@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -51,7 +52,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions update counters. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Map<Integer, Long>> partCntrs;
+    private Map<Integer, Map<Integer, T2<Long, Long>>> partCntrs;
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
@@ -103,7 +104,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param cacheId Cache ID.
      * @param cntrMap Partition update counters.
      */
-    public void partitionUpdateCounters(int cacheId, Map<Integer, Long> cntrMap) {
+    public void partitionUpdateCounters(int cacheId, Map<Integer, T2<Long, Long>> cntrMap) {
         if (partCntrs == null)
             partCntrs = new HashMap<>();
 
@@ -114,11 +115,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param cacheId Cache ID.
      * @return Partition update counters.
      */
-    @Override public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
+    @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
         if (partCntrs != null) {
-            Map<Integer, Long> res = partCntrs.get(cacheId);
+            Map<Integer, T2<Long, Long>> res = partCntrs.get(cacheId);
 
-            return res != null ? res : Collections.<Integer, Long>emptyMap();
+            return res != null ? res : Collections.emptyMap();
         }
 
         return Collections.emptyMap();

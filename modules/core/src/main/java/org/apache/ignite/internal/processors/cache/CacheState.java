@@ -26,6 +26,10 @@ public enum CacheState {
      */
     INACTIVE,
 
+
+    /** Cache is inactive. But process of it activation in progress. */
+    ACTIVATING,
+
     /**
      * Cache is active and operations. There are no lost partitions.
      */

@@ -639,7 +639,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
-        assert cctx.shared().cache().globalState() != CacheState.INACTIVE;
+        assert cctx.shared().cache().globalState() == CacheState.ACTIVE;
 
         long reservations = state.get();
 
@@ -840,7 +840,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         store.updateCounter(val);
     }
 
-    public void updateInitialCounter(long val) {
+    public void initialUpdateCounter(long val) {
         store.updateInitialCounter(val);
     }
 
