@@ -147,9 +147,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final IgniteLogger log;
 
-    /** Local mappers count. */
-    private final int locMappersCnt;
-
     /** Message size. */
     private final int msgSize;
 
@@ -188,7 +185,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.totalReducerCnt = totalReducerCnt;
         this.job = job;
         this.mem = mem;
-        this.locMappersCnt = locMappersCnt;
         this.log = log.getLogger(HadoopShuffleJob.class);
         this.embedded = embedded;
 
