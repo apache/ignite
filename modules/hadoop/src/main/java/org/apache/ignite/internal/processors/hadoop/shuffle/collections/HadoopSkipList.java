@@ -23,6 +23,9 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.hadoop.io.BinaryComparable;
+import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.io.Text;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
@@ -264,6 +267,18 @@ public class HadoopSkipList extends HadoopMultimapBase {
                 throw new IgniteException(e);
             }
         }
+
+        /**
+         * @param meta Meta pointer.
+         * @return Key.
+         */
+        public MemoryManager.Bytes readKeyBin(long meta) {
+            assert meta > 0 : meta;
+
+            long k = key(meta);
+
+            return mem.bytes(k + 4, keySize(k));
+        }
     }
 
     /**
@@ -469,6 +484,17 @@ public class HadoopSkipList extends HadoopMultimapBase {
         @SuppressWarnings("unchecked")
         private int cmp(Object key, long meta) {
             assert meta != 0;
+
+            if (cmp instanceof RawComparator && key instanceof BinaryComparable) {
+                RawComparator rawCmp = (RawComparator)cmp;
+
+                BinaryComparable binKey = (BinaryComparable)key;
+
+                MemoryManager.Bytes metaKeyBytes = keyReader.readKeyBin(meta);
+
+                return rawCmp.compare(binKey.getBytes(), 0, binKey.getLength(),
+                    metaKeyBytes.buf(), metaKeyBytes.off(), metaKeyBytes.len());
+            }
 
             return cmp.compare(key, keyReader.readKey(meta));
         }

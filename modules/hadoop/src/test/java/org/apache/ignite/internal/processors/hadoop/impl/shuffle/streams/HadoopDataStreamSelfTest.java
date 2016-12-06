@@ -44,7 +44,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
             int size = 4 * 1024;
 
-            final long ptr = mem.allocate(size);
+            final long ptr = memoryMgr.allocate(size);
 
             out.buffer().set(ptr, size);
 
