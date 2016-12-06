@@ -27,26 +27,12 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Remote shuffle state.
  */
-class HadoopShuffleRemoteState {
+class HadoopShuffleRemoteState<T> {
     /** Message count. */
     private final AtomicLong msgCnt = new AtomicLong();
 
     /** Completion future. */
     private final GridFutureAdapter fut = new GridFutureAdapter();
-
-    /**
-     * Constructor.
-     *
-     * @param nodeId Node ID.
-     */
-    @SuppressWarnings("unchecked")
-    public HadoopShuffleRemoteState(final UUID nodeId) {
-        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture igniteInternalFuture) {
-                System.out.println("Shuffle ack received for node: " + nodeId);
-            }
-        });
-    }
 
     /**
      * Callback invoked when shuffle message is sent.

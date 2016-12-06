@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -122,10 +121,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final int msgSize;
 
     /** Local shuffle states. */
-    private volatile HashMap<UUID, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
+    private volatile HashMap<T, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
 
     /** Remote shuffle states. */
-    private volatile HashMap<UUID, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
+    private volatile HashMap<T, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
 
     /** Mutex for internal synchronization. */
     private final Object mux = new Object();
@@ -296,10 +295,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         }
 
         if (embedded) {
-            UUID src0 = (UUID)src;
-
-            if (localShuffleState(src0).onShuffleMessage())
-                sendFinishResponse(src0, msg.jobId());
+            if (localShuffleState(src).onShuffleMessage())
+                sendFinishResponse(src, msg.jobId());
         }
     }
 
@@ -319,59 +316,59 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Process shuffle finish request.
      *
-     * @param nodeId Source node ID.
+     * @param src Source.
      * @param msg Shuffle finish message.
      */
-    public void onShuffleFinishRequest(UUID nodeId, HadoopShuffleFinishRequest msg) {
-        HadoopShuffleLocalState state = localShuffleState(nodeId);
+    public void onShuffleFinishRequest(T src, HadoopShuffleFinishRequest msg) {
+        HadoopShuffleLocalState state = localShuffleState(src);
 
         if (state.onShuffleFinishMessage(msg.messageCount()))
-            sendFinishResponse(nodeId, msg.jobId());
+            sendFinishResponse(src, msg.jobId());
     }
 
     /**
      * Process shuffle finish response.
      *
-     * @param nodeId Source node ID.
+     * @param src Source.
      */
-    public void onShuffleFinishResponse(UUID nodeId) {
-        remoteShuffleState(nodeId).onShuffleFinishResponse();
+    public void onShuffleFinishResponse(T src) {
+        remoteShuffleState(src).onShuffleFinishResponse();
     }
 
     /**
      * Send finish response.
      *
-     * @param nodeId Node ID.
+     * @param dest Destination.
      * @param jobId Job ID.
      */
     @SuppressWarnings("unchecked")
-    private void sendFinishResponse(UUID nodeId, HadoopJobId jobId) {
+    private void sendFinishResponse(T dest, HadoopJobId jobId) {
         HadoopShuffleFinishResponse msg = new HadoopShuffleFinishResponse(jobId);
 
-        io.apply((T)nodeId, msg);
+        io.apply(dest, msg);
     }
 
     /**
      * Get local shuffle state for node.
      *
-     * @param nodeId Node ID.
+     * @param src Source
      * @return Local shuffle state.
      */
-    private HadoopShuffleLocalState localShuffleState(UUID nodeId) {
-        HashMap<UUID, HadoopShuffleLocalState> states = locShuffleStates;
+    private HadoopShuffleLocalState localShuffleState(T src) {
+        HashMap<T, HadoopShuffleLocalState> states = locShuffleStates;
 
-        HadoopShuffleLocalState res = states.get(nodeId);
+        HadoopShuffleLocalState res = states.get(src);
 
         if (res == null) {
             synchronized (mux) {
-                res = locShuffleStates.get(nodeId);
+                res = locShuffleStates.get(src);
 
                 if (res == null) {
                     res = new HadoopShuffleLocalState();
 
                     states = new HashMap<>(locShuffleStates);
 
-                    states.put(nodeId, res);
+                    states.put(src, res);
 
                     locShuffleStates = states;
                 }
@@ -384,24 +381,24 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Get remote shuffle state for node.
      *
-     * @param nodeId Node ID.
+     * @param src Source.
      * @return Remote shuffle state.
      */
-    private HadoopShuffleRemoteState remoteShuffleState(UUID nodeId) {
-        HashMap<UUID, HadoopShuffleRemoteState> states = rmtShuffleStates;
+    private HadoopShuffleRemoteState remoteShuffleState(T src) {
+        HashMap<T, HadoopShuffleRemoteState> states = rmtShuffleStates;
 
-        HadoopShuffleRemoteState res = states.get(nodeId);
+        HadoopShuffleRemoteState res = states.get(src);
 
         if (res == null) {
             synchronized (mux) {
-                res = rmtShuffleStates.get(nodeId);
+                res = rmtShuffleStates.get(src);
 
                 if (res == null) {
-                    res = new HadoopShuffleRemoteState(nodeId);
+                    res = new HadoopShuffleRemoteState();
 
                     states = new HashMap<>(rmtShuffleStates);
 
-                    states.put(nodeId, res);
+                    states.put(src, res);
 
                     rmtShuffleStates = states;
                 }
@@ -416,7 +413,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      *
      * @return Remote shuffle states.
      */
-    private HashMap<UUID, HadoopShuffleRemoteState> remoteShuffleStates() {
+    private HashMap<T, HadoopShuffleRemoteState> remoteShuffleStates() {
         synchronized (mux) {
             return new HashMap<>(rmtShuffleStates);
         }
