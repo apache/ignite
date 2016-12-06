@@ -674,10 +674,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 T dest = rmtStateEntry.getKey();
                 HadoopShuffleRemoteState rmtState = rmtStateEntry.getValue();
 
-                io.apply(dest, new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount()));
+                HadoopShuffleFinishRequest req = new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount());
+
+                io.apply(dest, req);
 
                 if (log.isDebugEnabled())
-                    log.debug("Sent shuffle finish request [jobId=" + job.id() + ", dest=" + dest + ']');
+                    log.debug("Sent shuffle finish request [jobId=" + job.id() + ", dest=" + dest +
+                        ", req=" + req + ']');
 
                 fut.add(rmtState.future());
 
