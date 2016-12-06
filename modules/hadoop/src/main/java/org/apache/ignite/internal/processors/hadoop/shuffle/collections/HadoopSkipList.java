@@ -485,17 +485,6 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private int cmp(Object key, long meta) {
             assert meta != 0;
 
-            if (cmp instanceof RawComparator && key instanceof BinaryComparable) {
-                RawComparator rawCmp = (RawComparator)cmp;
-
-                BinaryComparable binKey = (BinaryComparable)key;
-
-                MemoryManager.Bytes metaKeyBytes = keyReader.readKeyBin(meta);
-
-                return rawCmp.compare(binKey.getBytes(), 0, binKey.getLength(),
-                    metaKeyBytes.buf(), metaKeyBytes.off(), metaKeyBytes.len());
-            }
-
             return cmp.compare(key, keyReader.readKey(meta));
         }
 
