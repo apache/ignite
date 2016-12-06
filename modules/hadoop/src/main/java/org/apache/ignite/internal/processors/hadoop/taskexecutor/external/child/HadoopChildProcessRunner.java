@@ -432,7 +432,7 @@ public class HadoopChildProcessRunner {
                         try {
                             HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
 
-                            shuffleJob.onShuffleMessage(m);
+                            shuffleJob.onShuffleMessage(desc, m);
 
                             comm.sendMessage(desc, new HadoopShuffleAck(m.id(), m.jobId()));
                         }

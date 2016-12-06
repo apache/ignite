@@ -255,11 +255,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param src Source.
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(UUID nodeId, HadoopShuffleMessage msg) throws IgniteCheckedException {
+    public void onShuffleMessage(T src, HadoopShuffleMessage msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
@@ -295,8 +295,12 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             });
         }
 
-        if (localShuffleState(nodeId).onShuffleMessage())
-            sendFinishResponse(nodeId, msg.jobId());
+        if (embedded) {
+            UUID src0 = (UUID)src;
+
+            if (localShuffleState(src0).onShuffleMessage())
+                sendFinishResponse(src0, msg.jobId());
+        }
     }
 
     /**
