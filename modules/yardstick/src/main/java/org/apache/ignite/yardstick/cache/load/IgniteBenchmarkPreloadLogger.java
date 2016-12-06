@@ -64,6 +64,13 @@ public class IgniteBenchmarkPreloadLogger extends Thread {
     /** {@inheritDoc} */
     @Override public void run() {
         while (!Thread.interrupted()) {
+            try {
+                Thread.sleep(sleepInterval);
+            }
+            catch (InterruptedException ignored) {
+                break;
+            }
+
             for (IgniteCache<Object, Object> cache : caches) {
                 String cacheName = cache.getName();
 
@@ -77,13 +84,7 @@ public class IgniteBenchmarkPreloadLogger extends Thread {
                 counters.put(cacheName, cacheSize);
             }
 
-            try {
-                Thread.sleep(sleepInterval);
-            }
-            catch (InterruptedException ignored) {
-                BenchmarkUtils.println("WARNING: preload logger is interrupted.");
-                return;
-            }
+
         }
 
         BenchmarkUtils.println("WARNING: preload logger is interrupted.");
