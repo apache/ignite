@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,12 @@ public class StripedExecutor implements ExecutorService {
     /** Stripes. */
     private final Stripe[] stripes;
 
+    /** For starvation checks. */
+    private final long[] completedCntrs;
+
+    /** */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      *
@@ -59,6 +66,12 @@ public class StripedExecutor implements ExecutorService {
 
         stripes = new Stripe[cnt];
 
+        completedCntrs = new long[cnt];
+
+        Arrays.fill(completedCntrs, -1);
+
+        this.log = log;
+
         try {
             for (int i = 0; i < cnt; i++) {
                 stripes[i] = new StripeConcurrentQueue(
@@ -69,60 +82,6 @@ public class StripedExecutor implements ExecutorService {
 
                 stripes[i].start();
             }
-
-            // TODO - move to starvation checker
-            Thread t = new Thread(new Runnable() {
-                @Override public void run() {
-                    long[] cntrs = new long[stripes.length];
-
-                    for (; !isShutdown();) {
-                        try {
-                            Thread.sleep(10_000);
-                        }
-                        catch (InterruptedException e) {
-                            return;
-                        }
-
-                        for (int i = 0; i < stripes.length; i++) {
-                            Stripe stripe = stripes[i];
-
-                            long completedCnt = stripe.completedCnt;
-
-                            if (cntrs[i] == completedCnt &&
-                                stripe.active) {
-                                boolean deadlockPresent = U.deadlockPresent();
-
-                                GridStringBuilder sb = new GridStringBuilder();
-
-                                sb.a(">>> Possible starvation in striped pool: ")
-                                    .a(stripe.thread.getName()).a(U.nl())
-                                    .a(stripe.queueToString()).a(U.nl())
-                                    .a("deadlock: ").a(deadlockPresent).a(U.nl())
-                                    .a("completed: ").a(completedCnt).a(U.nl());
-
-                                U.printStackTrace(
-                                    stripe.thread.getId(),
-                                    sb);
-
-                                String msg = sb.toString();
-
-                                U.warn(
-                                    log,
-                                    msg);
-                                U.warn(
-                                    null,
-                                    msg);
-                            }
-                            else
-                                cntrs[i] = completedCnt;
-                        }
-                    }
-                }
-            });
-
-            t.setDaemon(true);
-
-            t.start();
 
             success = true;
         }
@@ -143,6 +102,45 @@ public class StripedExecutor implements ExecutorService {
                         stripe.awaitStop();
                 }
             }
+        }
+    }
+
+    /**
+     * Checks starvation in striped pool. Maybe too verbose
+     * but this is needed to faster debug possible issues.
+     */
+    public void checkStarvation() {
+        for (int i = 0; i < stripes.length; i++) {
+            Stripe stripe = stripes[i];
+
+            long completedCnt = stripe.completedCnt;
+
+            boolean active = stripe.active;
+
+            if (completedCntrs[i] != -1 &&
+                completedCntrs[i] == completedCnt &&
+                active) {
+                boolean deadlockPresent = U.deadlockPresent();
+
+                GridStringBuilder sb = new GridStringBuilder();
+
+                sb.a(">>> Possible starvation in striped pool: ")
+                    .a(stripe.thread.getName()).a(U.nl())
+                    .a(stripe.queueToString()).a(U.nl())
+                    .a("deadlock: ").a(deadlockPresent).a(U.nl())
+                    .a("completed: ").a(completedCnt).a(U.nl());
+
+                U.printStackTrace(
+                    stripe.thread.getId(),
+                    sb);
+
+                String msg = sb.toString();
+
+                U.warn(log, msg);
+            }
+
+            if (active || completedCnt > 0)
+                completedCntrs[i] = completedCnt;
         }
     }
 
@@ -246,19 +244,6 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     * @param log Logger to dump to.
-     */
-    public void dumpStats(IgniteLogger log) {
-        StringBuilder sb = new StringBuilder("Stats ");
-
-        for (int i = 0; i < stripes.length; i++)
-            sb.append(i).append(" [qSize=").append(stripes[i].queueSize()).append("]; ");
-
-        if (log.isInfoEnabled())
-            log.info(sb.toString());
-    }
-
-    /**
      * @return Return total queue size of all stripes.
      */
     public int queueSize() {
@@ -268,6 +253,18 @@ public class StripedExecutor implements ExecutorService {
             size += stripe.queueSize();
 
         return size;
+    }
+
+    /**
+     * @return Completed tasks count.
+     */
+    public long completedTasks() {
+        long cnt = 0;
+
+        for (Stripe stripe : stripes)
+            cnt += stripe.completedCnt;
+
+        return cnt;
     }
 
     /**
