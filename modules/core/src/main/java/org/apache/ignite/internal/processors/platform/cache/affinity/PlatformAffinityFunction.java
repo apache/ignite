@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -103,6 +105,33 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         this.partitions = partitions;
         this.overrideFlags = overrideFlags;
         this.baseFunc = baseFunc;
+    }
+
+    /**
+     * Gets the user func object.
+     *
+     * @return User func object.
+     */
+    public Object getUserFunc() {
+        return userFunc;
+    }
+
+    /**
+     * Gets the base func.
+     *
+     * @return Base func.
+     */
+    public AffinityFunction getBaseFunc() {
+        return baseFunc;
+    }
+
+    /**
+     * Gets the override flags.
+     *
+     * @return The override flags
+     */
+    public byte getOverrideFlags() {
+        return overrideFlags;
     }
 
     /** {@inheritDoc} */
@@ -271,7 +300,10 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      */
     @SuppressWarnings("unused")
     @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
+    public void setIgnite(Ignite ignite) throws IgniteCheckedException {
         this.ignite = ignite;
+
+        if (baseFunc != null && ignite != null)
+            ((IgniteEx)ignite).context().resource().injectGeneric(baseFunc);
     }
 }

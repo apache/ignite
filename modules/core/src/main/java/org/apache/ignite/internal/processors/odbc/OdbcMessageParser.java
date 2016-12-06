@@ -79,7 +79,19 @@ public class OdbcMessageParser {
             {
                 long longVersion = reader.readLong();
 
-                return new OdbcHandshakeRequest(longVersion);
+                OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
+
+                OdbcProtocolVersion version = res.version();
+
+                if (version.isUnknown())
+                    return res;
+
+                if (version.isDistributedJoinsSupported()) {
+                    res.distributedJoins(reader.readBoolean());
+                    res.enforceJoinOrder(reader.readBoolean());
+                }
+
+                return res;
             }
             else
                 throw new IgniteException("Unexpected ODBC command " +

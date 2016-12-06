@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -83,14 +83,14 @@ public interface GridCachePreloader {
      *
      * @param assignments Assignments to add.
      * @param forcePreload Force preload flag.
-     * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
-     * @return Rebalancing closure.
+     * @param next Runnable responsible for cache rebalancing start.
+     * @return Rebalancing runnable.
      */
-    public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
+    public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
-        Collection<String> caches,
-        int cnt);
+        int cnt,
+        Runnable next);
 
     /**
      * @param p Preload predicate.
@@ -138,6 +138,16 @@ public interface GridCachePreloader {
      * @return Future to complete when all keys are preloaded.
      */
     public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
+
+    /**
+     * Requests that preloader sends the request for the key.
+     *
+     * @param req Message with keys to request.
+     * @param topVer Topology version, {@code -1} if not required.
+     * @return Future to complete when all keys are preloaded.
+     */
+    public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+        AffinityTopologyVersion topVer);
 
     /**
      * Force preload process.

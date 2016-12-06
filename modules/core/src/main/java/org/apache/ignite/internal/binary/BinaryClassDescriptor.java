@@ -25,14 +25,15 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -40,6 +41,7 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -120,6 +122,9 @@ public class BinaryClassDescriptor {
     /** */
     private final Class<?>[] intfs;
 
+    /** Whether stable schema was published. */
+    private volatile boolean stableSchemaPublished;
+
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -152,7 +157,7 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null;
+        useOptMarshaller = serializer == null || GridQueryProcessor.isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -185,7 +190,8 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) &&
+            !GridQueryProcessor.isGeometryClass(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
@@ -269,10 +275,14 @@ public class BinaryClassDescriptor {
             case OBJECT:
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
-                ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+                Map<Object, BinaryFieldAccessor> fields0;
+
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fields0 = new TreeMap<>();
+                else
+                    fields0 = new LinkedHashMap<>();
 
                 Set<String> duplicates = duplicateFields(cls);
 
@@ -300,9 +310,7 @@ public class BinaryClassDescriptor {
 
                             BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
 
-                            fields0.add(fieldInfo);
-
-                            schemaBuilder.addField(fieldId);
+                            fields0.put(name, fieldInfo);
 
                             if (metaDataEnabled)
                                 stableFieldsMeta.put(name, fieldInfo.mode().typeId());
@@ -310,7 +318,12 @@ public class BinaryClassDescriptor {
                     }
                 }
 
-                fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
+                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+
+                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+
+                for (BinaryFieldAccessor field : fields)
+                    schemaBuilder.addField(field.id);
 
                 stableSchema = schemaBuilder.build();
 
@@ -747,6 +760,18 @@ public class BinaryClassDescriptor {
                 break;
 
             case OBJECT:
+                if (userType && !stableSchemaPublished) {
+                    // Update meta before write object with new schema
+                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
+                        affKeyFieldName, Collections.singleton(stableSchema), false);
+
+                    ctx.updateMetadata(typeId, meta);
+
+                    schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+
+                    stableSchemaPublished = true;
+                }
+
                 if (preWrite(writer, obj)) {
                     try {
                         for (BinaryFieldAccessor info : fields)

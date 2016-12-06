@@ -83,6 +83,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
         return noOpBinary;
     }
@@ -103,8 +108,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
-        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, U.resolveClassLoader(clsLdr,
-            ctx.kernalContext().config()));
+        return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
     }
 
     /** {@inheritDoc} */

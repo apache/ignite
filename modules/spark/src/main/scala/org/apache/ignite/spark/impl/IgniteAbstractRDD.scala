@@ -25,7 +25,7 @@ import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 
 abstract class IgniteAbstractRDD[R:ClassTag, K, V] (
-    ic: IgniteContext[K, V],
+    ic: IgniteContext,
     cacheName: String,
     cacheCfg: CacheConfiguration[K, V],
     keepBinary: Boolean

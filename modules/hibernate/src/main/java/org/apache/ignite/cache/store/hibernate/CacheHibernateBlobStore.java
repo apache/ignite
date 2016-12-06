@@ -506,7 +506,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return U.marshal(marsh, obj);
     }
 
     /**
@@ -521,7 +521,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return marsh.unmarshal(bytes, getClass().getClassLoader());
+        return U.unmarshal(marsh, bytes, getClass().getClassLoader());
     }
 
     /**

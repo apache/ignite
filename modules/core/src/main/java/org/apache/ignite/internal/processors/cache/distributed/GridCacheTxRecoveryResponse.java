@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -31,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Transactions recovery check response.
  */
-public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
+public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,6 +45,10 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
 
     /** Flag indicating if all remote transactions were prepared. */
     private boolean success;
+
+    /** Transient TX state. */
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Empty constructor required by {@link Externalizable}
@@ -62,8 +68,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
         IgniteUuid futId,
         IgniteUuid miniId,
         boolean success,
-        boolean addDepInfo)
-    {
+        boolean addDepInfo) {
         super(txId, 0, addDepInfo);
 
         this.futId = futId;
@@ -92,6 +97,16 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
      */
     public boolean success() {
         return success;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
+        return txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
+        this.txState = txState;
     }
 
     /** {@inheritDoc} */

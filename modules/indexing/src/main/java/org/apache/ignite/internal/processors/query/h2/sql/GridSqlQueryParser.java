@@ -21,8 +21,10 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
+import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Query;
@@ -48,6 +50,8 @@ import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
 import org.h2.expression.TableFunction;
 import org.h2.expression.ValueExpression;
+import org.h2.index.Index;
+import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
@@ -91,14 +95,16 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fro
 @SuppressWarnings("TypeMayBeWeakened")
 public class GridSqlQueryParser {
     /** */
-    private static final GridSqlOperationType[] OPERATION_OP_TYPES = new GridSqlOperationType[] {CONCAT, PLUS, MINUS, MULTIPLY, DIVIDE, null, MODULUS};
+    private static final GridSqlOperationType[] OPERATION_OP_TYPES =
+        {CONCAT, PLUS, MINUS, MULTIPLY, DIVIDE, null, MODULUS};
 
     /** */
-    private static final GridSqlOperationType[] COMPARISON_TYPES = new GridSqlOperationType[] {
-        EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
+    private static final GridSqlOperationType[] COMPARISON_TYPES =
+        {EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
         SMALLER, NOT_EQUAL, IS_NULL, IS_NOT_NULL,
-        null, null, null, SPATIAL_INTERSECTS /* 11 */, null, null, null, null, EQUAL_NULL_SAFE /* 16 */, null, null, null, null,
-        NOT_EQUAL_NULL_SAFE /* 21 */};
+        null, null, null, SPATIAL_INTERSECTS /* 11 */,
+        null, null, null, null, EQUAL_NULL_SAFE /* 16 */,
+        null, null, null, null, NOT_EQUAL_NULL_SAFE /* 21 */};
 
     /** */
     private static final Getter<Select, Expression> CONDITION = getter(Select.class, "condition");
@@ -134,7 +140,7 @@ public class GridSqlQueryParser {
     private static final Getter<ConditionAndOr, Expression> ANDOR_RIGHT = getter(ConditionAndOr.class, "right");
 
     /** */
-    private static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
+    public static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
 
     /** */
     private static final Getter<TableFilter, String> ALIAS = getter(TableFilter.class, "alias");
@@ -218,7 +224,8 @@ public class GridSqlQueryParser {
     private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
 
     /** */
-    private static volatile Getter<Command, Prepared> prepared;
+    private static final Getter<Command, Prepared> PREPARED =
+        GridSqlQueryParser.<Command, Prepared>getter(CommandContainer.class, "prepared");
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -227,22 +234,12 @@ public class GridSqlQueryParser {
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
-    public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
+    public static Prepared prepared(JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
-        Getter<Command, Prepared> p = prepared;
+        assert cmd instanceof CommandContainer;
 
-        if (p == null) {
-            Class<? extends Command> cls = cmd.getClass();
-
-            assert "CommandContainer".equals(cls.getSimpleName());
-
-            prepared = p = getter(cls, "prepared");
-        }
-
-        Prepared statement = p.get(cmd);
-
-        return new GridSqlQueryParser().parse(statement);
+        return PREPARED.get(cmd);
     }
 
     /**
@@ -255,11 +252,15 @@ public class GridSqlQueryParser {
             Table tbl = filter.getTable();
 
             if (tbl instanceof TableBase)
-                res = new GridSqlTable(tbl.getSchema().getName(), tbl.getName());
+                res = new GridSqlTable(tbl);
             else if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView)tbl);
 
-                res = new GridSqlSubquery(parse(qry));
+                Index idx = filter.getIndex();
+
+                Query idxQry = idx instanceof ViewIndex ? ((ViewIndex)idx).getQuery() : null;
+
+                res = new GridSqlSubquery(parse(qry, idxQry));
             }
             else if (tbl instanceof FunctionTable)
                 res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl), false);
@@ -286,7 +287,7 @@ public class GridSqlQueryParser {
     /**
      * @param select Select.
      */
-    public GridSqlSelect parse(Select select) {
+    public GridSqlSelect parse(Select select, @Nullable Query idxQry) {
         GridSqlSelect res = (GridSqlSelect)h2ObjToGridObj.get(select);
 
         if (res != null)
@@ -304,6 +305,9 @@ public class GridSqlQueryParser {
         GridSqlElement from = null;
 
         TableFilter filter = select.getTopTableFilter();
+
+        if (idxQry instanceof Select)
+            filter = ((Select)idxQry).getTopTableFilter();
 
         do {
             assert0(filter != null, select);
@@ -366,11 +370,35 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param qry Select.
+     * @param qry Prepared.
+     * @return Query.
+     */
+    public static Query query(Prepared qry) {
+        if (qry instanceof Query)
+            return (Query)qry;
+
+        if (qry instanceof Explain)
+            return query(EXPLAIN_COMMAND.get((Explain)qry));
+
+        throw new CacheException("Unsupported query: " + qry);
+    }
+
+    /**
+     * @param qry Prepared.
+     * @return Query.
      */
     public GridSqlQuery parse(Prepared qry) {
+        return parse(qry, null);
+    }
+
+    /**
+     * @param qry Select.
+     */
+    public GridSqlQuery parse(Prepared qry, @Nullable Query idxQry) {
+        assert qry != null;
+
         if (qry instanceof Select)
-            return parse((Select)qry);
+            return parse((Select)qry, idxQry);
 
         if (qry instanceof SelectUnion)
             return parse((SelectUnion)qry);
@@ -378,7 +406,7 @@ public class GridSqlQueryParser {
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
 
-        throw new UnsupportedOperationException("Unknown query type: " + qry);
+        throw new CacheException("Unsupported query: " + qry);
     }
 
     /**
@@ -437,11 +465,12 @@ public class GridSqlQueryParser {
      */
     private GridSqlElement parseExpression0(Expression expression, boolean calcTypes) {
         if (expression instanceof ExpressionColumn) {
-            TableFilter tblFilter = ((ExpressionColumn)expression).getTableFilter();
+            ExpressionColumn expCol = (ExpressionColumn)expression;
 
-            GridSqlElement gridTblFilter = parseTable(tblFilter);
-
-            return new GridSqlColumn(gridTblFilter, expression.getColumnName(), expression.getSQL());
+            return new GridSqlColumn(expCol.getColumn(),
+                parseTable(expCol.getTableFilter()),
+                expression.getColumnName(),
+                expression.getSQL());
         }
 
         if (expression instanceof Alias)
@@ -475,12 +504,14 @@ public class GridSqlQueryParser {
 
             assert opType != null : COMPARISON_TYPE.get(cmp);
 
-            GridSqlElement left = parseExpression(COMPARISON_LEFT.get(cmp), calcTypes);
+            Expression leftExp = COMPARISON_LEFT.get(cmp);
+            GridSqlElement left = parseExpression(leftExp, calcTypes);
 
             if (opType.childrenCount() == 1)
                 return new GridSqlOperation(opType, left);
 
-            GridSqlElement right = parseExpression(COMPARISON_RIGHT.get(cmp), calcTypes);
+            Expression rightExp = COMPARISON_RIGHT.get(cmp);
+            GridSqlElement right = parseExpression(rightExp, calcTypes);
 
             return new GridSqlOperation(opType, left, right);
         }
@@ -685,7 +716,7 @@ public class GridSqlQueryParser {
      * Field getter.
      */
     @SuppressWarnings("unchecked")
-    private static class Getter<T, R> {
+    public static class Getter<T, R> {
         /** */
         private final Field fld;
 

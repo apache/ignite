@@ -38,26 +38,6 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(QuerySourceReferenceExpression expression)
-        {
-            Debug.Assert(expression != null);
-
-            var fromSource = expression.ReferencedQuerySource as IFromClause; 
-
-            if (fromSource != null)
-                return GetCacheQueryable(fromSource);
-
-            var joinSource = expression.ReferencedQuerySource as JoinClause;
-
-            if (joinSource != null)
-                return GetCacheQueryable(joinSource);
-
-            throw new NotSupportedException("Unexpected query source: " + expression.ReferencedQuerySource);
-        }
-
-        /// <summary>
-        /// Gets the cache queryable.
-        /// </summary>
         public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause)
         {
             return GetCacheQueryable(fromClause.FromExpression);
@@ -84,7 +64,19 @@ namespace Apache.Ignite.Linq.Impl
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
             if (srcRefExp != null)
-                return GetCacheQueryable(srcRefExp);
+            {
+                var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
+
+                if (fromSource != null)
+                    return GetCacheQueryable(fromSource);
+
+                var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
+
+                if (joinSource != null)
+                    return GetCacheQueryable(joinSource);
+
+                throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
+            }
 
             var memberExpr = expression as MemberExpression;
 

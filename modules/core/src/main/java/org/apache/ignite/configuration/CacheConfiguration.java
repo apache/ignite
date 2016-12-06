@@ -209,6 +209,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default number of queries detail metrics to collect. */
+    public static final int DFLT_QRY_DETAIL_METRICS_SIZE = 0;
+
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
@@ -361,6 +364,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
+    /** */
+    private int qryDetailMetricsSz = DFLT_QRY_DETAIL_METRICS_SIZE;
+
     /**
      * Flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
@@ -468,6 +474,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nodeFilter = cc.getNodeFilter();
         pluginCfgs = cc.getPluginConfigurations();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();
@@ -1824,6 +1831,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets size of queries detail metrics that will be stored in memory for monitoring purposes.
+     * If {@code 0} then history will not be collected.
+     * Note, larger number may lead to higher memory consumption.
+     *
+     * @return Maximum number of query metrics that will be stored in memory.
+     */
+    public int getQueryDetailMetricsSize() {
+        return qryDetailMetricsSz;
+    }
+
+    /**
+     * Sets size of queries detail metrics that will be stored in memory for monitoring purposes.
+     *
+     * @param qryDetailMetricsSz Maximum number of latest queries metrics that will be stored in memory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setQueryDetailMetricsSize(int qryDetailMetricsSz) {
+        this.qryDetailMetricsSz = qryDetailMetricsSz;
+
+        return this;
+    }
+
+    /**
      * Gets custom name of the sql schema. If custom sql schema is not set then {@code null} will be returned and
      * quoted case sensitive name will be used as sql schema.
      *
@@ -2668,10 +2698,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         ClassProperty(Member member) {
             this.member = member;
 
-            name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
+            name = member.getName();
 
-            ((AccessibleObject) member).setAccessible(true);
+            if (member instanceof Method) {
+                if (member.getName().startsWith("get") && member.getName().length() > 3)
+                    name = member.getName().substring(3);
+
+                if (member.getName().startsWith("is") && member.getName().length() > 2)
+                    name = member.getName().substring(2);
+            }
+
+            ((AccessibleObject)member).setAccessible(true);
         }
 
         /**

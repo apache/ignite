@@ -28,6 +28,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
@@ -38,10 +41,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -50,6 +51,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -65,8 +69,14 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
+    /** */
+    private static final byte SWAP_TYP_NONE = 0;
+
+    /** */
+    private static final byte SWAP_TYP_FILE = 1;
+
     /**
      * Write .Net configuration to the stream.
      *
@@ -175,6 +185,7 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        ccfg.setAffinity(readAffinityFunction(in));
 
         return ccfg;
     }
@@ -200,7 +211,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Eviction policy.
      */
-    public static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
+    private static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -228,17 +239,112 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Affinity function.
+     */
+    public static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+        byte plcTyp = in.readByte();
+
+        if (plcTyp == 0)
+            return null;
+
+        int partitions = in.readInt();
+        boolean exclNeighbours = in.readBoolean();
+        byte overrideFlags = in.readByte();
+        Object userFunc = in.readObjectDetached();
+
+        AffinityFunction baseFunc = null;
+
+        switch (plcTyp) {
+            case 1: {
+                FairAffinityFunction f = new FairAffinityFunction();
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
+            }
+            case 2: {
+                RendezvousAffinityFunction f = new RendezvousAffinityFunction();
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
+            }
+            default:
+                assert plcTyp == 3;
+        }
+
+        return new PlatformAffinityFunction(userFunc, partitions, overrideFlags, baseFunc);
+    }
+
+    /**
      * Reads the near config.
      *
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+    private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
         writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * Writes the affinity functions.
+     *
+     * @param out Stream.
+     * @param f Affinity.
+     */
+    private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        if (f instanceof PlatformDotNetAffinityFunction)
+            f = ((PlatformDotNetAffinityFunction)f).getFunc();
+
+        if (f instanceof FairAffinityFunction) {
+            out.writeByte((byte) 1);
+
+            FairAffinityFunction f0 = (FairAffinityFunction) f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof RendezvousAffinityFunction) {
+            out.writeByte((byte) 2);
+
+            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction) f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof PlatformAffinityFunction) {
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
+            AffinityFunction baseFunc = f0.getBaseFunc();
+
+            if (baseFunc instanceof FairAffinityFunction) {
+                out.writeByte((byte) 1);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((FairAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else if (baseFunc instanceof RendezvousAffinityFunction) {
+                out.writeByte((byte) 2);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else {
+                out.writeByte((byte) 3);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(false);  // exclude neighbors
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            }
+        } else {
+            out.writeByte((byte) 0);
+        }
     }
 
     /**
@@ -274,7 +380,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReader in) {
+    private static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -325,7 +431,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Query index.
      */
-    public static QueryIndex readQueryIndex(BinaryRawReader in) {
+    private static QueryIndex readQueryIndex(BinaryRawReader in) {
         QueryIndex res = new QueryIndex();
 
         res.setName(in.readString());
@@ -364,6 +470,7 @@ public class PlatformConfigurationUtils {
         String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
         if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
         if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean()) cfg.setFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -431,6 +538,27 @@ public class PlatformConfigurationUtils {
 
             cfg.setTransactionConfiguration(tx);
         }
+
+        byte swapType = in.readByte();
+
+        switch (swapType) {
+            case SWAP_TYP_FILE: {
+                FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+                swap.setBaseDirectory(in.readString());
+                swap.setMaximumSparsity(in.readFloat());
+                swap.setMaxWriteQueueSize(in.readInt());
+                swap.setReadStripesNumber(in.readInt());
+                swap.setWriteBufferSize(in.readInt());
+
+                cfg.setSwapSpaceSpi(swap);
+
+                break;
+            }
+
+            default:
+                assert swapType == SWAP_TYP_NONE;
+        }
     }
 
     /**
@@ -439,7 +567,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    public static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         int len = in.readInt();
 
         if (len == 0)
@@ -471,7 +599,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    public static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
+    private static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
         boolean hasConfig = in.readBoolean();
 
         if (!hasConfig)
@@ -627,6 +755,7 @@ public class PlatformConfigurationUtils {
             writer.writeBoolean(false);
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
+        writeAffinityFunction(writer, ccfg.getAffinity());
     }
 
     /**
@@ -731,6 +860,7 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
         w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true); w.writeLong(cfg.getFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -816,6 +946,23 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
+
+        SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
+
+        if (swap instanceof FileSwapSpaceSpiMBean) {
+            w.writeByte(SWAP_TYP_FILE);
+
+            FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
+
+            w.writeString(fileSwap.getBaseDirectory());
+            w.writeFloat(fileSwap.getMaximumSparsity());
+            w.writeInt(fileSwap.getMaxWriteQueueSize());
+            w.writeInt(fileSwap.getReadStripesNumber());
+            w.writeInt(fileSwap.getWriteBufferSize());
+        }
+        else {
+            w.writeByte(SWAP_TYP_NONE);
+        }
 
         w.writeString(cfg.getIgniteHome());
 

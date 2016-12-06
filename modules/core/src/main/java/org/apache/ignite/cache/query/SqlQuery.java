@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -42,6 +43,12 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Arguments. */
     @GridToStringInclude
     private Object[] args;
+
+    /** Timeout in millis. */
+    private int timeout;
+
+    /** */
+    private boolean distributedJoins;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -130,6 +137,27 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return this;
     }
 
+    /**
+     * Gets the query execution timeout in milliseconds.
+     *
+     * @return Timeout value.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     * @param timeout Timeout value. Zero value disables timeout.
+     * @param timeUnit Time granularity.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery<K, V> setTimeout(int timeout, TimeUnit timeUnit) {
+        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlQuery<K, V> setPageSize(int pageSize) {
         return (SqlQuery<K, V>)super.setPageSize(pageSize);
@@ -142,9 +170,34 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * @param type Type.
+     * @return {@code this} For chaining.
      */
     public SqlQuery setType(Class<?> type) {
         return setType(GridQueryProcessor.typeName(type));
+    }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * When disabled, join results will only contain colocated data (joins work locally).
+     * When enabled, joins work as expected, no matter how the data is distributed.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery setDistributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+
+        return this;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean isDistributedJoins() {
+        return distributedJoins;
     }
 
     /** {@inheritDoc} */

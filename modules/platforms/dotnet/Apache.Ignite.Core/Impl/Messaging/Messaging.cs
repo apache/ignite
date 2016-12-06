@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
@@ -30,7 +31,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Messaging functionality.
@@ -48,7 +48,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
             SendMulti = 4,
             SendOrdered = 5,
             StopLocalListen = 6,
-            StopRemoteListen = 7
+            StopRemoteListen = 7,
+            RemoteListenAsync = 9,
+            StopRemoteListenAsync = 10
         }
 
         /** Map from user (func+topic) -> id, needed for unsubscription. */
@@ -58,12 +60,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** Grid */
         private readonly Ignite _ignite;
         
-        /** Async instance. */
-        private readonly Lazy<Messaging> _asyncInstance;
-
-        /** Async flag. */
-        private readonly bool _isAsync;
-
         /** Cluster group. */
         private readonly IClusterGroup _clusterGroup;
 
@@ -81,19 +77,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
             _clusterGroup = prj;
 
             _ignite = (Ignite) prj.Ignite;
-
-            _asyncInstance = new Lazy<Messaging>(() => new Messaging(this));
-        }
-
-        /// <summary>
-        /// Initializes a new async instance.
-        /// </summary>
-        /// <param name="messaging">The messaging.</param>
-        private Messaging(Messaging messaging) : base(UU.MessagingWithASync(messaging.Target), messaging.Marshaller)
-        {
-            _isAsync = true;
-            _ignite = messaging._ignite;
-            _clusterGroup = messaging.ClusterGroup;
         }
 
         /** <inheritdoc /> */
@@ -102,16 +85,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             get { return _clusterGroup; }
         }
 
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private Messaging AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
-        }
-
         /** <inheritdoc /> */
-
         public void Send(object message, object topic = null)
         {
             IgniteArgumentCheck.NotNull(message, "message");
@@ -214,65 +188,28 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Guid RemoteListen<T>(IMessageListener<T> listener, object topic = null)
         {
-            IgniteArgumentCheck.NotNull(listener, "filter");
-
-            var filter0 = MessageListenerHolder.CreateLocal(_ignite, listener);
-            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
-
-            try
-            {
-                Guid id = Guid.Empty;
-
-                DoOutInOp((int) Op.RemoteListen,
-                    writer =>
-                    {
-                        writer.Write(filter0);
-                        writer.WriteLong(filterHnd);
-                        writer.Write(topic);
-                    },
-                    input =>
-                    {
-                        var id0 = Marshaller.StartUnmarshal(input).GetRawReader().ReadGuid();
-
-                        Debug.Assert(_isAsync || id0.HasValue);
-
-                        if (id0.HasValue)
-                            id = id0.Value;
-                    });
-
-                return id;
-            }
-            catch (Exception)
-            {
-                _ignite.HandleRegistry.Release(filterHnd);
-
-                throw;
-            }
+            return RemoteListen(listener, topic,
+                (writeAct, readAct) => DoOutInOp((int) Op.RemoteListen, writeAct,
+                    stream => readAct(Marshaller.StartUnmarshal(stream))));
         }
 
         /** <inheritdoc /> */
         public Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
         {
-            AsyncInstance.RemoteListen(listener, topic);
-
-            return AsyncInstance.GetTask<Guid>();
+            return RemoteListen(listener, topic,
+                (writeAct, readAct) => DoOutOpAsync((int) Op.RemoteListenAsync, writeAct, convertFunc: readAct));
         }
 
         /** <inheritdoc /> */
         public void StopRemoteListen(Guid opId)
         {
-            DoOutOp((int) Op.StopRemoteListen, writer =>
-            {
-                writer.WriteGuid(opId);
-            });
+            DoOutOp((int) Op.StopRemoteListen, writer => writer.WriteGuid(opId));
         }
 
         /** <inheritdoc /> */
         public Task StopRemoteListenAsync(Guid opId)
         {
-            AsyncInstance.StopRemoteListen(opId);
-
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync((int) Op.StopRemoteListenAsync, writer => writer.WriteGuid(opId));
         }
 
         /// <summary>
@@ -284,6 +221,34 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private static KeyValuePair<object, object> GetKey(object filter, object topic)
         {
             return new KeyValuePair<object, object>(filter, topic);
+        }
+
+        /// <summary>
+        /// Remotes listen.
+        /// </summary>
+        private TRes RemoteListen<T, TRes>(IMessageListener<T> filter, object topic,
+            Func<Action<IBinaryRawWriter>, Func<BinaryReader, Guid>, TRes> invoker)
+        {
+            IgniteArgumentCheck.NotNull(filter, "filter");
+
+            var filter0 = MessageListenerHolder.CreateLocal(_ignite, filter);
+            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
+
+            try
+            {
+                return invoker(writer =>
+                {
+                    writer.WriteObject(filter0);
+                    writer.WriteLong(filterHnd);
+                    writer.WriteObject(topic);
+                }, input => input.ReadGuid() ?? Guid.Empty);
+            }
+            catch (Exception)
+            {
+                _ignite.HandleRegistry.Release(filterHnd);
+
+                throw;
+            }
         }
     }
 }

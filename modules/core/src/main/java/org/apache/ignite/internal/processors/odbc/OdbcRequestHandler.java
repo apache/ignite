@@ -60,6 +60,12 @@ public class OdbcRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
 
+    /** Distributed joins flag. */
+    private boolean distributedJoins = false;
+
+    /** Enforce join order flag. */
+    private boolean enforceJoinOrder = false;
+
     /**
      * Constructor.
      *
@@ -92,7 +98,7 @@ public class OdbcRequestHandler {
         try {
             switch (req.command()) {
                 case HANDSHAKE:
-                    return performHandshake((OdbcHandshakeRequest)req);
+                    return performHandshake(reqId, (OdbcHandshakeRequest)req);
 
                 case EXECUTE_SQL_QUERY:
                     return executeQuery(reqId, (OdbcQueryExecuteRequest)req);
@@ -120,10 +126,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcHandshakeRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Handshake request.
      * @return Response.
      */
-    private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
+    private OdbcResponse performHandshake(long reqId, OdbcHandshakeRequest req) {
         OdbcProtocolVersion version = req.version();
 
         if (version.isUnknown()) {
@@ -137,6 +144,11 @@ public class OdbcRequestHandler {
         }
 
         OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
+
+        if (version.isDistributedJoinsSupported()) {
+            distributedJoins = req.distributedJoins();
+            enforceJoinOrder = req.enforceJoinOrder();
+        }
 
         return new OdbcResponse(res);
     }
@@ -169,17 +181,24 @@ public class OdbcRequestHandler {
 
             qry.setArgs(req.arguments());
 
-            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+            qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
+
+            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
+
+            if (cache0 == null)
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                        "Cache doesn't exist (did you configure it?): " + req.cacheName());
+
+            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
 
             if (cache == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
+                    "Can not get cache with keep binary: " + req.cacheName());
 
             QueryCursor qryCur = cache.query(qry);
 
-            Iterator iter = qryCur.iterator();
-
-            qryCursors.put(qryId, new IgniteBiTuple<>(qryCur, iter));
+            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
@@ -205,10 +224,14 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse closeQuery(long reqId, OdbcQueryCloseRequest req) {
         try {
-            QueryCursor cur = qryCursors.get(req.queryId()).get1();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
-            if (cur == null)
+            if (tuple == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+
+            QueryCursor cur = tuple.get1();
+
+            assert(cur != null);
 
             cur.close();
 
@@ -236,17 +259,27 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse fetchQuery(long reqId, OdbcQueryFetchRequest req) {
         try {
-            Iterator cur = qryCursors.get(req.queryId()).get2();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
-            if (cur == null)
+            if (tuple == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+
+            Iterator iter = tuple.get2();
+
+            if (iter == null) {
+                QueryCursor cur = tuple.get1();
+
+                iter = cur.iterator();
+
+                tuple.put(cur, iter);
+            }
 
             List<Object> items = new ArrayList<>();
 
-            for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
-                items.add(cur.next());
+            for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
+                items.add(iter.next());
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !cur.hasNext());
+            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !iter.hasNext());
 
             return new OdbcResponse(res);
         }

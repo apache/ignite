@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private Action _runAction;
 
         /** Config url */
-        public string SpringConfigUrl { get; private set; }
+        public string ConfigPath { get; private set; }
 
         /** Source path */
         public string SourceFilePath { get; private set; }
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 yield return new Example
                 {
                     SourceFilePath = sourceFile,
-                    SpringConfigUrl = GetSpringConfigUrl(sourceCode),
+                    ConfigPath = GetConfigPath(sourceCode),
                     NeedsTestDll = sourceCode.Contains(examplesDllName),
                     _runAction = GetRunAction(type),
                     Name = type.Name
@@ -109,9 +109,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Gets the spring configuration URL.
         /// </summary>
-        private static string GetSpringConfigUrl(string code)
+        private static string GetConfigPath(string code)
         {
-            var match = Regex.Match(code, "-springConfigUrl=(.*?.xml)");
+            var match = Regex.Match(code, "-configFileName=(.*?.config)");
 
             return match.Success ? match.Groups[1].Value : null;
         }

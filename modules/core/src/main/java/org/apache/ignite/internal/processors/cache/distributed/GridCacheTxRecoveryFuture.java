@@ -448,6 +448,13 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
         return null;
     }
 
+    /**
+     * @return Transaction.
+     */
+    public IgniteInternalTx tx() {
+        return tx;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;

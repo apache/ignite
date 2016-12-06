@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Constrcutor.
+        /// Constructor.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="name">Type name.</param>
@@ -113,9 +113,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IBinarySerializer Serializer
+        public IBinarySerializerInternal Serializer
         {
-            get { return _cfg.DefaultSerializer; }
+            get { return new UserSerializerProxy(_cfg.DefaultSerializer); }
         }
 
         /** <inheritDoc /> */

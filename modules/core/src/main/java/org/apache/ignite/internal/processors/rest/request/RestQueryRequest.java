@@ -32,6 +32,9 @@ public class RestQueryRequest extends GridRestRequest {
     /** Page size. */
     private Integer pageSize;
 
+    /** Distributed joins. */
+    private boolean distributedJoins;
+
     /** Cache name. */
     private String cacheName;
 
@@ -87,6 +90,20 @@ public class RestQueryRequest extends GridRestRequest {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @param distributedJoins New distributed joins.
+     */
+    public void distributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+    }
+
+    /**
+     * @return Distributed joins.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
     }
 
     /**

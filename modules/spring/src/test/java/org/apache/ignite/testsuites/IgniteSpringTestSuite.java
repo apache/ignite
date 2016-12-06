@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
+import org.apache.ignite.internal.IgniteSpringBeanTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlSelfTest;
@@ -49,6 +50,7 @@ public class IgniteSpringTestSuite extends TestSuite {
         TestSuite suite = new IgniteTestSuite("Spring Test Suite");
 
         suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
+        suite.addTestSuite(IgniteSpringBeanTest.class);
         suite.addTestSuite(GridFactorySelfTest.class);
 
         suite.addTest(IgniteResourceSelfTestSuite.suite());

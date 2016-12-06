@@ -18,7 +18,9 @@
 package org.apache.ignite.cache.query;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -55,6 +57,15 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /** Collocation flag. */
     private boolean collocated;
+
+    /** Query timeout in millis. */
+    private int timeout;
+
+    /** */
+    private boolean enforceJoinOrder;
+
+    /** */
+    private boolean distributedJoins;
 
     /**
      * Constructs SQL fields query.
@@ -121,6 +132,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
+     * Gets the query execution timeout in milliseconds.
+     *
+     * @return Timeout value.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     * @param timeout Timeout value. Zero value disables timeout.
+     * @param timeUnit Time unit.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
+        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+
+        return this;
+    }
+
+    /**
      * Checks if this query is collocated.
      *
      * @return {@code true} If the query is collocated.
@@ -139,6 +171,53 @@ public final class SqlFieldsQuery extends Query<List<?>> {
         this.collocated = collocated;
 
         return this;
+    }
+
+    /**
+     * Checks if join order of tables if enforced.
+     *
+     * @return Flag value.
+     */
+    public boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * Sets flag to enforce join order of tables in the query. If set to {@code true}
+     * query optimizer will not reorder tables in join. By default is {@code false}.
+     * <p>
+     * It is not recommended to enable this property until you are sure that
+     * your indexes and the query itself are correct and tuned as much as possible but
+     * query optimizer still produces wrong join order.
+     *
+     * @param enforceJoinOrder Flag value.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setEnforceJoinOrder(boolean enforceJoinOrder) {
+        this.enforceJoinOrder = enforceJoinOrder;
+
+        return this;
+    }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+
+        return this;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean isDistributedJoins() {
+        return distributedJoins;
     }
 
     /** {@inheritDoc} */

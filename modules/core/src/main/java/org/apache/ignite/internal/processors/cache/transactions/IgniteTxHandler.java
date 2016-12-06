@@ -120,7 +120,12 @@ public class IgniteTxHandler {
                 ", node=" + nearNodeId + ']');
         }
 
-        return prepareTx(nearNodeId, null, req);
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
+
+        assert req.txState() != null || fut.error() != null ||
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -243,6 +248,8 @@ public class IgniteTxHandler {
         final GridNearTxLocal locTx,
         final GridNearTxPrepareRequest req
     ) {
+        req.txState(locTx.txState());
+
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(
             req.reads(),
             req.writes(),
@@ -318,7 +325,7 @@ public class IgniteTxHandler {
 
         assert firstEntry != null : req;
 
-        GridDhtTxLocal tx;
+        GridDhtTxLocal tx = null;
 
         GridCacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
 
@@ -426,12 +433,17 @@ public class IgniteTxHandler {
                         req.version() + ", req=" + req + ']');
             }
             finally {
+                if (tx != null)
+                    req.txState(tx.txState());
+
                 if (top != null)
                     top.readUnlock();
             }
         }
 
         if (tx != null) {
+            req.txState(tx.txState());
+
             if (req.explicitLock())
                 tx.explicitLock(true);
 
@@ -547,6 +559,12 @@ public class IgniteTxHandler {
             return;
         }
 
+        IgniteInternalTx tx = fut.tx();
+
+        assert tx != null;
+
+        res.txState(tx.txState());
+
         fut.onResult(nodeId, res);
     }
 
@@ -594,6 +612,12 @@ public class IgniteTxHandler {
         }
         else if (txPrepareMsgLog.isDebugEnabled())
             txPrepareMsgLog.debug("Received dht prepare response [txId=" + fut.tx().nearXidVersion() + ", node=" + nodeId + ']');
+
+        IgniteInternalTx tx = fut.tx();
+
+        assert tx != null;
+
+        res.txState(tx.txState());
 
         fut.onResult(nodeId, res);
     }
@@ -655,12 +679,17 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
+    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
         GridNearTxFinishRequest req) {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
 
-        return finish(nodeId, null, req);
+        IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
+
+        assert req.txState() != null || (fut != null && fut.error() != null) ||
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -673,6 +702,9 @@ public class IgniteTxHandler {
         GridNearTxFinishRequest req) {
         assert nodeId != null;
         assert req != null;
+
+        if (locTx != null)
+            req.txState(locTx.txState());
 
         // 'baseVersion' message field is re-used for version to be added in completed versions.
         if (!req.commit() && req.baseVersion() != null)
@@ -730,6 +762,9 @@ public class IgniteTxHandler {
         }
         else
             tx = ctx.tm().tx(dhtVer);
+
+        if (tx != null)
+            req.txState(tx.txState());
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -918,6 +953,11 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
 
+            if (dhtTx != null)
+                req.txState(dhtTx.txState());
+            else if (nearTx != null)
+                req.txState(nearTx.txState());
+
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
                 res.invalidPartitionsByCacheId(dhtTx.invalidPartitions());
 
@@ -997,6 +1037,9 @@ public class IgniteTxHandler {
         }
         else
             sendReply(nodeId, req, res, dhtTx, nearTx);
+
+        assert req.txState() != null || res.error() != null ||
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
 
     /**
@@ -1097,6 +1140,8 @@ public class IgniteTxHandler {
         }
         else
             sendReply(nodeId, req, true, null);
+
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
 
     /**
@@ -1129,6 +1174,8 @@ public class IgniteTxHandler {
         else if (log.isDebugEnabled())
             log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
                 ", tx=" + tx + ']');
+
+        req.txState(tx.txState());
 
         try {
             if (req.commit() || req.isSystemInvalidate()) {
@@ -1687,6 +1734,8 @@ public class IgniteTxHandler {
 
             return;
         }
+        else
+            res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
     }

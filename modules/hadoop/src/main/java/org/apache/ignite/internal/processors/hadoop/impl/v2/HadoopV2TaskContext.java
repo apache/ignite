@@ -285,12 +285,12 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
             case REDUCE:
                 job().prepareTaskEnvironment(taskInfo());
 
-                locDir = taskLocalDir(locNodeId, taskInfo());
+                locDir = taskLocalDir(job.igniteWorkDirectory(), locNodeId, taskInfo());
 
                 break;
 
             default:
-                locDir = jobLocalDir(locNodeId, taskInfo().jobId());
+                locDir = jobLocalDir(job.igniteWorkDirectory(), locNodeId, taskInfo().jobId());
         }
 
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(jobConf().getClassLoader());
