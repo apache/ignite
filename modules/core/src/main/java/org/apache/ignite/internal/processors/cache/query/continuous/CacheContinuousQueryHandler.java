@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -153,10 +154,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient int cacheId;
 
     /** */
-    private transient volatile Map<Integer, Long> initUpdCntrs;
+    private transient volatile Map<Integer, T2<Long, Long>> initUpdCntrs;
 
     /** */
-    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
+    private transient volatile Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode;
 
     /** */
     private transient volatile AffinityTopologyVersion initTopVer;
@@ -289,8 +290,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
-        Map<Integer, Long> cntrs) {
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
+        Map<Integer, T2<Long, Long>> cntrs) {
         this.initUpdCntrsPerNode = cntrsPerNode;
         this.initUpdCntrs = cntrs;
         this.initTopVer = topVer;
@@ -856,7 +857,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         PartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            Long partCntr = null;
+            T2<Long, Long> partCntrs = null;
 
             AffinityTopologyVersion initTopVer0 = initTopVer;
 
@@ -867,20 +868,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 if (initUpdCntrsPerNode != null) {
                     for (ClusterNode node : aff.nodes(partId, initTopVer)) {
-                        Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
+                        Map<Integer, T2<Long, Long>> map = initUpdCntrsPerNode.get(node.id());
 
                         if (map != null) {
-                            partCntr = map.get(partId);
+                            partCntrs = map.get(partId);
 
                             break;
                         }
                     }
                 }
                 else if (initUpdCntrs != null)
-                    partCntr = initUpdCntrs.get(partId);
+                    partCntrs = initUpdCntrs.get(partId);
             }
 
-            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntr);
+            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntrs.get2());
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
 
