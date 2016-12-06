@@ -563,8 +563,11 @@ public class PlatformConfigurationUtils {
 
                 for (int i = 0; i < typeCnt; i++) {
                     BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
+
                     type.setEnum(in.readBoolean());
                     type.setIdentityResolver(readBinaryIdentityResolver(in));
+
+                    types.add(type);
                 }
 
                 cfg.getBinaryConfiguration().setTypeConfigurations(types);
