@@ -66,8 +66,6 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         startGrids(gridCount());
     }
 

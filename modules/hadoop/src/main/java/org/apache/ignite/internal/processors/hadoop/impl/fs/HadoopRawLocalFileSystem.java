@@ -46,15 +46,11 @@ import java.nio.file.Files;
  */
 public class HadoopRawLocalFileSystem extends FileSystem {
     /** Working directory for each thread. */
-    private ThreadLocal<Path> workDir = new ThreadLocal<Path>() {
+    private final ThreadLocal<Path> workDir = new ThreadLocal<Path>() {
         @Override protected Path initialValue() {
             return getInitialWorkingDirectory();
         }
     };
-
-    public HadoopRawLocalFileSystem() {
-        int qq = 1;
-    }
 
     /**
      * Converts Hadoop path to local path.

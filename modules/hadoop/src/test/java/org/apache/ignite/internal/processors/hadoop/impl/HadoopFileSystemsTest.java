@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FsConstants;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
@@ -73,17 +72,12 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
         setupFileSystems(cfg);
 
-        System.out.println("### local fs impl:  " + cfg.get("fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl"));
-
         cfg.set(HadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP,
             new Path(new Path(uri), "user/" + System.getProperty("user.name")).toString());
 
         FileSystem fs = FileSystem.get(uri, cfg);
-        System.out.println("###### fs: " + fs.getClass());
 
-        fs = FileSystem.get(uri, cfg);
         assertTrue(fs instanceof HadoopLocalFileSystemV1);
-        System.out.println("###### fs: " + fs.getClass());
 
         final CountDownLatch changeUserPhase = new CountDownLatch(THREAD_COUNT);
         final CountDownLatch changeDirPhase = new CountDownLatch(THREAD_COUNT);
@@ -104,9 +98,6 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
                     if ("file".equals(uri.getScheme()))
                         FileSystem.get(uri, cfg).setWorkingDirectory(new Path("file:///user/user" + curThreadNum));
-
-                    FileSystem fs = FileSystem.get(uri, cfg);
-                    System.out.println("fs: " + fs.getClass());
 
                     changeUserPhase.countDown();
                     changeUserPhase.await();
@@ -141,8 +132,6 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
         finishPhase.await();
 
-        System.out.println("### local fs impl:  " + cfg.get("fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl"));
-
         for (int i = 0; i < THREAD_COUNT; i ++) {
             cfg.set(MRJobConfig.USER_NAME, "user" + i);
 
@@ -170,10 +159,6 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
      * @throws Exception If fails.
      */
     public void testLocal() throws Exception {
-        //System.out.println(new Configuration().get("fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl"));
-
         testFileSystem(URI.create("file:///"));
-
-        //System.out.println(new Configuration().get("fs." + FsConstants.LOCAL_FS_URI.getScheme() + ".impl"));
     }
 }

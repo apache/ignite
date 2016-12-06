@@ -65,9 +65,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTestsStarted0() throws Exception {
         startGrids(gridCount());
     }
 
@@ -80,8 +78,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         latch.put("mapAwaitLatch", new CountDownLatch(1));
         latch.put("reduceAwaitLatch", new CountDownLatch(1));
         latch.put("combineAwaitLatch", new CountDownLatch(1));

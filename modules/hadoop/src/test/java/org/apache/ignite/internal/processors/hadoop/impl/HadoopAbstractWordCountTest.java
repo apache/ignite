@@ -49,9 +49,7 @@ public abstract class HadoopAbstractWordCountTest extends HadoopAbstractSelfTest
     protected IgfsEx igfs;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTestsStarted0() throws Exception {
         Configuration cfg = new Configuration();
 
         setupFileSystems(cfg);

@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.examples.terasort.TeraGen;
+import org.apache.hadoop.examples.terasort.TeraInputFormat;
+import org.apache.hadoop.examples.terasort.TeraOutputFormat;
+import org.apache.hadoop.examples.terasort.TeraSort;
+import org.apache.hadoop.examples.terasort.TeraValidate;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -27,16 +34,15 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.util.ToolRunner;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraGen;
-import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraInputFormat;
-import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraOutputFormat;
-import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraSort;
-import org.apache.ignite.internal.processors.hadoop.impl.examples.terasort.TeraValidate;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -44,6 +50,9 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
  * Implements TeraSort Hadoop sample as a unit test.
  */
 public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
+    /** Copy of Hadoop constant of package-private visibility. */
+    public static final String PARTITION_FILENAME = getPartitionFileNameConstant();
+
     /**  Out destination dir. */
     protected final String generateOutDir = getFsBase() + "/tera-generated";
 
@@ -52,6 +61,24 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /** Validation destination dir. */
     protected final String validateOutDir = getFsBase() + "/tera-validated";
+
+    /**
+     * Extracts value of Hadoop package-private constant.
+     *
+     * @return TeraInputFormat.PARTITION_FILENAME.
+     */
+    private static String getPartitionFileNameConstant() {
+        try {
+            Field f = TeraInputFormat.class.getDeclaredField("PARTITION_FILENAME");
+
+            f.setAccessible(true);
+
+            return (String)f.get(null);
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+    }
 
     /**
      * Gets base directory.
@@ -167,9 +194,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
             throw new IllegalStateException("Data size is too small: " + dataSizeBytes());
 
         // Generate input data:
-        int ret = TeraGen.mainImpl("-Dmapreduce.framework.name=local", String.valueOf(numLines), generateOutDir);
+        int res = ToolRunner.run(new Configuration(), new TeraGen(), new String[] {"-Dmapreduce.framework.name=local",
+            String.valueOf(numLines), generateOutDir});
 
-        assertEquals(0, ret);
+        assertEquals(0, res);
 
         FileStatus[] fileStatuses = getFileSystem().listStatus(new Path(generateOutDir));
 
@@ -211,9 +239,9 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         else {
             long start = System.currentTimeMillis();
 
-            Path partFile = new Path(outputDir, TeraInputFormat.PARTITION_FILENAME);
+            Path partFile = new Path(outputDir, PARTITION_FILENAME);
 
-            URI partUri = new URI(partFile.toString() + "#" + TeraInputFormat.PARTITION_FILENAME);
+            URI partUri = new URI(partFile.toString() + "#" + PARTITION_FILENAME);
 
             try {
                 TeraInputFormat.writePartitionFile(job, partFile);
@@ -228,14 +256,42 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
             System.out.println("Spent " + (end - start) + "ms computing partitions. " +
                 "Partition file added to distributed cache: " + partUri);
 
-            job.setPartitionerClass(TeraSort.TotalOrderPartitioner.class);
+            job.setPartitionerClass(getTeraSortTotalOrderPartitioner()/*TeraSort.TotalOrderPartitioner.class*/);
         }
 
         job.getConfiguration().setInt("dfs.replication", TeraSort.getOutputReplication(job));
 
-        TeraOutputFormat.setFinalSync(job, true);
+        /* TeraOutputFormat.setFinalSync(job, true); */
+        Method m = TeraOutputFormat.class.getDeclaredMethod("setFinalSync", JobContext.class, boolean.class);
+        m.setAccessible(true);
+        m.invoke(null, job, true);
 
         return job;
+    }
+
+    /**
+     * Extracts package-private TeraSort total order partitioner class.
+     *
+     * @return The class.
+     */
+    @SuppressWarnings("unchecked")
+    private Class<? extends Partitioner> getTeraSortTotalOrderPartitioner() {
+        Class[] classes = TeraSort.class.getDeclaredClasses();
+
+        Class<? extends Partitioner> totalOrderPartitionerCls = null;
+
+        for (Class<?> x: classes) {
+            if ("TotalOrderPartitioner".equals(x.getSimpleName())) {
+                totalOrderPartitionerCls = (Class<? extends Partitioner>)x;
+
+                break;
+            }
+        }
+
+        if (totalOrderPartitionerCls == null)
+            throw new IllegalStateException("Failed to find TeraSort total order partitioner class.");
+
+        return totalOrderPartitionerCls;
     }
 
     /**
@@ -248,9 +304,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         getFileSystem().delete(new Path(validateOutDir), true);
 
         // Generate input data:
-        int ret = TeraValidate.mainImpl("-Dmapreduce.framework.name=local", sortOutDir, validateOutDir);
+        int res = ToolRunner.run(new Configuration(), new TeraValidate(),
+            new String[] {"-Dmapreduce.framework.name=local", sortOutDir, validateOutDir});
 
-        assertEquals(0, ret);
+        assertEquals(0, res);
 
         FileStatus[] fileStatuses = getFileSystem().listStatus(new Path(validateOutDir), new PathFilter() {
             @Override public boolean accept(Path path) {
