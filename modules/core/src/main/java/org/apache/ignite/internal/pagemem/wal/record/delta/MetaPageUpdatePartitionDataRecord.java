@@ -34,16 +34,20 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private int partSize;
 
+    /** */
+    private byte state;
+
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      */
-    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize) {
+    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize, byte state) {
         super(cacheId, pageId);
 
         this.updateCntr = updateCntr;
         this.globalRmvId = globalRmvId;
         this.partSize = partSize;
+        this.state = state;
     }
 
     /**
@@ -65,6 +69,13 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
      */
     public int partitionSize() {
         return partSize;
+    }
+
+    /**
+     * @return Partition state
+     */
+    public byte state() {
+        return state;
     }
 
     /** {@inheritDoc} */

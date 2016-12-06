@@ -36,7 +36,9 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -48,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -346,25 +349,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /**
-     * @param cached Entry.
-     * @return {@code True} if locked.
-     * @throws GridCacheEntryRemovedException If removed.
-     */
-    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
-        return (cached.lockedLocally(lockVer) && filter(cached)); // If filter failed, lock is failed.
-    }
-
-    /**
-     * @param cached Entry.
-     * @param owner Lock owner.
-     * @return {@code True} if locked.
-     */
-    private boolean locked(GridCacheEntryEx cached, GridCacheMvccCandidate owner) {
-        // Reentry-aware check (if filter failed, lock is failed).
-        return owner != null && owner.matches(lockVer, cctx.nodeId(), threadId) && filter(cached);
-    }
-
-    /**
      * Adds entry to future.
      *
      * @param entry Entry to add.
@@ -392,11 +376,11 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             threadId,
             lockVer,
             null,
-            null,
             timeout,
             /*reenter*/false,
             inTx(),
-            implicitSingle()
+            implicitSingle(),
+            false
         );
 
         if (c == null && timeout < 0) {
@@ -575,10 +559,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     break; // While.
 
                 try {
-                    GridCacheMvccCandidate owner = entry.readyLock(lockVer);
+                    CacheLockCandidates owners = entry.readyLock(lockVer);
 
                     if (timeout < 0) {
-                        if (owner == null || !owner.version().equals(lockVer)) {
+                        if (owners == null || !owners.hasCandidate(lockVer)) {
                             // We did not send any requests yet.
                             onFailed(false);
 
@@ -587,9 +571,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     }
 
                     if (log.isDebugEnabled()) {
-                        if (!locked(entry, owner))
-                            log.debug("Entry is not locked (will keep waiting) [entry=" + entry +
-                                ", fut=" + this + ']');
+                        log.debug("Current lock owners [entry=" + entry +
+                            ", owners=" + owners +
+                            ", fut=" + this + ']');
                     }
 
                     break; // Inner while loop.
@@ -1248,9 +1232,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
                 boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
+                GridCacheAdapter<?, ?> cache0 = cctx.cache();
+
+                if (cache0.isNear())
+                    cache0 = ((GridNearCacheAdapter)cache0).dht();
+
                 for (GridCacheEntryInfo info : res.preloadEntries()) {
                     try {
-                        GridCacheEntryEx entry = cctx.cache().entryEx(info.key(), topVer);
+                        GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 
                         if (entry.initialValue(info.value(),
                             info.version(),

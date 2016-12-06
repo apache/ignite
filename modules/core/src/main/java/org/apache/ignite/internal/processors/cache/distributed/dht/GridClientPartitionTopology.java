@@ -888,7 +888,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void setOwners(int p, Set<UUID> owners) {
+    @Override public boolean setOwners(int p, Set<UUID> owners, boolean skipUpdateSeq) {
         lock.writeLock().lock();
 
         try {
@@ -896,13 +896,22 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 if (!e.getValue().containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
                     e.getValue().put(p, MOVING);
+
+                    if (!skipUpdateSeq) {
+                        updateSeq.incrementAndGet();
+
+                        skipUpdateSeq = true;
+                    }
+                }
                 else if (owners.contains(e.getKey()))
                     e.getValue().put(p, OWNING);
             }
 
             part2node.put(p, owners);
+
+            return skipUpdateSeq;
         }
         finally {
             lock.writeLock().unlock();

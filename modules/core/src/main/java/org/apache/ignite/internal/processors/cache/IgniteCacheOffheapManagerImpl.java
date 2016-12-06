@@ -82,6 +82,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
+    protected final CacheDataStore removedStore = new CacheDataStoreImpl(-1, null, null, null);
+
+    /** */
     protected PendingEntriesTree pendingEntries;
 
     /** */
@@ -324,6 +327,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
+    @Override public void onPartitionInitialCounterUpdated(int part, long cntr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public long lastUpdatedPartitionCounter(int part) {
         return 0;
     }
@@ -356,17 +364,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to clear cache entry: " + key, e);
             }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(GridDhtLocalPartition part) throws IgniteCheckedException {
-        GridIterator<CacheDataRow> iterator = iterator(part.id());
-
-        while (iterator.hasNext()) {
-            CacheDataRow row = iterator.next();
-
-            remove(row.key(), part.id(), part);
         }
     }
 
@@ -645,9 +642,15 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStore dataStore = createCacheDataStore0(p);
+        CacheDataStore dataStore = null;
+        CacheDataStore oldStore = null;
 
-        partDataStores.put(p, dataStore);
+        do {
+            dataStore = createCacheDataStore0(p);
+
+            oldStore = partDataStores.putIfAbsent(p, dataStore);
+        }
+        while (oldStore != null);
 
         return dataStore;
     }
@@ -948,6 +951,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
+        @Override public void updateInitialCounter(long cntr) {
+            if (updateCounter() < cntr)
+                updateCounter(cntr);
+
+            initCntr = cntr;
+        }
+
+        /** {@inheritDoc} */
         @Override public void init(long size, long updCntr) {
             initCntr = updCntr;
             storageSize.set(size);
@@ -1225,7 +1236,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx) {
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
 
@@ -1284,7 +1295,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx) {
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
 
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
