@@ -304,6 +304,19 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param ack Shuffle ack.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void onShuffleAck(HadoopShuffleAck ack) {
+        IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup = sentMsgs.get(ack.id());
+
+        if (tup != null)
+            tup.get2().onDone();
+        else
+            log.warning("Received shuffle ack for not registered shuffle id: " + ack);
+    }
+
+    /**
      * Process shuffle finish request.
      *
      * @param nodeId Source node ID.
