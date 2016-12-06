@@ -118,6 +118,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
@@ -169,13 +170,18 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -31:
+            case -32:
                 msg = new HadoopShuffleFinishResponse();
 
                 break;
 
-            case -30:
+            case -31:
                 msg = new HadoopShuffleFinishRequest();
+
+                break;
+
+            case -30:
+                msg = new HadoopShuffleAck();
 
                 break;
 
