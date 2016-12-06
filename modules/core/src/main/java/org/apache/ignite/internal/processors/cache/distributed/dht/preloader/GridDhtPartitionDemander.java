@@ -303,14 +303,15 @@ public class GridDhtPartitionDemander {
      * @param force {@code True} if dummy reassign.
      * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
+     * @param forcedRebalanceFut External future for forced rebalance.
      * @return Rebalancing closure.
      */
     Callable<Boolean> addAssignments(final GridDhtPreloaderAssignments assigns, boolean force,
-        final Collection<String> caches, int cnt, @Nullable final GridFutureAdapter<Boolean> preloadFut) {
+        final Collection<String> caches, int cnt, @Nullable final GridFutureAdapter<Boolean> forcedRebalanceFut) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
-        assert force == (preloadFut != null);
+        assert force == (forcedRebalanceFut != null);
 
         long delay = cctx.config().getRebalanceDelay();
 
@@ -329,14 +330,14 @@ public class GridDhtPartitionDemander {
                 });
             }
 
-            if (preloadFut != null) {
+            if (forcedRebalanceFut != null) {
                 fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> future) {
                         try {
-                            preloadFut.onDone(future.get());
+                            forcedRebalanceFut.onDone(future.get());
                         }
                         catch (Exception e) {
-                            preloadFut.onDone(e);
+                            forcedRebalanceFut.onDone(e);
                         }
                     }
                 });

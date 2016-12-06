@@ -90,7 +90,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> forcePreload() {
+    @Override public IgniteInternalFuture<Boolean> forceRebalance() {
         return new GridFinishedFuture<>(true);
     }
 
@@ -168,7 +168,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** {@inheritDoc} */
     @Override public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload,
-        Collection<String> caches, int cnt, @Nullable GridFutureAdapter<Boolean> preloadFut) {
+        Collection<String> caches, int cnt, @Nullable GridFutureAdapter<Boolean> rebalanceFut) {
         return null;
     }
 

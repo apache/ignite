@@ -93,7 +93,7 @@ public interface GridCachePreloader {
         boolean forcePreload,
         Collection<String> caches,
         int cnt,
-        @Nullable GridFutureAdapter<Boolean> preloadFut);
+        @Nullable GridFutureAdapter<Boolean> rebalanceFut);
 
     /**
      * @param p Preload predicate.
@@ -153,9 +153,9 @@ public interface GridCachePreloader {
         AffinityTopologyVersion topVer);
 
     /**
-     * Force preload process.
+     * Force rebalance process.
      */
-    public IgniteInternalFuture<Boolean> forcePreload();
+    public IgniteInternalFuture<Boolean> forceRebalance();
 
     /**
      * Unwinds undeploys.
