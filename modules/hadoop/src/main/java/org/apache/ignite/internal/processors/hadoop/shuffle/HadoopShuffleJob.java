@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -534,38 +535,47 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param newBufMinSize Min new buffer size.
      */
     private void send(final int idx, int newBufMinSize) {
-        final GridFutureAdapter<?> fut = new GridFutureAdapter<>();
-
         HadoopShuffleMessage msg = msgs[idx];
 
         final long msgId = msg.id();
 
-        IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
-            new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+        final GridFutureAdapter<?> fut;
 
-        assert old == null;
+        if (embedded)
+            fut = null;
+        else {
+            fut = new GridFutureAdapter<>();
+
+            IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
+                new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+
+            assert old == null;
+        }
 
         try {
             io.apply(reduceAddrs[idx], msg);
         }
         catch (GridClosureException e) {
-            fut.onDone(U.unwrap(e));
+            if (fut != null)
+                fut.onDone(U.unwrap(e));
         }
 
-        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                try {
-                    f.get();
+        if (fut != null) {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override
+                public void apply(IgniteInternalFuture<?> f) {
+                    try {
+                        f.get();
 
-                    // Clean up the future from map only if there was no exception.
-                    // Otherwise flush() should fail.
-                    sentMsgs.remove(msgId);
+                        // Clean up the future from map only if there was no exception.
+                        // Otherwise flush() should fail.
+                        sentMsgs.remove(msgId);
+                    } catch (IgniteCheckedException e) {
+                        log.error("Failed to send message.", e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to send message.", e);
-                }
-            }
-        });
+            });
+        }
 
         msgs[idx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), idx,
             Math.max(msgSize, newBufMinSize));
@@ -641,14 +651,38 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
-            fut.add(tup.get2());
+        if (embedded) {
+            boolean sent = false;
 
-        fut.markInitialized();
+            for (Map.Entry<T, HadoopShuffleRemoteState> rmtStateEntry : remoteShuffleStates().entrySet()) {
+                T dest = rmtStateEntry.getKey();
+                HadoopShuffleRemoteState rmtState = rmtStateEntry.getValue();
 
-        if (log.isDebugEnabled())
-            log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
+                io.apply(dest, new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount()));
 
+                if (log.isDebugEnabled())
+                    log.debug("Sent shuffle finish request [jobId=" + job.id() + ", dest=" + dest + ']');
+
+                fut.add(rmtState.future());
+
+                sent = true;
+            }
+
+            if (sent)
+                fut.markInitialized();
+            else
+                return new GridFinishedFuture<>();
+        }
+        else {
+            for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
+                fut.add(tup.get2());
+
+            fut.markInitialized();
+
+            if (log.isDebugEnabled())
+                log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
+
+        }
         return fut;
     }
 
