@@ -541,6 +541,7 @@ public class GridMapQueryExecutor {
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
                 reqId,
+                segmentId,
                 mainCctx.isReplicated() ? REPLICATED : MAP)
                 .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)

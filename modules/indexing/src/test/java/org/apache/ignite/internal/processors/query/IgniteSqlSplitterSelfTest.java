@@ -78,6 +78,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
+        cfg.setSqlQueryParallelismLevel(4);
+
         return cfg;
     }
 
@@ -750,6 +752,105 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 ignite(0).destroyCache(cache.getName());
         }
     }
+
+    public void testIndexSegmentation() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            Integer.class, Person2.class).setIndexSegmentationEnabled(true);
+        CacheConfiguration ccfg2 = cacheConfig("org", true,
+            Integer.class, Organization.class).setIndexSegmentationEnabled(true);
+
+        IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
+
+        try {
+            c2.put(1, new Organization("o1"));
+            c2.put(2, new Organization("o2"));
+            c1.put(3, new Person2(1, "p1"));
+            c1.put(4, new Person2(2, "p2"));
+            c1.put(5, new Person2(3, "p3"));
+
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+
+            checkQueryPlan(c1,true, 1, select0);
+        }
+        finally {
+            c1.destroy();
+            c2.destroy();
+        }
+    }
+
+    public void testIndexSegmentationFailurePartitionedReplicated() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            Integer.class, Person2.class).setIndexSegmentationEnabled(true);
+        CacheConfiguration ccfg2 = cacheConfig("org", false,
+            Integer.class, Organization.class);
+
+        IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
+
+        try {
+            c2.put(1, new Organization("o1"));
+            c2.put(2, new Organization("o2"));
+            c1.put(3, new Person2(1, "p1"));
+            c1.put(4, new Person2(2, "p2"));
+            c1.put(5, new Person2(3, "p3"));
+
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+
+            final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
+
+            qry.setDistributedJoins(true);
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    c1.query(qry);
+
+                    return null;
+                }
+            }, CacheException.class, "Using segmented and non-segmented index forbidden.");
+        }
+        finally {
+            c1.destroy();
+            c2.destroy();
+        }
+    }
+
+    public void testIndexSegmentationFailureSegmentedWithNonSegmented() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            Integer.class, Person2.class).setIndexSegmentationEnabled(true);
+        CacheConfiguration ccfg2 = cacheConfig("org", true,
+            Integer.class, Organization.class).setIndexSegmentationEnabled(false);
+
+        IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
+
+        try {
+            c2.put(1, new Organization("o1"));
+            c2.put(2, new Organization("o2"));
+            c1.put(3, new Person2(1, "p1"));
+            c1.put(4, new Person2(2, "p2"));
+            c1.put(5, new Person2(3, "p3"));
+
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+
+            final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
+
+            qry.setDistributedJoins(true);
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    c1.query(qry);
+
+                    return null;
+                }
+            }, CacheException.class, "Using segmented and non-segmented index forbidden.");
+        }
+        finally {
+            c1.destroy();
+            c2.destroy();
+        }
+    }
+
 
     /**
      * @param cache Cache.

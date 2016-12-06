@@ -97,7 +97,22 @@ public class GridH2QueryContext {
      * @param type Query type.
      */
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        key = new Key(locNodeId, nodeId, qryId, type);
+        assert type != MAP;
+
+        key = new Key(locNodeId, nodeId, qryId, 0, type);
+    }
+
+    /**
+     * @param locNodeId Local node ID.
+     * @param nodeId The node who initiated the query.
+     * @param qryId The query ID.
+     * @param segmentIdx Use index segment.
+     * @param type Query type.
+     */
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentIdx, GridH2QueryType type) {
+        assert segmentIdx == 0 || type == MAP;
+
+        key = new Key(locNodeId, nodeId, qryId, segmentIdx, type);
     }
 
     /**
@@ -398,7 +413,14 @@ public class GridH2QueryContext {
      * @return {@code True} if context was found.
      */
     public static boolean clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        return doClear(new Key(locNodeId, nodeId, qryId, type), false);
+        boolean res = false;
+
+        for (Key key : qctxs.keySet()) {
+            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
+                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentIdx, type), false);
+        }
+
+        return res;
     }
 
     /**
@@ -487,9 +509,10 @@ public class GridH2QueryContext {
         UUID locNodeId,
         UUID nodeId,
         long qryId,
+        int threadIdx,
         GridH2QueryType type
     ) {
-        return qctxs.get(new Key(locNodeId, nodeId, qryId, type));
+        return qctxs.get(new Key(locNodeId, nodeId, qryId, threadIdx, type));
     }
 
     /**
@@ -545,15 +568,19 @@ public class GridH2QueryContext {
         private final long qryId;
 
         /** */
+        private final int segmentIdx;
+
+        /** */
         private final GridH2QueryType type;
 
         /**
          * @param locNodeId Local node ID.
          * @param nodeId The node who initiated the query.
          * @param qryId The query ID.
+         * @param segmentIdx Query thread idx.
          * @param type Query type.
          */
-        private Key(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+        private Key(UUID locNodeId, UUID nodeId, long qryId, int segmentIdx, GridH2QueryType type) {
             assert locNodeId != null;
             assert nodeId != null;
             assert type != null;
@@ -561,6 +588,7 @@ public class GridH2QueryContext {
             this.locNodeId = locNodeId;
             this.nodeId = nodeId;
             this.qryId = qryId;
+            this.segmentIdx = segmentIdx;
             this.type = type;
         }
 
@@ -585,6 +613,7 @@ public class GridH2QueryContext {
             res = 31 * res + nodeId.hashCode();
             res = 31 * res + (int)(qryId ^ (qryId >>> 32));
             res = 31 * res + type.hashCode();
+            res = 31 * res + segmentIdx;
 
             return res;
         }

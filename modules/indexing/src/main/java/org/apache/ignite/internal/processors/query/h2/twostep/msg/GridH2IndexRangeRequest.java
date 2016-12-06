@@ -38,6 +38,9 @@ public class GridH2IndexRangeRequest implements Message {
     private long qryId;
 
     /** */
+    private int segmentId;
+
+    /** */
     private int batchLookupId;
 
     /** */
@@ -84,6 +87,20 @@ public class GridH2IndexRangeRequest implements Message {
      */
     public void queryId(long qryId) {
         this.qryId = qryId;
+    }
+
+    /**
+     * @param segmentId Segment idx.
+     */
+    public void segment(int segmentId) {
+        this.segmentId = segmentId;
+    }
+
+    /**
+     * @return Segment idx.
+     */
+    public int segment() {
+        return segmentId;
     }
 
     /**
@@ -136,6 +153,11 @@ public class GridH2IndexRangeRequest implements Message {
 
                 writer.incrementState();
 
+            case 4:
+                if (!writer.writeInt("segmentId", segmentId))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -181,6 +203,13 @@ public class GridH2IndexRangeRequest implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                segmentId = reader.readInt("segmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2IndexRangeRequest.class);
@@ -193,7 +222,7 @@ public class GridH2IndexRangeRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */

@@ -441,12 +441,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
             msg.originNodeId(),
             msg.queryId(),
+            msg.segment(),
             MAP);
 
         GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
 
         res.originNodeId(msg.originNodeId());
         res.queryId(msg.queryId());
+        res.segment(msg.segment());
         res.batchLookupId(msg.batchLookupId());
 
         if (qctx == null)
@@ -520,7 +522,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
-            msg.originNodeId(), msg.queryId(), MAP);
+            msg.originNodeId(), msg.queryId(),
+            msg.segment(),
+            MAP);
 
         if (qctx == null)
             return;
@@ -556,6 +560,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         req.originNodeId(qctx.originNodeId());
         req.queryId(qctx.queryId());
+        req.segment(qctx.segment());
         req.batchLookupId(batchLookupId);
 
         return req;
