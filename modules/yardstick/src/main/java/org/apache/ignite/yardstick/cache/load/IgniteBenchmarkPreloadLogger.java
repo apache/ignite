@@ -83,8 +83,6 @@ public class IgniteBenchmarkPreloadLogger extends Thread {
 
                 counters.put(cacheName, cacheSize);
             }
-
-
         }
 
         BenchmarkUtils.println("WARNING: preload logger is interrupted.");
