@@ -108,9 +108,8 @@ public class HadoopShuffle extends HadoopComponent {
 
         int locMappersCnt = F.isEmpty(locMappers) ? 0 : locMappers.size();
 
-        HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()), locMappersCntб
-            true);
+        HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log, ctx.jobTracker().job(jobId, null),
+            mem, plan.reducers(), plan.reducers(ctx.localNodeId()), locMappersCnt, true);
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 

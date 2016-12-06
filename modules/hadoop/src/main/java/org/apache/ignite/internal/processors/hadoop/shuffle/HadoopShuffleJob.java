@@ -57,7 +57,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -361,11 +360,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Process shuffle message.
      *
-     * @param nodeId Source Node ID.
+     * @param src Source.
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(UUID nodeId, HadoopShuffleMessage2 msg) throws IgniteCheckedException {
+    public void onShuffleMessage(T src, HadoopShuffleMessage2 msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
 
         HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
@@ -394,8 +393,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
         }
 
-        if (localShuffleState(nodeId).onShuffleMessage())
-            sendFinishResponse(nodeId, msg.jobId());
+        if (localShuffleState(src).onShuffleMessage())
+            sendFinishResponse(src, msg.jobId());
     }
 
     /**
@@ -624,7 +623,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         io.apply(nodeId, msg);
 
-        remoteShuffleState((UUID)nodeId).onShuffleMessage();
+        remoteShuffleState(nodeId).onShuffleMessage();
     }
 
     /**
@@ -858,7 +857,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
         }
 
-        }
         return fut;
     }
 
