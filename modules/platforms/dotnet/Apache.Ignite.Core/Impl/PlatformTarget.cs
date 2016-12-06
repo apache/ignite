@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -48,9 +47,6 @@ namespace Apache.Ignite.Core.Impl
 
         /** */
         protected const int Error = -1;
-
-        /** */
-        private const int OpMeta = -1;
 
         /** */
         public const int OpNone = -2;
@@ -258,16 +254,6 @@ namespace Apache.Ignite.Core.Impl
         #endregion
 
         #region OUT operations
-
-        /// <summary>
-        /// Perform out operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <returns>Long result.</returns>
-        protected long DoOutOp(int type)
-        {
-            return UU.TargetOutLong(_target, type);
-        }
 
         /// <summary>
         /// Perform out operation.
@@ -547,7 +533,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction, 
+        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             Debug.Assert(inErrorAction != null);
@@ -573,35 +559,6 @@ namespace Apache.Ignite.Core.Impl
             }
         }
 
-        /// <summary>
-        /// Perform out-in operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <param name="inAction">In action.</param>
-        /// <param name="arg">Argument.</param>
-        /// <returns>Result.</returns>
-        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, void* arg)
-        {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
-                    outAction(writer);
-
-                    FinishMarshal(writer);
-
-                    UU.TargetInObjectStreamOutStream(_target, type, arg, outStream.SynchronizeOutput(), inStream.MemoryPointer);
-
-                    inStream.SynchronizeInput();
-
-                    return inAction(inStream);
-                }
-            }
-        }
-        
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
@@ -751,7 +708,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="val">Value.</param>
         /// <returns>Result.</returns>
-        protected long DoOutInOpLong(int type, long val)
+        protected long DoOutInOp(int type, long val = 0)
         {
             return UU.TargetInLongOutLong(_target, type, val);
         }
@@ -863,66 +820,6 @@ namespace Apache.Ignite.Core.Impl
         internal void FinishMarshal(BinaryWriter writer)
         {
             _marsh.FinishMarshal(writer);
-        }
-
-        /// <summary>
-        /// Put binary types to Grid.
-        /// </summary>
-        /// <param name="types">Binary types.</param>
-        internal void PutBinaryTypes(ICollection<BinaryType> types)
-        {
-            DoOutOp(OpMeta, stream =>
-            {
-                BinaryWriter w = _marsh.StartMarshal(stream);
-
-                w.WriteInt(types.Count);
-
-                foreach (var meta in types)
-                {
-                    w.WriteInt(meta.TypeId);
-                    w.WriteString(meta.TypeName);
-                    w.WriteString(meta.AffinityKeyFieldName);
-
-                    IDictionary<string, int> fields = meta.GetFieldsMap();
-
-                    w.WriteInt(fields.Count);
-
-                    foreach (var field in fields)
-                    {
-                        w.WriteString(field.Key);
-                        w.WriteInt(field.Value);
-                    }
-
-                    w.WriteBoolean(meta.IsEnum);
-
-                    // Send schemas
-                    var desc = meta.Descriptor;
-                    Debug.Assert(desc != null);
-
-                    var count = 0;
-                    var countPos = stream.Position;
-                    w.WriteInt(0);  // Reserve for count
-
-                    foreach (var schema in desc.Schema.GetAll())
-                    {
-                        w.WriteInt(schema.Key);
-
-                        var ids = schema.Value;
-                        w.WriteInt(ids.Length);
-
-                        foreach (var id in ids)
-                            w.WriteInt(id);
-
-                        count++;
-                    }
-
-                    stream.WriteInt(countPos, count);
-                }
-
-                _marsh.FinishMarshal(w);
-            });
-
-            _marsh.OnBinaryTypesSent(types);
         }
 
         /// <summary>

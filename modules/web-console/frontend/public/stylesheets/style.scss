@@ -541,6 +541,12 @@ i.btn {
         margin-left: 0;
     }
 
+    button.btn[disabled="disabled"] {
+        i {
+            cursor: not-allowed;
+        }
+    }
+
     > .btn + .dropdown-toggle {
         margin-right: 0;
         padding: 3px 6px;
@@ -1350,9 +1356,6 @@ label {
     margin: 0 5px;
 }
 
-.fa {
-    cursor: pointer;
-}
 
 .fa-cursor-default {
     cursor: default !important;
@@ -1370,10 +1373,6 @@ label {
 .fa-chevron-circle-right {
     color: $brand-primary;
     margin-right: 5px;
-}
-
-.fa-question-circle {
-    cursor: default;
 }
 
 label.required:after {

@@ -136,7 +136,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     }
 
     /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_ITERATOR:
                 iter = cursor.iterator();
@@ -154,7 +154,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
                 return iter.hasNext() ? TRUE : FALSE;
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc} */
