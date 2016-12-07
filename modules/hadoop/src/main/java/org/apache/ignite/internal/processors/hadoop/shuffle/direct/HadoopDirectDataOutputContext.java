@@ -85,7 +85,7 @@ public class HadoopDirectDataOutputContext {
      * @return State.
      */
     public HadoopDirectDataOutputState state() {
-        return new HadoopDirectDataOutputState(out.buffer(), out.position(), out.position());
+        return new HadoopDirectDataOutputState(out.buffer(), out.position());
     }
 
     /**

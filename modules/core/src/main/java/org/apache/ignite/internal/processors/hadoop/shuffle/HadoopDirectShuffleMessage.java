@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -30,7 +31,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Direct shuffle message.
@@ -38,13 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final AtomicLong ID_GEN = new AtomicLong();
-
-    /** */
-    @GridToStringInclude
-    private long msgId;
 
     /** */
     @GridToStringInclude
@@ -57,12 +50,12 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     /** Count. */
     private int cnt;
 
-    /** */
+    /** Buffer. */
     private byte[] buf;
 
-    /** */
-    @GridToStringInclude
-    private int bufLen;
+    /** Buffer length (equal or less than buf.length). */
+    @GridDirectTransient
+    private transient int bufLen;
 
     /**
      * Default constructor.
@@ -79,9 +72,8 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
      * @param cnt Count.
      * @param buf Buffer.
      * @param bufLen Buffer length.
-     * @param dataLen Original data length.
      */
-    public HadoopDirectShuffleMessage(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen, int dataLen) {
+    public HadoopDirectShuffleMessage(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen) {
         assert jobId != null;
 
         this.jobId = jobId;
@@ -89,15 +81,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         this.cnt = cnt;
         this.buf = buf;
         this.bufLen = bufLen;
-
-        msgId = ID_GEN.incrementAndGet();
-    }
-
-    /**
-     * @return Message ID.
-     */
-    public long id() {
-        return msgId;
     }
 
     /**
@@ -128,13 +111,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         return buf;
     }
 
-    /**
-     * @return Buffer length.
-     */
-    public int bufferLength() {
-        return bufLen;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -148,37 +124,25 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("msgId", msgId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("jobId", jobId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeInt("reducer", reducer))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeInt("cnt", cnt))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 3:
                 if (!writer.writeByteArray("buf", this.buf, 0, bufLen))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeInt("bufLen", bufLen))
                     return false;
 
                 writer.incrementState();
@@ -197,14 +161,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
         switch (reader.state()) {
             case 0:
-                msgId = reader.readLong("msgId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 jobId = reader.readMessage("jobId");
 
                 if (!reader.isLastRead())
@@ -212,7 +168,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 reducer = reader.readInt("reducer");
 
                 if (!reader.isLastRead())
@@ -220,7 +176,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 cnt = reader.readInt("cnt");
 
                 if (!reader.isLastRead())
@@ -228,19 +184,13 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 3:
                 this.buf = reader.readByteArray("buf");
 
                 if (!reader.isLastRead())
                     return false;
 
-                reader.incrementState();
-
-            case 5:
-                bufLen = reader.readInt("bufLen");
-
-                if (!reader.isLastRead())
-                    return false;
+                bufLen = this.buf != null ? this.buf.length : 0;
 
                 reader.incrementState();
 
@@ -256,7 +206,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -267,23 +217,23 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         jobId.writeExternal(out);
-        out.writeLong(msgId);
+
         out.writeInt(reducer);
         out.writeInt(cnt);
-        out.writeInt(bufLen);
+
         U.writeByteArray(out, buf);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         jobId = new HadoopJobId();
-
         jobId.readExternal(in);
-        msgId = in.readLong();
+
         reducer = in.readInt();
         cnt = in.readInt();
-        bufLen = in.readInt();
+
         buf = U.readByteArray(in);
+        bufLen = buf != null ? buf.length : 0;
     }
 
     /** {@inheritDoc} */

@@ -27,20 +27,15 @@ public class HadoopDirectDataOutputState {
     /** Buffer length. */
     private final int bufLen;
 
-    /** Original data length. */
-    private final int dataLen;
-
     /**
      * Constructor.
      *
      * @param buf Buffer.
      * @param bufLen Buffer length.
-     * @param dataLen Original length.
      */
-    public HadoopDirectDataOutputState(byte[] buf, int bufLen, int dataLen) {
+    public HadoopDirectDataOutputState(byte[] buf, int bufLen) {
         this.buf = buf;
         this.bufLen = bufLen;
-        this.dataLen = dataLen;
     }
 
     /**
@@ -55,12 +50,5 @@ public class HadoopDirectDataOutputState {
      */
     public int bufferLength() {
         return bufLen;
-    }
-
-    /**
-     * @return Original data length.
-     */
-    public int dataLength() {
-        return dataLen;
     }
 }
