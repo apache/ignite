@@ -48,18 +48,18 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /** Error. */
     private Exception err;
 
-    private boolean incremental;
+    private boolean fullBackup;
 
     private Map<Integer, Long> lastFullBackupIdForCache = new HashMap<>();
 
     /**
      * @param cacheNames Cache names.
      */
-    public StartFullBackupDiscoveryMessage(long globalBackupId, Collection<String> cacheNames, UUID initiatorId, boolean incremental) {
+    public StartFullBackupDiscoveryMessage(long globalBackupId, Collection<String> cacheNames, UUID initiatorId, boolean fullBackup) {
         this.globalBackupId = globalBackupId;
         this.cacheNames = cacheNames;
         this.initiatorId = initiatorId;
-        this.incremental = incremental;
+        this.fullBackup = fullBackup;
     }
 
     /**
@@ -111,8 +111,8 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
         return cacheNames;
     }
 
-    public boolean incremental() {
-        return incremental;
+    public boolean fullBackup() {
+        return fullBackup;
     }
 
     public Long lastFullBackupId(int cacheId) {
@@ -125,7 +125,7 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullBackupAckDiscoveryMessage(globalBackupId, incremental, lastFullBackupIdForCache, cacheNames, err, initiatorId);
+        return new StartFullBackupAckDiscoveryMessage(globalBackupId, fullBackup, lastFullBackupIdForCache, cacheNames, err, initiatorId);
     }
 
     /** {@inheritDoc} */
