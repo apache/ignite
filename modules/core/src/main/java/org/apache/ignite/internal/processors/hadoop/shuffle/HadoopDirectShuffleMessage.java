@@ -33,9 +33,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Shuffle message.
+ * Direct shuffle message.
  */
-public class HadoopShuffleMessage2 implements Message, HadoopMessage {
+public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,7 +70,7 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
     /**
      * Default constructor.
      */
-    public HadoopShuffleMessage2() {
+    public HadoopDirectShuffleMessage() {
         // No-op.
     }
 
@@ -84,7 +84,7 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
      * @param bufLen Buffer length.
      * @param dataLen Original data length.
      */
-    public HadoopShuffleMessage2(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen, int dataLen) {
+    public HadoopDirectShuffleMessage(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen, int dataLen) {
         assert jobId != null;
 
         this.jobId = jobId;
@@ -271,7 +271,7 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
 
         }
 
-        return reader.afterMessageRead(HadoopShuffleMessage2.class);
+        return reader.afterMessageRead(HadoopDirectShuffleMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -315,6 +315,6 @@ public class HadoopShuffleMessage2 implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HadoopShuffleMessage2.class, this);
+        return S.toString(HadoopDirectShuffleMessage.class, this);
     }
 }

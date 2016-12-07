@@ -201,10 +201,10 @@ public class HadoopShuffle extends HadoopComponent {
 
                 job(m.jobId()).onShuffleMessage(src, m);
             }
-            else if (msg instanceof HadoopShuffleMessage2) {
-                HadoopShuffleMessage2 m = (HadoopShuffleMessage2)msg;
+            else if (msg instanceof HadoopDirectShuffleMessage) {
+                HadoopDirectShuffleMessage m = (HadoopDirectShuffleMessage)msg;
 
-                job(m.jobId()).onShuffleMessage(src, m);
+                job(m.jobId()).onDirectShuffleMessage(src, m);
             }
             else if (msg instanceof HadoopShuffleAck) {
                 HadoopShuffleAck m = (HadoopShuffleAck)msg;

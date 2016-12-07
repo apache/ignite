@@ -360,7 +360,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(T src, HadoopShuffleMessage2 msg) throws IgniteCheckedException {
+    public void onDirectShuffleMessage(T src, HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
 
         HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
@@ -612,7 +612,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         if (reset)
             rmtDirectCtx.reset();
 
-        HadoopShuffleMessage2 msg = new HadoopShuffleMessage2(job.id(), rmtRdcIdx, cnt,
+        HadoopDirectShuffleMessage msg = new HadoopDirectShuffleMessage(job.id(), rmtRdcIdx, cnt,
             state.buffer(), state.bufferLength(), state.dataLength());
 
         T nodeId = reduceAddrs[rmtRdcIdx];
