@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -131,5 +133,10 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtAffinityAssignmentRequest.class, this, super.toString());
+    }
+
+    /** Cache ids. */
+    public List<Integer> cacheIds() {
+        return Collections.singletonList(cacheId);
     }
 }

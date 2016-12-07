@@ -755,7 +755,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
         if (!found)
-            U.warn(log, "MultiAssignmentResponse is not found");
+            U.warn(log, "AssignmentResponse is not found");
     }
 
     /**
@@ -1023,7 +1023,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (cacheCtx.isLocal())
                 continue;
 
-            cacheIds.add(cacheCtx.cacheId());
+            DynamicCacheDescriptor cacheDesc = registeredCaches.get(cacheCtx.cacheId());
+
+            if (cctx.localNodeId().equals(cacheDesc.receivedFrom())) {
+                List<List<ClusterNode>> assignment =
+                    cacheCtx.affinity().affinityCache().calculate(fut.topologyVersion(), fut.discoveryEvent());
+
+                cacheCtx.affinity().affinityCache().initialize(fut.topologyVersion(), assignment);
+            }
+            else
+                cacheIds.add(cacheCtx.cacheId());
         }
 
         List<ClusterNode> nodes = cctx.discovery().serverNodes(fut.topologyVersion());
@@ -1058,13 +1067,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             DynamicCacheDescriptor cacheDesc = registeredCaches.get(cacheCtx.cacheId());
 
-            if (cctx.localNodeId().equals(cacheDesc.receivedFrom())) {
-                List<List<ClusterNode>> assignment =
-                    cacheCtx.affinity().affinityCache().calculate(fut.topologyVersion(), fut.discoveryEvent());
-
-                cacheCtx.affinity().affinityCache().initialize(fut.topologyVersion(), assignment);
-            }
-            else {
+            if (!cctx.localNodeId().equals(cacheDesc.receivedFrom())) {
                 GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                     cacheCtx.name(),
                     fut.topologyVersion());
@@ -1227,7 +1230,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return Future completed when caches initialization is done.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
+    public IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 
