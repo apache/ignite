@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
+package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
@@ -28,9 +28,9 @@ import java.nio.charset.StandardCharsets;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 
 /**
- * New Hadoop data output.
+ * Hadoop data input used for direct communication.
  */
-public class NewHadoopDataInput extends InputStream implements DataInput {
+public class HadoopDirectDataInput extends InputStream implements DataInput {
     /** Data buffer. */
     private final byte[] buf;
 
@@ -42,7 +42,7 @@ public class NewHadoopDataInput extends InputStream implements DataInput {
      *
      * @param buf Buffer.
      */
-    public NewHadoopDataInput(byte[] buf) {
+    public HadoopDirectDataInput(byte[] buf) {
         this.buf = buf;
     }
 

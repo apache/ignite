@@ -1,13 +1,30 @@
-package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 
 /**
- * Hadoop data output context.
+ * Hadoop data output context for direct communication.
  */
-public class NewHadoopDataOutputContext {
+public class HadoopDirectDataOutputContext {
     /** Flush size. */
     private final int flushSize;
 
@@ -18,7 +35,7 @@ public class NewHadoopDataOutputContext {
     private final HadoopSerialization valSer;
 
     /** Data output. */
-    private NewHadoopDataOutput out;
+    private HadoopDirectDataOutput out;
 
     /** Number of keys written. */
     private int cnt;
@@ -30,14 +47,14 @@ public class NewHadoopDataOutputContext {
      * @param taskCtx Task context.
      * @throws IgniteCheckedException If failed.
      */
-    public NewHadoopDataOutputContext(int flushSize, HadoopTaskContext taskCtx)
+    public HadoopDirectDataOutputContext(int flushSize, HadoopTaskContext taskCtx)
         throws IgniteCheckedException {
         this.flushSize = flushSize;
 
         keySer = taskCtx.keySerialization();
         valSer = taskCtx.valueSerialization();
 
-        out = new NewHadoopDataOutput(flushSize);
+        out = new HadoopDirectDataOutput(flushSize);
     }
 
     /**
@@ -67,8 +84,8 @@ public class NewHadoopDataOutputContext {
     /**
      * @return State.
      */
-    public NewHadoopDataOutputState state() {
-        return new NewHadoopDataOutputState(out.buffer(), out.position(), out.position());
+    public HadoopDirectDataOutputState state() {
+        return new HadoopDirectDataOutputState(out.buffer(), out.position(), out.position());
     }
 
     /**
@@ -77,7 +94,7 @@ public class NewHadoopDataOutputContext {
     public void reset() {
         int allocSize = Math.max(flushSize, out.position());
 
-        out = new NewHadoopDataOutput(flushSize, allocSize);
+        out = new HadoopDirectDataOutput(flushSize, allocSize);
         cnt = 0;
     }
 }

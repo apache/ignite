@@ -35,9 +35,9 @@ import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataInput;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataOutputContext;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.NewHadoopDataOutputState;
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataOutputContext;
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataOutputState;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -376,7 +376,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
-            NewHadoopDataInput in = new NewHadoopDataInput(msg.buffer());
+            HadoopDirectDataInput in = new HadoopDirectDataInput(msg.buffer());
 
             Object key = null;
             Object val = null;
@@ -596,7 +596,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param rmtDirectCtx Remote direct context.
      * @param reset Whether to perform reset.
      */
-    private void sendShuffleMessage(int rmtMapIdx, @Nullable NewHadoopDataOutputContext rmtDirectCtx, boolean reset) {
+    private void sendShuffleMessage(int rmtMapIdx, @Nullable HadoopDirectDataOutputContext rmtDirectCtx, boolean reset) {
         if (rmtDirectCtx == null)
             return;
 
@@ -607,7 +607,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         int rmtRdcIdx = stripeMappers ? rmtMapIdx % totalReducerCnt : rmtMapIdx;
 
-        NewHadoopDataOutputState state = rmtDirectCtx.state();
+        HadoopDirectDataOutputState state = rmtDirectCtx.state();
 
         if (reset)
             rmtDirectCtx.reset();
@@ -934,7 +934,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         private final HadoopTaskOutput[] rmtAdders = new HadoopTaskOutput[rmtMaps.length()];
 
         /** Remote direct contexts. */
-        private final NewHadoopDataOutputContext[] rmtDirectCtxs = new NewHadoopDataOutputContext[rmtMaps.length()];
+        private final HadoopDirectDataOutputContext[] rmtDirectCtxs = new HadoopDirectDataOutputContext[rmtMaps.length()];
 
         /** */
         private HadoopPartitioner partitioner;
@@ -980,10 +980,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
                     int idx = totalReducerCnt * mapperIdx + part;
 
-                    NewHadoopDataOutputContext rmtDirectCtx = rmtDirectCtxs[idx];
+                    HadoopDirectDataOutputContext rmtDirectCtx = rmtDirectCtxs[idx];
 
                     if (rmtDirectCtx == null) {
-                        rmtDirectCtx = new NewHadoopDataOutputContext(msgSize, taskCtx);
+                        rmtDirectCtx = new HadoopDirectDataOutputContext(msgSize, taskCtx);
 
                         rmtDirectCtxs[idx] = rmtDirectCtx;
                     }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
+package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
@@ -29,9 +29,9 @@ import java.nio.charset.StandardCharsets;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 
 /**
- * New Hadoop data output.
+ * Hadoop data output for direct communication.
  */
-public class NewHadoopDataOutput extends OutputStream implements DataOutput {
+public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
     /** Flush size. */
     private final int flushSize;
 
@@ -49,7 +49,7 @@ public class NewHadoopDataOutput extends OutputStream implements DataOutput {
      *
      * @param flushSize Flush size.
      */
-    public NewHadoopDataOutput(int flushSize) {
+    public HadoopDirectDataOutput(int flushSize) {
         this(flushSize, flushSize);
     }
 
@@ -59,7 +59,7 @@ public class NewHadoopDataOutput extends OutputStream implements DataOutput {
      * @param flushSize Flush size.
      * @param allocSize Allocation size.
      */
-    public NewHadoopDataOutput(int flushSize, int allocSize) {
+    public HadoopDirectDataOutput(int flushSize, int allocSize) {
         this.flushSize = flushSize;
 
         buf = new byte[allocSize];

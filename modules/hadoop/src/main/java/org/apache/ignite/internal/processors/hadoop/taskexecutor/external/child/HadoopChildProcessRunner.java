@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE;
