@@ -144,6 +144,15 @@ namespace ignite
         class BinaryReader;
 
         /**
+         * Get data hash code.
+         *
+         * @param data Data pointer.
+         * @param size Data size in bytes.
+         * @return Hash code.
+         */
+        IGNITE_IMPORT_EXPORT int32_t GetDataHashCode(const void* data, size_t size);
+
+        /**
          * Get binary string hash code.
          *
          * @param val Value.

@@ -97,6 +97,9 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_impl.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_array_identity_resolver.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">

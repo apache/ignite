@@ -21,6 +21,22 @@ namespace ignite
 {
     namespace binary
     {
+        int32_t GetDataHashCode(const void* data, size_t size)
+        {
+            if (data)
+            {
+                int32_t hash = 1;
+                const int8_t* bytes = static_cast<const int8_t*>(data);
+
+                for (int i = 0; i < size; ++i)
+                    hash = 31 * hash + bytes[i];
+
+                return hash;
+            }
+
+            return 0;
+        }
+
         int32_t GetBinaryStringHashCode(const char* val)
         {
             if (val)
