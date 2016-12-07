@@ -152,7 +152,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             else if (cacheDesc.receivedFromStartVersion() != null)
                                 startTopVer0 = cacheDesc.receivedFromStartVersion();
 
-                            if (startTopVer0.compareTo(startTopVer) > 0)
+                            if (startTopVer0 != null && startTopVer0.compareTo(startTopVer) > 0)
                                 startTopVer = startTopVer0;
                         }
                     }
