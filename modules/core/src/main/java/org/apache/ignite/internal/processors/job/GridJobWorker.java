@@ -962,24 +962,24 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null)
-            return false;
-
-        assert obj instanceof GridJobWorker;
-
-        IgniteUuid jobId1 = ses.getJobId();
-        IgniteUuid jobId2 = ((GridJobWorker)obj).ses.getJobId();
-
-        assert jobId1 != null;
-        assert jobId2 != null;
-
-        return jobId1.equals(jobId2);
-    }
+//    /** {@inheritDoc} */
+//    @Override public boolean equals(Object obj) {
+//        if (this == obj)
+//            return true;
+//
+//        if (obj == null)
+//            return false;
+//
+//        assert obj instanceof GridJobWorker;
+//
+//        IgniteUuid jobId1 = ses.getJobId();
+//        IgniteUuid jobId2 = ((GridJobWorker)obj).ses.getJobId();
+//
+//        assert jobId1 != null;
+//        assert jobId2 != null;
+//
+//        return jobId1.equals(jobId2);
+//    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
