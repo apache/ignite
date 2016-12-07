@@ -58,6 +58,12 @@
     <ClCompile Include="..\..\src\interop_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\binary_identity_resolver_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test_utils.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
@@ -67,6 +73,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\binary_test_utils.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\test_utils.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
@@ -86,6 +95,9 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-identity.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>
