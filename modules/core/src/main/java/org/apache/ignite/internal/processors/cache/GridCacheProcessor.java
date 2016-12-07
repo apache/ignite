@@ -4383,8 +4383,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 globalState = actx.activate ? INACTIVE : ACTIVE;
-
-                lastActCtx.set(null);
             }
         }
 
@@ -4669,7 +4667,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             final boolean client = ctx.clientNode();
 
             if (log.isInfoEnabled())
-                log.info("Start deactivation process [id=" + ctx.localNodeId() + ", client=" +
+                log.info("Start deactivate process [id=" + ctx.localNodeId() + ", client=" +
                     client + ", topVer=" + topVer + "]");
 
             try {
@@ -4709,7 +4707,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             final boolean client = ctx.clientNode();
 
             if (log.isInfoEnabled())
-                log.info("Success final deActivate [nodeId="
+                log.info("Success final deactivate [nodeId="
                     + ctx.localNodeId() + ", client=" + client + ", topVer=" + topVer + "]");
 
             globalState = INACTIVE;
@@ -4732,12 +4730,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (req != null) {
                 ActivationContext actx = lastActCtx.get();
 
-                if (actx != null && !actx.isFail()) {
+                if (!actx.isFail()) {
                     if (req.globalStateActivate())
                         onFinalActivate(req, topVer);
                     else if (req.globalStateDeActivate())
                         onFinalDeActivate(req, topVer);
                 }
+                else
+                    lastActCtx.set(null);
             }
         }
 
