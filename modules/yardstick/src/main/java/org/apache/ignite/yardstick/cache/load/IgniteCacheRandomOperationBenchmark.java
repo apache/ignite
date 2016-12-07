@@ -30,7 +30,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
@@ -403,9 +407,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
                 " range (\"-r\", \"--range\").");
 
-        final ScheduledExecutorService exctr = Executors.newScheduledThreadPool(1);
+        final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         final IgniteBenchmarkPreloadLogger lgr = new IgniteBenchmarkPreloadLogger(availableCaches);
-        exctr.scheduleWithFixedDelay(lgr, 0L, args.preloadLogsInterval(), TimeUnit.MILLISECONDS);
+
+        exec.scheduleWithFixedDelay(lgr, 0L, args.preloadLogsInterval(), TimeUnit.MILLISECONDS);
 
         BenchmarkUtils.println("Preloading started.");
 
@@ -429,8 +434,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         for (Thread thread : threads)
             thread.join();
 
-        exctr.awaitTermination(1, TimeUnit.SECONDS);
-        exctr.shutdownNow();
+        exec.awaitTermination(1, TimeUnit.SECONDS);
+        exec.shutdownNow();
 
         BenchmarkUtils.println("Preloading finished.");
     }

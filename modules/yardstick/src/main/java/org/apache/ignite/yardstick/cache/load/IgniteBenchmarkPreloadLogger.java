@@ -30,12 +30,12 @@ public class IgniteBenchmarkPreloadLogger extends Thread {
     /**
      * Map for keeping previous values to make sure all the caches work correctly.
      */
-    private final Map<String, Long> counters;
+    private final Map<String, Long> cntrs = new HashMap<>();
 
     /**
      * String template used in String.format() to make output readable.
      */
-    private final String fmtstr;
+    private final String strFmt;
 
     /**
      * List of caches whose size to be printed during preload
@@ -50,19 +50,17 @@ public class IgniteBenchmarkPreloadLogger extends Thread {
     public IgniteBenchmarkPreloadLogger(final Collection<IgniteCache<Object, Object>> caches) {
         this.caches = caches;
 
-        counters = new HashMap<>();
-
-        int longestNameLgh = 0;
+        int longestName = 0;
 
         // Set up an initial values to the map
         for (IgniteCache<Object, Object> availableCache : caches) {
-            counters.put(availableCache.getName(), 0L);
+            cntrs.put(availableCache.getName(), 0L);
 
             //Find out the length of the longest cache name
-            longestNameLgh = Math.max(availableCache.getName().length(), longestNameLgh);
+            longestName = Math.max(availableCache.getName().length(), longestName);
         }
 
-        fmtstr = "Preloading:%-" + (longestNameLgh + 4) + "s%-8d\t(+%d)";
+        strFmt = "Preloading:%-" + (longestName + 4) + "s%-8d\t(+%d)";
     }
 
     /** {@inheritDoc} */
@@ -72,12 +70,11 @@ public class IgniteBenchmarkPreloadLogger extends Thread {
 
             long cacheSize = cache.sizeLong();
 
-            long recentlyLoaded = cacheSize - counters.get(cacheName);
+            long recentlyLoaded = cacheSize - cntrs.get(cacheName);
 
-            String log = String.format(fmtstr, cacheName, cacheSize, recentlyLoaded);
-            BenchmarkUtils.println(log);
+            BenchmarkUtils.println(String.format(strFmt, cacheName, cacheSize, recentlyLoaded));
 
-            counters.put(cacheName, cacheSize);
+            cntrs.put(cacheName, cacheSize);
         }
     }
 }
