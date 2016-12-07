@@ -67,7 +67,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.UrgentMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
@@ -2322,14 +2321,8 @@ public class GridNioServer<T> {
 
                     return null;
                 }
-                else {
-                    Message msg0 = (Message)msg;
-
-                    boolean urgent =
-                        msg0 instanceof GridIoMessage && ((GridIoMessage)msg0).message() instanceof UrgentMessage;
-
-                    return urgent ? sendSystem(ses, msg0) : send(ses, msg0);
-                }
+                else
+                    return send(ses, (Message)msg);
             }
             else
                 return send(ses, (ByteBuffer)msg);

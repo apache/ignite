@@ -21,9 +21,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.UrgentMessage;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
 /**
  * Acknowledgement message.
  */
-public class HadoopShuffleAck implements HadoopMessage, UrgentMessage {
+public class HadoopShuffleAck implements HadoopMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
