@@ -15,54 +15,52 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
-import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+
 /**
- * Job ID.
+ * Shuffle finish response.
  */
-public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
+public class HadoopShuffleFinishResponse implements Message, HadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private UUID nodeId;
-
-    /** */
-    private int jobId;
+    /** Job ID. */
+    @GridToStringInclude
+    private HadoopJobId jobId;
 
     /**
-     * For {@link Externalizable}.
+     * Default constructor.
      */
-    public HadoopJobId() {
+    public HadoopShuffleFinishResponse() {
         // No-op.
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param jobId Job ID.
+     * Constructor.
+     *
+     * @param jobId Job.
      */
-    public HadoopJobId(UUID nodeId, int jobId) {
-        this.nodeId = nodeId;
+    public HadoopShuffleFinishResponse(HadoopJobId jobId) {
         this.jobId = jobId;
     }
 
-    public UUID globalId() {
-        return nodeId;
-    }
-
-    public int localId() {
+    /**
+     * @return Job ID.
+     */
+    public HadoopJobId jobId() {
         return jobId;
     }
 
@@ -79,13 +77,7 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("nodeId", nodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt("localId", jobId))
+                if (!writer.writeMessage("jobId", jobId))
                     return false;
 
                 writer.incrementState();
@@ -104,15 +96,7 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
         switch (reader.state()) {
             case 0:
-                nodeId = reader.readUuid("nodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                jobId = reader.readInt("jobId");
+                jobId = reader.readMessage("jobId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -121,17 +105,17 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
         }
 
-        return reader.afterMessageRead(HadoopJobId.class);
+        return reader.afterMessageRead(HadoopShuffleFinishResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -39;
+        return -41;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -141,42 +125,18 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-        out.writeInt(jobId);
+        jobId.writeExternal(out);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-        jobId = in.readInt();
-    }
+        jobId = new HadoopJobId();
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        HadoopJobId that = (HadoopJobId) o;
-
-        if (jobId != that.jobId)
-            return false;
-
-        if (!nodeId.equals(that.nodeId))
-            return false;
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return 31 * nodeId.hashCode() + jobId;
+        jobId.readExternal(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return nodeId + "_" + jobId;
+        return S.toString(HadoopShuffleFinishResponse.class, this);
     }
 }
