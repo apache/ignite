@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         },
                         new BinaryTypeConfiguration(typeof(Key2))
                         {
-                            EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
+                            EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo", "Str")
                         }
                     }
                 }
@@ -154,8 +154,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key2, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
-                                               "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, str, id, name) " +
+                                               "values (1, 2, 'Foo', 3, 'John'), (4, 5, 'Bar', 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
@@ -167,19 +167,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(1, foos[0].Key.Hi);
             Assert.AreEqual(2, foos[0].Key.Lo);
+            Assert.AreEqual("Foo", foos[0].Key.Str);
             Assert.AreEqual(3, foos[0].Value.Id);
             Assert.AreEqual("John", foos[0].Value.Name);
 
             Assert.AreEqual(4, foos[1].Key.Hi);
             Assert.AreEqual(5, foos[1].Key.Lo);
+            Assert.AreEqual("Bar", foos[1].Key.Str);
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
             // Existence tests check that hash codes are consistent.
-            Assert.IsTrue(cache.ContainsKey(new Key2(2, 1)));
+            Assert.IsTrue(cache.ContainsKey(new Key2(2, 1, "Foo")));
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
 
-            Assert.IsTrue(cache.ContainsKey(new Key2(5, 4)));
+            Assert.IsTrue(cache.ContainsKey(new Key2(5, 4, "Bar")));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
 
             // Test update.
@@ -268,14 +270,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private struct Key2
         {
-            public Key2(int lo, int hi) : this()
+            public Key2(int lo, int hi, string str) : this()
             {
                 Lo = lo;
                 Hi = hi;
+                Str = str;
             }
 
             [QuerySqlField] public int Lo { get; private set; }
             [QuerySqlField] public int Hi { get; private set; }
+            [QuerySqlField] public string Str { get; private set; }
         }
 
         /// <summary>
