@@ -52,6 +52,13 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** Clients. */
     private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
+    /**
+     * Clears the map of grid client futures.
+     */
+    public static void clear() {
+        cliMap.clear();
+    }
+
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
         if (FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME))) {

@@ -120,6 +120,8 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        IgniteHadoopClientProtocolProvider.clear();
+
         setupLockFile.createNewFile();
         mapLockFile.createNewFile();
         reduceLockFile.createNewFile();
