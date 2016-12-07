@@ -45,7 +45,19 @@ public enum GridNioSessionMetaKey {
     MSG_WRITER,
 
     /** Ack closure. */
-    ACK_CLOSURE;
+    ACK_CLOSURE,
+
+    /** Connection timeout object. */
+    CONN_TIMEOUT_OBJ,
+
+    /** Handshake timeout object. */
+    HANDSHAKE_TIMEOUT_OBJ,
+
+    /** Node ID meta for session. */
+    NODE_ID_META,
+
+    /** Expected node ID meta for session. */
+    EXP_NODE_ID_META;
 
     /** Maximum count of NIO session keys in system. */
     public static final int MAX_KEYS_CNT = 64;

@@ -98,8 +98,6 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            info("Test listener received message: " + msg);
-
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
 
             GridTestMessage msg0 = (GridTestMessage)msg;
@@ -171,6 +169,17 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                     spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0), ackC);
 
                     spi1.sendMessage(node0, new GridTestMessage(node1.id(), ++msgId, 0), ackC);
+
+                    if (j == 0) {
+                        final TestListener lsnr0 = (TestListener)spi0.getListener();
+                        final TestListener lsnr1 = (TestListener)spi1.getListener();
+
+                        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                            @Override public boolean apply() {
+                                return lsnr0.rcvCnt.get() >= 1 && lsnr1.rcvCnt.get() >= 1;
+                            }
+                        }, 1000);
+                    }
                 }
 
                 expMsgs += msgPerIter;
@@ -434,6 +443,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             spi.setListener(new TestListener());
 
             node.setAttributes(spi.getNodeAttributes());
+
+            node.order(i);
 
             nodes.add(node);
 

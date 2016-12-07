@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -97,6 +98,10 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
                     GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "gridName") + ", spi=" + spi + ']');
 
                 U.sleep(1000);
+            }
+
+            if (!clients.isEmpty()) {
+                U.dumpThreads(log);
             }
 
             assert clients.isEmpty() : "Clients: " + clients;

@@ -71,7 +71,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     private static final int SPI_CNT = 2;
 
     /** */
-    private static final int ITERS = 10;
+    private static final int ITERS = 1;
 
     /** */
     protected static int port = 30_000;
@@ -114,7 +114,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            // info("Test listener received message: " + msg);
+            info("Test listener received message: " + msg);
 
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
 
@@ -185,7 +185,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @return Timeout.
      */
     protected long awaitForSocketWriteTimeout() {
-        return 8000;
+        return 20000;
     }
 
     /**
@@ -297,6 +297,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             // Send message to establish connection.
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr1.rcvCnt.get() >= 1;
+                }
+            }, 1000);
+
             final AtomicInteger sentCnt = new AtomicInteger(1);
 
             int errCnt = 0;
@@ -312,7 +318,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            for (int i = 0; i < 5000; i++) {
+                            for (int i = 0; i < 100; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
                                 sentCnt.incrementAndGet();
@@ -406,6 +412,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             // Send message to establish connection.
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr1.rcvCnt.get() >= 1;
+                }
+            }, 1000);
 
             expCnt1.incrementAndGet();
 
@@ -523,6 +535,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             // Send message to establish connection.
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr1.rcvCnt.get() >= 1;
+                }
+            }, 1000);
 
             final AtomicInteger sentCnt = new AtomicInteger(1);
 

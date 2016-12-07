@@ -288,9 +288,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         if (val instanceof GridNioRecoveryDescriptor) {
             recovery = (GridNioRecoveryDescriptor)val;
 
-            if (!accepted())
-                recovery.connected();
-
             return null;
         }
         else

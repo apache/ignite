@@ -104,13 +104,13 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg, IgniteInClosure<IgniteException> closure)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg, IgniteInClosure<IgniteException> clo)
         throws IgniteCheckedException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;
 
-        if (closure != null)
-            ses.addMeta(ACK_CLOSURE.ordinal(), closure);
+        if (clo != null)
+            ses.addMeta(ACK_CLOSURE.ordinal(), clo);
 
         GridNioFuture<?> fut = ses.send(msg);
 
@@ -119,7 +119,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IgniteCheckedException e) {
-                if (closure != null)
+                if (clo != null)
                     ses.removeMeta(ACK_CLOSURE.ordinal());
 
                 if (log.isDebugEnabled())
@@ -135,7 +135,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
             }
         }
 
-        if (closure != null)
+        if (clo != null)
             ses.removeMeta(ACK_CLOSURE.ordinal());
 
         return false;

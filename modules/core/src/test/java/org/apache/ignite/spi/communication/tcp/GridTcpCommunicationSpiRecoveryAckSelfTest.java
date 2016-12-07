@@ -66,9 +66,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /** */
     private static final int SPI_CNT = 2;
 
-    /**
-     *
-     */
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
@@ -94,8 +91,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            info("Test listener received message: " + msg);
-
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
 
             GridTestMessage msg0 = (GridTestMessage)msg;
@@ -268,15 +263,15 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         ClusterNode node0 = nodes.get(0);
         ClusterNode node1 = nodes.get(1);
 
-        final GridNioServer srv1 = U.field(spi1, "nioSrvr");
-
         int msgId = 0;
 
         // Send message to establish connection.
         spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
 
+        U.sleep(1000);
+
         // Prevent node1 from send
-        GridTestUtils.setFieldValue(srv1, "skipWrite", true);
+        GridTestUtils.setFieldValue(spi1, "skipAck", true);
 
         final GridNioSession ses0 = communicationSession(spi0);
 
@@ -304,7 +299,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
-        GridTestUtils.setFieldValue(srv1, "skipWrite", false);
+        GridTestUtils.setFieldValue(spi1, "skipAck", false);
 
         for (int i = 0; i < 100; i++)
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
@@ -381,8 +376,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         for (int i = 0; i < SPI_CNT; i++) {
             TcpCommunicationSpi spi = getSpi(ackCnt, idleTimeout, queueLimit);
 
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
-
             IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
@@ -395,9 +388,13 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             rsrcs.inject(spi);
 
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
+
             spi.setListener(new TestListener());
 
             node.setAttributes(spi.getNodeAttributes());
+
+            node.order(i);
 
             nodes.add(node);
 

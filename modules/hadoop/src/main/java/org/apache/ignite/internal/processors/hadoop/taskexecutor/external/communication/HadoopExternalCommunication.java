@@ -1001,7 +1001,10 @@ public class HadoopExternalCommunication {
 
                 HandshakeFinish fin = new HandshakeFinish();
 
-                GridNioSession ses = nioSrvr.createSession(ch, F.asMap(HANDSHAKE_FINISH_META, fin)).get();
+                GridNioFuture<GridNioSession> sesFut =
+                    nioSrvr.createSession(ch, F.<Integer, Object>asMap(HANDSHAKE_FINISH_META, fin), false);
+
+                GridNioSession ses = sesFut.get();
 
                 client = new HadoopTcpNioCommunicationClient(ses);
 

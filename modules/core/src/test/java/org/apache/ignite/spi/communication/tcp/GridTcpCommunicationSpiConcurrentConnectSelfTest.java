@@ -338,8 +338,6 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         for (int i = 0; i < SPI_CNT; i++) {
             CommunicationSpi<Message> spi = createSpi();
 
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
-
             IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
@@ -355,6 +353,8 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             if (useSsl) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");

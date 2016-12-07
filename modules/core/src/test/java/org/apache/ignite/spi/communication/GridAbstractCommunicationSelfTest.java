@@ -298,8 +298,6 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
-            node.order(i);
-
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.setLocalNode(node);
@@ -309,6 +307,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             if (useSsl) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
@@ -323,6 +323,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             node.setAttributes(spi.getNodeAttributes());
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
+
+            node.order(i + 1);
 
             nodes.add(node);
 
