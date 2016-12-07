@@ -53,26 +53,20 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         // LOGGED.
         LT.error(log, new RuntimeException("Test exception 2."), "Test");
 
-        // OMITTED.
-        LT.warn(log, new RuntimeException("Test exception 1."), "Test");
-
-        // OMITTED.
-        LT.warn(log, new RuntimeException("Test exception 2."), "Test1");
-
-        // OMITTED.
-        LT.warn(log, new RuntimeException("Test exception 2."), "Test3");
-
         // LOGGED.
         LT.error(log, null, "Test - without throwable.");
 
         // OMITTED.
         LT.error(log, null, "Test - without throwable.");
 
+        // OMITTED.
+        LT.warn(log, "Test - without throwable.");
+
         // LOGGED.
-        LT.warn(log, null, "Test - without throwable1.");
+        LT.warn(log, "Test - without throwable1.");
 
         // OMITTED.
-        LT.warn(log, null, "Test - without throwable1.");
+        LT.warn(log, "Test - without throwable1.");
 
         Thread.sleep(LT.throttleTimeout());
 
@@ -90,14 +84,11 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         // LOGGED.
         LT.error(log, new RuntimeException("Test exception 2."), "Test");
 
-        // OMITTED.
-        LT.warn(log, new RuntimeException("Test exception 1."), "Test");
+        // LOGGED.
+        LT.warn(log, "Test - without throwable.");
 
         // OMITTED.
-        LT.warn(log, new RuntimeException("Test exception 2."), "Test1");
-
-        // OMITTED.
-        LT.warn(log, new RuntimeException("Test exception 2."), "Test3");
+        LT.warn(log, "Test - without throwable.");
 
         Thread.sleep(LT.throttleTimeout());
 
