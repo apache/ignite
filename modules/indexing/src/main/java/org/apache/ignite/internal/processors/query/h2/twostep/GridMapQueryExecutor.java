@@ -438,7 +438,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Query request.
      */
-    private void onQueryRequest(ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
+    private void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
         final Map<UUID,int[]> partsMap = req.partitions();
         final int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
 
