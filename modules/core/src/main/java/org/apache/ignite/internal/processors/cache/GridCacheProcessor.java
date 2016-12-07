@@ -802,34 +802,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartedLatch.countDown();
         }
 
-        //todo need to refactoring this
         if (stateManger.globalState() == ACTIVE) {
             if (!ctx.clientNode())
                 sharedCtx.database().lock();
 
             sharedCtx.wal().onKernalStart(false);
 
+            if (sharedCtx.pageStore() != null)
+                sharedCtx.pageStore().onKernalStart(false);
+
             sharedCtx.database().onKernalStart(false);
         }
 
-
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers()) {
-            if (stateManger.globalState() == CacheState.INACTIVE &&
-                (mgr instanceof IgniteCacheDatabaseSharedManager ||
-                    mgr instanceof IgnitePageStoreManager ||
-                    mgr instanceof IgniteWriteAheadLogManager))
-                continue;
-
-            if (sharedCtx.database() != mgr && sharedCtx.wal() != mgr)
+            if (sharedCtx.database() != mgr && sharedCtx.wal() != mgr && sharedCtx.pageStore() != mgr)
                 mgr.onKernalStart(false);
         }
 
-        for (GridCacheAdapter<?, ?> cache : caches.values())
-            onKernalStart(cache);
-
         if (stateManger.globalState() != ACTIVE)
             return;
+
+        for (GridCacheAdapter<?, ?> cache : caches.values())
+            onKernalStart(cache);
 
         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
@@ -2547,7 +2542,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> changeGlobalState(boolean activate) {
         if (log.isInfoEnabled())
             log.info("Change global state [nodeId=" + ctx.localNodeId() +
-                " current=" + stateManger.map(stateManger.globalState()==CacheState.ACTIVE)
+                " current=" + (stateManger.globalState() == CacheState.ACTIVE ? "activate" : "deactivate")
                 + ", next=" + activate + "]");
 
         return stateManger.changeGlobalState(activate);
@@ -3912,28 +3907,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @GridToStringExclude
         private final IgniteLogger log;
 
-        /** Lsr. */
-        private final GridLocalEventListener lsr = new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                assert evt != null;
-
-                if (isDone())
-                    return;
-
-                DiscoveryEvent e = (DiscoveryEvent)evt;
-
-                boolean allReceived = false;
-
-                synchronized (mux) {
-                    if (remaining.remove(e.eventNode().id()))
-                        allReceived = remaining.isEmpty();
-                }
-
-                if (allReceived)
-                    onAllReceived();
-            }
-        };
-
         /**
          * @param activate
          * @param ctx Context.
@@ -3943,8 +3916,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             this.activate = activate;
             this.ctx = ctx;
             this.log = ctx.log(getClass());
+        }
 
-            ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        /**
+         * @param event Event.
+         */
+        public void onDiscoveryEvent(DiscoveryEvent event){
+            assert event != null;
+
+            boolean allReceived = false;
+
+            synchronized (mux) {
+                if (remaining.remove(event.eventNode().id()))
+                    allReceived = remaining.isEmpty();
+            }
+
+            if (allReceived)
+                onAllReceived();
         }
 
         /**
@@ -4021,8 +4009,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ClusterStateManger m = ctx.cache().stateManger;
 
             m.locFut.set(null);
-
-            ctx.event().removeLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             return super.onDone(res, err);
         }
@@ -4142,6 +4128,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @GridToStringExclude
         private final IgniteLogger log;
 
+        /** Listener. */
+        private final GridLocalEventListener lsr = new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                assert evt != null;
+
+                DiscoveryEvent e = (DiscoveryEvent)evt;
+
+                GridActivateFuture f = locFut.get();
+
+                ActivationContext actx = lastActCtx.get();
+
+                if (f != null && actx != null && f.requestId.equals(actx.requestId))
+                    f.onDiscoveryEvent(e);
+            }
+        };
+
         /**
          * @param cacheProc Process.
          * @param ctx Context.
@@ -4158,8 +4160,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 GridChangeGlobalStateMessageResponse.class,
                 new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
                     @Override public void apply(
-                        UUID nodeId,
-                        GridChangeGlobalStateMessageResponse msg
+                        UUID nodeId, GridChangeGlobalStateMessageResponse msg
                     ) {
                         processChangeGlobalStateResponse(msg);
                     }
@@ -4178,23 +4179,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             GridActivateFuture f = locFut.get();
 
                             if (log.isDebugEnabled())
-                                log.debug("Concurrent " + map(msg.getActivate()) + " [id=" +
+                                log.debug("Concurrent " + prettyStr(msg.getActivate()) + " [id=" +
                                     ctx.localNodeId() + " topVer=" + topVer + " actx=" + actx + ", msg=" + msg + "]");
 
                             if (f != null && f.requestId.equals(msg.getRequestId()))
                                 f.onDone(new IgniteCheckedException(
-                                    "Concurrent change state, now in progress=" + (map(actx.activate))
+                                    "Concurrent change state, now in progress=" + (prettyStr(actx.activate))
                                         + ", initiatingNodeId=" + actx.initiatingNodeId
-                                        + ", you try=" + (map(msg.getActivate())) + ", locNodeId=" + ctx.localNodeId()
+                                        + ", you try=" + (prettyStr(msg.getActivate())) + ", locNodeId=" + ctx.localNodeId()
                                 ));
 
                             msg.setConcurrentChangeState();
                         }
                         else {
-                            globalState = TRANSITION;
-
                             if (log.isDebugEnabled())
-                                log.debug("Create " + map(msg.getActivate()) + " context [id=" +
+                                log.debug("Create " + prettyStr(msg.getActivate()) + " context [id=" +
                                     ctx.localNodeId() + " topVer=" + topVer + ", reqId=" +
                                     msg.getRequestId() + ", initiatingNodeId=" + msg.getInitiatingNodeId() + "]");
 
@@ -4205,15 +4204,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 topVer,
                                 msg.getActivate())
                             );
+
+                            globalState = TRANSITION;
                         }
                     }
                 });
+
+            this.ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
         }
 
         /**
          * @param activate Activate.
          */
-        private String map(boolean activate){
+        private String prettyStr(boolean activate){
             return activate ? "activate" : "deactivate";
         }
 
@@ -4222,6 +4225,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         private void stop() {
             this.sharedCtx.io().removeHandler(0, GridChangeGlobalStateMessageResponse.class);
+            this.ctx.event().removeLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             IgniteCheckedException stopErr = new IgniteInterruptedCheckedException(
                 "Node is stopping: " + ctx.gridName()
@@ -4369,7 +4373,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 GridActivateFuture af = locFut.get();
 
-                if (af != null) {
+                if (af != null && af.requestId.equals(actx.requestId)) {
                     IgniteException e = new IgniteException("see suppressed");
 
                     for (Map.Entry<UUID, Exception> entry : exs.entrySet())
@@ -4379,6 +4383,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 globalState = actx.activate ? INACTIVE : ACTIVE;
+
+                lastActCtx.set(null);
             }
         }
 
@@ -4386,7 +4392,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         private IgniteInternalFuture<?> changeGlobalState(boolean activate) {
             if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
-                throw new IgniteException("Cannot " + map(activate) + " cluster, because cache locked on transaction.");
+                throw new IgniteException("Cannot " + prettyStr(activate) + " cluster, because cache locked on transaction.");
 
             if ((this.globalState == ACTIVE && activate) || (this.globalState == INACTIVE && !activate))
                 return new GridFinishedFuture<>();
@@ -4402,7 +4408,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return locF;
                 else
                     return new GridFinishedFuture<>(new IgniteException(
-                        "fail " + map(activate) + ", because now " + map(locF.activate) + " in progress")
+                        "fail " + prettyStr(activate) + ", because now " + prettyStr(locF.activate) + " in progress")
                     );
             }
 
@@ -4493,7 +4499,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 reqs.add(createRequest(cfg, internalCaches));
 
                             if (log.isInfoEnabled())
-                                log.info("Send " + map(activate) + " state request from server node [id=" +
+                                log.info("Send " + prettyStr(activate) + " state request from server node [id=" +
                                     ctx.localNodeId() + " topVer=" + ctx.discovery().topologyVersionEx() +
                                     " reqs=" + reqs + " ]");
                         }
@@ -4524,7 +4530,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         if (log.isInfoEnabled())
-                            log.info("Send " + map(activate) + "  state request from server node [id=" +
+                            log.info("Send " + prettyStr(activate) + "  state request from server node [id=" +
                                 ctx.localNodeId() + " topVer=" + ctx.discovery().topologyVersionEx() +
                                 " reqs=" + reqs + " ]");
                     }
@@ -4542,12 +4548,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ctx.discovery().sendCustomEvent(msg);
 
                         if (ctx.isStopping()) {
-                            ex = new IgniteCheckedException("Failed to execute " + map(activate) + " request, " +
+                            ex = new IgniteCheckedException("Failed to execute " + prettyStr(activate) + " request, " +
                                 "node is stopping.");
                         }
                         else if (ctx.clientDisconnected()) {
                             ex = new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
-                                "Failed to execute " + map(activate) + " change request, client node disconnected.");
+                                "Failed to execute " + prettyStr(activate) + " change request, client node disconnected.");
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -4645,6 +4651,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         globalState = ACTIVE;
 
                         sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), e);
+
+                        lastActCtx.set(null);
                     }
                 }
             });
@@ -4707,6 +4715,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             globalState = INACTIVE;
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), null);
+
+            lastActCtx.set(null);
         }
 
         /**
@@ -4724,7 +4734,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (actx != null && !actx.isFail()) {
                     if (req.globalStateActivate())
-                       onFinalActivate(req, topVer);
+                        onFinalActivate(req, topVer);
                     else if (req.globalStateDeActivate())
                         onFinalDeActivate(req, topVer);
                 }
@@ -4743,8 +4753,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (req != null) {
                 GridActivateFuture f = locFut.get();
+                ActivationContext actx = lastActCtx.get();
 
-                if (f != null)
+                assert actx != null;
+
+                if (f != null && actx.requestId.equals(f.requestId))
                     f.setRemaining(topVer);
 
                 if (req.globalStateActivate())
@@ -4865,13 +4878,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     });
                 }
             }
-        }
-
-        /**
-         * @param batch Batch.
-         */
-        private DynamicCacheChangeRequest request(DynamicCacheChangeBatch batch){
-            return request(batch.requests());
         }
 
         /**
