@@ -59,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -88,8 +87,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /** Affinity information for all started caches (initialized on coordinator). */
     private final ConcurrentMap<Integer, CacheHolder> caches = new ConcurrentHashMap<>();
-
-    private final ConcurrentMap<Integer, CacheHolderReadyFuture> cacheFuts = new ConcurrentHashMap<>();
 
     /** Last topology version when affinity was calculated (updated from exchange thread). */
     private AffinityTopologyVersion affCalcVer;
@@ -458,13 +455,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         rmvCache = true;
 
                     if (rmvCache) {
-                        CacheHolder cache;
-                        synchronized (caches) {
-                            cache = caches.remove(cacheId);
-                            CacheHolderReadyFuture cacheFut = cacheFuts.get(cacheId);
-                            if (cacheFut != null)
-                                cacheFut.onDone(new IgniteCheckedException("cache removed"));
-                        }
+                        CacheHolder cache = caches.remove(cacheId);
 
                         if (cache != null) {
                             if (!req.stop()) {
@@ -475,13 +466,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                     fut,
                                     cache.affinity());
 
-                                addCache(cacheId, cache);
+                                caches.put(cacheId, cache);
                             }
                             else {
                                 if (stoppedCaches == null)
                                     stoppedCaches = new HashSet<>();
 
                                 stoppedCaches.add(cache.cacheId());
+
                                 cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
                             }
                         }
@@ -519,31 +511,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return clientOnly;
-    }
-
-    /** */
-    private CacheHolder addCache(int cacheId, CacheHolder cache) {
-        assert cache.cacheId() == cacheId;
-
-        synchronized (caches) {
-            CacheHolder old = caches.put(cacheId, cache);
-            CacheHolderReadyFuture fut = cacheFuts.get(cacheId);
-            if (fut != null)
-                fut.onDone(cache);
-            return old;
-        }
-    }
-
-    /** */
-    public IgniteInternalFuture<CacheHolder> getCacheHolderFuture(boolean crd, int cacheId) {
-        synchronized (caches) {
-            if (caches.containsKey(cacheId))
-                return new GridFinishedFuture<>(caches.get(cacheId));
-            if (crd)
-                return F.addIfAbsent(cacheFuts, cacheId, new CacheHolderReadyFuture(cacheId));
-            else
-                return new GridFinishedFuture<>();
-        }
     }
 
     /**
@@ -833,7 +800,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             cache = cacheCtx != null ? new CacheHolder1(cacheCtx, null) : CacheHolder2.create(cctx, desc, fut, null);
 
-            CacheHolder old = addCache(cacheId, cache);
+            CacheHolder old = caches.put(cacheId, cache);
 
             assert old == null : old;
 
@@ -846,7 +813,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             cache = new CacheHolder1(cacheCtx, cache.affinity());
 
-            addCache(cacheId, cache);
+            caches.put(cacheId, cache);
         }
     }
 
@@ -1227,10 +1194,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param fut Exchange future.
-     * @return Future completed when caches initialization is done.
      * @throws IgniteCheckedException If failed.
+     * @return Future completed when caches initialization is done.
      */
-    public IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
+    private IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 
@@ -1287,8 +1254,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     final GridFutureAdapter<AffinityTopologyVersion> affFut = new GridFutureAdapter<>();
 
                     fetchFut.listen(new IgniteInClosureX<IgniteInternalFuture<GridDhtAffinityAssignmentResponse>>() {
-                        @Override
-                        public void applyx(IgniteInternalFuture<GridDhtAffinityAssignmentResponse> fetchFut)
+                        @Override public void applyx(IgniteInternalFuture<GridDhtAffinityAssignmentResponse> fetchFut)
                             throws IgniteCheckedException {
                             fetchAffinity(prev, aff, (GridDhtAssignmentFetchFuture)fetchFut);
 
@@ -1303,7 +1269,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     cache = new CacheHolder1(cacheCtx, null);
 
-                CacheHolder old = addCache(cache.cacheId(), cache);
+                CacheHolder old = caches.put(cache.cacheId(), cache);
 
                 assert old == null : old;
             }
@@ -1356,7 +1322,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         else
             cache = new CacheHolder1(cacheCtx, null);
 
-        CacheHolder old = addCache(cache.cacheId(), cache);
+        CacheHolder old = caches.put(cache.cacheId(), cache);
 
         assert old == null : old;
 
@@ -1739,88 +1705,61 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final AffinityTopologyVersion topVer = msg.topologyVersion();
         final ClusterNode node = cctx.node(nodeId);
 
-        final List<IgniteInternalFuture<CacheHolder>> cacheHolderFuts = new ArrayList<>();
-
-        final GridCompoundFuture<CacheHolder, Void> cacheCompoundFut = new GridCompoundFuture<>();
-
-        List<ClusterNode> serverNodes = cctx.discovery().serverNodes(topVer);
-        boolean crd = !serverNodes.isEmpty() && serverNodes.get(0).isLocal();
+        final List<IgniteInternalFuture<CacheAffinityInfo>> futs = new ArrayList<>();
+        GridCompoundFuture<CacheAffinityInfo, Void> compoundFut = new GridCompoundFuture<>();
 
         for (Integer cacheId : msg.cacheIds()) {
-            IgniteInternalFuture<CacheHolder> cacheHolderFut = getCacheHolderFuture(crd, cacheId);
+            final CacheHolder cacheHolder = caches.get(cacheId);
 
-            cacheHolderFuts.add(cacheHolderFut);
-            cacheCompoundFut.add(cacheHolderFut);
-        }
+            if (cacheHolder == null)
+                continue;
 
-        cacheCompoundFut.listen(new CI1<IgniteInternalFuture<Void>>() {
-            @Override public void apply(IgniteInternalFuture<Void> fut) {
-                final List<IgniteInternalFuture<CacheAffinityInfo>> futs = new ArrayList<>();
-                GridCompoundFuture<CacheAffinityInfo, Void> compoundFut = new GridCompoundFuture<>();
+            IgniteInternalFuture<CacheAffinityInfo> affFut;
+            IgniteInternalFuture<AffinityTopologyVersion> fut0 = cacheHolder.affinity().readyFuture(topVer);
 
-                for (IgniteInternalFuture<CacheHolder> cacheHolderFut : cacheHolderFuts) {
-                    final CacheHolder cacheHolder;
-                    try {
-                        cacheHolder = cacheHolderFut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to get cache holder", e);
-                        continue;
-                    }
-
-                    if (cacheHolder == null)
-                        continue;
-
-                    IgniteInternalFuture<CacheAffinityInfo> affFut;
-                    IgniteInternalFuture<AffinityTopologyVersion> fut0 = cacheHolder.affinity().readyFuture(topVer);
-
-                    if (fut0 != null) {
-                        affFut = fut0.chain(new CX1<IgniteInternalFuture<AffinityTopologyVersion>, CacheAffinityInfo>() {
-                            @Override public CacheAffinityInfo applyx(
-                                IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                                return getAssignment(topVer, cacheHolder);
-                            }
-                        });
-                    }
-                    else
-                        affFut = new GridFinishedFuture<>(getAssignment(topVer, cacheHolder));
-
-                    if (affFut != null) {
-                        futs.add(affFut);
-                        compoundFut.add(affFut);
-                    }
-
-                }
-                compoundFut.listen(new CI1<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> fut) {
-                        final GridDhtAffinityMultiAssignmentResponse res = new GridDhtAffinityMultiAssignmentResponse();
-                        for (int i = 0; i < futs.size(); i++) {
-                            try {
-                                CacheAffinityInfo futRes = futs.get(i).get();
-
-                                assert futRes != null;
-
-                                res.addResult(futRes.cacheId(), futRes.assignment(), futRes.idealAssignment());
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to get cache affinity", e);
-                            }
-                        }
-
-                        try {
-                            cctx.io().send(node, res, AFFINITY_POOL);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to send response", e);
-                        }
+            if (fut0 != null) {
+                affFut = fut0.chain(new CX1<IgniteInternalFuture<AffinityTopologyVersion>, CacheAffinityInfo>() {
+                    @Override public CacheAffinityInfo applyx(
+                        IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                        return getAssignment(topVer, cacheHolder);
                     }
                 });
+            }
+            else
+                affFut = new GridFinishedFuture<>(getAssignment(topVer, cacheHolder));
 
-                compoundFut.markInitialized();
+            if (affFut != null) {
+                futs.add(affFut);
+                compoundFut.add(affFut);
+            }
+        }
 
+        compoundFut.listen(new CI1<IgniteInternalFuture<Void>>() {
+            @Override public void apply(IgniteInternalFuture<Void> fut) {
+                final GridDhtAffinityMultiAssignmentResponse res = new GridDhtAffinityMultiAssignmentResponse();
+                for (int i = 0; i < futs.size(); i++) {
+                    try {
+                        CacheAffinityInfo futRes = futs.get(i).get();
+
+                        assert futRes != null;
+
+                        res.addResult(futRes.cacheId(), futRes.assignment(), futRes.idealAssignment());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to get cache affinity", e);
+                    }
+                }
+
+                try {
+                    cctx.io().send(node, res, AFFINITY_POOL);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send response", e);
+                }
             }
         });
-        cacheCompoundFut.markInitialized();
+
+        compoundFut.markInitialized();
     }
 
     /**
@@ -1841,23 +1780,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return new CacheAffinityInfo(cacheHolder.cacheId(), assignment.assignment(), idealAssignment);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        super.onKernalStop0(cancel);
-        cancelFutures();
-    }
-
-    /**
-     * Cancel all cache futures.
-     */
-    public void cancelFutures() {
-        IgniteCheckedException err =
-            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
-
-        for (CacheHolderReadyFuture future : cacheFuts.values())
-            future.onDone(err);
     }
 
     /**
@@ -2113,41 +2035,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assignments.put(cacheId, cacheAssignment = new HashMap<>());
 
             cacheAssignment.put(part, assignment);
-        }
-    }
-
-    /**
-     * Affinity ready future. Will remove itself from ready futures map.
-     */
-    private class CacheHolderReadyFuture extends GridFutureAdapter<CacheHolder> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private int cacheId;
-
-        /**
-         * @param cacheId cacheId.
-         */
-        private CacheHolderReadyFuture(int cacheId) {
-            this.cacheId = cacheId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(CacheHolder res, @Nullable Throwable err) {
-            assert res != null || err != null;
-
-            boolean done = super.onDone(res, err);
-
-            if (done)
-                cacheFuts.remove(cacheId, this);
-
-            return done;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(CacheHolderReadyFuture.class, this);
         }
     }
 
