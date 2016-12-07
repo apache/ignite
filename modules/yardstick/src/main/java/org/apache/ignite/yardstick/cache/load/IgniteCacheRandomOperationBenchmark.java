@@ -407,7 +407,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         final IgniteBenchmarkPreloadLogger lgr = new IgniteBenchmarkPreloadLogger(availableCaches);
         exctr.scheduleWithFixedDelay(lgr, 0L, args.preloadLogsInterval(), TimeUnit.MILLISECONDS);
 
-        BenchmarkUtils.println("Preloading started");
+        BenchmarkUtils.println("Preloading started.");
 
         Thread[] threads = new Thread[availableCaches.size()];
 
@@ -432,7 +432,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         exctr.awaitTermination(1, TimeUnit.SECONDS);
         exctr.shutdownNow();
 
-        BenchmarkUtils.println("Preloading finished");
+        BenchmarkUtils.println("Preloading finished.");
     }
 
     /**
