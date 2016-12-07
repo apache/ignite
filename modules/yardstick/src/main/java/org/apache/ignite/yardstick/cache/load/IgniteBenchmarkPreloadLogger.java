@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Prints a log of preloading process to the BenchmarkUtils output
  */
-public class IgniteBenchmarkPreloadLogger implements Runnable {
+public class IgniteBenchmarkPreloadLogger extends Thread {
     /**
      * Map for keeping previous values to make sure all the caches work correctly.
      */
@@ -62,7 +62,7 @@ public class IgniteBenchmarkPreloadLogger implements Runnable {
             longestNameLgh = Math.max(availableCache.getName().length(), longestNameLgh);
         }
 
-        fmtstr = "Preloading log:%-" + (longestNameLgh + 4) + "s%-8d\t(+%d)";
+        fmtstr = "Preloading:%-" + (longestNameLgh + 4) + "s%-8d\t(+%d)";
     }
 
     /** {@inheritDoc} */
