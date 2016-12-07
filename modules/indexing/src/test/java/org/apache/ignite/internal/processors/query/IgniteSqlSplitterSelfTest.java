@@ -785,8 +785,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg2 = cacheConfig("org", false,
             Integer.class, Organization.class);
 
-        IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
-        IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
+        final IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
+        final IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
 
         try {
             c2.put(1, new Organization("o1"));
@@ -821,8 +821,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg2 = cacheConfig("org", true,
             Integer.class, Organization.class).setIndexSegmentationEnabled(false);
 
-        IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
-        IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
+        final IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
+        final IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
 
         try {
             c2.put(1, new Organization("o1"));
