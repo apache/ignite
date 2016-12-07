@@ -32,6 +32,7 @@
 #include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/test_utils.h"
 
 using namespace boost::unit_test;
 
@@ -194,8 +195,8 @@ public:
     /**
      * Constructor.
      *
-     * @param name Name.
-     * @param age Age.
+     * @param personId Id.
+     * @param someVal Int value.
      */
     QueryRelation(int32_t personId, int32_t someVal) :
         personId(personId),
@@ -293,7 +294,6 @@ namespace ignite
         IGNITE_BINARY_TYPE_END
     }
 }
-
 
 /**
  * Count number of records returned by cursor.
@@ -591,36 +591,7 @@ struct CacheQueryTestSuiteFixture
 {
     Ignite StartNode(const char* name)
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        const char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        BOOST_CHECK(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/cache-query.xml");
-
-        IgniteError err;
-
-        Ignite grid0 = Ignition::Start(cfg, name, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
-
-        return grid0;
+        return ignite_test::StartNode("cache-query.xml", name);
     }
 
     void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)

@@ -44,7 +44,6 @@ namespace ignite
         /**
          * Binary type structure. Defines a set of functions required for type to be serialized and deserialized.
          */
-        template<typename T>
         struct BinaryArrayIdentityResolver
         {
             /**
@@ -53,7 +52,8 @@ namespace ignite
              * @param obj Binary object.
              * @return Hash code.
              */
-            int32_t GetHashCode(const T& obj)
+            template<typename T>
+            static int32_t GetHashCode(const T& obj)
             {
                 using namespace impl::interop;
                 using namespace impl::binary;
