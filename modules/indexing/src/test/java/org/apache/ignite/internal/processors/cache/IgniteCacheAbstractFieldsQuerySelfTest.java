@@ -28,12 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
@@ -649,23 +647,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             assert "key".equals(row.get(0));
             assert "val".equals(row.get(1));
         }
-    }
-
-    /** @throws Exception If failed. */
-    public void testLocalQuery() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache( null);
-
-        int expected = 0;
-
-        for(Cache.Entry e: cache.localEntries(CachePeekMode.PRIMARY)){
-            if(e.getValue() instanceof Integer)
-                expected++;
-        }
-
-        QueryCursor<List<?>> qry = cache
-            .query(new SqlFieldsQuery("select _key, _val from Integer").setLocal(true));
-
-        assertEquals(expected, qry.getAll().size());
     }
 
     /** @throws Exception If failed. */
