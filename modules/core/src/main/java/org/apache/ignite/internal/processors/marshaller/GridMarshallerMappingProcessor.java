@@ -145,6 +145,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             }
         }
 
+        /**
+         * @param mappingItem Mapping item.
+         * @param conflictingClsName Conflicting class name.
+         */
         private IgniteCheckedException duplicateMappingException(MarshallerMappingItem mappingItem, String conflictingClsName) {
             return new IgniteCheckedException("Duplicate ID [platformId="
                     + mappingItem.platformId()
@@ -195,6 +199,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             }
         }
 
+        /**
+         * @param item Item.
+         */
         private IgniteCheckedException resolutionFailedException(MarshallerMappingItem item) {
             return new IgniteCheckedException("Failed to resolve class name for "
                     + "[platformId="
@@ -232,7 +239,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         marshallerCtx.onMarshallerProcessorStopping();
 
         IgniteCheckedException err = new IgniteCheckedException("Node is stopping.");

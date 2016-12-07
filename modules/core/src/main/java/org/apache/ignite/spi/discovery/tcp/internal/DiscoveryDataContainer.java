@@ -19,10 +19,10 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -48,15 +48,18 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 public final class DiscoveryDataContainer implements Serializable {
 
     /**
-     * Facade interface representing {@link DiscoveryDataContainer} object with discovery data of new joining node.
+     * Facade interface representing {@link DiscoveryDataContainer} object with discovery data from joining node.
      *
      * It is passed in to {@link org.apache.ignite.internal.GridComponent#onJoiningNodeDataReceived(NewNodeDiscoveryData)} method of each component on all "old" grid nodes.
      */
     public interface NewNodeDiscoveryData {
+        /** */
         UUID joiningNodeId();
 
+        /** */
         boolean hasJoiningNodeData();
 
+        /** */
         Serializable joiningNodeData();
     }
 
@@ -66,59 +69,88 @@ public final class DiscoveryDataContainer implements Serializable {
      * It is passed in to {@link org.apache.ignite.internal.GridComponent#onGridDataReceived(GridDiscoveryData)} method of each component on new joining node when all discovery data is collected in the grid.
      */
     public interface GridDiscoveryData {
+        /** */
         UUID joiningNodeId();
 
+        /** */
         Serializable commonData();
 
+        /** */
         Map<UUID, Serializable> nodeSpecificData();
     }
 
+    /**
+     *
+     */
     private final class NewNodeDiscoveryDataImpl implements NewNodeDiscoveryData, Serializable {
+        /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         private int cmpId;
 
+        /** {@inheritDoc} */
         @Override public UUID joiningNodeId() {
             return joiningNodeId;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasJoiningNodeData() {
             return unmarshJoiningNodeDiscoData.containsKey(cmpId);
         }
 
+        /** {@inheritDoc} */
         @Override @Nullable public Serializable joiningNodeData() {
             return unmarshJoiningNodeDiscoData.get(cmpId);
         }
 
+        /**
+         * @param cmpId Cmp id.
+         */
         private void setComponentId(int cmpId) {
             this.cmpId = cmpId;
         }
     }
 
+    /**
+     *
+     */
     private final class GridDiscoveryDataImpl implements GridDiscoveryData, Serializable {
+        /** */
         private static final long serialVersionUID = 0L;
         
+        /** */
         private int cmpId;
 
+        /** */
         private Map<UUID, Serializable> nodeSpecificData = new LinkedHashMap<>(unmarshNodeSpecData.size());
 
+        /** {@inheritDoc} */
         @Override public UUID joiningNodeId() {
             return joiningNodeId;
         }
 
+        /** {@inheritDoc} */
         @Override @Nullable public Serializable commonData() {
             return unmarshCmnData.get(cmpId);
         }
 
+        /** {@inheritDoc} */
         @Override public Map<UUID, Serializable> nodeSpecificData() {
             return nodeSpecificData;
         }
 
-        private void setComponentId(int cmpId) {
+        /**
+         * @param cmpId Cmp id.
+         */
+        private void componentId(int cmpId) {
             this.cmpId = cmpId;
             reinitNodeSpecData(cmpId);
         }
 
+        /**
+         * @param cmpId Cmp id.
+         */
         private void reinitNodeSpecData(int cmpId) {
             nodeSpecificData.clear();
             for (Map.Entry<UUID, Map<Integer, Serializable>> e : unmarshNodeSpecData.entrySet())
@@ -127,38 +159,70 @@ public final class DiscoveryDataContainer implements Serializable {
         }
     }
 
+    /** */
     private NewNodeDiscoveryDataImpl newJoinerData;
 
+    /** */
     private GridDiscoveryDataImpl gridData;
 
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private static final UUID DEFAULT_UUID = null;
 
+    /**
+     *
+     */
     private enum DiscoveryPhase {
-        NODE_JOINING,
+        /** */
+        JOINING_NODE_DATA_COLLECTION,
+
+        /** */
         GRID_DATA_COLLECTION
     }
 
+    /** */
     private DiscoveryPhase phase;
 
+    /** */
     private UUID joiningNodeId;
+    /** */
     private boolean clientNode;
 
+    /** */
     private Map<Integer, byte[]> joiningNodeDiscoData;
+
+    /** */
     private Map<Integer, byte[]> commonDiscoData = new HashMap<>();
+
+    /** */
     private Map<UUID, Map<Integer, byte[]>> nodeSpecificDiscoData = new LinkedHashMap<>();
 
+
+    /** */
     private Map<Integer, Serializable> unmarshJoiningNodeDiscoData = new HashMap<>();
+
+    /** */
     private Map<Integer, Serializable> unmarshCmnData = new HashMap<>();
+
+    /** */
     private Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = new LinkedHashMap<>();
 
+    /**
+     * @param joiningNodeId Joining node id.
+     * @param clientNode Client node.
+     */
     public DiscoveryDataContainer(UUID joiningNodeId, boolean clientNode) {
         this.joiningNodeId = joiningNodeId;
         this.clientNode = clientNode;
-        phase = DiscoveryPhase.NODE_JOINING;
+        phase = DiscoveryPhase.JOINING_NODE_DATA_COLLECTION;
     }
 
+    /**
+     * @param cmpId Cmp id.
+     * @param data Data.
+     */
     public void addGridCommonData(int cmpId, Serializable data) {
         if (isJoiningPhase())
             addDataOnJoin(cmpId, data);
@@ -166,6 +230,10 @@ public final class DiscoveryDataContainer implements Serializable {
             unmarshCmnData.put(cmpId, data);
     }
 
+    /**
+     * @param cmpId Cmp id.
+     * @param data Data.
+     */
     public void addNodeSpecificData(int cmpId, Serializable data) {
         if (isJoiningPhase())
             addDataOnJoin(cmpId, data);
@@ -177,6 +245,10 @@ public final class DiscoveryDataContainer implements Serializable {
         }
     }
 
+    /**
+     * @param cmpId Cmp id.
+     * @param data Data.
+     */
     private void addDataOnJoin(int cmpId, Serializable data) {
         if (!unmarshNodeSpecData.containsKey(DEFAULT_UUID))
             unmarshNodeSpecData.put(DEFAULT_UUID, new HashMap<Integer, Serializable>());
@@ -184,23 +256,37 @@ public final class DiscoveryDataContainer implements Serializable {
         unmarshNodeSpecData.get(DEFAULT_UUID).put(cmpId, data);
     }
 
+    /**
+     * @param cmpId Cmp id.
+     */
     public boolean isCommonDataCollectedFor(int cmpId) {
         return commonDiscoData.containsKey(cmpId);
     }
 
+    /**
+     *
+     */
     public void markGridDiscoveryStarted() {
         phase = DiscoveryPhase.GRID_DATA_COLLECTION;
     }
 
+    /**
+     *
+     */
     private boolean isJoiningPhase() {
-        return phase == DiscoveryPhase.NODE_JOINING;
+        return phase == DiscoveryPhase.JOINING_NODE_DATA_COLLECTION;
     }
 
+    /**
+     * @param nodeId Node id.
+     * @param marsh Marsh.
+     * @param log Logger.
+     */
     public void marshalGridData(UUID nodeId, Marshaller marsh, IgniteLogger log) {
-        if (phase == DiscoveryPhase.NODE_JOINING) {
+        if (phase == DiscoveryPhase.JOINING_NODE_DATA_COLLECTION) {
             Map<Integer, Serializable> joiningNodeData = unmarshNodeSpecData.get(DEFAULT_UUID);
 
-            if (joiningNodeData == null || joiningNodeData.size() == 0)
+            if (joiningNodeData == null || joiningNodeData.isEmpty())
                 return;
 
             joiningNodeDiscoData = U.newHashMap(joiningNodeData.size());
@@ -219,8 +305,14 @@ public final class DiscoveryDataContainer implements Serializable {
         unmarshNodeSpecData.clear();
     }
 
-    private void marshalFromTo(Map<Integer, Serializable> source, Map<Integer, byte[]> target, Marshaller marsh, IgniteLogger log) {
-        for (Map.Entry<Integer, Serializable> entry : source.entrySet())
+    /**
+     * @param src Source.
+     * @param target Target.
+     * @param marsh Marsh.
+     * @param log Logger.
+     */
+    private void marshalFromTo(Map<Integer, Serializable> src, Map<Integer, byte[]> target, Marshaller marsh, IgniteLogger log) {
+        for (Map.Entry<Integer, Serializable> entry : src.entrySet())
             try {
                 target.put(entry.getKey(), marsh.marshal(entry.getValue()));
             } catch (IgniteCheckedException e) {
@@ -229,12 +321,17 @@ public final class DiscoveryDataContainer implements Serializable {
             }
     }
 
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param log Logger.
+     */
     public void unmarshalGridData(Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
         unmarshalFromTo(commonDiscoData, unmarshCmnData, marsh, clsLdr, log);
 
         for (Map.Entry<UUID, Map<Integer, byte[]>> binDataEntry : nodeSpecificDiscoData.entrySet()) {
             Map<Integer, byte[]> binData = binDataEntry.getValue();
-            if (binData == null || binData.size() == 0)
+            if (binData == null || binData.isEmpty())
                 continue;
 
             Map<Integer, Serializable> unmarshData = U.newHashMap(binData.size());
@@ -244,20 +341,38 @@ public final class DiscoveryDataContainer implements Serializable {
         }
     }
 
+    /**
+     *
+     */
     public boolean hasJoiningNodeDiscoveryData() {
-        return joiningNodeDiscoData != null && joiningNodeDiscoData.size() > 0;
+        return joiningNodeDiscoData != null && !joiningNodeDiscoData.isEmpty();
     }
 
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param log Logger.
+     */
     public void unmarshalJoiningNodeData(Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
         unmarshalFromTo(joiningNodeDiscoData, unmarshJoiningNodeDiscoData, marsh, clsLdr, log);
     }
 
+    /**
+     * @param nodeId Node id.
+     */
     public boolean hasDataFromNode(UUID nodeId) {
         return nodeSpecificDiscoData.containsKey(nodeId);
     }
 
-    private void unmarshalFromTo(Map<Integer, byte[]> source, Map<Integer, Serializable> target, Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
-        for (Map.Entry<Integer, byte[]> binEntry : source.entrySet()) {
+    /**
+     * @param src Source.
+     * @param target Target.
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param log Logger.
+     */
+    private void unmarshalFromTo(Map<Integer, byte[]> src, Map<Integer, Serializable> target, Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
+        for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
             try {
                 Serializable compData = marsh.unmarshal(binEntry.getValue(), clsLdr);
                 target.put(binEntry.getKey(), compData);
@@ -271,17 +386,26 @@ public final class DiscoveryDataContainer implements Serializable {
         }
     }
 
+    /**
+     *
+     */
     public UUID getJoiningNodeId() {
         return joiningNodeId;
     }
 
+    /**
+     * @param cmpId Cmp id.
+     */
     public GridDiscoveryData gridDiscoveryData(int cmpId) {
         if (gridData == null)
             gridData = new GridDiscoveryDataImpl();
-        gridData.setComponentId(cmpId);
+        gridData.componentId(cmpId);
         return gridData;
     }
 
+    /**
+     * @param cmpId Cmp id.
+     */
     public NewNodeDiscoveryData newJoinerDiscoveryData(int cmpId) {
         if (newJoinerData == null)
             newJoinerData = new NewNodeDiscoveryDataImpl();
@@ -289,7 +413,17 @@ public final class DiscoveryDataContainer implements Serializable {
         return newJoinerData;
     }
 
-    public boolean mergeDataFrom(DiscoveryDataContainer existingDiscoData, Set<Integer> mrgdCmnDataKeys, Set<UUID> mrgdSpecifDataKeys) {
+    /**
+     * Method merges data from current (this) discovery data container with data from provided container.
+     *
+     * Merging means that if current and provided containers has two data entries of exactly the same data, we force current container to reference data from provided one so duplicated object can be garbage collected.
+     * It allows us to save a lot of memory when keeping all message history.
+     *
+     * @param existingDiscoData existing discovery data we want to merge data entries from.
+     * @param mrgdCmnDataKeys common disco data entries already merged for current disco data (no need to merge them again).
+     * @param mrgdSpecifDataKeys node specific disco data entries already merged for current disco data.
+     */
+    public boolean mergeDataFrom(DiscoveryDataContainer existingDiscoData, Collection<Integer> mrgdCmnDataKeys, Collection<UUID> mrgdSpecifDataKeys) {
         if (commonDiscoData.size() != mrgdCmnDataKeys.size()) {
             for (Map.Entry<Integer, byte[]> e : commonDiscoData.entrySet()) {
                 if (!mrgdCmnDataKeys.contains(e.getKey())) {
@@ -331,6 +465,10 @@ public final class DiscoveryDataContainer implements Serializable {
         return (mrgdCmnDataKeys.size() == commonDiscoData.size()) && (mrgdSpecifDataKeys.size() == nodeSpecificDiscoData.size());
     }
 
+    /**
+     * @param m1 first map to compare.
+     * @param m2 second map to compare.
+     */
     private boolean mapsEqual(Map<Integer, byte[]> m1, Map<Integer, byte[]> m2) {
         if (m1 == m2)
             return true;
