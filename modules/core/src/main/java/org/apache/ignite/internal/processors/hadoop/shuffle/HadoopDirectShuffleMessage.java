@@ -64,9 +64,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     @GridToStringInclude
     private int bufLen;
 
-    /** Original data length. */
-    private int dataLen;
-
     /**
      * Default constructor.
      */
@@ -92,7 +89,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         this.cnt = cnt;
         this.buf = buf;
         this.bufLen = bufLen;
-        this.dataLen = dataLen;
 
         msgId = ID_GEN.incrementAndGet();
     }
@@ -139,13 +135,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         return bufLen;
     }
 
-    /**
-     * @return Original data length.
-     */
-    public int dataLength() {
-        return dataLen;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -190,12 +179,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
             case 5:
                 if (!writer.writeInt("bufLen", bufLen))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeInt("dataLen", dataLen))
                     return false;
 
                 writer.incrementState();
@@ -261,14 +244,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
                 reader.incrementState();
 
-            case 6:
-                dataLen = reader.readInt("dataLen");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(HadoopDirectShuffleMessage.class);
@@ -281,7 +256,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
     }
 
     /** {@inheritDoc} */
@@ -296,7 +271,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         out.writeInt(reducer);
         out.writeInt(cnt);
         out.writeInt(bufLen);
-        out.writeInt(dataLen);
         U.writeByteArray(out, buf);
     }
 
@@ -309,7 +283,6 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         reducer = in.readInt();
         cnt = in.readInt();
         bufLen = in.readInt();
-        dataLen = in.readInt();
         buf = U.readByteArray(in);
     }
 
