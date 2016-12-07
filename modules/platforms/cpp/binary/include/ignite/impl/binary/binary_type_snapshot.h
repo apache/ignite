@@ -27,13 +27,13 @@
 #include <ignite/common/concurrent.h>
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace binary
         {
             /**
-             * Type snapshot. 
+             * Type snapshot.
              */
             class BinaryTypeSnapshot
             {
@@ -48,7 +48,7 @@ namespace ignite
                  */
                 BinaryTypeSnapshot(std::string typeName, int32_t typeId, std::set<int32_t>* fieldIds, 
                     std::map<std::string, int32_t>* fields);
-                
+
                 /**
                  * Destructor.
                  */
@@ -65,7 +65,7 @@ namespace ignite
                 /**
                  * Get type name.
                  *
-                 * @param Type name.
+                 * @return Type name.
                  */
                 std::string GetTypeName();
 
@@ -79,14 +79,14 @@ namespace ignite
                 /**
                  * Whether snapshot contains any fields.
                  *
-                 * @param True if fields exist.
+                 * @return True if fields exist.
                  */
                 bool HasFields();
 
                 /** 
                  * Get field IDs.
                  *
-                 * @param Field IDs.
+                 * @return Field IDs.
                  */
                 std::set<int32_t>* GetFieldIds();
 
@@ -99,8 +99,8 @@ namespace ignite
 
             private:
                 /** Type name. */
-                std::string typeName;                   
-                
+                std::string typeName;
+
                 /** Type ID. */
                 int32_t typeId;
 
@@ -116,7 +116,7 @@ namespace ignite
             typedef BinaryTypeSnapshot Snap;
             typedef ignite::common::concurrent::SharedPointer<Snap> SPSnap;
         }
-    }    
+    }
 }
 
 #endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_SNAPSHOT

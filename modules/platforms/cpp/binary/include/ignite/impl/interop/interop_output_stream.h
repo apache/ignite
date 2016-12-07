@@ -237,7 +237,7 @@ namespace ignite
                 /**
                  * Copy data to the stream shifting it along the way.
                  *
-                 * @param ptr Pointer to data.
+                 * @param src Pointer to data.
                  * @param off Offset.
                  * @param len Length.
                  */
