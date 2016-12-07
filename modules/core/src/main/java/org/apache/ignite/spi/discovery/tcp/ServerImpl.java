@@ -1929,7 +1929,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // Do not need this data for client reconnect.
                 if (addedMsg.gridDiscoveryData() != null)
-                    addedMsg.gridDiscoveryData().clearGridData();
+                    addedMsg.clearDiscoveryData();
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;

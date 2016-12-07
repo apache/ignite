@@ -348,9 +348,4 @@ public final class DiscoveryDataContainer implements Serializable {
 
         return false;
     }
-
-    public void clearGridData() {
-        commonDiscoData.clear();
-        nodeSpecificDiscoData.clear();
-    }
 }
