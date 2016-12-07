@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -120,9 +121,12 @@ public class IgfsUtils {
     /** Separator between id and name parts in the trash name. */
     private static final char TRASH_NAME_SEPARATOR = '|';
 
-    /**
-     * Static initializer.
-     */
+    /** Flag: this is a directory. */
+    private static final byte FLAG_DIR = 0x1;
+
+    /** Flag: this is a file. */
+    private static final byte FLAG_FILE = 0x2;
+
     static {
         TRASH_IDS = new IgniteUuid[TRASH_CONCURRENCY];
 
@@ -744,6 +748,21 @@ public class IgfsUtils {
     }
 
     /**
+     * Read non-null path from the input.
+     *
+     * @param in Input.
+     * @return IGFS path.
+     * @throws IOException If failed.
+     */
+    public static IgfsPath readPath(ObjectInput in) throws IOException {
+        IgfsPath res = new IgfsPath();
+
+        res.readExternal(in);
+
+        return res;
+    }
+
+    /**
      * Write IgfsFileAffinityRange.
      *
      * @param writer Writer
@@ -872,7 +891,7 @@ public class IgfsUtils {
 
         ArrayList<T2<IgfsPath, IgfsMode>> resModes = new ArrayList<>(modes.size() + 1);
 
-        resModes.add(new T2<>(new IgfsPath("/"), dfltMode));
+        resModes.add(new T2<>(IgfsPath.ROOT, dfltMode));
 
         for (T2<IgfsPath, IgfsMode> mode : modes) {
             assert mode.getKey() != null;
@@ -906,5 +925,52 @@ public class IgfsUtils {
         resModes.remove(resModes.size() - 1);
 
         return resModes;
+    }
+
+    /**
+     * Create flags value.
+     *
+     * @param isDir Directory flag.
+     * @param isFile File flag.
+     * @return Result.
+     */
+    public static byte flags(boolean isDir, boolean isFile) {
+        byte res = isDir ? FLAG_DIR : 0;
+
+        if (isFile)
+            res |= FLAG_FILE;
+
+        return res;
+    }
+
+    /**
+     * Check whether passed flags represent directory.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is directory.
+     */
+    public static boolean isDirectory(byte flags) {
+        return hasFlag(flags, FLAG_DIR);
+    }
+
+    /**
+     * Check whether passed flags represent file.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is file.
+     */
+    public static boolean isFile(byte flags) {
+        return hasFlag(flags, FLAG_FILE);
+    }
+
+    /**
+     * Check whether certain flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag to check.
+     * @return {@code True} if flag is set.
+     */
+    private static boolean hasFlag(byte flags, byte flag) {
+        return (flags & flag) == flag;
     }
 }

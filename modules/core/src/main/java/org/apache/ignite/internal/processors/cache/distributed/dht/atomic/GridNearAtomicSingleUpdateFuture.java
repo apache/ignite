@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,6 +33,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -37,28 +45,23 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.expiry.ExpiryPolicy;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
-
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
  * DHT atomic cache near update future.
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
+    /** */
+    private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.7.4");
+
     /** Keys */
     private Object key;
 
@@ -67,7 +70,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     private Object val;
 
     /** Not null is operation is mapped to single node. */
-    private GridNearAtomicUpdateRequest req;
+    private GridNearAtomicAbstractUpdateRequest req;
 
     /**
      * @param cctx Cache context.
@@ -127,7 +130,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     @Override public boolean onNodeLeft(UUID nodeId) {
         GridNearAtomicUpdateResponse res = null;
 
-        GridNearAtomicUpdateRequest req;
+        GridNearAtomicAbstractUpdateRequest req;
 
         synchronized (mux) {
             req = this.req != null && this.req.nodeId().equals(nodeId) ? this.req : null;
@@ -191,16 +194,10 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         return false;
     }
 
-    /**
-     * Response callback.
-     *
-     * @param nodeId Node ID.
-     * @param res Update response.
-     * @param nodeErr {@code True} if response was created on node failure.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
-        GridNearAtomicUpdateRequest req;
+    @Override public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
+        GridNearAtomicAbstractUpdateRequest req;
 
         AffinityTopologyVersion remapTopVer = null;
 
@@ -376,7 +373,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+    private void updateNear(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -441,64 +438,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         map(topVer);
     }
 
-    /**
-     * Maps future to single node.
-     *
-     * @param nodeId Node ID.
-     * @param req Request.
-     */
-    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequest req) {
-        if (cctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(nodeId, req,
-                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                        onResult(res.nodeId(), res, false);
-                    }
-                });
-        }
-        else {
-            try {
-                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
-
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near update single fut, sent request [futId=" + req.futureVersion() +
-                        ", writeVer=" + req.updateVersion() +
-                        ", node=" + req.nodeId() + ']');
-                }
-
-                if (syncMode == FULL_ASYNC)
-                    onDone(new GridCacheReturn(cctx, true, true, null, true));
-            }
-            catch (IgniteCheckedException e) {
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near update single fut, failed to send request [futId=" + req.futureVersion() +
-                        ", writeVer=" + req.updateVersion() +
-                        ", node=" + req.nodeId() +
-                        ", err=" + e + ']');
-                }
-
-                onSendError(req, e);
-            }
-        }
-    }
-
-    /**
-     * @param req Request.
-     * @param e Error.
-     */
-    void onSendError(GridNearAtomicUpdateRequest req, IgniteCheckedException e) {
-        synchronized (mux) {
-            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
-                req.nodeId(),
-                req.futureVersion(),
-                cctx.deploymentEnabled());
-
-            res.addFailedKeys(req.keys(), e);
-
-            onResult(req.nodeId(), res, true);
-        }
-    }
-
     /** {@inheritDoc} */
     protected void map(AffinityTopologyVersion topVer) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
@@ -511,7 +450,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         }
 
         Exception err = null;
-        GridNearAtomicUpdateRequest singleReq0 = null;
+        GridNearAtomicAbstractUpdateRequest singleReq0 = null;
 
         GridCacheVersion futVer = cctx.versions().next(topVer);
 
@@ -600,7 +539,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @return Request.
      * @throws Exception If failed.
      */
-    private GridNearAtomicUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
+    private GridNearAtomicAbstractUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
         GridCacheVersion futVer,
         @Nullable GridCacheVersion updVer) throws Exception {
         if (key == null)
@@ -615,6 +554,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         if (op != TRANSFORM)
             val = cctx.toCacheObject(val);
+        else
+            val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
         ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
 
@@ -622,27 +563,94 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
                 "left the grid).");
 
-        GridNearAtomicUpdateRequest req = new GridNearAtomicUpdateRequest(
-            cctx.cacheId(),
-            primary.id(),
-            futVer,
-            false,
-            updVer,
-            topVer,
-            topLocked,
-            syncMode,
-            op,
-            retval,
-            expiryPlc,
-            invokeArgs,
-            filter,
-            subjId,
-            taskNameHash,
-            skipStore,
-            keepBinary,
-            cctx.kernalContext().clientNode(),
-            cctx.deploymentEnabled(),
-            1);
+        GridNearAtomicAbstractUpdateRequest req;
+
+        if (canUseSingleRequest(primary)) {
+            if (op == TRANSFORM) {
+                req = new GridNearAtomicSingleUpdateInvokeRequest(
+                    cctx.cacheId(),
+                    primary.id(),
+                    futVer,
+                    false,
+                    updVer,
+                    topVer,
+                    topLocked,
+                    syncMode,
+                    op,
+                    retval,
+                    invokeArgs,
+                    subjId,
+                    taskNameHash,
+                    skipStore,
+                    keepBinary,
+                    cctx.kernalContext().clientNode(),
+                    cctx.deploymentEnabled());
+            }
+            else {
+                if (filter == null || filter.length == 0) {
+                    req = new GridNearAtomicSingleUpdateRequest(
+                        cctx.cacheId(),
+                        primary.id(),
+                        futVer,
+                        false,
+                        updVer,
+                        topVer,
+                        topLocked,
+                        syncMode,
+                        op,
+                        retval,
+                        subjId,
+                        taskNameHash,
+                        skipStore,
+                        keepBinary,
+                        cctx.kernalContext().clientNode(),
+                        cctx.deploymentEnabled());
+                }
+                else {
+                    req = new GridNearAtomicSingleUpdateFilterRequest(
+                        cctx.cacheId(),
+                        primary.id(),
+                        futVer,
+                        false,
+                        updVer,
+                        topVer,
+                        topLocked,
+                        syncMode,
+                        op,
+                        retval,
+                        filter,
+                        subjId,
+                        taskNameHash,
+                        skipStore,
+                        keepBinary,
+                        cctx.kernalContext().clientNode(),
+                        cctx.deploymentEnabled());
+                }
+            }
+        }
+        else {
+            req = new GridNearAtomicFullUpdateRequest(
+                cctx.cacheId(),
+                primary.id(),
+                futVer,
+                false,
+                updVer,
+                topVer,
+                topLocked,
+                syncMode,
+                op,
+                retval,
+                expiryPlc,
+                invokeArgs,
+                filter,
+                subjId,
+                taskNameHash,
+                skipStore,
+                keepBinary,
+                cctx.kernalContext().clientNode(),
+                cctx.deploymentEnabled(),
+                1);
+        }
 
         req.addUpdateEntry(cacheKey,
             val,
@@ -652,6 +660,14 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             true);
 
         return req;
+    }
+
+    /**
+     * @param node Target node
+     * @return {@code True} can use 'single' update requests.
+     */
+    private boolean canUseSingleRequest(ClusterNode node) {
+        return expiryPlc == null && node != null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
     }
 
     /** {@inheritDoc} */

@@ -575,6 +575,31 @@ public class PlatformUtils {
     }
 
     /**
+     * Writes error.
+     *
+     * @param ex Error.
+     * @param writer Writer.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+        writer.writeObjectDetached(ex.getClass().getName());
+
+        writer.writeObjectDetached(ex.getMessage());
+
+        writer.writeObjectDetached(X.getFullStackTrace(ex));
+
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
+            writer.writeBoolean(true);
+
+            writer.writeObjectDetached(nativeCause.cause());
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
      * Writer error data.
      *
      * @param err Error.
@@ -788,12 +813,16 @@ public class PlatformUtils {
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         try {
+            IgniteConfiguration cfg = new IgniteConfiguration();
+
             BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), cfg, new NullLogger());
 
             BinaryMarshaller marsh = new BinaryMarshaller();
 
-            marsh.setContext(new MarshallerContextImpl(null));
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+
+            marsh.setContext(new MarshallerContextImpl(workDir, null));
 
             ctx.configure(marsh, new IgniteConfiguration());
 

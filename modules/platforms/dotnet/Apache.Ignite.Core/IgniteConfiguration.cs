@@ -39,7 +39,10 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -89,6 +92,11 @@
         /// </summary>
         public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -118,6 +126,9 @@
 
         /** */
         private bool? _clientMode;
+
+        /** */
+        private TimeSpan? _failureDetectionTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -194,6 +205,7 @@
             writer.WriteString(Localhost);
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
+            writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -287,10 +299,28 @@
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionConcurrency);
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
-                writer.WriteLong((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
+
+            // Swap space
+            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var ccfg = CacheConfiguration;
+            if (ccfg != null)
+            {
+                foreach (var cfg in ccfg)
+                    cfg.Validate(log);
+            }
         }
 
         /// <summary>
@@ -313,6 +343,7 @@
             Localhost = r.ReadString();
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
+            _failureDetectionTimeout = r.ReadTimeSpanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -360,6 +391,9 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
+
+            // Swap
+            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
         }
 
         /// <summary>
@@ -400,6 +434,7 @@
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
+            Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
         }
@@ -731,11 +766,14 @@
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
         public static IgniteConfiguration FromXml(string xml)
         {
             IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
 
-            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
             {
                 // Skip XML header.
                 xmlReader.MoveToContent();
@@ -743,5 +781,29 @@
                 return FromXml(xmlReader);
             }
         }
+
+        /// <summary>
+        /// Gets or sets the logger.
+        /// <para />
+        /// If no logger is set, logging is delegated to Java, which uses the logger defined in Spring XML (if present)
+        /// or logs to console otherwise.
+        /// </summary>
+        public ILogger Logger { get; set; }
+
+        /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/> 
+        /// and <see cref="TcpCommunicationSpi"/>.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        public TimeSpan FailureDetectionTimeout
+        {
+            get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
+            set { _failureDetectionTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the swap space SPI.
+        /// </summary>
+        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
     }
 }

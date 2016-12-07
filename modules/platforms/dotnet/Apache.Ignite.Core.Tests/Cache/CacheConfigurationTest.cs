@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
@@ -250,6 +251,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
+            Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+
+            if (x.ExpiryPolicyFactory != null)
+                Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
+                    y.ExpiryPolicyFactory.CreateInstance().GetType());
+            else
+                Assert.IsNull(y.ExpiryPolicyFactory);
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
@@ -555,7 +563,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     Partitions = 513,
                     ExcludeNeighbors = true
-                }
+                },
+                ExpiryPolicyFactory = new ExpiryFactory(),
+                EnableStatistics = true
             };
         }
         /// <summary>
@@ -713,6 +723,19 @@ namespace Apache.Ignite.Core.Tests.Cache
             /// Gets or sets the foo.
             /// </summary>
             public int Foo { get; set; }
+        }
+
+
+        /// <summary>
+        /// Expiry policy factory.
+        /// </summary>
+        private class ExpiryFactory : IFactory<IExpiryPolicy>
+        {
+            /** <inheritdoc /> */
+            public IExpiryPolicy CreateInstance()
+            {
+                return new ExpiryPolicy(null, null, null);
+            }
         }
     }
 }

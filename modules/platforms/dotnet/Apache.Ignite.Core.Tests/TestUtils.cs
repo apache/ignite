@@ -21,9 +21,10 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
@@ -39,6 +40,9 @@ namespace Apache.Ignite.Core.Tests
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
 
+        /** Indicates examples tests. */
+        public const string CategoryExamples = "EXAMPLES_TEST";
+
         /** */
         public const int DfltBusywaitSleepInterval = 200;
 
@@ -50,7 +54,8 @@ namespace Apache.Ignite.Core.Tests
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-Xms1g",
                 "-Xmx4g",
-                "-ea"
+                "-ea",
+                "-DIGNITE_QUIET=true"
             }
             : new List<string>
             {
@@ -58,7 +63,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xms512m",
                 "-Xmx512m",
                 "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000"
+                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
+                "-DIGNITE_QUIET=true"
             };
 
         /** */
@@ -281,7 +287,8 @@ namespace Apache.Ignite.Core.Tests
             var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleBeanHolder)).ToList();
 
             if (items.Any())
-                Assert.Fail("HandleRegistry is not empty in grid '{0}':\n '{1}'", grid.Name,
+                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'", 
+                    grid.Name, expectedCount, handleRegistry.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
         }
 
@@ -336,6 +343,32 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestJavaOptions(jvmDebug),
                 JvmClasspath = CreateTestClasspath()
             };
+        }
+
+        /// <summary>
+        /// Runs the test in new process.
+        /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        public static void RunTestInNewProcess(string fixtureName, string testName)
+        {
+            var procStart = new ProcessStartInfo
+            {
+                FileName = typeof(TestUtils).Assembly.Location,
+                Arguments = fixtureName + " " + testName,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = System.Diagnostics.Process.Start(procStart);
+
+            Assert.IsNotNull(proc);
+
+            Console.WriteLine(proc.StandardOutput.ReadToEnd());
+            Console.WriteLine(proc.StandardError.ReadToEnd());
+            Assert.IsTrue(proc.WaitForExit(15000));
+            Assert.AreEqual(0, proc.ExitCode);
         }
     }
 }
