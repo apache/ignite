@@ -307,9 +307,6 @@ public class MarshallerContextImpl implements MarshallerContext {
     @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
-        if (cache == null)
-            throw new IgniteCheckedException("Cache for platformId=" + platformId + " not found.");
-
         String clsName;
         MappedName mappedName = cache.get(typeId);
 
@@ -388,9 +385,8 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (map != null)
             return map;
 
-        ConcurrentMap<Integer, MappedName> oldMap;
         map = new ConcurrentHashMap8<>();
-        oldMap = allCaches.putIfAbsent(platformId, map);
+        ConcurrentMap<Integer, MappedName> oldMap = allCaches.putIfAbsent(platformId, map);
 
         return oldMap != null ? oldMap : map;
     }

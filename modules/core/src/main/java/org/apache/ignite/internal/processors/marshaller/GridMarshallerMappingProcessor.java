@@ -22,11 +22,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -36,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridD
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
 
 /**
@@ -84,6 +87,12 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         discoMgr.setCustomEventListener(MissingMappingRequestMessage.class, new MissingMappingRequestListener());
 
         discoMgr.setCustomEventListener(MissingMappingResponseMessage.class, new MissingMappingResponseListener());
+
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                cancelFutures(new MappingExchangeResult(null, new IgniteCheckedException("Topology segmented")));
+            }
+        }, EVT_NODE_SEGMENTED);
     }
 
     /**
@@ -242,14 +251,19 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         marshallerCtx.onMarshallerProcessorStopping();
 
-        IgniteCheckedException err = new IgniteCheckedException("Node is stopping.");
-
-        for (GridFutureAdapter<MappingExchangeResult> fut : mappingExchangeSyncMap.values())
-            fut.onDone(new MappingExchangeResult(null, err));
+        cancelFutures(new MappingExchangeResult(null, new IgniteCheckedException("Node is stopping.")));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return MARSHALLER_PROC;
+    }
+
+    /**
+     * @param res Response.
+     */
+    private void cancelFutures(MappingExchangeResult res) {
+        for (GridFutureAdapter<MappingExchangeResult> fut : mappingExchangeSyncMap.values())
+            fut.onDone(res);
     }
 }
