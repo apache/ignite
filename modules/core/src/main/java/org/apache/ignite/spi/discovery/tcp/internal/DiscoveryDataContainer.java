@@ -201,13 +201,13 @@ public final class DiscoveryDataContainer implements Serializable {
 
 
     /** */
-    private Map<Integer, Serializable> unmarshJoiningNodeDiscoData = new HashMap<>();
+    private Map<Integer, Serializable> unmarshJoiningNodeDiscoData;
 
     /** */
-    private Map<Integer, Serializable> unmarshCmnData = new HashMap<>();
+    private Map<Integer, Serializable> unmarshCmnData;
 
     /** */
-    private Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = new LinkedHashMap<>();
+    private Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData;
 
     /**
      * @param joiningNodeId Joining node id.
@@ -226,8 +226,12 @@ public final class DiscoveryDataContainer implements Serializable {
     public void addGridCommonData(int cmpId, Serializable data) {
         if (isJoiningPhase())
             addDataOnJoin(cmpId, data);
-        else
+        else {
+            if (unmarshCmnData == null)
+                unmarshCmnData = new HashMap<>();
+
             unmarshCmnData.put(cmpId, data);
+        }
     }
 
     /**
@@ -235,6 +239,9 @@ public final class DiscoveryDataContainer implements Serializable {
      * @param data Data.
      */
     public void addNodeSpecificData(int cmpId, Serializable data) {
+        if (unmarshNodeSpecData == null)
+            unmarshNodeSpecData = new LinkedHashMap<>();
+
         if (isJoiningPhase())
             addDataOnJoin(cmpId, data);
         else {
@@ -250,6 +257,9 @@ public final class DiscoveryDataContainer implements Serializable {
      * @param data Data.
      */
     private void addDataOnJoin(int cmpId, Serializable data) {
+        if (unmarshNodeSpecData == null)
+            unmarshNodeSpecData = new HashMap<>();
+
         if (!unmarshNodeSpecData.containsKey(DEFAULT_UUID))
             unmarshNodeSpecData.put(DEFAULT_UUID, new HashMap<Integer, Serializable>());
 
@@ -301,8 +311,8 @@ public final class DiscoveryDataContainer implements Serializable {
             }
         }
 
-        unmarshCmnData.clear();
-        unmarshNodeSpecData.clear();
+        unmarshCmnData = null;
+        unmarshNodeSpecData = null;
     }
 
     /**
@@ -312,6 +322,10 @@ public final class DiscoveryDataContainer implements Serializable {
      * @param log Logger.
      */
     private void marshalFromTo(Map<Integer, Serializable> src, Map<Integer, byte[]> target, Marshaller marsh, IgniteLogger log) {
+        //may happen if nothing was collected from components, corresponding map (for common data or for node specific data) left null
+        if (src == null)
+            return;
+
         for (Map.Entry<Integer, Serializable> entry : src.entrySet())
             try {
                 target.put(entry.getKey(), marsh.marshal(entry.getValue()));
@@ -327,6 +341,9 @@ public final class DiscoveryDataContainer implements Serializable {
      * @param log Logger.
      */
     public void unmarshalGridData(Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
+        unmarshCmnData = new HashMap<>();
+        unmarshNodeSpecData = new LinkedHashMap<>();
+
         unmarshalFromTo(commonDiscoData, unmarshCmnData, marsh, clsLdr, log);
 
         for (Map.Entry<UUID, Map<Integer, byte[]>> binDataEntry : nodeSpecificDiscoData.entrySet()) {
@@ -354,6 +371,7 @@ public final class DiscoveryDataContainer implements Serializable {
      * @param log Logger.
      */
     public void unmarshalJoiningNodeData(Marshaller marsh, ClassLoader clsLdr, IgniteLogger log) {
+        unmarshJoiningNodeDiscoData = new HashMap<>();
         unmarshalFromTo(joiningNodeDiscoData, unmarshJoiningNodeDiscoData, marsh, clsLdr, log);
     }
 
