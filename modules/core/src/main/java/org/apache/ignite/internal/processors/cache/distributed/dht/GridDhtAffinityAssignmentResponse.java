@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -45,7 +44,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    protected AffinityTopologyVersion topVer;
 
     /** Affinity assignment. */
     @GridDirectTransient

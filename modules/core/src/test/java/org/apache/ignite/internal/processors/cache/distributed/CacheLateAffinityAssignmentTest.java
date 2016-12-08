@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityMultiAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
@@ -1806,6 +1807,66 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         updateFut.get();
 
         assertFalse("Unexpected messages.", fail.get());
+    }
+
+    /**
+     * Wait for rebalance, coordinator leaves, new coordinator doesn't have cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCoordinatorLeaveSecondNodeNoCache() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
+                if (gridName.equals(getTestGridName(0)) || gridName.equals(getTestGridName(1)))
+                    return null;
+
+                return new CacheConfiguration[] {cacheConfiguration()};
+            }
+        };
+
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0), getTestGridName(1)));
+
+        final int NUM_NODES = 3;
+        int topVer = 0;
+
+        for (int i = 0; i < NUM_NODES; i++)
+            startServer(i, ++topVer);
+
+        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi spi0 =
+            (TestRecordingCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
+
+        spi0.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage message) {
+                return message.message() instanceof GridDhtAffinityMultiAssignmentResponse;
+            }
+        });
+
+        final int newTopVer = ++topVer;
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startServer(NUM_NODES, newTopVer);
+                return null;
+            }
+        }, "node start");
+
+        U.sleep(1000);
+
+        assertFalse(fut.isDone());
+
+        stopGrid(0, true);
+
+        fut.get(600000);
+
+        awaitPartitionMapExchange();
+
+        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal)ignite(NUM_NODES)).context().cache().internalCache(CACHE_NAME1));
+
+        checkAffinity(NUM_NODES, topVer(topVer, 0), false);
     }
 
     /**

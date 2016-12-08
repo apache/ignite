@@ -142,13 +142,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
-                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
+                    for (Integer cacheId : ((GridDhtAffinityAssignmentRequest)cacheMsg).cacheIds()) {
+                        DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
 
-                    if (cacheDesc != null) {
-                        if (cacheDesc.startTopologyVersion() != null)
-                            startTopVer = cacheDesc.startTopologyVersion();
-                        else if (cacheDesc.receivedFromStartVersion() != null)
-                            startTopVer = cacheDesc.receivedFromStartVersion();
+                        if (cacheDesc != null) {
+                            AffinityTopologyVersion startTopVer0 = null;
+                            if (cacheDesc.startTopologyVersion() != null)
+                                startTopVer0 = cacheDesc.startTopologyVersion();
+                            else if (cacheDesc.receivedFromStartVersion() != null)
+                                startTopVer0 = cacheDesc.receivedFromStartVersion();
+
+                            if (startTopVer0 != null && startTopVer0.compareTo(startTopVer) > 0)
+                                startTopVer = startTopVer0;
+                        }
                     }
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
@@ -158,8 +164,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         if (log.isDebugEnabled()) {
                             log.debug("Wait for exchange before processing message [msg=" + msg +
                                 ", node=" + nodeId +
-                                ", waitVer=" + startTopVer +
-                                ", cacheDesc=" + cacheDesc + ']');
+                                ", waitVer=" + startTopVer + ']');
                         }
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
