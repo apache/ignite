@@ -534,11 +534,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasConflictData() {
-        return F.size(conflictVers) > 0 || conflictTtls != null || conflictExpireTimes != null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

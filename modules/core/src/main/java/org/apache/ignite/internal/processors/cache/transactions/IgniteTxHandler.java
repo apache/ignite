@@ -686,7 +686,7 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
-        assert req.txState() != null || fut.error() != null ||
+        assert req.txState() != null || (fut != null && fut.error() != null) ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
 
         return fut;
@@ -1507,7 +1507,7 @@ public class IgniteTxHandler {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                    entry.cached(null);
+                                    entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                 }
                             }
                         }

@@ -227,15 +227,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasConflictData() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

@@ -893,6 +893,14 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(Version=.+)\d+\.\d+\.\d+\.\d+(.+)" />
+                                            <substitution expression="\1${new.client.version}\2" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/*.wxs" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">

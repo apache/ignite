@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryProxy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
@@ -63,8 +65,6 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -79,7 +79,7 @@ import java.util.concurrent.locks.Lock;
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened"})
+@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened", "WeakerAccess"})
 public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR = 1;
@@ -148,7 +148,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_LOCK_ALL = 23;
 
     /** */
-    public static final int OP_METRICS = 24;
+    public static final int OP_LOCAL_METRICS = 24;
 
     /** */
     private static final int OP_PEEK = 25;
@@ -323,6 +323,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_EXTENSION = 82;
+
+    /** */
+    public static final int OP_GLOBAL_METRICS = 83;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -858,7 +861,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 long update = reader.readLong();
                 long access = reader.readLong();
 
-                IgniteCache cache0 = rawCache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
+                IgniteCache cache0 = rawCache.withExpiryPolicy(new PlatformExpiryPolicy(create, update, access));
 
                 return copy(cache0, keepBinary);
             }
@@ -907,64 +910,21 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
-            case OP_METRICS:
+            case OP_LOCAL_METRICS: {
                 CacheMetrics metrics = cache.localMetrics();
 
-                writer.writeLong(metrics.getCacheGets());
-                writer.writeLong(metrics.getCachePuts());
-                writer.writeLong(metrics.getCacheHits());
-                writer.writeLong(metrics.getCacheMisses());
-                writer.writeLong(metrics.getCacheTxCommits());
-                writer.writeLong(metrics.getCacheTxRollbacks());
-                writer.writeLong(metrics.getCacheEvictions());
-                writer.writeLong(metrics.getCacheRemovals());
-                writer.writeFloat(metrics.getAveragePutTime());
-                writer.writeFloat(metrics.getAverageGetTime());
-                writer.writeFloat(metrics.getAverageRemoveTime());
-                writer.writeFloat(metrics.getAverageTxCommitTime());
-                writer.writeFloat(metrics.getAverageTxRollbackTime());
-                writer.writeString(metrics.name());
-                writer.writeLong(metrics.getOverflowSize());
-                writer.writeLong(metrics.getOffHeapEntriesCount());
-                writer.writeLong(metrics.getOffHeapAllocatedSize());
-                writer.writeInt(metrics.getSize());
-                writer.writeInt(metrics.getKeySize());
-                writer.writeBoolean(metrics.isEmpty());
-                writer.writeInt(metrics.getDhtEvictQueueCurrentSize());
-                writer.writeInt(metrics.getTxThreadMapSize());
-                writer.writeInt(metrics.getTxXidMapSize());
-                writer.writeInt(metrics.getTxCommitQueueSize());
-                writer.writeInt(metrics.getTxPrepareQueueSize());
-                writer.writeInt(metrics.getTxStartVersionCountsSize());
-                writer.writeInt(metrics.getTxCommittedVersionsSize());
-                writer.writeInt(metrics.getTxRolledbackVersionsSize());
-                writer.writeInt(metrics.getTxDhtThreadMapSize());
-                writer.writeInt(metrics.getTxDhtXidMapSize());
-                writer.writeInt(metrics.getTxDhtCommitQueueSize());
-                writer.writeInt(metrics.getTxDhtPrepareQueueSize());
-                writer.writeInt(metrics.getTxDhtStartVersionCountsSize());
-                writer.writeInt(metrics.getTxDhtCommittedVersionsSize());
-                writer.writeInt(metrics.getTxDhtRolledbackVersionsSize());
-                writer.writeBoolean(metrics.isWriteBehindEnabled());
-                writer.writeInt(metrics.getWriteBehindFlushSize());
-                writer.writeInt(metrics.getWriteBehindFlushThreadCount());
-                writer.writeLong(metrics.getWriteBehindFlushFrequency());
-                writer.writeInt(metrics.getWriteBehindStoreBatchSize());
-                writer.writeInt(metrics.getWriteBehindTotalCriticalOverflowCount());
-                writer.writeInt(metrics.getWriteBehindCriticalOverflowCount());
-                writer.writeInt(metrics.getWriteBehindErrorRetryCount());
-                writer.writeInt(metrics.getWriteBehindBufferSize());
-                writer.writeString(metrics.getKeyType());
-                writer.writeString(metrics.getValueType());
-                writer.writeBoolean(metrics.isStoreByValue());
-                writer.writeBoolean(metrics.isStatisticsEnabled());
-                writer.writeBoolean(metrics.isManagementEnabled());
-                writer.writeBoolean(metrics.isReadThrough());
-                writer.writeBoolean(metrics.isWriteThrough());
-                writer.writeFloat(metrics.getCacheHitPercentage());
-                writer.writeFloat(metrics.getCacheMissPercentage());
+                writeCacheMetrics(writer, metrics);
 
                 break;
+            }
+
+            case OP_GLOBAL_METRICS: {
+                CacheMetrics metrics = cache.metrics();
+
+                writeCacheMetrics(writer, metrics);
+
+                break;
+            }
 
             case OP_GET_CONFIG:
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
@@ -1361,6 +1321,91 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /**
+     * Writes cache metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    public static void writeCacheMetrics(BinaryRawWriter writer, CacheMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeLong(metrics.getCacheHits());
+        writer.writeFloat(metrics.getCacheHitPercentage());
+        writer.writeLong(metrics.getCacheMisses());
+        writer.writeFloat(metrics.getCacheMissPercentage());
+        writer.writeLong(metrics.getCacheGets());
+        writer.writeLong(metrics.getCachePuts());
+        writer.writeLong(metrics.getCacheRemovals());
+        writer.writeLong(metrics.getCacheEvictions());
+        writer.writeFloat(metrics.getAverageGetTime());
+        writer.writeFloat(metrics.getAveragePutTime());
+        writer.writeFloat(metrics.getAverageRemoveTime());
+        writer.writeFloat(metrics.getAverageTxCommitTime());
+        writer.writeFloat(metrics.getAverageTxRollbackTime());
+        writer.writeLong(metrics.getCacheTxCommits());
+        writer.writeLong(metrics.getCacheTxRollbacks());
+        writer.writeString(metrics.name());
+        writer.writeLong(metrics.getOverflowSize());
+        writer.writeLong(metrics.getOffHeapGets());
+        writer.writeLong(metrics.getOffHeapPuts());
+        writer.writeLong(metrics.getOffHeapRemovals());
+        writer.writeLong(metrics.getOffHeapEvictions());
+        writer.writeLong(metrics.getOffHeapHits());
+        writer.writeFloat(metrics.getOffHeapHitPercentage());
+        writer.writeLong(metrics.getOffHeapMisses());
+        writer.writeFloat(metrics.getOffHeapMissPercentage());
+        writer.writeLong(metrics.getOffHeapEntriesCount());
+        writer.writeLong(metrics.getOffHeapPrimaryEntriesCount());
+        writer.writeLong(metrics.getOffHeapBackupEntriesCount());
+        writer.writeLong(metrics.getOffHeapAllocatedSize());
+        writer.writeLong(metrics.getOffHeapMaxSize());
+        writer.writeLong(metrics.getSwapGets());
+        writer.writeLong(metrics.getSwapPuts());
+        writer.writeLong(metrics.getSwapRemovals());
+        writer.writeLong(metrics.getSwapHits());
+        writer.writeLong(metrics.getSwapMisses());
+        writer.writeLong(metrics.getSwapEntriesCount());
+        writer.writeLong(metrics.getSwapSize());
+        writer.writeFloat(metrics.getSwapHitPercentage());
+        writer.writeFloat(metrics.getSwapMissPercentage());
+        writer.writeInt(metrics.getSize());
+        writer.writeInt(metrics.getKeySize());
+        writer.writeBoolean(metrics.isEmpty());
+        writer.writeInt(metrics.getDhtEvictQueueCurrentSize());
+        writer.writeInt(metrics.getTxThreadMapSize());
+        writer.writeInt(metrics.getTxXidMapSize());
+        writer.writeInt(metrics.getTxCommitQueueSize());
+        writer.writeInt(metrics.getTxPrepareQueueSize());
+        writer.writeInt(metrics.getTxStartVersionCountsSize());
+        writer.writeInt(metrics.getTxCommittedVersionsSize());
+        writer.writeInt(metrics.getTxRolledbackVersionsSize());
+        writer.writeInt(metrics.getTxDhtThreadMapSize());
+        writer.writeInt(metrics.getTxDhtXidMapSize());
+        writer.writeInt(metrics.getTxDhtCommitQueueSize());
+        writer.writeInt(metrics.getTxDhtPrepareQueueSize());
+        writer.writeInt(metrics.getTxDhtStartVersionCountsSize());
+        writer.writeInt(metrics.getTxDhtCommittedVersionsSize());
+        writer.writeInt(metrics.getTxDhtRolledbackVersionsSize());
+        writer.writeBoolean(metrics.isWriteBehindEnabled());
+        writer.writeInt(metrics.getWriteBehindFlushSize());
+        writer.writeInt(metrics.getWriteBehindFlushThreadCount());
+        writer.writeLong(metrics.getWriteBehindFlushFrequency());
+        writer.writeInt(metrics.getWriteBehindStoreBatchSize());
+        writer.writeInt(metrics.getWriteBehindTotalCriticalOverflowCount());
+        writer.writeInt(metrics.getWriteBehindCriticalOverflowCount());
+        writer.writeInt(metrics.getWriteBehindErrorRetryCount());
+        writer.writeInt(metrics.getWriteBehindBufferSize());
+        writer.writeString(metrics.getKeyType());
+        writer.writeString(metrics.getValueType());
+        writer.writeBoolean(metrics.isStoreByValue());
+        writer.writeBoolean(metrics.isStatisticsEnabled());
+        writer.writeBoolean(metrics.isManagementEnabled());
+        writer.writeBoolean(metrics.isReadThrough());
+        writer.writeBoolean(metrics.isWriteThrough());
+    }
+
+    /**
      * Writes error with EntryProcessorException cause.
      */
     private static class GetAllWriter implements PlatformFutureUtils.Writer {
@@ -1413,77 +1458,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         /** <inheritDoc /> */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return obj != null && err == null;
-        }
-    }
-
-    /**
-     * Interop expiry policy.
-     */
-    private static class InteropExpiryPolicy implements ExpiryPolicy {
-        /** Duration: unchanged. */
-        private static final long DUR_UNCHANGED = -2;
-
-        /** Duration: eternal. */
-        private static final long DUR_ETERNAL = -1;
-
-        /** Duration: zero. */
-        private static final long DUR_ZERO = 0;
-
-        /** Expiry for create. */
-        private final Duration create;
-
-        /** Expiry for update. */
-        private final Duration update;
-
-        /** Expiry for access. */
-        private final Duration access;
-
-        /**
-         * Constructor.
-         *
-         * @param create Expiry for create.
-         * @param update Expiry for update.
-         * @param access Expiry for access.
-         */
-        private InteropExpiryPolicy(long create, long update, long access) {
-            this.create = convert(create);
-            this.update = convert(update);
-            this.access = convert(access);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForCreation() {
-            return create;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForUpdate() {
-            return update;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForAccess() {
-            return access;
-        }
-
-        /**
-         * Convert encoded duration to actual duration.
-         *
-         * @param dur Encoded duration.
-         * @return Actual duration.
-         */
-        private static Duration convert(long dur) {
-            if (dur == DUR_UNCHANGED)
-                return null;
-            else if (dur == DUR_ETERNAL)
-                return Duration.ETERNAL;
-            else if (dur == DUR_ZERO)
-                return Duration.ZERO;
-            else {
-                assert dur > 0;
-
-                return new Duration(TimeUnit.MILLISECONDS, dur);
-            }
         }
     }
 
