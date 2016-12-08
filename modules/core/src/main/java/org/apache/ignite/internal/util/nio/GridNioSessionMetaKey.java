@@ -47,6 +47,7 @@ public enum GridNioSessionMetaKey {
     /** Ack closure. */
     ACK_CLOSURE,
 
+    // TODO: create single 'connect context' with fields. Think about move constants to CommSpi.
     /** Connection timeout object. */
     CONN_TIMEOUT_OBJ,
 

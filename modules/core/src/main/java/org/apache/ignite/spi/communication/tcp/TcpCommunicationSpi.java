@@ -45,7 +45,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLException;
@@ -96,6 +95,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -425,6 +425,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes, 0);
 
                     if (ses.remoteAddress() != null) { // Not shmem.
+                        assert !ses.accepted();
+
                         UUID expNodeId = ses.meta(EXP_NODE_ID_META.ordinal());
 
                         assert expNodeId != null;
@@ -582,7 +584,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             log.debug("Received incoming connection from remote node while " +
                                     "connecting to this node, rejecting [locNode=" + locNode.id() +
                                     ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
-                                    ", rmtNodeOrder=" + rmtNode.order() + ']' + " ses=" + ses);
+                                    ", rmtNodeOrder=" + rmtNode.order() + ']');
                         }
 
                         ses.send(new RecoveryLastReceivedMessage(-1));
@@ -602,6 +604,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 UUID sndId = ses.meta(NODE_ID_META.ordinal());
 
                 if (sndId == null) {
+                    // TODO: for outgoing already entered gate.
                     if (!connectGate.tryEnter()) {
                         if (log.isDebugEnabled())
                             log.debug("Close incoming connection, failed to enter gateway.");
@@ -639,6 +642,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 else {
                                     ses.addMeta(RECOVERY_MSGS_RCVD_META_KEY, rcvCnt);
 
+                                    // TODO: do not need submit 'READY' handle in comm worker.
                                     commWorker.addSessionStateChangeRequest(new SessionInfo(ses, SessionState.READY));
                                 }
                             }
@@ -1932,14 +1936,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         if (node.id().equals(locNode.id()))
             notifyListener(node.id(), msg, NOOP);
-        else {
+        else
             send(node, msg, ackC);
-
-            if (getSpiContext().node(node.id()) == null)
-                throw new IgniteSpiException("Failed to send message to remote node: " + node,
-                    new IgniteCheckedException("Failed to send message to remote node " +
-                        "(node has left the grid): " + node.id()));
-        }
     }
 
     /**
@@ -1964,22 +1962,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
 
-                    if (!retry) {
+                    if (!retry)
                         sentMsgsCnt.increment();
-                    }
                     else {
                         clients.remove(node.id(), client);
 
                         ClusterNode node0 = getSpiContext().node(node.id());
 
-                        if (node0 == null)
+                        if (node0 == null) {
+                            // TODO: do not throw exception, log instead.
                             throw new IgniteCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
+                        }
 
                         send(node, msg, ackC);
                     }
                 }
                 catch (IgniteCheckedException e) {
+                    // TODO: log error.
                     if (client != null && clients.remove(node.id(), client))
                         client.forceClose();
                 }
@@ -1996,6 +1996,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private IgniteInternalFuture<GridCommunicationClient> reserveClient(ClusterNode node) {
         GridCommunicationClient client = clients.get(node.id());
 
+        // TODO: do not create future if client exists.
         if (client != null && client.reserve())
             return new GridFinishedFuture<>(client);
         else {
@@ -2045,8 +2046,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      */
     private class ReserveClientFuture extends GridFutureAdapter<GridCommunicationClient> {
-        private final long debugFutId = ThreadLocalRandom.current().nextLong(0, 100);
-
         /** Node. */
         private final ClusterNode node;
 
@@ -2114,7 +2113,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                             }
                                         }
                                         else
-                                            U.sleep(200);
+                                            U.sleep(200); // TODO: do not sleep here, use timeout object.
 
                                         if (client0 == null) {
                                             clientFuts.remove(nodeId, connFut);
@@ -2160,24 +2159,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             try {
                                 GridCommunicationClient client0 = fut.get();
 
-                                if (client0 == null) {
-                                    clientFuts.remove(nodeId, oldFut);
-
+                                if (client0 == null)
                                     onDone();
-                                }
-                                else if (client0.reserve()) {
+                                else if (client0.reserve())
                                     onDone(client0);
-
-                                    clientFuts.remove(nodeId, oldFut);
-                                }
                                 else {
-                                    clientFuts.remove(nodeId, oldFut);
-
                                     clients.remove(nodeId, client0);
 
                                     onDone();
                                 }
-
                             }
                             catch (IgniteCheckedException e) {
                                 onDone(e);
@@ -2392,22 +2382,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         connectGate.enter();
 
-        try {
-            fut.connect();
+        fut.connect();
 
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
-                @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut0) {
-                    connectGate.leave();
-                }
-            });
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
+            @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut0) {
+                connectGate.leave();
+            }
+        });
 
-            return fut;
-        }
-        catch (IgniteCheckedException e) {
-            connectGate.leave();
-
-            return new GridFinishedFuture<>(e);
-        }
+        return fut;
     }
 
     /**
@@ -2461,8 +2444,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /**
          * Connects to remote node.
          */
-        void connect() throws IgniteCheckedException {
-            addrs = addrs();
+        void connect() {
+            try {
+                addrs = addrs();
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+
+                return;
+            }
+
             addrsIt = addrs.iterator();
 
             tryConnect(true);
@@ -2473,7 +2464,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          */
         private void tryConnect(boolean next) {
             if (attempt >= connectAttempts) {
-                getSpiContext().failNode(node.id(), "Can't establish connection to the node " + node);
+                if (getSpiContext().node(node.id()) != null && CU.clientNode(node))
+                    getSpiContext().failNode(node.id(), "Failed to establish connection to client node: " + node);
 
                 onError(err == null ? new IgniteException("Can't establish connection to the node " + node) : err);
 
@@ -2486,7 +2478,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 assert err0 != null;
 
                 if (X.hasCause(err0, ConnectException.class))
-                    LT.warn(log, null, "Failed to connect to a remote node " +
+                    LT.warn(log, "Failed to connect to a remote node " +
                         "(make sure that destination node is alive and " +
                         "operating system firewall is disabled on local and remote hosts) " +
                         "[addrs=" + addrs + ']');
@@ -2529,7 +2521,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 final GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
 
-                recoveryDesc.reserve();
+                recoveryDesc.reserve(); // TODO: make sure 'reserve' is not called from NIO.
 
                 Map<Integer, Object> meta = new HashMap<>();
 
@@ -2550,34 +2542,38 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 meta.put(GridNioSessionMetaKey.CONN_TIMEOUT_OBJ.ordinal(), connTimeoutObj);
 
-                addTimeoutObject(connTimeoutObj);
-
                 GridNioFutureImpl<GridNioSession> sesFut;
 
                 boolean connect = ch.connect(addr);
 
                 sesFut = (GridNioFutureImpl)nioSrvr.createSession(ch, meta, !connect);
 
+                addTimeoutObject(connTimeoutObj);
+
                 sesFut.listen(new IgniteInClosure<IgniteInternalFuture<GridNioSession>>() {
                     @Override public void apply(IgniteInternalFuture<GridNioSession> fut) {
+                        // TODO: call listener from comm worker.
                         boolean cancelled = connTimeoutObj.cancel();
 
                         if (cancelled)
                             removeTimeoutObject(connTimeoutObj);
-                        else
+                        else {
                             onError(new SocketTimeoutException("Connect timed out (consider increasing " +
                                 "'connTimeout' configuration property) [addr=" + currAddr +
                                 ", connTimeout=" + connTimeout + ']'));
 
+                            // TODO: always properly release recoveryDesc.
+                        }
+
                         try {
+                            GridNioSession ses = fut.get();
+
                             int timeoutChunk = (int)timeoutHelper.nextTimeoutChunk(connTimeout);
 
                             long time = U.currentTimeMillis() + timeoutChunk * (attempt0 > 0 ? attempt0 * 2 : 1);
 
                             HandshakeTimeoutObject<SocketChannel> handshakeTimeoutObj =
                                 new HandshakeTimeoutObject<>(ch, TcpClientFuture.this, time);
-
-                            GridNioSession ses = fut.get();
 
                             ses.addMeta(HANDSHAKE_TIMEOUT_OBJ.ordinal(), handshakeTimeoutObj);
 
@@ -3440,6 +3436,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             processDisconnect(sesInfo);
 
                             break;
+
                         case READY:
                             recoveryDesc = sesInfo.ses.recoveryDescriptor();
 
@@ -3467,6 +3464,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             clientFut.onDone(new GridTcpNioCommunicationClient(sesInfo.ses, log));
 
                             break;
+
                         case CLOSE:
                             if ((clientFut = sesInfo.ses.removeMeta(TCP_CLIENT_FUT_META_KEY)) != null) {
                                 timeoutObj = sesInfo.ses.removeMeta(GridNioSessionMetaKey.HANDSHAKE_TIMEOUT_OBJ.ordinal());
@@ -3596,53 +3594,53 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param sesInfo Disconnected session information.
          */
         private void processDisconnect(final SessionInfo sesInfo) {
-            if (sesInfo.state == SessionState.RECONNECT) {
-                final GridNioRecoveryDescriptor recoveryDesc = sesInfo.ses.recoveryDescriptor();
+            assert sesInfo.state == SessionState.RECONNECT : sesInfo.state;
 
-                final ClusterNode node = recoveryDesc.node();
+            final GridNioRecoveryDescriptor recoveryDesc = sesInfo.ses.recoveryDescriptor();
 
-                if (!recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
-                    return;
+            final ClusterNode node = recoveryDesc.node();
 
-                if (log.isDebugEnabled())
-                    log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
+            if (!recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
+                return;
 
-                final IgniteInternalFuture<GridCommunicationClient> fut = reserveClient(node);
+            if (log.isDebugEnabled())
+                log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
 
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
-                    @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut0) {
+            final IgniteInternalFuture<GridCommunicationClient> fut = reserveClient(node);
+
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<GridCommunicationClient>>() {
+                @Override public void apply(IgniteInternalFuture<GridCommunicationClient> fut0) {
+                    try {
+                        GridCommunicationClient client = fut0.get();
+
+                        client.release();
+                    }
+                    catch (IgniteCheckedException | IgniteException e) {
                         try {
-                            GridCommunicationClient client = fut0.get();
-
-                            client.release();
-                        }
-                        catch (IgniteCheckedException | IgniteException e) {
-                            try {
-                                if (recoveryDesc.nodeAlive(getSpiContext().node(node.id())) &&
-                                    getSpiContext().pingNode(node.id())) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Recovery reconnect failed, will retry " +
-                                            "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
-
-                                    addSessionStateChangeRequest(sesInfo);
-                                }
-                                else {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Recovery reconnect failed, " +
-                                            "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
-
-                                    onException("Recovery reconnect failed, node left [rmtNode=" +
-                                        recoveryDesc.node().id() + "]", e);
-                                }
-                            }
-                            catch (IgniteClientDisconnectedException e0) {
+                            if (recoveryDesc.nodeAlive(getSpiContext().node(node.id())) &&
+                                getSpiContext().pingNode(node.id())) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Failed to ping node, client disconnected.");
+                                    log.debug("Recovery reconnect failed, will retry " +
+                                        "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+
+                                addSessionStateChangeRequest(sesInfo);
                             }
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Recovery reconnect failed, " +
+                                        "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+
+                                onException("Recovery reconnect failed, node left [rmtNode=" +
+                                    recoveryDesc.node().id() + "]", e);
+                            }
+                        }
+                        catch (IgniteClientDisconnectedException e0) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to ping node, client disconnected.");
                         }
                     }
-                });
-            }
+                }
+            });
         }
 
         /**

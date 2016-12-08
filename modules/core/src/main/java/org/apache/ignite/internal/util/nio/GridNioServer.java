@@ -107,8 +107,8 @@ public class GridNioServer<T> {
     /** Session future meta key. */
     private static final int SESSION_FUT_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Sel key meta key. */
-    private static final int SEL_KEY_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** Selection key meta key. */
+    private static final int WORKER_IDX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
@@ -585,13 +585,15 @@ public class GridNioServer<T> {
 
                 NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
-                if (async)
+                if (async) {
+                    assert meta != null;
+
                     req.op = NioOperation.CONNECT;
 
-                if (meta != null)
                     meta.put(SESSION_FUT_META_KEY, req);
+                }
 
-                offerBalanced(req);
+                offerBalanced(req, meta);
 
                 return req;
             }
@@ -606,7 +608,7 @@ public class GridNioServer<T> {
 
     /**
      * @param ch Channel.
-     * @param meta Meta.
+     * @param meta Session meta.
      */
     public GridNioFuture<GridNioSession> cancelConnect(final SocketChannel ch, Map<Integer, ?> meta) {
         if (!closed) {
@@ -614,9 +616,9 @@ public class GridNioServer<T> {
 
             req.op = NioOperation.CANCEL_CONNECT;
 
-            Integer idx = (Integer)meta.get(SEL_KEY_META_KEY);
+            Integer idx = (Integer)meta.get(WORKER_IDX_META_KEY);
 
-            assert idx != null;
+            assert idx != null : meta;
 
             clientWorkers.get(idx).offer(req);
 
@@ -713,14 +715,23 @@ public class GridNioServer<T> {
 
     /**
      * @param req Request to balance.
+     * @param meta Session metadata.
+     * @return Worker index.
      */
-    private synchronized void offerBalanced(NioOperationFuture req) {
+    private synchronized int offerBalanced(NioOperationFuture req, @Nullable Map<Integer, Object> meta) {
+        int idx = balanceIdx;
+
+        if (meta != null)
+            meta.put(WORKER_IDX_META_KEY, idx);
+
         clientWorkers.get(balanceIdx).offer(req);
 
         balanceIdx++;
 
         if (balanceIdx == clientWorkers.size())
             balanceIdx = 0;
+
+        return idx;
     }
 
     /** {@inheritDoc} */
@@ -1423,8 +1434,9 @@ public class GridNioServer<T> {
 
                                 Map<Integer, Object> meta = req.meta();
 
-                                meta.put(SEL_KEY_META_KEY, idx);
+                                meta.put(WORKER_IDX_META_KEY, idx);
 
+                                // TODO: handle exception, in case of error complete req with error.
                                 ch.register(selector, SelectionKey.OP_CONNECT, meta);
 
                                 break;
@@ -1435,9 +1447,11 @@ public class GridNioServer<T> {
 
                                 SelectionKey key = ch.keyFor(selector);
 
-                                key.interestOps(0);
+                                key.cancel();
 
-                                ch.close();
+                                U.closeQuiet(ch);
+
+                                req.onDone();
 
                                 break;
                             }
@@ -1982,6 +1996,7 @@ public class GridNioServer<T> {
             Map<Integer, Object> meta = (Map<Integer, Object>)key.attachment();
 
             try {
+                // TODO: do not need call offer, just call register() right here.
                 if (ch.finishConnect()) {
                     changeReqs.offer(new NioOperationFuture<>(ch, false, meta));
 
@@ -2182,7 +2197,7 @@ public class GridNioServer<T> {
          * @param sockCh Socket channel to be registered on one of the selectors.
          */
         private void addRegistrationReq(SocketChannel sockCh) {
-            offerBalanced(new NioOperationFuture(sockCh));
+            offerBalanced(new NioOperationFuture(sockCh), null);
         }
     }
 
