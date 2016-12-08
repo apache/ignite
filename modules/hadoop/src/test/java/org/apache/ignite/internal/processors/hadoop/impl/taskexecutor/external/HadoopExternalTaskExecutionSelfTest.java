@@ -39,7 +39,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
@@ -55,8 +55,6 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-404");
-
         startGrids(gridCount());
     }
 
@@ -69,8 +67,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //cfg.setExternalExecution(true);
+        cfg.setExternalExecution(true);
 
         return cfg;
     }
@@ -117,6 +114,13 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
         IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
             createJobInfo(job.getConfiguration()));
 
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> future) {
+                System.out.println("+++ Completed");
+            }
+        });
+
+
         fut.get();
     }
 
@@ -157,10 +161,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
             fut.get();
         }
         catch (IgniteCheckedException e) {
-            IOException exp = X.cause(e, IOException.class);
-
-            assertNotNull(exp);
-            assertEquals("Test failure", exp.getMessage());
+            assertTrue(e.toString().contains("Caused by: java.io.IOException: Test failure"));
         }
     }
 

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedTaskExecutor;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopExternalTaskExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,9 +82,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             ctx,
             cfg,
             new HadoopJobTracker(),
-            new HadoopEmbeddedTaskExecutor(),
-            // TODO: IGNITE-404: Uncomment when fixed.
-            //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
+            cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
             new HadoopShuffle());
 
         for (HadoopComponent c : hctx.components())

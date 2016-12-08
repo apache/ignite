@@ -110,7 +110,7 @@ public class HadoopExternalProcessStarter {
 
         HadoopChildProcessRunner runner = new HadoopChildProcessRunner();
 
-        runner.start(comm, nodeDesc, msgExecSvc, log);
+        runner.start(comm, nodeDesc, msgExecSvc, log, args.childProcId);
 
         System.err.println("Started");
         System.err.flush();
@@ -179,6 +179,7 @@ public class HadoopExternalProcessStarter {
     /**
      * @param processArgs Process arguments.
      * @return Child process instance.
+     * @throws Exception If failed.
      */
     private static Args arguments(String[] processArgs) throws Exception {
         Args args = new Args();

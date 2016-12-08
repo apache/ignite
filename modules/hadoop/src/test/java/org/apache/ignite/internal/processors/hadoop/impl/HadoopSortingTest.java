@@ -89,8 +89,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //cfg.setExternalExecution(false);
+        cfg.setExternalExecution(false);
 
         return cfg;
     }

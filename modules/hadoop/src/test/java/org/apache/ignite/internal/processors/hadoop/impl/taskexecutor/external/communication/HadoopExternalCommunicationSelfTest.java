@@ -41,11 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests Hadoop external communication component.
  */
 public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-404");
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -61,6 +56,7 @@ public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @param useShmem Use shared memory.
      * @throws Exception If failed.
      */
     private void checkSimpleMessageSending(boolean useShmem) throws Exception {

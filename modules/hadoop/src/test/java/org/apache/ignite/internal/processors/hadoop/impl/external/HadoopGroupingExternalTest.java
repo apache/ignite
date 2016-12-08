@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.client;
+package org.apache.ignite.internal.processors.hadoop.impl.external;
 
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopGroupingTest;
 
 /**
- * Hadoop client protocol tests in embedded process mode.
+ * Grouping test.
  */
-public class HadoopClientProtocolEmbeddedSelfTest extends HadoopClientProtocolSelfTest {
+public class HadoopGroupingExternalTest extends HadoopGroupingTest {
     /** {@inheritDoc} */
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(false);
+        cfg.setExternalExecution(true);
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Override public void testGroupingReducer() throws Exception {
+        // Skip test in external execution mode.
     }
 }

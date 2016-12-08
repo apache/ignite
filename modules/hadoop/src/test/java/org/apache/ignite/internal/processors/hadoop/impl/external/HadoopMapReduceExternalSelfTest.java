@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.client;
+package org.apache.ignite.internal.processors.hadoop.impl.external;
 
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceEmbeddedSelfTest;
 
 /**
- * Hadoop client protocol tests in embedded process mode.
+ * Tests map-reduce execution with embedded mode.
  */
-public class HadoopClientProtocolEmbeddedSelfTest extends HadoopClientProtocolSelfTest {
+public class HadoopMapReduceExternalSelfTest extends HadoopMapReduceEmbeddedSelfTest {
     /** {@inheritDoc} */
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(false);
+        cfg.setExternalExecution(true);
 
         return cfg;
     }

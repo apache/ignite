@@ -1616,6 +1616,30 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Reads array from input stream with specified class of elements.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @Nullable public static<T> T[] readArray(ObjectInput in, Class<? extends T> compType) throws IOException,
+        ClassNotFoundException {
+        int len = in.readInt();
+
+        T[] arr = null;
+
+        if (len > 0) {
+            arr = (T[])Array.newInstance(compType, len);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (T)in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
      * Reads array from input stream.
      *
      * @param in Input stream.

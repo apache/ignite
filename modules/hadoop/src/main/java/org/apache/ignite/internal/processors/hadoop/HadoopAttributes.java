@@ -87,8 +87,7 @@ public class HadoopAttributes implements Externalizable {
 
         plannerCls = cfg.getMapReducePlanner().getClass().getName();
 
-        // TODO: IGNITE-404: Get from configuration when fixed.
-        extExec = false;
+        extExec = cfg.isExternalExecution();
 
         maxParallelTasks = cfg.getMaxParallelTasks();
         maxTaskQueueSize = cfg.getMaxTaskQueueSize();

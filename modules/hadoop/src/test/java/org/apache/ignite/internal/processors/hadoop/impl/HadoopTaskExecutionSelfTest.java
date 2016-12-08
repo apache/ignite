@@ -107,8 +107,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         cfg.setMaxParallelTasks(5);
 
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //cfg.setExternalExecution(false);
+        cfg.setExternalExecution(false);
 
         return cfg;
     }

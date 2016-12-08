@@ -78,8 +78,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //cfg.setExternalExecution(false);
+        cfg.setExternalExecution(false);
 
         return cfg;
     }
@@ -127,15 +126,19 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         }
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
-            createJobInfo(job.getConfiguration())).get(30000);
+            createJobInfo(job.getConfiguration())).get(60000);
 
         assertTrue(HadoopGroupingTestState.values().isEmpty());
     }
 
+    /**
+     *
+     */
     public static class MyReducer extends Reducer<YearTemperature, Text, Text, Object> {
         /** */
         int lastYear;
 
+        /** {@inheritDoc} */
         @Override protected void reduce(YearTemperature key, Iterable<Text> vals0, Context context)
             throws IOException, InterruptedException {
             X.println("___ : " + context.getTaskAttemptID() + " --> " + key);
@@ -159,6 +162,9 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         }
     }
 
+    /**
+     *
+     */
     public static class YearComparator implements RawComparator<YearTemperature> { // Grouping comparator.
         /** {@inheritDoc} */
         @Override public int compare(YearTemperature o1, YearTemperature o2) {
@@ -171,6 +177,9 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         }
     }
 
+    /**
+     *
+     */
     public static class YearTemperature implements WritableComparable<YearTemperature>, Cloneable {
         /** */
         private int year;

@@ -187,10 +187,6 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
 
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
-
         suite.addTest(new TestSuite(ldr.loadClass(HadoopGroupingTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
@@ -202,6 +198,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
+
+        suite.addTest(IgniteHadoopExternalTestSuite.suite());
 
         return suite;
     }
@@ -332,7 +330,11 @@ public class IgniteHadoopTestSuite extends TestSuite {
                                 out.flush();
                             }
 
-                            Files.setPosixFilePermissions(dest.toPath(), modeToPermissionSet(entry.getMode()));
+                            try {
+                                Files.setPosixFilePermissions(dest.toPath(), modeToPermissionSet(entry.getMode()));
+                            } catch (IOException e) {
+                                // swallow
+                            }
 
                             X.println("]");
                         }

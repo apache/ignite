@@ -48,8 +48,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        // TODO: IGNITE-404: Uncomment when fixed.
-        //cfg.setExternalExecution(false);
+        cfg.setExternalExecution(false);
 
         return cfg;
     }
@@ -69,93 +68,101 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
         generateTestFile(inFile.toString(), "key1", 10000, "key2", 20000, "key3", 15000, "key4", 7000, "key5", 12000,
             "key6", 18000 );
 
-        for (int i = 0; i < 2; i++) {
-            boolean useNewAPI = i == 1;
+        doTestMultiReducer(inFile, true);
 
-            igfs.delete(new IgfsPath(PATH_OUTPUT), true);
+        doTestMultiReducer(inFile, false);
+    }
 
-            flags.put("serializationWasConfigured", false);
-            flags.put("partitionerWasConfigured", false);
-            flags.put("inputFormatWasConfigured", false);
-            flags.put("outputFormatWasConfigured", false);
+    /**
+     * @param inFile Input file.
+     * @param useNewAPI Use new API
+     * @throws Exception If failed.
+     */
+    private void doTestMultiReducer(IgfsPath inFile, boolean useNewAPI) throws Exception {
+        igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
-            JobConf jobConf = new JobConf();
+        flags.put("serializationWasConfigured", false);
+        flags.put("partitionerWasConfigured", false);
+        flags.put("inputFormatWasConfigured", false);
+        flags.put("outputFormatWasConfigured", false);
 
-            jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
+        JobConf jobConf = new JobConf();
 
-            //To split into about 6-7 items for v2
-            jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
+        jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-            //For v1
-            jobConf.setInt("fs.local.block.size", 65000);
+        //To split into about 6-7 items for v2
+        jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
 
-            // File system coordinates.
-            setupFileSystems(jobConf);
+        //For v1
+        jobConf.setInt("fs.local.block.size", 65000);
 
-            HadoopWordCount1.setTasksClasses(jobConf, !useNewAPI, !useNewAPI, !useNewAPI);
+        // File system coordinates.
+        setupFileSystems(jobConf);
 
-            if (!useNewAPI) {
-                jobConf.setPartitionerClass(CustomV1Partitioner.class);
-                jobConf.setInputFormat(CustomV1InputFormat.class);
-                jobConf.setOutputFormat(CustomV1OutputFormat.class);
-            }
+        HadoopWordCount1.setTasksClasses(jobConf, !useNewAPI, !useNewAPI, !useNewAPI);
 
-            Job job = Job.getInstance(jobConf);
+        if (!useNewAPI) {
+            jobConf.setPartitionerClass(CustomV1Partitioner.class);
+            jobConf.setInputFormat(CustomV1InputFormat.class);
+            jobConf.setOutputFormat(CustomV1OutputFormat.class);
+        }
 
-            HadoopWordCount2.setTasksClasses(job, useNewAPI, useNewAPI, useNewAPI, false);
+        Job job = Job.getInstance(jobConf);
 
-            if (useNewAPI) {
-                job.setPartitionerClass(CustomV2Partitioner.class);
-                job.setInputFormatClass(CustomV2InputFormat.class);
-                job.setOutputFormatClass(CustomV2OutputFormat.class);
-            }
+        HadoopWordCount2.setTasksClasses(job, useNewAPI, useNewAPI, useNewAPI, false);
 
-            job.setOutputKeyClass(Text.class);
-            job.setOutputValueClass(IntWritable.class);
+        if (useNewAPI) {
+            job.setPartitionerClass(CustomV2Partitioner.class);
+            job.setInputFormatClass(CustomV2InputFormat.class);
+            job.setOutputFormatClass(CustomV2OutputFormat.class);
+        }
 
-            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
 
-            job.setNumReduceTasks(3);
+        FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+        FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
-            job.setJarByClass(HadoopWordCount2.class);
+        job.setNumReduceTasks(3);
 
-            IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-                    createJobInfo(job.getConfiguration()));
+        job.setJarByClass(HadoopWordCount2.class);
 
-            fut.get();
+        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
+                createJobInfo(job.getConfiguration()));
 
+        fut.get();
+
+        if (!igfs.context().kernalContext().config().getHadoopConfiguration().isExternalExecution()) {
             assertTrue("Serialization was configured (new API is " + useNewAPI + ")",
-                 flags.get("serializationWasConfigured"));
+                flags.get("serializationWasConfigured"));
 
             assertTrue("Partitioner was configured (new API is = " + useNewAPI + ")",
-                 flags.get("partitionerWasConfigured"));
+                flags.get("partitionerWasConfigured"));
 
             assertTrue("Input format was configured (new API is = " + useNewAPI + ")",
-                 flags.get("inputFormatWasConfigured"));
+                flags.get("inputFormatWasConfigured"));
 
             assertTrue("Output format was configured (new API is = " + useNewAPI + ")",
-                 flags.get("outputFormatWasConfigured"));
-
-            assertEquals("Use new API = " + useNewAPI,
-                "key3\t15000\n" +
-                "key6\t18000\n",
-                readAndSortFile(PATH_OUTPUT + "/" + (useNewAPI ? "part-r-" : "part-") + "00000")
-            );
-
-            assertEquals("Use new API = " + useNewAPI,
-                "key1\t10000\n" +
-                "key4\t7000\n",
-                readAndSortFile(PATH_OUTPUT + "/" + (useNewAPI ? "part-r-" : "part-") + "00001")
-            );
-
-            assertEquals("Use new API = " + useNewAPI,
-                "key2\t20000\n" +
-                "key5\t12000\n",
-                readAndSortFile(PATH_OUTPUT + "/" + (useNewAPI ? "part-r-" : "part-") + "00002")
-            );
-
+                flags.get("outputFormatWasConfigured"));
         }
+
+        assertEquals("Use new API = " + useNewAPI,
+            "key3\t15000\n" +
+            "key6\t18000\n",
+            readAndSortFile(PATH_OUTPUT + "/" + (useNewAPI ? "part-r-" : "part-") + "00000")
+        );
+
+        assertEquals("Use new API = " + useNewAPI,
+            "key1\t10000\n" +
+            "key4\t7000\n",
+            readAndSortFile(PATH_OUTPUT + "/" + (useNewAPI ? "part-r-" : "part-") + "00001")
+        );
+
+        assertEquals("Use new API = " + useNewAPI,
+            "key2\t20000\n" +
+            "key5\t12000\n",
+            readAndSortFile(PATH_OUTPUT + "/" + (useNewAPI ? "part-r-" : "part-") + "00002")
+        );
     }
 
     /**

@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.client;
+package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopExternalTaskExecutionSelfTest;
 
 /**
- * Hadoop client protocol tests in embedded process mode.
+ * Job tracker self test.
  */
-public class HadoopClientProtocolEmbeddedSelfTest extends HadoopClientProtocolSelfTest {
+public class HadoopEmbeddedTaskExecutionSelfTest extends HadoopExternalTaskExecutionSelfTest {
     /** {@inheritDoc} */
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);

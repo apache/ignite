@@ -103,7 +103,7 @@ public class HadoopJobInfoUpdateRequest implements HadoopMessage {
         jobId.readExternal(in);
 
         jobPhase = (HadoopJobPhase)in.readObject();
-        reducersAddrs = (HadoopProcessDescriptor[])U.readArray(in);
+        reducersAddrs = U.readArray(in, HadoopProcessDescriptor.class);
     }
 
     /** {@inheritDoc} */
