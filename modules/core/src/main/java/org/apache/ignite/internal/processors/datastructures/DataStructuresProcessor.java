@@ -204,21 +204,28 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        if (ctx.cache().globalState() != CacheState.ACTIVE)
-            return;
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+        super.start(activeOnStart);
 
-        super.start();
+        if (!activeOnStart)
+            return;
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.config().isDaemon() || ctx.cache().globalState() != CacheState.ACTIVE)
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+        if (ctx.config().isDaemon() || !activeOnStart)
             return;
 
+        onKernalStart0();
+    }
+
+    /**
+     *
+     */
+    private void onKernalStart0(){
         utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
         utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
@@ -273,9 +280,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.cache().globalState() != CacheState.ACTIVE)
-            return;
-
         super.onKernalStop(cancel);
 
         for (GridCacheRemovable ds : dsMap.values()) {
@@ -304,39 +308,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         this.initFailed = false;
 
+        this.initLatch = new CountDownLatch(1);
+
+        this.qryId = null;
+
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
-
-        utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
-
-        assert utilityCache != null;
-
-        if (atomicCfg != null) {
-            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
-
-            assert atomicsCache != null;
-
-            dsView = atomicsCache;
-
-            cntDownLatchView = atomicsCache;
-
-            semView = atomicsCache;
-
-            reentrantLockView = atomicsCache;
-
-            atomicLongView = atomicsCache;
-
-            atomicRefView = atomicsCache;
-
-            atomicStampedView = atomicsCache;
-
-            seqView = atomicsCache;
-
-            dsCacheCtx = atomicsCache.context();
-        }
-
-        initLatch.countDown();
+        onKernalStart0();
 
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable v = e.getValue();
@@ -355,10 +333,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         onKernalStop(false);
-
-        this.initLatch = new CountDownLatch(1);
-
-        this.qryId = null;
 
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable v = e.getValue();

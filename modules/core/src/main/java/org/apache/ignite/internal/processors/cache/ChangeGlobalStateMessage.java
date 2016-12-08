@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -26,45 +24,50 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Message represent request for change cluster global state.
  */
-public class ChangeGlobalState implements DiscoveryCustomMessage {
+public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Near node ID in case if near cache is being started. */
-    private UUID initiatingNodeId;
-
-    /** */
+    /** Request ID */
     private UUID requestId;
 
-    /** Activate. */
-    private Boolean activate;
+    /** Initiator node ID. */
+    private UUID initiatingNodeId;
 
-    /** Activation batch. */
-    private DynamicCacheChangeBatch actBatch;
+    /** If true activate else deactivate. */
+    private boolean activate;
 
-    /** Exception while file lock. */
-    private Map<UUID, Exception> exs = new HashMap<>();
+    /** Batch contains all requests for start or stop caches. */
+    private DynamicCacheChangeBatch changeGlobalStateBatch;
 
-    /** Concurrent change state. */
+    /** If happened concurrent activate/deactivate then processed only first message, other message must be skip. */
     private boolean concurrentChangeState;
 
     /**
-     * @param actBatch Action batch.
+     *
      */
-    public ChangeGlobalState(DynamicCacheChangeBatch actBatch) {
-        this.actBatch = actBatch;
+    public ChangeGlobalStateMessage(
+        UUID requestId,
+        UUID initiatingNodeId,
+        boolean activate,
+        DynamicCacheChangeBatch changeGlobalStateBatch
+    ) {
+        this.requestId = requestId;
+        this.initiatingNodeId = initiatingNodeId;
+        this.activate = activate;
+        this.changeGlobalStateBatch = changeGlobalStateBatch;
     }
 
     /**
      *
      */
-    public DynamicCacheChangeBatch getActBatch() {
-        return actBatch;
+    public DynamicCacheChangeBatch getDynamicCacheChangeBatch() {
+        return changeGlobalStateBatch;
     }
 
     /** {@inheritDoc} */
@@ -74,20 +77,12 @@ public class ChangeGlobalState implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return !concurrentChangeState ? actBatch : null;
+        return !concurrentChangeState ? changeGlobalStateBatch : null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param e Exception.
-     */
-    public void addException(UUID nodeId, Exception e) {
-        exs.put(nodeId, e);
+        return false;
     }
 
     /**
@@ -98,62 +93,28 @@ public class ChangeGlobalState implements DiscoveryCustomMessage {
     }
 
     /**
-     * @param activate Activate.
-     */
-    public void setActivate(Boolean activate) {
-        this.activate = activate;
-    }
-
-    /**
      *
      */
-    public Boolean getActivate() {
+    public boolean activate() {
         return activate;
     }
 
     /**
      *
      */
-    public UUID getInitiatingNodeId() {
-        return initiatingNodeId;
-    }
-
-    /**
-     * @param initiatingNodeId Initiating node id.
-     */
-    public void setInitiatingNodeId(UUID initiatingNodeId) {
-        this.initiatingNodeId = initiatingNodeId;
-    }
-
-    /**
-     *
-     */
-    public UUID getRequestId() {
+    public UUID requestId() {
         return requestId;
     }
 
     /**
-     * @param requestId Request id.
-     */
-    public void setRequestId(UUID requestId) {
-        this.requestId = requestId;
-    }
-
-    /**
      *
      */
-    public boolean isConcurrentChangeState() {
-        return concurrentChangeState;
-    }
-
-    /**
-     */
-    public void setConcurrentChangeState() {
+    public void concurrentChangeState() {
         this.concurrentChangeState = true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ChangeGlobalState.class, this);
+        return S.toString(ChangeGlobalStateMessage.class, this);
     }
 }

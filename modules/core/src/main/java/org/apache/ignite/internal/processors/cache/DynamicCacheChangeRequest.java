@@ -62,6 +62,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Destroy. */
+    private boolean destroy;
+
     /** Close flag. */
     private boolean close;
 
@@ -131,20 +134,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean globalStateChange() {
         return state != null;
-    }
-
-    /**
-     *
-     */
-    public boolean globalStateActivate(){
-        return state != null && state == CacheState.ACTIVE;
-    }
-
-    /**
-     *
-     */
-    public boolean globalStateDeActivate(){
-        return state != null && state == CacheState.INACTIVE;
     }
 
     /**
@@ -222,6 +211,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean stop() {
         return stop;
+    }
+
+    /**
+     *
+     */
+    public boolean destroy(){
+        return destroy;
+    }
+
+    /**
+     * @param destroy Destroy.
+     */
+    public void destroy(boolean destroy) {
+        this.destroy = destroy;
     }
 
     /**
