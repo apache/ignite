@@ -42,6 +42,9 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /** Node. */
     private IgniteNode node;
 
+    /** Preload logger. */
+    private IgniteBenchmarkPreloadLogger plgr;
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -58,20 +61,22 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
             node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), Ignition.ignite());
 
         waitForNodes();
+
+        plgr = new IgniteBenchmarkPreloadLogger(node, cfg);
     }
 
     /**
      * Prints non-system caches sizes during preloading.
      */
-    protected void printPreloadLog(){
-        IgniteBenchmarkPreloadLogger.printLog(node, cfg, args);
+    protected void startPreloadLogging(){
+        plgr.printLog(args.preloadLogsInterval());
     }
 
     /**
      * Terminates printing preloading log.
      */
     protected void stopPreloadLog() throws Exception {
-        IgniteBenchmarkPreloadLogger.stopPrint();
+        plgr.stopPrint();
     }
 
     /** {@inheritDoc} */

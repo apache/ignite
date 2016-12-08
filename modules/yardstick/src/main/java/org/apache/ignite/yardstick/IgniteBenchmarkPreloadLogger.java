@@ -33,9 +33,29 @@ import java.util.concurrent.TimeUnit;
  */
 public class IgniteBenchmarkPreloadLogger {
     /**
-     * Map for keeping previous values to make sure all the caches work correctly.
+     * List of caches whose size to be printed during preload.
      */
-    private static Map<String, Long> cntrs = new HashMap<>();
+    private final Collection<IgniteCache<Object, Object>> caches;
+
+    /**
+     * Map for keeping previous values to make sure all the caches are working correctly.
+     */
+    private final Map<String, Long> cntrs;
+
+    /**
+     * Benchmark configuration.
+     */
+    private final BenchmarkConfiguration cfg;
+
+    /**
+     * Runnable instance for printing log.
+     */
+    private final Runnable lgr;
+
+    /**
+     * String template used in String.format() to make output readable.
+     */
+    private String strFmt;
 
     /**
      * Executor for printing log in parallel thread.
@@ -43,39 +63,41 @@ public class IgniteBenchmarkPreloadLogger {
     private static ScheduledExecutorService exec;
 
     /**
-     * Benchmark configuration.
+     * Creates an instance and sets fields.
+     * @param node Ignite node.
+     * @param cnfg Benchmark configuration.
      */
-    private static BenchmarkConfiguration cfg;
+    public IgniteBenchmarkPreloadLogger(IgniteNode node, BenchmarkConfiguration cnfg) {
+        this.cfg = cnfg;
+        this.caches = new ArrayList<>();
+        this.cntrs = new HashMap<>();
+        this.lgr = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                for (IgniteCache<Object, Object> cache : caches) {
+                    String cacheName = cache.getName();
 
-    /**
-     * String template used in String.format() to make output readable.
-     */
-    private static String strFmt;
+                    long cacheSize = cache.sizeLong();
 
-    /**
-     * List of caches whose size to be printed during preload.
-     */
-    private static Collection<IgniteCache<Object, Object>> caches;
+                    long recentlyLoaded = cacheSize - cntrs.get(cacheName);
+                    String recLoaded = recentlyLoaded == 0 ?  "" + recentlyLoaded : "+" + recentlyLoaded;
 
-    /**
-     * Utility class constructor.
-     */
-    private IgniteBenchmarkPreloadLogger() {
-       //No-op.
+                    BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
+
+                    cntrs.put(cacheName, cacheSize);
+                }
+            }
+        };
+        exec = Executors.newSingleThreadScheduledExecutor();
+        setCaches(node);
     }
 
     /**
-     * Prints non-system caches sizes during preloading.
-     * @param node Ignite node.
-     * @param config Benchmark configuration.
-     * @param args Benchmark arguments.
+     * Prints non-system cache sizes during preloading.
+     * @param logsInterval Time interval in milliseconds between printing logs.
      */
-    public static void printLog(IgniteNode node, BenchmarkConfiguration config, IgniteBenchmarkArguments args){
-        cfg = config;
-        exec = Executors.newSingleThreadScheduledExecutor();
-        setCaches(node);
-        setCounters();
-        exec.scheduleWithFixedDelay(lgr, 0L, args.preloadLogsInterval(), TimeUnit.MILLISECONDS);
+    public void printLog(long logsInterval){
+        exec.scheduleWithFixedDelay(lgr, 0L, logsInterval, TimeUnit.MILLISECONDS);
         BenchmarkUtils.println(cfg, "Preloading started.");
     }
 
@@ -83,61 +105,31 @@ public class IgniteBenchmarkPreloadLogger {
      * Terminates printing log.
      * @throws Exception if failed.
      */
-    public static void stopPrint() throws Exception {
+    public void stopPrint() throws Exception {
         exec.execute(lgr);
-        exec.awaitTermination(3, TimeUnit.SECONDS);
+        exec.awaitTermination(1, TimeUnit.SECONDS);
         exec.shutdownNow();
         BenchmarkUtils.println(cfg, "Preloading finished.");
     }
 
     /**
-     * Helper method for initializing the cache list.
+     * Helper method for initializing the cache list and counters map.
      * @param node Ignite node.
      */
-    private static void setCaches(IgniteNode node) {
-        caches = new ArrayList<>();
+    private void setCaches(IgniteNode node) {
+        int longestName = 0;
         for (String cacheName : node.ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = node.ignite().cache(cacheName);
             caches.add(cache);
-        }
-    }
 
-    /**
-     * Helper method for initializing the counters map.
-     */
-    private static void setCounters() {
-        int longestName = 0;
-
-        // Set up an initial values to the map
-        for (IgniteCache<Object, Object> availableCache : caches) {
-            cntrs.put(availableCache.getName(), 0L);
+            // Set up an initial values to the map
+            cntrs.put(cache.getName(), 0L);
 
             //Find out the length of the longest cache name
-            longestName = Math.max(availableCache.getName().length(), longestName);
+            longestName = Math.max(cache.getName().length(), longestName);
         }
 
         // Should look like "Preloading:%-20s%-8d\t(%s)"
         strFmt = "Preloading:%-" + (longestName + 4) + "s%-8d\t(%s)";
     }
-
-    /**
-     * Runnable instance for printing log.
-     */
-    private static final Runnable lgr = new Runnable() {
-        /** {@inheritDoc} */
-        @Override public void run() {
-            for (IgniteCache<Object, Object> cache : caches) {
-                String cacheName = cache.getName();
-
-                long cacheSize = cache.sizeLong();
-
-                long recentlyLoaded = cacheSize - cntrs.get(cacheName);
-                String recLoaded = recentlyLoaded == 0 ?  "" + recentlyLoaded : "+" + recentlyLoaded;
-
-                BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
-
-                cntrs.put(cacheName, cacheSize);
-            }
-        }
-    };
 }

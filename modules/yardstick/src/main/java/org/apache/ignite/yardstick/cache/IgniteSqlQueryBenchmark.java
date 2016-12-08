@@ -41,7 +41,7 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
 
         long start = System.nanoTime();
 
-        printPreloadLog();
+        startPreloadLogging();
 
         try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cache.getName())) {
             for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
