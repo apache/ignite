@@ -838,17 +838,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 assert qryMgr.enabled();
 
-                try {
-                    if (old != null)
-                        qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
-                    else
-                        qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
-                }
-                catch (NodeStoppingException e) {
-                    rowStore.removeRow(dataRow.link());
-
-                    throw e;
-                }
+                if (old != null)
+                    qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
+                else
+                    qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
             }
 
             if (old != null) {
