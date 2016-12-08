@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
   * Compound object used to address a page in the global page space.
@@ -65,7 +66,7 @@ public class FullPageId {
     public static int hashCode(int cacheId, long pageId) {
         long effectiveId = PageIdUtils.effectivePageId(pageId);
 
-        return hashCode0(cacheId, effectiveId);
+        return U.hash(hashCode0(cacheId, effectiveId));
     }
 
     /**
@@ -76,11 +77,13 @@ public class FullPageId {
      * @return Hash code.
      */
     private static int hashCode0(int cacheId, long effectivePageId) {
-        int res = (int)(effectivePageId ^ (effectivePageId >>> 32));
+        int pageIdx = (int)PageIdUtils.pageId(effectivePageId);
+        int partId = PageIdUtils.partId(effectivePageId);
 
-        res = 31 * res + cacheId;
+        // Take a prime number larger than total number of partitions.
+        int res = 65537 * partId + cacheId;
 
-        return res;
+        return res * 31 + pageIdx;
     }
 
     /**

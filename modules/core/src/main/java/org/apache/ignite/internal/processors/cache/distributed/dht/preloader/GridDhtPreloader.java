@@ -262,7 +262,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = cctx.dht().topology();
 
-        if (!cctx.rebalanceEnabled() || cctx.shared().cache().globalState() == CacheState.INACTIVE)
+        if (!cctx.rebalanceEnabled() || cctx.shared().cache().globalState() != CacheState.ACTIVE)
             return new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
         int partCnt = cctx.affinity().partitions();
