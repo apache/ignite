@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperAwareTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
@@ -924,7 +925,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Partitioned output.
      */
-    public class PartitionedOutput implements HadoopTaskOutput {
+    public class PartitionedOutput implements HadoopMapperAwareTaskOutput {
         /** */
         private final HadoopTaskOutput[] locAdders = new HadoopTaskOutput[locMaps.length()];
 
@@ -1002,12 +1003,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             out.write(key, val);
         }
 
-        /**
-         * Flush striped mapper.
-         *
-         * @throws IgniteCheckedException If failed.
-         */
-        public void flushStripedMapper() throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void onMapperFinished() throws IgniteCheckedException {
             if (stripeMappers) {
                 int mapperIdx = HadoopMapperUtils.mapperIndex();
 

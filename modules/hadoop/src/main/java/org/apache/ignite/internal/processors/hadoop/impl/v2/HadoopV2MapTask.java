@@ -77,15 +77,9 @@ public class HadoopV2MapTask extends HadoopV2Task {
             Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopContext().getConfiguration());
 
             try {
-                long start = System.currentTimeMillis();
-
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
 
-                hadoopContext().flushStripedMapper();
-
-                long finish = System.currentTimeMillis();
-
-                System.out.println(taskCtx.taskInfo().mapperIndex() +  ": Finished: " + (finish - start));
+                hadoopContext().onMapperFinished();
             }
             finally {
                 closeWriter();
