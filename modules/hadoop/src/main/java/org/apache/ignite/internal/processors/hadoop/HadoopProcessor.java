@@ -61,7 +61,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (ctx.isDaemon())
             return;
 
@@ -92,8 +92,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+        super.onKernalStart(activeOnStart);
 
         if (hctx == null)
             return;

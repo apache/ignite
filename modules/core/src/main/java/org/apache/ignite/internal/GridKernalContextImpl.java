@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.clock.GridJvmClockSource;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -197,6 +198,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridCacheProcessor cacheProc;
+
+    /** Cluster state process. */
+    @GridToStringInclude
+    private GridClusterStateProcessor stateProc;
 
     /** */
     @GridToStringInclude
@@ -474,6 +479,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             metricsProc = (GridJobMetricsProcessor)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
+        else if (comp instanceof GridClusterStateProcessor)
+            stateProc =(GridClusterStateProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -600,6 +607,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridCacheProcessor cache() {
         return cacheProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClusterStateProcessor state() {
+        return stateProc;
     }
 
     /** {@inheritDoc} */

@@ -63,7 +63,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         OdbcConfiguration odbcCfg = ctx.config().getOdbcConfiguration();
 
         if (odbcCfg != null) {

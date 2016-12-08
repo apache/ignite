@@ -86,7 +86,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 

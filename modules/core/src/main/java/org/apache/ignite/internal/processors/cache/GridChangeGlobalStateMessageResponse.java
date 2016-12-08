@@ -37,9 +37,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
     /** Request id. */
     private UUID requestId;
 
-    /** Node id. */
-    private UUID nodeId;
-
     /** Activation error. */
     @GridDirectTransient
     private Throwable err;
@@ -55,15 +52,10 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
     }
 
     /**
-     * @param nodeId Node id.
+     *
      */
-    public GridChangeGlobalStateMessageResponse(
-        UUID requestId,
-        UUID nodeId,
-        Throwable err
-    ) {
+    public GridChangeGlobalStateMessageResponse(UUID requestId, Throwable err) {
         this.requestId = requestId;
-        this.nodeId = nodeId;
         this.err = err;
     }
 
@@ -72,13 +64,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
      */
     public UUID getRequestId() {
         return requestId;
-    }
-
-    /**
-     *
-     */
-    public UUID getNodeId() {
-        return nodeId;
     }
 
     /**
@@ -128,12 +113,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeUuid("nodeId", nodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeUuid("requestId", requestId))
                     return false;
 
@@ -164,14 +143,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
                 reader.incrementState();
 
             case 4:
-                nodeId = reader.readUuid("nodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 requestId = reader.readUuid("requestId");
 
                 if (!reader.isLastRead())
@@ -191,7 +162,7 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 5;
     }
 
     /** {@inheritDoc} */
