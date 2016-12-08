@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 
@@ -98,7 +99,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
             JobConf jobConf = new JobConf();
 
             if (striped)
-                jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
+                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT.propertyName(), "true");
 
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
