@@ -737,33 +737,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
-        setFilters(filters);
+        final Connection conn = connectionForThread(schema(spaceName));
+
+        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+
+        List<GridQueryFieldMetadata> meta;
 
         try {
-            final Connection conn = connectionForThread(schema(spaceName));
+            meta = meta(stmt.getMetaData());
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Cannot prepare query metadata", e);
+        }
 
-            final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+        return new GridQueryFieldsResultAdapter(meta, null) {
+            @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
+                setFilters(filters);
 
-            List<GridQueryFieldMetadata> meta;
-
-            try {
-                meta = meta(stmt.getMetaData());
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException("Cannot prepare query metadata", e);
-            }
-
-            return new GridQueryFieldsResultAdapter(meta, null) {
-                @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException{
+                try {
                     ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
 
                     return new FieldsIterator(rs);
                 }
-            };
-        }
-        finally {
-            setFilters(null);
-        }
+                finally {
+                    setFilters(null);
+                }
+            }
+        };
     }
 
     /**
