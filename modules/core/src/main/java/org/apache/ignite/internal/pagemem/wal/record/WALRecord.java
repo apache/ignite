@@ -147,9 +147,6 @@ public abstract class WALRecord {
         /** Meta page update last allocated index. */
         META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,
 
-        /** Meta page update candidate allocated index. */
-        META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX,
-
         /** Partition meta update state. */
         PART_META_UPDATE_STATE,
 
