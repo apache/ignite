@@ -762,6 +762,9 @@ namespace Apache.Ignite.Core.Tests.Services
             [InstanceResource]
             private IIgnite _grid;
 
+            /** */
+            private readonly object _syncRoot = new object();
+
             /** <inheritdoc /> */
             public int TestProperty { get; set; }
 
@@ -807,41 +810,50 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
-                if (ThrowInit) 
-                    throw new Exception("Expected exception");
+                lock (_syncRoot)
+                {
+                    if (ThrowInit)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsFalse(context.IsCancelled);
-                Initialized = true;
+                    Assert.IsFalse(context.IsCancelled);
+                    Initialized = true;
+                }
             }
 
             /** <inheritdoc /> */
             public void Execute(IServiceContext context)
             {
-                if (ThrowExecute)
-                    throw new Exception("Expected exception");
+                lock (_syncRoot)
+                {
+                    if (ThrowExecute)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsFalse(context.IsCancelled);
-                Assert.IsTrue(Initialized);
-                Assert.IsFalse(Cancelled);
+                    Assert.IsFalse(context.IsCancelled);
+                    Assert.IsTrue(Initialized);
+                    Assert.IsFalse(Cancelled);
 
-                Executed = true;
+                    Executed = true;
+                }
             }
 
             /** <inheritdoc /> */
             public void Cancel(IServiceContext context)
             {
-                if (ThrowCancel)
-                    throw new Exception("Expected exception");
+                lock (_syncRoot)
+                {
+                    if (ThrowCancel)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsTrue(context.IsCancelled);
+                    Assert.IsTrue(context.IsCancelled);
 
-                Cancelled = true;
+                    Cancelled = true;
+                }
             }
 
             /// <summary>

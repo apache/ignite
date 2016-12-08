@@ -46,7 +46,9 @@ namespace ignite
 
             REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
 
-            REQUEST_TYPE_GET_TABLES_METADATA = 6
+            REQUEST_TYPE_GET_TABLES_METADATA = 6,
+
+            REQUEST_TYPE_GET_PARAMS_METADATA = 7
         };
 
         enum ResponseStatus
@@ -125,7 +127,9 @@ namespace ignite
              */
             QueryExecuteRequest(const std::string& cache, const std::string& sql,
                 const app::ParameterBindingMap& params) :
-                cache(cache), sql(sql), params(params)
+                cache(cache),
+                sql(sql),
+                params(params)
             {
                 // No-op.
             }
@@ -151,9 +155,20 @@ namespace ignite
                 writer.WriteInt32(static_cast<int32_t>(params.size()));
 
                 app::ParameterBindingMap::const_iterator i;
+                uint16_t prev = 0;
 
-                for (i = params.begin(); i != params.end(); ++i)
+                for (i = params.begin(); i != params.end(); ++i) {
+                    uint16_t current = i->first;
+
+                    while ((current - prev) > 1) {
+                        writer.WriteNull();
+                        ++prev;
+                    }
+
                     i->second.Write(writer);
+
+                    prev = current;
+                }
             }
 
         private:
@@ -220,7 +235,8 @@ namespace ignite
              * @param pageSize Required page size.
              */
             QueryFetchRequest(int64_t queryId, int32_t pageSize) :
-                queryId(queryId), pageSize(pageSize)
+                queryId(queryId),
+                pageSize(pageSize)
             {
                 // No-op.
             }
@@ -266,7 +282,9 @@ namespace ignite
              * @param column Column name.
              */
             QueryGetColumnsMetaRequest(const std::string& schema, const std::string& table, const std::string& column) :
-                schema(schema), table(table), column(column)
+                schema(schema),
+                table(table),
+                column(column)
             {
                 // No-op.
             }
@@ -319,7 +337,10 @@ namespace ignite
              */
             QueryGetTablesMetaRequest(const std::string& catalog, const std::string& schema,
                                       const std::string& table, const std::string& tableTypes) :
-                catalog(catalog), schema(schema), table(table), tableTypes(tableTypes)
+                catalog(catalog),
+                schema(schema),
+                table(table),
+                tableTypes(tableTypes)
             {
                 // No-op.
             }
@@ -361,6 +382,55 @@ namespace ignite
         };
 
         /**
+         * Get parameter metadata request.
+         */
+        class QueryGetParamsMetaRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param catalog Catalog search pattern.
+             * @param schema Schema search pattern.
+             * @param table Table search pattern.
+             * @param tableTypes Table types search pattern.
+             */
+            QueryGetParamsMetaRequest(const std::string& cacheName, const std::string& sqlQuery) :
+                cacheName(cacheName),
+                sqlQuery(sqlQuery)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetParamsMetaRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_GET_PARAMS_METADATA);
+
+                utility::WriteString(writer, cacheName);
+                utility::WriteString(writer, sqlQuery);
+            }
+
+        private:
+            /** Cache name. */
+            std::string cacheName;
+
+            /** SQL query. */
+            std::string sqlQuery;
+        };
+
+        /**
          * Query close response.
          */
         class Response
@@ -391,16 +461,9 @@ namespace ignite
                 status = reader.ReadInt8();
 
                 if (status == RESPONSE_STATUS_SUCCESS)
-                {
                     ReadOnSuccess(reader);
-                }
                 else
-                {
-                    int32_t errorLen = reader.ReadString(0, 0);
-                    error.resize(errorLen);
-
-                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
-                }
+                    utility::ReadString(reader, error);;
             }
             
             /**
@@ -759,6 +822,51 @@ namespace ignite
 
             /** Columns metadata. */
             meta::TableMetaVector meta;
+        };
+
+        /**
+         * Get params metadata response.
+         */
+        class QueryGetParamsMetaResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryGetParamsMetaResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetParamsMetaResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Get parameter type IDs.
+             * @return Type IDs.
+             */
+            const std::vector<int8_t>& GetTypeIds() const
+            {
+                return typeIds;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                utility::ReadByteArray(reader, typeIds);
+            }
+
+            /** Columns metadata. */
+            std::vector<int8_t> typeIds;
         };
     }
 }

@@ -77,7 +77,10 @@ export default () => {
                 './'
             ]
         },
-
+        jade: {
+            basedir: rootDir,
+            locals: {}
+        },
         // Modules resolvers.
         /* global require */
         module: {

@@ -221,6 +221,12 @@ export class Bean extends EmptyBean {
         return this;
     }
 
+    propertyInt(name, value, hint) {
+        this.properties.push({clsName: 'PROPERTY_INT', name, value, hint});
+
+        return this;
+    }
+
     stringProperty(model, name = model, mapper) {
         return this._property(this.properties, 'java.lang.String', model, name, _.nonEmpty, mapper);
     }
