@@ -54,12 +54,28 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
         return cfg;
     }
 
-    /**
-     * Tests whole job execution with all phases in old and new versions of API with definition of custom
-     * Serialization, Partitioner and IO formats.
+    /*
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
+        checkMultiReducerWholeMapReduceExecution(false);
+    }
+
+    /*
+     * @throws Exception If fails.
+     */
+    public void testMultiReducerWholeMapReduceExecutionStriped() throws Exception {
+        checkMultiReducerWholeMapReduceExecution(true);
+    }
+
+    /**
+     * Tests whole job execution with all phases in old and new versions of API with definition of custom
+     * Serialization, Partitioner and IO formats.
+     *
+     * @param striped Whether output should be striped or not.
+     * @throws Exception If fails.
+     */
+    public void checkMultiReducerWholeMapReduceExecution(boolean striped) throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
         igfs.mkdirs(inDir);
@@ -81,7 +97,9 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
 
             JobConf jobConf = new JobConf();
 
-            jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
+            if (striped)
+                jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
+
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
             //To split into about 6-7 items for v2
