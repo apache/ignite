@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text.RegularExpressions;
@@ -36,6 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -333,14 +333,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests aggregates with all clause.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-2563")]
         public void TestAggregatesAll()
         {
             var ints = GetPersonCache().AsCacheQueryable().Select(x => x.Key);
 
-            Assert.IsTrue(ints.Where(x => x > -10).All(x => x < PersonCount && x >= 0));
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<NotSupportedException>(() => ints.Where(x => x > -10)
+                .All(x => x < PersonCount && x >= 0));
 
-            Assert.IsFalse(ints.All(x => x < PersonCount / 2));
+            Assert.IsTrue(ex.Message.StartsWith("Operator is not supported: All"));
         }
 
         /// <summary>
@@ -535,6 +536,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = filtered.ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        /// <summary>
+        /// Tests the join of a table to itself.
+        /// </summary>
+        [Test]
+        public void TestSelfJoin()
+        {
+            // Different queryables
+            var p1 = GetPersonCache().AsCacheQueryable();
+            var p2 = GetPersonCache().AsCacheQueryable();
+
+            var qry = p1.Join(p2, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+            Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
+
+            // Same queryables
+            var qry2 = p1.Join(p1, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+            Assert.AreEqual(PersonCount, qry2.ToArray().Distinct().Count());
         }
 
         /// <summary>
@@ -1132,7 +1151,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(true).Where(x => x.Key > 10);
+            var query = (ICacheQueryable) cache.AsCacheQueryable(new QueryOptions
+            {
+                Local = true,
+                PageSize = 999,
+                EnforceJoinOrder = true
+            }).Where(x => x.Key > 10);
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -1142,6 +1166,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
             Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
+            Assert.AreEqual(999, fq.PageSize);
+            Assert.IsFalse(fq.EnableDistributedJoins);
+            Assert.IsTrue(fq.EnforceJoinOrder);
+
+            var str = query.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?), Arguments=[10], " +
+                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -1152,6 +1184,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fq.Sql);
             Assert.IsFalse(fq.Local);
+            Assert.AreEqual(SqlFieldsQuery.DfltPageSize, fq.PageSize);
+            Assert.IsFalse(fq.EnableDistributedJoins);
+            Assert.IsFalse(fq.EnforceJoinOrder);
+
+            str = fieldsQuery.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0.Name from \"\".Person as _T0, Arguments=[], Local=False, PageSize=1024, " +
+                            "EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+            
+            // Check distributed joins flag propagation
+            var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
+                .Where(x => x.Key > 10 && x.Value.Age > 20 && x.Value.Name.Contains("x"));
+
+            query = (ICacheQueryable) distrQuery;
+
+            Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
+
+            str = distrQuery.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0._key, _T0._val from \"\".Person as _T0 where (((_T0._key > ?) and (_T0.age1 > ?)) " +
+                            "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
         }
 
         /// <summary>
@@ -1180,6 +1234,45 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var nonQueryableCache = Ignition.GetIgnite().GetOrCreateCache<Role, Person>("nonQueryable");
 
             Assert.Throws<CacheException>(() => nonQueryableCache.AsCacheQueryable());
+        }
+
+        /// <summary>
+        /// Tests the distributed joins.
+        /// </summary>
+        [Test]
+        public void TestDistributedJoins()
+        {
+            var ignite = Ignition.GetIgnite();
+
+            // Create and populate partitioned caches
+            var personCache = ignite.CreateCache<int, Person>(new CacheConfiguration("partitioned_persons",
+                new QueryEntity(typeof(int), typeof(Person))));
+
+            personCache.PutAll(GetSecondPersonCache().ToDictionary(x => x.Key, x => x.Value));
+
+            var roleCache = ignite.CreateCache<int, Role>(new CacheConfiguration("partitioned_roles",
+                    new QueryEntity(typeof(int), typeof(Role))));
+
+            roleCache.PutAll(GetRoleCache().ToDictionary(x => x.Key.Foo, x => x.Value));
+
+            // Test non-distributed join: returns partial results
+            var persons = personCache.AsCacheQueryable();
+            var roles = roleCache.AsCacheQueryable();
+
+            var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+                .ToArray();
+
+            Assert.Greater(res.Length, 0);
+            Assert.Less(res.Length, RoleCount);
+
+            // Test distributed join: returns complete results
+            persons = personCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+            roles = roleCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+
+            res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+                .ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
         }
 
         /// <summary>

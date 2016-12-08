@@ -26,6 +26,8 @@
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
 
+#include "ignite/binary/binary_type.h"
+
 namespace ignite
 {
     namespace impl
@@ -538,7 +540,92 @@ namespace ignite
                  */
                 static Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
                     int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
+
+                /**
+                 * Get default value for the type.
+                 *
+                 * @return Null value for non primitive types and zeroes for primitives.
+                 */
+                template<typename T>
+                static T GetDefaultValue()
+                {
+                    ignite::binary::BinaryType<T> binType;
+
+                    return binType.GetNull();
+                }
             };
+
+            template<>
+            inline int8_t BinaryUtils::GetDefaultValue<int8_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline int16_t BinaryUtils::GetDefaultValue<int16_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline uint16_t BinaryUtils::GetDefaultValue<uint16_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline int32_t BinaryUtils::GetDefaultValue<int32_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline int64_t BinaryUtils::GetDefaultValue<int64_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline bool BinaryUtils::GetDefaultValue<bool>()
+            {
+                return false;
+            }
+
+            template<>
+            inline float BinaryUtils::GetDefaultValue<float>()
+            {
+                return 0.0f;
+            }
+
+            template<>
+            inline double BinaryUtils::GetDefaultValue<double>()
+            {
+                return 0.0;
+            }
+
+            template<>
+            inline Guid BinaryUtils::GetDefaultValue<Guid>()
+            {
+                return Guid();
+            }
+
+            template<>
+            inline Date BinaryUtils::GetDefaultValue<Date>()
+            {
+                return Date();
+            }
+
+            template<>
+            inline Timestamp BinaryUtils::GetDefaultValue<Timestamp>()
+            {
+                return Timestamp();
+            }
+
+            template<>
+            inline std::string BinaryUtils::GetDefaultValue<std::string>()
+            {
+                return std::string();
+            }
         }
     }
 }

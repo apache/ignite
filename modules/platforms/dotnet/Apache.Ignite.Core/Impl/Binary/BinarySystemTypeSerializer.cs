@@ -19,13 +19,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary serializer for system types.
     /// </summary>
     /// <typeparam name="T">Object type.</typeparam>
-    internal class BinarySystemTypeSerializer<T> : IBinarySystemTypeSerializer where T : IBinaryWriteAware
+    internal class BinarySystemTypeSerializer<T> : IBinarySerializerInternal where T : IBinaryWriteAware
     {
         /** Ctor delegate. */
         private readonly Func<BinaryReader, T> _ctor;
@@ -41,22 +41,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             _ctor = ctor;
         }
 
-        /** <inheritdoc /> */
-        public void WriteBinary(object obj, IBinaryWriter writer)
+        /** <inheritDoc /> */
+        public void WriteBinary<T1>(T1 obj, BinaryWriter writer)
         {
-            ((T) obj).WriteBinary(writer);
+            TypeCaster<T>.Cast(obj).WriteBinary(writer);
+        }
+
+        /** <inheritDoc /> */
+        public T1 ReadBinary<T1>(BinaryReader reader, Type type, int pos)
+        {
+            return TypeCaster<T1>.Cast(_ctor(reader));
         }
 
         /** <inheritdoc /> */
-        public void ReadBinary(object obj, IBinaryReader reader)
+        public bool SupportsHandles
         {
-            throw new NotSupportedException("System serializer does not support ReadBinary.");
-        }
-
-        /** <inheritdoc /> */
-        public object ReadInstance(BinaryReader reader)
-        {
-            return _ctor(reader);
+            get { return false; }
         }
     }
 }

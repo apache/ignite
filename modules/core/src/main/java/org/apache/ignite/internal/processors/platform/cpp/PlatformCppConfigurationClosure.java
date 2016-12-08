@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.cpp;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
@@ -130,17 +129,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
 
-        if (ggHome == null)
-            ggHome = U.getIgniteHome();
-        else
-            // If user provided IGNITE_HOME - set it as a system property.
+        if (ggHome != null)
             U.setIgniteHome(ggHome);
-
-        try {
-            U.setWorkDirectory(igniteCfg.getWorkDirectory(), ggHome);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
     }
 }

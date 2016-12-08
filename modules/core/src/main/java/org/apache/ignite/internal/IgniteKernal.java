@@ -126,6 +126,7 @@ import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -178,6 +179,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
@@ -666,6 +668,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc Reset executor service.
+     * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -679,6 +683,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         GridAbsClosure errHnd)
         throws IgniteCheckedException
@@ -784,6 +790,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc,
+                affExecSvc,
+                idxExecSvc,
                 callbackExecSvc,
                 plugins);
 
@@ -792,8 +800,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
 
             startProcessor(clusterProc);
-
-            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             U.onGridStart();
 
@@ -826,6 +832,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(HADOOP_HELPER.createIfInClassPath(ctx, false));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
+
+            startProcessor(new PoolProcessor(ctx));
 
             // Off-heap processor has no dependencies.
             startProcessor(new GridOffHeapProcessor(ctx));
@@ -895,6 +903,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
+
+            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             gw.writeLock();
 
@@ -991,7 +1001,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // at least one waiting request, then it is possible starvation.
                     if (exec.getPoolSize() == exec.getActiveCount() && completedCnt == lastCompletedCnt &&
                         !exec.getQueue().isEmpty())
-                        LT.warn(log, null, "Possible thread pool starvation detected (no task completed in last " +
+                        LT.warn(log, "Possible thread pool starvation detected (no task completed in last " +
                             interval + "ms, is executorService pool size large enough?)");
 
                     lastCompletedCnt = completedCnt;
@@ -1623,7 +1633,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isRestEnabled() {
         assert cfg != null;
 
-        return cfg.getConnectorConfiguration() != null;
+        return cfg.getConnectorConfiguration() != null &&
+            // By default rest processor doesn't start on client nodes.
+            (!isClientNode() || (isClientNode() && IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT)));
+    }
+
+    /**
+     * @return {@code True} if node client or daemon otherwise {@code false}.
+     */
+    private boolean isClientNode() {
+        return cfg.isClientMode() || cfg.isDaemon();
     }
 
     /**
@@ -2522,6 +2541,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
+        A.notNull(cacheCfgs, "cacheCfgs");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCaches(cacheCfgs,
+                true,
+                true).get();
+
+            List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
+
+            for (CacheConfiguration cacheCfg : cacheCfgs)
+                createdCaches.add(ctx.cache().publicJCache(cacheCfg.getName()));
+
+            return createdCaches;
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
         guard();
@@ -2556,6 +2602,32 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) {
+        A.notNull(cacheCfgs, "cacheCfgs");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCaches(cacheCfgs,
+                false,
+                true).get();
+
+            List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
+
+            for (CacheConfiguration cacheCfg : cacheCfgs)
+                createdCaches.add(ctx.cache().publicJCache(cacheCfg.getName()));
+
+            return createdCaches;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2726,6 +2798,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void destroyCaches(Collection<String> cacheNames) {
+        IgniteInternalFuture stopFut = destroyCachesAsync(cacheNames, true);
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+    }
+
     /**
      * @param cacheName Cache name.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
@@ -2736,6 +2820,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.cache().dynamicDestroyCache(cacheName, checkThreadTx);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * @param cacheNames Collection of cache names.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Ignite future.
+     */
+    public IgniteInternalFuture<?> destroyCachesAsync(Collection<String> cacheNames, boolean checkThreadTx) {
+        guard();
+
+        try {
+            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx);
         }
         finally {
             unguard();

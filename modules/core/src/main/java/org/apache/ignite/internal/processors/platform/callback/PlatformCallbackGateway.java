@@ -71,14 +71,13 @@ public class PlatformCallbackGateway {
     /**
      * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
-     * @param cb Callback.
      * @return Result.
      */
-    public int cacheStoreInvoke(long objPtr, long memPtr, Object cb) {
+    public int cacheStoreInvoke(long objPtr, long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr, cb);
+            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr);
         }
         finally {
             leave();
@@ -89,7 +88,8 @@ public class PlatformCallbackGateway {
      * @param objPtr Object pointer.
      */
     public void cacheStoreDestroy(long objPtr) {
-        enter();
+        if (!lock.enterBusy())
+            return;  // no need to destroy stores on grid stop
 
         try {
             PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
@@ -942,6 +942,44 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Logs to the platform.
+     *
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Error info.
+     * @param memPtr Pointer to optional payload (serialized exception).
+     */
+    public void loggerLog(int level, String message, String category, String errorInfo, long memPtr) {
+        if (!tryEnter())
+            return;  // Do not lock for logger: this should work during shutdown
+
+        try {
+            PlatformCallbackUtils.loggerLog(envPtr, level, message, category, errorInfo, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Gets a value indicating whether native logger has specified level enabled.
+     *
+     * @param level Log level.
+     */
+    public boolean loggerIsLevelEnabled(int level) {
+        if (!tryEnter())
+            return false;  // Do not lock for logger: this should work during shutdown
+
+        try {
+            return PlatformCallbackUtils.loggerIsLevelEnabled(envPtr, level);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Kernal stop callback.
      */
     public void onStop() {
@@ -1039,11 +1077,28 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Redirects the console output to platform.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    public static void consoleWrite(String str, boolean isErr) {
+        PlatformCallbackUtils.consoleWrite(str, isErr);
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {
         if (!lock.enterBusy())
             throw new IgniteException("Failed to execute native callback because grid is stopping.");
+    }
+
+    /**
+     * Enter gateway.
+     */
+    protected boolean tryEnter() {
+        return lock.enterBusy();
     }
 
     /**

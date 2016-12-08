@@ -103,9 +103,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as GoodException);
             Assert.AreEqual(ErrorMode.LocJobErr, ((GoodException) JobErrs.First()).Mode);
         }
@@ -120,9 +120,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(1, res);
 
-            Assert.AreEqual(1, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as BadException); // Local job exception is not marshalled.
         }
 
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(3, res); // Local job result is not marshalled.
+            Assert.AreEqual(2, res); // Local job result is not marshalled.
 
             Assert.AreEqual(0, JobErrs.Count);
         }
@@ -153,13 +153,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as GoodException);
-            Assert.IsNotNull(JobErrs.ElementAt(1) as GoodException);
 
             Assert.AreEqual(ErrorMode.RmtJobErr, ((GoodException) JobErrs.ElementAt(0)).Mode);
-            Assert.AreEqual(ErrorMode.RmtJobErr, ((GoodException) JobErrs.ElementAt(1)).Mode);
         }
 
         /// <summary>
@@ -174,10 +172,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
-            Assert.IsNotNull(JobErrs.ElementAt(1) as IgniteException);
         }
 
         /// <summary>
@@ -192,10 +189,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(4, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
-            Assert.IsNotNull(JobErrs.ElementAt(1) as IgniteException);
         }
 
         /// <summary>
@@ -298,7 +294,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(3, res);
+            Assert.AreEqual(2, res);
         }
 
         /// <summary>
@@ -309,9 +305,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             JobErrs.Clear();
 
-            object res = Grid1.GetCompute().Execute(new Task());
+            Func<object, int> getRes = r => r is GoodTaskResult ? ((GoodTaskResult) r).Res : ((BadTaskResult) r).Res;
 
-            return res is GoodTaskResult ? ((GoodTaskResult)res).Res : ((BadTaskResult)res).Res;
+            var res1 = getRes(Grid1.GetCompute().Execute(new Task()));
+            var res2 = getRes(Grid1.GetCompute().Execute<object, object>(typeof(Task)));
+
+            var resAsync1 = getRes(Grid1.GetCompute().ExecuteAsync(new Task()).Result);
+            var resAsync2 = getRes(Grid1.GetCompute().ExecuteAsync<object, object>(typeof(Task)).Result);
+
+            Assert.AreEqual(res1, res2);
+            Assert.AreEqual(res2, resAsync1);
+            Assert.AreEqual(resAsync1, resAsync2);
+
+            return res1;
         }
 
         /// <summary>
@@ -322,20 +328,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             JobErrs.Clear();
 
-            Exception err = null;
-
-            try
-            {
-                Grid1.GetCompute().Execute(new Task());
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                err = e;
-            }
-
-            return err;
+            return Assert.Catch(() => Grid1.GetCompute().Execute(new Task()));
         }
 
         /// <summary>
@@ -395,11 +388,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Task.
         /// </summary>
-        public class Task : IComputeTask<object, object>
+        private class Task : IComputeTask<object, object>
         {
             /** Grid. */
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** Result. */
             private int _res;

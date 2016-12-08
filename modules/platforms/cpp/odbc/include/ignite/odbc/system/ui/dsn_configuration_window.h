@@ -48,6 +48,10 @@ namespace ignite
                         ID_CACHE_LABEL,
                         ID_PAGE_SIZE_EDIT,
                         ID_PAGE_SIZE_LABEL,
+                        ID_DISTRIBUTED_JOINS_CHECK_BOX,
+                        ID_ENFORCE_JOIN_ORDER_CHECK_BOX,
+                        ID_PROTOCOL_VERSION_LABEL,
+                        ID_PROTOCOL_VERSION_COMBO_BOX,
                         ID_OK_BUTTON,
                         ID_CANCEL_BUTTON
                     };
@@ -123,6 +127,18 @@ namespace ignite
 
                     /** DSN fetch page size edit field. */
                     std::auto_ptr<Window> pageSizeEdit;
+
+                    /** Distributed joins CheckBox. */
+                    std::auto_ptr<Window> distributedJoinsCheckBox;
+
+                    /** Enforce join order CheckBox. */
+                    std::auto_ptr<Window> enforceJoinOrderCheckBox;
+
+                    /** Protocol version edit field. */
+                    std::auto_ptr<Window> protocolVersionLabel;
+
+                    /** Protocol verion ComboBox. */
+                    std::auto_ptr<Window> protocolVersionComboBox;
 
                     /** Ok button. */
                     std::auto_ptr<Window> okButton;

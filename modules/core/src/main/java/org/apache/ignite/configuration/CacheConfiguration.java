@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -209,6 +210,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default number of queries detail metrics to collect. */
+    public static final int DFLT_QRY_DETAIL_METRICS_SIZE = 0;
+
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
@@ -361,6 +365,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
+    /** */
+    private int qryDetailMetricsSz = DFLT_QRY_DETAIL_METRICS_SIZE;
+
     /**
      * Flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
@@ -468,6 +475,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nodeFilter = cc.getNodeFilter();
         pluginCfgs = cc.getPluginConfigurations();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();
@@ -1824,6 +1832,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets size of queries detail metrics that will be stored in memory for monitoring purposes.
+     * If {@code 0} then history will not be collected.
+     * Note, larger number may lead to higher memory consumption.
+     *
+     * @return Maximum number of query metrics that will be stored in memory.
+     */
+    public int getQueryDetailMetricsSize() {
+        return qryDetailMetricsSz;
+    }
+
+    /**
+     * Sets size of queries detail metrics that will be stored in memory for monitoring purposes.
+     *
+     * @param qryDetailMetricsSz Maximum number of latest queries metrics that will be stored in memory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setQueryDetailMetricsSize(int qryDetailMetricsSz) {
+        this.qryDetailMetricsSz = qryDetailMetricsSz;
+
+        return this;
+    }
+
+    /**
      * Gets custom name of the sql schema. If custom sql schema is not set then {@code null} will be returned and
      * quoted case sensitive name will be used as sql schema.
      *
@@ -2168,7 +2199,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param desc Type descriptor.
      * @return Type metadata.
      */
-    static QueryEntity convert(TypeDescriptor desc) {
+    private static QueryEntity convert(TypeDescriptor desc) {
         QueryEntity entity = new QueryEntity();
 
         // Key and val types.
@@ -2177,6 +2208,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
+
+        entity.setKeyFields(desc.keyProperties);
 
         QueryIndex txtIdx = null;
 
@@ -2325,7 +2358,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
 
-                    type.addProperty(prop, true);
+                    type.addProperty(prop, key, true);
                 }
             }
 
@@ -2347,7 +2380,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
 
-                    type.addProperty(prop, true);
+                    type.addProperty(prop, key, true);
                 }
             }
         }
@@ -2428,6 +2461,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         @GridToStringExclude
         private final Map<String, ClassProperty> props = new LinkedHashMap<>();
+
+        /** */
+        @GridToStringInclude
+        private final Set<String> keyProperties = new HashSet<>();
 
         /** */
         @GridToStringInclude
@@ -2537,15 +2574,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * Adds property to the type descriptor.
          *
          * @param prop Property.
+         * @param key Property ownership flag (key or not).
          * @param failOnDuplicate Fail on duplicate flag.
          */
-        public void addProperty(ClassProperty prop, boolean failOnDuplicate) {
+        void addProperty(ClassProperty prop, boolean key, boolean failOnDuplicate) {
             String name = prop.fullName();
 
             if (props.put(name, prop) != null && failOnDuplicate)
                 throw new CacheException("Property with name '" + name + "' already exists.");
 
             fields.put(name, prop.type());
+
+            if (key)
+                keyProperties.add(name);
         }
 
         /**
@@ -2668,10 +2709,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         ClassProperty(Member member) {
             this.member = member;
 
-            name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
+            name = member.getName();
 
-            ((AccessibleObject) member).setAccessible(true);
+            if (member instanceof Method) {
+                if (member.getName().startsWith("get") && member.getName().length() > 3)
+                    name = member.getName().substring(3);
+
+                if (member.getName().startsWith("is") && member.getName().length() > 2)
+                    name = member.getName().substring(2);
+            }
+
+            ((AccessibleObject)member).setAccessible(true);
         }
 
         /**

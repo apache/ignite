@@ -118,6 +118,25 @@ namespace ignite
             void UnbindAllParameters();
 
             /**
+             * Set statement attribute.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             */
+            void SetAttribute(int attr, void* value, SQLINTEGER valueLen);
+
+            /**
+             * Get statement attribute.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             */
+            void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
+
+            /**
              * Get number of binded parameters.
              *
              * @return Number of binded parameters.
@@ -149,41 +168,19 @@ namespace ignite
             /**
              * Prepare SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              */
             void PrepareSqlQuery(const std::string& query);
-
-            /**
-             * Prepare SQL query.
-             *
-             * @note Only SELECT queries are supported currently.
-             * @param query SQL query.
-             * @param len Query length.
-             */
-            void PrepareSqlQuery(const char* query, size_t len);
             
             /**
              * Execute SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              */
             void ExecuteSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
-             *
-             * @note Only SELECT queries are supported currently.
-             * @param query SQL query.
-             * @param len Query length.
-             */
-            void ExecuteSqlQuery(const char* query, size_t len);
-
-            /**
-             * Execute SQL query.
-             *
-             * @note Only SELECT queries are supported currently.
              */
             void ExecuteSqlQuery();
 
@@ -281,6 +278,13 @@ namespace ignite
             bool DataAvailable() const;
 
             /**
+             * Next results.
+             *
+             * Move to next result set or affected rows number.
+             */
+            void NextResults();
+
+            /**
              * Get column attribute.
              *
              * @param colIdx Column index.
@@ -343,6 +347,18 @@ namespace ignite
              */
             void PutData(void* data, SqlLen len);
 
+            /**
+             * Get type info of the parameter of the prepared statement.
+             *
+             * @param paramNum - Parameter index.
+             * @param dataType - Data type.
+             * @param paramSize - Size of the parameter.
+             * @param decimalDigits - Decimal digits.
+             * @param nullable - Nullability flag.
+             */
+            void DescribeParam(int16_t paramNum, int16_t* dataType,
+                SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
 
@@ -354,6 +370,29 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalBindParameter(uint16_t paramIdx, const app::Parameter& param);
+
+            /**
+             * Set statement attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             * @return Operation result.
+             */
+            SqlResult InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
+
+            /**
+             * Get statement attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             * @return Operation result.
+             */
+            SqlResult InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
 
             /**
              * Get value of the column in the result set.
@@ -375,27 +414,22 @@ namespace ignite
             /**
              * Prepare SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
-             * @param len Query length.
              * @return Operation result.
              */
-            SqlResult InternalPrepareSqlQuery(const char* query, size_t len);
+            SqlResult InternalPrepareSqlQuery(const std::string& query);
             
             /**
              * Execute SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
-             * @param len Query length.
              * @return Operation result.
              */
-            SqlResult InternalExecuteSqlQuery(const char* query, size_t len);
+            SqlResult InternalExecuteSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @return Operation result.
              */
             SqlResult InternalExecuteSqlQuery();
@@ -486,8 +520,18 @@ namespace ignite
              * Get type info.
              *
              * @param sqlType SQL type for which to return info or SQL_ALL_TYPES.
+             * @return Operation result.
              */
             SqlResult InternalExecuteGetTypeInfoQuery(int16_t sqlType);
+
+            /**
+             * Next results.
+             *
+             * Move to next result set or affected rows number.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalNextResults();
 
             /**
              * Get column attribute.
@@ -515,6 +559,7 @@ namespace ignite
              * Select next parameter data for which is required.
              *
              * @param paramPtr Pointer to param id stored here.
+             * @return Operation result.
              */
             SqlResult InternalSelectParam(void** paramPtr);
 
@@ -523,8 +568,27 @@ namespace ignite
              *
              * @param data Data.
              * @param len Data length.
+             * @return Operation result.
              */
             SqlResult InternalPutData(void* data, SqlLen len);
+
+            /**
+             * Get type info of the parameter of the prepared statement.
+             *
+             * @param paramNum - Parameter index.
+             * @param dataType - Data type.
+             * @param paramSize - Size of the parameter.
+             * @param decimalDigits - Decimal digits.
+             * @param nullable - Nullability flag.
+             * @return Operation result.
+             */
+            SqlResult InternalDescribeParam(int16_t paramNum, int16_t* dataType,
+                SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable);
+
+            /**
+             * Make request to data source to update parameters metadata.
+             */
+            SqlResult UpdateParamsMeta();
 
             /**
              * Constructor.
@@ -542,6 +606,9 @@ namespace ignite
 
             /** Parameter bindings. */
             app::ParameterBindingMap paramBindings;
+
+            /** Parameter meta. */
+            std::vector<int8_t> paramTypes;
 
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;

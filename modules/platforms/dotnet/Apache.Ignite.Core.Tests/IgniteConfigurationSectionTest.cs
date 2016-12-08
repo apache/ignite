@@ -64,6 +64,58 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(ignite.Name.StartsWith("myGrid"));
             }
+
+            using (var ignite = Ignition.StartFromApplicationConfiguration(
+                "igniteConfiguration3", "custom_app.config"))
+            {
+                Assert.AreEqual("myGrid3", ignite.Name);
+            }
+        }
+
+        /// <summary>
+        /// Tests the ignite start error.
+        /// </summary>
+        [Test]
+        public void TestIgniteStartError()
+        {
+            // Missing section in default file.
+            var ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration111"));
+
+            Assert.AreEqual("Could not find IgniteConfigurationSection with name 'igniteConfiguration111'", 
+                ex.Message);
+
+
+            // Missing section body.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfigurationMissing"));
+
+            Assert.AreEqual("IgniteConfigurationSection with name 'igniteConfigurationMissing' " +
+                            "is defined in <configSections>, but not present in configuration.", ex.Message);
+
+
+            // Missing custom file.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration", "somefile"));
+
+            Assert.AreEqual("Specified config file does not exist: somefile", ex.Message);
+
+
+            // Missing section in custom file.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration", "custom_app.config"));
+
+            Assert.AreEqual("Could not find IgniteConfigurationSection with name 'igniteConfiguration' " +
+                            "in file 'custom_app.config'", ex.Message);
+            
+            
+            // Missing section body in custom file.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfigurationMissing", "custom_app.config"));
+
+            Assert.AreEqual("IgniteConfigurationSection with name 'igniteConfigurationMissing' in file " +
+                            "'custom_app.config' is defined in <configSections>, but not present in configuration.",
+                ex.Message);
         }
     }
 }

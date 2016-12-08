@@ -17,10 +17,13 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq.Clauses;
+    using Remotion.Linq.Clauses.Expressions;
 
     /// <summary>
     /// Alias dictionary.
@@ -31,10 +34,10 @@ namespace Apache.Ignite.Linq.Impl
         private int _aliasIndex;
 
         /** */
-        private Dictionary<string, string> _aliases = new Dictionary<string, string>();
+        private Dictionary<IQuerySource, string> _aliases = new Dictionary<IQuerySource, string>();
 
         /** */
-        private readonly Stack<Dictionary<string, string>> _stack = new Stack<Dictionary<string, string>>();
+        private readonly Stack<Dictionary<IQuerySource, string>> _stack = new Stack<Dictionary<IQuerySource, string>>();
 
         /// <summary>
         /// Pushes current aliases to stack.
@@ -43,7 +46,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             _stack.Push(_aliases);
 
-            _aliases = new Dictionary<string, string>();
+            _aliases = new Dictionary<IQuerySource, string>();
         }
 
         /// <summary>
@@ -57,27 +60,34 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the table alias.
         /// </summary>
-        public string GetTableAlias(ICacheQueryableInternal queryable)
+        public string GetTableAlias(Expression expression)
         {
-            Debug.Assert(queryable != null);
+            Debug.Assert(expression != null);
 
-            return GetTableAlias(ExpressionWalker.GetTableNameWithSchema(queryable));
+            return GetTableAlias(GetQuerySource(expression));
         }
 
-        /// <summary>
-        /// Gets the table alias.
-        /// </summary>
-        public string GetTableAlias(string fullName)
+        public string GetTableAlias(IFromClause fromClause)
         {
-            Debug.Assert(!string.IsNullOrEmpty(fullName));
+            return GetTableAlias(GetQuerySource(fromClause.FromExpression) ?? fromClause);
+        }
+
+        public string GetTableAlias(JoinClause joinClause)
+        {
+            return GetTableAlias(GetQuerySource(joinClause.InnerSequence) ?? joinClause);
+        }
+
+        private string GetTableAlias(IQuerySource querySource)
+        {
+            Debug.Assert(querySource != null);
 
             string alias;
 
-            if (!_aliases.TryGetValue(fullName, out alias))
+            if (!_aliases.TryGetValue(querySource, out alias))
             {
                 alias = "_T" + _aliasIndex++;
 
-                _aliases[fullName] = alias;
+                _aliases[querySource] = alias;
             }
 
             return alias;
@@ -94,9 +104,45 @@ namespace Apache.Ignite.Linq.Impl
             var queryable = ExpressionWalker.GetCacheQueryable(clause);
             var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
 
-            builder.AppendFormat("{0} as {1}", tableName, GetTableAlias(tableName));
+            builder.AppendFormat("{0} as {1}", tableName, GetTableAlias(clause));
 
             return builder;
+        }
+
+        /// <summary>
+        /// Gets the query source.
+        /// </summary>
+        private static IQuerySource GetQuerySource(Expression expression)
+        {
+            var subQueryExp = expression as SubQueryExpression;
+
+            if (subQueryExp != null)
+                return GetQuerySource(subQueryExp.QueryModel.MainFromClause.FromExpression)
+                    ?? subQueryExp.QueryModel.MainFromClause;
+
+            var srcRefExp = expression as QuerySourceReferenceExpression;
+
+            if (srcRefExp != null)
+            {
+                var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
+
+                if (fromSource != null)
+                    return GetQuerySource(fromSource.FromExpression) ?? fromSource;
+
+                var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
+
+                if (joinSource != null)
+                    return GetQuerySource(joinSource.InnerSequence) ?? joinSource;
+
+                throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
+            }
+
+            var memberExpr = expression as MemberExpression;
+
+            if (memberExpr != null)
+                return GetQuerySource(memberExpr.Expression);
+
+            return null;
         }
     }
 }

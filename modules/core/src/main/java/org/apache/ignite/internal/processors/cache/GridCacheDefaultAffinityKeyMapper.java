@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Default key affinity mapper. If key class has annotation {@link AffinityKeyMapped},
@@ -117,6 +118,24 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
         }
 
         return key;
+    }
+
+    /**
+     * @param cls Key class.
+     * @return Name of
+     */
+    @Nullable public String affinityKeyPropertyName(Class<?> cls) {
+        Field field = reflectCache.firstField(cls);
+
+        if (field != null)
+            return field.getName();
+
+        Method mtd = reflectCache.firstMethod(cls);
+
+        if (mtd != null)
+            return mtd.getName();
+
+        return null;
     }
 
     /**

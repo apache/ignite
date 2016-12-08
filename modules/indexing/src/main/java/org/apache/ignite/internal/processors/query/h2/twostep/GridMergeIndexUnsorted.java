@@ -25,6 +25,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
@@ -73,7 +75,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
-        return new IteratorCursor(fetched.iterator());
+        return new GridH2Cursor(fetched.iterator());
     }
 
     /** {@inheritDoc} */
@@ -112,7 +114,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
             }
 
             @Override public Row next() {
-                return new Row(iter.next(), 0);
+                return GridH2RowFactory.create(iter.next());
             }
 
             @Override public void remove() {

@@ -107,7 +107,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         log = ctx.kernalContext().log(HadoopExternalTaskExecutor.class);
 
-        outputBase = U.resolveWorkDirectory("hadoop", false);
+        outputBase = U.resolveWorkDirectory(ctx.kernalContext().config().getWorkDirectory(), "hadoop", false);
 
         pathSep = System.getProperty("path.separator", U.isWindows() ? ";" : ":");
 
@@ -119,7 +119,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             new JdkMarshaller(),
             log,
             ctx.kernalContext().getSystemExecutorService(),
-            ctx.kernalContext().gridName());
+            ctx.kernalContext().gridName(),
+            ctx.kernalContext().config().getWorkDirectory());
 
         comm.setListener(new MessageListener());
 
@@ -383,7 +384,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                         log.debug("Created hadoop child process metadata for job [job=" + job +
                             ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
 
-                    Process proc = startJavaProcess(childProcId, startMeta, job);
+                    Process proc = startJavaProcess(childProcId, startMeta, job,
+                        ctx.kernalContext().config().getWorkDirectory());
 
                     BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
@@ -521,11 +523,12 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param childProcId Child process ID.
      * @param startMeta Metadata.
      * @param job Job.
+     * @param igniteWorkDir Work directory.
      * @return Started process.
      * @throws Exception If failed.
      */
     private Process startJavaProcess(UUID childProcId, HadoopExternalTaskMetadata startMeta,
-        HadoopJob job) throws Exception {
+        HadoopJob job, String igniteWorkDir) throws Exception {
         String outFldr = jobWorkFolder(job.id()) + File.separator + childProcId;
 
         if (log.isDebugEnabled())
@@ -533,7 +536,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         List<String> cmd = new ArrayList<>();
 
-        File workDir = U.resolveWorkDirectory("", false);
+        File workDir = U.resolveWorkDirectory(igniteWorkDir, "", false);
 
         cmd.add(javaCmd);
         cmd.addAll(startMeta.jvmOptions());

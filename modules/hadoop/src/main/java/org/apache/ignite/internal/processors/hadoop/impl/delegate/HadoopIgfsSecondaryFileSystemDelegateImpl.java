@@ -56,7 +56,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,7 +85,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         if (factory0 == null)
             factory0 = new CachingHadoopFileSystemFactory();
 
-        factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
+        factory = HadoopDelegateUtils.fileSystemFactoryDelegate(getClass().getClassLoader(), factory0);
     }
 
     /** {@inheritDoc} */
@@ -250,8 +249,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        HadoopIgfsProperties props0 =
-            new HadoopIgfsProperties(props != null ? props : Collections.<String, String>emptyMap());
+        HadoopIgfsProperties props0 = new HadoopIgfsProperties(props);
 
         try {
             return fileSystemForUser().create(convert(path), props0.permission(), overwrite, bufSize,

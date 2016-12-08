@@ -25,7 +25,7 @@ import org.apache.spark.{TaskContext, Partition}
 import scala.reflect.ClassTag
 
 class IgniteSqlRDD[R: ClassTag, T, K, V](
-    ic: IgniteContext[K, V],
+    ic: IgniteContext,
     cacheName: String,
     cacheCfg: CacheConfiguration[K, V],
     qry: Query[T],

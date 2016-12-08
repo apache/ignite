@@ -299,7 +299,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
 
         try {
-            dir = U.resolveWorkDirectory(path, true);
+            dir = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), path, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e);
@@ -333,12 +333,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
     /** {@inheritDoc} */
     @Override public void clear(@Nullable String spaceName) throws IgniteSpiException {
-        Space space = space(spaceName, false);
-
-        if (space == null)
-            return;
-
-        space.clear();
+        destruct(spaceName);
 
         notifyListener(EVT_SWAP_SPACE_CLEARED, spaceName);
     }
@@ -596,7 +591,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         if (keyBytes == null) {
             try {
-                keyBytes = ignite.configuration().getMarshaller().marshal(key.key());
+                keyBytes = U.marshal(ignite.configuration().getMarshaller(), key.key());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal key: " + key.key(), e);
@@ -630,7 +625,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
     @Nullable private Space space(@Nullable String name, boolean create) throws IgniteSpiException {
-        String masked = name != null ? name : DFLT_SPACE_NAME;
+        String masked = maskNull(name);
 
         assert masked != null;
 
@@ -649,6 +644,36 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             space.initialize();
 
         return space;
+    }
+
+    /**
+     * Destructs space.
+     *
+     * @param spaceName space name.
+     * */
+    private void destruct(@Nullable String spaceName) {
+        String masked = maskNull(spaceName);
+
+        Space space = spaces.remove(masked);
+
+        if (space != null) {
+            try {
+                space.stop();
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                U.error(log, "Interrupted.", e);
+            }
+        }
+    }
+
+    /**
+     * Masks null space name with default space name.
+     *
+     * @param spaceName Space name.
+     * @return Space name or default space name if space name is null.
+     * */
+    private static String maskNull(String spaceName) {
+        return spaceName != null ? spaceName : DFLT_SPACE_NAME;
     }
 
     /**
@@ -1620,18 +1645,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             }
 
             return cnt;
-        }
-
-        /**
-         * Clears space.
-         *
-         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
-         */
-        public void clear() throws IgniteSpiException {
-            Iterator<Map.Entry<SwapKey, byte[]>> iter = entriesIterator();
-
-            while (iter.hasNext())
-                remove(iter.next().getKey(), false);
         }
 
         /**

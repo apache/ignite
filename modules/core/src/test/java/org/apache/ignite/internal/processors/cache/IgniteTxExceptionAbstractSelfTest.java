@@ -106,7 +106,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        failIndexingSpi(false);
+        TestIndexingSpi.forceFail(false);
 
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
@@ -319,7 +319,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (putBefore) {
-            failIndexingSpi(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Start transaction.");
 
@@ -342,7 +342,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        failIndexingSpi(true);
+        TestIndexingSpi.forceFail(true);
 
         try {
             info("Start transaction.");
@@ -378,7 +378,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     @SuppressWarnings("unchecked")
     private void checkUnlocked(final Integer key) throws Exception {
-        failIndexingSpi(false);
+        TestIndexingSpi.forceFail(false);
 
         awaitPartitionMapExchange();
 
@@ -446,7 +446,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPut(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            failIndexingSpi(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -457,7 +457,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        failIndexingSpi(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to put: " + key);
 
@@ -479,7 +479,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            failIndexingSpi(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -490,7 +490,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        failIndexingSpi(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to transform: " + key);
 
@@ -522,7 +522,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         assert keys.length > 1;
 
         if (putBefore) {
-            failIndexingSpi(false);
+            TestIndexingSpi.forceFail(false);
 
             Map<Integer, Integer> m = new HashMap<>();
 
@@ -540,7 +540,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        failIndexingSpi(true);
+        TestIndexingSpi.forceFail(true);
 
         final Map<Integer, Integer> m = new HashMap<>();
 
@@ -568,7 +568,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            failIndexingSpi(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -579,7 +579,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        failIndexingSpi(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to remove: " + key);
 
@@ -651,30 +651,17 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     }
 
     /**
-     * Controls indexing SPI behavior.
-     *
-     * @param fail fail the SPI or not.
-     */
-    private void failIndexingSpi(boolean fail) {
-        for (Ignite ignite : Ignition.allGrids()) {
-            TestIndexingSpi idxSpi = (TestIndexingSpi)ignite.configuration().getIndexingSpi();
-
-            idxSpi.forceFail(fail);
-        }
-    }
-
-    /**
      * Indexing SPI that can fail on demand.
      */
     private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Fail flag. */
-        private volatile boolean fail;
+        private static volatile boolean fail;
 
         /**
-         * @param fail Fail flag.
+         * @param failFlag Fail flag.
          */
-        public void forceFail(boolean fail) {
-            this.fail = fail;
+        public static void forceFail(boolean failFlag) {
+            fail = failFlag;
         }
 
         /** {@inheritDoc} */

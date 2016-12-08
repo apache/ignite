@@ -37,7 +37,6 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -185,7 +184,8 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         fac.setConfigPaths(primaryConfFullPath);
         fac.setUri(primaryFsUriStr);
 
-        HadoopFileSystemFactoryDelegate facDelegate = HadoopDelegateUtils.fileSystemFactoryDelegate(fac);
+        HadoopFileSystemFactoryDelegate facDelegate = HadoopDelegateUtils.fileSystemFactoryDelegate(
+            getClass().getClassLoader(), fac);
 
         facDelegate.start();
 
@@ -579,5 +579,17 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      */
     static String mkUri(String scheme, String authority) {
         return scheme + "://" + authority + "/";
+    }
+
+    /**
+     * Makes URI.
+     *
+     * @param scheme the scheme
+     * @param authority the authority
+     * @param path Path part of URI.
+     * @return URI String
+     */
+    static String mkUri(String scheme, String authority, String path) {
+        return scheme + "://" + authority + "/" + path;
     }
 }

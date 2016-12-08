@@ -995,7 +995,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 break;
 
             if (ctx.config().isWaitForSegmentOnStart()) {
-                LT.warn(log, null, "Failed to check network segment (retrying every 2000 ms).");
+                LT.warn(log, "Failed to check network segment (retrying every 2000 ms).");
 
                 // Wait and check again.
                 U.sleep(2000);
@@ -2228,7 +2228,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (log.isInfoEnabled())
                         log.info("Client node reconnected to topology: " + node);
 
-                    ackTopology(topVer.topologyVersion(), true);
+                    if (!isLocDaemon)
+                        ackTopology(topVer.topologyVersion(), true);
 
                     break;
                 }

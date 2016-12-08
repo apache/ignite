@@ -213,7 +213,8 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
         // Ignite instance can be null here because service processor invokes "cleanup" on resource manager.
-        platformCtx = ignite != null ? PlatformUtils.platformContext(ignite) : null;
+        if (ignite != null && platformCtx == null)
+            platformCtx = PlatformUtils.platformContext(ignite);
     }
 
     /** {@inheritDoc} */

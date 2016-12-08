@@ -61,6 +61,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** Flag to control amount of output for full map. */
     private static final boolean FULL_MAP_DEBUG = false;
 
+    /** */
+    private static final Long ZERO = 0L;
+
     /** Cache shared context. */
     private GridCacheSharedContext cctx;
 
@@ -97,18 +100,24 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** Partition update counters. */
     private Map<Integer, Long> cntrMap = new HashMap<>();
 
+    /** */
+    private final Object similarAffKey;
+
     /**
      * @param cctx Context.
      * @param cacheId Cache ID.
      * @param exchFut Exchange ID.
+     * @param similarAffKey Key to find caches with similar affinity.
      */
     public GridClientPartitionTopology(
         GridCacheSharedContext cctx,
         int cacheId,
-        GridDhtPartitionsExchangeFuture exchFut
+        GridDhtPartitionsExchangeFuture exchFut,
+        Object similarAffKey
     ) {
         this.cctx = cctx;
         this.cacheId = cacheId;
+        this.similarAffKey = similarAffKey;
 
         topVer = exchFut.topologyVersion();
 
@@ -122,6 +131,13 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /**
+     * @return Key to find caches with similar affinity.
+     */
+    @Nullable public Object similarAffinityKey() {
+        return similarAffKey;
     }
 
     /**
@@ -873,11 +889,22 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Long> updateCounters() {
+    @Override public Map<Integer, Long> updateCounters(boolean skipZeros) {
         lock.readLock().lock();
 
         try {
-            return new HashMap<>(cntrMap);
+            if (skipZeros) {
+                Map<Integer, Long> res = U.newHashMap(cntrMap.size());
+
+                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
+                    if (!e.getValue().equals(ZERO))
+                        res.put(e.getKey(), e.getValue());
+                }
+
+                return res;
+            }
+            else
+                return new HashMap<>(cntrMap);
         }
         finally {
             lock.readLock().unlock();
