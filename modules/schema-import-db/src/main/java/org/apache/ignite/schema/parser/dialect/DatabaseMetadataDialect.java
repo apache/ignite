@@ -18,6 +18,7 @@
 package org.apache.ignite.schema.parser.dialect;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,6 +61,14 @@ public abstract class DatabaseMetadataDialect {
      */
     public Set<String> systemSchemas() {
         return Collections.singleton("INFORMATION_SCHEMA");
+    }
+
+    /**
+     * @return Collection of unsigned type names.
+     * @throws SQLException If failed to get unsigned type names.
+     */
+    public Set<String> unsignedTypes(DatabaseMetaData dbMeta) throws SQLException {
+        return Collections.emptySet();
     }
 
     /**

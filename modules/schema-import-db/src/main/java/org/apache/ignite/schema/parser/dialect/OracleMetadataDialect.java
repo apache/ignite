@@ -258,8 +258,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
      * @return Indexes.
      * @throws SQLException If failed to retrieve indexes columns.
      */
-    private Collection<QueryIndex> indexes(PreparedStatement stmt, String owner, String tbl)
-        throws SQLException {
+    private Collection<QueryIndex> indexes(PreparedStatement stmt, String owner, String tbl) throws SQLException {
         Map<String, QueryIndex> idxs = new LinkedHashMap<>();
 
         stmt.setString(1, owner);
@@ -347,7 +346,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                         String colName = colsRs.getString(COL_NAME_IDX);
 
                         cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
-                                !"N".equals(colsRs.getString(NULLABLE_IDX))));
+                            !"N".equals(colsRs.getString(NULLABLE_IDX)), false));
                     }
 
                     if (!cols.isEmpty())

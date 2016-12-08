@@ -56,20 +56,14 @@ namespace ignite
         void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str)
         {
             int32_t strLen = reader.ReadString(0, 0);
-            if (!strLen)
-            {
-                str.clear();
-
-                char dummy;
-
-                reader.ReadString(&dummy, sizeof(dummy));
-            }
-            else
+            if (strLen > 0)
             {
                 str.resize(strLen);
 
                 reader.ReadString(&str[0], static_cast<int32_t>(str.size()));
             }
+            else
+                str.clear();
         }
 
         void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string & str)
@@ -131,10 +125,24 @@ namespace ignite
 
             if (sqlStrLen == SQL_NTS)
                 res.assign(sqlStrC);
-            else
+            else if (sqlStrLen > 0)
                 res.assign(sqlStrC, sqlStrLen);
 
             return res;
+        }
+
+        void ReadByteArray(impl::binary::BinaryReaderImpl& reader, std::vector<int8_t>& res)
+        {
+            int32_t len = reader.ReadInt8Array(0, 0);
+
+            if (len > 0)
+            {
+                res.resize(len);
+
+                reader.ReadInt8Array(&res[0], static_cast<int32_t>(res.size()));
+            }
+            else
+                res.clear();
         }
     }
 }

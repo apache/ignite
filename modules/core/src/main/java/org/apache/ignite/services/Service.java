@@ -53,21 +53,21 @@ import java.io.Serializable;
  * Consecutively, this service can be deployed as follows:
  * <pre name="code" class="java">
  * ...
- * GridServices svcs = grid.services();
+ * IgniteServices svcs = ignite.services();
  *
- * svcs.deployClusterSingleton("mySingleton", new MyGridService());
+ * svcs.deployClusterSingleton("mySingleton", new MyIgniteService());
  * </pre>
  * Or from grid configuration on startup:
  * <pre name="code" class="java">
  * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
- * GridServiceConfiguration svcCfg = new GridServiceConfiguration();
+ * IgniteServiceConfiguration svcCfg = new IgniteServiceConfiguration();
  *
  * // Configuration for cluster-singleton service.
  * svcCfg.setName("mySingleton");
  * svcCfg.setMaxPerNodeCount(1);
  * svcCfg.setTotalCount(1);
- * svcCfg.setService(new MyGridService());
+ * svcCfg.setService(new MyIgniteService());
  *
  * gridCfg.setServiceConfiguration(svcCfg);
  * ...
@@ -88,7 +88,7 @@ public interface Service extends Serializable {
      * {@code cancel} methods on {@link org.apache.ignite.IgniteServices} API are called.
      * <p>
      * Note that Ignite cannot guarantee that the service exits from {@link #execute(ServiceContext)}
-     * method whenever {@code cancel(GridServiceContext)} method is called. It is up to the user to
+     * method whenever {@code cancel(ServiceContext)} method is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      *
      * @param ctx Service execution context.

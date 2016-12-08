@@ -157,7 +157,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
-            IgfsPath path = new IgfsPath();
+            IgfsPath path = IgfsPath.ROOT;
 
             long t = System.currentTimeMillis();
 
@@ -243,7 +243,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int blockSize = IGFS_BLOCK_SIZE;
 
         for (int i = 0; i < 10; i++) {
-            IgfsPath path = new IgfsPath();
+            IgfsPath path = IgfsPath.ROOT;
 
             long t = System.currentTimeMillis();
 
@@ -335,7 +335,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int writesCnt = 64;
 
         for (int i = 0; i < 10; i++) {
-            IgfsPath path = new IgfsPath();
+            IgfsPath path = IgfsPath.ROOT;
 
             long t = System.currentTimeMillis();
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -358,6 +359,18 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
     }
 
+    /**
+     * Check IGFS property equality on local and remote nodes.
+     *
+     * @param name Property human readable name.
+     * @param propName Property name/
+     * @param rmtNodeId Remote node ID.
+     * @param rmtVal Remote value.
+     * @param locVal Local value.
+     * @param igfsName IGFS name.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String igfsName)
         throws IgniteCheckedException {
         if (!F.eq(rmtVal, locVal))

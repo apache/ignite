@@ -116,6 +116,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -170,6 +171,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void startSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -380,6 +382,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
     public void testBlockMetrics() throws Exception {
         IgfsEx igfs = (IgfsEx)igfsPrimary[0];
 
@@ -420,7 +423,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 3, 0, blockSize * 3);
 
         // Read data from the first file.
-        IgfsInputStreamAdapter is = igfs.open(file1);
+        IgfsInputStream is = igfs.open(file1);
         is.readFully(0, new byte[blockSize * 2]);
         is.close();
 
@@ -428,7 +431,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         // Read data from the second file with hits.
         is = igfs.open(file2);
-        is.readChunks(0, blockSize);
+        is.read(new byte[blockSize]);
         is.close();
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, 0, blockSize * 3);
@@ -445,7 +448,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         // Read remote file.
         is = igfs.open(fileRemote);
-        is.readChunks(0, rmtBlockSize);
+        is.read(new byte[rmtBlockSize]);
         is.close();
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 4, 1, blockSize * 3 + rmtBlockSize, 3, 0, blockSize * 3);
@@ -455,7 +458,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         // Read remote file again.
         is = igfs.open(fileRemote);
-        is.readChunks(0, rmtBlockSize);
+        is.read(new byte[rmtBlockSize]);
         is.close();
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 3, 0, blockSize * 3);
@@ -489,16 +492,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         os.close();
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 5, 1,
-            blockSize * 7 / 2 + rmtBlockSize);
-
-        // Now read partial block.
-        // Read remote file again.
-        is = igfs.open(file1);
-        is.seek(blockSize * 2);
-        is.readChunks(0, blockSize / 2);
-        is.close();
-
-        checkBlockMetrics(initMetrics, igfs.metrics(), 6, 1, blockSize * 7 / 2 + rmtBlockSize * 2, 5, 1,
             blockSize * 7 / 2 + rmtBlockSize);
 
         igfs.resetMetrics();

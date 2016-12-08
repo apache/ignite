@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -158,6 +160,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** Metadata updates collected before metadata cache is initialized. */
     private final Map<Integer, BinaryMetadata> metaBuf = new ConcurrentHashMap<>();
+
+    /** Cached affinity key field names. */
+    private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -692,22 +697,43 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Affinity key.
      */
     public Object affinityKey(BinaryObject po) {
+        // Fast path for already cached field.
+        if (po instanceof BinaryObjectEx) {
+            int typeId = ((BinaryObjectEx)po).typeId();
+
+            T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
+
+            if (fieldHolder != null) {
+                BinaryField field = fieldHolder.get();
+
+                return field != null ? field.value(po) : po;
+            }
+        }
+
+        // Slow path if affinity field is not cached yet.
         try {
             BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
 
             if (meta != null) {
-                String affKeyFieldName = meta.affinityKeyFieldName();
+                String name = meta.affinityKeyFieldName();
 
-                if (affKeyFieldName != null)
-                    return po.field(affKeyFieldName);
+                if (name != null) {
+                    BinaryField field = meta.field(name);
+
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
+
+                    return field.value(po);
+                }
+                else
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
             }
             else if (po instanceof BinaryObjectEx) {
-                int id = ((BinaryObjectEx)po).typeId();
+                int typeId = ((BinaryObjectEx)po).typeId();
 
-                String affKeyFieldName = binaryCtx.affinityKeyFieldName(id);
+                String name = binaryCtx.affinityKeyFieldName(typeId);
 
-                if (affKeyFieldName != null)
-                    return po.field(affKeyFieldName);
+                if (name != null)
+                    return po.field(name);
             }
         }
         catch (BinaryObjectException e) {

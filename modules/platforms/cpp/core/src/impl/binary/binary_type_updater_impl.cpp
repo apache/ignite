@@ -34,24 +34,25 @@ namespace ignite
         namespace binary
         {
             /** Operation: metadata update. */
-            const int32_t OP_METADATA = -1;
+            const int32_t OP_PUT_META = 3;
 
-            BinaryTypeUpdaterImpl::BinaryTypeUpdaterImpl(SharedPointer<IgniteEnvironment> env,
-                jobject javaRef) :  env(env), javaRef(javaRef)
+            BinaryTypeUpdaterImpl::BinaryTypeUpdaterImpl(IgniteEnvironment& env, jobject javaRef) :
+                env(env),
+                javaRef(javaRef)
             {
                 // No-op.
             }
 
             BinaryTypeUpdaterImpl::~BinaryTypeUpdaterImpl()
             {
-                // No-op.
+                JniContext::Release(javaRef);
             }
 
             bool BinaryTypeUpdaterImpl::Update(Snap* snap, IgniteError* err)
             {
                 JniErrorInfo jniErr;
 
-                SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
+                SharedPointer<InteropMemory> mem = env.AllocateMemory();
 
                 InteropOutputStream out(mem.Get());
                 BinaryWriterImpl writer(&out, NULL);
@@ -85,7 +86,7 @@ namespace ignite
 
                 out.Synchronize();
 
-                long long res = env.Get()->Context()->TargetInStreamOutLong(javaRef, OP_METADATA, mem.Get()->PointerLong(), &jniErr);
+                long long res = env.Context()->TargetInStreamOutLong(javaRef, OP_PUT_META, mem.Get()->PointerLong(), &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 

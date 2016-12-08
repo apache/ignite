@@ -370,7 +370,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-                byte[] nodeHashBytes = ignite.configuration().getMarshaller().marshal(nodeHash);
+                byte[] nodeHashBytes = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
 
                 out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
                 out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
@@ -440,7 +440,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             }
 
             if (!exclNeighborsWarn) {
-                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
                     "because topology has no enough nodes to assign backups.");
 
                 exclNeighborsWarn = true;

@@ -27,14 +27,17 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
     -I@top_srcdir@/binary/include \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
     -std=c++0x
 
 libignite_odbc_la_LIBADD = \
-    @top_srcdir@/binary/libignite-binary.la
+    @top_srcdir@/binary/libignite-binary.la \
+    -lodbcinst
 
 libignite_odbc_la_LDFLAGS = \
     -no-undefined \
@@ -62,6 +65,7 @@ libignite_odbc_la_SOURCES = \
     src/meta/table_meta.cpp \
     src/odbc.cpp \
     src/entry_points.cpp \
+    src/dsn_config.cpp \
     src/query/column_metadata_query.cpp \
     src/query/data_query.cpp \
     src/query/foreign_keys_query.cpp \

@@ -1,0 +1,7 @@
+build/frontend/build
+build/frontend/node_modules
+build/frontend/ignite_modules_temp
+build/frontend/test
+build/backend/config/*.json
+build/backend/node_modules
+build/backend/test
