@@ -46,8 +46,11 @@ public class HadoopTaskInfo implements Externalizable {
     /** */
     private HadoopInputSplit inputSplit;
 
+    /** Whether mapper index is set. */
+    private boolean mapperIdxSet;
+
     /** Current mapper index. */
-    private Integer mapperIdx;
+    private int mapperIdx;
 
     /**
      * For {@link Externalizable}.
@@ -82,7 +85,7 @@ public class HadoopTaskInfo implements Externalizable {
         out.writeInt(attempt);
         out.writeObject(inputSplit);
 
-        if (mapperIdx != null) {
+        if (mapperIdxSet) {
             out.writeBoolean(true);
             out.writeInt(mapperIdx);
         }
@@ -98,8 +101,12 @@ public class HadoopTaskInfo implements Externalizable {
         attempt = in.readInt();
         inputSplit = (HadoopInputSplit)in.readObject();
 
-        if (in.readBoolean())
+        if (in.readBoolean()) {
+            mapperIdxSet = true;
             mapperIdx = in.readInt();
+        }
+        else
+            mapperIdxSet = false;
     }
 
     /**
@@ -135,13 +142,22 @@ public class HadoopTaskInfo implements Externalizable {
      */
     public void mapperIndex(int mapperIdx) {
         this.mapperIdx = mapperIdx;
+
+        mapperIdxSet = true;
     }
 
     /**
-     * @return Current mepper intex.
+     * @return Current mapper index or {@code null}
      */
-    @Nullable public Integer mapperIndex() {
+    public int mapperIndex() {
         return mapperIdx;
+    }
+
+    /**
+     * @return {@code True} if mapped index is set.
+     */
+    public boolean hasMapperIndex() {
+        return mapperIdxSet;
     }
 
     /**

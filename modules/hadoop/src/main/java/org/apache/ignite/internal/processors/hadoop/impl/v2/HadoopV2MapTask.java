@@ -28,8 +28,8 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleJob;
 
 /**
  * Hadoop map task implementation for v2 API.
@@ -50,7 +50,10 @@ public class HadoopV2MapTask extends HadoopV2Task {
 
         JobContextImpl jobCtx = taskCtx.jobContext();
 
-        HadoopShuffleJob.mapperIndex(taskCtx.taskInfo().mapperIndex());
+        if (taskCtx.taskInfo().hasMapperIndex())
+            HadoopMapperUtils.mapperIndex(taskCtx.taskInfo().mapperIndex());
+        else
+            HadoopMapperUtils.clearMapperIndex();
 
         try {
             InputSplit nativeSplit = hadoopContext().getInputSplit();
@@ -103,7 +106,7 @@ public class HadoopV2MapTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
-            HadoopShuffleJob.mapperIndex(null);
+            HadoopMapperUtils.clearMapperIndex();
 
             if (err != null)
                 abort(outputFormat);

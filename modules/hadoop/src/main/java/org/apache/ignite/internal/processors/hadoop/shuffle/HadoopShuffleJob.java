@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -73,28 +74,6 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  * Shuffle job.
  */
 public class HadoopShuffleJob<T> implements AutoCloseable {
-    /** Thread-local mapper index. */
-    private static final ThreadLocal<Integer> MAP_IDX = new ThreadLocal<>();
-
-    /**
-     * @return Current mapper index.
-     */
-    public static int mapperIndex() {
-        Integer res = MAP_IDX.get();
-
-        return res != null ? res : -1;
-    }
-
-    /**
-     * @param idx Current mapper index.
-     */
-    public static void mapperIndex(Integer idx) {
-        if (idx == null)
-            MAP_IDX.remove();
-
-        MAP_IDX.set(idx);
-    }
-
     /** */
     private static final int DFLT_SHUFFLE_MSG_SIZE = 128 * 1024;
 
@@ -974,7 +953,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
             else {
                 if (stripeMappers) {
-                    int mapperIdx = mapperIndex();
+                    int mapperIdx = HadoopMapperUtils.mapperIndex();
 
                     assert mapperIdx >= 0;
 
@@ -1011,7 +990,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
          */
         public void flushStripedMapper() throws IgniteCheckedException {
             if (stripeMappers) {
-                int mapperIdx = mapperIndex();
+                int mapperIdx = HadoopMapperUtils.mapperIndex();
 
                 assert mapperIdx >= 0;
 
