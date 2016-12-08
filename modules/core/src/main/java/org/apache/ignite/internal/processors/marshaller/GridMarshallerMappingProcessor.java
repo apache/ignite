@@ -38,6 +38,8 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridD
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
 
@@ -90,9 +92,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
-                cancelFutures(new MappingExchangeResult(null, new IgniteCheckedException("Topology segmented")));
+                cancelFutures(new MappingExchangeResult(null, new IgniteCheckedException("Node left topology normally or abnormally")));
             }
-        }, EVT_NODE_SEGMENTED);
+        }, EVT_NODE_LEFT, EVT_NODE_SEGMENTED, EVT_NODE_FAILED);
     }
 
     /**
@@ -239,12 +241,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
+        cancelFutures(new MappingExchangeResult(null, new IgniteClientDisconnectedCheckedException(
                 ctx.cluster().clientReconnectFuture(),
-                "Failed to request missed mapping from grid, client node disconnected.");
-
-        for (GridFutureAdapter<MappingExchangeResult> fut : mappingExchangeSyncMap.values())
-            fut.onDone(new MappingExchangeResult(null, err));
+                "Failed to propose or request mapping, client node disconnected.")));
     }
 
     /** {@inheritDoc} */

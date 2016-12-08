@@ -169,7 +169,7 @@ public final class DiscoveryDataContainer implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final UUID DEFAULT_UUID = null;
+    private static final UUID DEFAULT_KEY = null;
 
     /**
      *
@@ -245,10 +245,10 @@ public final class DiscoveryDataContainer implements Serializable {
         if (isJoiningPhase())
             addDataOnJoin(cmpId, data);
         else {
-            if (!unmarshNodeSpecData.containsKey(DEFAULT_UUID))
-                unmarshNodeSpecData.put(DEFAULT_UUID, new HashMap<Integer, Serializable>());
+            if (!unmarshNodeSpecData.containsKey(DEFAULT_KEY))
+                unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
 
-            unmarshNodeSpecData.get(DEFAULT_UUID).put(cmpId, data);
+            unmarshNodeSpecData.get(DEFAULT_KEY).put(cmpId, data);
         }
     }
 
@@ -260,10 +260,10 @@ public final class DiscoveryDataContainer implements Serializable {
         if (unmarshNodeSpecData == null)
             unmarshNodeSpecData = new HashMap<>();
 
-        if (!unmarshNodeSpecData.containsKey(DEFAULT_UUID))
-            unmarshNodeSpecData.put(DEFAULT_UUID, new HashMap<Integer, Serializable>());
+        if (!unmarshNodeSpecData.containsKey(DEFAULT_KEY))
+            unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
 
-        unmarshNodeSpecData.get(DEFAULT_UUID).put(cmpId, data);
+        unmarshNodeSpecData.get(DEFAULT_KEY).put(cmpId, data);
     }
 
     /**
@@ -294,20 +294,27 @@ public final class DiscoveryDataContainer implements Serializable {
      */
     public void marshalGridData(UUID nodeId, Marshaller marsh, IgniteLogger log) {
         if (phase == DiscoveryPhase.JOINING_NODE_DATA_COLLECTION) {
-            Map<Integer, Serializable> joiningNodeData = unmarshNodeSpecData.get(DEFAULT_UUID);
+            if (unmarshNodeSpecData == null)
+                return;
+
+            Map<Integer, Serializable> joiningNodeData = unmarshNodeSpecData.get(DEFAULT_KEY);
 
             if (joiningNodeData == null || joiningNodeData.isEmpty())
                 return;
 
             joiningNodeDiscoData = U.newHashMap(joiningNodeData.size());
             marshalFromTo(joiningNodeData, joiningNodeDiscoData, marsh, log);
-        } else {
+        }
+        else {
             marshalFromTo(unmarshCmnData, commonDiscoData, marsh, log);
 
-            if (unmarshNodeSpecData.containsKey(DEFAULT_UUID)) {
+            if (unmarshNodeSpecData == null)
+                return;
+
+            if (unmarshNodeSpecData.containsKey(DEFAULT_KEY)) {
                 Map<Integer, byte[]> marshalledNodeSpecData = U.newHashMap(unmarshNodeSpecData.size());
                 nodeSpecificDiscoData.put(nodeId, marshalledNodeSpecData);
-                marshalFromTo(unmarshNodeSpecData.get(DEFAULT_UUID), marshalledNodeSpecData, marsh, log);
+                marshalFromTo(unmarshNodeSpecData.get(DEFAULT_KEY), marshalledNodeSpecData, marsh, log);
             }
         }
 
