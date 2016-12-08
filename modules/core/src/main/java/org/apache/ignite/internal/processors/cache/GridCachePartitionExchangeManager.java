@@ -712,9 +712,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *
      * @param exchFut Exchange future.
      */
-    public void forcePreloadExchange(GridDhtPartitionsExchangeFuture exchFut) {
+    public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionsExchangeFuture exchFut) {
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
         exchWorker.addFuture(
-            new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId()));
+            new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId(), fut));
+
+        return fut;
     }
 
     /**
@@ -1586,7 +1590,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 Callable<Boolean> r = cacheCtx.preloader().addAssignments(assignsMap.get(cacheId),
                                     forcePreload,
                                     waitList,
-                                    cnt);
+                                    cnt,
+                                    exchFut.forcedRebalanceFuture());
 
                                 if (r != null) {
                                     U.log(log, "Cache rebalancing scheduled: [cache=" + cacheCtx.name() +

@@ -203,6 +203,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
 
+    /** Forced Rebalance future. */
+    private GridFutureAdapter<Boolean> forcedRebFut;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -238,15 +241,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param cctx Cache context.
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
+     * @param forcedRebFut Forced Rebalance future.
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext cctx, DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId) {
+        GridDhtPartitionExchangeId exchId, GridFutureAdapter<Boolean> forcedRebFut) {
         dummy = false;
         forcePreload = true;
 
         this.exchId = exchId;
         this.discoEvt = discoEvt;
         this.cctx = cctx;
+        this.forcedRebFut = forcedRebFut;
 
         log = cctx.logger(getClass());
 
@@ -420,6 +425,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
+    }
+
+    /**
+     * @return Forced Rebalance future.
+     */
+    @Nullable public GridFutureAdapter<Boolean> forcedRebalanceFuture() {
+        return forcedRebFut;
     }
 
     /**
