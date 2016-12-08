@@ -2117,10 +2117,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         private Map<UUID, Map<Integer, byte[]>> obtainViaReflection(DiscoveryDataContainer discoData) {
+            if (discoData == null)
+                return null;
 
             Map<UUID, Map<Integer, byte[]>> res = null;
             try {
                 Field f = DiscoveryDataContainer.class.getDeclaredField("nodeSpecificDiscoData");
+                f.setAccessible(true);
                 res = (Map<UUID, Map<Integer, byte[]>>) f.get(discoData);
             } catch (NoSuchFieldException ignored) {
                 // No-op.
@@ -2139,9 +2142,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (discoData != null && discoData.size() > 1) {
                 int cnt = 0;
 
-                for (Map.Entry<UUID, Map<Integer, byte[]>> e : discoData.entrySet()) {
-                    Map<Integer, byte[]> map = e.getValue();
-
+                for (Map<Integer, byte[]> map : discoData.values()) {
                     if (map.containsKey(GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()))
                         cnt++;
                 }

@@ -1918,6 +1918,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         batch.clientNodes(clientNodesMap);
         batch.clientReconnect(reconnect);
+
         // Reset random batch ID so that serialized batches with the same descriptors will be exactly the same.
         batch.id(null);
 
@@ -1939,11 +1940,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
-                req.startCacheConfiguration(desc.cacheConfiguration());
-                req.template(true);
-                reqs.add(req);
-            }
+            req.startCacheConfiguration(desc.cacheConfiguration());
+            req.template(true);
+            reqs.add(req);
         }
+    }
 
     private void collectDataOnReconnectingNode(Collection<DynamicCacheChangeRequest> reqs, Map<String, Map<UUID, Boolean>> clientNodesMap, UUID nodeId) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {

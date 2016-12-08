@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -313,13 +314,38 @@ public final class DiscoveryDataContainer implements Serializable {
 
             if (unmarshNodeSpecData.containsKey(DEFAULT_KEY)) {
                 Map<Integer, byte[]> marshalledNodeSpecData = U.newHashMap(unmarshNodeSpecData.size());
-                nodeSpecificDiscoData.put(nodeId, marshalledNodeSpecData);
                 marshalFromTo(unmarshNodeSpecData.get(DEFAULT_KEY), marshalledNodeSpecData, marsh, log);
+
+                filterDuplicatedData(marshalledNodeSpecData);
+
+                if (!marshalledNodeSpecData.isEmpty())
+                    nodeSpecificDiscoData.put(nodeId, marshalledNodeSpecData);
             }
         }
 
         unmarshCmnData = null;
         unmarshNodeSpecData = null;
+    }
+
+    /**
+     * //TODO this filtering method is just a quick adaptation of functionality implemented earlier in main development line. It should be removed and replaced with using gridCommonData for components that need it.
+     */
+    private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
+        for (Map<Integer, byte[]> existingData : nodeSpecificDiscoData.values()) {
+            Iterator<Map.Entry<Integer, byte[]>> it = discoData.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<Integer, byte[]> discoDataEntry = it.next();
+
+                byte[] curData = existingData.get(discoDataEntry.getKey());
+
+                if (Arrays.equals(curData, discoDataEntry.getValue()))
+                    it.remove();
+            }
+
+            if (discoData.isEmpty())
+                break;
+        }
     }
 
     /**
