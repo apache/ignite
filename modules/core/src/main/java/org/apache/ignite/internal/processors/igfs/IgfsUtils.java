@@ -568,9 +568,6 @@ public class IgfsUtils {
             if (GridQueryProcessor.isEnabled(dataCacheCfg))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
-            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName());
-
             if (metaCacheCfg == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
 
