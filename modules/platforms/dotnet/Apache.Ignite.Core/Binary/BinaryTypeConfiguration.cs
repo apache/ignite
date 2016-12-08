@@ -122,8 +122,7 @@ namespace Apache.Ignite.Core.Binary
         /// Null means legacy behavior: hash code is computed by calling <see cref="object.GetHashCode"/>, equality is
         /// computed by comparing bytes in serialized (binary) form.
         /// <para />
-        /// Only predefined implementations are supported: <see cref="BinaryArrayEqualityComparer"/>
-        /// and <see cref="BinaryFieldEqualityComparer"/>.
+        /// Only predefined implementations are supported: <see cref="BinaryArrayEqualityComparer"/>.
         /// </summary>
         public IEqualityComparer<IBinaryObject> EqualityComparer { get; set; }
 

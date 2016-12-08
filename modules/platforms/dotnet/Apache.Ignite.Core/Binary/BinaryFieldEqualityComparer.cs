@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Binary
     /// <summary>
     /// Uses a set of binary object fields to calculate hash code and check equality.
     /// </summary>
-    public class BinaryFieldEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer
+    internal class BinaryFieldEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryFieldEqualityComparer"/> class.

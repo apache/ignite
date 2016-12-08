@@ -48,7 +48,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         },
                         new BinaryTypeConfiguration(typeof(Key2))
                         {
-                            EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo", "Str")
+                            // TODO: Include other field types
+                            EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
                         }
                     }
                 }
