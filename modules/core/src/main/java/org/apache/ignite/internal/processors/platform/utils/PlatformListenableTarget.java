@@ -15,41 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.cache.query;
+package org.apache.ignite.internal.processors.platform.utils;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
 
 /**
- * Proxy that implements PlatformTarget.
+ * Wraps listenable in a platform target.
  */
-public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
-    private final PlatformContinuousQuery qry;
+public class PlatformListenableTarget extends PlatformAbstractTarget {
+    /** */
+    private static final int OP_CANCEL = 1;
+
+    /** */
+    private static final int OP_IS_CANCELLED = 2;
+
+    /** Wrapped listenable */
+    private final PlatformListenable listenable;
 
     /**
      * Constructor.
      *
      * @param platformCtx Context.
      */
-    public PlatformContinuousQueryProxy(PlatformContext platformCtx, PlatformContinuousQuery qry) {
+    public PlatformListenableTarget(PlatformListenable listenable, PlatformContext platformCtx) {
         super(platformCtx);
 
-        assert qry != null;
+        assert listenable != null;
 
-        this.qry = qry;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
-        return qry.getInitialQueryCursor();
+        this.listenable = listenable;
     }
 
     /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
-        qry.close();
+        switch (type) {
+            case OP_CANCEL:
+                return listenable.cancel() ? TRUE : FALSE;
 
-        return 0;
+            case OP_IS_CANCELLED:
+                return listenable.isCancelled() ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 }

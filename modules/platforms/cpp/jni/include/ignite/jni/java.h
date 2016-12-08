@@ -286,10 +286,6 @@ namespace ignite
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
 
-                jclass c_PlatformListenable;
-                jmethodID m_PlatformListenable_cancel;
-                jmethodID m_PlatformListenable_isCancelled;
-
                 /**
                  * Constructor.
                  */
@@ -464,9 +460,6 @@ namespace ignite
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                bool ListenableCancel(jobject obj);
-                bool ListenableIsCancelled(jobject obj);
 
                 jobject Acquire(jobject obj);
 
