@@ -85,8 +85,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgniteHadoopClientProtocolProvider.clear();
-
         // Add surefire classpath to regular classpath.
         initCp = System.getProperty("java.class.path");
 

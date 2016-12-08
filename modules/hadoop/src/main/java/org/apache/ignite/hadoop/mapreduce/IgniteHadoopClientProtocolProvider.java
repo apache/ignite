@@ -38,6 +38,7 @@ import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.processors.hadoop.impl.proto.HadoopClientProtocol;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 
@@ -50,14 +51,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
     public static final String FRAMEWORK_NAME = "ignite";
 
     /** Clients. */
-    private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
-
-    /**
-     * Clears the map of grid client futures.
-     */
-    public static void clear() {
-        cliMap.clear();
-    }
+    private final ConcurrentHashMap<String, IgniteInternalFuture<T3>> cliMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
@@ -98,7 +92,13 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
 
     /** {@inheritDoc} */
     @Override public void close(ClientProtocol cliProto) throws IOException {
-        // No-op.
+        if (cliProto instanceof HadoopClientProtocol) {
+            T3<GridClient, String, GridFutureAdapter<T3>> t3 = ((HadoopClientProtocol)cliProto).getT3();
+
+            cliMap.remove(t3.get2(), t3.get3());
+
+            t3.get1().close();
+        }
     }
 
     /**
@@ -109,7 +109,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client protocol.
      * @throws IOException If failed.
      */
-    private static ClientProtocol createProtocol(String addr, Configuration conf) throws IOException {
+    private ClientProtocol createProtocol(String addr, Configuration conf) throws IOException {
         return new HadoopClientProtocol(conf, client(addr, Collections.singletonList(addr)));
     }
 
@@ -121,14 +121,15 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client.
      * @throws IOException If failed.
      */
-    private static GridClient client(String clusterName, Collection<String> addrs) throws IOException {
+    private T3<GridClient, String, GridFutureAdapter<T3>> client(final String clusterName,
+        final Collection<String> addrs) throws IOException {
         try {
-            IgniteInternalFuture<GridClient> fut = cliMap.get(clusterName);
+            IgniteInternalFuture<T3> fut = cliMap.get(clusterName);
 
             if (fut == null) {
-                GridFutureAdapter<GridClient> fut0 = new GridFutureAdapter<>();
+                GridFutureAdapter<T3> fut0 = new GridFutureAdapter<>();
 
-                IgniteInternalFuture<GridClient> oldFut = cliMap.putIfAbsent(clusterName, fut0);
+                IgniteInternalFuture<T3> oldFut = cliMap.putIfAbsent(clusterName, fut0);
 
                 if (oldFut != null)
                     return oldFut.get();
@@ -144,9 +145,11 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                     try {
                         GridClient cli = GridClientFactory.start(cliCfg);
 
-                        fut0.onDone(cli);
+                        T3<GridClient, String, GridFutureAdapter<T3>> t3 = new T3<>(cli, clusterName, fut0);
 
-                        return cli;
+                        fut0.onDone(t3);
+
+                        return t3;
                     }
                     catch (GridClientException e) {
                         fut0.onDone(e);

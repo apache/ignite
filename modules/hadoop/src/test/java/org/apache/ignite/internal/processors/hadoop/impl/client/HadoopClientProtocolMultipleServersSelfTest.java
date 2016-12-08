@@ -76,13 +76,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        IgniteHadoopClientProtocolProvider.clear();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -124,26 +117,31 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     public void checkJobSubmit(Configuration conf) throws Exception {
         final Job job = Job.getInstance(conf);
 
-        job.setJobName(JOB_NAME);
+        try {
+            job.setJobName(JOB_NAME);
 
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(IntWritable.class);
 
-        job.setInputFormatClass(TextInputFormat.class);
-        job.setOutputFormatClass(OutFormat.class);
+            job.setInputFormatClass(TextInputFormat.class);
+            job.setOutputFormatClass(OutFormat.class);
 
-        job.setMapperClass(TestMapper.class);
-        job.setReducerClass(TestReducer.class);
+            job.setMapperClass(TestMapper.class);
+            job.setReducerClass(TestReducer.class);
 
-        job.setNumReduceTasks(0);
+            job.setNumReduceTasks(0);
 
-        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
 
-        job.submit();
+            job.submit();
 
-        job.waitForCompletion(false);
+            job.waitForCompletion(false);
 
-        assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : job.getStatus().getState();
+            assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : job.getStatus().getState();
+        }
+        finally {
+            job.getCluster().close();
+        }
     }
 
     /**
@@ -181,7 +179,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
             startGrids(gridCount());
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                         checkJobSubmit(configSingleAddress());
                         return null;
                     }
