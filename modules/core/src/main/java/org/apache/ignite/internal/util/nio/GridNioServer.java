@@ -1436,8 +1436,12 @@ public class GridNioServer<T> {
 
                                 meta.put(WORKER_IDX_META_KEY, idx);
 
-                                // TODO: handle exception, in case of error complete req with error.
-                                ch.register(selector, SelectionKey.OP_CONNECT, meta);
+                                try {
+                                    ch.register(selector, SelectionKey.OP_CONNECT, meta);
+                                }
+                                catch (IOException e) {
+                                    req.onDone(new IgniteCheckedException("Failed to register channel on selector", e));
+                                }
 
                                 break;
                             }
@@ -1911,7 +1915,9 @@ public class GridNioServer<T> {
             SelectionKey key = ses.key();
 
             // Shutdown input and output so that remote client will see correct socket close.
-            Socket sock = ((SocketChannel)key.channel()).socket();
+            SocketChannel channel = (SocketChannel)key.channel();
+
+            Socket sock = channel.socket();
 
             if (ses.setClosed()) {
                 ses.onClosed();
@@ -1996,12 +2002,8 @@ public class GridNioServer<T> {
             Map<Integer, Object> meta = (Map<Integer, Object>)key.attachment();
 
             try {
-                // TODO: do not need call offer, just call register() right here.
-                if (ch.finishConnect()) {
-                    changeReqs.offer(new NioOperationFuture<>(ch, false, meta));
-
-                    selector.wakeup();
-                }
+                if (ch.finishConnect())
+                    register(new NioOperationFuture<GridNioSession>(ch, false, meta));
             }
             catch (IOException e) {
                 NioOperationFuture<GridNioSession> sesFut =
