@@ -826,7 +826,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     break;
                 }
-                else if (node.version().compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) < 0)
+                else if (!canUsePartitionMapCompression(node))
                     compress = false;
             }
         }
@@ -964,8 +964,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean clientOnlyExchange,
         boolean sndCounters)
     {
-        boolean compress =
-            targetNode.version().compareToIgnoreTimestamp(GridDhtPartitionsSingleMessage.PART_MAP_COMPRESS_SINCE) >= 0;
+        boolean compress = canUsePartitionMapCompression(targetNode);
 
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
@@ -1552,6 +1551,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             Thread.currentThread().interrupt();
 
         return deque.poll(time, MILLISECONDS);
+    }
+
+    /**
+     * @param node Target node.
+     * @return {@code True} if can use compression for partition map messages.
+     */
+    @SuppressWarnings("SimplifiableIfStatement")
+    private boolean canUsePartitionMapCompression(ClusterNode node) {
+        IgniteProductVersion ver = node.version();
+
+        if (ver.compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) >= 0) {
+            if (ver.minor() == 7 && ver.maintenance() < 4)
+                return false;
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
