@@ -103,6 +103,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public JobID getNewJobID() throws IOException, InterruptedException {
         try {
             conf.setLong(HadoopCommonUtils.REQ_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
@@ -119,6 +120,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public JobStatus submitJob(JobID jobId, String jobSubmitDir, Credentials ts) throws IOException,
         InterruptedException {
         try {
@@ -158,6 +160,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void killJob(JobID jobId) throws IOException, InterruptedException {
         try {
             t3.get1().compute().execute(HadoopProtocolKillJobTask.class.getName(),
@@ -180,6 +183,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
             Long delay = conf.getLong(HadoopJobProperty.JOB_STATUS_POLL_DELAY.propertyName(), -1);
@@ -201,6 +205,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public Counters getJobCounters(JobID jobId) throws IOException, InterruptedException {
         try {
             final HadoopCounters counters = t3.get1().compute().execute(HadoopProtocolJobCountersTask.class.getName(),
@@ -360,7 +365,7 @@ public class HadoopClientProtocol implements ClientProtocol {
      *
      * @return The client.
      */
-    public T3 getT3() {
+    public T3<GridClient, String, GridFutureAdapter<T3>> getT3() {
         return t3;
     }
 }
