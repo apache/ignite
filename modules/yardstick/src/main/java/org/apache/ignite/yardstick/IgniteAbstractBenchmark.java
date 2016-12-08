@@ -60,6 +60,20 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
         waitForNodes();
     }
 
+    /**
+     * Prints non-system caches sizes during preloading.
+     */
+    protected void printPreloadLog(){
+        IgniteBenchmarkPreloadLogger.printLog(node, cfg, args);
+    }
+
+    /**
+     * Terminates printing preloading log.
+     */
+    protected void stopPreloadLog() throws Exception {
+        IgniteBenchmarkPreloadLogger.stopPrint();
+    }
+
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         if (node != null)

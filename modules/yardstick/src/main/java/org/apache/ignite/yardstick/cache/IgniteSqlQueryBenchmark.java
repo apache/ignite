@@ -41,6 +41,8 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
 
         long start = System.nanoTime();
 
+        printPreloadLog();
+
         try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cache.getName())) {
             for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
                 dataLdr.addData(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
@@ -49,6 +51,8 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
                     println(cfg, "Populated persons: " + i);
             }
         }
+
+        stopPreloadLog();
 
         println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
