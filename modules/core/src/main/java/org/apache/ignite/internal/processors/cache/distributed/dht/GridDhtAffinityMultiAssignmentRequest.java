@@ -60,7 +60,7 @@ public class GridDhtAffinityMultiAssignmentRequest extends GridDhtAffinityAssign
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -37;
+        return -43;
     }
 
     /** {@inheritDoc} */

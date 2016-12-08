@@ -172,6 +172,16 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -43:
+                msg = new GridDhtAffinityMultiAssignmentRequest();
+
+                break;
+
+            case -42:
+                msg = new GridDhtAffinityMultiAssignmentResponse();
+
+                break;
+
             case -41:
                 msg = new HadoopShuffleFinishResponse();
 
@@ -809,15 +819,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 127:
                 msg = new GridNearAtomicSingleUpdateFilterRequest();
-
-                break;
-            case -37:
-                msg = new GridDhtAffinityMultiAssignmentRequest();
-
-                break;
-
-            case -38:
-                msg = new GridDhtAffinityMultiAssignmentResponse();
 
                 break;
 
