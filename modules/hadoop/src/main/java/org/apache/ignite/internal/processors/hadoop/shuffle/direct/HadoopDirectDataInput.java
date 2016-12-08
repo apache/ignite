@@ -150,6 +150,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public String readLine() throws IOException {
+        // TODO: Create ticket!
         throw new UnsupportedOperationException();
     }
 

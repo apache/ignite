@@ -155,7 +155,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
-     * @param locMappersCnt Amount of mappers running on the given node.
+     * @param locMappersCnt Number of mappers running on the given node.
      * @param embedded Whether shuffle is running in embedded mode.
      * @throws IgniteCheckedException If error.
      */
@@ -933,7 +933,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         private final HadoopTaskOutput[] rmtAdders = new HadoopTaskOutput[rmtMaps.length()];
 
         /** Remote direct contexts. */
-        private final HadoopDirectDataOutputContext[] rmtDirectCtxs = new HadoopDirectDataOutputContext[rmtMaps.length()];
+        private final HadoopDirectDataOutputContext[] rmtDirectCtxs =
+            new HadoopDirectDataOutputContext[rmtMaps.length()];
 
         /** */
         private HadoopPartitioner partitioner;

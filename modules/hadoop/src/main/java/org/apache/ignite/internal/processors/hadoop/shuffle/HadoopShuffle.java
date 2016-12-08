@@ -104,12 +104,8 @@ public class HadoopShuffle extends HadoopComponent {
     private HadoopShuffleJob<UUID> newJob(HadoopJobId jobId) throws IgniteCheckedException {
         HadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
-        Collection<HadoopInputSplit> locMappers = plan.mappers(ctx.localNodeId());
-
-        int locMappersCnt = F.isEmpty(locMappers) ? 0 : locMappers.size();
-
         HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log, ctx.jobTracker().job(jobId, null),
-            mem, plan.reducers(), plan.reducers(ctx.localNodeId()), locMappersCnt, true);
+            mem, plan.reducers(), plan.reducers(ctx.localNodeId()), localMappersCount(plan), true);
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
@@ -126,6 +122,18 @@ public class HadoopShuffle extends HadoopComponent {
         assert init;
 
         return job;
+    }
+
+    /**
+     * Get number of local mappers.
+     *
+     * @param plan Plan.
+     * @return Number of local mappers.
+     */
+    private int localMappersCount(HadoopMapReducePlan plan) {
+        Collection<HadoopInputSplit> locMappers = plan.mappers(ctx.localNodeId());
+
+        return F.isEmpty(locMappers) ? 0 : locMappers.size();
     }
 
     /**

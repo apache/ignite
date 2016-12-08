@@ -1331,8 +1331,6 @@ public class HadoopJobTracker extends HadoopComponent {
                         catch (IgniteCheckedException e) {
                             err = e;
                         }
-
-                        System.out.println(Thread.currentThread().getName() + ": Final flush finished: " + System.currentTimeMillis());
                     }
 
                     transform(jobId, new RemoveMappersProcessor(prev, taskInfo.inputSplit(), err));

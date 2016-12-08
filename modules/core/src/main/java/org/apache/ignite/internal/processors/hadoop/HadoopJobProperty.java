@@ -95,6 +95,7 @@ public enum HadoopJobProperty {
      * <p>
      * Defaults to {@code false}.
      */
+    // TODO: Better naming!
     SHUFFLE_MAPPER_STRIPE_OUTPUT("ignite.shuffle.mapper.stripe.output"),
 
     /**
