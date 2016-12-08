@@ -117,6 +117,11 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
@@ -165,6 +170,36 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -41:
+                msg = new HadoopShuffleFinishResponse();
+
+                break;
+
+            case -40:
+                msg = new HadoopShuffleFinishRequest();
+
+                break;
+
+            case -39:
+                msg = new HadoopJobId();
+
+                break;
+
+            case -38:
+                msg = new HadoopShuffleAck();
+
+                break;
+
+            case -37:
+                msg = new HadoopShuffleMessage();
+
+                break;
+
+            case -36:
+                msg = new GridDhtAtomicSingleUpdateRequest();
+
+                break;
+
             case -27:
                 msg = new GridDhtTxOnePhaseCommitAckRequest();
 
@@ -772,11 +807,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 127:
                 msg = new GridNearAtomicSingleUpdateFilterRequest();
-
-                break;
-
-            case -36:
-                msg = new GridDhtAtomicSingleUpdateRequest();
 
                 break;
 

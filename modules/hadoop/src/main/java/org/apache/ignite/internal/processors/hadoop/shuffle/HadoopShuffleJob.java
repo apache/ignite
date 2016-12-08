@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
@@ -55,6 +57,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
@@ -63,7 +67,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  */
 public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
-    private static final int MSG_BUF_SIZE = 128 * 1024;
+    private static final int DFLT_SHUFFLE_MSG_SIZE = 128 * 1024;
 
     /** */
     private final HadoopJob job;
@@ -74,11 +78,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final boolean needPartitioner;
 
-    /** Collection of task contexts for each reduce task. */
-    private final Map<Integer, HadoopTaskContext> reducersCtx = new HashMap<>();
+    /** Task contexts for each reduce task. */
+    private final AtomicReferenceArray<LocalTaskContextProxy> locReducersCtx;
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
+
+    /** Total reducer count. */
+    private final int totalReducerCnt;
 
     /** Local reducers address. */
     private final T locReduceAddr;
@@ -86,11 +93,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final HadoopShuffleMessage[] msgs;
 
-    /** */
-    private final AtomicReferenceArray<HadoopMultimap> maps;
+    /** Maps for local reducers. */
+    private final AtomicReferenceArray<HadoopMultimap> locMaps;
+
+    /** Maps for remote reducers. */
+    private final AtomicReferenceArray<HadoopMultimap> rmtMaps;
 
     /** */
-    private volatile IgniteInClosure2X<T, HadoopShuffleMessage> io;
+    private volatile IgniteInClosure2X<T, HadoopMessage> io;
 
     /** */
     protected ConcurrentMap<Long, IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>> sentMsgs =
@@ -108,6 +118,24 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final IgniteLogger log;
 
+    /** Message size. */
+    private final int msgSize;
+
+    /** Local shuffle states. */
+    private volatile HashMap<T, HadoopShuffleLocalState> locShuffleStates = new HashMap<>();
+
+    /** Remote shuffle states. */
+    private volatile HashMap<T, HadoopShuffleRemoteState> rmtShuffleStates = new HashMap<>();
+
+    /** Mutex for internal synchronization. */
+    private final Object mux = new Object();
+
+    /** */
+    private final long throttle;
+
+    /** Embedded mode flag. */
+    private final boolean embedded;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -115,27 +143,37 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
+     * @param embedded Whether shuffle is running in embedded mode.
      * @throws IgniteCheckedException If error.
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
+        int totalReducerCnt, int[] locReducers, boolean embedded) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
+        this.totalReducerCnt = totalReducerCnt;
         this.job = job;
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
+        this.embedded = embedded;
+
+        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
+
+        locReducersCtx = new AtomicReferenceArray<>(totalReducerCnt);
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
                 HadoopTaskInfo taskInfo = new HadoopTaskInfo(HadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
-                reducersCtx.put(rdc, job.getTaskContext(taskInfo));
+                locReducersCtx.set(rdc, new LocalTaskContextProxy(taskInfo));
             }
         }
 
         needPartitioner = totalReducerCnt > 1;
 
-        maps = new AtomicReferenceArray<>(totalReducerCnt);
+        locMaps = new AtomicReferenceArray<>(totalReducerCnt);
+        rmtMaps = new AtomicReferenceArray<>(totalReducerCnt);
         msgs = new HadoopShuffleMessage[totalReducerCnt];
+
+        throttle = get(job.info(), SHUFFLE_JOB_THROTTLE, 0);
     }
 
     /**
@@ -164,7 +202,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param io IO Closure for sending messages.
      */
     @SuppressWarnings("BusyWait")
-    public void startSending(String gridName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
+    public void startSending(String gridName, IgniteInClosure2X<T, HadoopMessage> io) {
         assert snd == null;
         assert io != null;
 
@@ -175,7 +213,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 @Override protected void body() throws InterruptedException {
                     try {
                         while (!isCancelled()) {
-                            Thread.sleep(5);
+                            if (throttle > 0)
+                                Thread.sleep(throttle);
 
                             collectUpdatesAndSend(false);
                         }
@@ -216,20 +255,21 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * @param src Source.
      * @param msg Message.
      * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(HadoopShuffleMessage msg) throws IgniteCheckedException {
+    public void onShuffleMessage(T src, HadoopShuffleMessage msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
-        HadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
+        HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
         perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
 
-        HadoopMultimap map = getOrCreateMap(maps, msg.reducer());
+        HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
@@ -254,6 +294,15 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 }
             });
         }
+
+        if (embedded) {
+            // No immediate response.
+            if (localShuffleState(src).onShuffleMessage())
+                sendFinishResponse(src, msg.jobId());
+        }
+        else
+            // Response for every message.
+            io.apply(src, new HadoopShuffleAck(msg.id(), msg.jobId()));
     }
 
     /**
@@ -267,6 +316,121 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             tup.get2().onDone();
         else
             log.warning("Received shuffle ack for not registered shuffle id: " + ack);
+    }
+
+    /**
+     * Process shuffle finish request.
+     *
+     * @param src Source.
+     * @param msg Shuffle finish message.
+     */
+    public void onShuffleFinishRequest(T src, HadoopShuffleFinishRequest msg) {
+        if (log.isDebugEnabled())
+            log.debug("Received shuffle finish request [jobId=" + job.id() + ", src=" + src + ", req=" + msg + ']');
+
+        HadoopShuffleLocalState state = localShuffleState(src);
+
+        if (state.onShuffleFinishMessage(msg.messageCount()))
+            sendFinishResponse(src, msg.jobId());
+    }
+
+    /**
+     * Process shuffle finish response.
+     *
+     * @param src Source.
+     */
+    public void onShuffleFinishResponse(T src) {
+        if (log.isDebugEnabled())
+            log.debug("Received shuffle finish response [jobId=" + job.id() + ", src=" + src + ']');
+
+        remoteShuffleState(src).onShuffleFinishResponse();
+    }
+
+    /**
+     * Send finish response.
+     *
+     * @param dest Destination.
+     * @param jobId Job ID.
+     */
+    @SuppressWarnings("unchecked")
+    private void sendFinishResponse(T dest, HadoopJobId jobId) {
+        if (log.isDebugEnabled())
+            log.debug("Sent shuffle finish response [jobId=" + jobId + ", dest=" + dest + ']');
+
+        HadoopShuffleFinishResponse msg = new HadoopShuffleFinishResponse(jobId);
+
+        io.apply(dest, msg);
+    }
+
+    /**
+     * Get local shuffle state for node.
+     *
+     * @param src Source
+     * @return Local shuffle state.
+     */
+    private HadoopShuffleLocalState localShuffleState(T src) {
+        HashMap<T, HadoopShuffleLocalState> states = locShuffleStates;
+
+        HadoopShuffleLocalState res = states.get(src);
+
+        if (res == null) {
+            synchronized (mux) {
+                res = locShuffleStates.get(src);
+
+                if (res == null) {
+                    res = new HadoopShuffleLocalState();
+
+                    states = new HashMap<>(locShuffleStates);
+
+                    states.put(src, res);
+
+                    locShuffleStates = states;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Get remote shuffle state for node.
+     *
+     * @param src Source.
+     * @return Remote shuffle state.
+     */
+    private HadoopShuffleRemoteState remoteShuffleState(T src) {
+        HashMap<T, HadoopShuffleRemoteState> states = rmtShuffleStates;
+
+        HadoopShuffleRemoteState res = states.get(src);
+
+        if (res == null) {
+            synchronized (mux) {
+                res = rmtShuffleStates.get(src);
+
+                if (res == null) {
+                    res = new HadoopShuffleRemoteState();
+
+                    states = new HashMap<>(rmtShuffleStates);
+
+                    states.put(src, res);
+
+                    rmtShuffleStates = states;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Get all remote shuffle states.
+     *
+     * @return Remote shuffle states.
+     */
+    private HashMap<T, HadoopShuffleRemoteState> remoteShuffleStates() {
+        synchronized (mux) {
+            return new HashMap<>(rmtShuffleStates);
+        }
     }
 
     /**
@@ -298,7 +462,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         /** */
         @Override public void copyTo(long ptr) {
-            GridUnsafe.copyMemory(buf, GridUnsafe.BYTE_ARR_OFF + off, null, ptr, size);
+            GridUnsafe.copyHeapOffheap(buf, GridUnsafe.BYTE_ARR_OFF + off, ptr, size);
         }
     }
 
@@ -306,14 +470,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * Sends map updates to remote reducers.
      */
     private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
-        for (int i = 0; i < maps.length(); i++) {
-            HadoopMultimap map = maps.get(i);
+        for (int i = 0; i < rmtMaps.length(); i++) {
+            HadoopMultimap map = rmtMaps.get(i);
 
-            if (map == null || locReduceAddr.equals(reduceAddrs[i]))
+            if (map == null)
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
-                msgs[i] = new HadoopShuffleMessage(job.id(), i, MSG_BUF_SIZE);
+                msgs[i] = new HadoopShuffleMessage(job.id(), i, msgSize);
 
             final int idx = i;
 
@@ -384,41 +548,53 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param newBufMinSize Min new buffer size.
      */
     private void send(final int idx, int newBufMinSize) {
-        final GridFutureAdapter<?> fut = new GridFutureAdapter<>();
-
         HadoopShuffleMessage msg = msgs[idx];
 
         final long msgId = msg.id();
 
-        IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
-            new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+        final GridFutureAdapter<?> fut;
 
-        assert old == null;
+        if (embedded)
+            fut = null;
+        else {
+            fut = new GridFutureAdapter<>();
+
+            IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
+                new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+
+            assert old == null;
+        }
 
         try {
             io.apply(reduceAddrs[idx], msg);
+
+            if (embedded)
+                remoteShuffleState(reduceAddrs[idx]).onShuffleMessage();
         }
         catch (GridClosureException e) {
-            fut.onDone(U.unwrap(e));
+            if (fut != null)
+                fut.onDone(U.unwrap(e));
         }
 
-        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                try {
-                    f.get();
+        if (fut != null) {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
+                    try {
+                        f.get();
 
-                    // Clean up the future from map only if there was no exception.
-                    // Otherwise flush() should fail.
-                    sentMsgs.remove(msgId);
+                        // Clean up the future from map only if there was no exception.
+                        // Otherwise flush() should fail.
+                        sentMsgs.remove(msgId);
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Failed to send message.", e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to send message.", e);
-                }
-            }
-        });
+            });
+        }
 
         msgs[idx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), idx,
-            Math.max(MSG_BUF_SIZE, newBufMinSize));
+            Math.max(msgSize, newBufMinSize));
     }
 
     /** {@inheritDoc} */
@@ -434,7 +610,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
         }
 
-        close(maps);
+        close(locMaps);
+        close(rmtMaps);
     }
 
     /**
@@ -459,7 +636,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         flushed = true;
 
-        if (maps.length() == 0)
+        if (totalReducerCnt == 0)
             return new GridFinishedFuture<>();
 
         U.await(ioInitLatch);
@@ -490,14 +667,41 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         GridCompoundFuture fut = new GridCompoundFuture<>();
 
-        for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
-            fut.add(tup.get2());
+        if (embedded) {
+            boolean sent = false;
 
-        fut.markInitialized();
+            for (Map.Entry<T, HadoopShuffleRemoteState> rmtStateEntry : remoteShuffleStates().entrySet()) {
+                T dest = rmtStateEntry.getKey();
+                HadoopShuffleRemoteState rmtState = rmtStateEntry.getValue();
 
-        if (log.isDebugEnabled())
-            log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
+                HadoopShuffleFinishRequest req = new HadoopShuffleFinishRequest(job.id(), rmtState.messageCount());
 
+                io.apply(dest, req);
+
+                if (log.isDebugEnabled())
+                    log.debug("Sent shuffle finish request [jobId=" + job.id() + ", dest=" + dest +
+                        ", req=" + req + ']');
+
+                fut.add(rmtState.future());
+
+                sent = true;
+            }
+
+            if (sent)
+                fut.markInitialized();
+            else
+                return new GridFinishedFuture<>();
+        }
+        else {
+            for (IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup : sentMsgs.values())
+                fut.add(tup.get2());
+
+            fut.markInitialized();
+
+            if (log.isDebugEnabled())
+                log.debug("Collected futures to compound futures for flush: " + sentMsgs.size());
+
+        }
         return fut;
     }
 
@@ -530,7 +734,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             case REDUCE:
                 int reducer = taskCtx.taskInfo().taskNumber();
 
-                HadoopMultimap m = maps.get(reducer);
+                HadoopMultimap m = locMaps.get(reducer);
 
                 if (m != null)
                     return m.input(taskCtx);
@@ -559,11 +763,24 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * Check if certain partition (reducer) is local.
+     *
+     * @param part Partition.
+     * @return {@code True} if local.
+     */
+    private boolean isLocalPartition(int part) {
+        return locReducersCtx.get(part) != null;
+    }
+
+    /**
      * Partitioned output.
      */
     private class PartitionedOutput implements HadoopTaskOutput {
         /** */
-        private final HadoopTaskOutput[] adders = new HadoopTaskOutput[maps.length()];
+        private final HadoopTaskOutput[] locAdders = new HadoopTaskOutput[locMaps.length()];
+
+        /** */
+        private final HadoopTaskOutput[] rmtAdders = new HadoopTaskOutput[rmtMaps.length()];
 
         /** */
         private HadoopPartitioner partitioner;
@@ -587,26 +804,88 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             int part = 0;
 
             if (partitioner != null) {
-                part = partitioner.partition(key, val, adders.length);
+                part = partitioner.partition(key, val, totalReducerCnt);
 
-                if (part < 0 || part >= adders.length)
+                if (part < 0 || part >= totalReducerCnt)
                     throw new IgniteCheckedException("Invalid partition: " + part);
             }
 
-            HadoopTaskOutput out = adders[part];
+            HadoopTaskOutput out;
 
-            if (out == null)
-                adders[part] = out = getOrCreateMap(maps, part).startAdding(taskCtx);
+            if (isLocalPartition(part)) {
+                out = locAdders[part];
+
+                if (out == null)
+                    locAdders[part] = out = getOrCreateMap(locMaps, part).startAdding(taskCtx);
+            }
+            else {
+                out = rmtAdders[part];
+
+                if (out == null)
+                    rmtAdders[part] = out = getOrCreateMap(rmtMaps, part).startAdding(taskCtx);
+            }
 
             out.write(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public void close() throws IgniteCheckedException {
-            for (HadoopTaskOutput adder : adders) {
+            for (HadoopTaskOutput adder : locAdders) {
                 if (adder != null)
                     adder.close();
             }
+
+            for (HadoopTaskOutput adder : rmtAdders) {
+                if (adder != null)
+                    adder.close();
+            }
+        }
+    }
+
+    /**
+     * Local task context proxy with delayed initialization.
+     */
+    private class LocalTaskContextProxy {
+        /** Mutex for synchronization. */
+        private final Object mux = new Object();
+
+        /** Task info. */
+        private final HadoopTaskInfo taskInfo;
+
+        /** Task context. */
+        private volatile HadoopTaskContext ctx;
+
+        /**
+         * Constructor.
+         *
+         * @param taskInfo Task info.
+         */
+        public LocalTaskContextProxy(HadoopTaskInfo taskInfo) {
+            this.taskInfo = taskInfo;
+        }
+
+        /**
+         * Get task context.
+         *
+         * @return Task context.
+         * @throws IgniteCheckedException If failed.
+         */
+        public HadoopTaskContext get() throws IgniteCheckedException {
+            HadoopTaskContext ctx0 = ctx;
+
+            if (ctx0 == null) {
+                synchronized (mux) {
+                    ctx0 = ctx;
+
+                    if (ctx0 == null) {
+                        ctx0 = job.getTaskContext(taskInfo);
+
+                        ctx = ctx0;
+                    }
+                }
+            }
+
+            return ctx0;
         }
     }
 }

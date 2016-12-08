@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 .docs-header
     h1 Configure Ignite Clusters
@@ -36,33 +36,33 @@ include ../../app/helpers/jade/mixins.jade
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
                 form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
                     .panel-group
-                        include ../../app/modules/states/configuration/clusters/general.jade
+                        include /app/modules/states/configuration/clusters/general.jade
 
                         +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
-                            include ../../app/modules/states/configuration/clusters/atomic.jade
-                            include ../../app/modules/states/configuration/clusters/binary.jade
-                            include ../../app/modules/states/configuration/clusters/cache-key-cfg.jade
-                            include ../../app/modules/states/configuration/clusters/checkpoint.jade
-                            include ../../app/modules/states/configuration/clusters/collision.jade
-                            include ../../app/modules/states/configuration/clusters/communication.jade
-                            include ../../app/modules/states/configuration/clusters/connector.jade
-                            include ../../app/modules/states/configuration/clusters/deployment.jade
-                            include ../../app/modules/states/configuration/clusters/discovery.jade
-                            include ../../app/modules/states/configuration/clusters/events.jade
-                            include ../../app/modules/states/configuration/clusters/failover.jade
-                            include ../../app/modules/states/configuration/clusters/igfs.jade
-                            include ../../app/modules/states/configuration/clusters/load-balancing.jade
-                            include ../../app/modules/states/configuration/clusters/logger.jade
-                            include ../../app/modules/states/configuration/clusters/marshaller.jade
-                            include ../../app/modules/states/configuration/clusters/metrics.jade
-                            include ../../app/modules/states/configuration/clusters/odbc.jade
-                            include ../../app/modules/states/configuration/clusters/ssl.jade
-                            include ../../app/modules/states/configuration/clusters/swap.jade
-                            include ../../app/modules/states/configuration/clusters/thread.jade
-                            include ../../app/modules/states/configuration/clusters/time.jade
-                            include ../../app/modules/states/configuration/clusters/transactions.jade
-                            include ../../app/modules/states/configuration/clusters/attributes.jade
+                            include /app/modules/states/configuration/clusters/atomic.jade
+                            include /app/modules/states/configuration/clusters/binary.jade
+                            include /app/modules/states/configuration/clusters/cache-key-cfg.jade
+                            include /app/modules/states/configuration/clusters/checkpoint.jade
+                            include /app/modules/states/configuration/clusters/collision.jade
+                            include /app/modules/states/configuration/clusters/communication.jade
+                            include /app/modules/states/configuration/clusters/connector.jade
+                            include /app/modules/states/configuration/clusters/deployment.jade
+                            include /app/modules/states/configuration/clusters/discovery.jade
+                            include /app/modules/states/configuration/clusters/events.jade
+                            include /app/modules/states/configuration/clusters/failover.jade
+                            include /app/modules/states/configuration/clusters/igfs.jade
+                            include /app/modules/states/configuration/clusters/load-balancing.jade
+                            include /app/modules/states/configuration/clusters/logger.jade
+                            include /app/modules/states/configuration/clusters/marshaller.jade
+                            include /app/modules/states/configuration/clusters/metrics.jade
+                            include /app/modules/states/configuration/clusters/odbc.jade
+                            include /app/modules/states/configuration/clusters/ssl.jade
+                            include /app/modules/states/configuration/clusters/swap.jade
+                            include /app/modules/states/configuration/clusters/thread.jade
+                            include /app/modules/states/configuration/clusters/time.jade
+                            include /app/modules/states/configuration/clusters/transactions.jade
+                            include /app/modules/states/configuration/clusters/attributes.jade
 
                             +advanced-options-toggle-default
