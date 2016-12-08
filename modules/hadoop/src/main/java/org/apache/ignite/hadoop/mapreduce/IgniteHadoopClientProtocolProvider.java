@@ -91,12 +91,15 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void close(ClientProtocol cliProto) throws IOException {
         if (cliProto instanceof HadoopClientProtocol) {
             T3<GridClient, String, GridFutureAdapter<T3>> t3 = ((HadoopClientProtocol)cliProto).getT3();
 
+            // Remove the client from the cache:
             cliMap.remove(t3.get2(), t3.get3());
 
+            // Close the Grid client:
             t3.get1().close();
         }
     }
@@ -121,6 +124,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client.
      * @throws IOException If failed.
      */
+    @SuppressWarnings("unchecked")
     private T3<GridClient, String, GridFutureAdapter<T3>> client(final String clusterName,
         final Collection<String> addrs) throws IOException {
         try {

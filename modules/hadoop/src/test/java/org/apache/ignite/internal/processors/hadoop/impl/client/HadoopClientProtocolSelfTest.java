@@ -50,7 +50,6 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -113,7 +112,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         stopAllGrids();
 
         super.afterTestsStopped();
-//        IgniteHadoopClientProtocolProvider.cliMap.clear();
     }
 
     /** {@inheritDoc} */
@@ -525,7 +523,12 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * Test Hadoop counters.
      */
     public enum TestCounter {
-        COUNTER1, COUNTER2, COUNTER3
+        /** */
+        COUNTER1,
+        /** */
+        COUNTER2,
+        /** */
+        COUNTER3
     }
 
     /**
@@ -543,6 +546,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * Test combiner that counts invocations.
      */
     public static class TestCountingCombiner extends TestReducer {
+        /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values,
             Context ctx) throws IOException, InterruptedException {
             ctx.getCounter(TestCounter.COUNTER1).increment(1);
@@ -560,6 +564,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * Test reducer that counts invocations.
      */
     public static class TestCountingReducer extends TestReducer {
+        /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values,
             Context ctx) throws IOException, InterruptedException {
             ctx.getCounter(TestCounter.COUNTER1).increment(1);
@@ -574,6 +579,9 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         // No-op.
     }
 
+    /**
+     * Test output format.
+     */
     public static class TestOutputFormat<K, V> extends TextOutputFormat<K, V> {
         /** {@inheritDoc} */
         @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext ctx)
