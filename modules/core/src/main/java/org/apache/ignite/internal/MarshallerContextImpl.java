@@ -75,8 +75,6 @@ public class MarshallerContextImpl implements MarshallerContext {
     /** */
     private boolean isClientNode;
 
-    private final AtomicBoolean isStopping = new AtomicBoolean();
-
     /**
      * Initializes context.
      *
@@ -217,9 +215,6 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
-        if (isStopping.get())
-            throw new IgniteCheckedException("Node is stopping");
-
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -230,22 +225,34 @@ public class MarshallerContextImpl implements MarshallerContext {
             else {
                 if (mappedName.accepted())
                     return true;
+
+                if (transport.stopping())
+                    return false;
+
                 IgniteInternalFuture<MappingExchangeResult> fut = transport.awaitMappingAcceptance(new MarshallerMappingItem(platformId, typeId, clsName), cache);
                 MappingExchangeResult res = fut.get();
 
-                if (res.error() == null)
-                    return true;
-                else
-                    throw res.error();
+                return convertXchRes(res);
             }
         else {
+            if (transport.stopping())
+                return false;
+
             IgniteInternalFuture<MappingExchangeResult> fut = transport.proposeMapping(new MarshallerMappingItem(platformId, typeId, clsName), cache);
             MappingExchangeResult res = fut.get();
 
-            if (res.error() == null)
-                return true;
-            else
-                throw res.error();
+            return convertXchRes(res);
+        }
+    }
+
+    private boolean convertXchRes(MappingExchangeResult res) throws IgniteCheckedException {
+        if (res.successful())
+            return true;
+        else if (res.exchangeDisabled())
+            return false;
+        else {
+            assert res.error() != null;
+            throw res.error();
         }
     }
 
@@ -401,14 +408,12 @@ public class MarshallerContextImpl implements MarshallerContext {
         persistence = new MarshallerMappingPersistence(ctx.log(MarshallerMappingPersistence.class));
         this.transport = transport;
         isClientNode = ctx.clientNode();
-
-        isStopping.set(false);
     }
 
     /**
      *
      */
-    public void onMarshallerProcessorStopping() {
-        isStopping.set(true);
+    public void onMarshallerProcessorStop() {
+        transport.markStopping();
     }
 }

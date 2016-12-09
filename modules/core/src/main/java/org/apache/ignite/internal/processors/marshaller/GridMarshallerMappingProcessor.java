@@ -92,7 +92,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
-                cancelFutures(new MappingExchangeResult(null, new IgniteCheckedException("Node left topology normally or abnormally")));
+                cancelFutures(MappingExchangeResult.createFailureResult(new IgniteCheckedException("Node left topology normally or abnormally")));
             }
         }, EVT_NODE_LEFT, EVT_NODE_SEGMENTED, EVT_NODE_FAILED);
     }
@@ -133,7 +133,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 
             if (fut != null) {
-                fut.onDone(new MappingExchangeResult(item.className(), null));
+                fut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
                 mappingExchangeSyncMap.remove(item, fut);
             }
         }
@@ -152,7 +152,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.getOrigMappingItem());
 
                 if (fut != null)
-                    fut.onDone(new MappingExchangeResult(null, duplicateMappingException(msg.getOrigMappingItem(), msg.getConflictingClsName())));
+                    fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(msg.getOrigMappingItem(), msg.getConflictingClsName())));
             }
         }
 
@@ -200,12 +200,12 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
                     GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.marshallerMappingItem());
                     if (fut != null)
-                        fut.onDone(new MappingExchangeResult(resolvedClsName, null));
+                        fut.onDone(MappingExchangeResult.createSuccessfulResult(resolvedClsName));
                 }
                 else {
                     GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.marshallerMappingItem());
                     if (fut != null)
-                        fut.onDone(new MappingExchangeResult(null, resolutionFailedException(msg.marshallerMappingItem())));
+                        fut.onDone(MappingExchangeResult.createFailureResult(resolutionFailedException(msg.marshallerMappingItem())));
                 }
             }
         }
@@ -241,16 +241,16 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        cancelFutures(new MappingExchangeResult(null, new IgniteClientDisconnectedCheckedException(
+        cancelFutures(MappingExchangeResult.createFailureResult(new IgniteClientDisconnectedCheckedException(
                 ctx.cluster().clientReconnectFuture(),
                 "Failed to propose or request mapping, client node disconnected.")));
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        marshallerCtx.onMarshallerProcessorStopping();
+    @Override public void onKernalStop(boolean cancel) {
+        marshallerCtx.onMarshallerProcessorStop();
 
-        cancelFutures(new MappingExchangeResult(null, new IgniteCheckedException("Node is stopping.")));
+        cancelFutures(MappingExchangeResult.createExchangeDisabledResult());
     }
 
     /** {@inheritDoc} */

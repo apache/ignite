@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -35,6 +36,9 @@ public final class MarshallerMappingTransport {
     /** */
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap;
 
+    /** */
+    private final AtomicBoolean stopping;
+
     /**
      * @param discoMgr Disco manager.
      * @param mappingExchSyncMap Mapping exch sync map.
@@ -42,6 +46,7 @@ public final class MarshallerMappingTransport {
     MarshallerMappingTransport(GridDiscoveryManager discoMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
         this.discoMgr = discoMgr;
         this.mappingExchSyncMap = mappingExchSyncMap;
+        stopping = new AtomicBoolean(false);
     }
 
     /**
@@ -61,7 +66,7 @@ public final class MarshallerMappingTransport {
 
         //double check whether mapping is accepted, first check was in MarshallerContextImpl::registerClassName
         if (mappedName.accepted()) {
-            fut.onDone(new MappingExchangeResult(mappedName.className(), null));
+            fut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
             mappingExchSyncMap.remove(item, fut);
         }
 
@@ -86,10 +91,15 @@ public final class MarshallerMappingTransport {
                 String mappedClsName = mapping.className();
 
                 if (!mappedClsName.equals(item.className())) {
-                    fut.onDone(new MappingExchangeResult(null, duplicateMappingException(item, mappedClsName)));
+                    fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(item, mappedClsName)));
                     mappingExchSyncMap.remove(item, fut);
-                } else if (mapping.accepted()) {
-                    fut.onDone(new MappingExchangeResult(mappedClsName, null));
+                }
+                else if (mapping.accepted()) {
+                    fut.onDone(MappingExchangeResult.createSuccessfulResult(mappedClsName));
+                    mappingExchSyncMap.remove(item, fut);
+                }
+                else if (stopping.get()) {
+                    fut.onDone(MappingExchangeResult.createExchangeDisabledResult());
                     mappingExchSyncMap.remove(item, fut);
                 }
 
@@ -118,7 +128,7 @@ public final class MarshallerMappingTransport {
         if (oldFut == null) {
             MappedName mappedName = cache.get(item.typeId());
             if (mappedName != null) {
-                newFut.onDone(new MappingExchangeResult(mappedName.className(), null));
+                newFut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
                 mappingExchSyncMap.remove(item, newFut);
 
                 return newFut;
@@ -131,6 +141,10 @@ public final class MarshallerMappingTransport {
         return newFut;
     }
 
+    /**
+     * @param item Item.
+     * @param mappedClsName Mapped class name.
+     */
     private IgniteCheckedException duplicateMappingException(MarshallerMappingItem item, String mappedClsName) {
         return new IgniteCheckedException("Duplicate ID [platformId="
                 + item.platformId()
@@ -140,5 +154,15 @@ public final class MarshallerMappingTransport {
                 + mappedClsName
                 + ", newCls="
                 + item.className() + "]");
+    }
+
+    /** */
+    public void markStopping() {
+        stopping.set(true);
+    }
+
+    /** */
+    public boolean stopping() {
+        return stopping.get();
     }
 }
