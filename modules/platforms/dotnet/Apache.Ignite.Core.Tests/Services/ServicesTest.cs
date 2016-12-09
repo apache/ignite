@@ -762,9 +762,6 @@ namespace Apache.Ignite.Core.Tests.Services
             [InstanceResource]
             private IIgnite _grid;
 
-            /** */
-            private readonly object _syncRoot = new object();
-
             /** <inheritdoc /> */
             public int TestProperty { get; set; }
 
@@ -810,7 +807,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
-                lock (_syncRoot)
+                lock (this)
                 {
                     if (ThrowInit)
                         throw new Exception("Expected exception");
@@ -825,7 +822,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public void Execute(IServiceContext context)
             {
-                lock (_syncRoot)
+                lock (this)
                 {
                     if (ThrowExecute)
                         throw new Exception("Expected exception");
@@ -843,7 +840,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public void Cancel(IServiceContext context)
             {
-                lock (_syncRoot)
+                lock (this)
                 {
                     if (ThrowCancel)
                         throw new Exception("Expected exception");

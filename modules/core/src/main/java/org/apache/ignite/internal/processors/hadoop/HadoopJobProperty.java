@@ -91,6 +91,13 @@ public enum HadoopJobProperty {
     SHUFFLE_MSG_SIZE("ignite.shuffle.message.size"),
 
     /**
+     * Whether to stripe mapper output for remote reducers.
+     * <p>
+     * Defaults to {@code false}.
+     */
+    SHUFFLE_MAPPER_STRIPED_OUTPUT("ignite.shuffle.mapper.striped.output"),
+
+    /**
      * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter
      * controls sleep duration between iterations through intermediate reducer maps.
      * <p>
