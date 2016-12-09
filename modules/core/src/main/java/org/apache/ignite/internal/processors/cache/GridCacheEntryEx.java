@@ -565,6 +565,7 @@ public interface GridCacheEntryEx {
      * @param timeout Timeout for lock acquisition.
      * @param serOrder Version for serializable transactions ordering.
      * @param serReadVer Optional read entry version for optimistic serializable transaction.
+     * @param read Read lock flag.
      * @return {@code True} if lock was acquired, {@code false} otherwise.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
@@ -573,7 +574,7 @@ public interface GridCacheEntryEx {
         long timeout,
         @Nullable GridCacheVersion serOrder,
         @Nullable GridCacheVersion serReadVer,
-        boolean keepBinary
+        boolean read
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
 
     /**

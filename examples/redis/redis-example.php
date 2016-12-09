@@ -22,7 +22,7 @@
  * To execute this script, you need to have Predis extension installed and Ignite running.
  * See https://github.com/nrk/predis for Predis details.
  *
- * See https://apacheignite.readme.io/ for more details on Redis integration.
+ * See https://apacheignite.readme.io/docs/redis for more details on Redis integration.
  */
 
 // Load the library.

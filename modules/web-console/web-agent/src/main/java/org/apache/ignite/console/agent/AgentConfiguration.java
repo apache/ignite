@@ -31,9 +31,6 @@ import java.util.Properties;
  * Agent configuration.
  */
 public class AgentConfiguration {
-    /** Default server port. */
-    public static final int DFLT_SERVER_PORT = 3001;
-
     /** Default Ignite node HTTP port. */
     public static final int DFLT_NODE_PORT = 8080;
 
@@ -41,7 +38,7 @@ public class AgentConfiguration {
     public static final String DFLT_CFG_PATH = "default.properties";
 
     /** Default server URI. */
-    private static final String DFLT_SERVER_URI = "http://localhost:3001";
+    private static final String DFLT_SERVER_URI = "http://localhost:3000";
 
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
