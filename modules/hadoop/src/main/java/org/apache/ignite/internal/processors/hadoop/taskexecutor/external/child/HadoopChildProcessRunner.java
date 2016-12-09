@@ -150,6 +150,7 @@ public class HadoopChildProcessRunner {
 
                 job.initialize(true, nodeDesc.processId());
 
+                // TODO: How to pass local mappers here?
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers(), 0, false);
 
