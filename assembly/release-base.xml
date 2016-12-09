@@ -46,6 +46,11 @@
             <source>config/java.util.logging.properties</source>
             <outputDirectory>/config</outputDirectory>
         </file>
+
+        <file>
+            <source>config/dotnet/default-dotnet.xml</source>
+            <outputDirectory>/config/dotnet</outputDirectory>
+        </file>
     </files>
 
     <fileSets>
