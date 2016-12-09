@@ -29,15 +29,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message indicating that a snapshot has been started.
  */
-public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Backup ID. */
-    private long globalBackupId;
+    /** Snapshot ID. */
+    private long globalSnapshotId;
 
     /** */
     private Collection<String> cacheNames;
@@ -48,18 +48,18 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /** Error. */
     private Exception err;
 
-    private boolean fullBackup;
+    private boolean fullSnapshot;
 
-    private Map<Integer, Long> lastFullBackupIdForCache = new HashMap<>();
+    private Map<Integer, Long> lastFullSnapshotIdForCache = new HashMap<>();
 
     /**
      * @param cacheNames Cache names.
      */
-    public StartFullBackupDiscoveryMessage(long globalBackupId, Collection<String> cacheNames, UUID initiatorId, boolean fullBackup) {
-        this.globalBackupId = globalBackupId;
+    public StartFullSnapshotDiscoveryMessage(long globalSnapshotId, Collection<String> cacheNames, UUID initiatorId, boolean fullSnapshot) {
+        this.globalSnapshotId = globalSnapshotId;
         this.cacheNames = cacheNames;
         this.initiatorId = initiatorId;
-        this.fullBackup = fullBackup;
+        this.fullSnapshot = fullSnapshot;
     }
 
     /**
@@ -100,8 +100,8 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /**
      * @return Backup ID.
      */
-    public long globalBackupId() {
-        return globalBackupId;
+    public long globalSnapshotId() {
+        return globalSnapshotId;
     }
 
     /**
@@ -111,21 +111,21 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
         return cacheNames;
     }
 
-    public boolean fullBackup() {
-        return fullBackup;
+    public boolean fullSnapshot() {
+        return fullSnapshot;
     }
 
-    public Long lastFullBackupId(int cacheId) {
-        return lastFullBackupIdForCache.get(cacheId);
+    public Long lastFullSnapshotId(int cacheId) {
+        return lastFullSnapshotIdForCache.get(cacheId);
     }
 
-    public void lastFullBackupId(int cacheId, long id) {
-        lastFullBackupIdForCache.put(cacheId, id);
+    public void lastFullSnapshotId(int cacheId, long id) {
+        lastFullSnapshotIdForCache.put(cacheId, id);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullBackupAckDiscoveryMessage(globalBackupId, fullBackup, lastFullBackupIdForCache, cacheNames, err, initiatorId);
+        return new StartFullSnapshotAckDiscoveryMessage(globalSnapshotId, fullSnapshot, lastFullSnapshotIdForCache, cacheNames, err, initiatorId);
     }
 
     /** {@inheritDoc} */

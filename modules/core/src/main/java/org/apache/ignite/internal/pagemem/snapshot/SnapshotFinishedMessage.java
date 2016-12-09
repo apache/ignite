@@ -26,12 +26,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Message indicating that snapshot has been finished on a single node.
  */
-public class BackupFinishedMessage implements Message {
+public class SnapshotFinishedMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long backupId;
+    private long snapshotId;
 
     /** */
     private boolean success;
@@ -39,22 +39,22 @@ public class BackupFinishedMessage implements Message {
     /**
      *
      */
-    public BackupFinishedMessage() {
+    public SnapshotFinishedMessage() {
     }
 
     /**
-     * @param backupId Backup ID.
+     * @param snapshotId Snapshot ID.
      */
-    public BackupFinishedMessage(long backupId, boolean success) {
-        this.backupId = backupId;
+    public SnapshotFinishedMessage(long snapshotId, boolean success) {
+        this.snapshotId = snapshotId;
         this.success = success;
     }
 
     /**
-     * @return Backup ID.
+     * @return Snapshot ID.
      */
-    public long backupId() {
-        return backupId;
+    public long snapshotId() {
+        return snapshotId;
     }
 
     public boolean success() {
@@ -74,7 +74,7 @@ public class BackupFinishedMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("backupId", backupId))
+                if (!writer.writeLong("snapshotId", snapshotId))
                     return false;
 
                 writer.incrementState();
@@ -97,7 +97,7 @@ public class BackupFinishedMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                backupId = reader.readLong("backupId");
+                snapshotId = reader.readLong("snapshotId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -113,7 +113,7 @@ public class BackupFinishedMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(BackupFinishedMessage.class);
+        return reader.afterMessageRead(SnapshotFinishedMessage.class);
     }
 
     /** {@inheritDoc} */

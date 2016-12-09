@@ -26,26 +26,26 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
  */
 public class MetaPageUpdateLastSuccessfulSnapshotId extends PageDeltaRecord {
     /** */
-    private final long lastSuccessfulBackupId;
+    private final long lastSuccessfulSnapshotId;
     /** Last successful snapshot tag. */
-    private final long lastSuccessfulBackupTag;
+    private final long lastSuccessfulSnapshotTag;
 
     /**
      * @param pageId Meta page ID.
-     * @param backupTag
+     * @param snapshotTag
      */
-    public MetaPageUpdateLastSuccessfulSnapshotId(int cacheId, long pageId, long lastSuccessfulBackupId, long backupTag) {
+    public MetaPageUpdateLastSuccessfulSnapshotId(int cacheId, long pageId, long lastSuccessfulSnapshotId, long snapshotTag) {
         super(cacheId, pageId);
 
-        this.lastSuccessfulBackupId = lastSuccessfulBackupId;
-        this.lastSuccessfulBackupTag = backupTag;
+        this.lastSuccessfulSnapshotId = lastSuccessfulSnapshotId;
+        this.lastSuccessfulSnapshotTag = snapshotTag;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         PageMetaIO io = PageMetaIO.VERSIONS.forPage(buf);
 
-        io.setLastSuccessfulBackupId(buf, lastSuccessfulBackupId);
+        io.setLastSuccessfulSnapshotId(buf, lastSuccessfulSnapshotId);
     }
 
     /** {@inheritDoc} */
@@ -57,14 +57,14 @@ public class MetaPageUpdateLastSuccessfulSnapshotId extends PageDeltaRecord {
      * @return lastSuccessfulSnapshotId
      */
     public long lastSuccessfulSnapshotId() {
-        return lastSuccessfulBackupId;
+        return lastSuccessfulSnapshotId;
     }
 
     /**
      * @return lastSuccessfulSnapshotTag
      */
     public long lastSuccessfulSnapshotTag() {
-        return lastSuccessfulBackupTag;
+        return lastSuccessfulSnapshotTag;
     }
 }
 

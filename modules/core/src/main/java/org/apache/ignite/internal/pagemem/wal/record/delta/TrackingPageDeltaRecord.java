@@ -29,23 +29,23 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     private final long pageIdToMark;
 
     /** Next snapshot id. */
-    private final long nextBackupId;
+    private final long nextSnapshotId;
 
     /** Last successful snapshot id. */
-    private final long lastSuccessfulBackupId;
+    private final long lastSuccessfulSnapshotId;
 
     /**
      * @param cacheId Cache id.
      * @param pageId Page id.
-     * @param nextBackupId
-     * @param lastSuccessfulBackupId
+     * @param nextSnapshotId
+     * @param lastSuccessfulSnapshotId
      */
-    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark, long nextBackupId, long lastSuccessfulBackupId) {
+    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark, long nextSnapshotId, long lastSuccessfulSnapshotId) {
         super(cacheId, pageId);
 
         this.pageIdToMark = pageIdToMark;
-        this.nextBackupId = nextBackupId;
-        this.lastSuccessfulBackupId = lastSuccessfulBackupId;
+        this.nextSnapshotId = nextSnapshotId;
+        this.lastSuccessfulSnapshotId = lastSuccessfulSnapshotId;
     }
 
     /**
@@ -59,19 +59,19 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
      *
      */
     public long nextSnapshotId() {
-        return nextBackupId;
+        return nextSnapshotId;
     }
 
     /**
      *
      */
     public long lastSuccessfulSnapshotId() {
-        return lastSuccessfulBackupId;
+        return lastSuccessfulSnapshotId;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        TrackingPageIO.VERSIONS.forPage(buf).markChanged(buf, pageIdToMark, nextBackupId, lastSuccessfulBackupId, buf.capacity());
+        TrackingPageIO.VERSIONS.forPage(buf).markChanged(buf, pageIdToMark, nextSnapshotId, lastSuccessfulSnapshotId, buf.capacity());
     }
 
     /** {@inheritDoc} */

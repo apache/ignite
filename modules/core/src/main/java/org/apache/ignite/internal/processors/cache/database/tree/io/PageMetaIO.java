@@ -31,19 +31,19 @@ public class PageMetaIO extends PageIO {
     private static final int REUSE_LIST_ROOT_OFF = TREE_ROOT_OFF + 8;
 
     /** Last successful snapshot id offset. */
-    private static final int LAST_SUCCESSFUL_BACKUP_ID_OFF = REUSE_LIST_ROOT_OFF + 8;
+    private static final int LAST_SUCCESSFUL_SNAPSHOT_ID_OFF = REUSE_LIST_ROOT_OFF + 8;
 
     /** Last successful full snapshot id offset. */
-    private static final int LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF = LAST_SUCCESSFUL_BACKUP_ID_OFF + 8;
+    private static final int LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF = LAST_SUCCESSFUL_SNAPSHOT_ID_OFF + 8;
 
     /** Next snapshot id offset. */
-    private static final int NEXT_BACKUP_TAG_OFF = LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF + 8;
+    private static final int NEXT_SNAPSHOT_TAG_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF + 8;
 
     /** Last successful full snapshot tag offset. */
-    private static final int LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF = NEXT_BACKUP_TAG_OFF + 8;
+    private static final int LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF = NEXT_SNAPSHOT_TAG_OFF + 8;
 
     /** Last allocated index offset. */
-    private static final int LAST_ALLOCATED_INDEX_OFF = LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF + 8;
+    private static final int LAST_ALLOCATED_INDEX_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF + 8;
 
     /** Candidate allocated index offset. */
     private static final int CANDIDATE_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
@@ -77,9 +77,9 @@ public class PageMetaIO extends PageIO {
 
         setTreeRoot(buf, 0);
         setReuseListRoot(buf, 0);
-        setLastSuccessfulFullBackupId(buf, 0);
-        setLastSuccessfulBackupId(buf, 0);
-        setNextBackupTag(buf, 1);
+        setLastSuccessfulFullSnapshotId(buf, 0);
+        setLastSuccessfulSnapshotId(buf, 0);
+        setNextSnapshotTag(buf, 1);
         setLastAllocatedIndex(buf, 0);
         setCandidateAllocatedIndex(buf, 0);
     }
@@ -118,62 +118,62 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param lastSuccessfulBackupId Last successful snapshot id.
+     * @param lastSuccessfulSnapshotId Last successful snapshot id.
      */
-    public void setLastSuccessfulBackupId(@NotNull ByteBuffer buf, long lastSuccessfulBackupId) {
-        buf.putLong(LAST_SUCCESSFUL_BACKUP_ID_OFF, lastSuccessfulBackupId);
+    public void setLastSuccessfulSnapshotId(@NotNull ByteBuffer buf, long lastSuccessfulSnapshotId) {
+        buf.putLong(LAST_SUCCESSFUL_SNAPSHOT_ID_OFF, lastSuccessfulSnapshotId);
     }
 
     /**
      * @param buf Buffer.
      */
-    public long getLastSuccessfulBackupId(@NotNull ByteBuffer buf) {
-        return buf.getLong(LAST_SUCCESSFUL_BACKUP_ID_OFF);
+    public long getLastSuccessfulSnapshotId(@NotNull ByteBuffer buf) {
+        return buf.getLong(LAST_SUCCESSFUL_SNAPSHOT_ID_OFF);
     }
 
     /**
      * @param buf Buffer.
-     * @param lastSuccessfulFullBackupId Last successful full snapshot id.
+     * @param lastSuccessfulFullSnapshotId Last successful full snapshot id.
      */
-    public void setLastSuccessfulFullBackupId(@NotNull ByteBuffer buf, long lastSuccessfulFullBackupId) {
-        buf.putLong(LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF, lastSuccessfulFullBackupId);
-    }
-
-    /**
-     * @param buf Buffer.
-     */
-    public long getLastSuccessfulFullBackupId(@NotNull ByteBuffer buf) {
-        return buf.getLong(LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF);
-    }
-
-    /**
-     * @param buf Buffer.
-     * @param nextBackupId Next snapshot id.
-     */
-    public void setNextBackupTag(@NotNull ByteBuffer buf, long nextBackupId) {
-        buf.putLong(NEXT_BACKUP_TAG_OFF, nextBackupId);
+    public void setLastSuccessfulFullSnapshotId(@NotNull ByteBuffer buf, long lastSuccessfulFullSnapshotId) {
+        buf.putLong(LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF, lastSuccessfulFullSnapshotId);
     }
 
     /**
      * @param buf Buffer.
      */
-    public long getLastSuccessfulBackupTag(@NotNull ByteBuffer buf) {
-        return buf.getLong(LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF);
+    public long getLastSuccessfulFullSnapshotId(@NotNull ByteBuffer buf) {
+        return buf.getLong(LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF);
     }
 
     /**
      * @param buf Buffer.
-     * @param lastSuccessfulBackupTag Last successful snapshot tag.
+     * @param nextSnapshotId Next snapshot id.
      */
-    public void setLastSuccessfulBackupTag(@NotNull ByteBuffer buf, long lastSuccessfulBackupTag) {
-        buf.putLong(LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF, lastSuccessfulBackupTag);
+    public void setNextSnapshotTag(@NotNull ByteBuffer buf, long nextSnapshotId) {
+        buf.putLong(NEXT_SNAPSHOT_TAG_OFF, nextSnapshotId);
     }
 
     /**
      * @param buf Buffer.
      */
-    public long getNextBackupTag(@NotNull ByteBuffer buf) {
-        return buf.getLong(NEXT_BACKUP_TAG_OFF);
+    public long getLastSuccessfulSnapshotTag(@NotNull ByteBuffer buf) {
+        return buf.getLong(LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
+     */
+    public void setLastSuccessfulSnapshotTag(@NotNull ByteBuffer buf, long lastSuccessfulSnapshotTag) {
+        buf.putLong(LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF, lastSuccessfulSnapshotTag);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public long getNextSnapshotTag(@NotNull ByteBuffer buf) {
+        return buf.getLong(NEXT_SNAPSHOT_TAG_OFF);
     }
 
     /**
