@@ -113,7 +113,7 @@ public class IgniteBenchmarkPreloadLogger {
     }
 
     /**
-     * Helper method for initializing the cache list and counters map.
+     * Helper method for initializing the cache list and the counters map.
      * @param node Ignite node.
      */
     private void setCaches(IgniteNode node) {

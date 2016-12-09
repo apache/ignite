@@ -68,14 +68,14 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /**
      * Prints non-system caches sizes during preloading.
      */
-    protected void startPreloadLogging(){
-        plgr.printLog(args.preloadLogsInterval());
+    protected void startPreloadLogging(long timeInterval){
+        plgr.printLog(timeInterval);
     }
 
     /**
      * Terminates printing preloading log.
      */
-    protected void stopPreloadLog() throws Exception {
+    protected void stopPreloadLogging() throws Exception {
         plgr.stopPrint();
     }
 

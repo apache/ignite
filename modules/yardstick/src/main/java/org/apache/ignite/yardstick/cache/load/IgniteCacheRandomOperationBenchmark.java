@@ -31,10 +31,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
@@ -71,6 +68,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.IgniteBenchmarkPreloadLogger;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
 import org.jetbrains.annotations.NotNull;
@@ -407,7 +405,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
                 " range (\"-r\", \"--range\").");
 
-        startPreloadLogging();
+        startPreloadLogging(args.preloadLogsInterval());
 
         Thread[] threads = new Thread[availableCaches.size()];
 
@@ -429,7 +427,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         for (Thread thread : threads)
             thread.join();
 
-        stopPreloadLog();
+        stopPreloadLogging();
     }
 
     /**
