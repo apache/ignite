@@ -81,13 +81,13 @@ public class HadoopDelegateUtils {
      * @return Delegate.
      */
     @SuppressWarnings("unchecked")
-    public static HadoopFileSystemFactoryDelegate fileSystemFactoryDelegate(Object proxy) {
+    public static HadoopFileSystemFactoryDelegate fileSystemFactoryDelegate(ClassLoader ldr, Object proxy) {
         String clsName = FACTORY_CLS_MAP.get(proxy.getClass().getName());
 
         if (clsName == null)
             clsName = DFLT_FACTORY_CLS;
 
-        return newInstance(clsName, null, proxy);
+        return newInstance(clsName, ldr, proxy);
     }
 
     /**

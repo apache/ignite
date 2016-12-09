@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 .settings-row
     +text('Data source bean name:', 'model.JDBC.dataSourceBean', '"checkpointJdbcDataSourceBean" + $index', 'model.kind === "JDBC"', 'Input bean name',
@@ -23,23 +23,24 @@ include ../../../../../../app/helpers/jade/mixins.jade
     +dialect('Dialect:', 'model.JDBC.dialect', '"checkpointJdbcDialect" + $index', 'model.kind === "JDBC"',
     'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
 .settings-row
-    +text('User:', 'model.JDBC.user', '"checkpointJdbcUser" + $index', 'false', 'Input user name', 'Checkpoint jdbc user name')
-.settings-row
-    +text('Table name:', 'model.JDBC.checkpointTableName', '"checkpointJdbcCheckpointTableName" + $index', 'false', 'CHECKPOINTS', 'Checkpoint table name')
-.settings-row
-    +text('Key field name:', 'model.JDBC.keyFieldName', '"checkpointJdbcKeyFieldName" + $index', 'false', 'NAME', 'Checkpoint key field name')
-.settings-row
-    +dropdown('Key field type:', 'model.JDBC.keyFieldType', '"checkpointJdbcKeyFieldType" + $index', 'true', 'VARCHAR', 'supportedJdbcTypes', 'Checkpoint key field type')
-.settings-row
-    +text('Value field name:', 'model.JDBC.valueFieldName', '"checkpointJdbcValueFieldName" + $index', 'false', 'VALUE', 'Checkpoint value field name')
-.settings-row
-    +dropdown('Value field type:', 'model.JDBC.valueFieldType', '"checkpointJdbcValueFieldType" + $index', 'true', 'BLOB', 'supportedJdbcTypes', 'Checkpoint value field type')
-.settings-row
-    +text('Expire date field name:', 'model.JDBC.expireDateFieldName', '"checkpointJdbcExpireDateFieldName" + $index', 'false', 'EXPIRE_DATE', 'Checkpoint expire date field name')
-.settings-row
-    +dropdown('Expire date field type:', 'model.JDBC.expireDateFieldType', '"checkpointJdbcExpireDateFieldType"', 'true', 'DATETIME', 'supportedJdbcTypes', 'Checkpoint expire date field type')
-.settings-row
-    +number('Number of retries:', 'model.JDBC.numberOfRetries', '"checkpointJdbcNumberOfRetries"', 'true', '2', '0', 'Number of retries in case of DB failure')
-.settings-row
     +java-class('Listener:', 'model.JDBC.checkpointListener', '"checkpointJdbcListener" + $index', 'true', 'false',
-    'Checkpoint listener implementation class name')
+        'Checkpoint listener implementation class name')
++showHideLink('jdbcExpanded', 'settings')
+    .details-row
+        +text('User:', 'model.JDBC.user', '"checkpointJdbcUser" + $index', 'false', 'Input user name', 'Checkpoint jdbc user name')
+    .details-row
+        +text('Table name:', 'model.JDBC.checkpointTableName', '"checkpointJdbcCheckpointTableName" + $index', 'false', 'CHECKPOINTS', 'Checkpoint table name')
+    .details-row
+        +text('Key field name:', 'model.JDBC.keyFieldName', '"checkpointJdbcKeyFieldName" + $index', 'false', 'NAME', 'Checkpoint key field name')
+    .details-row
+        +dropdown('Key field type:', 'model.JDBC.keyFieldType', '"checkpointJdbcKeyFieldType" + $index', 'true', 'VARCHAR', 'supportedJdbcTypes', 'Checkpoint key field type')
+    .details-row
+        +text('Value field name:', 'model.JDBC.valueFieldName', '"checkpointJdbcValueFieldName" + $index', 'false', 'VALUE', 'Checkpoint value field name')
+    .details-row
+        +dropdown('Value field type:', 'model.JDBC.valueFieldType', '"checkpointJdbcValueFieldType" + $index', 'true', 'BLOB', 'supportedJdbcTypes', 'Checkpoint value field type')
+    .details-row
+        +text('Expire date field name:', 'model.JDBC.expireDateFieldName', '"checkpointJdbcExpireDateFieldName" + $index', 'false', 'EXPIRE_DATE', 'Checkpoint expire date field name')
+    .details-row
+        +dropdown('Expire date field type:', 'model.JDBC.expireDateFieldType', '"checkpointJdbcExpireDateFieldType"', 'true', 'DATETIME', 'supportedJdbcTypes', 'Checkpoint expire date field type')
+    .details-row
+        +number('Number of retries:', 'model.JDBC.numberOfRetries', '"checkpointJdbcNumberOfRetries"', 'true', '2', '0', 'Number of retries in case of DB failure')
