@@ -34,11 +34,6 @@
 
 namespace ignite
 {
-    BOOL ConfigDSN(HWND     hwndParent,
-                   WORD     req,
-                   LPCSTR   driver,
-                   LPCSTR   attributes);
-
     SQLRETURN SQLGetInfo(SQLHDBC        conn,
                          SQLUSMALLINT   infoType,
                          SQLPOINTER     infoValue,
@@ -264,6 +259,13 @@ namespace ignite
                        SQLCHAR*     msgBuf,
                        SQLSMALLINT  msgBufLen,
                        SQLSMALLINT* msgResLen);
+
+    SQLRETURN SQLDescribeParam(SQLHSTMT     stmt,
+                               SQLUSMALLINT paramNum,
+                               SQLSMALLINT* dataType,
+                               SQLULEN*     paramSize,
+                               SQLSMALLINT* decimalDigits,
+                               SQLSMALLINT* nullable);
 
 } // namespace ignite
 

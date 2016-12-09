@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Transactions
         /// </summary>
         /// <param name="concurrency">Concurrency.</param>
         /// <param name="isolation">Isolation.</param>
-        /// <param name="timeout">Timeout.</param>
+        /// <param name="timeout">Timeout. TimeSpan.Zero for indefinite timeout.</param>
         /// <param name="txSize">Number of entries participating in transaction (may be approximate).</param>
         /// <returns>New transaction.</returns>
         ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, 

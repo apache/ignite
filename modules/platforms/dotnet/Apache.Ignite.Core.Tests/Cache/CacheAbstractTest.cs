@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable MissingSerializationAttribute
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
@@ -30,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -39,14 +41,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     class CacheTestKey
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public CacheTestKey()
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -872,6 +866,32 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestWithExpiryPolicy()
         {
+            TestWithExpiryPolicy((cache, policy) => cache.WithExpiryPolicy(policy), true);
+        }
+
+        /// <summary>
+        /// Expiry policy tests.
+        /// </summary>
+        [Test]
+        public void TestCacheConfigurationExpiryPolicy()
+        {
+            TestWithExpiryPolicy((cache, policy) =>
+            {
+                var cfg = cache.GetConfiguration();
+
+                cfg.Name = string.Format("expiryPolicyCache_{0}_{1}", GetType().Name, policy.GetHashCode());
+                cfg.ExpiryPolicyFactory = new ExpiryPolicyFactory(policy);
+
+                return cache.Ignite.CreateCache<int, int>(cfg);
+            }, false);
+        }
+
+        /// <summary>
+        /// Expiry policy tests.
+        /// </summary>
+        public void TestWithExpiryPolicy(Func<ICache<int, int>, IExpiryPolicy, ICache<int, int>> withPolicyFunc, 
+            bool origCache)
+        {
             ICache<int, int> cache0 = Cache(0);
             
             int key0;
@@ -889,7 +909,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             
             // Test unchanged expiration.
-            ICache<int, int> cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
+            ICache<int, int> cache = withPolicyFunc(cache0, new ExpiryPolicy(null, null, null));
+            cache0 = origCache ? cache0 : cache;
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -912,7 +933,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache0.RemoveAll(new List<int> { key0, key1 });
 
             // Test eternal expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.MaxValue, TimeSpan.MaxValue, TimeSpan.MaxValue));
+            cache = withPolicyFunc(cache0, new ExpiryPolicy(TimeSpan.MaxValue, TimeSpan.MaxValue, TimeSpan.MaxValue));
+            cache0 = origCache ? cache0 : cache;
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -935,8 +957,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache0.RemoveAll(new List<int> { key0, key1 });
 
             // Test regular expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
+            cache = withPolicyFunc(cache0, new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
                 TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
+            cache0 = origCache ? cache0 : cache;
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -956,10 +979,17 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key0));
             Assert.IsFalse(cache0.ContainsKey(key1));
 
+            // Test sliding expiration
             cache0.Put(key0, key0);
             cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
+            for (var i = 0; i < 3; i++)
+            {
+                Thread.Sleep(50);
+
+                // Prolong expiration by touching the entry
+                cache.Get(key0);
+                cache.Get(key1);
+            }
             Assert.IsTrue(cache0.ContainsKey(key0));
             Assert.IsTrue(cache0.ContainsKey(key1));
             Thread.Sleep(200);
@@ -2994,7 +3024,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
 
                 if (string.IsNullOrEmpty(containsText))
+                {
+                    Assert.IsNotNull(ex.InnerException);
                     Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
+                }
                 else
                     Assert.IsTrue(ex.ToString().Contains(containsText));
             }
@@ -3119,27 +3152,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestCacheMetrics()
-        {
-            var cache = Cache();
-
-            cache.Put(1, 1);
-
-            var m = cache.GetMetrics();
-
-            Assert.AreEqual(cache.Name, m.CacheName);
-
-            Assert.AreEqual(cache.GetSize(), m.Size);
-        }
-
-        [Test]
         public void TestRebalance()
         {
             var cache = Cache();
 
-            var fut = cache.Rebalance();
+            var task = cache.Rebalance();
 
-            
+            task.Wait();
         }
 
         [Test]

@@ -279,7 +279,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         boolean rmv;
 
-        synchronized (futs) {
+        synchronized (sync) {
             rmv = lockKeys.remove(entry.txKey());
         }
 
@@ -310,7 +310,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (!locksReady)
             return false;
 
-        synchronized (futs) {
+        synchronized (sync) {
             return lockKeys.isEmpty();
         }
     }
@@ -563,11 +563,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
-        synchronized (futs) {
-            // We iterate directly over the futs collection here to avoid copy.
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<IgniteInternalTx> fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -581,9 +581,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         return null;
                 }
             }
-
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -621,7 +621,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             }
 
             if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                synchronized (futs) {
+                synchronized (sync) {
                     lockKeys.add(txEntry.txKey());
                 }
             }
@@ -1342,7 +1342,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                         MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
-                        add(fut);
+                        add(fut); // Append new future.
 
                         GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                             futId,
@@ -1796,8 +1796,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            synchronized (futs) {
-                futs.clear();
+            synchronized (sync) {
+                clear();
 
                 lockKeys.clear();
             }
