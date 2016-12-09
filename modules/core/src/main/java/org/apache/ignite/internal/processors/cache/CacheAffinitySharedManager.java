@@ -1013,13 +1013,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> processedCacheIds = null;
 
-        if (multiFetchFut.get() != null) {
-            processedCacheIds = fetchAffinityFromMultiResult(fut, multiFetchFut);
+        GridDhtAffinityMultiAssignmentResponse res = multiFetchFut.get();
+        if (res != null) {
+            processedCacheIds = fetchAffinityFromMultiResult(fut, res);
 
             if (F.eqNodes(multiFetchFut.answeredNode(), crdNode))
-                assert multiFetchFut.get().size() == cacheIds.size() : "not all caches in crd answer";
+                assert res.size() == cacheIds.size() :
+                    String.format("not all caches in crd answer: expect %s, got %s", cacheIds.size(), res.size());
 
-            if (multiFetchFut.get().size() == cacheIds.size())
+            if (processedCacheIds.size() == cacheIds.size())
                 return;
         }
 
@@ -1096,16 +1098,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param fut Exchange future.
-     * @param fetchFut Affinity fetch future.
+     * @param res Affinity fetch future result.
      * @return Set of processed cache ids.
-     * @throws IgniteCheckedException If failed.
      */
     private Set<Integer> fetchAffinityFromMultiResult(GridDhtPartitionsExchangeFuture fut,
-        GridDhtAssignmentMultiFetchFuture fetchFut)
-        throws IgniteCheckedException {
+        GridDhtAffinityMultiAssignmentResponse res) {
         AffinityTopologyVersion topVer = fut.topologyVersion();
-
-        GridDhtAffinityMultiAssignmentResponse res = fetchFut.get();
 
         assert res != null;
 
