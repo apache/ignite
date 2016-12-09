@@ -52,7 +52,7 @@ struct CompositeKey
     /**
      * Default constructor.
      */
-    CompositeKey() : 
+    CompositeKey() :
         str(),
         ts(),
         guid()
@@ -67,7 +67,7 @@ struct CompositeKey
      * @param ts Timestamp part.
      * @param guid Guid part.
      */
-    CompositeKey(const std::string& str, const Timestamp& ts, const Guid& guid) : 
+    CompositeKey(const std::string& str, const Timestamp& ts, const Guid& guid) :
         str(str),
         ts(ts),
         guid(guid)
@@ -121,7 +121,7 @@ namespace ignite
                 val.str = reader.ReadString("str");
                 val.ts = reader.ReadTimestamp("ts");
                 val.guid = reader.ReadGuid("guid");
-            
+
                 return val;
             }
         };
