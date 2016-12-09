@@ -135,14 +135,14 @@ public abstract class WALRecord {
         /** */
         TRACKING_PAGE_DELTA,
 
-        /** Meta page update last successful backup id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_BACKUP_ID,
+        /** Meta page update last successful snapshot id. */
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID,
 
-        /** Meta page update last successful full backup id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_BACKUP_ID,
+        /** Meta page update last successful full snapshot id. */
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID,
 
-        /** Meta page update next backup id. */
-        META_PAGE_UPDATE_NEXT_BACKUP_ID,
+        /** Meta page update next snapshot id. */
+        META_PAGE_UPDATE_NEXT_SNAPSHOT_ID,
 
         /** Meta page update last allocated index. */
         META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,

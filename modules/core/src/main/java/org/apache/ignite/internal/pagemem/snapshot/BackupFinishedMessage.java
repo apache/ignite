@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.pagemem.backup;
+package org.apache.ignite.internal.pagemem.snapshot;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Message indicating that backup has been finished on a single node.
+ * Message indicating that snapshot has been finished on a single node.
  */
 public class BackupFinishedMessage implements Message {
     /** */

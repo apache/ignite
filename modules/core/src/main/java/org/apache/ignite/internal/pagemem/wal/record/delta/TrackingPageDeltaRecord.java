@@ -28,10 +28,10 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /** Page id to mark. */
     private final long pageIdToMark;
 
-    /** Next backup id. */
+    /** Next snapshot id. */
     private final long nextBackupId;
 
-    /** Last successful backup id. */
+    /** Last successful snapshot id. */
     private final long lastSuccessfulBackupId;
 
     /**
@@ -58,14 +58,14 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /**
      *
      */
-    public long nextBackupId() {
+    public long nextSnapshotId() {
         return nextBackupId;
     }
 
     /**
      *
      */
-    public long lastSuccessfulBackupId() {
+    public long lastSuccessfulSnapshotId() {
         return lastSuccessfulBackupId;
     }
 

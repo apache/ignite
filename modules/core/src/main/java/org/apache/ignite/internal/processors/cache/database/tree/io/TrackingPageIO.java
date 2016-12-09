@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
 /**
  * We use dedicated page for tracking pages updates.
  * Also we divide such 'tracking' pages on two half, first is used for check that page was changed or not
- * (during incremental backup), second - to accumulate changed for next backup.
+ * (during incremental snapshot), second - to accumulate changed for next snapshot.
  *
- * You cannot test change for not started backup! because it will cause of preparation for backup.
+ * You cannot test change for not started snapshot! because it will cause of preparation for snapshot.
  *
  * Implementation. For each page there is own bit in both half. Tracking page is used for tracking N page after it.
  * N depends on page size (how many bytes we can use for tracking).
@@ -46,7 +46,7 @@ public class TrackingPageIO extends PageIO {
         new TrackingPageIO(1)
     );
 
-    /** Last backup offset. */
+    /** Last snapshot offset. */
     public static final int LAST_BACKUP_TAG_OFFSET = COMMON_HEADER_END;
 
     /** Size field offset. */
@@ -73,7 +73,7 @@ public class TrackingPageIO extends PageIO {
      *
      * @param buf Buffer.
      * @param pageId Page id.
-     * @param nextBackupTag tag of next backup.
+     * @param nextBackupTag tag of next snapshot.
      * @param pageSize Page size.
      */
     public boolean markChanged(ByteBuffer buf, long pageId, long nextBackupTag, long lastSuccessfulBackupTag, int pageSize) {
@@ -106,13 +106,13 @@ public class TrackingPageIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param nextBackupTag Next backup id.
-     * @param lastSuccessfulBackupId Last successful backup id.
+     * @param nextBackupTag Next snapshot id.
+     * @param lastSuccessfulBackupId Last successful snapshot id.
      * @param pageSize Page size.
      */
     private void validateBackupId(ByteBuffer buf, long nextBackupTag, long lastSuccessfulBackupId, int pageSize) {
         assert nextBackupTag != lastSuccessfulBackupId : "nextBackupTag = " + nextBackupTag +
-            ", lastSuccessfulBackupId = " + lastSuccessfulBackupId;
+            ", lastSuccessfulSnapshotId = " + lastSuccessfulBackupId;
 
         long last = getLastBackupTag(buf);
 
@@ -137,7 +137,7 @@ public class TrackingPageIO extends PageIO {
                 //new data will be written in the same half, we should move old data to another half
                 if ((nextBackupTag - last) % 2 == 0)
                     PageHandler.copyMemory(buf, buf, sizeOff, sizeOff2, len + SIZE_FIELD_SIZE);
-            } else { //last - lastSuccessfulBackupId > 1, e.g. we should merge two half in one
+            } else { //last - lastSuccessfulSnapshotId > 1, e.g. we should merge two half in one
                 int newSize = 0;
                 int i = 0;
 
@@ -174,7 +174,7 @@ public class TrackingPageIO extends PageIO {
     }
 
     /**
-     * Check that pageId was marked as changed between previous backup finish and current backup start.
+     * Check that pageId was marked as changed between previous snapshot finish and current snapshot start.
      *
      * @param buf Buffer.
      * @param pageId Page id.

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.snapshot.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -172,7 +172,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param backupMsg Backup message.
      * @param initiator Initiator node.
-     * @return Backup init future or {@code null} if backup is not available.
+     * @return Backup init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgniteInternalFuture startLocalBackup(StartFullBackupAckDiscoveryMessage backupMsg,

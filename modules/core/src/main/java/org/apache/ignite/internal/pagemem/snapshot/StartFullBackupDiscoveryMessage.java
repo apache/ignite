@@ -16,9 +16,10 @@
  *
  */
 
-package org.apache.ignite.internal.pagemem.backup;
+package org.apache.ignite.internal.pagemem.snapshot;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -26,79 +27,74 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message indicating that a backup has been started.
+ * Message indicating that a snapshot has been started.
  */
-public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Backup ID. */
     private long globalBackupId;
-
-    /** */
-    private Exception err;
 
     /** */
     private Collection<String> cacheNames;
 
     /** */
-    private UUID initiatorNodeId;
+    private UUID initiatorId;
+
+    /** Error. */
+    private Exception err;
 
     private boolean fullBackup;
 
-    private Map<Integer, Long> lastFullBackupIdForCache;
+    private Map<Integer, Long> lastFullBackupIdForCache = new HashMap<>();
 
     /**
-     * @param globalBackupId Backup ID.
-     * @param err Error.
      * @param cacheNames Cache names.
      */
-    public StartFullBackupAckDiscoveryMessage(long globalBackupId, boolean fullBackup,
-        Map<Integer, Long> lastFullBackupIdForCache,
-        Collection<String> cacheNames, Exception err,
-        UUID initiatorNodeId) {
+    public StartFullBackupDiscoveryMessage(long globalBackupId, Collection<String> cacheNames, UUID initiatorId, boolean fullBackup) {
         this.globalBackupId = globalBackupId;
-        this.fullBackup = fullBackup;
-        this.lastFullBackupIdForCache = lastFullBackupIdForCache;
-        this.err = err;
         this.cacheNames = cacheNames;
-        this.initiatorNodeId = initiatorNodeId;
+        this.initiatorId = initiatorId;
+        this.fullBackup = fullBackup;
     }
 
     /**
-     * @return Cache names.
+     * Sets error.
+     *
+     * @param err Error.
      */
-    public Collection<String> cacheNames() {
-        return cacheNames;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    public void error(Exception err) {
+        this.err = err;
     }
 
     /**
-     * @return Initiator node id.
+     * @return {@code True} if message contains error.
      */
-    public UUID initiatorNodeId() {
-        return initiatorNodeId;
+    public boolean hasError() {
+        return err != null;
     }
 
     /**
-     * @return Error if start this process is not successfully.
+     * @return Error.
      */
     public Exception error() {
         return err;
     }
 
     /**
-     * @return {@code True} if message has error otherwise {@code false}.
+     * @return Initiator node id.
      */
-    public boolean hasError() {
-        return err != null;
+    public UUID initiatorId() {
+        return initiatorId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /**
@@ -108,21 +104,32 @@ public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessag
         return globalBackupId;
     }
 
+    /**
+     * @return Cache names.
+     */
+    public Collection<String> cacheNames() {
+        return cacheNames;
+    }
+
     public boolean fullBackup() {
         return fullBackup;
     }
 
-    @Nullable public Long lastFullBackupId(int cacheId) {
+    public Long lastFullBackupId(int cacheId) {
         return lastFullBackupIdForCache.get(cacheId);
+    }
+
+    public void lastFullBackupId(int cacheId, long id) {
+        lastFullBackupIdForCache.put(cacheId, id);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+        return new StartFullBackupAckDiscoveryMessage(globalBackupId, fullBackup, lastFullBackupIdForCache, cacheNames, err, initiatorId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
+        return true;
     }
 }

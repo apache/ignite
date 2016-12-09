@@ -30,16 +30,16 @@ public class PageMetaIO extends PageIO {
     /** */
     private static final int REUSE_LIST_ROOT_OFF = TREE_ROOT_OFF + 8;
 
-    /** Last successful backup id offset. */
+    /** Last successful snapshot id offset. */
     private static final int LAST_SUCCESSFUL_BACKUP_ID_OFF = REUSE_LIST_ROOT_OFF + 8;
 
-    /** Last successful full backup id offset. */
+    /** Last successful full snapshot id offset. */
     private static final int LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF = LAST_SUCCESSFUL_BACKUP_ID_OFF + 8;
 
-    /** Next backup id offset. */
+    /** Next snapshot id offset. */
     private static final int NEXT_BACKUP_TAG_OFF = LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF + 8;
 
-    /** Last successful full backup tag offset. */
+    /** Last successful full snapshot tag offset. */
     private static final int LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF = NEXT_BACKUP_TAG_OFF + 8;
 
     /** Last allocated index offset. */
@@ -118,7 +118,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param lastSuccessfulBackupId Last successful backup id.
+     * @param lastSuccessfulBackupId Last successful snapshot id.
      */
     public void setLastSuccessfulBackupId(@NotNull ByteBuffer buf, long lastSuccessfulBackupId) {
         buf.putLong(LAST_SUCCESSFUL_BACKUP_ID_OFF, lastSuccessfulBackupId);
@@ -133,7 +133,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param lastSuccessfulFullBackupId Last successful full backup id.
+     * @param lastSuccessfulFullBackupId Last successful full snapshot id.
      */
     public void setLastSuccessfulFullBackupId(@NotNull ByteBuffer buf, long lastSuccessfulFullBackupId) {
         buf.putLong(LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF, lastSuccessfulFullBackupId);
@@ -148,7 +148,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param nextBackupId Next backup id.
+     * @param nextBackupId Next snapshot id.
      */
     public void setNextBackupTag(@NotNull ByteBuffer buf, long nextBackupId) {
         buf.putLong(NEXT_BACKUP_TAG_OFF, nextBackupId);
@@ -163,7 +163,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param lastSuccessfulBackupTag Last successful backup tag.
+     * @param lastSuccessfulBackupTag Last successful snapshot tag.
      */
     public void setLastSuccessfulBackupTag(@NotNull ByteBuffer buf, long lastSuccessfulBackupTag) {
         buf.putLong(LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF, lastSuccessfulBackupTag);
