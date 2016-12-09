@@ -150,15 +150,15 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      */
     private Object buildBuiltinObject(String typeName, JdbcTypeField[] fields, Map<String, Integer> loadColIdxs,
         ResultSet rs) throws CacheLoaderException {
-        try {
-            JdbcTypeField field = fields[0];
+        JdbcTypeField field = fields[0];
 
+        try {
             Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
 
             return transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
         }
         catch (SQLException e) {
-            throw new CacheLoaderException("Failed to read object of class: " + typeName, e);
+            throw new CacheLoaderException("Failed to read object: [cls=" + typeName + ", prop=" + field + "]", e);
         }
     }
 
@@ -211,12 +211,13 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     }
                     catch (Exception e) {
                         throw new CacheLoaderException("Failed to set property in POJO class [type=" + typeName +
-                            ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + dbName + "]", e);
+                            ", colIdx=" + colIdx + ", prop=" + fld +
+                            ", dbValCls=" + colVal.getClass().getName() + ", dbVal=" + colVal + "]", e);
                     }
                 }
                 catch (SQLException e) {
-                    throw new CacheLoaderException("Failed to read object property [type= " + typeName +
-                        ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + dbName + "]", e);
+                    throw new CacheLoaderException("Failed to read object property [type=" + typeName +
+                        ", colIdx=" + colIdx + ", prop=" + fld + "]", e);
                 }
             }
 
