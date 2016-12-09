@@ -18,6 +18,7 @@
 #include "ignite/impl/interop/interop_external_memory.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
+#include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/binary/binary.h"
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 
@@ -26,6 +27,7 @@ using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
+using namespace ignite::impl::cache::query::continuous;
 
 namespace ignite 
 {
@@ -73,8 +75,47 @@ namespace ignite
             mem.Get()->Reallocate(cap);
         }
 
-        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(0),
-            proc(), metaMgr(new BinaryTypeManager()), metaUpdater(0)
+        /**
+         * Continuous query event listener callback.
+         *
+         * @param target Target environment.
+         * @param lsnrPtr Listener pointer.
+         * @param memPtr Memory pointer.
+         */
+        void IGNITE_CALL ContinuousQueryListenerApply(void* target, long long qryHandle, long long memPtr)
+        {
+            assert(qryHandle != -1);
+            assert(memPtr != 0);
+            assert(target != 0);
+
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
+
+            env->Get()->OnContinuousQueryListenerApply(qryHandle, mem);
+        }
+
+        /**
+         * Continuous query event listener callback.
+         *
+         * @param target Target environment.
+         * @param filterPtr Filter pointer.
+         */
+        void IGNITE_CALL ContinuousQueryFilterRelease(void* target, long long filterPtr)
+        {
+            assert(target != 0);
+
+            // No-op.
+        }
+
+        IgniteEnvironment::IgniteEnvironment() :
+            ctx(SharedPointer<JniContext>()),
+            latch(new SingleLatch),
+            name(0),
+            proc(),
+            metaMgr(new BinaryTypeManager()),
+            metaUpdater(0),
+            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP)
         {
             // No-op.
         }
@@ -89,7 +130,7 @@ namespace ignite
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
         {
-            JniHandlers hnds = JniHandlers();
+            JniHandlers hnds;
 
             hnds.target = target;
 
@@ -97,6 +138,9 @@ namespace ignite
             hnds.onStop = OnStop;
 
             hnds.memRealloc = MemoryReallocate;
+
+            hnds.contQryLsnrApply = ContinuousQueryListenerApply;
+            hnds.contQryFilterRelease = ContinuousQueryFilterRelease;
 
             hnds.error = 0;
 
@@ -177,6 +221,11 @@ namespace ignite
                 ctx.Get()->ProcessorReleaseStart(proc.Get());
         }
 
+        HandleRegistry& IgniteEnvironment::GetHandleRegistry()
+        {
+            return registry;
+        }
+
         void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
         {
             this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
@@ -195,6 +244,20 @@ namespace ignite
             }
             else
                 name = 0;
+        }
+
+        void IgniteEnvironment::OnContinuousQueryListenerApply(int64_t qryHandle, SharedPointer<InteropMemory>& mem)
+        {
+            ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(registry.Get(qryHandle).Get());
+
+            if (contQry)
+            {
+                InteropInputStream stream(mem.Get());
+                BinaryReaderImpl reader(&stream);
+                BinaryRawReader rawReader(&reader);
+
+                contQry->ReadAndProcessEvents(rawReader);
+            }
         }
     }
 }

@@ -35,11 +35,21 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     /** Metrics listener. */
     protected final GridNioMetricsListener metricsLsnr;
 
+    /** */
+    private final int connIdx;
+
     /**
+     * @param connIdx Connection index.
      * @param metricsLsnr Metrics listener.
      */
-    protected GridAbstractCommunicationClient(@Nullable GridNioMetricsListener metricsLsnr) {
+    protected GridAbstractCommunicationClient(int connIdx, @Nullable GridNioMetricsListener metricsLsnr) {
+        this.connIdx = connIdx;
         this.metricsLsnr = metricsLsnr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int connectionIndex() {
+        return connIdx;
     }
 
     /** {@inheritDoc} */
