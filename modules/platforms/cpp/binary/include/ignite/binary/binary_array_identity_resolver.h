@@ -42,7 +42,7 @@ namespace ignite
         class BinaryReader;
 
         /**
-         * Binary type structure. Defines a set of functions required for type to be serialized and deserialized.
+         * Binary array identity resolver.
          */
         struct BinaryArrayIdentityResolver
         {

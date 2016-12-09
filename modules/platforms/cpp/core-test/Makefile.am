@@ -54,6 +54,7 @@ ignite_tests_LDFLAGS = \
 ignite_tests_SOURCES = \
     src/reference_test.cpp \
     src/bits_test.cpp \
+	src/binary_identity_resolver_test.cpp \
     src/cache_test.cpp \
     src/cache_query_test.cpp \
     src/continuous_query_test.cpp \
@@ -73,7 +74,8 @@ ignite_tests_SOURCES = \
     src/fixed_size_array_test.cpp \
     src/transactions_test.cpp \
     src/teamcity_messages.cpp \
-    src/teamcity_boost.cpp
+    src/teamcity_boost.cpp \
+	src/test_utils.cpp
 
 run-check: check
 	./ignite-tests -p

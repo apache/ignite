@@ -27,6 +27,7 @@ nobase_include_HEADERS = \
     ignite/binary/binary_consts.h \
     ignite/binary/binary_type.h \
     ignite/binary/binary_object.h \
+    ignite/binary/binary_array_identity_resolver.h \
     ignite/impl/binary/binary_type_handler.h \
     ignite/impl/binary/binary_id_resolver.h \
     ignite/impl/binary/binary_type_manager.h \
