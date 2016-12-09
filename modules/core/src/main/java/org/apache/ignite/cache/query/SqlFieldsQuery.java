@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  * @see IgniteCache#query(Query)
  */
-public final class SqlFieldsQuery extends Query<List<?>> {
+public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 

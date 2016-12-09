@@ -73,7 +73,7 @@ namespace ignite
             ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::Diagnosable& diag, 
                 Connection& connection, const std::string& schema,
                 const std::string& table, const std::string& column) :
-                Query(diag),
+                Query(diag, COLUMN_METADATA),
                 connection(connection),
                 schema(schema),
                 table(table),

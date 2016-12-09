@@ -145,7 +145,8 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgnitePartitionedCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(IgniteDataStructureWithJobTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(SemaphoreFailoverSafeReleasePermitsTest.class));
+        // TODO https://issues.apache.org/jira/browse/IGNITE-4173, enable when fixed.
+        // suite.addTest(new TestSuite(SemaphoreFailoverSafeReleasePermitsTest.class));
         // TODO IGNITE-3141, enabled when fixed.
         // suite.addTest(new TestSuite(IgnitePartitionedLockSelfTest.class));
 

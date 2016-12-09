@@ -197,6 +197,12 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
                 },
+                batchSize: Number,
+                maximumPoolSize: Number,
+                maximumWriteAttempts: Number,
+                parallelLoadCacheMinimumThreshold: Number,
+                hasher: String,
+                transformer: String,
                 sqlEscapeAll: Boolean
             },
             CacheJdbcBlobStoreFactory: {
