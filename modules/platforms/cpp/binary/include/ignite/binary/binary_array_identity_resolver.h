@@ -59,20 +59,19 @@ namespace ignite
                 using namespace impl::binary;
 
                 BinaryType<T> bt;
+                TemplatedBinaryIdResolver<T> idRslvr(bt);
 
                 InteropUnpooledMemory mem(1024);
                 InteropOutputStream out(&mem);
 
-                BinaryWriterImpl writerImpl(&out, 0, 0, 0, 0);
+                BinaryWriterImpl writerImpl(&out, &idRslvr, 0, 0, 0);
                 BinaryWriter writer(&writerImpl);
 
                 bt.Write(writer, obj);
 
                 out.Synchronize();
 
-                GetDataHashCode(mem.Data(), mem.Length());
-
-                return 0;
+                return GetDataHashCode(mem.Data(), mem.Length());
             }
         };
     }

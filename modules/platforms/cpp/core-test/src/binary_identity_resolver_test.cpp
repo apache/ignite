@@ -161,12 +161,12 @@ BOOST_FIXTURE_TEST_SUITE(BinaryIdentityResolverTestSuite, BinaryIdentityResolver
  */
 BOOST_AUTO_TEST_CASE(TestIdentityEquility)
 {
-    CompositeKey key("Key String", Timestamp(7518432006436), Guid(0x4A950C6206FE4502, 0xAC06145097E56F02));
+    CompositeKey key("Key String", Timestamp(123851, 562304134), Guid(0x4A950C6206FE4502, 0xAC06145097E56F02));
     int32_t value = 12321;
 
-    Cache<CompositeKey, int32_t> cache = grid.GetOrCreateCache<CompositeKey, int32_t>("cache-1");
+    Cache<CompositeKey, int32_t> cache = grid.GetOrCreateCache<CompositeKey, int32_t>("cache1");
 
-    SqlFieldsQuery qry("INSERT INTO cache-1 (str, ts, guid, _val) VALUES (?, ?, ?, ?)");
+    SqlFieldsQuery qry("INSERT INTO Integer (str, ts, guid, _val) VALUES (?, ?, ?, ?)");
 
     qry.AddArgument(key.str);
     qry.AddArgument(key.ts);
