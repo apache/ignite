@@ -15,47 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle;
-
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-
-import java.util.concurrent.atomic.AtomicLong;
+package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 /**
- * Remote shuffle state.
+ * Hadoop data output state for direct communication.
  */
-class HadoopShuffleRemoteState {
-    /** Message count. */
-    private final AtomicLong msgCnt = new AtomicLong();
+public class HadoopDirectDataOutputState {
+    /** Buffer. */
+    private final byte[] buf;
 
-    /** Completion future. */
-    private final GridFutureAdapter fut = new GridFutureAdapter();
+    /** Buffer length. */
+    private final int bufLen;
 
     /**
-     * Callback invoked when shuffle message is sent.
+     * Constructor.
+     *
+     * @param buf Buffer.
+     * @param bufLen Buffer length.
      */
-    public void onShuffleMessage() {
-        msgCnt.incrementAndGet();
+    public HadoopDirectDataOutputState(byte[] buf, int bufLen) {
+        this.buf = buf;
+        this.bufLen = bufLen;
     }
 
     /**
-     * Callback invoked on shuffle finish response.
+     * @return Buffer.
      */
-    public void onShuffleFinishResponse() {
-        fut.onDone();
+    public byte[] buffer() {
+        return buf;
     }
 
     /**
-     * @return Message count.
+     * @return Length.
      */
-    public long messageCount() {
-        return msgCnt.get();
-    }
-
-    /**
-     * @return Completion future.
-     */
-    public GridFutureAdapter future() {
-        return fut;
+    public int bufferLength() {
+        return bufLen;
     }
 }

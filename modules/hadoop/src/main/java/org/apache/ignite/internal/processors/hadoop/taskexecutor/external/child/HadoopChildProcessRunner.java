@@ -151,7 +151,7 @@ public class HadoopChildProcessRunner {
                 job.initialize(true, nodeDesc.processId());
 
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
-                    req.totalReducerCount(), req.localReducers(), false);
+                    req.totalReducerCount(), req.localReducers(), 0, false);
 
                 initializeExecutors(req);
 

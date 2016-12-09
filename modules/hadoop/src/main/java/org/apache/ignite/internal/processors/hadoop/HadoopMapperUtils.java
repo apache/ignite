@@ -15,47 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle;
-
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-
-import java.util.concurrent.atomic.AtomicLong;
+package org.apache.ignite.internal.processors.hadoop;
 
 /**
- * Remote shuffle state.
+ * Set of mapper utility methods.
  */
-class HadoopShuffleRemoteState {
-    /** Message count. */
-    private final AtomicLong msgCnt = new AtomicLong();
-
-    /** Completion future. */
-    private final GridFutureAdapter fut = new GridFutureAdapter();
+public class HadoopMapperUtils {
+    /** Thread-local mapper index. */
+    private static final ThreadLocal<Integer> MAP_IDX = new ThreadLocal<>();
 
     /**
-     * Callback invoked when shuffle message is sent.
+     * @return Current mapper index.
      */
-    public void onShuffleMessage() {
-        msgCnt.incrementAndGet();
+    public static int mapperIndex() {
+        Integer res = MAP_IDX.get();
+
+        return res != null ? res : -1;
     }
 
     /**
-     * Callback invoked on shuffle finish response.
+     * @param idx Current mapper index.
      */
-    public void onShuffleFinishResponse() {
-        fut.onDone();
+    public static void mapperIndex(Integer idx) {
+        MAP_IDX.set(idx);
     }
 
     /**
-     * @return Message count.
+     * Clear mapper index.
      */
-    public long messageCount() {
-        return msgCnt.get();
+    public static void clearMapperIndex() {
+        MAP_IDX.remove();
     }
 
     /**
-     * @return Completion future.
+     * Constructor.
      */
-    public GridFutureAdapter future() {
-        return fut;
+    private HadoopMapperUtils() {
+        // No-op.
     }
 }
