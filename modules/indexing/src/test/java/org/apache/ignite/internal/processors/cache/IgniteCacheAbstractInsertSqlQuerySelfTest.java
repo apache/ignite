@@ -148,8 +148,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             QueryEntity s2p = new QueryEntity(String.class.getName(), "Person");
 
-            s2p.setKeyFields(Collections.<String>emptySet());
-
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
@@ -161,8 +159,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             QueryEntity s2s = new QueryEntity(String.class.getName(), String.class.getName());
 
-            s2s.setKeyFields(Collections.<String>emptySet());
-
             s2pCcfg.setQueryEntities(Arrays.asList(s2p, s2s));
 
             ignite(0).createCache(s2pCcfg);
@@ -172,8 +168,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             CacheConfiguration i2pCcfg = cacheConfig("I2P", true, false);
 
             QueryEntity i2p = new QueryEntity(Integer.class.getName(), "Person");
-
-            i2p.setKeyFields(Collections.<String>emptySet());
 
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
@@ -223,7 +217,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("Id", Integer.class.getName());
             flds.put("id", Integer.class.getName());
             flds.put("name", String.class.getName());
-            flds.put("_Val", Integer.class.getName());
+            flds.put("IntVal", Integer.class.getName());
 
             k22p.setFields(flds);
 
@@ -285,8 +279,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             QueryEntity i2i = new QueryEntity(Integer.class.getName(), Integer.class.getName());
 
-            i2i.setKeyFields(Collections.<String>emptySet());
-
             i2i.setFields(new LinkedHashMap<String, String>());
 
             i2i.setIndexes(Collections.<QueryIndex>emptyList());
@@ -344,7 +336,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         if (!isBinaryMarshaller()) {
             Person2 p = new Person2(id);
             p.name = name;
-            p._Val = valFld;
+            p.IntVal = valFld;
 
             return p;
         }
@@ -352,7 +344,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             BinaryObjectBuilder o = grid(0).binary().builder("Person2");
             o.setField("id", id);
             o.setField("name", name);
-            o.setField("_Val", valFld);
+            o.setField("IntVal", valFld);
 
             return o.build();
         }
@@ -562,6 +554,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
         /** */
         @QuerySqlField
-        public int _Val;
+        public int IntVal;
     }
 }

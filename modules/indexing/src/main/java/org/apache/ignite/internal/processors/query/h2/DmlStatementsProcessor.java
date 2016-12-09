@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -46,7 +48,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
@@ -73,6 +75,8 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
+import org.h2.value.DataType;
+import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -130,9 +134,34 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(spaceName, stmt, null);
 
+        GridCacheContext<?, ?> cctx = plan.tbl.rowDescriptor().context();
+
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            UpdateResult r = executeUpdateStatement(plan.tbl.rowDescriptor().context(), stmt, fieldsQry, loc, filters,
-                cancel, errKeys);
+            CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+            // Force keepBinary for operation context to avoid binary deserialization inside entry processor
+            if (cctx.binaryMarshaller()) {
+                CacheOperationContext newOpCtx = null;
+
+                if (opCtx == null)
+                    // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
+                else if (!opCtx.isKeepBinary())
+                    newOpCtx = opCtx.keepBinary();
+
+                if (newOpCtx != null)
+                    cctx.operationContextPerCall(newOpCtx);
+            }
+
+            UpdateResult r;
+
+            try {
+                r = executeUpdateStatement(cctx, stmt, fieldsQry, loc, filters,
+                    cancel, errKeys);
+            }
+            finally {
+                cctx.operationContextPerCall(opCtx);
+            }
 
             if (F.isEmpty(r.errKeys))
                 return r.cnt + items;
@@ -195,12 +224,16 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         Integer errKeysPos = null;
 
-        if (!F.isEmpty(failedKeys))
-            errKeysPos = F.isEmpty(fieldsQry.getArgs()) ? 1 : fieldsQry.getArgs().length + 1;
+        Object[] params = fieldsQry.getArgs();
+
+        if (!F.isEmpty(failedKeys)) {
+            int paramsCnt = F.isEmpty(params) ? 0 : params.length;
+            params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
+            params[paramsCnt] = failedKeys;
+            errKeysPos = paramsCnt; // Last position
+        }
 
         UpdatePlan plan = getPlanForStatement(cctx.name(), prepStmt, errKeysPos);
-
-        Object[] params = fieldsQry.getArgs();
 
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
@@ -351,78 +384,58 @@ public class DmlStatementsProcessor {
         // With DELETE, we have only two columns - key and value.
         long res = 0;
 
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
         // Keys that failed to DELETE due to concurrent updates.
         List<Object> failedKeys = new ArrayList<>();
 
         SQLException resEx = null;
 
-        try {
-            Iterator<List<?>> it = cursor.iterator();
-            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
-            while (it.hasNext()) {
-                List<?> e = it.next();
-                if (e.size() != 2) {
-                    U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
-                    continue;
-                }
+        Iterator<List<?>> it = cursor.iterator();
+        Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
-                rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
-
-                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    PageProcessingResult pageRes = processPage(cctx, rows);
-
-                    res += pageRes.cnt;
-
-                    failedKeys.addAll(F.asList(pageRes.errKeys));
-
-                    if (pageRes.ex != null) {
-                        if (resEx == null)
-                            resEx = pageRes.ex;
-                        else
-                            resEx.setNextException(pageRes.ex);
-                    }
-
-                    if (it.hasNext())
-                        rows.clear(); // No need to clear after the last batch.
-                }
+        while (it.hasNext()) {
+            List<?> e = it.next();
+            if (e.size() != 2) {
+                U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
+                continue;
             }
 
-            if (resEx != null) {
-                if (!F.isEmpty(failedKeys)) {
-                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
-                    // had been modified concurrently right away.
-                    String msg = "Failed to DELETE some keys because they had been modified concurrently " +
-                        "[keys=" + failedKeys + ']';
+            rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
 
-                    SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                PageProcessingResult pageRes = processPage(cctx, rows);
 
-                    conEx.setNextException(resEx);
+                res += pageRes.cnt;
 
-                    resEx = conEx;
+                failedKeys.addAll(F.asList(pageRes.errKeys));
+
+                if (pageRes.ex != null) {
+                    if (resEx == null)
+                        resEx = pageRes.ex;
+                    else
+                        resEx.setNextException(pageRes.ex);
                 }
 
-                throw new IgniteSQLException(resEx);
+                if (it.hasNext())
+                    rows.clear(); // No need to clear after the last batch.
             }
         }
-        finally {
-            cctx.operationContextPerCall(opCtx);
+
+        if (resEx != null) {
+            if (!F.isEmpty(failedKeys)) {
+                // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                // had been modified concurrently right away.
+                String msg = "Failed to DELETE some keys because they had been modified concurrently " +
+                    "[keys=" + failedKeys + ']';
+
+                SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+                conEx.setNextException(resEx);
+
+                resEx = conEx;
+            }
+
+            throw new IgniteSQLException(resEx);
         }
 
         return new UpdateResult(res, failedKeys.toArray());
@@ -456,22 +469,6 @@ public class DmlStatementsProcessor {
 
         long res = 0;
 
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
         Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
         // Keys that failed to UPDATE due to concurrent updates.
@@ -479,99 +476,165 @@ public class DmlStatementsProcessor {
 
         SQLException resEx = null;
 
-        try {
-            Iterator<List<?>> it = cursor.iterator();
+        Iterator<List<?>> it = cursor.iterator();
 
-            while (it.hasNext()) {
-                List<?> e = it.next();
-                Object key = e.get(0);
-                Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
+        while (it.hasNext()) {
+            List<?> e = it.next();
+            Object key = e.get(0);
+            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
-                Object newVal;
+            Object newVal;
 
-                Map<String, Object> newColVals = new HashMap<>();
+            Map<String, Object> newColVals = new HashMap<>();
 
-                for (int i = 0; i < plan.colNames.length; i++) {
-                    if (hasNewVal && i == valColIdx - 2)
-                        continue;
+            for (int i = 0; i < plan.colNames.length; i++) {
+                if (hasNewVal && i == valColIdx - 2)
+                    continue;
 
-                    newColVals.put(plan.colNames[i], e.get(i + 2));
-                }
-
-                newVal = plan.valSupplier.apply(e);
-
-                if (bin && !(val instanceof BinaryObject))
-                    val = cctx.grid().binary().toBinary(val);
-
-                // Skip key and value - that's why we start off with 2nd column
-                for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                    Column c = plan.tbl.getColumn(i + 2);
-
-                    boolean hasNewColVal = newColVals.containsKey(c.getName());
-
-                    // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                    if (bin && !hasNewColVal)
-                        continue;
-
-                    Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
-
-                    desc.setColumnValue(key, newVal, colVal, i);
-                }
-
-                if (bin && hasProps) {
-                    assert newVal instanceof BinaryObjectBuilder;
-
-                    newVal = ((BinaryObjectBuilder) newVal).build();
-                }
-
-                Object srcVal = e.get(1);
-
-                if (bin && !(srcVal instanceof BinaryObject))
-                    srcVal = cctx.grid().binary().toBinary(srcVal);
-
-                rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
-
-                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    PageProcessingResult pageRes = processPage(cctx, rows);
-
-                    res += pageRes.cnt;
-
-                    failedKeys.addAll(F.asList(pageRes.errKeys));
-
-                    if (pageRes.ex != null) {
-                        if (resEx == null)
-                            resEx = pageRes.ex;
-                        else
-                            resEx.setNextException(pageRes.ex);
-                    }
-
-                    if (it.hasNext())
-                        rows.clear(); // No need to clear after the last batch.
-                }
+                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.colNames[i],
+                    plan.tbl.rowDescriptor(), plan.colTypes[i]));
             }
 
-            if (resEx != null) {
-                if (!F.isEmpty(failedKeys)) {
-                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
-                    // had been modified concurrently right away.
-                    String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
-                        "[keys=" + failedKeys + ']';
+            newVal = plan.valSupplier.apply(e);
 
-                    SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            if (newVal == null)
+                throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-                    dupEx.setNextException(resEx);
+            if (bin && !(val instanceof BinaryObject))
+                val = cctx.grid().binary().toBinary(val);
 
-                    resEx = dupEx;
+            // Skip key and value - that's why we start off with 2nd column
+            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
+                Column c = plan.tbl.getColumn(i + 2);
+
+                GridQueryProperty prop = desc.type().property(c.getName());
+
+                if (prop.key())
+                    continue; // Don't get values of key's columns - we won't use them anyway
+
+                boolean hasNewColVal = newColVals.containsKey(c.getName());
+
+                // Binary objects get old field values from the Builder, so we can skip what we're not updating
+                if (bin && !hasNewColVal)
+                    continue;
+
+                // Column values that have been explicitly specified have priority over field values in old or new _val
+                // If no value given for the column, then we expect to find it in value, and not in key - hence null arg.
+                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : prop.value(null, val);
+
+                // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
+                desc.setColumnValue(null, newVal, colVal, i);
+            }
+
+            if (bin && hasProps) {
+                assert newVal instanceof BinaryObjectBuilder;
+
+                newVal = ((BinaryObjectBuilder) newVal).build();
+            }
+
+            Object srcVal = e.get(1);
+
+            if (bin && !(srcVal instanceof BinaryObject))
+                srcVal = cctx.grid().binary().toBinary(srcVal);
+
+            rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
+
+            if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                PageProcessingResult pageRes = processPage(cctx, rows);
+
+                res += pageRes.cnt;
+
+                failedKeys.addAll(F.asList(pageRes.errKeys));
+
+                if (pageRes.ex != null) {
+                    if (resEx == null)
+                        resEx = pageRes.ex;
+                    else
+                        resEx.setNextException(pageRes.ex);
                 }
 
-                throw new IgniteSQLException(resEx);
+                if (it.hasNext())
+                    rows.clear(); // No need to clear after the last batch.
             }
         }
-        finally {
-            cctx.operationContextPerCall(opCtx);
+
+        if (resEx != null) {
+            if (!F.isEmpty(failedKeys)) {
+                // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                // had been modified concurrently right away.
+                String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
+                    "[keys=" + failedKeys + ']';
+
+                SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+                dupEx.setNextException(resEx);
+
+                resEx = dupEx;
+            }
+
+            throw new IgniteSQLException(resEx);
         }
+
 
         return new UpdateResult(res, failedKeys.toArray());
+    }
+
+    /**
+     * Convert value to column's expected type by means of H2.
+     *
+     * @param val Source value.
+     * @param colName Column name to search for property.
+     * @param desc Row descriptor.
+     * @param type Expected column type to convert to.
+     * @return Converted object.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
+    private static Object convert(Object val, String colName, GridH2RowDescriptor desc, int type)
+        throws IgniteCheckedException {
+        if (val == null)
+            return null;
+
+        GridQueryProperty prop = desc.type().property(colName);
+
+        assert prop != null;
+
+        Class<?> expCls = prop.type();
+
+        Class<?> currCls = val.getClass();
+
+        if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
+            // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
+            // precise Date instance. Let's satisfy it.
+            return new Date(((Date) val).getTime());
+        }
+
+        // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
+        // Still, we only can convert from Object[] to something more precise.
+        if (type == Value.ARRAY && currCls != expCls) {
+            if (currCls != Object[].class)
+                throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
+
+            // Why would otherwise type be Value.ARRAY?
+            assert expCls.isArray();
+
+            Object[] curr = (Object[]) val;
+
+            Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
+
+            System.arraycopy(curr, 0, newArr, 0, curr.length);
+
+            return newArr;
+        }
+
+        int objType = DataType.getTypeFromClass(val.getClass());
+
+        if (objType == type)
+            return val;
+
+        Value h2Val = desc.wrap(val, objType);
+
+        return h2Val.convertTo(type).getObject();
     }
 
     /**
@@ -633,8 +696,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
@@ -646,8 +709,8 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier, plan.valSupplier,
-                    plan.keyColIdx, plan.valColIdx, desc.type());
+                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier, plan.valSupplier,
+                    plan.keyColIdx, plan.valColIdx, desc);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -679,8 +742,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes,
+                plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -689,22 +752,6 @@ public class DmlStatementsProcessor {
                     IgniteQueryErrorCode.DUPLICATE_KEY);
         }
         else {
-            CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-            // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-            if (cctx.binaryMarshaller()) {
-                CacheOperationContext newOpCtx = null;
-
-                if (opCtx == null)
-                    // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-                else if (!opCtx.isKeepBinary())
-                    newOpCtx = opCtx.keepBinary();
-
-                if (newOpCtx != null)
-                    cctx.operationContextPerCall(newOpCtx);
-            }
-
             Map<Object, EntryProcessor<Object, Object, Boolean>> rows = plan.isLocSubqry ?
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>(plan.rowsNum) :
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>();
@@ -716,55 +763,50 @@ public class DmlStatementsProcessor {
 
             SQLException resEx = null;
 
-            try {
-                Iterator<List<?>> it = cursor.iterator();
+            Iterator<List<?>> it = cursor.iterator();
 
-                while (it.hasNext()) {
-                    List<?> row = it.next();
+            while (it.hasNext()) {
+                List<?> row = it.next();
 
-                    final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier,
-                        plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
-                    rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
+                rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
-                    if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
-                        PageProcessingResult pageRes = processPage(cctx, rows);
+                if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
+                    PageProcessingResult pageRes = processPage(cctx, rows);
 
-                        resCnt += pageRes.cnt;
+                    resCnt += pageRes.cnt;
 
-                        duplicateKeys.addAll(F.asList(pageRes.errKeys));
+                    duplicateKeys.addAll(F.asList(pageRes.errKeys));
 
-                        if (pageRes.ex != null) {
-                            if (resEx == null)
-                                resEx = pageRes.ex;
-                            else
-                                resEx.setNextException(pageRes.ex);
-                        }
-
-                        rows.clear();
+                    if (pageRes.ex != null) {
+                        if (resEx == null)
+                            resEx = pageRes.ex;
+                        else
+                            resEx.setNextException(pageRes.ex);
                     }
+
+                    rows.clear();
                 }
-
-                if (!F.isEmpty(duplicateKeys)) {
-                    String msg = "Failed to INSERT some keys because they are already in cache " +
-                        "[keys=" + duplicateKeys + ']';
-
-                    SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
-
-                    if (resEx == null)
-                        resEx = dupEx;
-                    else
-                        resEx.setNextException(dupEx);
-                }
-
-                if (resEx != null)
-                    throw new IgniteSQLException(resEx);
-
-                return resCnt;
             }
-            finally {
-                cctx.operationContextPerCall(opCtx);
+
+            if (!F.isEmpty(duplicateKeys)) {
+                String msg = "Failed to INSERT some keys because they are already in cache " +
+                    "[keys=" + duplicateKeys + ']';
+
+                SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
+
+                if (resEx == null)
+                    resEx = dupEx;
+                else
+                    resEx.setNextException(dupEx);
             }
+
+            if (resEx != null)
+                throw new IgniteSQLException(resEx);
+
+            return resCnt;
         }
     }
 
@@ -793,22 +835,21 @@ public class DmlStatementsProcessor {
 
     /**
      * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
-     *
      * @param cctx Cache context.
      * @param row Row to process.
      * @param cols Query cols.
+     * @param colTypes Column types to convert data from {@code row} to.
      * @param keySupplier Key instantiation method.
      * @param valSupplier Key instantiation method.
      * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
      * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param desc Table descriptor.
-     * @return Key-value pair.
+     * @param rowDesc Row descriptor.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
-        KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
-        GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+        int[] colTypes, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
+        GridH2RowDescriptor rowDesc) throws IgniteCheckedException {
         Object key = keySupplier.apply(F.asList(row));
         Object val = valSupplier.apply(F.asList(row));
 
@@ -818,11 +859,13 @@ public class DmlStatementsProcessor {
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
+        GridQueryTypeDescriptor desc = rowDesc.type();
+
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
-            desc.setValue(cols[i], key, val, row[i]);
+            desc.setValue(cols[i], key, val, convert(row[i], cols[i], rowDesc, colTypes[i]));
         }
 
         if (cctx.binaryMarshaller()) {
@@ -882,7 +925,7 @@ public class DmlStatementsProcessor {
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
-            if (entry.getValue() != null)
+            if (entry.exists())
                 return false;
 
             entry.setValue(val);
@@ -902,17 +945,28 @@ public class DmlStatementsProcessor {
 
         /** */
         private ModifyingEntryProcessor(Object val, IgniteInClosure<MutableEntry<Object, Object>> entryModifier) {
+            assert val != null;
+
             this.val = val;
             this.entryModifier = entryModifier;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+            if (!entry.exists())
+                return null; // Someone got ahead of us and removed this entry, let's skip it.
+
+            Object entryVal = entry.getValue();
+
+            if (entryVal == null)
+                return null;
+
             // Something happened to the cache while we were performing map-reduce.
-            if (!F.eq(entry.getValue(), val))
+            if (!F.eq(entryVal, val))
                 return false;
 
             entryModifier.apply(entry);
+
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
         }
     }
@@ -934,6 +988,8 @@ public class DmlStatementsProcessor {
 
         /** */
         private EntryValueUpdater(Object val) {
+            assert val != null;
+
             this.val = val;
         }
 

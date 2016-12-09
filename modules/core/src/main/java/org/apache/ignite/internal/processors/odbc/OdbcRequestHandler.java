@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -199,13 +198,13 @@ public class OdbcRequestHandler {
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName()).withKeepBinary();
+            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 
             if (cache == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Cache doesn't exist (did you configure it?): " +
+                    req.cacheName());
 
-            QueryCursor qryCur = cache.query(qry);
+            QueryCursor qryCur = cache.withKeepBinary().query(qry);
 
             qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 

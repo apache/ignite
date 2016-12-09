@@ -95,7 +95,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
-        p.query(new SqlFieldsQuery("merge into \"Person2\" (\"Id\", \"id\", \"name\", \"_Val\") values (1, ?, ?, 5), " +
+        p.query(new SqlFieldsQuery("merge into \"Person2\" (\"Id\", \"id\", \"name\", \"IntVal\") values (1, ?, ?, 5), " +
             "(2, 3, 'Alex', 6)").setArgs(4, "Sergi"));
 
         assertEquals(createPerson2(4, "Sergi", 5), p.get(new Key2(1)));
