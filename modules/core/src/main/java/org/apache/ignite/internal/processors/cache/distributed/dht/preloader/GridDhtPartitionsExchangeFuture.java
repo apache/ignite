@@ -1380,7 +1380,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     updatePartitionSingleMap(node, msg);
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
-                        cctx.kernalContext().state().onSingleResponseMessage(node.id(), msg.getException());
+                        changeGlobalStateExceptions.put(node.id(), msg.getException());
 
                 }
 
@@ -1677,8 +1677,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         updatePartitionFullMap(msg);
 
-        if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
-            cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
+        if (exchangeOnChangeGlobalState && !F.isEmpty(msg.getExceptionsMap()))
+            cctx.kernalContext().state().onFullResponseMessage(msg.getExceptionsMap());
 
         onDone(exchId.topologyVersion());
     }

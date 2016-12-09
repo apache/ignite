@@ -778,6 +778,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (activeOnStart) {
+            //todo not used explicit lock
+            if (!ctx.clientNode())
+                sharedCtx.database().lock();
+
             sharedCtx.wal().onKernalStart(false);
 
             if (sharedCtx.pageStore() != null)
@@ -2725,6 +2729,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer
     ) {
         AffinityTopologyVersion newTopVer = null;
+
+        System.out.println("in change request on " + ctx.localNodeId() + " client=" + ctx.clientNode());
 
         boolean incMinorTopVer = false;
 

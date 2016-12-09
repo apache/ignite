@@ -252,7 +252,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!F.isEmpty(valid)) {
+                        //todo think about refactoring
+                        if (!F.isEmpty(valid) && !(valid.size() == 1 && valid.iterator().next().globalStateChange())) {
                             exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                             exchFut = exchangeFuture(exchId, e, valid, null);

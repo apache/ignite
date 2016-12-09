@@ -549,16 +549,16 @@ public interface Ignite extends AutoCloseable {
     public <K> Affinity<K> affinity(String cacheName);
 
     /**
-     * Checks if Ignite grid is active. If Ignite grid is not active,
+     * Checks Ignite grid is active or not active.
      *
-     * @return {@code True} if grid is active.
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
      */
     public boolean active();
 
     /**
-     * Changes Ignite grid active flag.
+     * Changes Ignite grid state to active or inactive.
      *
-     * @param active New value of grid active flag.
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      */
     public void active(boolean active);
 }

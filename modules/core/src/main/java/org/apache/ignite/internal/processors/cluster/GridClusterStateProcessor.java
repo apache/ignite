@@ -242,7 +242,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 return locF;
             else
                 return new GridFinishedFuture<>(new IgniteException(
-                    "fail " + prettyStr(activate) + ", because now " + prettyStr(locF.activate) + " in progress"));
+                    "fail " + prettyStr(activate) + ", because now in progress" + prettyStr(locF.activate)));
         }
 
         try {
@@ -326,10 +326,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         assert !F.isEmpty(reqs);
         assert topVer != null;
 
-        ChangeGlobalStateContext cgsCtx = lastCgsCtx;
-
         for (DynamicCacheChangeRequest req : reqs)
             if (req.globalStateChange()) {
+                ChangeGlobalStateContext cgsCtx = lastCgsCtx;
+
+                assert cgsCtx != null;
+
                 cgsCtx.topologyVersion(topVer);
 
                 return true;
@@ -345,7 +347,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     public Exception onChangeGlobalState() {
         GridChangeGlobalStateFuture f = cgsLocFut.get();
 
-        ChangeGlobalStateContext cgsCtx = this.lastCgsCtx;
+        ChangeGlobalStateContext cgsCtx = lastCgsCtx;
 
         assert cgsCtx != null;
 
@@ -353,20 +355,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             f.setRemaining(cgsCtx.topVer);
 
         return cgsCtx.activate ? onActivate(cgsCtx) : onDeActivate(cgsCtx);
-    }
-
-    /**
-     * .
-     *
-     * @param nodeId Node id.
-     * @param exs Exs.
-     */
-    public void onSingleResponseMessage(UUID nodeId, Exception exs) {
-        assert exs != null;
-
-        ChangeGlobalStateContext actx = lastCgsCtx;
-
-        actx.addException(nodeId, exs);
     }
 
     /**
@@ -446,18 +434,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 if (sharedCtx.pageStore() != null)
                     sharedCtx.pageStore().onActivate(ctx);
-
-                sharedCtx.database().afterActivate();
             }
 
             if (log.isInfoEnabled())
                 log.info("Success activate wal, dataBase, pageStore [nodeId="
-                    + this.ctx.localNodeId() + ", client=" + client + ", topVer=" + cgsCtx.topVer + "]");
+                    + ctx.localNodeId() + ", client=" + client + ", topVer=" + cgsCtx.topVer + "]");
 
             return null;
         }
         catch (Exception e) {
-            log.error("Activation fail [nodeId=" + this.ctx.localNodeId() + ", client=" + client +
+            log.error("Fail activate wal, dataBase, pageStore [nodeId=" + ctx.localNodeId() + ", client=" + client +
                 ", topVer=" + cgsCtx.topVer + "]", e);
 
             return e;
@@ -790,7 +776,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
-            //todo clean
+            ctx.state().cgsLocFut.set(null);
 
             return super.onDone(res, err);
         }
@@ -821,12 +807,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         /** Topology version. */
         private AffinityTopologyVersion topVer;
 
-        /** All exs. */
-        private final Map<UUID, Exception> allExs = new HashMap<>();
-
-        /** Local ex. */
-        private Exception ex;
-
         /** Fail. */
         private boolean fail;
 
@@ -853,20 +833,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
          */
         public void topologyVersion(AffinityTopologyVersion topVer) {
             this.topVer = topVer;
-        }
-
-        /**
-         * @param e Exception.
-         */
-        public void addException(Exception e) {
-            this.ex = e;
-        }
-
-        /**
-         * @param es Exception.
-         */
-        public void addException(UUID nodeId, Exception es) {
-            allExs.put(nodeId, es);
         }
 
         /**
