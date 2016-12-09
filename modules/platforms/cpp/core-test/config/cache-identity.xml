@@ -35,11 +35,11 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cache-1"/>
+                    <property name="name" value="cache1"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                    
+
                     <!-- Configure type metadata to enable queries. -->
                     <property name="queryEntities">
                         <list>
@@ -49,7 +49,7 @@
 
                                 <property name="fields">
                                     <map>
-                                        <entry key="str" value="str"/>
+                                        <entry key="str" value="java.lang.String"/>
                                         <entry key="ts" value="java.sql.Timestamp"/>
                                         <entry key="guid" value="java.util.UUID"/>
                                     </map>
