@@ -43,7 +43,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AccessControlList;
 import org.apache.hadoop.security.token.Token;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -78,7 +78,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     private final Configuration conf;
 
     /** Ignite client. */
-    private volatile GridClient cli;
+    private final IgniteHadoopClientProtocolProvider.ClientData clientData;
 
     /** Last received version. */
     private long lastVer = -1;
@@ -90,21 +90,23 @@ public class HadoopClientProtocol implements ClientProtocol {
      * Constructor.
      *
      * @param conf Configuration.
-     * @param cli Ignite client.
+     * @param cd Ignite client data.
      */
-    public HadoopClientProtocol(Configuration conf, GridClient cli) {
-        assert cli != null;
+    public HadoopClientProtocol(Configuration conf, IgniteHadoopClientProtocolProvider.ClientData cd) {
+        assert conf != null;
+        assert cd != null;
 
         this.conf = conf;
-        this.cli = cli;
+        this.clientData = cd;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public JobID getNewJobID() throws IOException, InterruptedException {
         try {
             conf.setLong(HadoopCommonUtils.REQ_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
 
-            HadoopJobId jobID = cli.compute().execute(HadoopProtocolNextTaskIdTask.class.getName(), null);
+            HadoopJobId jobID = clientData.getGridClient().compute().execute(HadoopProtocolNextTaskIdTask.class.getName(), null);
 
             conf.setLong(HadoopCommonUtils.RESPONSE_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
 
@@ -116,12 +118,13 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public JobStatus submitJob(JobID jobId, String jobSubmitDir, Credentials ts) throws IOException,
         InterruptedException {
         try {
             conf.setLong(HadoopCommonUtils.JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
 
-            HadoopJobStatus status = cli.compute().execute(HadoopProtocolSubmitJobTask.class.getName(),
+            HadoopJobStatus status = clientData.getGridClient().compute().execute(HadoopProtocolSubmitJobTask.class.getName(),
                 new HadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf)));
 
             if (status == null)
@@ -155,9 +158,10 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void killJob(JobID jobId) throws IOException, InterruptedException {
         try {
-            cli.compute().execute(HadoopProtocolKillJobTask.class.getName(),
+            clientData.getGridClient().compute().execute(HadoopProtocolKillJobTask.class.getName(),
                 new HadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
         }
         catch (GridClientException e) {
@@ -177,6 +181,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
             Long delay = conf.getLong(HadoopJobProperty.JOB_STATUS_POLL_DELAY.propertyName(), -1);
@@ -185,7 +190,8 @@ public class HadoopClientProtocol implements ClientProtocol {
                 new HadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), delay) :
                 new HadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId());
 
-            HadoopJobStatus status = cli.compute().execute(HadoopProtocolJobStatusTask.class.getName(), args);
+            HadoopJobStatus status = clientData.getGridClient().compute().execute(
+                HadoopProtocolJobStatusTask.class.getName(), args);
 
             if (status == null)
                 throw new IOException("Job tracker doesn't have any information about the job: " + jobId);
@@ -198,9 +204,11 @@ public class HadoopClientProtocol implements ClientProtocol {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public Counters getJobCounters(JobID jobId) throws IOException, InterruptedException {
         try {
-            final HadoopCounters counters = cli.compute().execute(HadoopProtocolJobCountersTask.class.getName(),
+            final HadoopCounters counters = clientData.getGridClient().compute()
+                .execute(HadoopProtocolJobCountersTask.class.getName(),
                 new HadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
 
             if (counters == null)
@@ -350,5 +358,14 @@ public class HadoopClientProtocol implements ClientProtocol {
             assert lastStatus != null;
 
         return HadoopUtils.status(lastStatus, conf);
+    }
+
+    /**
+     * Gets the GridClient data.
+     *
+     * @return The client data.
+     */
+    public IgniteHadoopClientProtocolProvider.ClientData getClientData() {
+        return clientData;
     }
 }
