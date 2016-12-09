@@ -2730,8 +2730,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         AffinityTopologyVersion newTopVer = null;
 
-        System.out.println("in change request on " + ctx.localNodeId() + " client=" + ctx.clientNode());
-
         boolean incMinorTopVer = false;
 
         for (DynamicCacheChangeRequest req : batch.requests()) {
