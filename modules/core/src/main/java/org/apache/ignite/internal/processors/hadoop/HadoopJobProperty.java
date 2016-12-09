@@ -95,8 +95,7 @@ public enum HadoopJobProperty {
      * <p>
      * Defaults to {@code false}.
      */
-    // TODO: Better naming!
-    SHUFFLE_MAPPER_STRIPE_OUTPUT("ignite.shuffle.mapper.stripe.output"),
+    SHUFFLE_MAPPER_STRIPED_OUTPUT("ignite.shuffle.mapper.striped.output"),
 
     /**
      * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter

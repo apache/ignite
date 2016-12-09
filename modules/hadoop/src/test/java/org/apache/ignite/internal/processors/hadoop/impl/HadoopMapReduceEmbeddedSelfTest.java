@@ -99,7 +99,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
             JobConf jobConf = new JobConf();
 
             if (striped)
-                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT.propertyName(), "true");
+                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "true");
 
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 

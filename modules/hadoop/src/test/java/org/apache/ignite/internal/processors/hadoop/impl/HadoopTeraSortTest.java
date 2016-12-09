@@ -88,7 +88,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         //jobConf.setUser(USER);
         jobConf.set("fs.defaultFS", FS_BASE);
         // TODO: !!! INVESTIGATION: Test new impl:
-        jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
+        jobConf.set("ignite.shuffle.mapper.striped.output", "true");
         jobConf.set("ignite.shuffle.striped.direct", "true");
         jobConf.set("ignite.shuffle.striped.gzip", "true");
         jobConf.set("mapreduce.job.reduces", "24");
