@@ -71,6 +71,8 @@ The following Ignite benchmark properties can be defined in the benchmark config
 * `-txi <value>` or `--txIsolation <value>` - Cache transaction isolation (defined in `CacheTxIsolation`)
 * `-wb` or `--writeBehind` - Enable or disable writeBehind for cache store
 * `-wom <mode>` or `--writeOrderMode <mode>` - Write order mode for ATOMIC caches (defined in `CacheAtomicWriteOrderMode`)
+* `-pa` or `--preloadAmount` - number of preloaded entries
+* `-plfreq` or `--preloadLogFrequency` - time interval in milliseconds between printing preload logs
 
 For example if we need to run 2 `IgniteNode` servers on localhost with `PutBenchmark` benchmark on localhost,
 with number of backups set to 1, synchronization mode set to `PRIMARY_SYNC`, then the following configuration

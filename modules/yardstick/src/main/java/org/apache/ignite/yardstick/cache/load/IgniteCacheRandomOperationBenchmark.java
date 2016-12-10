@@ -30,8 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
@@ -402,9 +401,15 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void preLoading() throws Exception {
         if (args.preloadAmount() > args.range())
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
-                " range (\"-r\", \"--range\").");
+                    " range (\"-r\", \"--range\").");
+
+        final ScheduledExecutorService exctr = Executors.newScheduledThreadPool(1);
+        final IgniteBenchmarkPreloadLogger lgr = new IgniteBenchmarkPreloadLogger(availableCaches);
+        exctr.scheduleWithFixedDelay(lgr, 0L, args.preloadLogsInterval(), TimeUnit.MILLISECONDS);
 
         Thread[] threads = new Thread[availableCaches.size()];
+
+        BenchmarkUtils.println("Preloading started");
 
         for (int i = 0; i < availableCaches.size(); i++) {
             final String cacheName = availableCaches.get(i).getName();
@@ -423,8 +428,12 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         for (Thread thread : threads)
             thread.join();
-    }
 
+        exctr.awaitTermination(1, TimeUnit.SECONDS);
+        exctr.shutdownNow();
+
+        BenchmarkUtils.println("Preloading finished");
+    }
     /**
      * Building a map that contains mapping of node ID to a list of partitions stored on the node.
      *
