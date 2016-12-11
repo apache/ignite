@@ -117,7 +117,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      * @param filter IgnitePredicate filter to filter events.
      * @throws Exception
      */
-    private void checkIgniteSource(final int evtCount, int parallelismCnt,
+    private void checkIgniteSource(final int evtCount, final int parallelismCnt,
         IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
 
