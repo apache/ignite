@@ -51,7 +51,12 @@ public class GridRedisGetRangeCommandHandler extends GridRedisRestCommandHandler
     /** End offset position in Redis message parameters. */
     private static final int END_OFFSET_POS = 2;
 
-    /** {@inheritDoc} */
+    /**
+     * Handler constructor.
+     *
+     * @param log Logger to use.
+     * @param hnd Rest handler.
+     */
     public GridRedisGetRangeCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }

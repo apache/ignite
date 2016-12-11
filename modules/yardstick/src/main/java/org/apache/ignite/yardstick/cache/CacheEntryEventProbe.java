@@ -72,7 +72,7 @@ public class CacheEntryEventProbe implements BenchmarkProbe {
 
                 buildingService = Executors.newSingleThreadExecutor();
 
-                buildingService.submit(new Runnable() {
+                buildingService.execute(new Runnable() {
                     @Override public void run() {
                         try {
                             while (!Thread.currentThread().isInterrupted()) {

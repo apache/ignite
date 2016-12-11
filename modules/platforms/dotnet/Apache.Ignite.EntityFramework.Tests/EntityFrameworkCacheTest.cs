@@ -662,10 +662,10 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
-            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 20);
+            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 5);
 
             // Wait for the cleanup to complete.
-            Thread.Sleep(500);
+            Thread.Sleep(2000);
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
@@ -700,7 +700,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
 
                 Interlocked.Increment(ref opCnt);
-            }, 4, 10);
+            }, 4, 5);
 
             var setVersion = _metaCache["Blog"];
 
@@ -822,7 +822,12 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null, Policy)
             {
-                // No-op.
+                var ex = Assert.Throws<ArgumentException>(() => InitializeIgniteCaching(
+                    this, Ignition.GetIgnite(), null, null, Policy));
+
+                Assert.IsTrue(ex.Message.StartsWith("'dbConfiguration' argument is invalid: " +
+                                                    "IgniteDbConfiguration.InitializeIgniteCaching should not " +
+                                                    "be called for IgniteDbConfiguration instance."), ex.Message);
             }
         }
 

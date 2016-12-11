@@ -55,7 +55,12 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
     /** Maximum offset. */
     private static final int MAX_OFFSET = 536870911;
 
-    /** {@inheritDoc} */
+    /**
+     * Handler constructor.
+     *
+     * @param log Logger to use.
+     * @param hnd Rest handler.
+     */
     public GridRedisSetRangeCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }

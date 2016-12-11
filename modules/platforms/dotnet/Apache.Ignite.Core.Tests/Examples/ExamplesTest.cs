@@ -92,8 +92,11 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                     var proc = new IgniteProcess(args.ToArray());
 
-                    Assert.IsTrue(ignite.WaitTopology(i + 2));
-                    Assert.IsTrue(proc.Alive);
+                    Assert.IsTrue(ignite.WaitTopology(i + 2), 
+                        string.Format("Standalone node failed to join topology: [{0}]", proc.GetInfo()));
+
+                    Assert.IsTrue(proc.Alive, string.Format("Standalone node stopped unexpectedly: [{0}]", 
+                        proc.GetInfo()));
                 }
 
                 Ignition.ClientMode = clientMode;
@@ -143,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCasesLocal
         {
-            get { return Example.GetExamples(); }
+            get { return Example.GetExamples().Where(x => x.Name != "NearCacheExample"); }
         }
 
         /// <summary>
@@ -155,8 +158,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             get
             {
-                return Example.GetExamples()
-                    .Where(x => !new[] {"LifecycleExample", "ClientReconnectExample"}.Contains(x.Name));
+                var localOnly = new[] {"LifecycleExample", "ClientReconnectExample", "MultiTieredCacheExample" };
+
+                return Example.GetExamples().Where(x => !localOnly.Contains(x.Name));
             }
         }
     }

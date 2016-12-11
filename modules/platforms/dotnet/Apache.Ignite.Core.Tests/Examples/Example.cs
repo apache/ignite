@@ -37,9 +37,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Config url */
         public string ConfigPath { get; private set; }
 
-        /** Source path */
-        public string SourceFilePath { get; private set; }
-
         /** Dll load flag */
         public bool NeedsTestDll { get; private set; }
 
@@ -75,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Assert.IsTrue(sourceFiles.Any());
 
-            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).ToArray();
+            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).OrderBy(x => x.Name).ToArray();
 
             Assert.IsTrue(types.Any());
 
@@ -89,7 +86,6 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 yield return new Example
                 {
-                    SourceFilePath = sourceFile,
                     ConfigPath = GetConfigPath(sourceCode),
                     NeedsTestDll = sourceCode.Contains(examplesDllName),
                     _runAction = GetRunAction(type),
