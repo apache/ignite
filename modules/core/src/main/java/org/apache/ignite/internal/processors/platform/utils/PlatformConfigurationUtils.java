@@ -167,6 +167,7 @@ public class PlatformConfigurationUtils {
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
+        ccfg.setStatisticsEnabled(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -762,6 +763,7 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
+        writer.writeBoolean(ccfg.isStatisticsEnabled());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());

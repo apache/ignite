@@ -24,7 +24,7 @@ Configuration file:
 
   Example configuration file:
     tokens=1a2b3c4d5f,2j1s134d12
-    serverURI=https://console.example.com:3001
+    serverURI=https://console.example.com
 
 Security tokens:
   1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-agent-x.x.x.zip".
@@ -47,7 +47,7 @@ Options:
      http://localhost:8080
   -s, --server-uri
      URI for connect to Ignite Web Console via web-socket protocol, default
-     value: http://localhost:3001
+     value: http://localhost:3000
   -t, --tokens
      User's security tokens
 

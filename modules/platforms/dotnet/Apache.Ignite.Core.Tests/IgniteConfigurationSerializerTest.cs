@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -81,7 +82,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleBeans>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String'>    
                                             <fields>
@@ -151,6 +152,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.ReadThrough);
             Assert.IsTrue(cacheCfg.WriteThrough);
             Assert.IsInstanceOf<MyPolicyFactory>(cacheCfg.ExpiryPolicyFactory);
+            Assert.IsTrue(cacheCfg.EnableStatistics);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -234,9 +236,9 @@ namespace Apache.Ignite.Core.Tests
         /// Tests that all properties are present in the schema.
         /// </summary>
         [Test]
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void TestAllPropertiesArePresentInSchema()
         {
-            // ReSharper disable once PossibleNullReferenceException
             var schema = XDocument.Load("IgniteConfigurationSection.xsd")
                     .Root.Elements()
                     .Single(x => x.Attribute("name").Value == "igniteConfiguration");
@@ -639,7 +641,8 @@ namespace Apache.Ignite.Core.Tests
                             ExcludeNeighbors = true,
                             Partitions = 48
                         },
-                        ExpiryPolicyFactory = new MyPolicyFactory()
+                        ExpiryPolicyFactory = new MyPolicyFactory(),
+                        EnableStatistics = true
                     }
                 },
                 ClientMode = true,

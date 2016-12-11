@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 .docs-header
     h1 Configure Ignite In-memory File Systems
@@ -37,15 +37,15 @@ include ../../app/helpers/jade/mixins.jade
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
                 form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
                     .panel-group
-                        include ../../app/modules/states/configuration/igfs/general.jade
+                        include /app/modules/states/configuration/igfs/general.jade
 
                         +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
-                            include ../../app/modules/states/configuration/igfs/secondary.jade
-                            include ../../app/modules/states/configuration/igfs/ipc.jade
-                            include ../../app/modules/states/configuration/igfs/fragmentizer.jade
-                            include ../../app/modules/states/configuration/igfs/dual.jade
-                            include ../../app/modules/states/configuration/igfs/misc.jade
+                            include /app/modules/states/configuration/igfs/secondary.jade
+                            include /app/modules/states/configuration/igfs/ipc.jade
+                            include /app/modules/states/configuration/igfs/fragmentizer.jade
+                            include /app/modules/states/configuration/igfs/dual.jade
+                            include /app/modules/states/configuration/igfs/misc.jade
 
                             +advanced-options-toggle-default

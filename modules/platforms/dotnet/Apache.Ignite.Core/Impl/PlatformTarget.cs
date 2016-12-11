@@ -533,7 +533,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction, 
+        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             Debug.Assert(inErrorAction != null);
@@ -869,7 +869,7 @@ namespace Apache.Ignite.Core.Impl
                 throw;
             }
 
-            fut.SetTarget(futTarget);
+            fut.SetTarget(new Listenable(futTarget, _marsh));
 
             return fut;
         }
