@@ -19,18 +19,16 @@ package org.apache.ignite.source.flink;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.contrib.streaming.DataStreamUtils;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -50,7 +48,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10_000;
+        return 20_000;
     }
 
     /** {@inheritDoc} */
@@ -117,13 +115,13 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      * @param evtCount event count to process.
      * @param parallelismCnt DataStreamSource parallelism count
      * @param filter IgnitePredicate filter to filter events.
-     *
      * @throws Exception
      */
-    private void checkIgniteSource(final int evtCount, int parallelismCnt, IgnitePredicate<CacheEvent> filter) throws Exception {
+    private void checkIgniteSource(final int evtCount, int parallelismCnt,
+        IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
 
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         env.getConfig().disableSysoutLogging();
         env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
@@ -144,7 +142,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         final List<Integer> eventList = new ArrayList<>();
 
-        while (cnt < evtCount)  {
+        while (cnt < evtCount) {
             cache.put(cnt, cnt);
 
             eventList.add(cnt);
@@ -152,34 +150,23 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             cnt++;
         }
 
-        Iterator<CacheEvent> myOutput = DataStreamUtils.collect(stream);
+        stream.addSink(new SinkFunction<CacheEvent>() {
+            List<CacheEvent> resultList = new ArrayList<>();
 
-        final List<Integer> resultList = new ArrayList<>();
+            @Override public void invoke(CacheEvent evt) throws Exception {
+                resultList.add(evt);
 
-        while(myOutput.hasNext()){
-            Integer testKey = myOutput.next().key();
+                Collections.sort(resultList);
 
-            X.println(">>> Printing iterator results: "+ testKey);
-
-            assertTrue(eventList.contains(testKey));
-
-            resultList.add(testKey);
-
-            if(testKey == (evtCount-1)){
-                igniteSrc.cancel();
-                break;
+                if (parallelismCnt == 1)
+                    assertEquals(eventList, resultList);
+                else {
+                    for (Integer i : eventList) {
+                        assertTrue(resultList.contains(i));
+                    }
+                }
             }
-        }
-
-        Collections.sort(resultList);
-
-        if (parallelismCnt == 1)
-            assertEquals(eventList, resultList);
-        else {
-            for (Integer i : eventList){
-                assertTrue(resultList.contains(i));
-            }
-        }
+        });
     }
 }
 
