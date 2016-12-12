@@ -2103,35 +2103,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                Map<UUID, Map<Integer, byte[]>> discoData = obtainViaReflection(((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData());
+                Map<UUID, Map<Integer, byte[]>> discoData = U.field(((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData(), "nodeSpecificDiscoData");
 
                 checkDiscoData(discoData, msg);
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                Map<UUID, Map<Integer, byte[]>> discoData = obtainViaReflection(((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData());
+                Map<UUID, Map<Integer, byte[]>> discoData = U.field(((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData(), "nodeSpecificDiscoData");
 
                 checkDiscoData(discoData, msg);
             }
 
             super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        private Map<UUID, Map<Integer, byte[]>> obtainViaReflection(DiscoveryDataContainer discoData) {
-            if (discoData == null)
-                return null;
-
-            Map<UUID, Map<Integer, byte[]>> res = null;
-            try {
-                Field f = DiscoveryDataContainer.class.getDeclaredField("nodeSpecificDiscoData");
-                f.setAccessible(true);
-                res = (Map<UUID, Map<Integer, byte[]>>) f.get(discoData);
-            } catch (NoSuchFieldException ignored) {
-                // No-op.
-            } catch (IllegalAccessException ignored) {
-                // No-op.
-            }
-
-            return res;
         }
 
         /**

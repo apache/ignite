@@ -653,8 +653,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override
-            public void onExchange(DiscoveryDataContainer dataContainer) {
+            @Override public void onExchange(DiscoveryDataContainer dataContainer) {
                 if (ctx.localNodeId().equals(dataContainer.getJoiningNodeId()))
                     //NodeAdded msg reached joining node after round-trip over the ring
                     for (GridComponent c : ctx.components()) {
