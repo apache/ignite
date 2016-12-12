@@ -38,7 +38,10 @@ namespace ignite
      * Constant Reference class.
      *
      * Abstraction on any reference-type object, from simple raw pointers and
-     * references to standard library smart pointers. Provides only constant access
+     * references to standard library smart pointers. Provides only constant
+     * access to the underlying data.
+     *
+     * There are no requirements for the template type T.
      */
     template<typename T>
     class ConstReference
@@ -88,6 +91,9 @@ namespace ignite
         /**
          * Copy constructor.
          *
+         * Constant reference of type T2 should be static-castable to constant
+         * reference of type T.
+         *
          * @param other Another instance.
          */
         template<typename T2>
@@ -117,6 +123,9 @@ namespace ignite
         
         /**
          * Assignment operator.
+         *
+         * Constant reference of type T2 should be static-castable to constant
+         * reference of type T.
          *
          * @param other Another instance.
          */
@@ -181,6 +190,8 @@ namespace ignite
      *
      * Abstraction on any reference-type object, from simple raw pointers and
      * references to standard library smart pointers.
+     *
+     * There are no requirements for the template type T.
      */
     template<typename T>
     class Reference
@@ -225,6 +236,8 @@ namespace ignite
 
         /**
          * Copy constructor.
+         * 
+         * Reference of type T2 should be static-castable to reference of type T.
          *
          * @param other Another instance.
          */
@@ -256,6 +269,8 @@ namespace ignite
         /**
          * Assignment operator.
          *
+         * Reference of type T2 should be static-castable to reference of type T.
+         *
          * @param other Another instance.
          */
         template<typename T2>
@@ -284,6 +299,8 @@ namespace ignite
         /**
          * Const cast operator.
          *
+         * Reference of type T2 should be static-castable to reference of type T.
+         *
          * Casts this instance to constant reference.
          */
         template<typename T2>
@@ -295,7 +312,7 @@ namespace ignite
             cr.offset = offset;
 
             T2* p0 = reinterpret_cast<T2*>(80000);
-            T* p1 = static_cast<T*>(p0);
+            const T* p1 = static_cast<T*>(p0);
 
             ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
             cr.offset -= diff;
@@ -352,6 +369,13 @@ namespace ignite
     /**
      * Used to pass smart pointers to Ignite API.
      *
+     * Template type 'T' should be a smart pointer and provide pointer semantics:
+     * - There should be defined type 'T::element_type', showing underlying type.
+     * - Type 'T' should be dereferencible (should have operators
+     *   T::element_type& operator*() and const T::element_type& operator*() const).
+     * - Operation std::swap should result in valid result if applied to two
+     *   instances of that type.
+     *
      * @param ptr Pointer.
      * @return Implementation defined value. User should not explicitly use the
      *     returned value.
@@ -370,6 +394,13 @@ namespace ignite
 
     /**
      * Used to pass smart pointers to Ignite API.
+     *
+     * Template type 'T' should be a smart pointer and provide pointer semantics:
+     * - There should be defined type 'T::element_type', showing underlying type.
+     * - Type 'T' should be dereferencible (should have operators
+     *   T::element_type& operator*() and const T::element_type& operator*() const).
+     * - Operation std::swap should result in valid result if applied to two
+     *   instances of that type.
      *
      * @param ptr Pointer.
      * @return Implementation defined value. User should not explicitly use the
@@ -390,6 +421,8 @@ namespace ignite
     /**
      * Used to pass object copy to Ignite API.
      *
+     * Template type 'T' should be copy-constructible.
+     *
      * @param val Instance.
      * @return Implementation defined value. User should not explicitly use the
      *     returned value.
@@ -404,6 +437,8 @@ namespace ignite
 
     /**
      * Used to pass object copy to Ignite API.
+     *
+     * Template type 'T' should be copy-constructible.
      *
      * @param val Instance.
      * @return Implementation defined value. User should not explicitly use the
@@ -421,6 +456,8 @@ namespace ignite
      * Used to pass object pointer to Ignite API.
      * Passed object deleted by Ignite when no longer needed.
      *
+     * There are no requirements for the template type T.
+     *
      * @param val Instance.
      * @return Implementation defined value. User should not explicitly use the
      *     returned value.
@@ -436,6 +473,8 @@ namespace ignite
     /**
      * Used to pass object pointer to Ignite API.
      * Passed object deleted by Ignite when no longer needed.
+     *
+     * There are no requirements for the template type T.
      *
      * @param val Instance.
      * @return Implementation defined value. User should not explicitly use the
@@ -453,6 +492,8 @@ namespace ignite
      * Used to pass object reference to Ignite API.
      * Ignite do not manage passed object and does not affect its lifetime.
      *
+     * There are no requirements for the template type T.
+     *
      * @param val Reference.
      * @return Implementation defined value. User should not explicitly use the
      *     returned value.
@@ -468,6 +509,8 @@ namespace ignite
     /**
      * Used to pass object reference to Ignite API.
      * Ignite do not manage passed object and does not affect its lifetime.
+     *
+     * There are no requirements for the template type T.
      *
      * @param val Reference.
      * @return Implementation defined value. User should not explicitly use the
@@ -485,6 +528,8 @@ namespace ignite
      * Used to pass object reference to Ignite API.
      * Ignite do not manage passed object and does not affect its lifetime.
      *
+     * There are no requirements for the template type T.
+     *
      * @param val Reference.
      * @return Implementation defined value. User should not explicitly use the
      *     returned value.
@@ -500,6 +545,8 @@ namespace ignite
     /**
      * Used to pass object reference to Ignite API.
      * Ignite do not manage passed object and does not affect its lifetime.
+     *
+     * There are no requirements for the template type T.
      *
      * @param val Reference.
      * @return Implementation defined value. User should not explicitly use the
