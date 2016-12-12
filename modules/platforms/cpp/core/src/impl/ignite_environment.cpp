@@ -29,48 +29,56 @@ using namespace ignite::binary;
 
 namespace ignite 
 {
-    namespace impl 
+    namespace impl
     {
         /**
-         * OnStart callback.
-         *
+         * InLongOutLong callback.
+         * 
          * @param target Target environment.
-         * @param proc Processor instance.
-         * @param memPtr Memory pointer.
+         * @param type Operation type.
+         * @param val Value.
          */
-        void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
+        long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
         {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+            if (type == IgniteEnvironment::OP_ON_STOP)
+            {
+                SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            ptr->Get()->OnStartCallback(memPtr, reinterpret_cast<jobject>(proc));
+                delete ptr;
+            }
+
+            return 0;
         }
 
         /**
-         * OnStop callback.
-         *
+         * InLongOutLong callback.
+         * 
          * @param target Target environment.
+         * @param type Operation type.
+         * @param val1 Value1.
+         * @param val2 Value2.
+         * @param val3 Value3.
+         * @param arg Object arg.
          */
-        void IGNITE_CALL OnStop(void* target)
+        long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2, 
+            long long val3, void* arg)
         {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+            if (type == IgniteEnvironment::OP_ON_START)
+            {
+                SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            delete ptr;
-        }
+                ptr->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));
+            }
+            else if (type == IgniteEnvironment::OP_REALLOC)
+            {
+                SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-        /**
-         * Memory reallocate callback.
-         *
-         * @param target Target environment.
-         * @param memPtr Memory pointer.
-         * @param cap Required capasity.
-         */
-        void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
-        {
-            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+                SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
 
-            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
+                mem.Get()->Reallocate(val2);
+            }
 
-            mem.Get()->Reallocate(cap);
+            return 0;
         }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(0),
@@ -93,10 +101,12 @@ namespace ignite
 
             hnds.target = target;
 
-            hnds.onStart = OnStart;
-            hnds.onStop = OnStop;
+            hnds.inLongOutLong = InLongOutLong;
 
-            hnds.memRealloc = MemoryReallocate;
+            //hnds.onStart = OnStart;
+            //hnds.onStop = OnStop;
+
+            //hnds.memRealloc = MemoryReallocate;
 
             hnds.error = 0;
 
