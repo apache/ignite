@@ -147,7 +147,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache[2] = new AttributeQueryPerson("John", 20);
 
-                using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson), "age > ?", 10)))
+                using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson),
+                    "age > ? and age < ? and birthday > ? and birthday < ?", 10, 30,
+                    DateTime.UtcNow.AddYears(-21), DateTime.UtcNow.AddYears(-19))))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
                 }
