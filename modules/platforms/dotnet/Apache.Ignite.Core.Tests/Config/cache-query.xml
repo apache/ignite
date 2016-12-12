@@ -65,7 +65,6 @@
                                     <util:map map-class="java.util.LinkedHashMap">
                                         <entry key="age" value="int" />
                                         <entry key="name" value="java.lang.String" />
-                                        <entry key="birthday" value="java.sql.Timestamp" />
                                     </util:map>
                                 </property>
                                 <property name="indexes">
