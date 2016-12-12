@@ -282,9 +282,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 try {
                     cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send one phase commit ack to backup node because it left grid: " + nodeId);
+                }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to send one phase commit ack to backup node [backup=" +
-                        nodeId + ']', e);
+                    log.error("Failed to send one phase commit ack to backup node [backup=" + nodeId + ']', e);
                 }
                 finally {
                     cctx.kernalContext().gateway().readUnlock();

@@ -42,11 +42,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Constructor.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public DateTimeHolder(IBinaryReader reader)
+        public DateTimeHolder(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
-            _item = DateTime.FromBinary(reader.GetRawReader().ReadLong());
+            _item = DateTime.FromBinary(reader.ReadLong());
         }
 
         /// <summary>

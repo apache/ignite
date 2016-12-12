@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridReleaseTypeSelfTest;
 import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
+import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
+import org.apache.ignite.marshaller.MarshallerContextSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
@@ -130,7 +132,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridLocalIgniteSerializationTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
-
+        suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
         suite.addTestSuite(OdbcProcessorValidationSelfTest.class);
         suite.addTestSuite(OdbcEscapeSequenceSelfTest.class);
 
@@ -143,6 +145,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(NotStringSystemPropertyTest.class);
 
         suite.addTestSuite(MarshallerContextLockingSelfTest.class);
+        suite.addTestSuite(MarshallerContextSelfTest.class);
 
         suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
 
