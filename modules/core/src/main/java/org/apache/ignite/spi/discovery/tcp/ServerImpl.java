@@ -7777,6 +7777,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
+                nioSem.drainPermits();
+
                 nioSem.tryAcquire(1000, TimeUnit.MILLISECONDS);
             }
         }

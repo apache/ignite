@@ -969,6 +969,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         boolean ack = msg instanceof TcpDiscoveryClientAckResponse;
 
+                        sockWriter.messageReceived();
+
                         if (!ack)
                             msgWorker.addMessage(msg);
                         else
@@ -1019,6 +1021,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** */
         private boolean writeLen;
+
+        /** */
+        private volatile long lastMsgReceived;
 
         /**
          *
@@ -1084,6 +1089,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }
 
+        /**
+         * Updates timeout when message received.
+         */
+        void messageReceived() {
+            lastMsgReceived = U.currentTimeMillis();
+        }
+
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             TcpDiscoveryAbstractMessage msg = null;
@@ -1138,8 +1150,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage unacked;
 
                         synchronized (mux) {
-                            while (unackedMsg != null && U.currentTimeMillis() < waitEnd)
+                            while (unackedMsg != null && U.currentTimeMillis() < waitEnd) {
                                 mux.wait(waitEnd);
+
+                                waitEnd = lastMsgReceived + (spi.failureDetectionTimeoutEnabled() ?
+                                    spi.failureDetectionTimeout() : spi.getAckTimeout());
+                            }
 
                             unacked = unackedMsg;
 
