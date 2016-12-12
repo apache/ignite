@@ -85,6 +85,9 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         }
     }
 
+    /**
+     * @throws Exception On error.
+     */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
