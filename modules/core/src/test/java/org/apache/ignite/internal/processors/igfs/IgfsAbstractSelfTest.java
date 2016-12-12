@@ -2709,8 +2709,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         igfs.configuration().setPrefetchBlocks(0);
 
-        Assert.assertTrue("https://issues.apache.org/jira/browse/IGNITE-3664",
-            !(igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem));
+        if (igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem)
+            // LocalIgfsSecondaryFileSystem does
+            return;
 
         igfs.format();
 
