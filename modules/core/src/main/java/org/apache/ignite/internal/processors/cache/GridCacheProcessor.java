@@ -904,6 +904,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 stopCache(cache, cancel, false);
         }
 
+        registeredCaches.clear();
     }
 
     /**

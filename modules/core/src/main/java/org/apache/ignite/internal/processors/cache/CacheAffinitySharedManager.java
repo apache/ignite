@@ -486,6 +486,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public void removeAllCacheInfo(){
+        caches.clear();
+
+        registeredCaches.clear();
+    }
+
+    /**
      * Called when received {@link CacheAffinityChangeMessage} which should complete exchange.
      *
      * @param exchFut Exchange future.

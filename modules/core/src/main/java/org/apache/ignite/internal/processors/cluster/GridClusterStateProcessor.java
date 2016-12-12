@@ -168,8 +168,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                         msg.concurrentChangeState();
                     }
                     else {
-                        if (log.isDebugEnabled())
-                            log.debug("Create " + prettyStr(activate) + " context [id=" +
+                        if (log.isInfoEnabled())
+                            log.info("Create " + prettyStr(activate) + " context [id=" +
                                 ctx.localNodeId() + " topVer=" + topVer + ", reqId=" +
                                 msg.requestId() + ", initiatingNodeId=" + msg.initiatorNodeId() + "]");
 
@@ -384,16 +384,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 cacheProc.onKernalStopCaches(true);
 
                 cacheProc.stopCaches(true);
+
+                sharedCtx.affinity().removeAllCacheInfo();
             }
             catch (Exception e) {
                 for (Map.Entry<UUID, Exception> entry : exs.entrySet())
                     e.addSuppressed(entry.getValue());
 
                 log.error("Fail while revert activation request changes", e);
-            }
-            finally {
-                if (!ctx.clientNode())
-                    sharedCtx.database().unLock();
             }
         }
         else {
@@ -447,6 +445,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 ", topVer=" + cgsCtx.topVer + "]", e);
 
             return e;
+        }
+        finally {
+            if (!ctx.clientNode())
+                sharedCtx.database().unLock();
         }
     }
 
