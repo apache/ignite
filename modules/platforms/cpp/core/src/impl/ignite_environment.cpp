@@ -75,7 +75,7 @@ namespace ignite
 
                 SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
 
-                mem.Get()->Reallocate(val2);
+                mem.Get()->Reallocate(static_cast<int32_t>(val2));
             }
 
             return 0;
