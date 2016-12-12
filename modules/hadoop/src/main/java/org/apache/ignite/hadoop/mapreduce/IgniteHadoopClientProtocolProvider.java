@@ -82,7 +82,6 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void close(ClientProtocol cliProto) throws IOException {
         if (cliProto instanceof HadoopClientProtocol) {
             MapReduceClient cli = ((HadoopClientProtocol)cliProto).client();
