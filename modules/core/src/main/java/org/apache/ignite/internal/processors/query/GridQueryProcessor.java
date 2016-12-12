@@ -63,6 +63,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -1929,7 +1930,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Description of type property.
      */
-    private static class ClassProperty extends GridQueryProperty {
+    private static class ClassProperty implements GridQueryProperty {
         /** */
         private final PropertyAccessor accessor;
 
@@ -2022,12 +2023,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public String toString() {
             return S.toString(ClassProperty.class, this);
         }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty parent() {
+            return parent;
+        }
     }
 
     /**
      *
      */
-    private class BinaryProperty extends GridQueryProperty {
+    private class BinaryProperty implements GridQueryProperty {
         /** Property name. */
         private String propName;
 
@@ -2111,11 +2117,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            assert obj instanceof BinaryObject;
-
-            BinaryObject obj0 = (BinaryObject)obj;
-
-            return fieldValue(obj0);
+            if (obj instanceof BinaryObject) {
+                BinaryObject obj0 = (BinaryObject) obj;
+                return fieldValue(obj0);
+            }
+            else if (obj instanceof BinaryObjectBuilder) {
+                BinaryObjectBuilder obj0 = (BinaryObjectBuilder) obj;
+                return obj0.getField(name());
+            }
+            else
+                throw new IgniteCheckedException("Unexpected type of binary object to get field value from [obj=" + obj
+                    + ", type=" + obj.getClass() + ']');
         }
 
         /** {@inheritDoc} */
@@ -2125,10 +2137,38 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (obj == null)
                 return;
 
+            Object srcObj = obj;
+
+            if (!(srcObj instanceof BinaryObjectBuilder))
+                throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
+
+            if (parent != null)
+                obj = parent.value(key, val);
+
+            boolean needsBuild = false;
+
+            if (obj instanceof BinaryObjectExImpl) {
+                if (parent == null)
+                    throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
+
+                needsBuild = true;
+
+                obj = ((BinaryObjectExImpl) obj).toBuilder();
+            }
+
             if (!(obj instanceof BinaryObjectBuilder))
                 throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
             setValue0((BinaryObjectBuilder) obj, name(), propVal, type());
+
+            if (needsBuild) {
+                obj = ((BinaryObjectBuilder) obj).build();
+
+                assert parent != null;
+
+                // And now let's set this newly constructed object to parent
+                setValue0((BinaryObjectBuilder) srcObj, parent.name(), obj, obj.getClass());
+            }
         }
 
         /**
@@ -2204,6 +2244,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     " property of QueryEntity in programmatic or XML configuration?");
 
             return isKeyProp0 == 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty parent() {
+            return parent;
         }
     }
 
@@ -2288,7 +2333,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(String name) {
-            return getProperty(name);
+            GridQueryProperty res = props.get(name);
+
+            if (res == null)
+                res = uppercaseProps.get(name.toUpperCase());
+
+            return res;
         }
 
         /** {@inheritDoc} */
@@ -2296,7 +2346,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
 
-            GridQueryProperty prop = getProperty(field);
+            GridQueryProperty prop = property(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2310,7 +2360,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throws IgniteCheckedException {
             assert field != null;
 
-            GridQueryProperty prop = getProperty(field);
+            GridQueryProperty prop = property(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2448,19 +2498,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
             fields.put(name, prop.type());
-        }
-
-        /**
-         * @param field Property name.
-         * @return Property with given field name.
-         */
-        private GridQueryProperty getProperty(String field) {
-            GridQueryProperty res = props.get(field);
-
-            if (res == null)
-                res = uppercaseProps.get(field.toUpperCase());
-
-            return res;
         }
 
         /** {@inheritDoc} */
