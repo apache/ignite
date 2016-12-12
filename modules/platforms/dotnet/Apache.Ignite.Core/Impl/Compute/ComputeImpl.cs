@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var future = holder.Future;
 
-            future.SetTarget(futTarget);
+            future.SetTarget(new Listenable(futTarget, Marshaller));
 
             return future;
         }
@@ -550,7 +550,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                             writeAction(writer);
                     });
 
-                    holder.Future.SetTarget(futTarget);
+                    holder.Future.SetTarget(new Listenable(futTarget, Marshaller));
                 }
                 catch (Exception e)
                 {

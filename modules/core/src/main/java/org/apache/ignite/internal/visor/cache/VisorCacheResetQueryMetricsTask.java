@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -53,10 +53,10 @@ public class VisorCacheResetQueryMetricsTask extends VisorOneNodeTask<String, Vo
 
         /** {@inheritDoc} */
         @Override protected Void run(String cacheName) {
-            IgniteInternalCache cache = ignite.cachex(cacheName);
+            IgniteCache cache = ignite.cache(cacheName);
 
             if (cache != null)
-                cache.context().queries().resetMetrics();
+                cache.resetQueryMetrics();
 
             return null;
         }

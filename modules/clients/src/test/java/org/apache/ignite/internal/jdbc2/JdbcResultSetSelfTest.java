@@ -596,6 +596,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         stmt.setFetchSize(0);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNewQueryTaskFetchSize() throws Exception {
+        stmt.setFetchSize(1);
+
+        boolean res = stmt.execute("select * from TestObject where id > 0");
+
+        assertTrue(res);
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+
+        stmt.setFetchSize(0);
+    }
 
     /**
      * @throws Exception If failed.

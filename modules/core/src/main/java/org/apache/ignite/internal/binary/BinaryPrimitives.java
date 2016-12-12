@@ -60,7 +60,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(byte[] arr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
+        System.arraycopy(arr, off, arr0, 0, len);
 
         return arr0;
     }
@@ -73,7 +73,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(long ptr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        GridUnsafe.copyMemory(null, ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
+        GridUnsafe.copyOffheapHeap(ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
 
         return arr0;
     }
@@ -117,6 +117,18 @@ public abstract class BinaryPrimitives {
             GridUnsafe.putShortLE(arr, pos, val);
         else
             GridUnsafe.putShort(arr, pos, val);
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @param val Value.
+     */
+    public static void writeShort(long ptr, int off, short val) {
+        if (BIG_ENDIAN)
+            GridUnsafe.putShortLE(ptr + off, val);
+        else
+            GridUnsafe.putShort(ptr + off, val);
     }
 
     /**
@@ -203,7 +215,7 @@ public abstract class BinaryPrimitives {
     public static char[] readCharArray(long ptr, int off, int len) {
         char[] arr0 = new char[len];
 
-        GridUnsafe.copyMemory(null, ptr + off, arr0, GridUnsafe.CHAR_ARR_OFF, len << 1);
+        GridUnsafe.copyOffheapHeap(ptr + off, arr0, GridUnsafe.CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)
@@ -225,6 +237,18 @@ public abstract class BinaryPrimitives {
             GridUnsafe.putIntLE(arr, pos, val);
         else
             GridUnsafe.putInt(arr, pos, val);
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @param val Value.
+     */
+    public static void writeInt(long ptr, int off, int val) {
+        if (BIG_ENDIAN)
+            GridUnsafe.putIntLE(ptr + off, val);
+        else
+            GridUnsafe.putInt(ptr + off, val);
     }
 
     /**
