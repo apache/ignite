@@ -208,6 +208,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Node ID in GridNioSession. */
     private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** ClientNioMessageWorker in GridNioSession. */
+    private static final int NIO_WORKER_META = GridNioSessionMetaKey.nextUniqueKey();
+
     /**
      * Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
      * <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
@@ -305,18 +308,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Stopping message worker on disconnect [remoteAddr=" + ses.remoteAddress() +
                     ", remote node ID=" + clientNodeId + ']');
 
-            final ClientMessageProcessor proc = clientMsgWorkers.get(clientNodeId);
+            final ClientNioMessageWorker proc = ses.meta(NIO_WORKER_META);
 
-            if (proc != null && proc instanceof ClientNioMessageWorker && ((ClientNioMessageWorker)proc).ses == ses) {
-                if (clientMsgWorkers.remove(clientNodeId, proc))
-                    ((ClientNioMessageWorker)proc).nonblockingStop();
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.error("Illegal ClientMessageProcessor: " + proc);
+            if (proc != null) {
+                clientMsgWorkers.remove(clientNodeId, proc);
 
-                if (ses.closeTime() == 0)
-                    ses.close();
+                proc.nonblockingStop();
             }
         }
 
@@ -5667,6 +5664,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ses = clientNioSrv.createSession(ch, meta).get();
 
+            ses.addMeta(NIO_WORKER_META, this);
+
             state = WorkerState.STARTED;
         }
 
@@ -5709,6 +5708,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             state = WorkerState.STOPPED;
 
             nioWorkers.remove(this);
+
+            ses.removeMeta(NIO_WORKER_META);
 
             return res;
         }
@@ -5880,12 +5881,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             final UUID nodeId = getConfiguredNodeId();
             final UUID clientNodeId = clientNodeId(ses);
 
-            final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker)clientMsgWorkers.get(clientNodeId);
+            final ClientNioMessageWorker clientMsgWrk = ses.meta(NIO_WORKER_META);
 
-            if (clientMsgWrk == null || clientMsgWrk.ses != ses) {
+            if (clientMsgWrk == null) {
                 if (log.isDebugEnabled())
                     log.debug("NIO Worker has been closed, drop message. [clientNodeId="
-                        + clientNodeId + ", message=" + msg + ", clientMsgWrk=" + clientMsgWrk + "]");
+                        + clientNodeId + ", message=" + msg + "]");
 
                 if (ses.closeTime() == 0)
                     ses.close();
