@@ -102,11 +102,7 @@ namespace ignite
             hnds.target = target;
 
             hnds.inLongOutLong = InLongOutLong;
-
-            //hnds.onStart = OnStart;
-            //hnds.onStop = OnStop;
-
-            //hnds.memRealloc = MemoryReallocate;
+            hnds.inLongLongLongObjectOutLong = InLongLongLongObjectOutLong;
 
             hnds.error = 0;
 
