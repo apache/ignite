@@ -883,6 +883,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<?> rebalance();
 
     /**
+     * Returns future that will be completed when all indexes for this cache are ready to use.
+     *
+     * @return Future.
+     */
+    public IgniteFuture<?> indexReadyFuture();
+
+    /**
      * Gets whole cluster snapshot metrics (statistics) for this cache.
      *
      * @return Cache metrics.

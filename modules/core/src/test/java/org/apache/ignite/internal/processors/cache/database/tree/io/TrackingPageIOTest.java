@@ -100,7 +100,7 @@ public class TrackingPageIOTest extends TestCase {
                     io.wasChanged(buf, e.getKey(), backupId, backupId -1, PAGE_SIZE));
         }
         catch (Throwable e) {
-            System.out.println("backupId = " + backupId + ", basePageId = " + basePageId);
+            System.out.println("snapshotId = " + backupId + ", basePageId = " + basePageId);
             throw e;
         }
     }
@@ -152,7 +152,7 @@ public class TrackingPageIOTest extends TestCase {
             }
         }
         catch (Throwable e) {
-            System.out.println("backupId = " + backupId + ", basePageId = " + basePageId);
+            System.out.println("snapshotId = " + backupId + ", basePageId = " + basePageId);
             throw e;
         }
     }

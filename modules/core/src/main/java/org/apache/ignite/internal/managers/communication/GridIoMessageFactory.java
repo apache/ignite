@@ -33,7 +33,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.pagemem.backup.BackupFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
@@ -187,7 +187,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -27:
-                msg = new BackupFinishedMessage();
+                msg = new SnapshotFinishedMessage();
 
                 break;
 

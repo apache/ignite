@@ -56,7 +56,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -280,8 +280,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
-                    else if (customEvt.customMessage() instanceof StartFullBackupAckDiscoveryMessage
-                        && !((StartFullBackupAckDiscoveryMessage)customEvt.customMessage()).hasError()) {
+                    else if (customEvt.customMessage() instanceof StartFullSnapshotAckDiscoveryMessage
+                        && !((StartFullSnapshotAckDiscoveryMessage)customEvt.customMessage()).hasError()) {
                         exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                         exchFut = exchangeFuture(exchId, e, null, null);

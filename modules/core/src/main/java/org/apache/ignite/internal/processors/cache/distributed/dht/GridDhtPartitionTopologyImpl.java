@@ -41,6 +41,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -676,7 +678,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (locPart != null) {
                         GridDhtPartitionState state = locPart.state();
 
-                        if (state == MOVING) {
+                        if (state == MOVING && cctx.shared().cache().globalState() == CacheState.ACTIVE) {
                             locPart.rent(false);
 
                             updateLocal(p, loc.id(), locPart.state(), updateSeq);
@@ -1588,6 +1590,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @return Checks if any of the local partitions need to be evicted.
      */
     private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
+        if (cctx.shared().cache().globalState() == CacheState.INACTIVE)
+            return false;
+
         boolean changed = false;
 
         UUID locId = cctx.nodeId();

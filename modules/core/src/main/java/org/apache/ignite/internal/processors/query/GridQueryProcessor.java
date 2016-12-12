@@ -90,6 +90,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -588,12 +589,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return rebuildIndexes(
-                space,
-                typesByName.get(
-                    new TypeName(
-                        space,
-                        valTypeName)));
+            return rebuildIndexes(space, typesByName.get(new TypeName(space, valTypeName)), false);
         }
         finally {
             busyLock.leaveBusy();
@@ -605,7 +601,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
+    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc,
+        final boolean fromHash) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
@@ -614,10 +611,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 
+        if (fromHash)
+            idx.markForRebuildFromHash(space, desc);
+
         GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
             @Override protected void body() {
                 try {
-                    idx.rebuildIndexes(space, desc);
+                    if (fromHash)
+                        idx.rebuildIndexesFromHash(space, desc);
+                    else
+                        idx.rebuildIndexes(space, desc);
 
                     fut.onDone();
                 }
@@ -656,7 +659,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
+                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue(), false));
+
+            fut.markInitialized();
+
+            return fut;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Rebuilds indexes for provided caches from corresponding hash indexes.
+     *
+     * @param cacheIds Cache IDs.
+     * @return Future that will be completed when rebuilding is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to get space size (grid is stopping).");
+
+        try {
+            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
+
+            for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
+                if (cacheIds.contains(CU.cacheId(e.getKey().space)))
+                    fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue(), true));
+            }
 
             fut.markInitialized();
 

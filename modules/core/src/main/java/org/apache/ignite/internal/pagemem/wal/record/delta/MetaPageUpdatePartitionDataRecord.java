@@ -37,17 +37,23 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private byte state;
 
+    /** */
+    private int allocatedIdxCandidate;
+
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
+     * @param allocatedIdxCandidate Page Allocated index candidate
      */
-    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize, byte state) {
+    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize,
+        byte state, int allocatedIdxCandidate) {
         super(cacheId, pageId);
 
         this.updateCntr = updateCntr;
         this.globalRmvId = globalRmvId;
         this.partSize = partSize;
         this.state = state;
+        this.allocatedIdxCandidate = allocatedIdxCandidate;
     }
 
     /**
@@ -85,6 +91,13 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setUpdateCounter(buf, updateCntr);
         io.setGlobalRemoveId(buf, globalRmvId);
         io.setSize(buf, partSize);
+    }
+
+    /**
+     *
+     */
+    public int allocatedIndexCandidate() {
+        return allocatedIdxCandidate;
     }
 
     /** {@inheritDoc} */

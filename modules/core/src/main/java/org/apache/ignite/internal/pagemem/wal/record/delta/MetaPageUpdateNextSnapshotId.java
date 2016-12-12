@@ -17,47 +17,43 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
-
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 
 /**
  *
  */
-public class MetaPageUpdateCandidateAllocatedIndex extends PageDeltaRecord {
+public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
     /** */
-    private final int candidateAllocatedIdx;
+    private final long nextSnapshotId;
 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateCandidateAllocatedIndex(int cacheId, long pageId, int candidateAllocatedIdx) {
+    public MetaPageUpdateNextSnapshotId(int cacheId, long pageId, long nextSnapshotId) {
         super(cacheId, pageId);
 
-        this.candidateAllocatedIdx = candidateAllocatedIdx;
+        this.nextSnapshotId = nextSnapshotId;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        assert PageIO.getType(buf) == PageIO.T_META || PageIO.getType(buf) == PageIO.T_PART_META;
+        PageMetaIO io = PageMetaIO.VERSIONS.forPage(buf);
 
-        PageMetaIO io = PageMetaIO.VERSIONS.forVersion(PageIO.getVersion(buf));
-
-        io.setCandidateAllocatedIndex(buf, candidateAllocatedIdx);
+        io.setNextSnapshotTag(buf, nextSnapshotId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX;
+        return RecordType.META_PAGE_UPDATE_NEXT_SNAPSHOT_ID;
     }
 
     /**
      * @return Root ID.
      */
-    public int candidateAllocatedIndex() {
-        return candidateAllocatedIdx;
+    public long nextSnapshotId() {
+        return nextSnapshotId;
     }
 }
 

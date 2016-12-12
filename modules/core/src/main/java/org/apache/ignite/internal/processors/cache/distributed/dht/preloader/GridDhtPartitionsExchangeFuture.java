@@ -48,7 +48,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
-import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -486,7 +486,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
-                else if (customMessage instanceof StartFullBackupAckDiscoveryMessage)
+                else if (customMessage instanceof StartFullSnapshotAckDiscoveryMessage)
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
@@ -805,15 +805,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
             DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
-            if (customMessage instanceof StartFullBackupAckDiscoveryMessage) {
-                StartFullBackupAckDiscoveryMessage backupMsg = (StartFullBackupAckDiscoveryMessage)customMessage;
+            if (customMessage instanceof StartFullSnapshotAckDiscoveryMessage) {
+                StartFullSnapshotAckDiscoveryMessage backupMsg = (StartFullSnapshotAckDiscoveryMessage)customMessage;
 
                 if (!cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
                     ClusterNode node = cctx.discovery().node(backupMsg.initiatorNodeId());
 
                     assert node != null;
 
-                    IgniteInternalFuture fut = cctx.database().startLocalBackup(backupMsg, node);
+                    IgniteInternalFuture fut = cctx.database().startLocalSnapshot(backupMsg, node);
 
                     if (fut != null)
                         fut.get();

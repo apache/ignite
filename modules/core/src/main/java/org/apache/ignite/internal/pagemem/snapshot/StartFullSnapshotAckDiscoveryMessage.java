@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.pagemem.backup;
+package org.apache.ignite.internal.pagemem.snapshot;
 
 import java.util.Collection;
 import java.util.Map;
@@ -26,9 +26,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message indicating that a backup has been started.
+ * Message indicating that a snapshot has been started.
  */
-public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessag
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
-    private long globalBackupId;
+    private long globalSnapshotId;
 
     /** */
     private Exception err;
@@ -47,22 +47,22 @@ public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessag
     /** */
     private UUID initiatorNodeId;
 
-    private boolean incremental;
+    private boolean fullSnapshot;
 
-    private Map<Integer, Long> lastFullBackupIdForCache;
+    private Map<Integer, Long> lastFullSnapshotIdForCache;
 
     /**
-     * @param globalBackupId Backup ID.
+     * @param globalSnapshotId Snapshot ID.
      * @param err Error.
      * @param cacheNames Cache names.
      */
-    public StartFullBackupAckDiscoveryMessage(long globalBackupId, boolean incremental,
-        Map<Integer, Long> lastFullBackupIdForCache,
+    public StartFullSnapshotAckDiscoveryMessage(long globalSnapshotId, boolean fullSnapshot,
+        Map<Integer, Long> lastFullSnapshotIdForCache,
         Collection<String> cacheNames, Exception err,
         UUID initiatorNodeId) {
-        this.globalBackupId = globalBackupId;
-        this.incremental = incremental;
-        this.lastFullBackupIdForCache = lastFullBackupIdForCache;
+        this.globalSnapshotId = globalSnapshotId;
+        this.fullSnapshot = fullSnapshot;
+        this.lastFullSnapshotIdForCache = lastFullSnapshotIdForCache;
         this.err = err;
         this.cacheNames = cacheNames;
         this.initiatorNodeId = initiatorNodeId;
@@ -102,18 +102,18 @@ public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessag
     }
 
     /**
-     * @return Backup ID.
+     * @return Snapshot ID.
      */
-    public long globalBackupId() {
-        return globalBackupId;
+    public long globalSnapshotId() {
+        return globalSnapshotId;
     }
 
-    public boolean incremental() {
-        return incremental;
+    public boolean fullSnapshot() {
+        return fullSnapshot;
     }
 
-    @Nullable public Long lastFullBackupId(int cacheId) {
-        return lastFullBackupIdForCache.get(cacheId);
+    @Nullable public Long lastFullSnapshotId(int cacheId) {
+        return lastFullSnapshotIdForCache.get(cacheId);
     }
 
     /** {@inheritDoc} */

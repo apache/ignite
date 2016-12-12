@@ -97,7 +97,7 @@ public enum GridTopic {
     TOPIC_TX,
 
     /** */
-    TOPIC_BACKUP,
+    TOPIC_SNAPSHOT,
 
     /** */
     TOPIC_IO_TEST;

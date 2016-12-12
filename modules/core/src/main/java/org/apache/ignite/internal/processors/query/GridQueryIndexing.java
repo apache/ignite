@@ -221,6 +221,25 @@ public interface GridQueryIndexing {
     public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type);
 
     /**
+     * Rebuilds all indexes of given type from hash index.
+     *
+     * @param spaceName Space name.
+     * @param type Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rebuildIndexesFromHash(@Nullable String spaceName,
+        GridQueryTypeDescriptor type) throws IgniteCheckedException;
+
+    /**
+     * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
+     *
+     * @param spaceName Space name.
+     * @param type Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type);
+
+    /**
      * Returns backup filter.
      *
      * @param topVer Topology version.

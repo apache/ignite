@@ -28,7 +28,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -143,7 +143,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId,
+    @Nullable public IgniteInternalFuture wakeupForSnapshot(long snapshotId, UUID snapshotNodeId,
         Collection<String> cacheNames) {
         return null;
     }
@@ -170,13 +170,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param backupMsg Backup message.
+     * @param snapshotMsg Snapshot message.
      * @param initiator Initiator node.
-     * @return Backup init future or {@code null} if backup is not available.
+     * @return Snapshot creation init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalBackup(StartFullBackupAckDiscoveryMessage backupMsg, ClusterNode initiator)
+    @Nullable public IgniteInternalFuture startLocalSnapshot(StartFullSnapshotAckDiscoveryMessage snapshotMsg,
+        ClusterNode initiator)
         throws IgniteCheckedException {
+        return null;
+    }
+
+    /**
+     * @return Future that will be completed when indexes for given cache are restored.
+     */
+    @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return null;
     }
 

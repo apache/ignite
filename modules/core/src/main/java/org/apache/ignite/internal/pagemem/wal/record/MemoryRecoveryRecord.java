@@ -21,29 +21,24 @@ package org.apache.ignite.internal.pagemem.wal.record;
  * Marker that we start memory recovering
  */
 public class MemoryRecoveryRecord extends WALRecord {
-    /**
-     *
-     */
-    private static class Holder {
-        /** Instance. */
-        private static final MemoryRecoveryRecord INSTANCE = new MemoryRecoveryRecord();
-    }
+    /** Time. */
+    private long time;
 
-    /**
-     *
-     */
-    public static MemoryRecoveryRecord instance() {
-        return Holder.INSTANCE;
-    }
 
     /**
      * Default constructor.
+     * @param time
      */
-    private MemoryRecoveryRecord() {
+    public MemoryRecoveryRecord(long time) {
+        this.time = time;
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.MEMORY_RECOVERY;
+    }
+
+    public long time() {
+        return time;
     }
 }

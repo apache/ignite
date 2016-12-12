@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRec
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -638,6 +639,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
+        assert cctx.shared().cache().globalState() != CacheState.INACTIVE;
+
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);
@@ -835,6 +838,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public void updateCounter(long val) {
         store.updateCounter(val);
+    }
+
+    public void updateInitialCounter(long val) {
+        store.updateInitialCounter(val);
     }
 
     /**
