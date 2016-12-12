@@ -222,12 +222,9 @@ namespace ignite
                 template<typename T2>
                 SharedPointer& operator=(const SharedPointer<T2>& other)
                 {
-                    if (this != &other)
-                    {
-                        SharedPointer<T> tmp(other);
+                    SharedPointer<T> tmp(other);
 
-                        Swap(tmp);
-                    }
+                    Swap(tmp);
 
                     return *this;
                 }

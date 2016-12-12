@@ -32,9 +32,31 @@ namespace ignite
     namespace common
     {
         /**
+         * Interface for constant Reference implementation class template.
+         */
+        class ConstReferenceImplBase
+        {
+        public:
+            /**
+             * Destructor.
+             */
+            virtual ~ConstReferenceImplBase()
+            {
+                // No-op.
+            }
+
+            /**
+             * Get the constant pointer.
+             *
+             * @return Constant pointer to underlying value.
+             */
+            virtual const void* Get() const = 0;
+        };
+
+        /**
          * Interface for Reference implementation class template.
          */
-        class ReferenceImplBase
+        class ReferenceImplBase : public ConstReferenceImplBase
         {
         public:
             /**
@@ -213,6 +235,51 @@ namespace ignite
         private:
             /** Underlying pointer. */
             T* ptr;
+        };
+
+        /**
+         * Constant reference implementation for the raw pointer.
+         */
+        template<typename T>
+        class ConstReferenceNonOwningRawPointer : public ConstReferenceImplBase
+        {
+        public:
+            /**
+             * Destructor.
+             */
+            virtual ~ConstReferenceNonOwningRawPointer()
+            {
+                // No-op.
+            }
+
+            /**
+             * Default constructor.
+             */
+            ConstReferenceNonOwningRawPointer() :
+                ptr(0)
+            {
+                // No-op.
+            }
+
+            /**
+             * Pointer constructor.
+             *
+             * @param ptr Pointer.
+             */
+            ConstReferenceNonOwningRawPointer(const T* ptr) :
+                ptr(ptr)
+            {
+                // No-op.
+            }
+
+            const void* Get() const
+            {
+                return reinterpret_cast<const void*>(ptr);
+            }
+
+        private:
+            /** Underlying pointer. */
+            const T* ptr;
         };
 
     }

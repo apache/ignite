@@ -31,6 +31,151 @@
 
 namespace ignite
 {
+    template<typename T>
+    class Reference;
+
+    /**
+     * Constant Reference class.
+     *
+     * Abstraction on any reference-type object, from simple raw pointers and
+     * references to standard library smart pointers. Provides only constant access
+     */
+    template<typename T>
+    class ConstReference
+    {
+        template<typename>
+        friend class ConstReference;
+
+        template<typename>
+        friend class Reference;
+
+    public:
+        /**
+         * Default constructor.
+         */
+        ConstReference() :
+            ptr(),
+            offset(0)
+        {
+            // No-op.
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param ptr ConstReference class implementation.
+         * @param offset Pointer offset.
+         */
+        explicit ConstReference(common::ConstReferenceImplBase* ptr, ptrdiff_t offset = 0) :
+            ptr(ptr),
+            offset(offset)
+        {
+            // No-op.
+        }
+
+        /**
+         * Copy constructor.
+         *
+         * @param other Another instance.
+         */
+        ConstReference(const ConstReference& other) :
+            ptr(other.ptr),
+            offset(other.offset)
+        {
+            // No-op.
+        }
+
+        /**
+         * Copy constructor.
+         *
+         * @param other Another instance.
+         */
+        template<typename T2>
+        ConstReference(const ConstReference<T2>& other) :
+            ptr(other.ptr),
+            offset(other.offset)
+        {
+            T2* p0 = reinterpret_cast<T2*>(80000);
+            T* p1 = static_cast<T*>(p0);
+
+            ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
+            offset += diff;
+        }
+
+        /**
+         * Assignment operator.
+         *
+         * @param other Another instance.
+         */
+        ConstReference& operator=(const ConstReference& other)
+        {
+            ptr = other.ptr;
+            offset = other.offset;
+
+            return *this;
+        }
+        
+        /**
+         * Assignment operator.
+         *
+         * @param other Another instance.
+         */
+        template<typename T2>
+        ConstReference& operator=(const ConstReference<T2>& other)
+        {
+            ptr = other.ptr;
+            offset = other.offset;
+
+            T2* p0 = reinterpret_cast<T2*>(80000);
+            T* p1 = static_cast<T*>(p0);
+
+            ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
+            offset += diff;
+
+            return *this;
+        }
+
+        /**
+         * Destructor.
+         */
+        ~ConstReference()
+        {
+            // No-op.
+        }
+
+        /**
+         * Dereference the pointer.
+         *
+         * If the pointer is null then this operation causes undefined
+         * behaviour.
+         *
+         * @return Constant reference to underlying value.
+         */
+        const T& Get() const
+        {
+            return *reinterpret_cast<const T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
+        }
+
+        /**
+         * Check if the pointer is null.
+         *
+         * @return True if the value is null.
+         */
+        bool IsNull() const
+        {
+            const common::ConstReferenceImplBase* raw = ptr.Get();
+
+            return !raw || !raw->Get();
+        }
+
+    private:
+        /** Implementation. */
+        common::concurrent::SharedPointer<common::ConstReferenceImplBase> ptr;
+
+        /** Address offset. */
+        ptrdiff_t offset;
+    };
+
     /**
      * Reference class.
      *
@@ -137,6 +282,28 @@ namespace ignite
         }
 
         /**
+         * Const cast operator.
+         *
+         * Casts this instance to constant reference.
+         */
+        template<typename T2>
+        operator ConstReference<T2>()
+        {
+            ConstReference<T2> cr;
+
+            cr.ptr = ptr;
+            cr.offset = offset;
+
+            T2* p0 = reinterpret_cast<T2*>(80000);
+            T* p1 = static_cast<T*>(p0);
+
+            ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
+            cr.offset -= diff;
+
+            return cr;
+        }
+
+        /**
          * Dereference the pointer.
          *
          * If the pointer is null then this operation causes undefined
@@ -190,11 +357,30 @@ namespace ignite
      *     returned value.
      */
     template<typename T>
-    Reference<typename T::element_type> PassSmartPointer(T ptr)
+    Reference<typename T::element_type> MakeReferenceFromSmartPointer(T ptr)
     {
         common::ReferenceSmartPointer<T>* impl = new common::ReferenceSmartPointer<T>();
 
         Reference<typename T::element_type> res(impl);
+
+        impl->Swap(ptr);
+
+        return res;
+    }
+
+    /**
+     * Used to pass smart pointers to Ignite API.
+     *
+     * @param ptr Pointer.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    ConstReference<typename T::element_type> MakeConstReferenceFromSmartPointer(T ptr)
+    {
+        common::ReferenceSmartPointer<T>* impl = new common::ReferenceSmartPointer<T>();
+
+        ConstReference<typename T::element_type> res(impl);
 
         impl->Swap(ptr);
 
@@ -209,9 +395,40 @@ namespace ignite
      *     returned value.
      */
     template<typename T>
-    Reference<T> PassCopy(const T& val)
+    Reference<T> MakeReferenceFromCopy(const T& val)
     {
         common::ReferenceOwningRawPointer<T>* impl = new common::ReferenceOwningRawPointer<T>(new T(val));
+
+        return Reference<T>(impl);
+    }
+
+    /**
+     * Used to pass object copy to Ignite API.
+     *
+     * @param val Instance.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    ConstReference<T> MakeConstReferenceFromCopy(const T& val)
+    {
+        common::ReferenceOwningRawPointer<T>* impl = new common::ReferenceOwningRawPointer<T>(new T(val));
+
+        return ConstReference<T>(impl);
+    }
+
+    /**
+     * Used to pass object pointer to Ignite API.
+     * Passed object deleted by Ignite when no longer needed.
+     *
+     * @param val Instance.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    Reference<T> MakeReferenceFromOwningPointer(T* val)
+    {
+        common::ReferenceOwningRawPointer<T>* impl = new common::ReferenceOwningRawPointer<T>(val);
 
         return Reference<T>(impl);
     }
@@ -225,9 +442,25 @@ namespace ignite
      *     returned value.
      */
     template<typename T>
-    Reference<T> PassOwnership(T* val)
+    ConstReference<T> MakeConstReferenceFromOwningPointer(T* val)
     {
         common::ReferenceOwningRawPointer<T>* impl = new common::ReferenceOwningRawPointer<T>(val);
+
+        return ConstReference<T>(impl);
+    }
+
+    /**
+     * Used to pass object reference to Ignite API.
+     * Ignite do not manage passed object and does not affect its lifetime.
+     *
+     * @param val Reference.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    Reference<T> MakeReference(T& val)
+    {
+        common::ReferenceNonOwningRawPointer<T>* impl = new common::ReferenceNonOwningRawPointer<T>(&val);
 
         return Reference<T>(impl);
     }
@@ -241,11 +474,43 @@ namespace ignite
      *     returned value.
      */
     template<typename T>
-    Reference<T> PassReference(T& val)
+    Reference<T> MakeReference(T* val)
     {
-        common::ReferenceNonOwningRawPointer<T>* impl = new common::ReferenceNonOwningRawPointer<T>(&val);
+        common::ReferenceNonOwningRawPointer<T>* impl = new common::ReferenceNonOwningRawPointer<T>(val);
 
         return Reference<T>(impl);
+    }
+
+    /**
+     * Used to pass object reference to Ignite API.
+     * Ignite do not manage passed object and does not affect its lifetime.
+     *
+     * @param val Reference.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    ConstReference<T> MakeConstReference(const T& val)
+    {
+        common::ConstReferenceNonOwningRawPointer<T>* impl = new common::ConstReferenceNonOwningRawPointer<T>(&val);
+
+        return ConstReference<T>(impl);
+    }
+
+    /**
+     * Used to pass object reference to Ignite API.
+     * Ignite do not manage passed object and does not affect its lifetime.
+     *
+     * @param val Reference.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    ConstReference<T> MakeConstReference(const T* val)
+    {
+        common::ConstReferenceNonOwningRawPointer<T>* impl = new common::ConstReferenceNonOwningRawPointer<T>(val);
+
+        return ConstReference<T>(impl);
     }
 }
 

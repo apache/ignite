@@ -131,6 +131,21 @@ void TestFunction3(Reference<C3> c3, int expected)
     BOOST_CHECK_EQUAL(c3.Get().c3, expected);
 }
 
+void TestFunctionConst1(ConstReference<C1> c1, int expected)
+{
+    BOOST_CHECK_EQUAL(c1.Get().c1, expected);
+}
+
+void TestFunctionConst2(ConstReference<C2> c2, int expected)
+{
+    BOOST_CHECK_EQUAL(c2.Get().c2, expected);
+}
+
+void TestFunctionConst3(ConstReference<C3> c3, int expected)
+{
+    BOOST_CHECK_EQUAL(c3.Get().c3, expected);
+}
+
 BOOST_AUTO_TEST_SUITE(ReferenceTestSuite)
 
 BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
@@ -142,7 +157,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
     BOOST_CHECK(objAlive);
 
     {
-        Reference<LivenessMarker> smart = PassSmartPointer(shared);
+        Reference<LivenessMarker> smart = MakeReferenceFromSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
 
@@ -163,7 +178,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestAfter)
     BOOST_CHECK(objAlive);
 
     {
-        Reference<LivenessMarker> smart = PassSmartPointer(shared);
+        Reference<LivenessMarker> smart = MakeReferenceFromSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
     }
@@ -184,7 +199,7 @@ BOOST_AUTO_TEST_CASE(StdAutoPointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        Reference<LivenessMarker> smart = PassSmartPointer(autop);
+        Reference<LivenessMarker> smart = MakeReferenceFromSmartPointer(autop);
 
         BOOST_CHECK(objAlive);
     }
@@ -201,7 +216,7 @@ BOOST_AUTO_TEST_CASE(StdUniquePointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        Reference<LivenessMarker> smart = PassSmartPointer(std::move(unique));
+        Reference<LivenessMarker> smart = MakeReferenceFromSmartPointer(std::move(unique));
 
         BOOST_CHECK(objAlive);
     }
@@ -218,7 +233,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestBefore)
     BOOST_CHECK(objAlive);
 
     {
-        Reference<LivenessMarker> smart = PassSmartPointer(shared);
+        Reference<LivenessMarker> smart = MakeReferenceFromSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
 
@@ -239,7 +254,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
     BOOST_CHECK(objAlive);
 
     {
-        Reference<LivenessMarker> smart = PassSmartPointer(shared);
+        Reference<LivenessMarker> smart = MakeReferenceFromSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
     }
@@ -261,11 +276,11 @@ BOOST_AUTO_TEST_CASE(PassingToFunction)
 
     boost::shared_ptr<LivenessMarker> boostShared = boost::make_shared<LivenessMarker>(objAlive);
 
-    TestFunction(PassSmartPointer(stdShared));
-    TestFunction(PassSmartPointer(std::move(stdUnique)));
-    TestFunction(PassSmartPointer(stdAuto));
+    TestFunction(MakeReferenceFromSmartPointer(stdShared));
+    TestFunction(MakeReferenceFromSmartPointer(std::move(stdUnique)));
+    TestFunction(MakeReferenceFromSmartPointer(stdAuto));
 
-    TestFunction(PassSmartPointer(boostShared));
+    TestFunction(MakeReferenceFromSmartPointer(boostShared));
 }
 
 BOOST_AUTO_TEST_CASE(CopyTest)
@@ -278,7 +293,7 @@ BOOST_AUTO_TEST_CASE(CopyTest)
         BOOST_CHECK_EQUAL(instances, 1);
 
         {
-            Reference<InstanceCounter> copy = PassCopy(counter);
+            Reference<InstanceCounter> copy = MakeReferenceFromCopy(counter);
 
             BOOST_CHECK_EQUAL(instances, 2);
         }
@@ -299,7 +314,7 @@ BOOST_AUTO_TEST_CASE(OwningPointerTest)
         BOOST_CHECK_EQUAL(instances, 1);
 
         {
-            Reference<InstanceCounter> owned = PassOwnership(counter);
+            Reference<InstanceCounter> owned = MakeReferenceFromOwningPointer(counter);
 
             BOOST_CHECK_EQUAL(instances, 1);
         }
@@ -320,7 +335,7 @@ BOOST_AUTO_TEST_CASE(NonOwningPointerTest1)
         BOOST_CHECK_EQUAL(instances, 1);
 
         {
-            Reference<InstanceCounter> copy = PassReference(counter);
+            Reference<InstanceCounter> copy = MakeReference(counter);
 
             BOOST_CHECK_EQUAL(instances, 1);
         }
@@ -340,7 +355,7 @@ BOOST_AUTO_TEST_CASE(NonOwningPointerTest2)
     BOOST_CHECK_EQUAL(instances, 1);
 
     {
-        Reference<InstanceCounter> copy = PassReference(*counter);
+        Reference<InstanceCounter> copy = MakeReference(*counter);
 
         BOOST_CHECK_EQUAL(instances, 1);
 
@@ -360,13 +375,38 @@ BOOST_AUTO_TEST_CASE(CastTest)
     testVal.c2 = 2;
     testVal.c3 = 3;
 
-    TestFunction1(PassReference(testVal), 1);
-    TestFunction2(PassReference(testVal), 2);
-    TestFunction3(PassReference(testVal), 3);
+    TestFunction1(MakeReference(testVal), 1);
+    TestFunction2(MakeReference(testVal), 2);
+    TestFunction3(MakeReference(testVal), 3);
 
-    TestFunction1(PassCopy(testVal), 1);
-    TestFunction2(PassCopy(testVal), 2);
-    TestFunction3(PassCopy(testVal), 3);
+    TestFunction1(MakeReferenceFromCopy(testVal), 1);
+    TestFunction2(MakeReferenceFromCopy(testVal), 2);
+    TestFunction3(MakeReferenceFromCopy(testVal), 3);
+}
+
+BOOST_AUTO_TEST_CASE(ConstTest)
+{
+    C3 testVal;
+
+    testVal.c1 = 1;
+    testVal.c2 = 2;
+    testVal.c3 = 3;
+
+    TestFunctionConst1(MakeConstReference(testVal), 1);
+    TestFunctionConst2(MakeConstReference(testVal), 2);
+    TestFunctionConst3(MakeConstReference(testVal), 3);
+
+    TestFunctionConst1(MakeConstReferenceFromCopy(testVal), 1);
+    TestFunctionConst2(MakeConstReferenceFromCopy(testVal), 2);
+    TestFunctionConst3(MakeConstReferenceFromCopy(testVal), 3);
+
+    TestFunctionConst1(MakeReference(testVal), 1);
+    TestFunctionConst2(MakeReference(testVal), 2);
+    TestFunctionConst3(MakeReference(testVal), 3);
+
+    TestFunctionConst1(MakeReferenceFromCopy(testVal), 1);
+    TestFunctionConst2(MakeReferenceFromCopy(testVal), 2);
+    TestFunctionConst3(MakeReferenceFromCopy(testVal), 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
