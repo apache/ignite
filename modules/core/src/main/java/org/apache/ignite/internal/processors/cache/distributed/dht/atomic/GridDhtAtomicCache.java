@@ -1850,7 +1850,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 // TODO handle failure: probably drop the node from topology
                 // TODO fire events only after successful fsync
-                ctx.shared().wal().fsync(null);
+                if (ctx.shared().wal() != null)
+                    ctx.shared().wal().fsync(null);
             }
         }
         catch (GridDhtInvalidPartitionException ignore) {
@@ -3237,7 +3238,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // TODO handle failure: probably drop the node from topology
             // TODO fire events only after successful fsync
-            ctx.shared().wal().fsync(null);
+            if (ctx.shared().wal() != null)
+                ctx.shared().wal().fsync(null);
         }
         catch (StorageException e) {
             res.onError(new IgniteCheckedException(e));

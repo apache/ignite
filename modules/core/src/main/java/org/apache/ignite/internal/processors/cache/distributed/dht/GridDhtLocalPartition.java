@@ -529,7 +529,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                 return update;
             }
-        } else
+        }
+        else
             return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
     }
 
