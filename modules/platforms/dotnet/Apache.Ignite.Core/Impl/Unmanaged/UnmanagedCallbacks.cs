@@ -1003,7 +1003,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long OnStart(long memPtr, long unused, long unused1, void* proc)
         {
-            var proc0 = new UnmanagedTarget(_ctx, proc);
+            var proc0 = UU.Acquire(_ctx, proc);
 
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
@@ -1143,8 +1143,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var affBase = func as AffinityFunctionBase;
 
                 if (affBase != null)
-                    affBase.SetBaseFunction(new PlatformAffinityFunction(
-                        _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
+                {
+                    var baseFunc0 = UU.Acquire(_ctx, baseFunc);
+
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0, _ignite.Marshaller));
+                }
 
                 return _handleRegistry.Allocate(func);
             }

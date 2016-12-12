@@ -470,6 +470,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     ", capacity=" + cap + ']');
         }
 
+        internal static IUnmanagedTarget Acquire(UnmanagedContext ctx, void* target)
+        {
+            void* target0 = JNI.Acquire(ctx.NativeContext, target);
+
+            return new UnmanagedTarget(ctx, target0);
+        }
+
         internal static void Release(IUnmanagedTarget target)
         {
             JNI.Release(target.Target);

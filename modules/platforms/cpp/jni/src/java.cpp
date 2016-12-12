@@ -1368,6 +1368,22 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
+			jobject JniContext::Acquire(jobject obj)
+            {
+                if (obj) {
+
+                    JNIEnv* env = Attach();
+
+                    jobject obj0 = env->NewGlobalRef(obj);
+
+                    ExceptionCheck(env);
+
+                    return obj0;
+                }
+
+                return NULL;
+            }
+
             void JniContext::Release(jobject obj) {
                 if (obj)
                 {
@@ -1578,8 +1594,7 @@ namespace ignite
             }
 
             JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg) {
-                void* argRef = arg ? env->NewGlobalRef(arg) : 0;
-                IGNITE_SAFE_FUNC(env, envPtr, InLongLongLongObjectOutLongHandler, inLongLongLongObjectOutLong, type, val1, val2, val3, argRef);
+                IGNITE_SAFE_FUNC(env, envPtr, InLongLongLongObjectOutLongHandler, inLongLongLongObjectOutLong, type, val1, val2, val3, arg);
             }
         }
     }

@@ -67,7 +67,7 @@ namespace ignite
             */
             JavaGlobalRef(java::JniContext& ctx, jobject obj) :
                 ctx(&ctx),
-                obj(obj)
+                obj(ctx.Acquire(obj))
             {
                 // No-op.
             }
@@ -79,7 +79,7 @@ namespace ignite
             */
             JavaGlobalRef(const JavaGlobalRef& other) :
                 ctx(other.ctx),
-                obj(other.obj)
+                obj(ctx->Acquire(other.obj))
             {
                 // No-op.
             }
@@ -98,7 +98,7 @@ namespace ignite
                         ctx->Release(obj);
 
                     ctx = other.ctx;
-                    obj = other.obj;
+                    obj = ctx->Acquire(other.obj);
                 }
 
                 return *this;

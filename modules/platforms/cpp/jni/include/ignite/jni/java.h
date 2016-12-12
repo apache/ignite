@@ -391,6 +391,8 @@ namespace ignite
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
+                jobject Acquire(jobject obj);
+
                 void DestroyJvm();
                 void ThrowToJava(char* errMsg);
             private:
