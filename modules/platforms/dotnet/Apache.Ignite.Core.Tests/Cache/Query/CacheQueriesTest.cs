@@ -362,6 +362,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Check SQL query.
+        /// </summary>
+        [Test]
+        public void TestSqlQuery2()
+        {
+            // TODO: Remove this test
+            var cache = Cache();
+
+            PopulateCache(cache, false, MaxItemCnt, x => x < 50);
+
+            // 2. Validate results.
+            var qry = new SqlQuery(typeof(QueryPerson), "birthday < ?", DateTime.UtcNow);
+
+            var res = cache.Query(qry).GetAll();
+
+            Assert.IsTrue(res.Count > 0);
+        }
+
+        /// <summary>
         /// Check SQL fields query.
         /// </summary>
         [Test]
@@ -797,6 +816,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             Name = name;
             Age = age;
+            Birthday = DateTime.UtcNow.AddYears(-age);
         }
 
         /// <summary>
@@ -808,6 +828,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Age.
         /// </summary>
         public int Age { get; set; }
+
+        /// <summary>
+        /// Gets or sets the birthday.
+        /// </summary>
+        public DateTime Birthday { get; set; }
     }
 
     /// <summary>
