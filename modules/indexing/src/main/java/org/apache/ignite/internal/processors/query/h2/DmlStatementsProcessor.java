@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -851,12 +850,30 @@ public class DmlStatementsProcessor {
 
         GridQueryTypeDescriptor desc = plan.tbl.rowDescriptor().type();
 
+        Map<String, Object> newColVals = new HashMap<>();
+
         for (int i = 0; i < plan.colNames.length; i++) {
             if (i == plan.keyColIdx || i == plan.valColIdx)
                 continue;
 
-            desc.setValue(plan.colNames[i], key, val, convert(row.get(i), plan.colNames[i], plan.tbl.rowDescriptor(),
-                plan.colTypes[i]));
+            newColVals.put(plan.colNames[i], convert(row.get(i), plan.colNames[i],
+                plan.tbl.rowDescriptor(), plan.colTypes[i]));
+        }
+
+        // We update columns in the order specified by the table for a reason - table's
+        // column order preserves their precedence for correct update of nested properties.
+        Column[] cols = plan.tbl.getColumns();
+
+        // First 2 columns are _key and _val, skip 'em.
+        for (int i = 2; i < cols.length; i++) {
+            String colName = cols[i].getName();
+
+            if (!newColVals.containsKey(colName))
+                continue;
+
+            Object colVal = newColVals.get(colName);
+
+            desc.setValue(colName, key, val, colVal);
         }
 
         if (cctx.binaryMarshaller()) {
