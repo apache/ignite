@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,6 +64,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -341,7 +343,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh = new JdkMarshaller();
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -1378,7 +1380,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IgniteCheckedException err = null;
 
         try {
-            marsh.marshal(msg, out);
+            marshaller().marshal(msg, out);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -1462,7 +1464,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in,
+            T res = marshaller().unmarshal(in == null ? sock.getInputStream() : in,
                 U.resolveClassLoader(ignite.configuration()));
 
             return res;
@@ -1680,7 +1682,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
             try {
-                byte[] bytes = marsh.marshal(entry.getValue());
+                byte[] bytes = marshaller().marshal(entry.getValue());
 
                 data0.put(entry.getKey(), bytes);
             }
@@ -1711,12 +1713,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
-                Serializable compData = marsh.unmarshal(entry.getValue(), clsLdr);
+                Serializable compData = marshaller().unmarshal(entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
+                if (GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC.ordinal() == entry.getKey() &&
+                    X.hasCause(e, ClassNotFoundException.class) && locNode.isClient())
+                    U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
+                else
+                    U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
             }
         }
 
@@ -1982,6 +1988,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     public void brakeConnection() {
         impl.brakeConnection();
+    }
+
+    /**
+     * @return Marshaller.
+     */
+    protected Marshaller marshaller() {
+        MarshallerUtils.setNodeName(marsh, gridName);
+
+        return marsh;
     }
 
     /** {@inheritDoc} */

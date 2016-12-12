@@ -93,6 +93,9 @@ public class HadoopV2Job implements HadoopJob {
     /** Job info. */
     protected final HadoopJobInfo jobInfo;
 
+    /** Native library names. */
+    private final String[] libNames;
+
     /** */
     private final JobID hadoopJobID;
 
@@ -119,31 +122,41 @@ public class HadoopV2Job implements HadoopJob {
     private volatile byte[] jobConfData;
 
     /**
+     * Constructor.
+     *
      * @param jobId Job ID.
      * @param jobInfo Job info.
      * @param log Logger.
+     * @param libNames Optional additional native library names.
      */
-    public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log) {
+    public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log,
+        @Nullable String[] libNames) {
         assert jobId != null;
         assert jobInfo != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+        this.libNames = libNames;
 
-        hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
+        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
-        jobConf = HadoopUtils.safeCreateJobConf();
+        try {
+            hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        HadoopFileSystemsUtils.setupFileSystems(jobConf);
+            jobConf = new JobConf();
 
-        Thread.currentThread().setContextClassLoader(null);
+            HadoopFileSystemsUtils.setupFileSystems(jobConf);
 
-        for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
-            jobConf.set(e.getKey(), e.getValue());
+            for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
+                jobConf.set(e.getKey(), e.getValue());
 
-        jobCtx = new JobContextImpl(jobConf, hadoopJobID);
+            jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
-        rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
+            rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
+        }
+        finally {
+            HadoopUtils.setContextClassLoader(oldLdr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -158,7 +171,7 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
-        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
+        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(jobConf.getClassLoader());
 
         try {
             String jobDirPath = jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
@@ -215,12 +228,12 @@ public class HadoopV2Job implements HadoopJob {
             }
         }
         finally {
-            Thread.currentThread().setContextClassLoader(null);
+            HadoopUtils.restoreContextClassLoader(oldLdr);
         }
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "MismatchedQueryAndUpdateOfCollection" })
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
         T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
@@ -242,7 +255,7 @@ public class HadoopV2Job implements HadoopJob {
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
                 HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
-                    HadoopClassLoader.nameForTask(info, false));
+                    HadoopClassLoader.nameForTask(info, false), libNames);
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
 
@@ -288,16 +301,13 @@ public class HadoopV2Job implements HadoopJob {
 
         this.locNodeId = locNodeId;
 
-        assert ((HadoopClassLoader)getClass().getClassLoader()).name()
-            .equals(HadoopClassLoader.nameForJob(this.locNodeId));
-
-        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
+        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
         }
         finally {
-            Thread.currentThread().setContextClassLoader(null);
+            HadoopUtils.restoreContextClassLoader(oldLdr);
         }
     }
 

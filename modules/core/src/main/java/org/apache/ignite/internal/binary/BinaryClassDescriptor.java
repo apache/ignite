@@ -89,8 +89,8 @@ public class BinaryClassDescriptor {
     /** */
     private final BinaryFieldAccessor[] fields;
 
-    /** */
-    private final Method writeReplaceMtd;
+    /** Write replacer. */
+    private final BinaryWriteReplacer writeReplacer;
 
     /** */
     private final Method readResolveMtd;
@@ -147,7 +147,7 @@ public class BinaryClassDescriptor {
 
         initialSerializer = serializer;
 
-        // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
+        // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
         useOptMarshaller = serializer == null;
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
@@ -298,11 +298,8 @@ public class BinaryClassDescriptor {
 
                             schemaBuilder.addField(fieldId);
 
-                            if (metaDataEnabled) {
-                                assert stableFieldsMeta != null;
-
+                            if (metaDataEnabled)
                                 stableFieldsMeta.put(name, fieldInfo.mode().typeId());
-                            }
                         }
                     }
                 }
@@ -320,14 +317,24 @@ public class BinaryClassDescriptor {
                 throw new BinaryObjectException("Invalid mode: " + mode);
         }
 
+        BinaryWriteReplacer writeReplacer0 = BinaryUtils.writeReplacer(cls);
+
+        Method writeReplaceMthd;
+
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
             readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
-            writeReplaceMtd = U.findNonPublicMethod(cls, "writeReplace");
+
+            writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;
-            writeReplaceMtd = null;
+            writeReplaceMthd = null;
         }
+
+        if (writeReplaceMthd != null && writeReplacer0 == null)
+            writeReplacer0 = new BinaryMethodWriteReplacer(writeReplaceMthd);
+
+        writeReplacer = writeReplacer0;
     }
 
     /**
@@ -469,10 +476,22 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return binaryWriteReplace() method
+     * @return {@code True} if write-replace should be performed for class.
      */
-    @Nullable Method getWriteReplaceMethod() {
-        return writeReplaceMtd;
+    public boolean isWriteReplace() {
+        return writeReplacer != null;
+    }
+
+    /**
+     * Perform write replace.
+     *
+     * @param obj Original object.
+     * @return Replaced object.
+     */
+    public Object writeReplace(Object obj) {
+        assert isWriteReplace();
+
+        return writeReplacer.replace(obj);
     }
 
     /**

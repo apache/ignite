@@ -77,11 +77,13 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Comparator<Object> sortComparator() {
             return ComparableComparator.getInstance();
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Comparator<Object> groupComparator() {
             return ComparableComparator.getInstance();
         }
@@ -141,8 +143,8 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
-                HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
+        @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
+            @Nullable String[] libNames) throws IgniteCheckedException {
             assert false;
 
             return null;

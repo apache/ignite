@@ -29,6 +29,15 @@ public class MySQLDialect extends BasicJdbcDialect {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
+    @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
+        String cols = mkString(keyCols, ",");
+
+        return String.format("SELECT %s " +
+            "FROM (SELECT %s, @rownum := @rownum + 1 AS rn FROM %s, (SELECT @rownum := 0) r ORDER BY %s) as r " +
+            "WHERE mod(rn, ?) = 0", cols, cols, fullTblName, cols);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;
     }
@@ -47,5 +56,12 @@ public class MySQLDialect extends BasicJdbcDialect {
 
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s", fullTblName,
             mkString(cols, ", "), repeat("?", cols.size(), "", ",", ""), updPart);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFetchSize() {
+        // Workaround for known issue with MySQL large result set.
+        // See: http://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-implementation-notes.html
+        return Integer.MIN_VALUE;
     }
 }

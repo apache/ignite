@@ -199,7 +199,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             Map<String, Integer> fieldsMeta = null;
 
-            if (reader != null) {
+            if (reader != null && BinaryUtils.hasSchema(flags)) {
                 BinarySchema schema = reader.schema();
 
                 Map<Integer, Object> assignedFldsById;

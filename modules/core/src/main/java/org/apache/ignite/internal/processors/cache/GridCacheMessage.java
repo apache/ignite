@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -49,7 +50,7 @@ public abstract class GridCacheMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of cache lookup indexes. */
-    public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 256;
+    public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 5;
 
     /** Cache message index field name. */
     public static final String CACHE_MSG_INDEX_FIELD_NAME = "CACHE_MSG_IDX";
@@ -611,6 +612,14 @@ public abstract class GridCacheMessage implements Message {
             col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
 
         return col;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.messageLogger();
     }
 
     /** {@inheritDoc} */

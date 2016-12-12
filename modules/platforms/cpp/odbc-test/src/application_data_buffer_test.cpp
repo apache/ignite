@@ -24,7 +24,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/guid.h>
-#include <ignite/odbc/decimal.h>
+#include <ignite/common/decimal.h>
+
 #include <ignite/odbc/app/application_data_buffer.h>
 #include <ignite/odbc/utility.h>
 
@@ -271,7 +272,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, sizeof(numBuf), &reslen, 0);
 
-    Decimal decimal;
+    common::Decimal decimal;
 
     BOOST_CHECK_CLOSE_FRACTION(static_cast<double>(decimal), 0.0, FLOAT_PRECISION);
 
@@ -280,14 +281,14 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
     int8_t mag1[] = { 1, 0 };
 
-    decimal = Decimal(0, mag1, sizeof(mag1));
+    decimal = common::Decimal(mag1, sizeof(mag1), 0, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_CLOSE_FRACTION(numBuf, 256.0, FLOAT_PRECISION);
 
     int8_t mag2[] = { 2, 23 };
 
-    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+    decimal = common::Decimal(mag2, sizeof(mag2), 1, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_CLOSE_FRACTION(numBuf, -53.5, FLOAT_PRECISION);
@@ -300,21 +301,21 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, 0);
 
-    Decimal decimal;
+    common::Decimal decimal;
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(numBuf == 0);
 
     int8_t mag1[] = { 1, 0 };
 
-    decimal = Decimal(0, mag1, sizeof(mag1));
+    decimal = common::Decimal(mag1, sizeof(mag1), 0, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(numBuf == 256);
 
     int8_t mag2[] = { 2, 23 };
 
-    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+    decimal = common::Decimal(mag2, sizeof(mag2), 1, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(numBuf == -53);
@@ -327,21 +328,21 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Decimal decimal;
+    common::Decimal decimal;
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(std::string(strBuf, reslen) == "0");
 
     int8_t mag1[] = { 1, 0 };
 
-    decimal = Decimal(0, mag1, sizeof(mag1));
+    decimal = common::Decimal(mag1, sizeof(mag1), 0, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(std::string(strBuf, reslen) == "256");
 
     int8_t mag2[] = { 2, 23 };
 
-    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+    decimal = common::Decimal(mag2, sizeof(mag2), 1, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(std::string(strBuf, reslen) == "-53.5");
@@ -354,12 +355,12 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_NUMERIC, &buf, sizeof(buf), &reslen, 0);
 
-    Decimal decimal;
+    common::Decimal decimal;
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
     BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
-    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+    BOOST_CHECK_EQUAL(1, buf.precision);    // Precision is 1 for default constructed Decimal (0).
 
     for (int i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
         BOOST_CHECK_EQUAL(0, buf.val[i]);
@@ -367,12 +368,12 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     // Trying to store 123.45 => 12345 => 0x3039 => [0x30, 0x39].
     uint8_t mag1[] = { 0x30, 0x39 };
 
-    decimal = Decimal(2, reinterpret_cast<int8_t*>(mag1), sizeof(mag1));
+    decimal = common::Decimal(reinterpret_cast<int8_t*>(mag1), sizeof(mag1), 2, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
     BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
-    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+    BOOST_CHECK_EQUAL(3, buf.precision);    // Precision is 3, as the scale is set to 0.
 
     // 123.45 => (scale=0) 123 => 0x7B => [0x7B].
     BOOST_CHECK_EQUAL(buf.val[0], 0x7B);
@@ -383,12 +384,12 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     // Trying to store 12345.678 => 12345678 => 0xBC614E => [0xBC, 0x61, 0x4E].
     uint8_t mag2[] = { 0xBC, 0x61, 0x4E };
 
-    decimal = Decimal(3 | 0x80000000, reinterpret_cast<int8_t*>(mag2), sizeof(mag2));
+    decimal = common::Decimal(reinterpret_cast<int8_t*>(mag2), sizeof(mag2), 3, -1);
 
     appBuf.PutDecimal(decimal);
-    BOOST_CHECK_EQUAL(2, buf.sign);         // Negative
+    BOOST_CHECK_EQUAL(0, buf.sign);         // Negative
     BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
-    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+    BOOST_CHECK_EQUAL(5, buf.precision);    // Precision is 5, as the scale is set to 0.
 
     // 12345.678 => (scale=0) 12345 => 0x3039 => [0x39, 0x30].
     BOOST_CHECK_EQUAL(buf.val[0], 0x39);

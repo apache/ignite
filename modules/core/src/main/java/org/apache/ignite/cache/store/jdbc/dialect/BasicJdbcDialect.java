@@ -274,4 +274,9 @@ public class BasicJdbcDialect implements JdbcDialect {
     public void setMaxParameterCount(int maxParamsCnt) {
         this.maxParamsCnt = maxParamsCnt;
     }
+
+    /** {@inheritDoc} */
+    @Override public int getFetchSize() {
+        return 0;
+    }
 }

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './dual.jade!';
+import templateUrl from './dual.jade';
 
 export default ['igniteConfigurationIgfsDual', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

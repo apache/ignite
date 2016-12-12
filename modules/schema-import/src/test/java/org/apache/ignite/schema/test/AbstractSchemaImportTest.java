@@ -35,8 +35,6 @@ import org.apache.ignite.schema.parser.DatabaseMetadataParser;
 import org.apache.ignite.schema.ui.ConfirmCallable;
 import org.apache.ignite.schema.ui.MessageBox;
 
-import static org.apache.ignite.schema.ui.MessageBox.Result.YES_TO_ALL;
-
 /**
  * Base functional for Ignite Schema Import utility tests.
  */
@@ -48,13 +46,16 @@ public abstract class AbstractSchemaImportTest extends TestCase {
     protected static final String OUT_DIR_PATH = System.getProperty("java.io.tmpdir") + "/ignite-schema-import/out";
 
     /** Auto confirmation of file conflicts. */
-    protected final ConfirmCallable askOverwrite = new ConfirmCallable(null, "") {
+    protected static final ConfirmCallable YES_TO_ALL = new ConfirmCallable(null, "") {
         @Override public MessageBox.Result confirm(String msg) {
-            return YES_TO_ALL;
+            return MessageBox.Result.YES_TO_ALL;
         }
     };
 
-    /** List of generated for test database POJO objects. */
+    /** List of ALL object parsed from test database. */
+    protected List<PojoDescriptor> all;
+
+    /** List of ONLY POJO descriptors. */
     protected List<PojoDescriptor> pojos;
 
     /** {@inheritDoc} */
@@ -99,6 +100,10 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " arrCol BINARY(10)," +
             " FIELD_WITH_ALIAS VARCHAR(10))");
 
+        stmt.executeUpdate("CREATE INDEX IF NOT EXISTS IDX_1 ON OBJECTS (INTCOL ASC, LONGCOL ASC)");
+
+        stmt.executeUpdate("CREATE INDEX IF NOT EXISTS IDX_2 ON OBJECTS (INTCOL ASC, LONGCOL DESC)");
+
         stmt.executeUpdate("CREATE SCHEMA IF NOT EXISTS TESTSCHEMA");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TESTSCHEMA.TST(pk INTEGER PRIMARY KEY, " +
@@ -118,13 +123,23 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " arrCol BINARY(10)," +
             " FIELD_WITH_ALIAS VARCHAR(10))");
 
+        stmt.executeUpdate("CREATE INDEX IF NOT EXISTS IDX_3 ON TESTSCHEMA.TST (INTCOL ASC, LONGCOL ASC)");
+
+        stmt.executeUpdate("CREATE INDEX IF NOT EXISTS IDX_4 ON TESTSCHEMA.TST (INTCOL ASC, LONGCOL DESC)");
+
         conn.commit();
 
         U.closeQuiet(stmt);
 
         List<String> schemas = new ArrayList<>();
 
-        pojos = DatabaseMetadataParser.parse(conn, schemas, false);
+        all = DatabaseMetadataParser.parse(conn, schemas, false);
+
+        pojos = new ArrayList<>();
+
+        for (PojoDescriptor pojo : all)
+            if (pojo.parent() != null)
+                pojos.add(pojo);
 
         U.closeQuiet(conn);
     }

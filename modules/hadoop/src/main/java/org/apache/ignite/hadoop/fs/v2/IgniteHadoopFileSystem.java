@@ -80,7 +80,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_BATCH_SIZE;
@@ -319,7 +318,12 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             else
                 clientLog = IgfsLogger.disabledLogger();
 
-            modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
+            try {
+                modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
+            }
+            catch (IgniteCheckedException ice) {
+                throw new IOException(ice);
+            }
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 
@@ -653,21 +657,16 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
         try {
             IgfsPath srcPath = convert(src);
             IgfsPath dstPath = convert(dst);
-            Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
 
-            if (childrenModes.contains(PROXY)) {
-                if (clientLog.isLogEnabled())
-                    clientLog.logRename(srcPath, PROXY, dstPath);
+            IgfsMode srcMode = modeRslvr.resolveMode(srcPath);
 
+            if (clientLog.isLogEnabled())
+                clientLog.logRename(srcPath, srcMode, dstPath);
+
+            if (srcMode == PROXY)
                 secondaryFileSystem().rename(toSecondary(src), toSecondary(dst));
-            }
-            else {
-                if (clientLog.isLogEnabled())
-                    clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
-
+            else
                 rmtClient.rename(srcPath, dstPath);
-            }
-
         }
         finally {
             leaveBusy();
@@ -682,10 +681,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = modeRslvr.resolveMode(path);
-            Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-            if (childrenModes.contains(PROXY)) {
+            IgfsMode mode = modeRslvr.resolveMode(path);
+
+            if (mode == PROXY) {
                 if (clientLog.isLogEnabled())
                     clientLog.logDelete(path, PROXY, recursive);
 

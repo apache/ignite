@@ -60,6 +60,9 @@ namespace ignite
             /** Output data has been truncated. */
             SQL_STATE_01004_DATA_TRUNCATED,
 
+            /** Invalid connection string attribute. */
+            SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+
             /** Error in row. */
             SQL_STATE_01S01_ERROR_IN_ROW,
 

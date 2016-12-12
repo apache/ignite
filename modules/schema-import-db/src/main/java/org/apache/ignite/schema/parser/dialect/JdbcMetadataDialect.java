@@ -171,10 +171,7 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                             QueryIndex idx = idxs.get(idxName);
 
                             if (idx == null) {
-                                idx = new QueryIndex();
-                                idx.setName(idxName);
-                                idx.setIndexType(QueryIndexType.SORTED);
-                                idx.setFields(new LinkedHashMap<String, Boolean>());
+                                idx = index(idxName);
 
                                 idxs.put(idxName, idx);
                             }

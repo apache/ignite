@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import COUNTRIES from 'app/data/countries.json!';
+import COUNTRIES from 'app/data/countries.json';
 
 export default ['IgniteCountries', function() {
     const indexByName = _.keyBy(COUNTRIES, 'name');

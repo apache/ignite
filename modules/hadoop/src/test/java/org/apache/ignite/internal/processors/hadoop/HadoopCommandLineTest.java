@@ -34,11 +34,11 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
+import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.IgfsInputStreamAdapter;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -398,7 +398,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
             "location '/result' as " + qry
         ));
 
-        IgfsInputStreamAdapter in = igfs.open(new IgfsPath("/result/000000_0"));
+        IgfsInputStream in = igfs.open(new IgfsPath("/result/000000_0"));
 
         byte[] buf = new byte[(int) in.length()];
 

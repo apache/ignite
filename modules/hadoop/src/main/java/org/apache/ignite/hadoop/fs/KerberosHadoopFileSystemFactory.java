@@ -68,10 +68,10 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
     }
 
     /** {@inheritDoc} */
-    @Override public FileSystem get(String userName) throws IOException {
+    @Override public FileSystem getWithMappedName(String name) throws IOException {
         reloginIfNeeded();
 
-        return super.get(userName);
+        return super.getWithMappedName(name);
     }
 
     /** {@inheritDoc} */

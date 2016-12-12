@@ -115,4 +115,13 @@ public interface JdbcDialect extends Serializable {
      * @return Max query parameters count.
      */
     public int getMaxParameterCount();
+
+    /**
+     * Gives the JDBC driver a hint how many rows should be fetched from the database when more rows are needed.
+     * If the value specified is zero, then the hint is ignored.
+     * The default value is zero.
+     *
+     * @return The fetch size for result sets.
+     */
+    public int getFetchSize();
 }

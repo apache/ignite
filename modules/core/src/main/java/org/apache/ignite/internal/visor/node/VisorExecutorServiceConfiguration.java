@@ -20,12 +20,13 @@ package org.apache.ignite.internal.visor.node;
 import java.io.Serializable;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for node executors configuration properties.
  */
-public class VisorExecutorServiceConfiguration implements Serializable {
+public class VisorExecutorServiceConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

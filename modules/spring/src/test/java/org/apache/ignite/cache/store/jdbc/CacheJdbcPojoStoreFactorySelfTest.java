@@ -129,9 +129,9 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Dummy JDBC dialect that does nothing.
      */
-    public static class DummyDialect implements JdbcDialect, Serializable {
+    public static class DummyDialect implements JdbcDialect {
         /** {@inheritDoc} */
         @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
             return null;
@@ -183,6 +183,11 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int getMaxParameterCount() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getFetchSize() {
             return 0;
         }
     }

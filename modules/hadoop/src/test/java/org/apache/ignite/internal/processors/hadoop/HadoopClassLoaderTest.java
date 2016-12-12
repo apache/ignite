@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.hadoop.deps.Without;
  */
 public class HadoopClassLoaderTest extends TestCase {
     /** */
-    final HadoopClassLoader ldr = new HadoopClassLoader(null, "test");
+    final HadoopClassLoader ldr = new HadoopClassLoader(null, "test", null);
 
     /**
      * @throws Exception If failed.

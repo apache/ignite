@@ -19,6 +19,8 @@
 #include <string>
 #include <sstream>
 
+#include "ignite/common/bits.h"
+
 #include "ignite/impl/binary/binary_utils.h"
 
 #include "ignite/odbc/system/odbc_constants.h"
@@ -154,15 +156,15 @@ namespace ignite
                             SQL_NUMERIC_STRUCT* out =
                                 reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
-                            out->precision = 20; // Max int64_t precision
+                            uint64_t uval = static_cast<uint64_t>(value < 0 ? -value : value);
+
+                            out->precision = common::bits::DigitLength(uval);
                             out->scale = 0;
-                            out->sign = value < 0 ? 2 : 1;
+                            out->sign = value < 0 ? 0 : 1;
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
-                            int64_t intVal = static_cast<int64_t>(std::abs(value));
-
-                            memcpy(out->val, &intVal, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(intVal)));
+                            memcpy(out->val, &uval, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(uval)));
                         }
                         break;
                     }
@@ -354,7 +356,9 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
-                        std::stringstream converter(value);
+                        std::stringstream converter;
+
+                        converter << value;
 
                         int64_t numValue;
 
@@ -370,7 +374,9 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_FLOAT:
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
-                        std::stringstream converter(value);
+                        std::stringstream converter;
+
+                        converter << value;
 
                         double numValue;
 
@@ -532,7 +538,7 @@ namespace ignite
                     *GetResLen() = SQL_NULL_DATA;
             }
 
-            void ApplicationDataBuffer::PutDecimal(const Decimal& value)
+            void ApplicationDataBuffer::PutDecimal(const common::Decimal& value)
             {
                 using namespace type_traits;
                 switch (type)
@@ -546,28 +552,63 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
                     case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    {
+                        PutNum<int64_t>(value.ToInt64());
+
+                        break;
+                    }
+
                     case IGNITE_ODBC_C_TYPE_FLOAT:
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    {
+                        PutNum<double>(value.ToDouble());
+
+                        break;
+                    }
+
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     case IGNITE_ODBC_C_TYPE_WCHAR:
+                    {
+                        std::stringstream converter;
+
+                        converter << value;
+
+                        PutString(converter.str());
+
+                        break;
+                    }
+
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
-                        PutNum<double>(static_cast<double>(value));
+                        SQL_NUMERIC_STRUCT* numeric =
+                            reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
+
+                        common::Decimal zeroScaled;
+                        value.SetScale(0, zeroScaled);
+
+                        common::FixedSizeArray<int8_t> bytesBuffer;
+
+                        const common::BigInteger& unscaled = zeroScaled.GetUnscaledValue();
+
+                        unscaled.MagnitudeToBytes(bytesBuffer);
+
+                        for (int32_t i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
+                        {
+                            int32_t bufIdx = bytesBuffer.GetSize() - 1 - i;
+                            if (bufIdx >= 0)
+                                numeric->val[i] = bytesBuffer[bufIdx];
+                            else
+                                numeric->val[i] = 0;
+                        }
+
+                        numeric->scale = 0;
+                        numeric->sign = unscaled.GetSign() < 0 ? 0 : 1;
+                        numeric->precision = unscaled.GetPrecision();
 
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
-                    {
-                        if (GetData())
-                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
-
-                        if (GetResLen())
-                            *GetResLen() = sizeof(value);
-
-                        break;
-                    }
-
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     default:
                     {
@@ -914,7 +955,9 @@ namespace ignite
                     {
                         std::string str(reinterpret_cast<const char*>(GetData()), static_cast<size_t>(buflen));
 
-                        std::stringstream converter(str);
+                        std::stringstream converter;
+
+                        converter << str;
 
                         converter >> res;
 
@@ -979,7 +1022,9 @@ namespace ignite
                     {
                         std::string str = GetString(static_cast<size_t>(buflen));
 
-                        std::stringstream converter(str);
+                        std::stringstream converter;
+
+                        converter << str;
 
                         // Workaround for char types which are recognised as
                         // symbolyc types and not numeric types.
@@ -1063,20 +1108,10 @@ namespace ignite
                         const SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
 
-                        int64_t resInt;
+                        common::Decimal dec(reinterpret_cast<const int8_t*>(numeric->val),
+                            SQL_MAX_NUMERIC_LEN, numeric->scale, numeric->sign ? 1 : -1, false);
 
-                        // TODO: implement propper conversation from numeric type.
-                        memcpy(&resInt, numeric->val, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(resInt)));
-
-                        if (numeric->sign == 2)
-                            resInt *= -1;
-
-                        double resDouble = static_cast<double>(resInt);
-
-                        for (SQLSCHAR scale = numeric->scale; scale > 0; --scale)
-                            resDouble /= 10.0;
-
-                        res = static_cast<T>(resDouble);
+                        res = static_cast<T>(dec.ToInt64());
 
                         break;
                     }
@@ -1200,6 +1235,76 @@ namespace ignite
                 }
 
                 return BinaryUtils::CTmToTimestamp(tmTime, nanos);
+            }
+
+            void ApplicationDataBuffer::GetDecimal(common::Decimal& val) const
+            {
+                using namespace type_traits;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str = GetString(static_cast<size_t>(buflen));
+
+                        std::stringstream converter;
+
+                        converter << str;
+
+                        converter >> val;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    {
+                        val.AssignInt64(GetNum<int64_t>());
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    {
+                        val.AssignUint64(GetNum<uint64_t>());
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    {
+                        val.AssignDouble(GetNum<double>());
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    {
+                        const SQL_NUMERIC_STRUCT* numeric =
+                            reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
+
+                        common::Decimal dec(reinterpret_cast<const int8_t*>(numeric->val),
+                            SQL_MAX_NUMERIC_LEN, numeric->scale, numeric->sign ? 1 : -1, false);
+
+                        val.Swap(dec);
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        val.AssignInt64(0);
+
+                        break;
+                    }
+                }
             }
 
             template<typename T>

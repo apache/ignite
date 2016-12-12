@@ -187,28 +187,36 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param key Key.
+     * @return Partition.
+     */
+    public int partition(Object key) {
+        return partition(key, true);
+    }
+
+    /**
      * NOTE: Use this method always when you need to calculate partition id for
      * a key provided by user. It's required since we should apply affinity mapper
      * logic in order to find a key that will eventually be passed to affinity function.
      *
      * @param key Key.
+     * @param useKeyPart If {@code true} can use pre-calculated partition stored in KeyCacheObject.
      * @return Partition.
      */
-    public int partition(Object key) {
+    public int partition(Object key, boolean useKeyPart) {
         GridAffinityAssignmentCache aff0 = aff;
-
-        if (key instanceof KeyCacheObject && ((KeyCacheObject)key).partition() != -1)
-            return ((KeyCacheObject)key).partition();
 
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        int p = affFunction.partition(affinityKey(key));
+        if (useKeyPart && (key instanceof KeyCacheObject)) {
+            int part = ((KeyCacheObject)key).partition();
 
-        if (key instanceof KeyCacheObject)
-            ((KeyCacheObject)key).partition(p);
+            if (part != -1)
+                return part;
+        }
 
-        return p;
+        return affFunction.partition(affinityKey(key));
     }
 
     /**

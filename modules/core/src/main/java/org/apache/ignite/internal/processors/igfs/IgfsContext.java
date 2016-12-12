@@ -24,10 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
  * IGFS context holding all required components for IGFS instance.
@@ -56,6 +53,12 @@ public class IgfsContext {
 
     /** IGFS instance. */
     private final IgfsEx igfs;
+
+    /** Local metrics holder. */
+    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
+
+    /** Local cluster node. */
+    private volatile ClusterNode locNode;
 
     /**
      * @param ctx Kernal context.
@@ -178,16 +181,28 @@ public class IgfsContext {
      * @return {@code True} if node has IGFS with this name, {@code false} otherwise.
      */
     public boolean igfsNode(ClusterNode node) {
-        assert node != null;
+        return IgfsUtils.isIgfsNode(node, cfg.getName());
+    }
 
-        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
+    /**
+     * Get local metrics.
+     *
+     * @return Local metrics.
+     */
+    public IgfsLocalMetrics metrics() {
+        return metrics;
+    }
 
-        if (igfs != null)
-            for (IgfsAttributes attrs : igfs)
-                if (F.eq(cfg.getName(), attrs.igfsName()))
-                    return true;
+    /**
+     * Get local node.
+     *
+     * @return Local node.
+     */
+    public ClusterNode localNode() {
+        if (locNode == null)
+            locNode = ctx.discovery().localNode();
 
-        return false;
+        return locNode;
     }
 
     /**

@@ -44,7 +44,7 @@ public class SQLServerDialect extends BasicJdbcDialect {
             @Override public String apply(String col) {
                 return String.format("t.%s=v.%s", col, col);
             }
-        }, "", ", ", "");
+        }, "", " AND ", "");
 
         String setCols = mkString(uniqCols, new C1<String, String>() {
             @Override public String apply(String col) {

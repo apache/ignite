@@ -19,14 +19,6 @@
 
 #include "ignite/odbc/utility.h"
 
-BOOL INSTAPI ConfigDSN(HWND     hwndParent,
-                       WORD     req,
-                       LPCSTR   driver,
-                       LPCSTR   attributes)
-{
-    return ignite::ConfigDSN(hwndParent, req, driver, attributes);
-}
-
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
                              SQLUSMALLINT   infoType,
                              SQLPOINTER     infoValue,

@@ -32,8 +32,9 @@ using namespace ignite::odbc;
 
 std::string GetStrColumnValue(size_t rowIdx)
 {
-    std::stringstream generator("Column 2 test string, row num: ");
-    generator << rowIdx << ". Some trailing bytes";
+    std::stringstream generator;
+    generator << "Column 2 test string, row num: "
+              << rowIdx << ". Some trailing bytes";
 
     return generator.str();
 }

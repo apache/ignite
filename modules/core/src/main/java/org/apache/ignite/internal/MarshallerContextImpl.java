@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -39,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 
@@ -64,6 +68,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** Non-volatile on purpose. */
     private int failedCnt;
 
+    /** */
+    private ContinuousQueryListener lsnr;
+
     /**
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
@@ -75,25 +82,58 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /**
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        if (ctx.clientNode()) {
+            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
+
+            ctx.continuous().registerStaticRoutine(
+                CU.MARSH_CACHE_NAME,
+                lsnr,
+                null,
+                null);
+        }
+    }
+
+    /**
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        if (!ctx.isDaemon()) {
+        log = ctx.log(MarshallerContextImpl.class);
+
+        cache = ctx.cache().marshallerCache();
+
+        if (ctx.cache().marshallerCache().context().affinityNode()) {
             ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
+                new ContinuousQueryListener(log, workDir),
                 null,
-                ctx.cache().marshallerCache().context().affinityNode(),
+                true,
                 true,
                 false
             );
         }
+        else {
+            if (lsnr != null) {
+                ctx.closure().runLocalSafe(new Runnable() {
+                    @SuppressWarnings("unchecked")
+                    @Override public void run() {
+                        try {
+                            Iterable entries = cache.context().continuousQueries().existingEntries(false, null);
 
-        log = ctx.log(MarshallerContextImpl.class);
-
-        cache = ctx.cache().marshallerCache();
+                            lsnr.onUpdated(entries);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to load marshaller cache entries: " + e, e);
+                        }
+                    }
+                });
+            }
+        }
 
         latch.countDown();
     }
@@ -164,7 +204,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 File file = new File(workDir, fileName);
 
                 try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = in.getChannel().lock(0L, Long.MAX_VALUE, true);
+                    FileLock fileLock = fileLock(in.getChannel(), true);
 
                     assert fileLock != null : fileName;
 
@@ -198,8 +238,28 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /**
+     * @param ch File channel.
+     * @param shared Shared.
      */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+    private static FileLock fileLock(
+        FileChannel ch,
+        boolean shared
+    ) throws IOException, IgniteInterruptedCheckedException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (true) {
+            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
+
+            if (fileLock == null)
+                U.sleep(rnd.nextLong(50));
+            else
+                return fileLock;
+        }
+    }
+
+    /**
+     */
+    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
         /** */
         private final IgniteLogger log;
 
@@ -210,7 +270,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
          * @param log Logger.
          * @param workDir Work directory.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+        public ContinuousQueryListener(IgniteLogger log, File workDir) {
             this.log = log;
             this.workDir = workDir;
         }
@@ -233,7 +293,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         File file = new File(workDir, fileName);
 
                         try (FileOutputStream out = new FileOutputStream(file)) {
-                            FileLock fileLock = out.getChannel().lock(0L, Long.MAX_VALUE, false);
+                            FileLock fileLock = fileLock(out.getChannel(), false);
 
                             assert fileLock != null : fileName;
 
@@ -246,6 +306,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         catch (IOException e) {
                             U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
                                 ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        }
+                        catch(OverlappingFileLockException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("File already locked (will ignore): " + file.getAbsolutePath());
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
                         }
                     }
                     finally {
