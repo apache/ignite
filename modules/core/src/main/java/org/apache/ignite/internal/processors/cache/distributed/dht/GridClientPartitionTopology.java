@@ -935,9 +935,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
         try {
             if (skipZeros) {
-                Map<Integer, Long> res = U.newHashMap(cntrMap.size());
+                Map<Integer, T2<Long, Long>> res = U.newHashMap(cntrMap.size());
 
-                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
+                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
                     if (!e.getValue().equals(ZERO))
                         res.put(e.getKey(), e.getValue());
                 }
