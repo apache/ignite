@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
@@ -40,6 +41,10 @@ import org.jetbrains.annotations.Nullable;
  * Data transfer object for {@link IgniteCache}.
  */
 public class VisorCache implements Serializable, LessNamingBean {
+    /** */
+    private static final CachePeekMode[] PEEK_NO_NEAR =
+        new CachePeekMode[] {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -141,13 +146,13 @@ public class VisorCache implements Serializable, LessNamingBean {
             }
         }
 
-        size = ca.size();
-        nearSize = ca.nearSize();
         dynamicDeploymentId = cctx.dynamicDeploymentId();
-        dhtSize = size - nearSize;
+        size = ca.localSize(PEEK_NO_NEAR);
         primarySize = ca.primarySize();
-        offHeapAllocatedSize = ca.offHeapAllocatedSize();
-        offHeapEntriesCnt = ca.offHeapEntriesCount();
+        dhtSize = size - nearSize; // This is backup size.
+        nearSize = ca.nearSize();
+        offHeapAllocatedSize = 0; // Memory is allocated globally.
+        offHeapEntriesCnt = 0; // Need to rename on ON-heap entries count, see GG-11148
         partitions = ca.affinity().partitions();
         metrics = new VisorCacheMetrics().from(ignite, cacheName);
         near = cctx.isNear();

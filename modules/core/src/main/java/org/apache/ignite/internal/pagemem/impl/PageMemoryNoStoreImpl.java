@@ -593,7 +593,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             pageIdx &= idxMask;
 
-            long offset = pageIdx * sysPageSize;
+            long offset = ((long)pageIdx) * sysPageSize;
 
             return pagesBase + offset;
         }

@@ -54,6 +54,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
@@ -433,7 +434,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // No-op.
 
         if (!enterBusy())
-            return; // Ignore index update when node is stopping.
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
         try {
             qryProc.store(space, key, partId, prevVal, prevVer, val, ver, expirationTime, link);
