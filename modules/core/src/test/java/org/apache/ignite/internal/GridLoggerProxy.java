@@ -32,6 +32,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collections;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
@@ -56,6 +57,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private static final boolean testSensitive = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
     /** Prefix for all suspicious sensitive data */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
+    /** Sensitive patterns */
     private static final Pattern[] SENSITIVE_PS = {
         Pattern.compile("\\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|" +
             "rows?|fields?|params?|args?|items?|elements?|" +
@@ -225,11 +227,19 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         return logGridName && m != null ? "<" + gridName + '-' + id8 + "> " + m : m;
     }
 
+    /**
+     * Testing the message by sensitive patterns.<br>
+     * All sensitive data will be logged with {@link #SENSITIVE_PREFIX}
+     */
     private void testSensitive(String m) {
         if (isSensitive(m))
             logSensitive(m);
     }
 
+    /**
+     * Testing the message and exceptions chain by sensitive patterns.<br>
+     * All sensitive data will be logged with {@link #SENSITIVE_PREFIX}
+     */
     private void testSensitive(String m, Throwable e) {
         if (isSensitive(m))
             logSensitive(m, e);
@@ -240,20 +250,26 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         }
     }
 
-    private boolean isSensitive(String m) {
-        if (m == null || m.isEmpty())
+    /** Checking the message by sensitive patterns */
+    private boolean isSensitive(String msg) {
+        if (msg == null || msg.isEmpty())
             return false;
         for (Pattern p : SENSITIVE_PS) {
-            if (p.matcher(m).find())
+            Matcher m = p.matcher(msg);
+            if (m.find()) {
+                logSensitive("Found: " + m.group());
                 return true;
+            }
         }
         return false;
     }
 
+    /** Logging the message with {@link #SENSITIVE_PREFIX} */
     private void logSensitive(String m) {
         logSensitive(m, null);
     }
 
+    /** Logging the message and the exception with {@link #SENSITIVE_PREFIX} */
     private void logSensitive(String m, Throwable e) {
         StringBuilder sb = sbLocal.get();
         sb.setLength(SENSITIVE_PREFIX.length());
