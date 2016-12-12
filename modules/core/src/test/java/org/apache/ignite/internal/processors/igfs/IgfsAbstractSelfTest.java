@@ -2705,13 +2705,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             assert blockSize2 == blockSize : "IgfsFile blk size = " + blockSize + ", Meta size = " + blockSize2;
         }
 
+        if (igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem)
+            // LocalIgfsSecondaryFileSystem does not report block size correctly.
+            return;
+
         final MetricExpectations e = new MetricExpectations(dual, proxy, blockSize);
 
         igfs.configuration().setPrefetchBlocks(0);
-
-        if (igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem)
-            // LocalIgfsSecondaryFileSystem does
-            return;
 
         igfs.format();
 
