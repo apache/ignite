@@ -71,8 +71,8 @@ public class CacheClientBinaryPutGetExample {
             try (IgniteCache<Integer, Organization> cache = ignite.getOrCreateCache(cfg)) {
                 if (ignite.cluster().forDataNodes(cache.getName()).nodes().isEmpty()) {
                     System.out.println();
-                    System.out.println(">>> Please start at least 1 remote cache node.");
                     System.out.println(">>> This example requires remote cache node nodes to be started.");
+                    System.out.println(">>> Please start at least 1 remote cache node.");
                     System.out.println(">>> Refer to example's javadoc for details on configuration.");
                     System.out.println();
 
