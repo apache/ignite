@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
@@ -59,9 +58,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * DHT atomic cache near update future.
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
-    /** */
-    private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.7.4");
-
     /** Keys */
     private Object key;
 
@@ -567,7 +563,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         GridNearAtomicAbstractUpdateRequest req;
 
-        if (canUseSingleRequest(primary)) {
+        if (canUseSingleRequest()) {
             if (op == TRANSFORM) {
                 req = new GridNearAtomicSingleUpdateInvokeRequest(
                     cctx.cacheId(),
@@ -669,11 +665,10 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /**
-     * @param node Target node
      * @return {@code True} can use 'single' update requests.
      */
-    private boolean canUseSingleRequest(ClusterNode node) {
-        return expiryPlc == null && node != null;
+    private boolean canUseSingleRequest() {
+        return expiryPlc == null;
     }
 
     /** {@inheritDoc} */
