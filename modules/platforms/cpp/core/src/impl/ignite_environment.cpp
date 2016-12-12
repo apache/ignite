@@ -32,6 +32,16 @@ namespace ignite
     namespace impl
     {
         /**
+        * Callback codes.
+        */
+        enum CallbackOp
+        {
+            REALLOC = 36,
+            ON_START = 49,
+            ON_STOP = 50 
+        };
+
+        /**
          * InLongOutLong callback.
          * 
          * @param target Target environment.
@@ -40,7 +50,7 @@ namespace ignite
          */
         long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
         {
-            if (type == IgniteEnvironment::OP_ON_STOP)
+            if (type == ON_STOP)
             {
                 SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
@@ -63,13 +73,13 @@ namespace ignite
         long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2, 
             long long val3, void* arg)
         {
-            if (type == IgniteEnvironment::OP_ON_START)
+            if (type == ON_START)
             {
                 SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
                 ptr->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));
             }
-            else if (type == IgniteEnvironment::OP_REALLOC)
+            else if (type == REALLOC)
             {
                 SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 

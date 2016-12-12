@@ -41,11 +41,6 @@ namespace ignite
             enum { DEFAULT_ALLOCATION_SIZE = 1024 };
 
             /**
-             * Callback codes.
-             */
-            enum { OP_ON_START = 49, OP_ON_STOP = 50, OP_REALLOC = 36 };
-
-            /**
              * Default constructor.
              */
             IgniteEnvironment();
