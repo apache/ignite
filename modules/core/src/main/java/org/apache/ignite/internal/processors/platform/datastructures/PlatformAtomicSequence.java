@@ -71,7 +71,7 @@ public class PlatformAtomicSequence extends PlatformAbstractTarget {
 
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_ADD_AND_GET:
                 return atomicSeq.addAndGet(val);
