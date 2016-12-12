@@ -84,19 +84,17 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void onGridDataReceived(DiscoveryDataContainer.GridDiscoveryData data) {
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onJoiningNodeDataReceived(DiscoveryDataContainer.NewNodeDiscoveryData data) {
+    @Override public void onGridDataReceived(DiscoveryDataContainer.GridDiscoveryData data) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(DiscoveryDataContainer.NewNodeDiscoveryData data) {
         // No-op.
     }
 

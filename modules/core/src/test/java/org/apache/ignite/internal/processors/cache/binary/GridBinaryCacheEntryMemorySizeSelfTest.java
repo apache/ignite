@@ -43,8 +43,9 @@ public class GridBinaryCacheEntryMemorySizeSelfTest extends GridCacheEntryMemory
 
         IgniteConfiguration iCfg = new IgniteConfiguration();
         iCfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override
-            public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {}
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                // No-op.
+            }
         });
         iCfg.setClientMode(false);
 
