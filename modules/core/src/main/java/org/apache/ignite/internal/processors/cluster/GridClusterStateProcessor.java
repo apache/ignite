@@ -474,6 +474,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 sharedCtx.wal().onDeActivate(ctx);
             }
 
+            if (log.isInfoEnabled())
+                log.info("Success deactivate services, dataStructures, database, pageStore, wal [id=" + ctx.localNodeId() + ", client=" +
+                    client + ", topVer=" + cgsCtx.topVer + "]");
+
             return null;
         }
         catch (Exception e) {

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheComman
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
@@ -444,7 +445,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new DataStructuresCommandHandler(ctx));
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
-
+            addHandler(new GridChangeStateCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
