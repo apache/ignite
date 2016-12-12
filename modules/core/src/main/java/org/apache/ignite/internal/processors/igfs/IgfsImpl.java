@@ -635,7 +635,7 @@ public final class IgfsImpl implements IgfsEx {
                         IgfsFile file = secondaryFs.update(path, props);
 
                         if (file != null)
-                            return new IgfsFileImpl(secondaryFs.update(path, props), data.groupBlockSize());
+                            return new IgfsFileImpl(secondaryFs.update(path, props), cfg.getBlockSize());
                 }
 
                 return null;
@@ -861,7 +861,7 @@ public final class IgfsImpl implements IgfsEx {
                         Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
                         for (IgfsFile child : children) {
-                            IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
+                            IgfsFileImpl impl = new IgfsFileImpl(child, cfg.getBlockSize()/*, data.groupBlockSize()*/);
 
                             files.add(impl);
                         }
@@ -1599,7 +1599,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
-                        return new IgfsFileImpl(status, data.groupBlockSize());
+                        return new IgfsFileImpl(status, cfg.getBlockSize());
                 }
                 catch (Exception e) {
                     U.error(log, "File info operation in DUAL mode failed [path=" + path + ']', e);
@@ -1615,7 +1615,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFile status = secondaryFs.info(path);
 
                 if (status != null)
-                    return new IgfsFileImpl(status, data.groupBlockSize());
+                    return new IgfsFileImpl(status, cfg.getBlockSize());
                 else
                     return null;
         }

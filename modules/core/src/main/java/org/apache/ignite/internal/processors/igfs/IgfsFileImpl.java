@@ -84,18 +84,18 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
      * which is specified separately.
      *
      * @param igfsFile The file to copy.
-     * @param grpBlockSize Group block size.
+     * @param blockSize The block size.
      */
-    public IgfsFileImpl(IgfsFile igfsFile, long grpBlockSize) {
+    public IgfsFileImpl(IgfsFile igfsFile, int blockSize) {
         A.notNull(igfsFile, "igfsFile");
 
         this.path = igfsFile.path();
         this.fileId = igfsFile instanceof IgfsFileImpl ? ((IgfsFileImpl)igfsFile).fileId : IgniteUuid.randomUuid();
 
-        this.blockSize = igfsFile.blockSize();
+        this.blockSize = blockSize;
         this.len = igfsFile.length();
 
-        this.grpBlockSize = igfsFile.isFile() ? grpBlockSize : 0L;
+        this.grpBlockSize = igfsFile.isFile() ? igfsFile.groupBlockSize() : 0L;
 
         this.props = igfsFile.properties();
 
