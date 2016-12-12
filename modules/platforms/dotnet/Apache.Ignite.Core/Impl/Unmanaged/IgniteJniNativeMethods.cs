@@ -146,9 +146,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetOutObject")]
         public static extern void* TargetOutObject(void* ctx, void* target, int opType);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAcquire")]
-        public static extern void* Acquire(void* ctx, void* target);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRelease")]
         public static extern void Release(void* target);
 

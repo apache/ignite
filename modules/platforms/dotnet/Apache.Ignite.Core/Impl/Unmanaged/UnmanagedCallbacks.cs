@@ -1003,7 +1003,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long OnStart(long memPtr, long unused, long unused1, void* proc)
         {
-            var proc0 = UU.Acquire(_ctx, proc);
+            var proc0 = new UnmanagedTarget(_ctx, proc);
 
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
