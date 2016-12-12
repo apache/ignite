@@ -599,7 +599,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param job Closure to execute.
      * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
-     * @param timeout If greater than 0 limits task execution. Cannot be negative.
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
