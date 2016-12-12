@@ -1368,22 +1368,6 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-			jobject JniContext::Acquire(jobject obj)
-            {
-                if (obj) {
-
-                    JNIEnv* env = Attach();
-
-                    jobject obj0 = env->NewGlobalRef(obj);
-
-                    ExceptionCheck(env);
-
-                    return obj0;
-                }
-
-                return NULL;
-            }
-
             void JniContext::Release(jobject obj) {
                 if (obj)
                 {
