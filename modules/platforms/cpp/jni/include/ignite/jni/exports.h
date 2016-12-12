@@ -68,6 +68,7 @@ extern "C" {
     void IGNITE_CALL IgniteTargetListenFuture(gcj::JniContext* ctx, void* obj, long long futId, int typ);
     void IGNITE_CALL IgniteTargetListenFutureForOperation(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId);
 
+    void* IGNITE_CALL IgniteAcquire(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteRelease(void* obj);
 
     void IGNITE_CALL IgniteThrowToJava(gcj::JniContext* ctx, char* errMsg);
