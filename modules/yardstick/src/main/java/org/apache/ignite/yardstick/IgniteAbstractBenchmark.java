@@ -42,9 +42,6 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /** Node. */
     private IgniteNode node;
 
-    /** Preload logger. */
-    private IgniteBenchmarkPreloadLogger plgr;
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
