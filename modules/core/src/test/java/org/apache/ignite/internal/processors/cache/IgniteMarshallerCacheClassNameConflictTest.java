@@ -94,8 +94,10 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     public void testCachePutGetClassesWithNameConflict() throws Exception {
-        ExecutorService exec1 = startGrid(0).executorService();
-        ExecutorService exec2 = startGrid(1).executorService();
+        Ignite srv1 = startGrid(0);
+        Ignite srv2 = startGrid(1);
+        ExecutorService exec1 = srv1.executorService();
+        ExecutorService exec2 = srv2.executorService();
 
         final AtomicInteger trickCompilerVar = new AtomicInteger(1);
 
@@ -155,7 +157,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         int cacheSize = ignite.cache(null).size(CachePeekMode.PRIMARY);
 
-        assertTrue(cacheSize == 1);
+        assertTrue("Expected cache size 1 but was " + cacheSize, cacheSize == 1);
 
         if (rejectObserved)
             assertTrue(aaClsRejected || bbClsRejected);
