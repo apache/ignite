@@ -639,6 +639,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 else {
                                     ctx.rcvCnt = rcvCnt;
 
+                                    recoveryDesc.onHandshake(rcvCnt);
+
+                                    HandshakeTimeoutObject timeoutObj = ctx.handshakeTimeoutObj;
+
+                                    if (timeoutObj != null)
+                                        cancelHandshakeTimeout(timeoutObj);
+
+                                    nioSrvr.resend(ses);
+
+                                    recoveryDesc.connected();
+
                                     commWorker.addSessionStateChangeRequest(new SessionInfo(ses, SessionState.READY));
                                 }
                             }
@@ -1625,9 +1636,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
-                        // TODO: get rid of 4 instanceof (e.g. add marker interface).
-                        return msg instanceof IgniteHeaderMessage || msg instanceof NodeIdMessage ||
-                            msg instanceof HandshakeMessage || msg instanceof RecoveryLastReceivedMessage;
+                        return msg instanceof NotRecoverable;
                     }
                 };
 
@@ -2576,7 +2585,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 final GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
 
-                recoveryDesc.reserve();
+                if (!recoveryDesc.reserve()) {
+                    onDone();
+
+                    return;
+                }
 
                 final Map<Integer, Object> meta = new HashMap<>();
 
@@ -3483,8 +3496,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 SessionInfo sesInfo = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
                 if (sesInfo != null) {
-                    GridNioRecoveryDescriptor recoveryDesc;
-
                     ConnectContext ctx;
 
                     HandshakeTimeoutObject timeoutObj;
@@ -3507,23 +3518,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             break;
 
                         case READY:
-                            recoveryDesc = sesInfo.ses.recoveryDescriptor();
-
                             ctx = sesInfo.ses.meta(CONN_CTX_META_KEY);
 
-                            assert recoveryDesc != null;
                             assert ctx != null;
-
-                            recoveryDesc.onHandshake(ctx.rcvCnt);
-
-                            recoveryDesc.connected();
-
-                            nioSrvr.resend(sesInfo.ses);
-
-                            timeoutObj = ctx.handshakeTimeoutObj;
-
-                            if (timeoutObj != null)
-                                cancelHandshakeTimeout(timeoutObj);
 
                             assert ctx.tcpClientFut != null;
 
@@ -3944,7 +3941,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** Ignite header message. */
-    private static class IgniteHeaderMessage implements Message {
+    private static class IgniteHeaderMessage implements Message, NotRecoverable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3980,10 +3977,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     *
+     */
+    private interface NotRecoverable {
+
+    }
+
+    /**
      * Handshake message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class HandshakeMessage implements Message {
+    public static class HandshakeMessage implements Message, NotRecoverable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -4101,7 +4105,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Recovery acknowledgment message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class RecoveryLastReceivedMessage implements Message {
+    public static class RecoveryLastReceivedMessage implements Message, NotRecoverable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -4176,7 +4180,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Node ID message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class NodeIdMessage implements Message {
+    public static class NodeIdMessage implements Message, NotRecoverable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -4266,18 +4270,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private int activeCnt;
 
         /** Err. */
-        private volatile IgniteException err;
+        private IgniteException err;
 
         /**
          *
          */
         void enter() {
-            doEnter();
+            synchronized (mux) {
+                waitForOpen();
 
-            if (err != null) {
-                leave();
+                if (err != null) {
+                    doLeave();
 
-                throw err;
+                    throw err;
+                }
             }
         }
 
@@ -4285,14 +4291,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         boolean tryEnter() {
-            doEnter();
+            synchronized (mux) {
+                waitForOpen();
 
-            boolean res = err == null;
+                boolean res = err == null;
 
-            if (!res)
-                leave();
+                if (!res)
+                    doLeave();
 
-            return res;
+                return res;
+            }
         }
 
         /**
@@ -4300,11 +4308,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          */
         void leave() {
             synchronized (mux) {
-                activeCnt--;
-
-                assert activeCnt >= 0;
-
-                mux.notifyAll();
+                doLeave();
             }
         }
 
@@ -4312,24 +4316,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param reconnectFut Reconnect future.
          */
         void disconnected(IgniteFuture<?> reconnectFut) {
-            close();
+            synchronized (mux) {
+                close();
 
-            err = new IgniteClientDisconnectedException(reconnectFut, "Failed to connect, client node disconnected.");
+                err = new IgniteClientDisconnectedException(reconnectFut, "Failed to connect, client node disconnected.");
 
-            open();
+                open();
+            }
         }
 
         /**
          *
          */
         void reconnected() {
-            close();
+            synchronized (mux) {
+                close();
 
-            try {
                 if (err instanceof IgniteClientDisconnectedException)
                     err = null;
-            }
-            finally {
+
                 open();
             }
         }
@@ -4338,61 +4343,68 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         void stopped() {
-            doEnter();
+            synchronized (mux) {
+                waitForOpen();
 
-            err = new IgniteException("Failed to connect, node stopped.");
+                err = new IgniteException("Failed to connect, node stopped.");
 
-            leave();
+                doLeave();
+            }
+        }
+
+        /**
+         *
+         */
+        private void waitForOpen() {
+            while (closed) {
+                try {
+                    mux.wait();
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            activeCnt++;
+
+            assert activeCnt > 0;
+
+            mux.notifyAll();
+        }
+
+        /**
+         *
+         */
+        private void doLeave() {
+            activeCnt--;
+
+            assert activeCnt >= 0;
+
+            mux.notifyAll();
         }
 
         /**
          *
          */
         private void open() {
-            synchronized (mux) {
-                closed = false;
+            closed = false;
 
-                mux.notifyAll();
-            }
+            mux.notifyAll();
         }
 
         /**
          *
          */
         private void close() {
-            synchronized (mux) {
-                closed = true;
+            closed = true;
 
-                while (activeCnt > 0) {
-                    try {
-                        mux.wait();
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+            while (activeCnt > 0) {
+                try {
+                    mux.wait();
                 }
-            }
-        }
-
-        /**
-         *
-         */
-        private void doEnter() {
-            synchronized (mux) {
-                while (closed) {
-                    try {
-                        mux.wait();
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-
-                activeCnt++;
-
-                assert activeCnt > 0;
-
-                mux.notifyAll();
             }
         }
     }
