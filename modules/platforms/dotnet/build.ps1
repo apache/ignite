@@ -48,6 +48,9 @@ Build platform ("Any CPU", "x86", "x64").
 .PARAMETER configuration
 Build configuration ("Release", "Debug").
 
+.PARAMETER mavenOpts
+Custom Maven options, default is "-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true".
+
 .EXAMPLE
 .\build.ps1 -clean  
 # Full rebuild of Java, .NET and NuGet packages.
@@ -66,7 +69,8 @@ param (
     [ValidateSet("Any CPU", "x64", "x86")]
     [string]$platform="Any CPU",
     [ValidateSet("Release", "Debug")]
-    [string]$configuration="Release"
+    [string]$configuration="Release",
+    [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
  )
 
 # 1) Build Java (Maven)
@@ -97,7 +101,7 @@ if (!$skipJava) {
     echo "Starting Java (Maven) build..."
     
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
-    cmd /c "$mv $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
+    cmd /c "$mv $mvnTargets -DskipTests $mavenOpts"
 
     # Check result
     if ($LastExitCode -ne 0) {
