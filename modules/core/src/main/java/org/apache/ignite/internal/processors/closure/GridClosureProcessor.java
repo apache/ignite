@@ -2213,7 +2213,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-        	Objects.requireNonNull(r, "received null runnable in Grid. Did we serialize only excluded classes? See MarshallerExclusions for the exclusion list.");
+        	Objects.requireNonNull(r, "Trying to execute a null closure. Make sure the closure is not assignable from classes listed in MarshallerExclusions");
             r.run();
             return null;
         }
