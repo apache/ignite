@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /**
  * Semi-raw offheap comparator for Text.
  */
-public class TextSemiRawOffheapComparator2 implements SemiRawOffheapComparator<Text> {
+public class TextSemiRawOffheapComparator implements SemiRawOffheapComparator<Text> {
     /** {@inheritDoc} */
     @Override public int compare(Text key1, long ptr2, int len2) {
         byte[] bytes1 = key1.getBytes();
