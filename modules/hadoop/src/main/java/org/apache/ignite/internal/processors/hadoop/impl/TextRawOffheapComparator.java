@@ -30,6 +30,6 @@ public class TextRawOffheapComparator implements RawOffheapComparator {
         int len11 = WritableUtils.decodeVIntSize(buf1[off1]);
         int len22 = WritableUtils.decodeVIntSize(GridUnsafe.getByte(ptr2));
 
-        return TextSemirawOffheapComparator.compareBytes(buf1, off1 + len11, len1 - len11, ptr2 + len22, len2 - len22);
+        return TextSemiRawOffheapComparator2.compareBytes(buf1, off1 + len11, len1 - len11, ptr2 + len22, len2 - len22);
     }
 }

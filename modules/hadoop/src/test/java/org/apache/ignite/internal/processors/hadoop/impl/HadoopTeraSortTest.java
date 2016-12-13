@@ -163,7 +163,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         jobConf.set("mapred.max.split.size", String.valueOf(splitSize));
 
         jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
-        jobConf.set(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), TextSemirawOffheapComparator.class.getName());
+        jobConf.set(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), TextSemiRawOffheapComparator2.class.getName());
         jobConf.set(HadoopJobProperty.SHUFFLE_RAW_COMPARATOR.propertyName(), TextRawOffheapComparator.class.getName());
 
         Job job = setupConfig(jobConf);
