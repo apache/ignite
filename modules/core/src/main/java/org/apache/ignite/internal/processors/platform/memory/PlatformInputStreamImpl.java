@@ -259,6 +259,11 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public int capacity() {
+        return len;
+    }
+
+    /** {@inheritDoc} */
     @Override public int position() {
         return pos;
     }
@@ -281,7 +286,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
         if (dataCopy == null) {
             dataCopy = new byte[len];
 
-            GridUnsafe.copyMemory(null, data, dataCopy, GridUnsafe.BYTE_ARR_OFF, dataCopy.length);
+            GridUnsafe.copyOffheapHeap(data, dataCopy, GridUnsafe.BYTE_ARR_OFF, dataCopy.length);
         }
 
         return dataCopy;
@@ -289,6 +294,11 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
     /** {@inheritDoc} */
     @Override public long offheapPointer() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
         return 0;
     }
 
@@ -324,7 +334,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     private void copyAndShift(Object target, long off, int cnt) {
         ensureEnoughData(cnt);
 
-        GridUnsafe.copyMemory(null, data + pos, target, off, cnt);
+        GridUnsafe.copyOffheapHeap(data + pos, target, off, cnt);
 
         shift(cnt);
     }

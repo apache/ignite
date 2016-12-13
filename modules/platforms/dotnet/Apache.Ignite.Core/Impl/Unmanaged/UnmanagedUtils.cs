@@ -516,11 +516,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.DestroyJvm(ctx);
         }
 
-        internal static bool ListenableCancel(IUnmanagedTarget target)
-        {
-            return JNI.ListenableCancel(target.Context, target.Target);
-        }
-
         #endregion
     }
 }

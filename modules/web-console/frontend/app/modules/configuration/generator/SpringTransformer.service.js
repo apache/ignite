@@ -20,6 +20,14 @@ import _ from 'lodash';
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
 
+const escapeXml = (str) => {
+    return str.replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+        .replace(/>/g, '&gt;')
+        .replace(/</g, '&lt;');
+};
+
 export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator', (JavaTypes, eventGroups, generator) => {
     return class SpringTransformer extends AbstractTransformer {
         static generator = generator;
@@ -84,11 +92,14 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
                 switch (clsName) {
                     case 'PROPERTY':
                     case 'PROPERTY_CHAR':
+                    case 'PROPERTY_INT':
                         return `\${${item}}`;
                     case 'java.lang.Class':
                         return JavaTypes.fullClassName(item);
                     case 'long':
                         return `${item}L`;
+                    case 'java.lang.String':
+                        return escapeXml(item);
                     default:
                         return item;
                 }
@@ -99,9 +110,9 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
             return JavaTypes.nonBuiltInClass(clsName) && JavaTypes.nonEnum(clsName) && _.includes(clsName, '.');
         }
 
-        static _setCollection(sb, prop, tag) {
+        static _setCollection(sb, prop) {
             sb.startBlock(`<property name="${prop.name}">`);
-            sb.startBlock(`<${tag}>`);
+            sb.startBlock('<list>');
 
             _.forEach(prop.items, (item, idx) => {
                 if (this._isBean(prop.typeClsName)) {
@@ -114,7 +125,7 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
                     sb.append(`<value>${item}</value>`);
             });
 
-            sb.endBlock(`</${tag}>`);
+            sb.endBlock('</list>');
             sb.endBlock('</property>');
         }
 
@@ -201,11 +212,8 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
 
                         break;
                     case 'ARRAY':
-                        this._setCollection(sb, prop, 'array');
-
-                        break;
                     case 'COLLECTION':
-                        this._setCollection(sb, prop, 'list');
+                        this._setCollection(sb, prop);
 
                         break;
                     case 'MAP':

@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'misc'
 -var model = 'backupItem'
@@ -32,7 +32,7 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
     .col-xs-8.col-sm-8.col-md-8
         .fieldSep /
         .input-tip
-            input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder='Path' ignite-on-escape='tableReset()')
+            input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder='Path' ignite-on-escape='tableReset(false)')
     .col-xs-4.col-sm-4.col-md-4
         -var arg = keyModel + ', ' + valModel
         -var btnVisible = 'tablePairSaveVisible(tblPathModes, ' + index + ')'
@@ -40,7 +40,7 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
         -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')

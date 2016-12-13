@@ -31,6 +31,7 @@ import org.apache.hadoop.mapreduce.task.JobContextImpl;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperAwareTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -151,6 +152,16 @@ public class HadoopV2Context extends JobContextImpl implements MapContext, Reduc
                 throw new IOException(e);
             }
         }
+    }
+
+    /**
+     * Callback invoked from mapper thread when map is finished.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onMapperFinished() throws IgniteCheckedException {
+        if (output instanceof HadoopMapperAwareTaskOutput)
+            ((HadoopMapperAwareTaskOutput)output).onMapperFinished();
     }
 
     /** {@inheritDoc} */
