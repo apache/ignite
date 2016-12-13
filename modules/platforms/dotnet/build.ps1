@@ -27,7 +27,6 @@ Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin
 
 Requirements:
 * PowerShell 3
-* NuGet in PATH
 * Apache Maven in PATH
 * JDK 7+
 
