@@ -62,7 +62,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -115,7 +114,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -158,8 +156,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
-import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -438,8 +434,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         clientNioSrv.start();
 
         nioClientProcessingPool = new IgniteThreadPoolExecutor(
-            "disco-client-nio-msg-processor", gridName, spi.getClientNioThreads() * 2, spi.getClientNioThreads() * 3,
-            60_000L, new LinkedBlockingQueue<Runnable>());
+            "disco-client-nio-msg-processor",
+            gridName,
+            spi.getClientNioThreads() * 2,
+            spi.getClientNioThreads() * 3,
+            60_000L,
+            new LinkedBlockingQueue<Runnable>());
 
         for (int i = 0; i < spi.getClientNioThreads(); i++)
             nioClientProcessingPool.submit(new NioSendWorker(gridName, log));
@@ -8099,7 +8099,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (msg != null)
                                     worker.sendMessage(msg.get1(), msg.get2());
-
                             }
                             while (msg != null);
 
