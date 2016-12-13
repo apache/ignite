@@ -89,10 +89,9 @@ if (!$skipJava) {
             exit -1
         }
 
-        $mv = join-path $mvHome "bin\mvn.bat"
-        echo "Maven detected at '$mv'."
+        $mv = "`"" + (join-path $mvHome "bin\mvn.bat") + "`""
+        echo "Maven detected at $mv."
     }
-
 
     # Run Maven
     echo "Starting Java (Maven) build..."
