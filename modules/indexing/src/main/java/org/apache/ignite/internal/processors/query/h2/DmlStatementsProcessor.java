@@ -480,7 +480,6 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             Object key = e.get(0);
-            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
             Object newVal;
 
@@ -499,9 +498,6 @@ public class DmlStatementsProcessor {
             if (newVal == null)
                 throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-            if (bin && !(val instanceof BinaryObject))
-                val = cctx.grid().binary().toBinary(val);
-
             // Skip key and value - that's why we start off with 2nd column
             for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
                 Column c = plan.tbl.getColumn(i + 2);
@@ -516,9 +512,7 @@ public class DmlStatementsProcessor {
                 if (!hasNewColVal)
                     continue;
 
-                // Column values that have been explicitly specified have priority over field values in old or new _val
-                // If no value given for the column, then we expect to find it in value, and not in key - hence null arg.
-                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : prop.value(null, val);
+                Object colVal = newColVals.get(c.getName());
 
                 // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
                 desc.setColumnValue(null, newVal, colVal, i);
