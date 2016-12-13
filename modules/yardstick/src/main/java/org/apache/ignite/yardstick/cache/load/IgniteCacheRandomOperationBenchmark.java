@@ -401,8 +401,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void preLoading() throws Exception {
         if (args.preloadAmount() > args.range())
-            throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
-                " range (\"-r\", \"--range\").");
+            throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
+                "must by less then the range (\"-r\", \"--range\").");
 
         startPreloadLogging(args.preloadLogsInterval());
 
