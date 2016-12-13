@@ -92,7 +92,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
-                cancelFutures(MappingExchangeResult.createFailureResult(new IgniteCheckedException("Node left topology normally or abnormally")));
+                //gently cancelling futures to not break any components that are not ready for exception
+                cancelFutures(MappingExchangeResult.createExchangeDisabledResult());
             }
         }, EVT_NODE_LEFT, EVT_NODE_SEGMENTED, EVT_NODE_FAILED);
     }
