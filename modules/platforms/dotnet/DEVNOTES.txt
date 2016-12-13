@@ -12,10 +12,10 @@ Requirements:
 
 Building binaries:
   build.bat -skipCodeAnalysis
-Resulting binaries and NuGet packages will be in bin folder
+Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 
-Running built binaries:
-  bin\Apache.Ignite.exe
+Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
+  bin\Apache.Ignite.exe  
 
 NOTE: 
 * x86 solution platform requires x86 Oracle JDK.
