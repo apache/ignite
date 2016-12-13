@@ -39,6 +39,8 @@ public class CommandHandler {
         if (args.length == 1 && "help".equals(args[0])){
             System.out.println("Example: --host {ip} --port {port} --{activate/deactivate} " +
                 "or without command --host {ip} --port {port} then will print status.");
+
+            return;
         }
 
         if (args.length > 5)
@@ -70,7 +72,15 @@ public class CommandHandler {
             GridClientClusterState state = client.state();
 
             if (activate != null)
-                state.active(activate);
+                try {
+                    state.active(activate);
+
+                    System.out.println(host + ":" + port + " - was " + (activate ? "activate" : "deactivate"));
+                }
+                catch (Exception e) {
+                    System.out.println("Something fail during " + (activate ? "activation" : "deactivation")
+                        + ", exception message: " + e.getMessage());
+                }
             else
                 System.out.println(host + ":" + port + " - " + (state.active() ? "active" : "inactive"));
 

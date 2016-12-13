@@ -206,7 +206,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private Exception changeGlobalStateException;
 
     /** Change global state exceptions. */
-    private Map<UUID, Exception> changeGlobalStateExceptions = new ConcurrentHashMap8<>();
+    private final Map<UUID, Exception> changeGlobalStateExceptions = new ConcurrentHashMap8<>();
 
     /** This exchange for change global state. */
     private boolean exchangeOnChangeGlobalState;
@@ -627,8 +627,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         GridClusterStateProcessor stateProc = cctx.kernalContext().state();
 
-        if (exchangeOnChangeGlobalState = stateProc.isChangeGlobalState(reqs, topologyVersion()))
+        if (exchangeOnChangeGlobalState = stateProc.isChangeGlobalState(reqs, topologyVersion())){
             changeGlobalStateException = stateProc.onChangeGlobalState();
+
+            if (crd && changeGlobalStateException != null)
+                changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateException);
+        }
 
         if (clientOnly) {
             boolean clientCacheStarted = false;
@@ -1381,7 +1385,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
                         changeGlobalStateExceptions.put(node.id(), msg.getException());
-
                 }
 
                 allReceived = remaining.isEmpty();
@@ -1885,6 +1888,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         if (crd0.isLocal()) {
+                            if (exchangeOnChangeGlobalState && changeGlobalStateException!=null)
+                                changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateException);
+
                             if (allReceived) {
                                 onAllReceived();
 

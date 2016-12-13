@@ -265,7 +265,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                             cgsFut.onDone();
                         }
-                        catch (IgniteException e) {
+                        catch (Exception e) {
                             cgsFut.onDone(e);
                         }
                     }
@@ -403,7 +403,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         GridChangeGlobalStateFuture af = cgsLocFut.get();
 
         if (af != null && af.requestId.equals(actx.requestId)) {
-            IgniteException e = new IgniteException("see suppressed");
+            IgniteCheckedException e = new IgniteCheckedException("see suppressed");
 
             for (Map.Entry<UUID, Exception> entry : exs.entrySet())
                 e.addSuppressed(entry.getValue());
@@ -444,11 +444,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.error("Fail activate wal, dataBase, pageStore [nodeId=" + ctx.localNodeId() + ", client=" + client +
                 ", topVer=" + cgsCtx.topVer + "]", e);
 
-            return e;
-        }
-        finally {
             if (!ctx.clientNode())
                 sharedCtx.database().unLock();
+
+            return e;
         }
     }
 

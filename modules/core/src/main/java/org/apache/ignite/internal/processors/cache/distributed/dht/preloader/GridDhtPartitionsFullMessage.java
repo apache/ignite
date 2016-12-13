@@ -151,7 +151,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param exs Exs.
      */
     public void setExceptionsMap(Map<UUID, Exception> exs) {
-        this.exs = exs;
+        this.exs = new HashMap<>(exs);
     }
 
     /** {@inheritDoc} */

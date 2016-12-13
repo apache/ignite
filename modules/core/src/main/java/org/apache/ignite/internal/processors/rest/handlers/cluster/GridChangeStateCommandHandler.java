@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
@@ -72,7 +73,14 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
             fut.onDone(res);
         }
         catch (Exception e) {
-            res.setError(e.getMessage());
+            SB sb = new SB();
+
+            sb.a(e.getMessage()).a("\n").a("suppressed: \n");
+
+            for (Throwable t:e.getSuppressed())
+                sb.a(t.getMessage()).a("\n");
+
+            res.setError(sb.toString());
 
             fut.onDone(res);
         }
