@@ -103,7 +103,12 @@ public enum HadoopJobProperty {
      * <p>
      * Defaults to {@code 0}.
      */
-    SHUFFLE_JOB_THROTTLE("ignite.shuffle.job.throttle");
+    SHUFFLE_JOB_THROTTLE("ignite.shuffle.job.throttle"),
+
+    /**
+     * Semi-raw comparator (if any).
+     */
+    SHUFFLE_SEMI_RAW_COMPARATOR("ignite.shuffle.semi.raw.comparator");
 
     /** Property name. */
     private final String propName;
