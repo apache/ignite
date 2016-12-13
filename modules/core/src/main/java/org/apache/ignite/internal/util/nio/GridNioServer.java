@@ -1432,12 +1432,8 @@ public class GridNioServer<T> {
                             case CONNECT: {
                                 SocketChannel ch = req.socketChannel();
 
-                                Map<Integer, Object> meta = req.meta();
-
-                                meta.put(WORKER_IDX_META_KEY, idx);
-
                                 try {
-                                    ch.register(selector, SelectionKey.OP_CONNECT, meta);
+                                    ch.register(selector, SelectionKey.OP_CONNECT, req.meta());
                                 }
                                 catch (IOException e) {
                                     req.onDone(new IgniteCheckedException("Failed to register channel on selector", e));
@@ -1451,7 +1447,8 @@ public class GridNioServer<T> {
 
                                 SelectionKey key = ch.keyFor(selector);
 
-                                key.cancel();
+                                if (key != null)
+                                    key.cancel();
 
                                 U.closeQuiet(ch);
 
@@ -1995,8 +1992,10 @@ public class GridNioServer<T> {
 
         /**
          * @param key Key.
+         * @throws IOException If failed.
          */
-        protected void processConnect(SelectionKey key) throws IOException {
+        @SuppressWarnings("unchecked")
+        private void processConnect(SelectionKey key) throws IOException {
             SocketChannel ch = (SocketChannel)key.channel();
 
             Map<Integer, Object> meta = (Map<Integer, Object>)key.attachment();

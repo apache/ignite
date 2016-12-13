@@ -1625,6 +1625,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
+                        // TODO: get rid of 4 instanceof (e.g. add marker interface).
                         return msg instanceof IgniteHeaderMessage || msg instanceof NodeIdMessage ||
                             msg instanceof HandshakeMessage || msg instanceof RecoveryLastReceivedMessage;
                     }
@@ -1662,7 +1663,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 else
                     filters = new GridNioFilter[] {
                         new GridNioCodecFilter(parser, log, true),
-                        new GridConnectionBytesVerifyFilter(log),
+                        new GridConnectionBytesVerifyFilter(log)
                     };
 
                 GridNioServer<Message> srvr =
@@ -1951,10 +1952,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 send0(client, node, msg, ackC);
             }
             catch (IgniteCheckedException e) {
-                LT.error(log, e, "Unexpected error occurred during sending of message to node: " + node.id());
-
                 if (clients.remove(node.id(), client))
                     client.forceClose();
+
+                throw new IgniteSpiException("Failed to send message to remote node: " + node, e);
             }
         }
         else {
@@ -2011,8 +2012,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             ClusterNode node0 = getSpiContext().node(node.id());
 
-            if (node0 == null)
+            if (node0 == null) {
                 U.warn(log, "Failed to send message to remote node (node has left the grid): " + node.id());
+
+                return;
+            }
 
             send(node, msg, ackC);
         }
@@ -2191,6 +2195,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                     catch (Throwable e) {
                         connFut.onDone(e);
+
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 }
                 else {
@@ -2661,7 +2668,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (err == null)
                         err = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                            "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
+                            "Make sure that each ComputeTask and cache Transaction has a timeout set " +
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
