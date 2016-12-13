@@ -37,22 +37,17 @@ public class VisorCachePartition implements Serializable, LessNamingBean {
     /** */
     private long offheap;
 
-    /** */
-    private long swap;
-
     /**
      * Full constructor.
      *
      * @param part Partition id.
      * @param heap Number of keys in heap.
      * @param offheap Number of keys in offheap.
-     * @param swap Number of keys in swap.
      */
-    public VisorCachePartition(int part, int heap, long offheap, long swap) {
+    public VisorCachePartition(int part, int heap, long offheap) {
         this.part = part;
         this.heap = heap;
         this.offheap = offheap;
-        this.swap = swap;
     }
 
     /**
@@ -74,13 +69,6 @@ public class VisorCachePartition implements Serializable, LessNamingBean {
      */
     public long offheap() {
         return offheap;
-    }
-
-    /**
-     * @return Number of keys in swap.
-     */
-    public long swap() {
-        return swap;
     }
 
     /** {@inheritDoc} */
