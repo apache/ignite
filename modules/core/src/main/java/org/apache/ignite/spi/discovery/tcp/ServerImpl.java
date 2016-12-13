@@ -196,12 +196,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** ClientNioMessageWorker in GridNioSession. */
     private static final int NIO_WORKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
-    /**
-     * Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
-     * <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
-     */
-    private static final int REOPEN_SERVER_SOCKET_CHANNEL_TRIES = 3;
-
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
@@ -5596,11 +5590,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
-            openServerSocketChannel();
-
-            int reopenTries = 0;
-
             for (port = spi.locPort; port <= lastPort; port++) {
+                openServerSocketChannel();
+
                 try {
                     srvCh.bind(new InetSocketAddress(spi.locHost, port));
 
@@ -5614,30 +5606,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 catch (AlreadyBoundException | IOException e) {
-                    // TODO: always create new channel on IOException.
-
-                    // On simultaneous nodes startup on the same JVM ServerSocketChannel.bind()
-                    // may start throwing 'SocketException: Invalid argument' on each invocation,
-                    // even if port is free.
-                    if (e instanceof SocketException && reopenTries < REOPEN_SERVER_SOCKET_CHANNEL_TRIES
-                        && e.getMessage() != null && e.getMessage().contains("Invalid argument")) {
-                        if (log.isDebugEnabled())
-                            log.debug("Caught SocketException try to reopen channel. " +
-                                "[port=" + port + ", localHost=" + spi.locHost + ']');
-
-                        U.close(srvCh, log);
-
-                        openServerSocketChannel();
-
-                        port = spi.locPort;
-
-                        reopenTries++;
-                    }
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to bind to local port (will try next port within range) " +
-                                "[port=" + port + ", localHost=" + spi.locHost + ']');
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to bind to local port (will try next port within range) " +
+                            "[port=" + port + ", localHost=" + spi.locHost + ']');
 
                     onException("Failed to bind to local port. " +
                         "[port=" + port + ", localHost=" + spi.locHost + ']', e);
@@ -5645,6 +5616,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             // If free port wasn't found.
+            U.closeQuiet(srvCh);
+
             throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
                 "are in use) [firstPort=" + spi.locPort + ", lastPort=" + lastPort +
                 ", addr=" + spi.locHost + ']');
@@ -7557,34 +7530,33 @@ class ServerImpl extends TcpDiscoveryImpl {
             return delegate.getOOBInline();
         }
 
-        // TODO: check if synchronized is really needed.
         /** {@inheritDoc} */
-        @Override public synchronized void setSoTimeout(final int timeout) throws SocketException {
+        @Override public void setSoTimeout(final int timeout) throws SocketException {
             delegate.setSoTimeout(timeout);
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized int getSoTimeout() throws SocketException {
+        @Override public int getSoTimeout() throws SocketException {
             return delegate.getSoTimeout();
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized void setSendBufferSize(final int size) throws SocketException {
+        @Override public void setSendBufferSize(final int size) throws SocketException {
             delegate.setSendBufferSize(size);
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized int getSendBufferSize() throws SocketException {
+        @Override public int getSendBufferSize() throws SocketException {
             return delegate.getSendBufferSize();
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized void setReceiveBufferSize(final int size) throws SocketException {
+        @Override public void setReceiveBufferSize(final int size) throws SocketException {
             delegate.setReceiveBufferSize(size);
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized int getReceiveBufferSize() throws SocketException {
+        @Override public int getReceiveBufferSize() throws SocketException {
             return delegate.getReceiveBufferSize();
         }
 
@@ -7620,7 +7592,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // TODO: check if synchronized is really needed.
         /** {@inheritDoc} */
-        @Override public synchronized void close() throws IOException {
+        @Override public void close() throws IOException {
             U.closeQuiet(sslIn);
             U.closeQuiet(sslOut);
             U.closeQuiet(ch);
@@ -7924,7 +7896,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
-            buf = expandBuffer(buf, len); // TODO: take 'off' into account when expand.
+            buf = expandBuffer(buf, len);
 
             buf.put(b, off, len);
 
