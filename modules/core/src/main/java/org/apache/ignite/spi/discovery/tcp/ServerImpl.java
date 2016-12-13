@@ -203,6 +203,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         IgniteProductVersion.fromString("1.5.0");
 
     /** Node ID in GridNioSession. */
+    // TODO: remove NODE_ID_META, use only NIO_WORKER_META.
     private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** ClientNioMessageWorker in GridNioSession. */
@@ -299,6 +300,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final ClientNioMessageProcessor msgProc = new ClientNioMessageProcessor(log);
 
+        // TODO: override onSessionWriteTimeout (see TcpCommSpi)
+
         @Override public void onConnected(final GridNioSession ses) {
             // No-op.
         }
@@ -306,9 +309,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public void onDisconnected(final GridNioSession ses, @Nullable final Exception e) {
             final UUID clientNodeId = msgProc.clientNodeId(ses);
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Stopping message worker on disconnect [remoteAddr=" + ses.remoteAddress() +
                     ", remote node ID=" + clientNodeId + ']');
+            }
 
             final ClientNioMessageWorker proc = ses.meta(NIO_WORKER_META);
 
@@ -327,6 +331,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         msgProc.processMessage(ses, msg);
                     }
                     catch (IgniteCheckedException e) {
+                        // TODO: really close session.
                         log.error("Failure processing message, closing connection. [ses=" + ses + ']', e);
 
                         final UUID nodeId = ses.meta(NODE_ID_META);
@@ -498,6 +503,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Respond to client without message length.
                 byte[] msg0 = (byte[])msg;
 
+                // TODO: allocate ByteBuffer once for all clients or get rid of ByteBuffer creation.
                 ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length) : ByteBuffer.wrap(msg0);
 
                 if (directBuf) {
@@ -638,7 +644,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.join(msgWorker, log);
 
         for (ClientMessageProcessor clientWorker : clientMsgWorkers.values())
-            stopClientProcessor(clientWorker, true);
+            stopClientProcessor(clientWorker);
 
         clientNioSrv.stop();
 
@@ -706,9 +712,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /**
      * @param proc Client message processor.
-     * @throws IgniteSpiException
      */
-    private void stopClientProcessor(final ClientMessageProcessor proc, final boolean nioBlock) throws IgniteSpiException {
+    private void stopClientProcessor(final ClientMessageProcessor proc) {
         if (proc == null)
             return;
 
@@ -722,14 +727,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (proc instanceof ClientNioMessageWorker) {
                 final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)proc;
 
-                if (nioBlock)
-                    nioWrk.stop();
-                else
-                    nioWrk.nonblockingStop();
+                nioWrk.stop();
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSpiException(e.getMessage(), e);
+            U.error(log, "Failed to stop client processor: " + proc, e);
         }
     }
 
@@ -1800,7 +1802,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.join(msgWorker, log);
 
         for (ClientMessageProcessor msgWorker : clientMsgWorkers.values())
-            stopClientProcessor(msgWorker, true);
+            stopClientProcessor(msgWorker);
 
         clientNioSrv.stop();
 
@@ -5695,11 +5697,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 catch (AlreadyBoundException | IOException e) {
+                    // TODO: always create new channel on IOException.
+
                     // On simultaneous nodes startup on the same JVM ServerSocketChannel.bind()
                     // may start throwing 'SocketException: Invalid argument' on each invocation,
                     // even if port is free.
                     if (e instanceof SocketException && reopenTries < REOPEN_SERVER_SOCKET_CHANNEL_TRIES
-                        && e.getMessage().contains("Invalid argument")) {
+                        && e.getMessage() != null && e.getMessage().contains("Invalid argument")) {
                         if (log.isDebugEnabled())
                             log.debug("Caught SocketException try to reopen channel. " +
                                 "[port=" + port + ", localHost=" + spi.locHost + ']');
@@ -5977,6 +5981,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             final Map<Integer, Object> meta = new HashMap<>();
 
             meta.put(NODE_ID_META, clientNodeId());
+            meta.put(NIO_WORKER_META, this);
 
             final SocketChannel ch = sock.getChannel();
 
@@ -5988,8 +5993,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             ses = clientNioSrv.createSession(ch, meta).get();
-
-            ses.addMeta(NIO_WORKER_META, this);
 
             state = WorkerState.STARTED;
         }
@@ -6019,14 +6022,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             final IgniteInternalFuture<Object> res = ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
                 @Override public Object apply(final IgniteInternalFuture<Boolean> fut) {
                     try {
-                        return fut.get();
+                        fut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSpiException(e.getMessage(), e);
+                        U.warn(log, "Failed to close client session: " + e);
                     }
                     finally {
                         U.closeQuiet(sock);
                     }
+
+                    return null;
                 }
             });
 
@@ -6034,6 +6039,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             nioWorkers.remove(this);
 
+            // TODO: not needed.
             ses.removeMeta(NIO_WORKER_META);
 
             return res;
@@ -6067,6 +6073,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nonblockingStop();
 
+                // TODO: move 'clientMsgWorkers.remove' to nonblockingStop.
                 clientMsgWorkers.remove(clientNodeId, this);
 
                 return new GridNioFinishedFuture<>(e);
@@ -6208,6 +6215,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ClientNioMessageWorker clientMsgWrk = ses.meta(NIO_WORKER_META);
 
+            // TODO assert clientMsgWrk != null;
+
             if (clientMsgWrk == null) {
                 if (log.isDebugEnabled())
                     log.debug("NIO Worker has been closed, drop message. [clientNodeId="
@@ -6229,6 +6238,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (debugMode && recordable(msg))
                 debugLog(msg, "Message has been received: " + msg);
 
+            // TODO: handle only messages client really can send.
             if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                 clientMsgWrk.addReceipt(RES_OK);
 
@@ -6241,6 +6251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     final TcpDiscoverySpiState state = spiStateCopy();
 
                     if (state == CONNECTED) {
+                        // TODO: future is not needed.
                         clientMsgWrk.addReceipt(RES_OK, new CX1<IgniteInternalFuture<?>, Object>() {
                             private static final long serialVersionUID = 0L;
 
@@ -6636,6 +6647,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (nioOldWrk.state() == WorkerState.STOPPED)
                                     clientMsgWorkers.remove(nodeId, nioOldWrk);
                                 else {
+                                    // TODO: implement 'join' method for ClientNioMessageWorker.
                                     // check if old worker is stopping
                                     for (int i = 0; i < 5; i++) {
                                         U.sleep(100);
@@ -6668,16 +6680,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                         assert clientProc == clientMsgWorkers.get(nodeId);
 
                         clientMsgWrk = clientProc;
-
-                        nioClient = clientMsgWrk instanceof ClientNioMessageWorker;
                     }
 
-                    if (nioClient) {
+                    if (clientMsgWrk instanceof ClientNioMessageWorker) {
                         final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)clientMsgWrk;
 
                         nioWrk.start();
 
                         nioWrk.sendMessage(res, null);
+
+                        nioClient = true;
 
                         return;
                     }
@@ -7007,20 +7019,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             finally {
+                if (nioClient)
+                    return;
+
                 if (clientMsgWrk != null) {
                     if (log.isDebugEnabled())
                         log.debug("Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
                             ", rmtNodeId=" + nodeId + ']');
 
-                    if (!nioClient) {
-                        clientMsgWorkers.remove(nodeId, clientMsgWrk);
+                    clientMsgWorkers.remove(nodeId, clientMsgWrk);
 
-                        U.interrupt((ClientMessageWorker)clientMsgWrk);
-                    }
+                    U.interrupt(clientMsgWrk);
                 }
 
-                if (!nioClient)
-                    U.closeQuiet(sock);
+                U.closeQuiet(sock);
             }
         }
 
@@ -7667,6 +7679,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             return delegate.getOOBInline();
         }
 
+        // TODO: check if synchronized is really needed.
         /** {@inheritDoc} */
         @Override public synchronized void setSoTimeout(final int timeout) throws SocketException {
             delegate.setSoTimeout(timeout);
@@ -7727,6 +7740,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             return delegate.getReuseAddress();
         }
 
+        // TODO: check if synchronized is really needed.
         /** {@inheritDoc} */
         @Override public synchronized void close() throws IOException {
             U.closeQuiet(sslIn);
@@ -8032,7 +8046,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
-            buf = expandBuffer(buf, len);
+            buf = expandBuffer(buf, len); // TODO: take 'off' into account when expand.
 
             buf.put(b, off, len);
 

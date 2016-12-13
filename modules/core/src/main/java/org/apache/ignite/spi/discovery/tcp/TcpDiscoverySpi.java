@@ -1487,6 +1487,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             final SocketChannel ch = sock.getChannel();
 
+            // TODO: try remove this hack after all others issues are fixed.
             // Use channel directly as a workaround, because output stream
             // from NIO socket may block infinitely.
             if (ch != null && !(sock instanceof ServerImpl.NioSslSocket))

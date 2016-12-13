@@ -127,8 +127,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
 
     /** */
-    @SuppressWarnings("FieldCanBeLocal")
-    private static int DFLT_BYTE_ARR_STREAM_SIZE = 32 * 1024;
+    private static final int DFLT_BYTE_ARR_STREAM_SIZE = 32 * 1024;
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
@@ -650,8 +649,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ", rmtNodeId=" + rmtNodeId + ']');
 
                 return new JoinResult(new SocketStream(sock),
-                    spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)),
-                    res.clientAck(), res.asyncMode());
+                    spi.readReceipt(sock,
+                    timeoutHelper.nextTimeoutChunk(ackTimeout0)),
+                    res.clientAck(),
+                    res.asyncMode());
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
