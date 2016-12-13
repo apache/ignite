@@ -5868,6 +5868,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Client message queue. */
         private volatile Deque<T2<TcpDiscoveryAbstractMessage, byte[]>> msgQueue;
 
+        /** */
         private final Object mux = new Object();
 
         /** Worker state. */
@@ -5909,7 +5910,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ses = clientNioSrv.createSession(ch, meta).get();
 
-            state = WorkerState.STARTED;
+            state(WorkerState.STARTED);
         }
 
         /**
@@ -5929,7 +5930,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         synchronized IgniteInternalFuture nonblockingStop() {
             if (state == WorkerState.NOT_STARTED)
-                state = WorkerState.STOPPED;
+                state(WorkerState.STOPPED);
 
             if (state == WorkerState.STOPPED)
                 return new GridFinishedFuture<>();
@@ -5950,9 +5951,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             });
 
-            state = WorkerState.STOPPED;
-
             clientMsgWorkers.remove(clientNodeId, this);
+
+            state(WorkerState.STOPPED);
 
             return res;
         }
@@ -5975,7 +5976,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     msgQueue = null;
 
-                    state = WorkerState.JOINED;
+                    state(WorkerState.JOINED);
                 }
             }
         }
@@ -6083,6 +6084,38 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         public WorkerState state() {
             return state;
+        }
+
+        /**
+         * Set state.
+         *
+         * @param state State.
+         */
+        private void state(WorkerState state) {
+            synchronized (mux) {
+                this.state = state;
+
+                mux.notifyAll();
+            }
+        }
+
+        /**
+         * Wait for state change.
+         *
+         * @param millis Milliseconds.
+         * @param state State wait for.
+         * @return {@code True} if state as expected.
+         * @throws InterruptedException If interrupted.
+         */
+        boolean waitForState(long millis, WorkerState state) throws InterruptedException {
+            if (this.state == state)
+                return true;
+
+            synchronized (mux) {
+                mux.wait(millis);
+            }
+
+            return this.state == state;
         }
 
         /** {@inheritDoc} */
@@ -6500,19 +6533,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (nioOldWrk.state() == WorkerState.STOPPED)
                                     clientMsgWorkers.remove(nodeId, nioOldWrk);
                                 else {
-                                    // TODO: implement 'join' method for ClientNioMessageWorker.
-                                    // check if old worker is stopping
-                                    for (int i = 0; i < 5; i++) {
-                                        U.sleep(100);
+                                    if (nioOldWrk.waitForState(500, WorkerState.STOPPED)) {
+                                        old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
 
-                                        if (nioOldWrk.state() == WorkerState.STOPPED)
+                                        if (old == null)
                                             break;
                                     }
-
-                                    old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
-
-                                    if (old == null)
-                                        break;
 
                                     if (log.isDebugEnabled())
                                         log.debug("Already have client message worker, closing connection " +
