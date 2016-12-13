@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -430,6 +431,42 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Check scan query.
+        /// </summary>
+        [Test]
+        public void TestScanQuery([Values(true, false)]  bool loc)
+        {
+            CheckScanQuery<QueryPerson>(loc, false);
+        }
+
+        /// <summary>
+        /// Check scan query in binary mode.
+        /// </summary>
+        [Test]
+        public void TestScanQueryBinary([Values(true, false)]  bool loc)
+        {
+            CheckScanQuery<BinaryObject>(loc, true);
+        }
+
+        /// <summary>
+        /// Check scan query with partitions.
+        /// </summary>
+        [Test]
+        public void TestScanQueryPartitions([Values(true, false)]  bool loc)
+        {
+            CheckScanQueryPartitions<QueryPerson>(loc, false);
+        }
+
+        /// <summary>
+        /// Check scan query with partitions in binary mode.
+        /// </summary>
+        [Test]
+        public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
+        {
+            CheckScanQueryPartitions<BinaryObject>(loc, true);
+        }
+
+        /// <summary>
         /// Tests that query attempt on non-indexed cache causes an exception.
         /// </summary>
         [Test]
@@ -455,11 +492,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query.
         /// </summary>
-        [Test]
-        public void TestScanQuery<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        /// <param name="loc">Local query flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        private static void CheckScanQuery<TV>(bool loc, bool keepBinary)
         {
             var cache = Cache();
-            var cnt = MaxItemCnt;
+            int cnt = MaxItemCnt;
 
             // No predicate
             var exp = PopulateCache(cache, loc, cnt, x => true);
@@ -492,14 +530,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Checks scan query with partitions.
         /// </summary>
-        [Test]
-        public void TestScanQueryPartitions<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        /// <param name="loc">Local query flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        private void CheckScanQueryPartitions<TV>(bool loc, bool keepBinary)
         {
             StopGrids();
             StartGrids();
 
             var cache = Cache();
-            var cnt = MaxItemCnt;
+            int cnt = MaxItemCnt;
 
             var aff = cache.Ignite.GetAffinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
@@ -759,6 +798,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             Name = name;
             Age = age;
+            Birthday = DateTime.UtcNow.AddYears(-age);
         }
 
         /// <summary>
@@ -770,6 +810,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Age.
         /// </summary>
         public int Age { get; set; }
+
+        /// <summary>
+        /// Gets or sets the birthday.
+        /// </summary>
+        [QuerySqlField]  // Enforce Timestamp serialization
+        public DateTime Birthday { get; set; }
     }
 
     /// <summary>

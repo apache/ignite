@@ -218,7 +218,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
-        preldr.onKernalStart();
+        if (preldr != null)
+            preldr.onKernalStart();
     }
 
     /** {@inheritDoc} */

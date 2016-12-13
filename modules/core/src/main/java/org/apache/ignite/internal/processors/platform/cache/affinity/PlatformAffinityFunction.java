@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxyImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -165,11 +166,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(ptr);
             writer.writeObject(key);
 
             out.synchronize();
 
-            return ctx.gateway().affinityFunctionPartition(ptr, mem.pointer());
+            return ctx.gateway().affinityFunctionPartition(mem.pointer());
         }
     }
 
@@ -185,34 +187,34 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         assert ptr != 0;
         assert affCtx != null;
 
-        try (PlatformMemory outMem = ctx.memory().allocate()) {
-            try (PlatformMemory inMem = ctx.memory().allocate()) {
-                PlatformOutputStream out = outMem.output();
-                BinaryRawWriterEx writer = ctx.writer(out);
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = ctx.writer(out);
 
-                // Write previous assignment
-                PlatformAffinityUtils.writeAffinityFunctionContext(affCtx, writer, ctx);
+            writer.writeLong(ptr);
 
-                out.synchronize();
+            // Write previous assignment
+            PlatformAffinityUtils.writeAffinityFunctionContext(affCtx, writer, ctx);
 
-                // Call platform
-                // We can not restore original AffinityFunctionContext after the call to platform,
-                // due to DiscoveryEvent (when node leaves, we can't get it by id anymore).
-                // Secondly, AffinityFunctionContext can't be changed by the user.
-                if (baseTarget != null)
-                    baseTarget.setCurrentAffinityFunctionContext(affCtx);
+            out.synchronize();
 
-                try {
-                    ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
-                }
-                finally {
-                    if (baseTarget != null)
-                        baseTarget.setCurrentAffinityFunctionContext(null);
-                }
+            // Call platform
+            // We can not restore original AffinityFunctionContext after the call to platform,
+            // due to DiscoveryEvent (when node leaves, we can't get it by id anymore).
+            // Secondly, AffinityFunctionContext can't be changed by the user.
+            if (baseTarget != null)
+                baseTarget.setCurrentAffinityFunctionContext(affCtx);
 
-                // Read result
-                return PlatformAffinityUtils.readPartitionAssignment(ctx.reader(inMem), ctx);
+            try {
+                ctx.gateway().affinityFunctionAssignPartitions(mem.pointer());
             }
+            finally {
+                if (baseTarget != null)
+                    baseTarget.setCurrentAffinityFunctionContext(null);
+            }
+
+            // Read result
+            return PlatformAffinityUtils.readPartitionAssignment(ctx.reader(mem), ctx);
         }
     }
 
@@ -233,11 +235,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(ptr);
             writer.writeUuid(nodeId);
 
             out.synchronize();
 
-            ctx.gateway().affinityFunctionRemoveNode(ptr, mem.pointer());
+            ctx.gateway().affinityFunctionRemoveNode(mem.pointer());
         }
     }
 
@@ -279,7 +282,11 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 ? new PlatformAffinityFunctionTarget(ctx, baseFunc)
                 : null;
 
-            ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTarget);
+            PlatformTargetProxyImpl baseTargetProxy = baseTarget != null
+                    ? new PlatformTargetProxyImpl(baseTarget, ctx)
+                    : null;
+
+            ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTargetProxy);
         }
     }
 

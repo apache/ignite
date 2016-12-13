@@ -4,9 +4,10 @@ Apache Ignite Cassandra Serializers Module
 Apache Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The
 module could be used as an addition to Ignite Cassandra Store module.
 
-To enable Cassandra Serializers module when starting a standalone node, move 'optional/ignite-cassandra-serializers' folder to
-'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+To enable Cassandra Serializers module when starting a standalone node, move 'optional/ignite-cassandra-serializers'
+folder to 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will be added to
+classpath in this case. Note, copying folder 'optional/ignite-cassandra-serializers' requires copying
+'optional/ignite-cassandra-store' folder.
 
 Importing Cassandra Serializers Module In Maven Project
 -------------------------------------

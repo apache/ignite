@@ -17,7 +17,11 @@
 
 package org.apache.ignite.yardstick;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,7 +38,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.yardstick.cache.IgniteSqlQueryBenchmark;
+import org.apache.ignite.yardstick.cache.IgnitePutBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkDriver;
 import org.yardstickframework.BenchmarkDriverStartUp;
@@ -108,13 +112,13 @@ public class IgniteBenchmarkUtils {
     public static void main(String[] args) throws Exception {
         final String cfg = "modules/yardstick/config/ignite-localhost-config.xml";
 
-        final Class<? extends BenchmarkDriver> benchmark = IgniteSqlQueryBenchmark.class;
+        final Class<? extends BenchmarkDriver> benchmark = IgnitePutBenchmark.class;
 
         final int threads = 1;
 
         final boolean clientDriverNode = true;
 
-        final int extraNodes = 2;
+        final int extraNodes = 4;
 
         final int warmUp = 5;
         final int duration = 5;

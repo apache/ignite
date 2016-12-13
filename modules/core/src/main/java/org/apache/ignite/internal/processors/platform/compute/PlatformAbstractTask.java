@@ -65,8 +65,6 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         assert rcvd.isEmpty() : "Should not cache result in Java for interop task";
 
-        int plc;
-
         lock.readLock().lock();
 
         try {
@@ -78,15 +76,20 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
 
             Object res0bj = res.getData();
 
+            int plc;
+
             if (res0bj == PlatformAbstractJob.LOC_JOB_RES)
                 // Processing local job execution result.
-                plc = ctx.gateway().computeTaskJobResult(taskPtr, job.pointer(), 0);
+                plc = ctx.gateway().computeTaskLocalJobResult(taskPtr, job.pointer());
             else {
                 // Processing remote job execution result or exception.
                 try (PlatformMemory mem = ctx.memory().allocate()) {
                     PlatformOutputStream out = mem.output();
 
                     BinaryRawWriterEx writer = ctx.writer(out);
+
+                    writer.writeLong(taskPtr);
+                    writer.writeLong(job.pointer());
 
                     writer.writeUuid(res.getNode().id());
                     writer.writeBoolean(res.isCancelled());
@@ -97,7 +100,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
 
                     out.synchronize();
 
-                    plc = ctx.gateway().computeTaskJobResult(taskPtr, job.pointer(), mem.pointer());
+                    plc = ctx.gateway().computeTaskJobResult(mem.pointer());
                 }
             }
 
@@ -184,7 +187,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
      * @return {@code} True if task is not completed yet, {@code false} otherwise.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public boolean onJobLock() {
+    boolean onJobLock() {
         lock.readLock().lock();
 
         if (done) {
@@ -199,7 +202,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
     /**
      * Callback invoked by job when task can be unlocked.
      */
-    public void onJobUnlock() {
+    void onJobUnlock() {
         assert !done;
 
         lock.readLock().unlock();

@@ -40,8 +40,8 @@ export default ['igniteFormPanelField', ['$parse', 'IgniteLegacyTable', ($parse,
         else
             saveDefault();
 
-        scope.tableReset = () => {
-            if (!LegacyTable.tableSaveAndReset())
+        scope.tableReset = (trySave) => {
+            if (trySave === false || !LegacyTable.tableSaveAndReset())
                 LegacyTable.tableReset();
         };
 
