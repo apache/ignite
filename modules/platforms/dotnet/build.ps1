@@ -133,7 +133,7 @@ if (!(Test-Path $regKey)) {
     exit -1
 }
 
-$msbuildExe = "`"" + (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe") + "`""
+$msbuildExe = (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
 echo "MSBuild detected at '$msbuildExe'."
 
 # Detect NuGet
