@@ -63,7 +63,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             "rows?|fields?|params?|args?|items?|elements?|" +
             "data|obj|res|result|err|error|clause|query|qry|sqlQry|ordinal|" +
             "entrySet|keys?Set|vals?Set)" +
-            "\\b\\s*=\\s*(?!\\w+\\s*\\[)(?!null\\b).+?($|[,\\]])")
+            "\\b\\s*=\\s*(?!\\w*\\s*\\[)(?!null\\b)(?!class\\s).+?($|[,\\]])")
     };
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
