@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle;
+package org.apache.ignite.internal.processors.hadoop.impl;
 
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedBytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
+import org.apache.ignite.internal.processors.hadoop.shuffle.SemiRawOffheapComparator;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Semi-raw offheap comparator for Text.
  */
 public class TextSemirawOffheapComparator implements SemiRawOffheapComparator<Text> {
-    /** Cache instance. */
-    public static final TextSemirawOffheapComparator INSTANCE = new TextSemirawOffheapComparator();
-
     /** {@inheritDoc} */
     @Override public int compare(Text key1, long ptr2, int len2) {
         byte[] bytes1 = key1.getBytes();
