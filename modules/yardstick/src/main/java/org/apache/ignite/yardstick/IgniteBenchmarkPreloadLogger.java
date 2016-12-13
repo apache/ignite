@@ -96,7 +96,7 @@ public class IgniteBenchmarkPreloadLogger {
      * Prints non-system cache sizes during preloading.
      * @param logsInterval Time interval in milliseconds between printing logs.
      */
-    public void printLog(long logsInterval){
+    public void startPreloadLogging(long logsInterval){
         exec.scheduleWithFixedDelay(lgr, 0L, logsInterval, TimeUnit.MILLISECONDS);
         BenchmarkUtils.println(cfg, "Preloading started.");
     }
@@ -105,7 +105,7 @@ public class IgniteBenchmarkPreloadLogger {
      * Terminates printing log.
      * @throws Exception if failed.
      */
-    public void stopPrint() throws Exception {
+    public void stopPreloadLogging() throws Exception {
         exec.execute(lgr);
         exec.awaitTermination(1, TimeUnit.SECONDS);
         exec.shutdownNow();
