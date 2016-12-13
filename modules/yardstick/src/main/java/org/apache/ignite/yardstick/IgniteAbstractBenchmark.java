@@ -74,7 +74,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * Terminates printing preloading log.
      */
     protected void stopPreloadLogging() throws Exception {
-        IgniteBenchmarkUtils.stopPrintCachesSize(cfg, plgr);
+        IgniteBenchmarkUtils.stopPrintCachesSize(plgr);
     }
 
     /** {@inheritDoc} */

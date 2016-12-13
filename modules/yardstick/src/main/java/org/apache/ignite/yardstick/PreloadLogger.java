@@ -21,12 +21,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import org.apache.ignite.IgniteCache;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
+/**
+ * Prints non-system caches sizes.
+ */
 public class PreloadLogger implements Runnable {
-    /** */
+    /** Benchmark configuration*/
     private BenchmarkConfiguration cfg;
 
     /** List of caches whose size to be printed during preload. */
@@ -42,11 +47,14 @@ public class PreloadLogger implements Runnable {
      */
     private String strFmt;
 
-    /**
-     * String template used in String.format() to make output readable.
-     */
+    /** */
+    private ScheduledFuture<?> ftr;
 
-    PreloadLogger(IgniteNode node, BenchmarkConfiguration cfg){
+    /**
+     * @param node Ignite node.
+     * @param cfg BenchmarkConfiguration.
+     */
+    public PreloadLogger(IgniteNode node, BenchmarkConfiguration cfg){
         this.caches = new ArrayList<>();
         this.cntrs = new HashMap<>();
         this.cfg = cfg;
@@ -56,10 +64,13 @@ public class PreloadLogger implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        printCacheStatistics();
+        printCachesStatistics();
     }
 
-    public synchronized void printCacheStatistics() {
+    /**
+     * Prints non-system cache sizes.
+     */
+    public synchronized void printCachesStatistics() {
         for (IgniteCache<Object, Object> cache : caches) {
             String cacheName = cache.getName();
 
@@ -93,5 +104,32 @@ public class PreloadLogger implements Runnable {
 
         // Should look like "Preloading:%-20s%-8d\t(%s)"
         strFmt = "Preloading:%-" + (longestName + 4) + "s%-8d\t(%s)";
+    }
+
+    /**
+     * Setter.
+     */
+    public void setFuture(ScheduledFuture<?> ftr) {
+        this.ftr = ftr;
+    }
+
+    /**
+     * Terminates printing log.
+     */
+    public void stopAndPrintStatistics() {
+        ftr.cancel(true);
+
+        try {
+            ftr.get();
+        }
+        catch (InterruptedException ignored) {
+            BenchmarkUtils.println(cfg, "Interrupted exception in Preload logger");
+        }
+        catch (ExecutionException ignored) {
+            BenchmarkUtils.println(cfg, "Execution exception in Preload logger");
+        }
+        finally {
+            BenchmarkUtils.println(cfg, "Preload log finished");
+        }
     }
 }

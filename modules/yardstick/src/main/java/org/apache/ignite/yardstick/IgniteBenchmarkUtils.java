@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 
@@ -163,7 +164,9 @@ public class IgniteBenchmarkUtils {
     public static PreloadLogger startPrintCachesSize(IgniteNode node, BenchmarkConfiguration cfg, long logsInterval){
         PreloadLogger plgr = new PreloadLogger(node, cfg);
 
-        exec.scheduleWithFixedDelay(plgr, 0L, logsInterval, TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> f = exec.scheduleWithFixedDelay(plgr, 0L, logsInterval, TimeUnit.MILLISECONDS);
+
+        plgr.setFuture(f);
 
         BenchmarkUtils.println(cfg, "Preloading log started.");
 
@@ -172,17 +175,8 @@ public class IgniteBenchmarkUtils {
 
     /**
      * Terminates printing log.
-     *
-     * @throws Exception if failed.
      */
-    public static void stopPrintCachesSize(BenchmarkConfiguration cfg, PreloadLogger plgr) throws Exception {
-
-        exec.awaitTermination(1, TimeUnit.SECONDS);
-
-        exec.shutdown();
-
-        plgr.printCacheStatistics();
-
-        BenchmarkUtils.println(cfg, "Preloading log finished.");
+    public static void stopPrintCachesSize(PreloadLogger plgr) {
+        plgr.stopAndPrintStatistics();
     }
 }
