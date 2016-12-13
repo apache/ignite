@@ -27,8 +27,8 @@ Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin
 
 Requirements:
 * PowerShell 3
-* Apache Maven in PATH
 * JDK 7+
+* MAVEN_HOME environment variable or mvn.bat in PATH
 
 .PARAMETER skipJava
 Skip Java build.
@@ -79,11 +79,26 @@ if (!$skipJava) {
 
     echo "Ignite home detected at '$pwd'."
 
+    # Detect Maven
+    $mv = "mvn"
+    if ((Get-Command $mv -ErrorAction SilentlyContinue) -eq $null) { 
+        $mvHome = ($env:MAVEN_HOME, $env:M2_HOME, $env:M3_HOME, $env:MVN_HOME -ne $null)[0]
+
+        if ($mvHome -eq $null) {
+            echo "Maven not found. Make sure to update PATH variable or set MAVEN_HOME, M2_HOME, M3_HOME, or MVN_HOME."
+            exit -1
+        }
+
+        $mv = join-path $mvHome "bin\mvn.bat"
+        echo "Maven detected at '$mv'."
+    }
+
+
     # Run Maven
     echo "Starting Java (Maven) build..."
     
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
-    cmd /c "mvn $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
+    cmd /c "$mv $mvnTargets -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
     # Check result
     if ($LastExitCode -ne 0) {
