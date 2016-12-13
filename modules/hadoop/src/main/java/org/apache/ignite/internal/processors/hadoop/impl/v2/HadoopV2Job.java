@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
@@ -73,6 +74,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHARE_JOB_CLASSLOADER;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.jobLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.taskLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.transformException;
@@ -121,6 +123,9 @@ public class HadoopV2Job implements HadoopJob {
     /** File system cache map. */
     private final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap = createHadoopLazyConcurrentMap();
 
+    /** Common class loader. */
+    private final HadoopClassLoader commonLdr;
+
     /** Local node ID */
     private volatile UUID locNodeId;
 
@@ -160,6 +165,12 @@ public class HadoopV2Job implements HadoopJob {
             jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
             rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
+
+            if (HadoopJobProperty.get(jobInfo, SHARE_JOB_CLASSLOADER, false))
+                commonLdr =
+                    new HadoopClassLoader(rsrcMgr.classPath(), HadoopClassLoader.nameForJob(jobId), libNames, helper);
+            else
+                commonLdr = null;
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
@@ -261,7 +272,7 @@ public class HadoopV2Job implements HadoopJob {
                 // If there is no pooled class, then load new one.
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
-                HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
+                HadoopClassLoader ldr = commonLdr != null ? commonLdr : new HadoopClassLoader(rsrcMgr.classPath(),
                     HadoopClassLoader.nameForTask(info, false), libNames, helper);
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
