@@ -68,7 +68,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.apache.ignite.yardstick.IgniteBenchmarkPreloadLogger;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
 import org.jetbrains.annotations.NotNull;
