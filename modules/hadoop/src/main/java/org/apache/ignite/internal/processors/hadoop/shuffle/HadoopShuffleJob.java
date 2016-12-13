@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -378,14 +379,23 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             HadoopDirectDataInput in = new HadoopDirectDataInput(msg.buffer());
 
             Object key = null;
-            Object val = null;
+            HeapWrapper val = new HeapWrapper(msg.buffer());
 
             for (int i = 0; i < msg.count(); i++) {
+                in.skipBytes(4); // TODO: Do not handle it for now.
                 key = keySer.read(in, key);
-                val = valSer.read(in, val);
+
+                int valLen = in.readInt();
+                int valPos = in.position();
+                in.skipBytes(valLen);
+
+                val.set(valPos, valLen);
 
                 adder.write(key, val);
             }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed due to IO exception.", e);
         }
 
         if (localShuffleState(src).onShuffleMessage())

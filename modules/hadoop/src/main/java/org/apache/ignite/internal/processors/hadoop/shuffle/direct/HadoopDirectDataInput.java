@@ -163,4 +163,11 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
         return new String(bytes, StandardCharsets.UTF_8);
     }
+
+    /**
+     * @return Current position.
+     */
+    public int position() {
+        return pos;
+    }
 }

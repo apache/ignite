@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HeapWrapper;
 import org.apache.ignite.internal.processors.hadoop.shuffle.SemiRawOffheapComparator;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
@@ -389,7 +390,11 @@ public class HadoopSkipList extends HadoopMultimapBase {
             long valPtr = 0;
 
             if (val != null) { // Write value.
-                valPtr = write(12, val, valSer);
+                if (val instanceof HeapWrapper)
+                    valPtr = writeHeapWrapper(12, (HeapWrapper)val);
+                else
+                    valPtr = write(12, val, valSer);
+
                 int valSize = writtenSize() - 12;
 
                 nextValue(valPtr, 0);

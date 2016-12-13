@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HeapWrapper;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOutStream;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopOffheapBuffer;
@@ -310,6 +311,25 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
                 out.move(off);
 
             ser.write(out, o);
+
+            return writeStart;
+        }
+
+        /**
+         * Write heap wrapper.
+         *
+         * @param off Offset.
+         * @param o Object.
+         * @return Page pointer.
+         * @throws IgniteCheckedException If failed.
+         */
+        protected long writeHeapWrapper(int off, HeapWrapper o) throws IgniteCheckedException {
+            writeStart = fixAlignment();
+
+            if (off != 0)
+                out.move(off);
+
+            out.write(o.array(), o.position(), o.length());
 
             return writeStart;
         }
