@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HeapWrapper;
+import org.apache.ignite.internal.processors.hadoop.shuffle.RawOffheapComparator;
 import org.apache.ignite.internal.processors.hadoop.shuffle.SemiRawOffheapComparator;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
@@ -282,6 +283,9 @@ public class HadoopSkipList extends HadoopMultimapBase {
         /** */
         private final Comparator<Object> cmp;
 
+        /** Raw offheap comparator. */
+        private final RawOffheapComparator rawCmp;
+
         /** */
         private final SemiRawOffheapComparator<Object> semiRawCmp;
 
@@ -304,6 +308,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
             keyReader = new Reader(keySer);
 
             cmp = ctx.sortComparator();
+            rawCmp = ctx.rawSortComparator();
             semiRawCmp = ctx.semiRawSortComparator();
         }
 
@@ -353,6 +358,22 @@ public class HadoopSkipList extends HadoopMultimapBase {
          */
         private long writeKey(Object key) throws IgniteCheckedException {
             long keyPtr = write(4, key, keySer);
+            int keySize = writtenSize() - 4;
+
+            keySize(keyPtr, keySize);
+
+            return keyPtr;
+        }
+
+        /**
+         * Write key as heap wrapper.
+         *
+         * @param key Key.
+         * @return Pointer.
+         * @throws IgniteCheckedException If failed.
+         */
+        private long writeKeyHeapWrapper(HeapWrapper key) throws IgniteCheckedException {
+            long keyPtr = writeHeapWrapper(4, key);
             int keySize = writtenSize() - 4;
 
             keySize(keyPtr, keySize);
@@ -412,7 +433,10 @@ public class HadoopSkipList extends HadoopMultimapBase {
             for (;;) {
                 if (level < 0) { // We did not find our key, trying to add new meta.
                     if (keyPtr == 0) { // Write key and create meta only once.
-                        keyPtr = writeKey(key);
+                        if (key instanceof HeapWrapper)
+                            keyPtr = writeKeyHeapWrapper((HeapWrapper)key);
+                        else
+                            keyPtr = writeKey(key);
 
                         newMetaLevel = randomLevel(rnd);
                         newMeta = createMeta(keyPtr, valPtr, newMetaLevel);
@@ -485,6 +509,18 @@ public class HadoopSkipList extends HadoopMultimapBase {
         @SuppressWarnings("unchecked")
         private int cmp(Object key, long meta) {
             assert meta != 0;
+
+            if (key instanceof HeapWrapper) {
+                if (rawCmp == null)
+                    throw new IllegalStateException("Heap wrapper received but raw comparator is not set!");
+
+                HeapWrapper key0 = (HeapWrapper)key;
+
+                long keyPtr = key(meta);
+                int keySize = keySize(keyPtr);
+
+                return rawCmp.compare(key0.array(), key0.position(), key0.length(), keyPtr + 4, keySize);
+            }
 
             if (semiRawCmp != null) {
                 long keyPtr = key(meta);

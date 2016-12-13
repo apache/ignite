@@ -164,6 +164,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
         jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
         jobConf.set(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), TextSemirawOffheapComparator.class.getName());
+        jobConf.set(HadoopJobProperty.SHUFFLE_RAW_COMPARATOR.propertyName(), TextRawOffheapComparator.class.getName());
 
         Job job = setupConfig(jobConf);
 

@@ -35,19 +35,20 @@ public class TextSemirawOffheapComparator implements SemiRawOffheapComparator<Te
 
         int len22 = WritableUtils.decodeVIntSize(GridUnsafe.getByte(ptr2));
 
-        return compareBytes(bytes1, len1, ptr2 + len22, len2 - len22);
+        return compareBytes(bytes1, 0, len1, ptr2 + len22, len2 - len22);
     }
 
     /**
      * Internal comparison routine.
      *
      * @param buf1 Bytes 1.
+     * @param off1 Offset 1.
      * @param len1 Length 1.
      * @param ptr2 Pointer 2.
      * @param len2 Length 2.
      * @return Result.
      */
-    private int compareBytes(byte[] buf1, int len1, long ptr2, int len2) {
+    static int compareBytes(byte[] buf1, int off1, int len1, long ptr2, int len2) {
         int minLength = Math.min(len1, len2);
         int minWords = minLength / Longs.BYTES;
 
@@ -57,7 +58,7 @@ public class TextSemirawOffheapComparator implements SemiRawOffheapComparator<Te
          * On the other hand, it is substantially faster on 64-bit.
          */
         for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
-            long lw = GridUnsafe.getLong(buf1, GridUnsafe.BYTE_ARR_OFF + i);
+            long lw = GridUnsafe.getLong(buf1, GridUnsafe.BYTE_ARR_OFF + off1 + i);
             long rw = GridUnsafe.getLong(ptr2 + i);
 
             long diff = lw ^ rw;
@@ -96,7 +97,7 @@ public class TextSemirawOffheapComparator implements SemiRawOffheapComparator<Te
 
         // The epilogue to cover the last (minLength % 8) elements.
         for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-            int res = UnsignedBytes.compare(buf1[i], GridUnsafe.getByte(ptr2 + i));
+            int res = UnsignedBytes.compare(buf1[off1 + i], GridUnsafe.getByte(ptr2 + i));
 
             if (res != 0)
                 return res;

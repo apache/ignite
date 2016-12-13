@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperAwareTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
@@ -371,27 +372,50 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
 
-        HadoopSerialization keySer = taskCtx.keySerialization();
-        HadoopSerialization valSer = taskCtx.valueSerialization();
-
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
             HadoopDirectDataInput in = new HadoopDirectDataInput(msg.buffer());
 
-            Object key = null;
-            HeapWrapper val = new HeapWrapper(msg.buffer());
+            if (get(job.info(), HadoopJobProperty.SHUFFLE_RAW_COMPARATOR, null) != null) {
+                // Write keys in raw form.
+                HeapWrapper key = new HeapWrapper(msg.buffer());
+                HeapWrapper val = new HeapWrapper(msg.buffer());
 
-            for (int i = 0; i < msg.count(); i++) {
-                in.skipBytes(4); // TODO: Do not handle it for now.
-                key = keySer.read(in, key);
+                for (int i = 0; i < msg.count(); i++) {
+                    int keyLen = in.readInt();
+                    int keyPos = in.position();
+                    in.skipBytes(keyLen);
 
-                int valLen = in.readInt();
-                int valPos = in.position();
-                in.skipBytes(valLen);
+                    key.set(keyPos, keyLen);
 
-                val.set(valPos, valLen);
+                    int valLen = in.readInt();
+                    int valPos = in.position();
+                    in.skipBytes(valLen);
 
-                adder.write(key, val);
+                    val.set(valPos, valLen);
+
+                    adder.write(key, val);
+                }
+            }
+            else {
+                HadoopSerialization keySer = taskCtx.keySerialization();
+
+                // Write key in deserialized form.
+                Object key = null;
+                HeapWrapper val = new HeapWrapper(msg.buffer());
+
+                for (int i = 0; i < msg.count(); i++) {
+                    in.skipBytes(4); // TODO: Do not handle it for now.
+                    key = keySer.read(in, key);
+
+                    int valLen = in.readInt();
+                    int valPos = in.position();
+                    in.skipBytes(valLen);
+
+                    val.set(valPos, valLen);
+
+                    adder.write(key, val);
+                }
             }
         }
         catch (IOException e) {

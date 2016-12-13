@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Partitioner;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1ReduceTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1SetupTask;
+import org.apache.ignite.internal.processors.hadoop.shuffle.RawOffheapComparator;
 import org.apache.ignite.internal.processors.hadoop.shuffle.SemiRawOffheapComparator;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -438,6 +439,16 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
             return null;
 
         return (SemiRawOffheapComparator<Object>)ReflectionUtils.newInstance(cls, jobConf());
+    }
+
+    /** {@inheritDoc} */
+    @Override public RawOffheapComparator rawSortComparator() {
+        Class cls = jobCtx.getJobConf().getClass(HadoopJobProperty.SHUFFLE_RAW_COMPARATOR.propertyName(), null);
+
+        if (cls == null)
+            return null;
+
+        return (RawOffheapComparator)ReflectionUtils.newInstance(cls, jobConf());
     }
 
     /** {@inheritDoc} */

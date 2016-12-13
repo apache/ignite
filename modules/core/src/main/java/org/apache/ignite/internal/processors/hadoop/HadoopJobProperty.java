@@ -108,7 +108,12 @@ public enum HadoopJobProperty {
     /**
      * Semi-raw comparator (if any).
      */
-    SHUFFLE_SEMI_RAW_COMPARATOR("ignite.shuffle.semi.raw.comparator");
+    SHUFFLE_SEMI_RAW_COMPARATOR("ignite.shuffle.semi.raw.comparator"),
+
+    /**
+     * Raw comparator (if any).
+     */
+    SHUFFLE_RAW_COMPARATOR("ignite.shuffle.raw.comparator");
 
     /** Property name. */
     private final String propName;
