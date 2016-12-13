@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(ex.ClientReconnectTask.Result);
 
             // Check the event args.
-            Thread.Sleep(1);  // Wait for event handler
+            Thread.Sleep(100);  // Wait for event handler
 
             Assert.IsNotNull(eventArgs);
             Assert.IsTrue(eventArgs.HasClusterRestarted);
@@ -148,6 +148,8 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(1, cache[1]);
                 Assert.AreEqual(1, disconnected);
+
+                Thread.Sleep(100);  // Wait for event handler
                 Assert.AreEqual(1, reconnected);
             }
         }

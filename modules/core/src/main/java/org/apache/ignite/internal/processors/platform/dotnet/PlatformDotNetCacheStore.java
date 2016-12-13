@@ -396,7 +396,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         if (sesPtr == null) {
             // Session is not deployed yet, do that.
-            sesPtr = platformCtx.gateway().cacheStoreSessionCreate(ptr);
+            sesPtr = platformCtx.gateway().cacheStoreSessionCreate();
 
             ses.properties().put(KEY_SES, sesPtr);
         }
@@ -419,11 +419,13 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
+
             task.apply(writer);
 
             out.synchronize();
 
-            int res = platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer());
+            int res = platformCtx.gateway().cacheStoreInvoke(mem.pointer());
 
             if (res != 0) {
                 // Read error

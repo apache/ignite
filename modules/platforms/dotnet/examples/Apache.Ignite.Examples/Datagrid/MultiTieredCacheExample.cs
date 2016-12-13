@@ -52,7 +52,7 @@ namespace Apache.Ignite.Examples.Datagrid
         public static void Main()
         {
             Console.WriteLine();
-            Console.WriteLine(">>> Lifecycle example started.");
+            Console.WriteLine(">>> Multi-tiered cache example started.");
 
             // Configure swap in the current bin directory (where our assembly is located).
             var binDir = Path.GetDirectoryName(typeof(MultiTieredCacheExample).Assembly.Location);
@@ -85,8 +85,10 @@ namespace Apache.Ignite.Examples.Datagrid
                     {
                         MaxSize = 10 // Maximum number of entries that will be stored in Java heap. 
                     },
-                    OffHeapMaxMemory = EntrySize * 10, // Limit off-heap to 10 entries.
-                    EnableSwap = true // Data will be swapped to disk if there is no more space in off-heap space.
+                    // Limit off-heap to roughly 10 entries. Actual entry count will be lower due to metadata overhead.
+                    OffHeapMaxMemory = EntrySize * 10,
+                    // Data will be swapped to disk if there is no more space in off-heap space.
+                    EnableSwap = true 
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cacheCfg);

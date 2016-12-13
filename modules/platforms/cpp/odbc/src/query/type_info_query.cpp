@@ -116,7 +116,7 @@ namespace ignite
         namespace query
         {
             TypeInfoQuery::TypeInfoQuery(diagnostic::Diagnosable& diag, int16_t sqlType) :
-                Query(diag),
+                Query(diag, TYPE_INFO),
                 columnsMeta(),
                 executed(false),
                 types(),
