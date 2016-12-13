@@ -101,8 +101,8 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         final AtomicInteger trickCompilerVar = new AtomicInteger(1);
 
-        final Aa aOrg1 = new Aa(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
-        final BB bOrg2 = new BB(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
+        final Organization aOrg1 = new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
+        final OrganizatioN bOrg2 = new OrganizatioN(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
 
         exec1.submit(new Runnable() {
             @Override public void run() {
@@ -188,9 +188,9 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                     if ("MappingRejectedMessage".equals(customMsg.getClass().getSimpleName())) {
                         rejectObserved = true;
                         String conflClsName = U.field(customMsg, "conflictingClsName");
-                        if (conflClsName.contains("Aa"))
+                        if (conflClsName.contains("Organization"))
                             bbClsRejected = true;
-                        else if (conflClsName.contains("BB"))
+                        else if (conflClsName.contains("OrganizatioN"))
                             aaClsRejected = true;
                     }
 
@@ -207,7 +207,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * Class name is chosen to be in conflict with other class name this test put to cache.
      */
-    private static class Aa {
+    private static class Organization {
         /** */
         private final int id;
 
@@ -222,7 +222,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
          * @param name Name.
          * @param addr Address.
          */
-        Aa(int id, String name, String addr) {
+        Organization(int id, String name, String addr) {
             this.id = id;
             this.name = name;
             this.addr = addr;
@@ -232,7 +232,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * Class name is chosen to be in conflict with other class name this test put to cache.
      */
-    private static class BB {
+    private static class OrganizatioN {
         /** */
         private final int id;
 
@@ -247,7 +247,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
          * @param name Name.
          * @param addr Address.
          */
-        BB(int id, String name, String addr) {
+        OrganizatioN(int id, String name, String addr) {
             this.id = id;
             this.name = name;
             this.addr = addr;
