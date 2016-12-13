@@ -29,9 +29,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1485,20 +1483,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IOException err = null;
 
         try {
-            final SocketChannel ch = sock.getChannel();
+            OutputStream out = sock.getOutputStream();
 
-            // TODO: try remove this hack after all others issues are fixed.
-            // Use channel directly as a workaround, because output stream
-            // from NIO socket may block infinitely.
-            if (ch != null && !(sock instanceof ServerImpl.NioSslSocket))
-                ch.write(ByteBuffer.wrap(data));
-            else {
-                OutputStream out = sock.getOutputStream();
+            out.write(data);
 
-                out.write(data);
-
-                out.flush();
-            }
+            out.flush();
         }
         catch (IOException e) {
             err = e;

@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -5878,7 +5879,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 assert sock instanceof NioSslSocket;
 
                 // Put the engine to the meta map to allow nio server to use it:
-                meta.put(GridNioSessionMetaKey.SSL_META.ordinal(), ((NioSslSocket)sock).sslEngine);
+                GridSslMeta sslMeta = new GridSslMeta();
+
+                sslMeta.sslEngine(((NioSslSocket)sock).sslEngine);
+
+                meta.put(GridNioSessionMetaKey.SSL_META.ordinal(), sslMeta);
             }
 
             ses = clientNioSrv.createSession(ch, meta).get();
@@ -7590,7 +7595,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             return delegate.getReuseAddress();
         }
 
-        // TODO: check if synchronized is really needed.
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
             U.closeQuiet(sslIn);
