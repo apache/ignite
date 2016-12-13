@@ -438,7 +438,8 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
             Assert.IsNotNull(ex.InnerException);
-            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackUtils.serviceInit(Native Method)"));
+            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackGateway.serviceInit"), 
+                ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
 
