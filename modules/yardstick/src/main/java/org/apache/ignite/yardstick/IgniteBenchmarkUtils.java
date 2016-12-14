@@ -178,7 +178,7 @@ public class IgniteBenchmarkUtils {
 
         lgr.setFuture(fut);
 
-        BenchmarkUtils.println(cfg, "Preloading log started.");
+        BenchmarkUtils.println(cfg, "Preload log started.");
 
         return lgr;
     }

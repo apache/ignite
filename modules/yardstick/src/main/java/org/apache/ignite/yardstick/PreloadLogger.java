@@ -37,17 +37,13 @@ public class PreloadLogger implements Runnable {
     /** List of caches whose size to be printed during preload. */
     private Collection<IgniteCache<Object, Object>> caches;
 
-    /**
-     * Map for keeping previous values to make sure all the caches are working correctly.
-     */
+    /** Map for keeping previous values to make sure all the caches are working correctly. */
     private Map<String, Long> cntrs;
 
-    /**
-     * String template used in String.format() to make output readable.
-     */
+    /** String template used in String.format() to make output readable. */
     private String strFmt;
 
-    /** */
+    /** Future instance to stop print log*/
     private ScheduledFuture<?> fut;
 
     /**
@@ -71,17 +67,21 @@ public class PreloadLogger implements Runnable {
      * Prints non-system cache sizes.
      */
     public synchronized void printCachesStatistics() {
-        for (IgniteCache<Object, Object> cache : caches)
+        for (IgniteCache<Object, Object> cache : caches) {
             try {
                 printCacheStatistics(cache);
             }
-            catch (Exception e){
-            BenchmarkUtils.println(cfg, "Failed to print size of cache " + cache.getName() + e);
+            catch (Exception e) {
+                BenchmarkUtils.println(cfg, "Failed to get affinity from node (will retry) [cache="
+                    + cache.getName() + ", msg=" + e.getMessage() + ']');
             }
+        }
     }
 
     /**
-     * @param cache Cache.
+     * Print cache size along with amount of recently loaded entries.
+     *
+     * @param cache Ignite cache.
      */
     public void printCacheStatistics(IgniteCache<Object, Object> cache) {
         String cacheName = cache.getName();
@@ -89,7 +89,7 @@ public class PreloadLogger implements Runnable {
         long cacheSize = cache.sizeLong();
 
         long recentlyLoaded = cacheSize - cntrs.get(cacheName);
-        String recLoaded = recentlyLoaded == 0 ?  "" + recentlyLoaded : "+" + recentlyLoaded;
+        String recLoaded = recentlyLoaded == 0 ?  String.valueOf(recentlyLoaded) : "+" + recentlyLoaded;
 
         BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
 
@@ -98,6 +98,7 @@ public class PreloadLogger implements Runnable {
 
     /**
      * Helper method for initializing the cache list and the counters map.
+     *
      * @param node Ignite node.
      */
     private void init(IgniteNode node) {
@@ -113,8 +114,8 @@ public class PreloadLogger implements Runnable {
             longestName = Math.max(cache.getName().length(), longestName);
         }
 
-        // Should look like "Preloading:%-20s%-8d\t(%s)"
-        strFmt = "Preloading:%-" + (longestName + 4) + "s%-8d\t(%s)";
+        // Should look like "Preload:%-20s%-8d\t(%s)"
+        strFmt = "Preload:%-" + (longestName + 4) + "s%-8d\t(%s)";
     }
 
     /**
@@ -134,14 +135,14 @@ public class PreloadLogger implements Runnable {
                     U.sleep(200);
 
                     if (!fut.cancel(true))
-                        BenchmarkUtils.println(cfg, "Failed to cancel Preloading logger");
+                        BenchmarkUtils.println(cfg, "Failed to cancel Preload logger");
                 }
             }
 
             printCachesStatistics();
         }
         catch (Exception e) {
-            BenchmarkUtils.error("Failed to stop Preloading logger", e);
+            BenchmarkUtils.error("Failed to stop Preload logger", e);
         }
 
         BenchmarkUtils.println(cfg, "Preload logger was stopped.");
