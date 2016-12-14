@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
-import org.apache.ignite.internal.processors.hadoop.shuffle.SemiRawOffheapComparator;
+import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -281,7 +281,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private final Comparator<Object> cmp;
 
         /** */
-        private final SemiRawOffheapComparator<Object> semiRawCmp;
+        private final PartialOffheapRawComparatorEx<Object> partialRawCmp;
 
         /** */
         private final Random rnd = new GridRandom();
@@ -302,7 +302,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
             keyReader = new Reader(keySer);
 
             cmp = ctx.sortComparator();
-            semiRawCmp = ctx.semiRawSortComparator();
+            partialRawCmp = ctx.partialRawSortComparator();
         }
 
         /** {@inheritDoc} */
@@ -480,11 +480,11 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private int cmp(Object key, long meta) {
             assert meta != 0;
 
-            if (semiRawCmp != null) {
+            if (partialRawCmp != null) {
                 long keyPtr = key(meta);
                 int keySize = keySize(keyPtr);
 
-                return semiRawCmp.compare(key, keyPtr + 4, keySize);
+                return partialRawCmp.compare(key, keyPtr + 4, keySize);
             }
             else
                 return cmp.compare(key, keyReader.readKey(meta));

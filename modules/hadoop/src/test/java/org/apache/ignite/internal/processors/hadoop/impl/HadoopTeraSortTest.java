@@ -41,6 +41,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.hadoop.io.TextPartialRawComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
@@ -163,7 +164,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         jobConf.set("mapred.max.split.size", String.valueOf(splitSize));
 
         jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
-        jobConf.set(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), TextSemiRawOffheapComparator.class.getName());
+        jobConf.set(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), TextPartialRawComparator.class.getName());
 
         Job job = setupConfig(jobConf);
 

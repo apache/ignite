@@ -40,6 +40,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.io.PartialRawComparator;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopExternalSplit;
@@ -64,7 +65,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Partitioner;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1ReduceTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1SetupTask;
-import org.apache.ignite.internal.processors.hadoop.shuffle.SemiRawOffheapComparator;
+import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -431,13 +432,18 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public SemiRawOffheapComparator<Object> semiRawSortComparator() {
+    @Override public PartialOffheapRawComparatorEx<Object> partialRawSortComparator() {
         Class cls = jobCtx.getJobConf().getClass(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), null);
 
         if (cls == null)
             return null;
 
-        return (SemiRawOffheapComparator<Object>)ReflectionUtils.newInstance(cls, jobConf());
+        Object res = ReflectionUtils.newInstance(cls, jobConf());
+
+        if (res instanceof PartialOffheapRawComparatorEx)
+            return (PartialOffheapRawComparatorEx)res;
+        else
+            return new HadoopV2DelegatingPartialOffheapRawComparator<>((PartialRawComparator)res);
     }
 
     /** {@inheritDoc} */
