@@ -27,14 +27,14 @@ public interface IgniteChangeGlobalStateSupport {
     /**
      * Called when cluster performing activation.
      *
-     * @param kctx - Kernal context.
+     * @param kctx Kernal context.
      */
     public void onActivate(GridKernalContext kctx) throws IgniteCheckedException;
 
     /**
      * Called when cluster performing deactivation.
      *
-     * @param kctx - Kernal context.
+     * @param kctx Kernal context.
      */
     public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException;
 }
