@@ -18,16 +18,16 @@
 package org.apache.ignite.internal.client;
 
 /**
- *
+ *  Interface for manage state of grid cluster.
  */
 public interface GridClientClusterState {
     /**
-     * @param active Active.
+     * @param active {@code True} activate, {@code False} deactivate.
      */
     public void active(boolean active) throws GridClientException;
 
     /**
-     * @return boolean current cluster state.
+     * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
      */
     public boolean active() throws GridClientException;
 }
