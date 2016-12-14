@@ -416,7 +416,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         assert cfg != null;
         assert gw != null;
 
-        this.grid = grid;Gri
+        this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
         this.utilityCachePool = utilityCachePool;
