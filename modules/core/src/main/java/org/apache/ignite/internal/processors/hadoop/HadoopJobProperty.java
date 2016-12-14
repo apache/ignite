@@ -57,6 +57,13 @@ public enum HadoopJobProperty {
     JOB_STATUS_POLL_DELAY("ignite.job.status.poll.delay"),
 
     /**
+     * Whether job classloader can be shared between all tasks.
+     * <p>
+     * Defaults to {@code true}.
+     */
+    JOB_SHARED_CLASSLOADER("ignite.job.shared.classloader"),
+
+    /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
      * By default is {@code 32 * 1024}.
@@ -119,6 +126,7 @@ public enum HadoopJobProperty {
      * Whether job classloader can be shared among all tasks.
      */
     SHARE_TASK_CLASSLOADER("ignite.share.task.classloader");
+
 
     /** Property name. */
     private final String propName;
