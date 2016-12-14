@@ -74,7 +74,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHARE_JOB_CLASSLOADER;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHARE_TASK_CLASSLOADER;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.jobLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.taskLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.transformException;
@@ -124,7 +124,7 @@ public class HadoopV2Job implements HadoopJob {
     private final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap = createHadoopLazyConcurrentMap();
 
     /** Common class loader. */
-    private volatile HadoopClassLoader commonLdr;
+    private volatile HadoopClassLoader sharedLdr;
 
     /** Local node ID */
     private volatile UUID locNodeId;
@@ -266,7 +266,7 @@ public class HadoopV2Job implements HadoopJob {
                 // If there is no pooled class, then load new one.
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
-                HadoopClassLoader ldr = commonLdr != null ? commonLdr : new HadoopClassLoader(rsrcMgr.classPath(),
+                HadoopClassLoader ldr = sharedLdr != null ? sharedLdr : new HadoopClassLoader(rsrcMgr.classPath(),
                     HadoopClassLoader.nameForTask(info, false), libNames, helper);
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
@@ -318,8 +318,8 @@ public class HadoopV2Job implements HadoopJob {
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
 
-            if (HadoopJobProperty.get(jobInfo, SHARE_JOB_CLASSLOADER, false))
-                commonLdr =
+            if (HadoopJobProperty.get(jobInfo, SHARE_TASK_CLASSLOADER, false))
+                sharedLdr =
                     new HadoopClassLoader(rsrcMgr.classPath(), HadoopClassLoader.nameForJob(jobId), libNames, helper);
         }
         finally {

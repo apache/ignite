@@ -118,7 +118,7 @@ public enum HadoopJobProperty {
     /**
      * Whether job classloader can be shared among all tasks.
      */
-    SHARE_JOB_CLASSLOADER("ignite.share.job.classloader");
+    SHARE_TASK_CLASSLOADER("ignite.share.task.classloader");
 
     /** Property name. */
     private final String propName;
