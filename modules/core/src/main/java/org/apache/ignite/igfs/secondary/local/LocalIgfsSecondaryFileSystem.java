@@ -18,6 +18,9 @@
 package org.apache.ignite.igfs.secondary.local;
 
 import java.util.ArrayList;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.FileTime;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -28,13 +31,13 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsDataManager;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemUtils;
@@ -64,7 +67,7 @@ import java.util.Map;
 /**
  * Secondary file system which delegates to local file system.
  */
-public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware {
+public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
     /** Path that will be added to each passed path. */
     private String workDir;
 
@@ -363,10 +366,14 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
 
         Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
 
-        if (isDir)
-            return new LocalFileSystemIgfsFile(path, false, true, 0, file.lastModified(), 0, props);
-        else
-            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0, file.lastModified(), file.length(), props);
+        if (isDir) {
+            return new LocalFileSystemIgfsFile(path, false, true, 0,
+                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), 0, props);
+        }
+        else {
+            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0,
+                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), file.length(), props);
+        }
     }
 
     /** {@inheritDoc} */
@@ -386,6 +393,25 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
     }
 
     /** {@inheritDoc} */
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+        Path p = fileForPath(path).toPath();
+
+        if (!Files.exists(p))
+            throw new IgfsPathNotFoundException("Failed to set times (path not found): " + path);
+
+        try {
+            Files.getFileAttributeView(p, BasicFileAttributeView.class)
+                .setTimes(
+                    (modificationTime >= 0) ? FileTime.from(modificationTime, TimeUnit.MILLISECONDS) : null,
+                    (accessTime >= 0) ? FileTime.from(accessTime, TimeUnit.MILLISECONDS) : null,
+                    null);
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to set times for path: " + path, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         if (workDir != null)
             workDir = new File(workDir).getAbsolutePath();
@@ -394,11 +420,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
-        throw new UnsupportedOperationException("Update operation is not yet supported.");
     }
 
     /** {@inheritDoc} */
