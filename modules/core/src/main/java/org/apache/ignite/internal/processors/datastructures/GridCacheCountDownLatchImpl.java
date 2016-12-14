@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteActivationSupport;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache count down latch implementation.
  */
-public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, IgniteActivationSupport, Externalizable {
+public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

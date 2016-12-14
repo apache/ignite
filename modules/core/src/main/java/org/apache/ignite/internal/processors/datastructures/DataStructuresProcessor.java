@@ -61,7 +61,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -82,7 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteActivationSupport;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -106,7 +105,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Manager of data structures.
  */
-public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteActivationSupport {
+public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     public static final CacheDataStructuresConfigurationKey DATA_STRUCTURES_KEY =
         new CacheDataStructuresConfigurationKey();
@@ -319,8 +318,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable v = e.getValue();
 
-            if (v instanceof IgniteActivationSupport)
-                ((IgniteActivationSupport)v).onActivate(ctx);
+            if (v instanceof IgniteChangeGlobalStateSupport)
+                ((IgniteChangeGlobalStateSupport)v).onActivate(ctx);
         }
     }
 
@@ -337,8 +336,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable v = e.getValue();
 
-            if (v instanceof IgniteActivationSupport)
-                ((IgniteActivationSupport)v).onDeActivate(ctx);
+            if (v instanceof IgniteChangeGlobalStateSupport)
+                ((IgniteChangeGlobalStateSupport)v).onDeActivate(ctx);
         }
     }
 

@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteActivationSupport;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
@@ -44,7 +44,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache atomic reference implementation.
  */
-public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, IgniteActivationSupport, Externalizable {
+public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

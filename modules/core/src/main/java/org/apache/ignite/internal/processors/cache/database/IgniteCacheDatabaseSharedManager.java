@@ -38,13 +38,13 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImp
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteActivationSupport;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter implements IgniteActivationSupport {
+public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     protected PageMemory pageMem;
 

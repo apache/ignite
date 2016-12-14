@@ -55,7 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteActivationSupport;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -67,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache reentrant lock implementation based on AbstractQueuedSynchronizer.
  */
-public final class GridCacheLockImpl implements GridCacheLockEx, IgniteActivationSupport, Externalizable {
+public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

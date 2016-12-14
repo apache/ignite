@@ -21,12 +21,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.lang.IgniteActivationSupport;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, IgniteActivationSupport {
+public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
      * @return {@code true} If we have to always write full pages.
      */
