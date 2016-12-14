@@ -70,6 +70,8 @@ namespace ignite
                 // No-op.
             }
 
+            virtual const void* Get() const = 0;
+
             /**
              * Get the pointer.
              *
