@@ -1267,34 +1267,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY) {
-                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
-                        return ((IgfsSecondaryFileSystemV2)secondaryFs).affinity(path, start, len, maxLen);
-                    else {
-                        IgfsFile info = info(path);
-
-                        if (info == null)
-                            throw new IgfsPathNotFoundException("File not found: " + path);
-
-                        // Simple affinity maps all blocks to local node.
-                        Collection<ClusterNode> nodes = Collections.singleton(igfsCtx.localNode());
-
-                        long blockLen = maxLen > 0 ? maxLen : cfg.getBlockSize();
-
-                        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(1 + len / blockLen));
-
-                        long off = start;
-                        long end = start + len;
-
-                        for (; off + blockLen < end; off += blockLen)
-                            blocks.add(new IgfsBlockLocationImpl(off, blockLen, nodes));
-
-                        blocks.add(new IgfsBlockLocationImpl(off, Math.min(blockLen, end - off),
-                            nodes));
-
-                        return blocks;
-                    }
-                }
+                if (mode == PROXY)
+                    return secondaryFs.affinity(path, start, len, maxLen);
 
                 // Check memory first.
                 IgfsEntryInfo info = meta.infoForPath(path);

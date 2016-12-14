@@ -32,6 +32,7 @@ import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.FileSystemResource;
@@ -172,7 +173,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      *
      */
-    private static abstract class TestBaseSecondaryFsMock implements IgfsSecondaryFileSystemV2 {
+    private static abstract class TestBaseSecondaryFsMock implements IgfsSecondaryFileSystem {
 
         /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {
