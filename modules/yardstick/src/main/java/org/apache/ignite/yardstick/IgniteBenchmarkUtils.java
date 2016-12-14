@@ -171,7 +171,7 @@ public class IgniteBenchmarkUtils {
      * @param cfg Benchmark configuration.
      * @param logsInterval Time interval in milliseconds between printing logs.
      */
-    public static PreloadLogger startPreloadLogger(IgniteNode node, BenchmarkConfiguration cfg, long logsInterval){
+    public static PreloadLogger startPreloadLogger(IgniteNode node, BenchmarkConfiguration cfg, long logsInterval) {
         PreloadLogger lgr = new PreloadLogger(node, cfg);
 
         ScheduledFuture<?> fut = exec.scheduleWithFixedDelay(lgr, 0L, logsInterval, TimeUnit.MILLISECONDS);
