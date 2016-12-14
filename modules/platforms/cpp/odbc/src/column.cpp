@@ -35,7 +35,7 @@ namespace
         {
             case IGNITE_TYPE_BINARY:
             {
-                // Header + Length + Object + Offset
+                // Header field + Length field + Object itself + Offset field
                 len = 1 + 4 + stream.ReadInt32() + 4;
 
                 break;
@@ -48,16 +48,8 @@ namespace
                 if (protoVer != IGNITE_PROTO_VER)
                     return false;
 
-                // Skipping flags
-                stream.ReadInt16();
-
-                // Skipping typeId
-                stream.ReadInt32();
-
-                // Skipping hash code
-                stream.ReadInt32();
-
-                len = stream.ReadInt32();
+                // Skipping flags, typeId and hash code
+                len = stream.ReadInt32(stream.Position() + 2 + 4 + 4);
 
                 break;
             }
