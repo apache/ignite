@@ -61,9 +61,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private static final Pattern[] SENSITIVE_PS = {
         Pattern.compile("(^|[^\\.-])\\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|" +
             "rows?|fields?|params?|args?|items?|elements?|" +
-            "data|obj|res|result|err|error|clause|query|qry|sqlQry|ordinal|" +
+            "data|obj|res|result|clause|query|qry|sqlQry|ordinal|" +
             "entrySet|keys?Set|vals?Set)" +
-            "\\b\\s*=\\s*(?!\\w*\\s*\\[)(?!null\\b)(?!class\\s).+?($|[,\\]])")
+            "\\b\\s*=\\s*(?!\\w*\\s*\\[)" +
+            "(?!null\\b)(?!true\\b)(?!false\\b)(?!class\\s)" +
+            ".+?($|[,\\]])")
     };
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
