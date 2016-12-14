@@ -31,7 +31,7 @@ import org.yardstickframework.BenchmarkUtils;
  * Prints non-system caches size.
  */
 public class PreloadLogger implements Runnable {
-    /** Benchmark configuration*/
+    /** Benchmark configuration. */
     private BenchmarkConfiguration cfg;
 
     /** List of caches whose size to be printed during preload. */
@@ -107,10 +107,10 @@ public class PreloadLogger implements Runnable {
             IgniteCache<Object, Object> cache = node.ignite().cache(cacheName);
             caches.add(cache);
 
-            // Set up an initial values to the map
+            // Set up an initial values to the map.
             cntrs.put(cache.getName(), 0L);
 
-            //Find out the length of the longest cache name
+            // Find out the length of the longest cache name.
             longestName = Math.max(cache.getName().length(), longestName);
         }
 
