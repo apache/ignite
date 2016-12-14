@@ -21,14 +21,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
- * Prints non-system caches sizes.
+ * Prints non-system caches size.
  */
 public class PreloadLogger implements Runnable {
     /** Benchmark configuration*/
@@ -48,7 +48,7 @@ public class PreloadLogger implements Runnable {
     private String strFmt;
 
     /** */
-    private ScheduledFuture<?> ftr;
+    private ScheduledFuture<?> fut;
 
     /**
      * @param node Ignite node.
@@ -71,18 +71,29 @@ public class PreloadLogger implements Runnable {
      * Prints non-system cache sizes.
      */
     public synchronized void printCachesStatistics() {
-        for (IgniteCache<Object, Object> cache : caches) {
-            String cacheName = cache.getName();
+        for (IgniteCache<Object, Object> cache : caches)
+            try {
+                printCacheStatistics(cache);
+            }
+            catch (Exception e){
+            BenchmarkUtils.println(cfg, "Failed to print size of cache " + cache.getName() + e);
+            }
+    }
 
-            long cacheSize = cache.sizeLong();
+    /**
+     * @param cache Cache.
+     */
+    public void printCacheStatistics(IgniteCache<Object, Object> cache) {
+        String cacheName = cache.getName();
 
-            long recentlyLoaded = cacheSize - cntrs.get(cacheName);
-            String recLoaded = recentlyLoaded == 0 ?  "" + recentlyLoaded : "+" + recentlyLoaded;
+        long cacheSize = cache.sizeLong();
 
-            BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
+        long recentlyLoaded = cacheSize - cntrs.get(cacheName);
+        String recLoaded = recentlyLoaded == 0 ?  "" + recentlyLoaded : "+" + recentlyLoaded;
 
-            cntrs.put(cacheName, cacheSize);
-        }
+        BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
+
+        cntrs.put(cacheName, cacheSize);
     }
 
     /**
@@ -109,27 +120,30 @@ public class PreloadLogger implements Runnable {
     /**
      * Setter.
      */
-    public void setFuture(ScheduledFuture<?> ftr) {
-        this.ftr = ftr;
+    public void setFuture(ScheduledFuture<?> fut) {
+        this.fut = fut;
     }
 
     /**
      * Terminates printing log.
      */
     public void stopAndPrintStatistics() {
-        ftr.cancel(true);
-
         try {
-            ftr.get();
+            if (fut != null) {
+                if (!fut.cancel(true)) {
+                    U.sleep(200);
+
+                    if (!fut.cancel(true))
+                        BenchmarkUtils.println(cfg, "Failed to cancel Preloading logger");
+                }
+            }
+
+            printCachesStatistics();
         }
-        catch (InterruptedException ignored) {
-            BenchmarkUtils.println(cfg, "Interrupted exception in Preload logger");
+        catch (Exception e) {
+            BenchmarkUtils.error("Failed to stop Preloading logger", e);
         }
-        catch (ExecutionException ignored) {
-            BenchmarkUtils.println(cfg, "Execution exception in Preload logger");
-        }
-        finally {
-            BenchmarkUtils.println(cfg, "Preload log finished");
-        }
+
+        BenchmarkUtils.println(cfg, "Preload logger was stopped.");
     }
 }
