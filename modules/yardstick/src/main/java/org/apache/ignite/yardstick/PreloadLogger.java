@@ -134,8 +134,11 @@ public class PreloadLogger implements Runnable {
                 if (!fut.cancel(true)) {
                     U.sleep(200);
 
-                    if (!fut.cancel(true))
+                    if (!fut.cancel(true)) {
                         BenchmarkUtils.println(cfg, "Failed to cancel Preload logger.");
+
+                        return;
+                    }
                 }
             }
 
