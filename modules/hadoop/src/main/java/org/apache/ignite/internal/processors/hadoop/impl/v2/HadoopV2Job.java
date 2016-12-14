@@ -318,7 +318,7 @@ public class HadoopV2Job implements HadoopJob {
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
 
-            if (HadoopJobProperty.get(jobInfo, SHARE_TASK_CLASSLOADER, false))
+            if (HadoopJobProperty.get(jobInfo, SHARE_TASK_CLASSLOADER, true))
                 sharedLdr =
                     new HadoopClassLoader(rsrcMgr.classPath(), HadoopClassLoader.nameForJob(jobId), libNames, helper);
         }
