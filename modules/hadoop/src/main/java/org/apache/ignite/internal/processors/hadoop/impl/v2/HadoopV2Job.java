@@ -124,7 +124,7 @@ public class HadoopV2Job implements HadoopJob {
     private final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap = createHadoopLazyConcurrentMap();
 
     /** Common class loader. */
-    private final HadoopClassLoader commonLdr;
+    private volatile HadoopClassLoader commonLdr;
 
     /** Local node ID */
     private volatile UUID locNodeId;
@@ -165,12 +165,6 @@ public class HadoopV2Job implements HadoopJob {
             jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
             rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
-
-            if (HadoopJobProperty.get(jobInfo, SHARE_JOB_CLASSLOADER, false))
-                commonLdr =
-                    new HadoopClassLoader(rsrcMgr.classPath(), HadoopClassLoader.nameForJob(jobId), libNames, helper);
-            else
-                commonLdr = null;
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
@@ -323,6 +317,10 @@ public class HadoopV2Job implements HadoopJob {
 
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
+
+            if (HadoopJobProperty.get(jobInfo, SHARE_JOB_CLASSLOADER, false))
+                commonLdr =
+                    new HadoopClassLoader(rsrcMgr.classPath(), HadoopClassLoader.nameForJob(jobId), libNames, helper);
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
