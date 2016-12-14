@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.CacheStatistics;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -243,6 +244,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private boolean customAffMapper;
 
+    /** */
+    private CacheStatistics stats;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -294,7 +298,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         IgniteCacheOffheapManager offheapMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
-        GridCacheAffinityManager affMgr
+        GridCacheAffinityManager affMgr,
+        CacheStatistics stats
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -355,6 +360,12 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+
+        this.stats = stats;
+    }
+
+    public CacheStatistics stats() {
+        return stats;
     }
 
     /**

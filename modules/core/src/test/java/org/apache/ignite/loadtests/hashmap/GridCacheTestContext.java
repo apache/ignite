@@ -91,7 +91,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             null,
             new CacheOsConflictResolutionManager<K, V>(),
             new CachePluginManager(ctx, new CacheConfiguration()),
-            new GridCacheAffinityManager()
+            new GridCacheAffinityManager(),
+            null
         );
 
         store().initialize(null, new IdentityHashMap<CacheStore, ThreadLocal>());

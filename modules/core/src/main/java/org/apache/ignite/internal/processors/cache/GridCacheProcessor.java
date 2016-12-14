@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.CacheStatistics;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1353,6 +1354,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
 
+        CacheStatistics stats = ctx.stats().cache();
+
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
             sharedCtx,
@@ -1376,7 +1379,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             offheapMgr,
             rslvrMgr,
             pluginMgr,
-            affMgr
+            affMgr,
+            stats
         );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -1504,7 +1508,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 offheapMgr,
                 rslvrMgr,
                 pluginMgr,
-                affMgr
+                affMgr,
+                stats
             );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);

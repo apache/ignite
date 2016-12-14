@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.DebugStatistic;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -67,6 +66,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.FIND_ONE;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.STORE_ADD;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.STORE_RMV;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.TREE_PUT;
 
 /**
  *
@@ -93,18 +96,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
-
-    /** */
-    private DebugStatistic storeAddStat;
-
-    /** */
-    private DebugStatistic storeRmvStat;
-
-    /** */
-    private DebugStatistic treePutStat;
-
-    /** */
-    private DebugStatistic treeFindOneStat;
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -133,11 +124,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 cctx.shared().database().checkpointReadUnlock();
             }
         }
-
-        storeAddStat = cctx.kernalContext().addStatistic(cctx.name() + "-storeAdd");
-        storeRmvStat = cctx.kernalContext().addStatistic(cctx.name() + "-storeRmv");
-        treePutStat = cctx.kernalContext().addStatistic(cctx.name() + "-treePut");
-        treeFindOneStat = cctx.kernalContext().addStatistic(cctx.name() + "-treeFindOne");
     }
 
     /**
@@ -851,27 +837,24 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             key.valueBytes(cctx.cacheObjectContext());
             val.valueBytes(cctx.cacheObjectContext());
 
-            long start = storeAddStat.start();
+            cctx.stats().opStart(STORE_ADD);
 
             rowStore.addRow(dataRow);
 
-            storeAddStat.addTime(start);
+            cctx.stats().opEnd(STORE_ADD);
 
             assert dataRow.link() != 0 : dataRow;
 
-            start = treePutStat.start();
+            cctx.stats().opStart(TREE_PUT);
 
             DataRow old = dataTree.put(dataRow);
 
-            treePutStat.addTime(start);
+            cctx.stats().opEnd(TREE_PUT);
 
             if (old == null)
                 storageSize.incrementAndGet();
 
             if (indexingEnabled) {
-                if (true)
-                    throw new IgniteException("Error");
-
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 assert qryMgr.enabled();
@@ -885,26 +868,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             if (old != null) {
                 assert old.link() != 0 : old;
 
-                if (pendingEntries != null && old.expireTime() != 0) {
-                    if (true)
-                        throw new IgniteException("Error");
-
+                if (pendingEntries != null && old.expireTime() != 0)
                     pendingEntries.remove(new PendingRow(old.expireTime(), old.link()));
-                }
 
-                start = storeRmvStat.start();
+                cctx.stats().opStart(STORE_RMV);
 
                 rowStore.removeRow(old.link());
 
-                storeRmvStat.addTime(start);
+                cctx.stats().opEnd(STORE_RMV);
             }
 
-            if (pendingEntries != null && expireTime != 0) {
-                if (true)
-                    throw new IgniteException("Error");
-
+            if (pendingEntries != null && expireTime != 0)
                 pendingEntries.put(new PendingRow(expireTime, dataRow.link()));
-            }
         }
 
         /** {@inheritDoc} */
@@ -942,13 +917,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public CacheDataRow find(KeyCacheObject key)
             throws IgniteCheckedException {
-            long start = treeFindOneStat.start();
+            cctx.stats().opStart(FIND_ONE);
 
             try {
                 return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
             }
             finally {
-                treeFindOneStat.addTime(start);
+                cctx.stats().opEnd(FIND_ONE);
             }
         }
 

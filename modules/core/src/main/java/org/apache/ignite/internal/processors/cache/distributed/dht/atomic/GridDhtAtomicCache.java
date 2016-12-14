@@ -81,7 +81,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.util.DebugStatistic;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -118,6 +117,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.LOCK;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.UNLOCK;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.UPDATE_INTERNAL;
 
 /**
  * Non-transactional partitioned cache.
@@ -229,12 +231,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         };
     }
 
-    /** */
-    private DebugStatistic updateStat;
-
-    /** */
-    private DebugStatistic lockStat;
-
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws IgniteCheckedException {
@@ -297,9 +293,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         preldr = new GridDhtPreloader(ctx);
 
         preldr.start();
-
-        updateStat = ctx.kernalContext().addStatistic("update-" + cacheCfg.getName());
-        lockStat = ctx.kernalContext().addStatistic("lock-" + cacheCfg.getName());
 
         ctx.io().addHandler(
             ctx.cacheId(),
@@ -1699,7 +1692,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest req,
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
-        long start = updateStat.start();
+        ctx.stats().opStart(UPDATE_INTERNAL);
 
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
@@ -1717,11 +1710,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
-            long lockStart = lockStat.start();
+            ctx.stats().opStart(LOCK);
 
             List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());
 
-            lockStat.addTime(lockStart);
+            ctx.stats().opEnd(LOCK);
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -1852,8 +1845,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 e.printStackTrace();
             }
             finally {
+                ctx.stats().opStart(UNLOCK);
+
                 if (locked != null)
                     unlockEntries(locked, req.topologyVersion());
+
+                ctx.stats().opEnd(UNLOCK);
 
                 // Enqueue if necessary after locks release.
                 if (deleted != null) {
@@ -1893,7 +1890,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
         finally {
-            updateStat.addTime(start);
+            ctx.stats().opEnd(UPDATE_INTERNAL);
         }
 
         if (remap) {
@@ -2923,7 +2920,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param topVer Topology version.
      */
-    private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
+    private void unlockEntries(List<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
         // Process deleted entries before locks release.
         assert ctx.deferredDelete() : this;
 

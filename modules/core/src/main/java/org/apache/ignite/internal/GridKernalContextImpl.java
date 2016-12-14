@@ -58,8 +58,8 @@ import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -80,9 +80,8 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.DebugStatistic;
-import org.apache.ignite.internal.util.DebugStatistics;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.InternalStatistics;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -356,7 +355,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private volatile boolean disconnected;
 
     /** */
-    private DebugStatistics debugStatistics;
+    private InternalStatistics internalStatistics;
 
     /**
      * No-arg constructor is required by externalization.
@@ -435,30 +434,32 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                     "META-INF/ignite.xml.");
         }
 
-        debugStatistics = new DebugStatistics();
+        internalStatistics = new InternalStatistics();
 
-        final DebugStatistics stat0 = debugStatistics;
+        final InternalStatistics stat0 = internalStatistics;
 
-        final IgniteLogger log0 = log(getClass());
+        if (config().getGridLogger() != null) {
+            final IgniteLogger log0 = log(getClass());
 
-        Thread thread = new Thread() {
-            @Override public void run() {
-                try {
-                    while (true) {
-                        stat0.dump(log0);
+            Thread thread = new Thread() {
+                @Override public void run() {
+                    try {
+                        while (true) {
+                            stat0.dump(log0);
 
-                        Thread.sleep(5000);
+                            Thread.sleep(5000);
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
+            };
 
-        thread.setDaemon(true);
+            thread.setDaemon(true);
 
-        thread.start();
+            thread.start();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1044,8 +1045,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public DebugStatistic addStatistic(String name) {
-        return debugStatistics.add(name);
+    @Override public InternalStatistics stats() {
+        return internalStatistics;
     }
 
     /** {@inheritDoc} */

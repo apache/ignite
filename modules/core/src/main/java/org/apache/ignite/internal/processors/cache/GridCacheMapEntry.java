@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -4062,15 +4063,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (true)
-            throw new IgniteException("Error");
-
         // Identity comparison left on purpose.
         return o == this;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
+        if (true)
+            throw new IgniteException("hasCode should not be called");
+
         return hash;
     }
 

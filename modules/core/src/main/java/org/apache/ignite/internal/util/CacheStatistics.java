@@ -17,31 +17,49 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-import org.apache.ignite.IgniteLogger;
-
 /**
  *
  */
-public class DebugStatistics {
+public class CacheStatistics {
     /** */
-    private final CopyOnWriteArrayList<DebugStatistic> stats = new CopyOnWriteArrayList<>();
+    private final ThreadLocal<PutStatistic> putStat = new ThreadLocal<>();
 
-    public DebugStatistic add(String name) {
-        DebugStatistic stat = new DebugStatistic(name);
+    private final InternalStatistics stats;
 
-        stats.add(stat);
-
-        return stat;
+    public CacheStatistics(InternalStatistics stats) {
+        this.stats = stats;
     }
 
-    public void dump(IgniteLogger log) {
-        for (DebugStatistic stat : stats) {
-            long cnt = stat.count().sumThenReset();
-            long time = stat.time().sumThenReset();
+    public void putStart() {
+        PutStatistic stat = putStat.get();
 
-            if (cnt > 0)
-                log.info("Statistic [name=" + stat.name() + ", cnt=" + time + ", avg=" + (time / (double)cnt) + ']');
+        if (stat == null)
+            putStat.set(stat = new PutStatistic());
+
+        stat.start();
+    }
+
+    public void putEnd() {
+        PutStatistic stat = putStat.get();
+
+        if (stat != null) {
+            stat.end();
+
+            stats.add(stat);
         }
+    }
+
+    public final void opStart(Enum op) {
+        PutStatistic stat = putStat.get();
+
+        if (stat != null)
+            stat.startOp(op.ordinal());
+    }
+
+    public final void opEnd(Enum op) {
+        PutStatistic stat = putStat.get();
+
+        if (stat != null)
+            stat.endOp(op.ordinal());
     }
 }

@@ -17,44 +17,62 @@
 
 package org.apache.ignite.internal.util;
 
-import org.jsr166.LongAdder8;
+import java.util.Arrays;
 
 /**
  *
  */
-public class DebugStatistic {
+public class OperationStatistic {
     /** */
-    private final String name;
-
-    /** */
-    private final LongAdder8 time = new LongAdder8();
+    private long startTime;
 
     /** */
-    private final LongAdder8 cnt = new LongAdder8();
+    private long endTime;
 
-    DebugStatistic(String name) {
-        this.name = name;
+    /** */
+    private final long[] time;
+
+    OperationStatistic(int ops) {
+        time = new long[ops];
     }
 
-    public long start() {
-        return System.nanoTime();
-    }
-
-    public String name() {
-        return name;
-    }
-
-    public void addTime(long start) {
-        time.add(System.nanoTime() - start);
-
-        cnt.increment();
-    }
-
-    public LongAdder8 time() {
+    public final long[] time() {
         return time;
     }
 
-    public LongAdder8 count() {
-        return cnt;
+    public final long startTime() {
+        return startTime;
+    }
+
+    public final long endTime() {
+        return endTime;
+    }
+
+    public String opName(int op) {
+        return "N/A";
+    }
+
+    public final void start() {
+        startTime = System.nanoTime();
+
+        Arrays.fill(time, -1L);
+    }
+
+    public final void end() {
+        endTime = System.nanoTime();
+    }
+
+    public final void startOp(int op) {
+        assert time[op] == -1L : time[op];
+
+        time[op] = System.nanoTime();
+    }
+
+    public final void endOp(int op) {
+        long start = time[op];
+
+        assert start > 0 : start;
+
+        time[op] = System.nanoTime() - start;
     }
 }
