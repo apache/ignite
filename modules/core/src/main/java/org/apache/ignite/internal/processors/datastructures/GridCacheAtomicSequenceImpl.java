@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -251,8 +252,15 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         while (true) {
             if (updateGuard.compareAndSet(false, true)) {
                 try {
-                    // This call must be outside lock.
-                    return CU.outTx(updateCall, ctx);
+                    try {
+                        return updateCall.call();
+                    }
+                    catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
                 }
                 finally {
                     lock.lock();
