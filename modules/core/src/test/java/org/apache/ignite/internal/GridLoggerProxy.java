@@ -79,7 +79,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     static {
         ArrayList<Pattern> lst = new ArrayList<>();
         final Class<GridLoggerProxy> cls = GridLoggerProxy.class;
-        try (InputStream inStr = cls.getResourceAsStream(cls.getName() + ".txt");
+        try (InputStream inStr = cls.getResourceAsStream(cls.getSimpleName() + ".txt");
              BufferedReader rdr = new BufferedReader(new InputStreamReader(inStr))) {
             String ln;
             while ((ln = rdr.readLine()) != null) {
@@ -91,6 +91,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         }
         catch (Exception ex) {
             System.err.println("Error loading sensitive patterns: " + ex);
+            ex.printStackTrace();
         }
         SENSITIVE_PS = lst.toArray(new Pattern[lst.size()]);
     }
