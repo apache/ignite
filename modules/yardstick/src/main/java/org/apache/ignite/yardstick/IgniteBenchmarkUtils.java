@@ -49,13 +49,16 @@ public class IgniteBenchmarkUtils {
     /**
      * Scheduler executor.
      */
-    private static final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-        @Override public Thread newThread(Runnable runnable) {
-            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
-            thread.setDaemon(true);
-            return thread;
-        }
-    });
+    private static final ScheduledExecutorService exec =
+        Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+            @Override public Thread newThread(Runnable run) {
+                Thread thread = Executors.defaultThreadFactory().newThread(run);
+
+                thread.setDaemon(true);
+
+                return thread;
+            }
+        });
 
     /**
      * Utility class constructor.
@@ -168,7 +171,7 @@ public class IgniteBenchmarkUtils {
      * @param cfg Benchmark configuration.
      * @param logsInterval Time interval in milliseconds between printing logs.
      */
-    public static PreloadLogger startPrintCachesSize(IgniteNode node, BenchmarkConfiguration cfg, long logsInterval){
+    public static PreloadLogger startPreloadLogger(IgniteNode node, BenchmarkConfiguration cfg, long logsInterval){
         PreloadLogger lgr = new PreloadLogger(node, cfg);
 
         ScheduledFuture<?> fut = exec.scheduleWithFixedDelay(lgr, 0L, logsInterval, TimeUnit.MILLISECONDS);
