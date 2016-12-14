@@ -49,7 +49,7 @@ public class IgniteBenchmarkUtils {
     /**
      * Scheduler executor.
      */
-    private static ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+    private static final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
         @Override public Thread newThread(Runnable runnable) {
             Thread thread = Executors.defaultThreadFactory().newThread(runnable);
             thread.setDaemon(true);
