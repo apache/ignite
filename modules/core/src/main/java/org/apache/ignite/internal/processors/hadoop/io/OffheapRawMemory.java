@@ -26,10 +26,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class OffheapRawMemory implements RawMemory {
     /** Pointer. */
-    private final long ptr;
+    private long ptr;
 
     /** Length. */
-    private final int len;
+    private int len;
 
     /**
      * Constructor.
@@ -38,8 +38,7 @@ public class OffheapRawMemory implements RawMemory {
      * @param len Length.
      */
     public OffheapRawMemory(long ptr, int len) {
-        this.ptr = ptr;
-        this.len = len;
+        update(ptr, len);
     }
 
     /** {@inheritDoc} */
@@ -101,6 +100,17 @@ public class OffheapRawMemory implements RawMemory {
      */
     public long pointer() {
         return ptr;
+    }
+
+    /**
+     * Update pointer and length.
+     *
+     * @param ptr Pointer.
+     * @param len Length.
+     */
+    public void update(long ptr, int len) {
+        this.ptr = ptr;
+        this.len = len;
     }
 
     /**
