@@ -119,6 +119,14 @@ public final class PageIdUtils {
         return link & EFFECTIVE_PAGE_ID_MASK;
     }
 
+    /**
+     * @param pageId Page id.
+     * @return {@code True} if page id is equal to effective page id.
+     */
+    public static boolean isEffectivePageId(long pageId) {
+        return (pageId & ~EFFECTIVE_PAGE_ID_MASK) == 0;
+    }
+
 
     /**
      * Index of the item inside of data page.
