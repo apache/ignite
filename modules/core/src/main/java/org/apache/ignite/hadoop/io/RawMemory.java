@@ -18,7 +18,7 @@
 package org.apache.ignite.hadoop.io;
 
 /**
- * Byte buffer abstraction.
+ * Memory abstraction for raw comparison.
  */
 public interface RawMemory {
     /**

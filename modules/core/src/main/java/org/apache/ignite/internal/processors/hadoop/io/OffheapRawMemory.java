@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Offheap-based Hadoop byte buffer.
+ * Offheap-based memory.
  */
 public class OffheapRawMemory implements RawMemory {
     /** Pointer. */
@@ -121,7 +121,7 @@ public class OffheapRawMemory implements RawMemory {
      */
     private void ensure(int idx, int cnt) {
         if (idx < 0 || idx + cnt - 1 >= len)
-            throw new IndexOutOfBoundsException("Illegal index [len=" + length() + ", idx=" + idx + ']');
+            throw new IndexOutOfBoundsException("Illegal index [len=" + len + ", idx=" + idx + ']');
     }
 
     /** {@inheritDoc} */
