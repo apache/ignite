@@ -52,12 +52,12 @@ public class GridRedisGetRangeCommandHandler extends GridRedisRestCommandHandler
     private static final int END_OFFSET_POS = 2;
 
     /**
-     * Constructor.
+     * Handler constructor.
      *
-     * @param log Logger.
-     * @param hnd Handler.
+     * @param log Logger to use.
+     * @param hnd Rest handler.
      */
-    public GridRedisGetRangeCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
+    public GridRedisGetRangeCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 

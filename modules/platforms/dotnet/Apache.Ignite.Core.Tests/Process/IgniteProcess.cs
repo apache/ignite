@@ -260,6 +260,25 @@ namespace Apache.Ignite.Core.Tests.Process
         }
 
         /// <summary>
+        /// Join process with timeout.
+        /// </summary>
+        /// <param name="timeout">Timeout in milliseconds.</param>
+        /// <param name="exitCode">Exit code.</param>
+        /// <returns><c>True</c> if process exit occurred before timeout.</returns>
+        public bool Join(int timeout, out int exitCode)
+        {
+            if (_proc.WaitForExit(timeout))
+            {
+                exitCode = _proc.ExitCode;
+
+                return true;
+            }
+            exitCode = 0;
+
+            return false;
+        }
+
+        /// <summary>
         /// Attach output reader to the process.
         /// </summary>
         /// <param name="proc">Process.</param>

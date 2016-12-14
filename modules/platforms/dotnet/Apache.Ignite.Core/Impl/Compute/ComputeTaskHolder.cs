@@ -41,10 +41,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Perform map step.
         /// </summary>
-        /// <param name="inStream">Stream with IN data (topology info).</param>
-        /// <param name="outStream">Stream for OUT data (map result).</param>
+        /// <param name="stream">Stream with IN data (topology info) and for OUT data (map result).</param>
         /// <returns>Map with produced jobs.</returns>
-        void Map(PlatformMemoryStream inStream, PlatformMemoryStream outStream);
+        void Map(PlatformMemoryStream stream);
 
         /// <summary>
         /// Process local job result.
@@ -141,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User code can throw any exception")]
-        public void Map(PlatformMemoryStream inStream, PlatformMemoryStream outStream)
+        public void Map(PlatformMemoryStream stream)
         {
             IList<IClusterNode> subgrid;
 
@@ -150,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             var ignite = (Ignite) prj.Ignite;
 
             // 1. Unmarshal topology info if topology changed.
-            var reader = prj.Marshaller.StartUnmarshal(inStream);
+            var reader = prj.Marshaller.StartUnmarshal(stream);
 
             if (reader.ReadBoolean())
             {
@@ -208,7 +207,8 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
 
             // 3. Write map result to the output stream.
-            BinaryWriter writer = prj.Marshaller.StartMarshal(outStream);
+            stream.Reset();
+            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 // Something went wrong during marshaling.
                 Finish(default(TR), e);
 
-                outStream.Reset();
+                stream.Reset();
                 
                 writer.WriteBoolean(false); // Map failed.
                 writer.WriteString(e.Message); // Write error message.
