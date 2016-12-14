@@ -2103,14 +2103,20 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                Map<UUID, Map<Integer, byte[]>> discoData = U.field(((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData(), "nodeSpecificDiscoData");
+                DiscoveryDataContainer dataContainer = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
+                if (dataContainer != null) {
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificDiscoData");
 
-                checkDiscoData(discoData, msg);
+                    checkDiscoData(discoData, msg);
+                }
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                Map<UUID, Map<Integer, byte[]>> discoData = U.field(((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData(), "nodeSpecificDiscoData");
+                DiscoveryDataContainer dataContainer = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+                if (dataContainer != null) {
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificDiscoData");
 
-                checkDiscoData(discoData, msg);
+                    checkDiscoData(discoData, msg);
+                }
             }
 
             super.writeToSocket(sock, out, msg, timeout);
