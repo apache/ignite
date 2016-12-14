@@ -165,7 +165,7 @@ public class IgniteBenchmarkUtils {
     }
 
     /**
-     * Prints non-system cache sizes during preloading.
+     * Prints non-system cache sizes during preload.
      *
      * @param node Ignite node.
      * @param cfg Benchmark configuration.

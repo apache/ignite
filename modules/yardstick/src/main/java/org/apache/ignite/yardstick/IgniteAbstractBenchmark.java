@@ -65,25 +65,23 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
 
     /**
      * Prints non-system caches sizes during preload.
+     *
      * @param logInterval time interval between printing preload log. Required to be positive integer.
      */
-    protected void startPreloadLogging(long logInterval){
+    protected void startPreloadLogging(long logInterval) {
         if (node != null && cfg != null && logInterval >= 0)
             lgr = IgniteBenchmarkUtils.startPreloadLogger(node, cfg, logInterval);
-
         else
-            BenchmarkUtils.println("Failed to start preload logger.");
+            BenchmarkUtils.println("Failed to start preload logger. Illegal state arguments: [node = " + node +
+                "] [cfg = " + cfg + "] " + "[logInterval = " + logInterval + "].");
     }
 
     /**
      * Terminates printing preload log.
      */
-    protected void stopPreloadLogging() throws Exception {
+    protected void stopPreloadLogging() {
         if (lgr != null)
             lgr.stopAndPrintStatistics();
-
-        else
-            BenchmarkUtils.println("Failed to stop preload logger. Logger instance does not exist.");
     }
 
     /** {@inheritDoc} */

@@ -72,8 +72,8 @@ public class PreloadLogger implements Runnable {
                 printCacheStatistics(cache);
             }
             catch (Exception e) {
-                BenchmarkUtils.println(cfg, "Failed to get affinity from node (will retry) [cache="
-                    + cache.getName() + ", msg=" + e.getMessage() + ']');
+                BenchmarkUtils.println(cfg, "Failed to print cache size [cache="
+                    + cache.getName() + ", msg=" + e.getMessage() + "].");
             }
         }
     }
@@ -135,14 +135,14 @@ public class PreloadLogger implements Runnable {
                     U.sleep(200);
 
                     if (!fut.cancel(true))
-                        BenchmarkUtils.println(cfg, "Failed to cancel Preload logger");
+                        BenchmarkUtils.println(cfg, "Failed to cancel Preload logger.");
                 }
             }
 
             printCachesStatistics();
         }
         catch (Exception e) {
-            BenchmarkUtils.error("Failed to stop Preload logger", e);
+            BenchmarkUtils.error("Failed to stop Preload logger.", e);
         }
 
         BenchmarkUtils.println(cfg, "Preload logger was stopped.");
