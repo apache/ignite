@@ -57,6 +57,13 @@ public enum HadoopJobProperty {
     JOB_STATUS_POLL_DELAY("ignite.job.status.poll.delay"),
 
     /**
+     * Whether job classloader can be shared between all tasks.
+     * <p>
+     * Defaults to {@code true}.
+     */
+    JOB_SHARED_CLASSLOADER("ignite.job.shared.classloader"),
+
+    /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
      * By default is {@code 32 * 1024}.
@@ -91,12 +98,20 @@ public enum HadoopJobProperty {
     SHUFFLE_MSG_SIZE("ignite.shuffle.message.size"),
 
     /**
+     * Whether to stripe mapper output for remote reducers.
+     * <p>
+     * Defaults to {@code false}.
+     */
+    SHUFFLE_MAPPER_STRIPED_OUTPUT("ignite.shuffle.mapper.striped.output"),
+
+    /**
      * Shuffle job throttle in milliseconds. When job is executed with separate shuffle thread, this parameter
      * controls sleep duration between iterations through intermediate reducer maps.
      * <p>
      * Defaults to {@code 0}.
      */
     SHUFFLE_JOB_THROTTLE("ignite.shuffle.job.throttle");
+
 
     /** Property name. */
     private final String propName;

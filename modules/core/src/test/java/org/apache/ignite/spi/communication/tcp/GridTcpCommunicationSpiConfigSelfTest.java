@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
@@ -47,6 +45,9 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "ackSendThreshold", 0);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "ackSendThreshold", -1);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "unacknowledgedMessagesBufferSize", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionsPerNode", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionsPerNode", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionsPerNode", Integer.MAX_VALUE);
     }
 
     /**
