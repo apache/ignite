@@ -370,14 +370,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
 
+        HadoopSerialization keySer = taskCtx.keySerialization();
+        HadoopSerialization valSer = taskCtx.valueSerialization();
+
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
             HadoopDirectDataInput in = new HadoopDirectDataInput(msg.buffer());
 
-            HadoopSerialization keySer = taskCtx.keySerialization();
-            HadoopSerialization valSer = taskCtx.keySerialization();
-
-            // Write key in deserialized form.
             Object key = null;
             Object val = null;
 

@@ -116,25 +116,6 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
         GridUnsafe.putInt(buf, BYTE_ARR_OFF + writePos, val);
     }
 
-    /**
-     * Write int at the given pre-allocated position.
-     *
-     * @param writePos Write position.
-     * @param val Value.
-     */
-    public void writeInt(int writePos, int val) {
-        GridUnsafe.putInt(buf, BYTE_ARR_OFF + writePos, val);
-    }
-
-    /**
-     * Mark that the given position will be used to write int in future.
-     *
-     * @return Position where int is supposed to be written.
-     */
-    public int markInt() {
-        return ensure(4);
-    }
-
     /** {@inheritDoc} */
     @Override public void writeLong(long val) throws IOException {
         int writePos = ensure(8);

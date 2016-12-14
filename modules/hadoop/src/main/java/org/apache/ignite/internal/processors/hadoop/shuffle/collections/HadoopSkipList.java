@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
@@ -390,7 +389,6 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
             if (val != null) { // Write value.
                 valPtr = write(12, val, valSer);
-
                 int valSize = writtenSize() - 12;
 
                 nextValue(valPtr, 0);

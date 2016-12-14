@@ -133,8 +133,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames, HadoopHelper helper) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
-        System.out.println("!!! LDR: " + name);
-
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
