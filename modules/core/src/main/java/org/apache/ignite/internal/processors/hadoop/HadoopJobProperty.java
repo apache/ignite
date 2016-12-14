@@ -118,11 +118,6 @@ public enum HadoopJobProperty {
     SHUFFLE_SEMI_RAW_COMPARATOR("ignite.shuffle.semi.raw.comparator"),
 
     /**
-     * Raw comparator (if any).
-     */
-    SHUFFLE_RAW_COMPARATOR("ignite.shuffle.raw.comparator"),
-
-    /**
      * Whether job classloader can be shared among all tasks.
      */
     SHARE_TASK_CLASSLOADER("ignite.share.task.classloader");

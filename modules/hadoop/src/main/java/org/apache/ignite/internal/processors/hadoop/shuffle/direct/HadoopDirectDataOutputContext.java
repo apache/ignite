@@ -66,31 +66,12 @@ public class HadoopDirectDataOutputContext {
      * @throws IgniteCheckedException If failed.
      */
     public boolean write(Object key, Object val) throws IgniteCheckedException {
-        writeWithLength(keySer, key);
-        writeWithLength(valSer, val);
+        keySer.write(out, key);
+        valSer.write(out, val);
 
         cnt++;
 
         return out.readyForFlush();
-    }
-
-    /**
-     * Write object with length.
-     *
-     * @param ser Serialization.
-     * @param obj Object.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void writeWithLength(HadoopSerialization ser, Object obj) throws IgniteCheckedException {
-        int lenPos = out.markInt();
-
-        ser.write(out, obj);
-
-        int endPos = out.position();
-
-        int len = endPos - lenPos - 4;
-
-        out.writeInt(lenPos, len);
     }
 
     /**
