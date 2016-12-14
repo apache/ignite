@@ -25,12 +25,16 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
 import java.io.Externalizable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,15 +62,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** Prefix for all suspicious sensitive data */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
     /** Sensitive patterns */
-    private static final Pattern[] SENSITIVE_PS = {
-        Pattern.compile("(^|[^\\.-])\\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|" +
-            "rows?|fields?|params?|args?|items?|elements?|" +
-            "data|obj|res|result|clause|query|qry|sqlQry|ordinal|" +
-            "entrySet|keys?Set|vals?Set)" +
-            "\\b\\s*=\\s*(?!\\w*\\s*\\[)" +
-            "(?!null\\b)(?!true\\b)(?!false\\b)(?!class\\s)" +
-            ".+?($|[,\\]])")
-    };
+    private static final Pattern[] SENSITIVE_PS;
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
@@ -79,6 +75,26 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             return new StringBuilder(SENSITIVE_PREFIX);
         }
     };
+
+    static {
+        ArrayList<Pattern> lst = new ArrayList<>();
+        final Class<GridLoggerProxy> cls = GridLoggerProxy.class;
+        try (InputStream inStr = cls.getResourceAsStream(cls.getName() + ".txt");
+             BufferedReader rdr = new BufferedReader(new InputStreamReader(inStr))) {
+            String ln;
+            while ((ln = rdr.readLine()) != null) {
+                ln = ln.trim();
+                if (ln.isEmpty())
+                    continue;
+                lst.add(Pattern.compile(ln));
+            }
+        }
+        catch (Exception ex) {
+            System.err.println("Error loading sensitive patterns: " + ex);
+        }
+        SENSITIVE_PS = lst.toArray(new Pattern[lst.size()]);
+    }
+
     /** */
     private IgniteLogger impl;
     /** */
