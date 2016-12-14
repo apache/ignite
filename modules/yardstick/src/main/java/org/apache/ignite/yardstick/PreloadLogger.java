@@ -43,14 +43,14 @@ public class PreloadLogger implements Runnable {
     /** String template used in String.format() to make output readable. */
     private String strFmt;
 
-    /** Future instance to stop print log*/
+    /** Future instance to stop print log. */
     private ScheduledFuture<?> fut;
 
     /**
      * @param node Ignite node.
      * @param cfg BenchmarkConfiguration.
      */
-    public PreloadLogger(IgniteNode node, BenchmarkConfiguration cfg){
+    public PreloadLogger(IgniteNode node, BenchmarkConfiguration cfg) {
         this.caches = new ArrayList<>();
         this.cntrs = new HashMap<>();
         this.cfg = cfg;
@@ -89,7 +89,7 @@ public class PreloadLogger implements Runnable {
         long cacheSize = cache.sizeLong();
 
         long recentlyLoaded = cacheSize - cntrs.get(cacheName);
-        String recLoaded = recentlyLoaded == 0 ?  String.valueOf(recentlyLoaded) : "+" + recentlyLoaded;
+        String recLoaded = recentlyLoaded == 0 ? String.valueOf(recentlyLoaded) : "+" + recentlyLoaded;
 
         BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
 

@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
-
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -75,7 +74,7 @@ public class IgniteBenchmarkUtils {
      * @throws Exception If failed.
      */
     public static <T> T doInTransaction(IgniteTransactions igniteTx, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation,  Callable<T> clo) throws Exception {
+        TransactionIsolation txIsolation, Callable<T> clo) throws Exception {
         while (true) {
             try (Transaction tx = igniteTx.txStart(txConcurrency, txIsolation)) {
                 T res = clo.call();
