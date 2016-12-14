@@ -2798,15 +2798,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return true;
     }
 
-    /**
-     * Gets hash value for the entry key.
-     *
-     * @return Hash value.
-     */
-    int hash() {
-        return hash;
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(
         boolean heap,
@@ -4071,6 +4062,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
+        if (true)
+            throw new IgniteException("Error");
+
         // Identity comparison left on purpose.
         return o == this;
     }

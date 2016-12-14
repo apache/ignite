@@ -203,7 +203,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     assert metaDataCache != null;
 
-                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx));
+                    //CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx));
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {

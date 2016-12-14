@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.DebugStatistic;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -93,6 +94,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
 
+    /** */
+    private DebugStatistic storeAddStat;
+
+    /** */
+    private DebugStatistic storeRmvStat;
+
+    /** */
+    private DebugStatistic treePutStat;
+
+    /** */
+    private DebugStatistic treeFindOneStat;
+
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
@@ -120,6 +133,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 cctx.shared().database().checkpointReadUnlock();
             }
         }
+
+        storeAddStat = cctx.kernalContext().addStatistic(cctx.name() + "-storeAdd");
+        storeRmvStat = cctx.kernalContext().addStatistic(cctx.name() + "-storeRmv");
+        treePutStat = cctx.kernalContext().addStatistic(cctx.name() + "-treePut");
+        treeFindOneStat = cctx.kernalContext().addStatistic(cctx.name() + "-treeFindOne");
     }
 
     /**
@@ -833,16 +851,27 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             key.valueBytes(cctx.cacheObjectContext());
             val.valueBytes(cctx.cacheObjectContext());
 
+            long start = storeAddStat.start();
+
             rowStore.addRow(dataRow);
+
+            storeAddStat.addTime(start);
 
             assert dataRow.link() != 0 : dataRow;
 
+            start = treePutStat.start();
+
             DataRow old = dataTree.put(dataRow);
+
+            treePutStat.addTime(start);
 
             if (old == null)
                 storageSize.incrementAndGet();
 
             if (indexingEnabled) {
+                if (true)
+                    throw new IgniteException("Error");
+
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 assert qryMgr.enabled();
@@ -856,14 +885,26 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             if (old != null) {
                 assert old.link() != 0 : old;
 
-                if (pendingEntries != null && old.expireTime() != 0)
+                if (pendingEntries != null && old.expireTime() != 0) {
+                    if (true)
+                        throw new IgniteException("Error");
+
                     pendingEntries.remove(new PendingRow(old.expireTime(), old.link()));
+                }
+
+                start = storeRmvStat.start();
 
                 rowStore.removeRow(old.link());
+
+                storeRmvStat.addTime(start);
             }
 
-            if (pendingEntries != null && expireTime != 0)
+            if (pendingEntries != null && expireTime != 0) {
+                if (true)
+                    throw new IgniteException("Error");
+
                 pendingEntries.put(new PendingRow(expireTime, dataRow.link()));
+            }
         }
 
         /** {@inheritDoc} */
@@ -901,7 +942,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public CacheDataRow find(KeyCacheObject key)
             throws IgniteCheckedException {
-            return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
+            long start = treeFindOneStat.start();
+
+            try {
+                return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
+            }
+            finally {
+                treeFindOneStat.addTime(start);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1006,13 +1054,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param hash Hash code.
          * @param link Link.
          */
-        DataRow(int hash, long link) {
+        DataRow(int hash, long link, boolean put) {
             super(hash, null, link);
 
             part = PageIdUtils.partId(link);
 
             // We can not init data row lazily because underlying buffer can be concurrently cleared.
-            initData(false);
+            if (!put)
+                initData(false);
         }
 
         /**
@@ -1100,12 +1149,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override protected DataRow getRow(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx)
+        @Override protected DataRow getRow(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx, boolean put)
             throws IgniteCheckedException {
             int hash = ((RowLinkIO)io).getHash(buf, idx);
             long link = ((RowLinkIO)io).getLink(buf, idx);
 
-            return rowStore.dataRow(hash, link);
+            return rowStore.dataRow(hash, link, put);
         }
 
         /**
@@ -1158,8 +1207,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param link Link.
          * @return Data row.
          */
-        private DataRow dataRow(int hash, long link) {
-            return new DataRow(hash, link);
+        private DataRow dataRow(int hash, long link, boolean put) {
+            return new DataRow(hash, link, put);
         }
     }
 
@@ -1406,7 +1455,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override protected PendingRow getRow(BPlusIO<PendingRow> io, ByteBuffer buf, int idx)
+        @Override protected PendingRow getRow(BPlusIO<PendingRow> io, ByteBuffer buf, int idx, boolean put)
             throws IgniteCheckedException {
             return io.getLookupRow(this, buf, idx);
         }

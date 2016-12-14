@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.DebugStatistic;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -135,6 +136,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @GridToStringExclude
     private boolean lock;
 
+    /** */
+    private DebugStatistic putStat;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -185,6 +189,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         internalProxy = new GridCacheProxyImpl<>(ctx, delegate, opCtx);
 
         this.lock = lock;
+
+        putStat = ctx.kernalContext().addStatistic(ctx.name() + "-put");
     }
 
     /**
@@ -1345,6 +1351,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
         try {
+            long start = putStat.start();
+
             GridCacheGateway<K, V> gate = this.gate;
 
             CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1373,6 +1381,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             }
             finally {
                 onLeave(gate, prev);
+
+                putStat.addTime(start);
             }
         }
         catch (IgniteCheckedException e) {

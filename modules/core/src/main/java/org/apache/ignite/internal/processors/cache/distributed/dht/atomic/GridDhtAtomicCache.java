@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.util.DebugStatistic;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -228,6 +229,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         };
     }
 
+    /** */
+    private DebugStatistic updateStat;
+
+    /** */
+    private DebugStatistic lockStat;
+
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws IgniteCheckedException {
@@ -290,6 +297,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         preldr = new GridDhtPreloader(ctx);
 
         preldr.start();
+
+        updateStat = ctx.kernalContext().addStatistic("update-" + cacheCfg.getName());
+        lockStat = ctx.kernalContext().addStatistic("lock-" + cacheCfg.getName());
 
         ctx.io().addHandler(
             ctx.cacheId(),
@@ -1689,6 +1699,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest req,
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
+        long start = updateStat.start();
+
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
 
@@ -1705,7 +1717,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
+            long lockStart = lockStat.start();
+
             List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());
+
+            lockStat.addTime(lockStart);
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -1875,6 +1891,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 throw (Error)e;
 
             return;
+        }
+        finally {
+            updateStat.addTime(start);
         }
 
         if (remap) {

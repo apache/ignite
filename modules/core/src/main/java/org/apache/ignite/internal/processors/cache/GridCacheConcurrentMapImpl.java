@@ -111,7 +111,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
         KeyCacheObject key, @Nullable final CacheObject val, final boolean create, final boolean touch) {
-
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;
@@ -127,7 +126,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             if (entry == null) {
                 if (create) {
                     if (created0 == null)
-                        created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        created0 = factory.create(ctx, topVer, key, 0, val);
 
                     cur = created = created0;
 
@@ -142,7 +141,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                     if (create) {
                         if (created0 == null)
-                            created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            created0 = factory.create(ctx, topVer, key, 0, val);
 
                         cur = created = created0;
 
@@ -162,46 +161,46 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         int sizeChange = 0;
 
         if (doomed != null) {
-            synchronized (doomed) {
-                if (!doomed.deleted())
-                    sizeChange--;
-            }
-
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
-                ctx.events().addEvent(doomed.partition(),
-                    doomed.key(),
-                    ctx.localNodeId(),
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_DESTROYED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
+//            synchronized (doomed) {
+//                if (!doomed.deleted())
+//                    sizeChange--;
+//            }
+//
+//            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+//                ctx.events().addEvent(doomed.partition(),
+//                    doomed.key(),
+//                    ctx.localNodeId(),
+//                    (IgniteUuid)null,
+//                    null,
+//                    EVT_CACHE_ENTRY_DESTROYED,
+//                    null,
+//                    false,
+//                    null,
+//                    false,
+//                    null,
+//                    null,
+//                    null,
+//                    true);
         }
 
         if (created != null) {
-            sizeChange++;
+            //sizeChange++;
 
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
-                ctx.events().addEvent(created.partition(),
-                    created.key(),
-                    ctx.localNodeId(),
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_CREATED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
+//            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
+//                ctx.events().addEvent(created.partition(),
+//                    created.key(),
+//                    ctx.localNodeId(),
+//                    (IgniteUuid)null,
+//                    null,
+//                    EVT_CACHE_ENTRY_CREATED,
+//                    null,
+//                    false,
+//                    null,
+//                    false,
+//                    null,
+//                    null,
+//                    null,
+//                    true);
 
             if (touch)
                 ctx.evicts().touch(
@@ -209,8 +208,8 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                     topVer);
         }
 
-        if (sizeChange != 0)
-            pubSize.addAndGet(sizeChange);
+//        if (sizeChange != 0)
+//            pubSize.addAndGet(sizeChange);
 
         return cur;
     }

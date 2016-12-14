@@ -1125,7 +1125,7 @@ public class DataPageIO extends PageIO {
      * @return New first entry offset.
      */
     private int compactDataEntries(ByteBuffer buf, int directCnt) {
-        assert checkCount(directCnt): directCnt;
+        assert checkCount(directCnt) : directCnt;
 
         int[] offs = new int[directCnt];
 

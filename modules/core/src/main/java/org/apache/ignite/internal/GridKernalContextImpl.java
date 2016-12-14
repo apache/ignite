@@ -80,6 +80,8 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.DebugStatistic;
+import org.apache.ignite.internal.util.DebugStatistics;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -353,6 +355,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private volatile boolean disconnected;
 
+    /** */
+    private DebugStatistics debugStatistics;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -429,6 +434,31 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/ignite.xml.");
         }
+
+        debugStatistics = new DebugStatistics();
+
+        final DebugStatistics stat0 = debugStatistics;
+
+        final IgniteLogger log0 = log(getClass());
+
+        Thread thread = new Thread() {
+            @Override public void run() {
+                try {
+                    while (true) {
+                        stat0.dump(log0);
+
+                        Thread.sleep(5000);
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        thread.setDaemon(true);
+
+        thread.start();
     }
 
     /** {@inheritDoc} */
@@ -1011,6 +1041,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     void disconnected(boolean disconnected) {
         this.disconnected = disconnected;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DebugStatistic addStatistic(String name) {
+        return debugStatistics.add(name);
     }
 
     /** {@inheritDoc} */

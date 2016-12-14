@@ -384,7 +384,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
     /** {@inheritDoc} */
     @Override protected void mapOnTopology() {
-        cache.topology().readLock();
+        //cache.topology().readLock();
 
         AffinityTopologyVersion topVer = null;
 
@@ -430,7 +430,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             }
         }
         finally {
-            cache.topology().readUnlock();
+            //cache.topology().readUnlock();
         }
 
         map(topVer);

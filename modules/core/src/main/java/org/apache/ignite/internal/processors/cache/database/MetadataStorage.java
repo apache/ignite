@@ -213,7 +213,7 @@ public class MetadataStorage implements MetaStore {
 
         /** {@inheritDoc} */
         @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final ByteBuffer buf,
-            final int idx) throws IgniteCheckedException {
+            final int idx, boolean put) throws IgniteCheckedException {
             return readRow(buf, ((IndexIO)io).getOffset(idx));
         }
     }

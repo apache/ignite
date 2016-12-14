@@ -319,7 +319,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 assert p.oldRow == null;
 
                 // Get old row in leaf page to reduce contention at upper level.
-                p.oldRow = getRow(io, buf, idx);
+                p.oldRow = getRow(io, buf, idx, true);
 
                 p.finish();
 
@@ -1181,7 +1181,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             if (i != 0)
                 b.append(',');
 
-            b.append(io.isLeaf() || canGetRowFromInner ? getRow(io, buf, i) : io.getLookupRow(this, buf, i));
+            b.append(io.isLeaf() || canGetRowFromInner ? getRow(io, buf, i, false) : io.getLookupRow(this, buf, i));
         }
 
         b.append(']');
@@ -2032,7 +2032,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             if (lvl != 0 && !canGetRowFromInner)
                 return false;
 
-            row = getRow(io, buf, idx);
+            row = getRow(io, buf, idx, false);
 
             return true;
         }
@@ -2779,7 +2779,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             assert !isRemoved(): "already removed";
 
             // Detach the row.
-            removed = getRow(io, buf, idx);
+            removed = getRow(io, buf, idx, false);
 
             doRemove(page, io, buf, cnt, idx);
 
@@ -3440,7 +3440,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Full detached data row.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract T getRow(BPlusIO<L> io, ByteBuffer buf, int idx) throws IgniteCheckedException;
+    protected abstract T getRow(BPlusIO<L> io, ByteBuffer buf, int idx, boolean put) throws IgniteCheckedException;
 
     /**
      * Forward cursor.
@@ -3584,7 +3584,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 rows = (T[])new Object[cnt];
 
             for (int i = 0; i < cnt; i++) {
-                T r = getRow(io, buf, startIdx + i);
+                T r = getRow(io, buf, startIdx + i, false);
 
                 rows = GridArrays.set(rows, i, r);
             }

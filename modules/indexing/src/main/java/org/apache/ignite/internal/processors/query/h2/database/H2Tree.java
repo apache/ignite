@@ -76,7 +76,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, ByteBuffer buf, int idx)
+    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, boolean put)
         throws IgniteCheckedException {
         return (GridH2Row)io.getLookupRow(this, buf, idx);
     }
