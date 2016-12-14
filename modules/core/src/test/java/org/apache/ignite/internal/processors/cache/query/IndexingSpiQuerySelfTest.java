@@ -41,7 +41,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -73,6 +72,29 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
+
+        IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
+
+        for (int i = 0; i < 10; i++)
+            cache.put(i, i);
+
+        QueryCursor<Cache.Entry<Integer, Integer>> cursor = cache.query(new SpiQuery<Integer, Integer>().setArgs(2, 5));
+
+        for (Cache.Entry<Integer, Integer> entry : cursor)
+            System.out.println(entry);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexingSpiWithDisabledQueryProcessor() throws Exception {
+        IgniteConfiguration cfg = configuration();
+
+        cfg.setIndexingSpi(new MyIndexingSpi());
+
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
