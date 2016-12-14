@@ -72,8 +72,8 @@ public class PreloadLogger implements Runnable {
                 printCacheStatistics(cache);
             }
             catch (Exception e) {
-                BenchmarkUtils.println(cfg, "Failed to print cache size [cache="
-                    + cache.getName() + ", msg=" + e.getMessage() + "].");
+                BenchmarkUtils.println(cfg, "Failed to print cache size [cache=" + cache.getName()
+                    + ", msg=" + e.getMessage() + "]");
             }
         }
     }
@@ -83,7 +83,7 @@ public class PreloadLogger implements Runnable {
      *
      * @param cache Ignite cache.
      */
-    public void printCacheStatistics(IgniteCache<Object, Object> cache) {
+    private void printCacheStatistics(IgniteCache<Object, Object> cache) {
         String cacheName = cache.getName();
 
         long cacheSize = cache.sizeLong();
@@ -103,8 +103,10 @@ public class PreloadLogger implements Runnable {
      */
     private void init(IgniteNode node) {
         int longestName = 0;
+
         for (String cacheName : node.ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = node.ignite().cache(cacheName);
+
             caches.add(cache);
 
             // Set up an initial values to the map.
@@ -119,7 +121,7 @@ public class PreloadLogger implements Runnable {
     }
 
     /**
-     * Setter.
+     * Set future.
      */
     public void setFuture(ScheduledFuture<?> fut) {
         this.fut = fut;
