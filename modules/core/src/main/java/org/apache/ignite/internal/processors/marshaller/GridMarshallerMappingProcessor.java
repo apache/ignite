@@ -105,19 +105,21 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingProposedMessage msg) {
-            if (!ctx.isStopping())
+            if (!ctx.isStopping()) {
                 if (!msg.inConflict() && !msg.duplicated()) {
                     MarshallerMappingItem item = msg.mappingItem();
                     String conflictingName = marshallerCtx.onMappingProposed(item);
 
-                    if (conflictingName != null)
+                    if (conflictingName != null) {
                         if (conflictingName.equals(item.className()))
                             msg.markDuplicated();
                         else {
                             msg.markInConflict();
                             msg.conflictingClassName(conflictingName);
                         }
+                    }
                 }
+            }
         }
     }
 
@@ -125,7 +127,6 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      *
      */
     private final class MappingAcceptedListener implements CustomEventListener<MappingAcceptedMessage> {
-
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingAcceptedMessage msg) {
             MarshallerMappingItem item = msg.getMappingItem();
@@ -200,6 +201,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                     marshallerCtx.onMissedMappingResolved(msg.marshallerMappingItem(), resolvedClsName);
 
                     GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.marshallerMappingItem());
+
                     if (fut != null)
                         fut.onDone(MappingExchangeResult.createSuccessfulResult(resolvedClsName));
                 }

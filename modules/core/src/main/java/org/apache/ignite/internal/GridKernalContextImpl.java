@@ -411,12 +411,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins
-    ) throws IgniteCheckedException {
+    ) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
 
-        this.grid = grid;
+        this.grid = grid;Gri
         this.cfg = cfg;
         this.gw = gw;
         this.utilityCachePool = utilityCachePool;
