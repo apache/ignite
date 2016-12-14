@@ -64,6 +64,11 @@ public enum HadoopJobProperty {
     JOB_SHARED_CLASSLOADER("ignite.job.shared.classloader"),
 
     /**
+     * Fully qualified name of partially-raw comparator which should be used on sorting phase.
+     */
+    JOB_PARTIAL_RAW_COMPARATOR("ignite.job.partial.raw.comparator"),
+
+    /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
      * By default is {@code 32 * 1024}.
@@ -110,13 +115,7 @@ public enum HadoopJobProperty {
      * <p>
      * Defaults to {@code 0}.
      */
-    SHUFFLE_JOB_THROTTLE("ignite.shuffle.job.throttle"),
-
-    /**
-     * Semi-raw comparator (if any).
-     */
-    SHUFFLE_SEMI_RAW_COMPARATOR("ignite.shuffle.semi.raw.comparator");
-
+    SHUFFLE_JOB_THROTTLE("ignite.shuffle.job.throttle");
 
     /** Property name. */
     private final String propName;

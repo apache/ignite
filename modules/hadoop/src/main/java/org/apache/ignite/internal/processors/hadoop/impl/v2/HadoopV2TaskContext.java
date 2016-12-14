@@ -433,7 +433,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public PartialOffheapRawComparatorEx<Object> partialRawSortComparator() {
-        Class cls = jobCtx.getJobConf().getClass(HadoopJobProperty.SHUFFLE_SEMI_RAW_COMPARATOR.propertyName(), null);
+        Class cls = jobCtx.getJobConf().getClass(HadoopJobProperty.JOB_PARTIAL_RAW_COMPARATOR.propertyName(), null);
 
         if (cls == null)
             return null;
