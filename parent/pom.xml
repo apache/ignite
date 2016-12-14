@@ -447,10 +447,6 @@
                                 <title>Flink integration</title>
                                 <packages>org.apache.ignite.sink.flink*</packages>
                             </group>
-                            <group>
-                                <title>Hadoop Accelerator</title>
-                                <packages>org.apache.ignite.hadoop*</packages>
-                            </group>
                         </groups>
                         <header>
                             <![CDATA[
