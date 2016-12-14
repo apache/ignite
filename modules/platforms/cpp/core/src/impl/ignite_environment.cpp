@@ -38,6 +38,8 @@ namespace ignite
         */
         enum CallbackOp
         {
+            CONTINUOUS_QUERY_LISTENER_APPLY = 18,
+            CONTINUOUS_QUERY_FILTER_RELEASE = 21,
             REALLOC = 36,
             ON_START = 49,
             ON_STOP = 50 
@@ -52,11 +54,36 @@ namespace ignite
          */
         long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
         {
-            if (type == ON_STOP)
-            {
-                SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-                delete ptr;
+            switch (type)
+            {
+                case ON_STOP:
+                {
+                    delete env;
+
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_LISTENER_APPLY:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->OnContinuousQueryListenerApply(mem);
+
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_FILTER_RELEASE:
+                {
+                    // No-op.
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
             }
 
             return 0;
@@ -75,55 +102,33 @@ namespace ignite
         long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2, 
             long long val3, void* arg)
         {
-            if (type == ON_START)
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            switch (type)
             {
-                SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+                case ON_START:
+                {
+                    env->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));
 
-                ptr->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));
-            }
-            else if (type == REALLOC)
-            {
-                SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+                    break;
+                }
 
-                SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
+                case REALLOC:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
 
-                mem.Get()->Reallocate(static_cast<int32_t>(val2));
+                    mem.Get()->Reallocate(static_cast<int32_t>(val2));
+
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
             }
 
             return 0;
-        }
-
-        /**
-         * Continuous query event listener callback.
-         *
-         * @param target Target environment.
-         * @param lsnrPtr Listener pointer.
-         * @param memPtr Memory pointer.
-         */
-        void IGNITE_CALL ContinuousQueryListenerApply(void* target, long long qryHandle, long long memPtr)
-        {
-            assert(qryHandle != -1);
-            assert(memPtr != 0);
-            assert(target != 0);
-
-            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
-
-            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
-
-            env->Get()->OnContinuousQueryListenerApply(qryHandle, mem);
-        }
-
-        /**
-         * Continuous query event listener callback.
-         *
-         * @param target Target environment.
-         * @param filterPtr Filter pointer.
-         */
-        void IGNITE_CALL ContinuousQueryFilterRelease(void* target, long long filterPtr)
-        {
-            assert(target != 0);
-
-            // No-op.
         }
 
         IgniteEnvironment::IgniteEnvironment() :
@@ -154,9 +159,6 @@ namespace ignite
 
             hnds.inLongOutLong = InLongOutLong;
             hnds.inLongLongLongObjectOutLong = InLongLongLongObjectOutLong;
-
-            hnds.contQryLsnrApply = ContinuousQueryListenerApply;
-            hnds.contQryFilterRelease = ContinuousQueryFilterRelease;
 
             hnds.error = 0;
 
@@ -262,14 +264,17 @@ namespace ignite
                 name = 0;
         }
 
-        void IgniteEnvironment::OnContinuousQueryListenerApply(int64_t qryHandle, SharedPointer<InteropMemory>& mem)
+        void IgniteEnvironment::OnContinuousQueryListenerApply(SharedPointer<InteropMemory>& mem)
         {
+            InteropInputStream stream(mem.Get());
+            BinaryReaderImpl reader(&stream);
+
+            int64_t qryHandle = reader.ReadInt64();
+
             ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(registry.Get(qryHandle).Get());
 
             if (contQry)
             {
-                InteropInputStream stream(mem.Get());
-                BinaryReaderImpl reader(&stream);
                 BinaryRawReader rawReader(&reader);
 
                 contQry->ReadAndProcessEvents(rawReader);

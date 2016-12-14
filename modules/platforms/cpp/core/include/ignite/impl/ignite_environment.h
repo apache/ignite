@@ -91,11 +91,9 @@ namespace ignite
             /**
              * Continuous query listener apply callback.
              *
-             * @param qryHandle Query handle.
              * @param mem Memory with data.
              */
-            void OnContinuousQueryListenerApply(int64_t qryHandle,
-                common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+            void OnContinuousQueryListenerApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Get name of Ignite instance.
