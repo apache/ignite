@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.hadoop.impl.io;
+package org.apache.ignite.internal.processors.hadoop.io;
 
 /**
  * Special version of raw comparator allowing direct access to the underlying memory.

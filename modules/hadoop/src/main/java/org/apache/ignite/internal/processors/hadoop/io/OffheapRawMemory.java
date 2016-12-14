@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.io;
+package org.apache.ignite.internal.processors.hadoop.io;
 
 import org.apache.ignite.hadoop.io.RawMemory;
 import org.apache.ignite.internal.util.GridUnsafe;

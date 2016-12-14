@@ -4,8 +4,8 @@ import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedBytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
-import org.apache.ignite.internal.processors.hadoop.impl.io.OffheapRawMemory;
-import org.apache.ignite.internal.processors.hadoop.impl.io.PartialOffheapRawComparatorEx;
+import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
+import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
