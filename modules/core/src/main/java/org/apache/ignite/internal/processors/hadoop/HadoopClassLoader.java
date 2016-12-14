@@ -101,6 +101,16 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
+     * Classloader name for job.
+     *
+     * @param jobId Job ID.
+     * @return Name.
+     */
+    public static String nameForJob(HadoopJobId jobId) {
+        return "hadoop-job-" + jobId;
+    }
+
+    /**
      * Gets name for the task class loader. Task class loader
      * @param info The task info.
      * @param prefix Get only prefix (without task type and number)
