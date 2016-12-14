@@ -410,23 +410,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets public cache name substituting null name by {@code 'default'}.
-     *
-     * @return Public cache name substituting null name by {@code 'default'}.
-     */
-    public static String namexx(@Nullable String name) {
-        return name == null ? "default" : name;
-    }
-
-    /**
-     * @return Partition to state transformer.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static IgniteClosure<GridDhtLocalPartition, GridDhtPartitionState> part2state() {
-        return PART2STATE;
-    }
-
-    /**
      * Gets all nodes on which cache with the same name is started.
      *
      * @param ctx Cache context.
@@ -459,18 +442,6 @@ public class GridCacheUtils {
      */
     public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
         return ctx.discovery().remoteCacheNodes(topVer);
-    }
-
-    /**
-     * Gets alive remote nodes with at least one cache configured.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
-     */
-    public static Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final GridCacheSharedContext ctx,
-        AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveRemoteServerNodesWithCaches(topOrder);
     }
 
     /**
@@ -641,44 +612,6 @@ public class GridCacheUtils {
     @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<IgniteTxEntry> writes() {
         return WRITE_FILTER;
-    }
-
-    /**
-     * Gets type filter for projections.
-     *
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Type filter.
-     */
-    public static <K, V> IgniteBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
-        return new P2<K, V>() {
-            @Override public boolean apply(K k, V v) {
-                return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
-            }
-
-            @Override public String toString() {
-                return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
-            }
-        };
-    }
-
-    /**
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @return Type filter.
-     */
-    public static CacheEntryPredicate typeFilter0(final Class<?> keyType, final Class<?> valType) {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                Object val = CU.value(peekVisibleValue(e), e.context(), false);
-
-                return val == null ||
-                    valType.isAssignableFrom(val.getClass()) &&
-                    keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
-            }
-        });
     }
 
     /**
