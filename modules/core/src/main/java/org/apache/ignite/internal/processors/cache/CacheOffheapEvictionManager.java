@@ -29,10 +29,10 @@ import org.jetbrains.annotations.Nullable;
  * TODO GG-11140.
  *
  * Temporary implementation, ignores configured EvictionPolicy, evictions to be reconsidered as
- * part of GG-1140.
+ * part of GG-11140.
  *
  */
-public class CacheOfheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
+public class CacheOffheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
     /** {@inheritDoc} */
     @Override public void touch(IgniteTxEntry txEntry, boolean loc) {
         touch(txEntry.cached(), null);
