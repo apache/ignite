@@ -101,7 +101,7 @@ namespace ignite
             ptr(other.ptr),
             offset(other.offset)
         {
-            T2* p0 = reinterpret_cast<T2*>(80000);
+            T2* p0 = reinterpret_cast<T2*>(common::POINTER_CAST_MAGIC_NUMBER);
             T* p1 = static_cast<T*>(p0);
 
             ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
@@ -135,7 +135,7 @@ namespace ignite
             ptr = other.ptr;
             offset = other.offset;
 
-            T2* p0 = reinterpret_cast<T2*>(80000);
+            T2* p0 = reinterpret_cast<T2*>(common::POINTER_CAST_MAGIC_NUMBER);
             T* p1 = static_cast<T*>(p0);
 
             ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
@@ -246,7 +246,7 @@ namespace ignite
             ptr(other.ptr),
             offset(other.offset)
         {
-            T2* p0 = reinterpret_cast<T2*>(80000);
+            T2* p0 = reinterpret_cast<T2*>(common::POINTER_CAST_MAGIC_NUMBER);
             T* p1 = static_cast<T*>(p0);
 
             ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
@@ -279,7 +279,7 @@ namespace ignite
             ptr = other.ptr;
             offset = other.offset;
 
-            T2* p0 = reinterpret_cast<T2*>(80000);
+            T2* p0 = reinterpret_cast<T2*>(common::POINTER_CAST_MAGIC_NUMBER);
             T* p1 = static_cast<T*>(p0);
 
             ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
@@ -311,7 +311,7 @@ namespace ignite
             cr.ptr = ptr;
             cr.offset = offset;
 
-            T2* p0 = reinterpret_cast<T2*>(80000);
+            T2* p0 = reinterpret_cast<T2*>(common::POINTER_CAST_MAGIC_NUMBER);
             const T* p1 = static_cast<T*>(p0);
 
             ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
@@ -367,7 +367,7 @@ namespace ignite
     };
 
     /**
-     * Used to pass smart pointers to Ignite API.
+     * Make ignite::Reference instance out of smart pointer.
      *
      * Template type 'T' should be a smart pointer and provide pointer semantics:
      * - There should be defined type 'T::element_type', showing underlying type.
@@ -393,7 +393,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass smart pointers to Ignite API.
+     * Make ignite::ConstReference instance out of smart pointer.
      *
      * Template type 'T' should be a smart pointer and provide pointer semantics:
      * - There should be defined type 'T::element_type', showing underlying type.
@@ -419,7 +419,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object copy to Ignite API.
+     * Copy object and wrap it to make ignite::Reference instance.
      *
      * Template type 'T' should be copy-constructible.
      *
@@ -436,7 +436,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object copy to Ignite API.
+     * Copy object and wrap it to make ignite::ConstReference instance.
      *
      * Template type 'T' should be copy-constructible.
      *
@@ -453,7 +453,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object pointer to Ignite API.
+     * Make ignite::Reference instance out of pointer and pass its ownership.
      * Passed object deleted by Ignite when no longer needed.
      *
      * There are no requirements for the template type T.
@@ -471,7 +471,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object pointer to Ignite API.
+     * Make ignite::ConstReference instance out of pointer and pass its ownership.
      * Passed object deleted by Ignite when no longer needed.
      *
      * There are no requirements for the template type T.
@@ -489,7 +489,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object reference to Ignite API.
+     * Make ignite::Reference instance out of reference.
      * Ignite do not manage passed object and does not affect its lifetime.
      *
      * There are no requirements for the template type T.
@@ -507,7 +507,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object reference to Ignite API.
+     * Make ignite::Reference instance out of pointer.
      * Ignite do not manage passed object and does not affect its lifetime.
      *
      * There are no requirements for the template type T.
@@ -525,7 +525,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object reference to Ignite API.
+     * Make ignite::ConstReference instance out of constant reference.
      * Ignite do not manage passed object and does not affect its lifetime.
      *
      * There are no requirements for the template type T.
@@ -543,7 +543,7 @@ namespace ignite
     }
 
     /**
-     * Used to pass object reference to Ignite API.
+     * Make ignite::ConstReference instance out of constant pointer.
      * Ignite do not manage passed object and does not affect its lifetime.
      *
      * There are no requirements for the template type T.

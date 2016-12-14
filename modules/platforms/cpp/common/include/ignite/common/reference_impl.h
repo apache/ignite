@@ -31,6 +31,9 @@ namespace ignite
 {
     namespace common
     {
+        // Any number is good as long as it is not null.
+        enum { POINTER_CAST_MAGIC_NUMBER = 80000 };
+
         /**
          * Interface for constant Reference implementation class template.
          */
@@ -68,13 +71,6 @@ namespace ignite
             }
 
             /**
-             * Get the constant pointer.
-             *
-             * @return Constant pointer to underlying value.
-             */
-            virtual const void* Get() const = 0;
-
-            /**
              * Get the pointer.
              *
              * @return Pointer to underlying value.
@@ -110,12 +106,12 @@ namespace ignite
                 // No-op.
             }
 
-            const void* Get() const
+            virtual const void* Get() const
             {
                 return reinterpret_cast<const void*>(&(*ptr));
             }
 
-            void* Get()
+            virtual void* Get()
             {
                 return reinterpret_cast<void*>(&(*ptr));
             }
@@ -172,12 +168,12 @@ namespace ignite
                 // No-op.
             }
 
-            const void* Get() const
+            virtual const void* Get() const
             {
                 return reinterpret_cast<const void*>(ptr);
             }
 
-            void* Get()
+            virtual void* Get()
             {
                 return reinterpret_cast<void*>(ptr);
             }
@@ -222,12 +218,12 @@ namespace ignite
                 // No-op.
             }
 
-            const void* Get() const
+            virtual const void* Get() const
             {
                 return reinterpret_cast<const void*>(ptr);
             }
 
-            void* Get()
+            virtual void* Get()
             {
                 return reinterpret_cast<void*>(ptr);
             }
@@ -272,7 +268,7 @@ namespace ignite
                 // No-op.
             }
 
-            const void* Get() const
+            virtual const void* Get() const
             {
                 return reinterpret_cast<const void*>(ptr);
             }

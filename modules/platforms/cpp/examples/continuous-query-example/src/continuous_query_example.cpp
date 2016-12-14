@@ -69,9 +69,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
-
     cfg.springCfgPath = "platforms/cpp/examples/continuous-query-example/config/continuous-query-example.xml";
 
     try
@@ -84,7 +81,7 @@ int main()
         std::cout << std::endl;
 
         // Get cache instance.
-        Cache<int32_t, std::string> cache = ignite.GetCache<int32_t, std::string>(CACHE_NAME);
+        Cache<int32_t, std::string> cache = ignite.GetOrCreateCache<int32_t, std::string>(CACHE_NAME);
 
         cache.Clear();
 
