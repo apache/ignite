@@ -62,6 +62,14 @@ public class OperationStatistic {
         endTime = System.nanoTime();
     }
 
+    public final void startOp(Enum op) {
+        startOp(op.ordinal());
+    }
+
+    public final void endOp(Enum op) {
+        endOp(op.ordinal());
+    }
+
     public final void startOp(int op) {
         assert time[op] == -1L : time[op];
 

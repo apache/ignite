@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.CacheStatistics;
+import org.apache.ignite.internal.util.PutStatistic;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
@@ -1127,6 +1129,8 @@ public class DataPageIO extends PageIO {
     private int compactDataEntries(ByteBuffer buf, int directCnt) {
         assert checkCount(directCnt) : directCnt;
 
+        CacheStatistics.opStart(PutStatistic.Ops.DATA_ADD1);
+
         int[] offs = new int[directCnt];
 
         for (int i = 0; i < directCnt; i++) {
@@ -1152,17 +1156,51 @@ public class DataPageIO extends PageIO {
             if (delta != 0) { // Move right.
                 assert delta > 0: delta;
 
-                moveBytes(buf, off, entrySize, delta);
+                int cnt = 1;
+                int mvSize = entrySize;
 
-                int itemId = offs[i] & 0xFF;
+                for (int j = i - 1; j >= 0; j++) {
+                    int off0 = offs[j] >>> 8;
+                    int entrySize0 = getPageEntrySize(buf, off0, SHOW_PAYLOAD_LEN | SHOW_LINK);
+                    int o = off0 + entrySize0;
 
-                off += delta;
+                    if (o != off)
+                        break;
 
-                setItem(buf, itemId, directItemFromOffset(off));
+                    mvSize += entrySize0;
+                    off = off0;
+
+                    cnt++;
+                }
+
+                if (cnt > 1) {
+                    moveBytes(buf, off, mvSize, delta);
+
+                    for (int j = 0; j < cnt; j++) {
+                        int itemId = offs[i + j] & 0xFF;
+
+                        off += delta;
+
+                        setItem(buf, itemId, directItemFromOffset(off));
+                    }
+
+                    i += cnt;
+                }
+                else {
+                    moveBytes(buf, off, entrySize, delta);
+
+                    int itemId = offs[i] & 0xFF;
+
+                    off += delta;
+
+                    setItem(buf, itemId, directItemFromOffset(off));
+                }
             }
 
             prevOff = off;
         }
+
+        CacheStatistics.opEnd(PutStatistic.Ops.DATA_ADD1);
 
         return prevOff;
     }

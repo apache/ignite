@@ -22,7 +22,7 @@ package org.apache.ignite.internal.util;
  */
 public class CacheStatistics {
     /** */
-    private final ThreadLocal<PutStatistic> putStat = new ThreadLocal<>();
+    private static final ThreadLocal<PutStatistic> putStat = new ThreadLocal<>();
 
     private final InternalStatistics stats;
 
@@ -49,14 +49,14 @@ public class CacheStatistics {
         }
     }
 
-    public final void opStart(Enum op) {
+    public static final void opStart(Enum op) {
         PutStatistic stat = putStat.get();
 
         if (stat != null)
             stat.startOp(op.ordinal());
     }
 
-    public final void opEnd(Enum op) {
+    public static final void opEnd(Enum op) {
         PutStatistic stat = putStat.get();
 
         if (stat != null)

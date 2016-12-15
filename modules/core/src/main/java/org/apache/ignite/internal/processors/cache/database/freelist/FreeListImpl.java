@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.util.CacheStatistics;
+import org.apache.ignite.internal.util.PutStatistic;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -81,17 +83,25 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 assert oldFreeSpace > 0 : oldFreeSpace;
 
+                CacheStatistics.opStart(PutStatistic.Ops.DATA_ADD);
+
                 // If the full row does not fit into this page write only a fragment.
                 written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, buf, io, row, rowSize):
                     addRowFragment(page, buf, io, row, written, rowSize);
+
+                CacheStatistics.opEnd(PutStatistic.Ops.DATA_ADD);
 
                 // Reread free space after update.
                 int newFreeSpace = io.getFreeSpace(buf);
 
                 if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                    CacheStatistics.opStart(PutStatistic.Ops.FREE_LIST_PUT);
+
                     int bucket = bucket(newFreeSpace, false);
 
                     put(null, page, buf, bucket);
+
+                    CacheStatistics.opEnd(PutStatistic.Ops.FREE_LIST_PUT);
                 }
 
                 // Avoid boxing with garbage generation for usual case.
@@ -155,6 +165,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 int written,
                 int rowSize
             ) throws IgniteCheckedException {
+                if (true)
+                    throw new IgniteCheckedException("Error");
+
                 // Read last link before the fragment write, because it will be updated there.
                 long lastLink = row.link();
 
@@ -304,6 +317,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int written = 0;
 
         do {
+            CacheStatistics.opStart(PutStatistic.Ops.FREE_LIST_FIND);
+
             int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
             int bucket = bucket(freeSpace, false);
@@ -321,6 +336,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     break;
                 }
             }
+
+            CacheStatistics.opEnd(PutStatistic.Ops.FREE_LIST_FIND);
 
             try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
@@ -350,6 +367,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
 
         while (nextLink != 0L) {
+            if (true)
+                throw new IgniteCheckedException("Error");
+
             itemId = PageIdUtils.itemId(nextLink);
             pageId = PageIdUtils.pageId(nextLink);
 

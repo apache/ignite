@@ -22,6 +22,7 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -100,7 +101,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         this.ctx = ctx;
         this.factory = factory;
 
-        map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
+        map = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */

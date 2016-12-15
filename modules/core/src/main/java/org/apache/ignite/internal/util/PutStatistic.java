@@ -56,6 +56,25 @@ public class PutStatistic extends OperationStatistic {
         STORE_RMV,
 
         /** */
-        TREE_PUT;
+        TREE_PUT,
+
+        /** */
+        FREE_LIST_FIND,
+
+        /** */
+        FREE_LIST_PUT,
+
+        /** */
+        DATA_ADD,
+
+        /** */
+        DATA_ADD1,
+
+        /** */
+        DATA_ADD2,
+
+        /** */
+        DATA_ADD3
+        ;
     }
 }
