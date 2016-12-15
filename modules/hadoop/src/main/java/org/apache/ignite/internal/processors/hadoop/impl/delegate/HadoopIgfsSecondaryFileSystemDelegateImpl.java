@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -109,12 +110,18 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
         final FileSystem fileSys = fileSystemForUser();
 
+        Path hadoopPath = convert(path);
+
+
         try {
+            if (!fileSys.exists(hadoopPath))
+                return null;
+
             if (props0.userName() != null || props0.groupName() != null)
-                fileSys.setOwner(convert(path), props0.userName(), props0.groupName());
+                fileSys.setOwner(hadoopPath, props0.userName(), props0.groupName());
 
             if (props0.permission() != null)
-                fileSys.setPermission(convert(path), props0.permission());
+                fileSys.setPermission(hadoopPath, props0.permission());
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to update file properties [path=" + path + "]");
@@ -271,7 +278,22 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         try {
-            return fileSystemForUser().append(convert(path), bufSize);
+            Path hadoopPath = convert(path);
+
+            FileSystem fs = fileSystemForUser();
+
+            if (create && !fs.exists(hadoopPath)) {
+                try {
+                    return fs.create(hadoopPath, false, bufSize);
+                } catch (IOException e) {
+                    if (fs.exists(hadoopPath))
+                        return fs.append(convert(path), bufSize);
+                    else
+                        throw e;
+                }
+            }
+            else
+                return fs.append(convert(path), bufSize);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ", bufSize=" + bufSize + "]");
@@ -376,100 +398,27 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
-        long maxLen) throws IgniteException {
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len)
+        throws IgniteException {
         try {
             BlockLocation[] hadoopBlocks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
 
-            IgfsBlockLocation[] blksRaw = new IgfsBlockLocation[hadoopBlocks.length];
+            List<IgfsBlockLocation> blks = new ArrayList<>(hadoopBlocks.length);
 
             for (int i = 0; i < hadoopBlocks.length; ++i)
-                blksRaw[i] = convertBlockLocation(hadoopBlocks[i]);
+                blks.add(convertBlockLocation(hadoopBlocks[i]));
 
-            // Because there is not guarantee that hadoop returns sorted array of block
-            Arrays.sort(blksRaw, new Comparator<IgfsBlockLocation>() {
-                @Override public int compare(IgfsBlockLocation o1, IgfsBlockLocation o2) {
-                    return Long.compare(o1.start(), o2.start());
-                }
-            });
-
-            return resliceBlocks(blksRaw, start, len, maxLen);
+            return blks;
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
         }
     }
 
-    /**
-     * @param blks Blocks array.
-     * @param start Position in the file to start affinity resolution from.
-     * @param len Size of data in the file to resolve affinity for.
-     * @param maxLen Maximum length of a single returned block location length.
-     * @return Blocks collection sliced by maxLen
-     */
-    static Collection<IgfsBlockLocation> resliceBlocks(IgfsBlockLocation[] blks, long start, long len,
-        long maxLen) {
-        assert blks[0].start() == start : "Check bounds:"
-            + "[firstBlock.start()=" + blks[0].start() + ", start=" + start + ']';
-
-        assert blks[blks.length - 1].start() + blks[blks.length - 1].length() == start + len
-            : "Check bounds: "
-            + "lastBlock.start()=" + blks[blks.length - 1].start() + ", lastBlock.length=" +
-            blks[blks.length - 1].length() + ", start=" + start + ", len=" + len + ']';
-
-        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
-
-        Collection<String> lastHosts = null;
-
-        long lastBlockIdx = -1;
-
-        long end = start + len;
-
-        IgfsBlockLocationImpl lastBlock = null;
-
-        int blockIdx = 0;
-
-        for (long offset = start; offset < end; ) {
-            IgfsBlockLocation blk = blks[blockIdx];
-
-            // Each step is min of maxLen and end of block.
-            long lenStep = Math.min(
-                maxLen - (lastBlock != null ? lastBlock.length() : 0),
-                blk.start() + blk.length() - offset);
-
-            if (blockIdx != lastBlockIdx) {
-                Collection<String> hosts = blk.hosts();
-
-                if (!hosts.equals(lastHosts) && lastHosts!= null && lastBlock != null) {
-                    blocks.add(lastBlock);
-
-                    lastBlock = null;
-                }
-
-                lastHosts = hosts;
-
-                lastBlockIdx = blockIdx;
-            }
-
-            if(lastBlock == null)
-                lastBlock = new IgfsBlockLocationImpl(offset, lenStep, blk);
-            else
-                lastBlock.increaseLength(lenStep);
-
-            if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
-                blocks.add(lastBlock);
-
-                lastBlock = null;
-            }
-
-            offset += lenStep;
-
-            if (offset == blk.start() + blk.length())
-                ++blockIdx;
-        }
-
-        return blocks;
-
+    /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen) throws IgniteException {
+        return affinity(path, start, len);
     }
 
     /** {@inheritDoc} */

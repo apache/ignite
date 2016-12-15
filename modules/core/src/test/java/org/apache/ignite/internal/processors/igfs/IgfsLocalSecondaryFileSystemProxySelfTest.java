@@ -236,7 +236,6 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         }
 
         Collection<IgfsBlockLocation> blocks;
-        int blockSize = igfs.configuration().getBlockSize();
 
         long len = igfs.info(filePath).length();
         int start = 0;

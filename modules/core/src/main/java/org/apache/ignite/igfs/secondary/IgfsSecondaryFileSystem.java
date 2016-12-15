@@ -213,6 +213,20 @@ public interface IgfsSecondaryFileSystem {
      * @param path File path to get affinity for.
      * @param start Position in the file to start affinity resolution from.
      * @param len Size of data in the file to resolve affinity for.
+     * @return Affinity block locations.
+     * @throws IgniteException In case of error.
+     * @throws IgfsPathNotFoundException If path doesn't exist.
+     */
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteException;
+
+    /**
+     * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
+     * particular block location length is greater than this value, block locations will be split into smaller
+     * chunks.
+     *
+     * @param path File path to get affinity for.
+     * @param start Position in the file to start affinity resolution from.
+     * @param len Size of data in the file to resolve affinity for.
      * @param maxLen Maximum length of a single returned block location length.
      * @return Affinity block locations.
      * @throws IgniteException In case of error.
