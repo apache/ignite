@@ -83,25 +83,25 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 assert oldFreeSpace > 0 : oldFreeSpace;
 
-                CacheStatistics.opStart(PutStatistic.Ops.DATA_ADD);
+                CacheStatistics.opStart(PutStatistic.Ops.STORE_ADD);
 
                 // If the full row does not fit into this page write only a fragment.
                 written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, buf, io, row, rowSize):
                     addRowFragment(page, buf, io, row, written, rowSize);
 
-                CacheStatistics.opEnd(PutStatistic.Ops.DATA_ADD);
+                CacheStatistics.opEnd(PutStatistic.Ops.STORE_ADD);
 
                 // Reread free space after update.
                 int newFreeSpace = io.getFreeSpace(buf);
 
                 if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
-                    CacheStatistics.opStart(PutStatistic.Ops.FREE_LIST_PUT);
+                    CacheStatistics.opStart(PutStatistic.Ops.STORE_ADD_FREE_LIST_PUT);
 
                     int bucket = bucket(newFreeSpace, false);
 
                     put(null, page, buf, bucket);
 
-                    CacheStatistics.opEnd(PutStatistic.Ops.FREE_LIST_PUT);
+                    CacheStatistics.opEnd(PutStatistic.Ops.STORE_ADD_FREE_LIST_PUT);
                 }
 
                 // Avoid boxing with garbage generation for usual case.
@@ -222,9 +222,13 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     int oldBucket = bucket(oldFreeSpace, false);
 
                     if (oldBucket != newBucket) {
+                        CacheStatistics.opStart(PutStatistic.Ops.STORE_RMV_FREE_LIST_PUT);
+
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
                         if (removeDataPage(page, buf, io, oldBucket))
                             put(null, page, buf, newBucket);
+
+                        CacheStatistics.opEnd(PutStatistic.Ops.STORE_RMV_FREE_LIST_PUT);
                     }
                 }
                 else

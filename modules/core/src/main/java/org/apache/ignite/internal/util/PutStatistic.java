@@ -62,19 +62,16 @@ public class PutStatistic extends OperationStatistic {
         FREE_LIST_FIND,
 
         /** */
-        FREE_LIST_PUT,
+        STORE_ADD_FREE_LIST_PUT,
+
+        /** */
+        STORE_RMV_FREE_LIST_PUT,
 
         /** */
         DATA_ADD,
 
         /** */
-        DATA_ADD1,
-
-        /** */
-        DATA_ADD2,
-
-        /** */
-        DATA_ADD3
+        IDX_UPDATE,
         ;
     }
 }

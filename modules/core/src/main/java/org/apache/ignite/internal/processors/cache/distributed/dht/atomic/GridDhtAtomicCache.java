@@ -1692,8 +1692,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest req,
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
-        ctx.stats().opStart(UPDATE_INTERNAL);
-
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
 
@@ -1710,11 +1708,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
-            ctx.stats().opStart(LOCK);
-
             List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());
-
-            ctx.stats().opEnd(LOCK);
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -1845,12 +1839,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 e.printStackTrace();
             }
             finally {
-                ctx.stats().opStart(UNLOCK);
-
                 if (locked != null)
                     unlockEntries(locked, req.topologyVersion());
-
-                ctx.stats().opEnd(UNLOCK);
 
                 // Enqueue if necessary after locks release.
                 if (deleted != null) {
@@ -1890,7 +1880,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
         finally {
-            ctx.stats().opEnd(UPDATE_INTERNAL);
+            //ctx.stats().opEnd(UPDATE_INTERNAL);
         }
 
         if (remap) {

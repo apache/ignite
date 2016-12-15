@@ -445,9 +445,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                 @Override public void run() {
                     try {
                         while (true) {
-                            stat0.dump(log0);
+                            Thread.sleep(10000);
 
-                            Thread.sleep(5000);
+                            stat0.dump(log0);
                         }
                     }
                     catch (Exception e) {

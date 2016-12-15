@@ -1129,8 +1129,6 @@ public class DataPageIO extends PageIO {
     private int compactDataEntries(ByteBuffer buf, int directCnt) {
         assert checkCount(directCnt) : directCnt;
 
-        CacheStatistics.opStart(PutStatistic.Ops.DATA_ADD1);
-
         int[] offs = new int[directCnt];
 
         for (int i = 0; i < directCnt; i++) {
@@ -1207,8 +1205,6 @@ public class DataPageIO extends PageIO {
 
             prevOff = off;
         }
-
-        CacheStatistics.opEnd(PutStatistic.Ops.DATA_ADD1);
 
         return prevOff;
     }

@@ -50,9 +50,11 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.CacheStatistics;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.PutStatistic;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -67,6 +69,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.util.PutStatistic.Ops.FIND_ONE;
+import static org.apache.ignite.internal.util.PutStatistic.Ops.IDX_UPDATE;
 import static org.apache.ignite.internal.util.PutStatistic.Ops.STORE_ADD;
 import static org.apache.ignite.internal.util.PutStatistic.Ops.STORE_RMV;
 import static org.apache.ignite.internal.util.PutStatistic.Ops.TREE_PUT;
@@ -96,6 +99,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
+
+    private ConcurrentMap<KeyCacheObject, CacheDataRow> data = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -837,11 +842,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             key.valueBytes(cctx.cacheObjectContext());
             val.valueBytes(cctx.cacheObjectContext());
 
-            cctx.stats().opStart(STORE_ADD);
+            if (true) {
+                cctx.stats().opStart(TREE_PUT);
+
+                data.put(key, dataRow);
+
+                cctx.stats().opEnd(TREE_PUT);
+
+                return;
+            }
 
             rowStore.addRow(dataRow);
-
-            cctx.stats().opEnd(STORE_ADD);
 
             assert dataRow.link() != 0 : dataRow;
 
@@ -855,6 +866,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 storageSize.incrementAndGet();
 
             if (indexingEnabled) {
+                cctx.stats().opStart(IDX_UPDATE);
+
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 assert qryMgr.enabled();
@@ -863,19 +876,26 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
                 else
                     qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
+
+                cctx.stats().opEnd(IDX_UPDATE);
             }
 
             if (old != null) {
                 assert old.link() != 0 : old;
 
-                if (pendingEntries != null && old.expireTime() != 0)
-                    pendingEntries.remove(new PendingRow(old.expireTime(), old.link()));
+                if (pendingEntries != null && old.expireTime() != 0) {
+                    if (true)
+                        throw new IgniteCheckedException("Error");
 
-                cctx.stats().opStart(STORE_RMV);
+                    pendingEntries.remove(new PendingRow(old.expireTime(), old.link()));
+                }
+
+                CacheStatistics.opStart(PutStatistic.Ops.STORE_RMV);
 
                 rowStore.removeRow(old.link());
 
-                cctx.stats().opEnd(STORE_RMV);
+                CacheStatistics.opEnd(PutStatistic.Ops.STORE_RMV);
+
             }
 
             if (pendingEntries != null && expireTime != 0)
@@ -920,7 +940,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             cctx.stats().opStart(FIND_ONE);
 
             try {
-                return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
+                return data.get(key);
+                //return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
             }
             finally {
                 cctx.stats().opEnd(FIND_ONE);
