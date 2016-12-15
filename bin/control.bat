@@ -103,7 +103,6 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in the binary release.
 set CP=%IGNITE_LIBS%
 
 ::
@@ -151,9 +150,9 @@ if "%JMX_PORT%" == "" (
 ::
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[7]\." > nul
 if %ERRORLEVEL% equ 0 (
-    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
+    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
 ) else (
-    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m
+    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
 )
 
 ::
