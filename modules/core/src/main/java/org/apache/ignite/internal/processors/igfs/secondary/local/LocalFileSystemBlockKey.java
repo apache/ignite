@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.internal.processors.igfs.secondary.local;
 
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.igfs.IgfsBaseBlockKey;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * File's binary data block key.
  */
-public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Comparable<IgfsLocalSecondaryBlockKey> {
+public final class LocalFileSystemBlockKey implements IgfsBaseBlockKey, Comparable<LocalFileSystemBlockKey> {
     /** IGFS path. */
     private IgfsPath path;
 
@@ -38,7 +39,7 @@ public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Compa
      * @param path IGFS path.
      * @param blockId Block ID.
      */
-    public IgfsLocalSecondaryBlockKey(IgfsPath path, long blockId) {
+    public LocalFileSystemBlockKey(IgfsPath path, long blockId) {
         assert path != null;
         assert blockId >= 0;
 
@@ -62,7 +63,7 @@ public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Compa
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull IgfsLocalSecondaryBlockKey o) {
+    @Override public int compareTo(@NotNull LocalFileSystemBlockKey o) {
         int res = path.compareTo(o.path);
 
         if (res != 0)
@@ -87,16 +88,16 @@ public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Compa
         if (o == this)
             return true;
 
-        if (o == null || !(o instanceof IgfsLocalSecondaryBlockKey))
+        if (o == null || !(o instanceof LocalFileSystemBlockKey))
             return false;
 
-        IgfsLocalSecondaryBlockKey that = (IgfsLocalSecondaryBlockKey)o;
+        LocalFileSystemBlockKey that = (LocalFileSystemBlockKey)o;
 
         return blockId == that.blockId && path.equals(that.path);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsLocalSecondaryBlockKey.class, this);
+        return S.toString(LocalFileSystemBlockKey.class, this);
     }
 }

@@ -208,7 +208,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @return {@code True} if filesystem was injected.
      * @throws IgniteCheckedException If failed to inject.
      */
-    public boolean injectFilesystem(Object obj, IgniteFileSystem igfs) throws IgniteCheckedException {
+    public boolean injectFileSystem(Object obj, IgniteFileSystem igfs) throws IgniteCheckedException {
         assert obj != null;
 
         if (log.isDebugEnabled())

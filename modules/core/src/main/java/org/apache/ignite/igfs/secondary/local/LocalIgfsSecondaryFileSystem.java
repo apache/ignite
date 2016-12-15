@@ -35,13 +35,13 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsDataManager;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryBlockKey;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemUtils;
-import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -278,7 +278,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         try {
             FileInputStream in = new FileInputStream(fileForPath(path));
 
-            return new LocalIgfsSecondaryFileSystemPositionedReadable(in, bufSize);
+            return new LocalFileSystemPositionedReadable(in, bufSize);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to open file for read: " + path);
@@ -466,7 +466,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             lenStep = Math.min(lenStep, end - offset);
 
             // Create fake affinity key to map blocks of secondary filesystem to nodes.
-            IgfsLocalSecondaryBlockKey affKey = new IgfsLocalSecondaryBlockKey(path, blockIdx);
+            LocalFileSystemBlockKey affKey = new LocalFileSystemBlockKey(path, blockIdx);
 
             if (blockIdx != lastBlockIdx) {
                 Collection<ClusterNode> nodes = data.affinityNodes(affKey);

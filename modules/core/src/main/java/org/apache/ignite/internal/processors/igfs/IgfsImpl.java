@@ -183,7 +183,7 @@ public final class IgfsImpl implements IgfsEx {
         if (secondaryFs != null) {
             igfsCtx.kernalContext().resource().injectGeneric(secondaryFs);
 
-            igfsCtx.kernalContext().resource().injectFilesystem(secondaryFs, this);
+            igfsCtx.kernalContext().resource().injectFileSystem(secondaryFs, this);
         }
 
         if (secondaryFs instanceof LifecycleAware)
