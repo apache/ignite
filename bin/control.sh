@@ -17,7 +17,7 @@
 #
 
 #
-# Grid command line loader.
+# Grid cluster control.
 #
 
 #
@@ -53,7 +53,6 @@ fi
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
 CP="${IGNITE_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
@@ -86,9 +85,9 @@ fi
 #
 if [ -z "$JVM_OPTS" ] ; then
     if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+        JVM_OPTS="-Xms256m -Xmx1g"
     else
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+        JVM_OPTS="-Xms256m -Xmx1g"
     fi
 fi
 
