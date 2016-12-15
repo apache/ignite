@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientState
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheRestMetrics;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -131,8 +133,11 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Protocol handler. */
     private GridRestProtocolHandler hnd;
 
-    /** Handler for all memcache requests */
+    /** Handler for all memcache requests. */
     private GridTcpMemcachedNioListener memcachedLsnr;
+
+    /** Handler for all Redis requests. */
+    private GridRedisNioListener redisLsnr;
 
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
@@ -146,6 +151,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     public GridTcpRestNioListener(IgniteLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
         GridKernalContext ctx) {
         memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
+        redisLsnr = new GridRedisNioListener(log, hnd, ctx);
 
         this.log = log;
         this.proto = proto;
@@ -183,6 +189,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     @Override public void onMessage(final GridNioSession ses, final GridClientMessage msg) {
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
+        else if (msg instanceof GridRedisMessage)
+            redisLsnr.onMessage(ses, (GridRedisMessage)msg);
         else {
             if (msg instanceof GridClientPingPacket)
                 ses.send(msg);
@@ -315,7 +323,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq = restCacheReq;
         }
         else if (msg instanceof GridClientTaskRequest) {
-            GridClientTaskRequest req = (GridClientTaskRequest) msg;
+            GridClientTaskRequest req = (GridClientTaskRequest)msg;
 
             GridRestTaskRequest restTaskReq = new GridRestTaskRequest();
 
@@ -327,7 +335,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq = restTaskReq;
         }
         else if (msg instanceof GridClientTopologyRequest) {
-            GridClientTopologyRequest req = (GridClientTopologyRequest) msg;
+            GridClientTopologyRequest req = (GridClientTopologyRequest)msg;
 
             GridRestTopologyRequest restTopReq = new GridRestTopologyRequest();
 

@@ -33,14 +33,12 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
-
 /**
  * Metadata storage.
  */
 public class MetadataStorage implements MetaStore {
     /** Max index name length (bytes num) */
-    public static final int MAX_IDX_NAME_LEN = 64;
+    public static final int MAX_IDX_NAME_LEN = 768;
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;

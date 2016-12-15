@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -147,6 +148,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public <F> F field(String fieldName) throws BinaryObjectException {
         return null;
     }
@@ -253,7 +259,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         if (valBytes != null)
             return valBytes;
 
-        valBytes = ctx.marshaller().marshal(this);
+        valBytes = U.marshal(ctx.marshaller(), this);
 
         return valBytes;
     }

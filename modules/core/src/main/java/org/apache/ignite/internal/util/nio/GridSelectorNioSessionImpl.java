@@ -224,7 +224,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             if (outRecovery != null) {
                 if (!outRecovery.add(last)) {
-                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
+                    LT.warn(log, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
                         "[remoteAddr=" + remoteAddress() +
                         ", queueLimit=" + outRecovery.queueLimit() + ']');
 

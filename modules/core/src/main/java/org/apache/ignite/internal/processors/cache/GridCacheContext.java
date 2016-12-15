@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -1953,6 +1954,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if fast eviction is allowed.
+     */
+    public boolean allowFastEviction() {
+        return shared().database().persistenceEnabled() && !GridQueryProcessor.isEnabled(cacheCfg);
+    }
+
+    /**
      * @param part Partition.
      * @param affNodes Affinity nodes.
      * @param topVer Topology version.
@@ -1992,7 +2000,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            IgniteKernal grid = IgnitionEx.gridx(t.get1());
+            IgniteKernal grid = IgnitionEx.localIgnite();
 
             GridCacheAdapter<K, V> cache = grid.internalCache(t.get2());
 

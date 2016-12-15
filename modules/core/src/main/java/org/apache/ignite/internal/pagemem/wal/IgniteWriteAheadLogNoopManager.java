@@ -34,6 +34,11 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isFullSync() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }

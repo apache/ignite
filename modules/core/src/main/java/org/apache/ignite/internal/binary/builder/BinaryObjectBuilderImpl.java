@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -86,6 +87,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private int hashCode;
 
+    /** */
+    private boolean isHashCodeSet;
+
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -117,7 +121,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
         this(new BinaryBuilderReader(obj), obj.start());
-
+        isHashCodeSet = !obj.isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
         reader.registerObject(this);
     }
 
@@ -199,7 +203,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             Map<String, Integer> fieldsMeta = null;
 
-            if (reader != null) {
+            if (reader != null && BinaryUtils.hasSchema(flags)) {
                 BinarySchema schema = reader.schema();
 
                 Map<Integer, Object> assignedFldsById;
@@ -329,7 +333,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            writer.postWrite(true, registeredType, hashCode);
+            //noinspection NumberEquality
+            writer.postWrite(true, registeredType, hashCode, isHashCodeSet);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -408,8 +413,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("UnnecessaryBoxing")
     @Override public BinaryObjectBuilderImpl hashCode(int hashCode) {
         this.hashCode = hashCode;
+
+        isHashCodeSet = true;
 
         return this;
     }
@@ -515,7 +523,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
+            if (BinaryUtils.FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 

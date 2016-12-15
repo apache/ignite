@@ -458,7 +458,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     srv.sendPacket(req, addr, port);
                 }
                 catch (IgniteCheckedException e) {
-                    LT.warn(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
+                    LT.error(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
                         ", addr=" + addr + ", port=" + port + ']');
                 }
             }

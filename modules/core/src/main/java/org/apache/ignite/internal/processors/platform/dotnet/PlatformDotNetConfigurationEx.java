@@ -19,11 +19,16 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionCacheExtension;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -76,6 +81,16 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     /** {@inheritDoc} */
     @Override public Collection<String> warnings() {
         return warnings;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<PlatformCacheExtension> cacheExtensions() {
+        Collection<PlatformCacheExtension> exts = new ArrayList<>(2);
+
+        exts.add(new PlatformDotNetSessionCacheExtension());
+        exts.add(new PlatformDotNetEntityFrameworkCacheExtension());
+
+        return exts;
     }
 
     /** {@inheritDoc} */

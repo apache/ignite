@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
@@ -203,9 +202,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param initVal Initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+    public PlatformTarget atomicLong(String name, long initVal, boolean create);
 
     /**
      * Get or create AtomicSequence.
@@ -213,9 +211,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param initVal Initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
+    public PlatformTarget atomicSequence(String name, long initVal, boolean create);
 
     /**
      * Get or create AtomicReference.
@@ -223,9 +220,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException;
+    public PlatformTarget atomicReference(String name, long memPtr, boolean create);
 
     /**
      * Gets the configuration of the current Ignite instance.
@@ -275,4 +271,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @param errorInfo Error info.
      */
     public void loggerLog(int level, String message, String category, String errorInfo);
+
+    /**
+     * Gets the binary processor.
+     *
+     * @return Binary processor.
+     */
+    public PlatformTarget binaryProcessor();
 }

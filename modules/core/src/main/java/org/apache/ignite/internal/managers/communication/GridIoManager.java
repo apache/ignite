@@ -30,9 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -58,6 +54,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -74,7 +71,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
@@ -84,7 +80,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -138,35 +133,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Disconnect listeners. */
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
 
-    /** Map of {@link IoPool}-s injected by Ignite plugins. */
-    private final IoPool[] ioPools = new IoPool[128];
-
-    /** Public pool. */
-    private ExecutorService pubPool;
-
-    /** Internal P2P pool. */
-    private ExecutorService p2pPool;
-
-    /** Internal system pool. */
-    private ExecutorService sysPool;
-
-    /** Internal management pool. */
-    private ExecutorService mgmtPool;
-
-    /** Affinity assignment executor service. */
-    private ExecutorService affPool;
-
-    /** Utility cache pool. */
-    private ExecutorService utilityCachePool;
-
-    /** Marshaller cache pool. */
-    private ExecutorService marshCachePool;
-
-    /** IGFS pool. */
-    private ExecutorService igfsPool;
-
-    /** Index pool. */
-    private ExecutorService idxPool;
+    /** Pool processor. */
+    private final PoolProcessor pools;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -227,6 +195,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
+        pools = ctx.pools();
+
+        assert pools != null;
+
         locNodeId = ctx.localNodeId();
 
         discoDelay = ctx.config().getDiscoveryStartupDelay();
@@ -269,28 +241,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
-
-        pubPool = ctx.getExecutorService();
-        p2pPool = ctx.getPeerClassLoadingExecutorService();
-        sysPool = ctx.getSystemExecutorService();
-        mgmtPool = ctx.getManagementExecutorService();
-        utilityCachePool = ctx.utilityCachePool();
-        marshCachePool = ctx.marshallerCachePool();
-        igfsPool = ctx.getIgfsExecutorService();
-        affPool = new IgniteThreadPoolExecutor(
-            "aff",
-            ctx.gridName(),
-            1,
-            1,
-            0,
-            new LinkedBlockingQueue<Runnable>());
-
-        if (IgniteComponentType.INDEXING.inClassPath()) {
-            int cpus = Runtime.getRuntime().availableProcessors();
-
-            idxPool = new IgniteThreadPoolExecutor("idx", ctx.gridName(),
-                cpus, cpus * 2, 3000L, new LinkedBlockingQueue<Runnable>(1000));
-        }
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -359,8 +309,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
-
-        registerIoPoolExtensions();
 
         addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -469,39 +417,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         return map;
-    }
-
-    /**
-     * Processes IO messaging pool extensions.
-     * @throws IgniteCheckedException On error.
-     */
-    private void registerIoPoolExtensions() throws IgniteCheckedException {
-        // Process custom IO messaging pool extensions:
-        final IoPool[] executorExtensions = ctx.plugins().extensions(IoPool.class);
-
-        if (executorExtensions != null) {
-            // Store it into the map and check for duplicates:
-            for (IoPool ex : executorExtensions) {
-                final byte id = ex.id();
-
-                // 1. Check the pool id is non-negative:
-                if (id < 0)
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id is negative " +
-                        "[id=" + id + ']');
-
-                // 2. Check the pool id is in allowed range:
-                if (isReservedGridIoPolicy(id))
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id in in the " +
-                        "reserved range (0-31) [id=" + id + ']');
-
-                // 3. Check the pool for duplicates:
-                if (ioPools[id] != null)
-                    throw new IgniteCheckedException("Failed to register IO executor pool because its " +
-                        "Id as already used [id=" + id + ']');
-
-                ioPools[id] = ex;
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -678,10 +593,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (interrupted)
                 Thread.currentThread().interrupt();
 
-            U.shutdownNow(getClass(), affPool, log);
-
-            U.shutdownNow(getClass(), idxPool, log);
-
             GridEventStorageManager evtMgr = ctx.event();
 
             if (evtMgr != null && discoLsnr != null)
@@ -700,8 +611,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-
-        Arrays.fill(ioPools, null);
     }
 
     /**
@@ -739,7 +648,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 int topicOrd = msg.topicOrdinal();
 
                 msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    marsh.unmarshal(msg.topicBytes(), U.resolveClassLoader(ctx.config())));
+                    U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
             }
 
             if (!started) {
@@ -818,72 +727,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * Gets execution pool for policy.
-     *
-     * @param plc Policy.
-     * @return Execution pool.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Executor pool(byte plc) throws IgniteCheckedException {
-        switch (plc) {
-            case P2P_POOL:
-                return p2pPool;
-            case SYSTEM_POOL:
-                return sysPool;
-            case PUBLIC_POOL:
-                return pubPool;
-            case MANAGEMENT_POOL:
-                return mgmtPool;
-            case AFFINITY_POOL:
-                return affPool;
-
-            case UTILITY_CACHE_POOL:
-                assert utilityCachePool != null : "Utility cache pool is not configured.";
-
-                return utilityCachePool;
-
-            case MARSH_CACHE_POOL:
-                assert marshCachePool != null : "Marshaller cache pool is not configured.";
-
-                return marshCachePool;
-
-            case IGFS_POOL:
-                assert igfsPool != null : "IGFS pool is not configured.";
-
-                return igfsPool;
-
-            case IDX_POOL:
-                assert idxPool != null : "Indexing pool is not configured.";
-
-                return idxPool;
-
-            default: {
-                assert plc >= 0 : "Negative policy: " + plc;
-
-                if (isReservedGridIoPolicy(plc))
-                    throw new IgniteCheckedException("Failed to process message with policy of reserved" +
-                        " range (0-31), [policy=" + plc + ']');
-
-                IoPool pool = ioPools[plc];
-
-                if (pool == null)
-                    throw new IgniteCheckedException("Failed to process message because no pool is registered " +
-                        "for policy. [policy=" + plc + ']');
-
-                assert plc == pool.id();
-
-                Executor ex = pool.executor();
-
-                if (ex == null)
-                    throw new IgniteCheckedException("Failed to process message because corresponding executor " +
-                        "is null. [id=" + plc + ']');
-
-                return ex;
-            }
-        }
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param msg Message.
      * @param msgC Closure to call when message processing finished.
@@ -918,7 +761,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            p2pPool.execute(c);
+            pools.p2pPool().execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
@@ -968,7 +811,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         try {
-            pool(plc).execute(c);
+            pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
@@ -1304,7 +1147,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            pool(plc).execute(c);
+            pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process ordered message due to execution rejection. " +
@@ -1428,7 +1271,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             if (topicOrd < 0)
-                ioMsg.topicBytes(marsh.marshal(topic));
+                ioMsg.topicBytes(U.marshal(marsh, topic));
 
             try {
                 if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
@@ -1701,10 +1544,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         byte[] serTopic = null;
 
         if (!loc) {
-            serMsg = marsh.marshal(msg);
+            serMsg = U.marshal(marsh, msg);
 
             if (topic != null)
-                serTopic = marsh.marshal(topic);
+                serTopic = U.marshal(marsh, topic);
         }
 
         GridDeployment dep = null;
@@ -1944,7 +1787,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             try {
                 for (final GridCommunicationMessageSet msgSet : msgSets) {
-                    pool(msgSet.policy()).execute(
+                    pools.poolForPolicy(msgSet.policy()).execute(
                         new Runnable() {
                             @Override public void run() {
                                 unwindMessageSet(msgSet, lsnrs0);
@@ -2361,7 +2204,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Unmarshall message topic if needed.
                     if (msgTopic == null && msgTopicBytes != null) {
-                        msgTopic = marsh.unmarshal(msgTopicBytes,
+                        msgTopic = U.unmarshal(marsh, msgTopicBytes,
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
@@ -2371,7 +2214,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         return;
 
                     if (msgBody == null) {
-                        msgBody = marsh.unmarshal(ioMsg.bodyBytes(),
+                        msgBody = U.unmarshal(marsh, ioMsg.bodyBytes(),
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.body(msgBody); // Save body to avoid future unmarshallings.

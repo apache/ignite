@@ -251,6 +251,20 @@ namespace ignite
                                 SQLSMALLINT tableNameLen,
                                 SQLSMALLINT scope,
                                 SQLSMALLINT nullable);
+
+    SQLRETURN SQLParamData(SQLHSTMT stmt, SQLPOINTER* value);
+
+    SQLRETURN SQLPutData(SQLHSTMT stmt, SQLPOINTER data, SQLLEN strLengthOrIndicator);
+
+    SQLRETURN SQLError(SQLHENV      env,
+                       SQLHDBC      conn,
+                       SQLHSTMT     stmt,
+                       SQLCHAR*     state,
+                       SQLINTEGER*  error,
+                       SQLCHAR*     msgBuf,
+                       SQLSMALLINT  msgBufLen,
+                       SQLSMALLINT* msgResLen);
+
 } // namespace ignite
 
 #endif //_IGNITE_ODBC

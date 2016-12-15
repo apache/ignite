@@ -168,4 +168,19 @@ public class GridMultiCollectionWrapper<E> implements Collection<E>{
         for (Collection<E> collection : collections)
             collection.clear();
     }
+
+    /**
+     * @return Number of inner collections.
+     */
+    public int collectionsSize() {
+        return collections.length;
+    }
+
+    /**
+     * @param idx Inner collection index.
+     * @return Collection.
+     */
+    public Collection<E> innerCollection(int idx) {
+        return collections[idx];
+    }
 }

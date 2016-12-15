@@ -47,6 +47,14 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public void onPartitionCounterUpdated(int part, long cntr);
 
     /**
+     * Initial counter will be updated on state restore only
+     *
+     * @param part Partition
+     * @param cntr New initial counter
+     */
+    public void onPartitionInitialCounterUpdated(int part, long cntr);
+
+    /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
      *
      * @param part Partition ID.
@@ -69,6 +77,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
+     * @return Iterable over all existing cache data stores.
+     */
+    public Iterable<CacheDataStore> cacheDataStores();
+
+    /**
      * @param p Partition ID.
      * @param store Data store.
      */
@@ -83,7 +96,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public void expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException;
+    public boolean expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount) throws IgniteCheckedException;
 
     /**
      * Gets the number of entries pending expire.
@@ -191,13 +204,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param readers {@code True} to clear readers.
      */
     public void clear(boolean readers);
-
-    /**
-     * @param part Partition to clear.
-     *
-     * @throws IgniteCheckedException
-     */
-    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException;
 
     /**
      * @param part Partition.
@@ -316,6 +322,15 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
 
         /**
+         * @param lower Lower bound.
+         * @param upper Upper bound.
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(KeyCacheObject lower,
+            KeyCacheObject upper) throws IgniteCheckedException;
+
+        /**
          * Destroys the tree associated with the store.
          *
          * @throws IgniteCheckedException If failed.
@@ -326,5 +341,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Row store.
          */
         public RowStore rowStore();
+
+        /**
+         * @param cntr Counter.
+         */
+        void updateInitialCounter(long cntr);
     }
 }

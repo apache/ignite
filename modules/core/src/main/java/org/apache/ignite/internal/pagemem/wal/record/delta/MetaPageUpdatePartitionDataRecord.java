@@ -34,16 +34,26 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private int partSize;
 
+    /** */
+    private byte state;
+
+    /** */
+    private int allocatedIdxCandidate;
+
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
+     * @param allocatedIdxCandidate Page Allocated index candidate
      */
-    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize) {
+    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize,
+        byte state, int allocatedIdxCandidate) {
         super(cacheId, pageId);
 
         this.updateCntr = updateCntr;
         this.globalRmvId = globalRmvId;
         this.partSize = partSize;
+        this.state = state;
+        this.allocatedIdxCandidate = allocatedIdxCandidate;
     }
 
     /**
@@ -67,6 +77,13 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         return partSize;
     }
 
+    /**
+     * @return Partition state
+     */
+    public byte state() {
+        return state;
+    }
+
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(buf);
@@ -74,6 +91,13 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setUpdateCounter(buf, updateCntr);
         io.setGlobalRemoveId(buf, globalRmvId);
         io.setSize(buf, partSize);
+    }
+
+    /**
+     *
+     */
+    public int allocatedIndexCandidate() {
+        return allocatedIdxCandidate;
     }
 
     /** {@inheritDoc} */

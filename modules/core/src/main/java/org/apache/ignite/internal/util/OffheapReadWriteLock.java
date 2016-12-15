@@ -97,6 +97,8 @@ public class OffheapReadWriteLock {
     public void init(long lock, int tag) {
         tag &= 0xFFFF;
 
+        assert tag != 0;
+
         GridUnsafe.putLong(lock, (long)tag << 16);
     }
 
@@ -105,6 +107,8 @@ public class OffheapReadWriteLock {
      */
     public boolean readLock(long lock, int tag) {
         long state = GridUnsafe.getLongVolatile(null, lock);
+
+        assert state != 0;
 
         // Check write waiters first.
         int writeWaitCnt = writersWaitCount(state);
@@ -149,9 +153,13 @@ public class OffheapReadWriteLock {
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
-            assert state > 0;
+            if (lockCount(state) <= 0)
+                throw new IllegalMonitorStateException("Attempted to release a read lock while not holding it " +
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
             long updated = updateState(state, -1, 0, 0);
+
+            assert updated != 0;
 
             if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
                 // Notify monitor if we were CASed to zero and there is a write waiter.
@@ -191,6 +199,8 @@ public class OffheapReadWriteLock {
     public boolean writeLock(long lock, int tag) {
         for (int i = 0; i < SPIN_CNT; i++) {
             long state = GridUnsafe.getLongVolatile(null, lock);
+
+            assert state != 0;
 
             if (!checkTag(state, tag))
                 return false;
@@ -245,9 +255,13 @@ public class OffheapReadWriteLock {
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
-            assert lockCount(state) == -1;
+            if (lockCount(state) != -1)
+                throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
 
             updated = releaseWithTag(state, tag);
+
+            assert updated != 0;
 
             if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
                 break;

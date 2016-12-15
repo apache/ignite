@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -3049,9 +3050,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 
-        if (isEmpty())
-            return;
-
         // We do batch and recreate cursor because removing using a single cursor
         // will cause it to reinitialize on each merged page.
         List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
@@ -4546,7 +4544,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            return IgnitionEx.gridx(t.get1()).cachex(t.get2());
+            return IgnitionEx.localIgnite().cachex(t.get2());
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -4558,9 +4556,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebalance() {
-        ctx.preloader().forcePreload();
-
-        return ctx.preloader().syncFuture();
+        return ctx.preloader().forceRebalance();
     }
 
     /** {@inheritDoc} */
@@ -4795,6 +4791,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public void onReconnected() {
         // No-op.
+    }
+
+    /**
+     * For tests only.
+     */
+    public void forceKeyCheck() {
+        keyCheck = true;
     }
 
     /**
@@ -5330,7 +5333,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear all.
      */
-    @GridInternal
     private static class GlobalClearAllJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5369,7 +5371,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear keys.
      */
-    @GridInternal
     private static class GlobalClearKeySetJob<K> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5414,7 +5415,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear all for near cache.
      */
-    @GridInternal
     private static class GlobalClearAllNearJob extends GlobalClearAllJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5445,7 +5445,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear keys for near cache.
      */
-    @GridInternal
     private static class GlobalClearKeySetNearJob<K> extends GlobalClearKeySetJob<K> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5477,7 +5476,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Internal callable for partition size calculation.
      */
-    @GridInternal
     private static class PartitionSizeLongJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5523,7 +5521,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Internal callable for global size calculation.
      */
-    @GridInternal
     private static class SizeJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5564,7 +5561,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Internal callable for global size calculation.
      */
-    @GridInternal
     private static class SizeLongJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6328,7 +6324,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Delayed callable class.
      */
-    protected static abstract class TopologyVersionAwareJob extends ComputeJobAdapter {
+    public static abstract class TopologyVersionAwareJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6410,6 +6406,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Size task.
      */
+    @GridInternal
     private static class SizeTask extends ComputeTaskAdapter<Object, Integer> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6475,6 +6472,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Size task.
      */
+    @GridInternal
     private static class SizeLongTask extends ComputeTaskAdapter<Object, Long> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6540,6 +6538,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Partition Size Long task.
      */
+    @GridInternal
     private static class PartitionSizeLongTask extends ComputeTaskAdapter<Object, Long> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6624,6 +6623,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Clear task.
      */
+    @GridInternal
     private static class ClearTask<K> extends ComputeTaskAdapter<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;

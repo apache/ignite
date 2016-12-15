@@ -95,11 +95,20 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         return cc;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ignite = startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        ignite = null;
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -314,7 +323,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static String normalizeSql(String sql) {
         return sql.toLowerCase()
             .replaceAll("/\\*(?:.|\r|\n)*?\\*/", " ")
-            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " on true ")
+            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " ")
             .replaceAll("\\s+", " ")
             .replaceAll("\\( +", "(")
             .replaceAll(" +\\)", ")")

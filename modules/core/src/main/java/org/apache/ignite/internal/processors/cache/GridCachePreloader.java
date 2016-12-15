@@ -24,10 +24,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,7 +92,8 @@ public interface GridCachePreloader {
     public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
         Collection<String> caches,
-        int cnt);
+        int cnt,
+        @Nullable GridFutureAdapter<Boolean> forcedRebFut);
 
     /**
      * @param p Preload predicate.
@@ -140,9 +143,19 @@ public interface GridCachePreloader {
     public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
 
     /**
-     * Force preload process.
+     * Requests that preloader sends the request for the key.
+     *
+     * @param req Message with keys to request.
+     * @param topVer Topology version, {@code -1} if not required.
+     * @return Future to complete when all keys are preloaded.
      */
-    public void forcePreload();
+    public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+        AffinityTopologyVersion topVer);
+
+    /**
+     * Force Rebalance process.
+     */
+    public IgniteInternalFuture<Boolean> forceRebalance();
 
     /**
      * Unwinds undeploys.

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.pagemem.backup.BackupFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -64,13 +64,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRe
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
@@ -162,8 +167,28 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -37:
+                msg = new GridDhtAtomicSingleUpdateRequest();
+
+                break;
+
+            case -36:
+                msg = new GridNearAtomicSingleUpdateRequest();
+
+                break;
+
+            case -29:
+                msg = new IgniteIoTestMessage();
+
+                break;
+
+            case -28:
+                msg = new GridDhtTxOnePhaseCommitAckRequest();
+
+                break;
+
             case -27:
-                msg = new BackupFinishedMessage();
+                msg = new SnapshotFinishedMessage();
 
                 break;
 
@@ -393,7 +418,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 40:
-                msg = new GridNearAtomicUpdateRequest();
+                msg = new GridNearAtomicFullUpdateRequest();
 
                 break;
 
@@ -762,18 +787,22 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124-125] - this
             case 126:
-                msg = new IgniteIoTestMessage();
+                msg = new GridNearAtomicSingleUpdateInvokeRequest();
 
                 break;
-
+            //todo change it
             case 127:
                 msg = new GridChangeGlobalStateMessageResponse();
 
                 break;
 
-            // [-3..119] [124-126] - this
+            case 127:
+                msg = new GridNearAtomicSingleUpdateFilterRequest();
+
+                break;
+
+            // [-3..119] [124-127] [-23..-29] [-36..-37] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:

@@ -213,7 +213,7 @@ public class IgniteIoTestMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 126;
+        return -29;
     }
 
     /** {@inheritDoc} */

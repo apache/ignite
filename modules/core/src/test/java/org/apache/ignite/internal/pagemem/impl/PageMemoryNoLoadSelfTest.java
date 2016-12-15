@@ -45,7 +45,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory("pagemem", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false));
     }
 
     /**
@@ -264,7 +264,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page memory implementation.
      */
     protected PageMemory memory() throws Exception {
-        File memDir = U.resolveWorkDirectory("pagemem", false);
+        File memDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false);
 
         long[] sizes = new long[10];
 

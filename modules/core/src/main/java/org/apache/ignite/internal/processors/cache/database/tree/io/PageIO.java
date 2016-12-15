@@ -143,6 +143,9 @@ public abstract class PageIO {
     public static final short T_PART_META = 14;
 
     /** */
+    public static final short T_PAGE_UPDATE_TRACKING = 15;
+
+    /** */
     private final int ver;
 
     /** */
@@ -326,6 +329,9 @@ public abstract class PageIO {
 
             case T_PART_META:
                 return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PAGE_UPDATE_TRACKING:
+                return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

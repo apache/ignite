@@ -76,12 +76,16 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -252,6 +256,8 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
+
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
         this.log = log;
@@ -319,6 +325,9 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
 
+        registerPredefinedType(PlatformDotNetSessionData.class, 0);
+        registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
+
         // IDs range [200..1000] is used by Ignite internal APIs.
     }
 
@@ -350,7 +359,8 @@ public class BinaryContext {
             if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
                 return false;
 
-            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
+                GridQueryProcessor.isGeometryClass(cls);
         }
         else
             return desc.useOptimizedMarshaller();
@@ -499,7 +509,7 @@ public class BinaryContext {
     }
 
     /**
-     * @return Intenal mpper used as default.
+     * @return Internal mapper used as default.
      */
     public static BinaryInternalMapper defaultMapper() {
         return DFLT_MAPPER;
@@ -783,12 +793,9 @@ public class BinaryContext {
             registered
         );
 
-        if (!deserialize) {
-            Collection<BinarySchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
+        if (!deserialize)
             metaHnd.addMeta(typeId,
-                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
-        }
+                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null, desc.isEnum()).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -1121,7 +1128,6 @@ public class BinaryContext {
         cls2Mappers.put(clsName, mapper);
 
         Map<String, Integer> fieldsMeta = null;
-        Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1146,7 +1152,6 @@ public class BinaryContext {
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
 
@@ -1155,7 +1160,7 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum).wrap(this));
     }
 
     /**
