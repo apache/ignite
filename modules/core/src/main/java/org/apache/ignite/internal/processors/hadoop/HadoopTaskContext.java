@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 
 /**
  * Task context.
@@ -162,7 +162,7 @@ public abstract class HadoopTaskContext {
      *
      * @return Semi-raw sorting comparator.
      */
-    public abstract PartialOffheapRawComparatorEx<Object> partialRawSortComparator();
+    public abstract PartiallyOffheapRawComparatorEx<Object> partialRawSortComparator();
 
     /**
      * Gets comparator for grouping on combine or reduce operation.

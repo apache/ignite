@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
-import org.apache.ignite.hadoop.io.PartialRawComparator;
+import org.apache.ignite.hadoop.io.PartiallyRawComparator;
 import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
-import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 
 /**
  * Delegating partial raw comparator.
  */
-public class HadoopV2DelegatingPartialOffheapRawComparator<T> implements PartialOffheapRawComparatorEx<T> {
+public class HadoopV2DelegatingPartiallyOffheapRawComparator<T> implements PartiallyOffheapRawComparatorEx<T> {
     /** Target comparator. */
-    private final PartialRawComparator<T> target;
+    private final PartiallyRawComparator<T> target;
 
     /** Memory. */
     private OffheapRawMemory mem;
@@ -36,7 +36,7 @@ public class HadoopV2DelegatingPartialOffheapRawComparator<T> implements Partial
      *
      * @param target Target.
      */
-    public HadoopV2DelegatingPartialOffheapRawComparator(PartialRawComparator<T> target) {
+    public HadoopV2DelegatingPartiallyOffheapRawComparator(PartiallyRawComparator<T> target) {
         assert target != null;
 
         this.target = target;

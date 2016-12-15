@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
-import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -281,7 +281,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private final Comparator<Object> cmp;
 
         /** */
-        private final PartialOffheapRawComparatorEx<Object> partialRawCmp;
+        private final PartiallyOffheapRawComparatorEx<Object> partialRawCmp;
 
         /** */
         private final Random rnd = new GridRandom();

@@ -18,15 +18,16 @@
 package org.apache.ignite.hadoop.io;
 
 /**
- * Partial raw comparator.
+ * Partially raw comparator. Compares one deserialized value with serialized value.
  */
-public interface PartialRawComparator<T> {
+public interface PartiallyRawComparator<T> {
     /**
-     * Perform compare.
+     * Do compare.
      *
-     * @param val1 First value.
-     * @param val2Buf Second value in deserialized form.
-     * @return Result.
+     * @param val1 First value (deserialized).
+     * @param val2Buf Second value (serialized).
+     * @return A negative integer, zero, or a positive integer as this object is less than, equal to, or greater
+     *     than the specified object.
      */
     int compare(T val1, RawMemory val2Buf);
 }

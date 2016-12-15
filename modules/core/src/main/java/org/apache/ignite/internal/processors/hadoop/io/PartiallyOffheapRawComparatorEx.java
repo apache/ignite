@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.io;
 /**
  * Special version of raw comparator allowing direct access to the underlying memory.
  */
-public interface PartialOffheapRawComparatorEx<T> {
+public interface PartiallyOffheapRawComparatorEx<T> {
     /**
      * Perform compare.
      *

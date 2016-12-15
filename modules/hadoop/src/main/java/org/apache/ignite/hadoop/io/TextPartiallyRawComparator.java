@@ -22,7 +22,7 @@ import com.google.common.primitives.UnsignedBytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
-import org.apache.ignite.internal.processors.hadoop.io.PartialOffheapRawComparatorEx;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
  * Implementation is borrowed from {@code org.apache.hadoop.io.FastByteComparisons} and adopted to Ignite
  * infrastructure.
  */
-public class TextPartialRawComparator implements PartialRawComparator<Text>, PartialOffheapRawComparatorEx<Text> {
+public class TextPartiallyRawComparator implements PartiallyRawComparator<Text>, PartiallyOffheapRawComparatorEx<Text> {
     /** {@inheritDoc} */
     @Override public int compare(Text val1, RawMemory val2Buf) {
         if (val2Buf instanceof OffheapRawMemory) {
