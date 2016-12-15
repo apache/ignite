@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -405,7 +406,9 @@ public class MarshallerContextImpl implements MarshallerContext {
     public void onMarshallerProcessorStarted(GridKernalContext ctx, MarshallerMappingTransport transport) throws IgniteCheckedException {
         assert ctx != null;
 
-        persistence = new MarshallerMappingPersistence(ctx.log(MarshallerMappingPersistence.class));
+        IgniteConfiguration cfg = ctx.config();
+
+        persistence = new MarshallerMappingPersistence(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()), ctx.log(MarshallerMappingPersistence.class));
         this.transport = transport;
         isClientNode = ctx.clientNode();
     }
