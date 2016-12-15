@@ -372,6 +372,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             // We use "contains" instead of "equals" to handle subclasses properly.
             if (clsName.contains("org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem") ||
                 clsName.contains("org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem") ||
+                clsName.contains("org.apache.ignite.hadoop.io.TextPartialRawComparator") ||
                 clsName.contains("org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider"))
                 return true;
         }
