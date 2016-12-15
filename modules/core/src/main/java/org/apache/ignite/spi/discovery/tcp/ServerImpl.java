@@ -5614,10 +5614,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     onException("Failed to bind to local port. " +
                         "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                 }
-            }
 
-            // If free port wasn't found.
-            U.closeQuiet(srvCh);
+                // If free port wasn't found.
+                U.closeQuiet(srvCh);
+            }
 
             throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
                 "are in use) [firstPort=" + spi.locPort + ", lastPort=" + lastPort +
