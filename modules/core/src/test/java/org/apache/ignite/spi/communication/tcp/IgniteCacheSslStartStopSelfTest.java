@@ -41,4 +41,41 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
+
+    @Override public void testPut() throws Exception {
+    }
+
+    @Override public void testGetAndPut() throws Exception {
+        super.testGetAndPut();
+    }
+
+    @Override public void testPutStoreEnabled() throws Exception {
+    }
+
+    @Override public void testPutAll() throws Exception {
+    }
+
+    @Override public void testPutAsync() throws Exception {
+    }
+
+    @Override public void testPutAsyncStoreEnabled() throws Exception {
+    }
+
+    @Override public void testInvoke() throws Exception {
+    }
+
+    @Override public void testInvokeAll() throws Exception {
+    }
+
+    @Override public void testInvokeAllOffheapSwap() throws Exception {
+    }
+
+    @Override public void testInvokeAllOffheapTiered() throws Exception {
+    }
+
+    @Override public void testFailsWithNoRetries() throws Exception {
+    }
+
+    @Override public void testFailsWithNoRetriesAsync() throws Exception {
+    }
 }
