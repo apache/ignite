@@ -1156,45 +1156,53 @@ public class DataPageIO extends PageIO {
             if (delta != 0) { // Move right.
                 assert delta > 0: delta;
 
-                int cnt = 1;
-                int mvSize = entrySize;
+                moveBytes(buf, off, entrySize, delta);
 
-                for (int j = i - 1; j >= 0; j++) {
-                    int off0 = offs[j] >>> 8;
-                    int entrySize0 = getPageEntrySize(buf, off0, SHOW_PAYLOAD_LEN | SHOW_LINK);
-                    int o = off0 + entrySize0;
+                int itemId = offs[i] & 0xFF;
 
-                    if (o != off)
-                        break;
+                off += delta;
 
-                    mvSize += entrySize0;
-                    off = off0;
+                setItem(buf, itemId, directItemFromOffset(off));
 
-                    cnt++;
-                }
-
-                if (cnt > 1) {
-                    moveBytes(buf, off, mvSize, delta);
-
-                    for (int j = 0; j < cnt; j++) {
-                        int itemId = offs[i + j] & 0xFF;
-
-                        off += delta;
-
-                        setItem(buf, itemId, directItemFromOffset(off));
-                    }
-
-                    i += cnt;
-                }
-                else {
-                    moveBytes(buf, off, entrySize, delta);
-
-                    int itemId = offs[i] & 0xFF;
-
-                    off += delta;
-
-                    setItem(buf, itemId, directItemFromOffset(off));
-                }
+//                int cnt = 1;
+//                int mvSize = entrySize;
+//
+//                for (int j = i - 1; j >= 0; j++) {
+//                    int off0 = offs[j] >>> 8;
+//                    int entrySize0 = getPageEntrySize(buf, off0, SHOW_PAYLOAD_LEN | SHOW_LINK);
+//                    int o = off0 + entrySize0;
+//
+//                    if (o != off)
+//                        break;
+//
+//                    mvSize += entrySize0;
+//                    off = off0;
+//
+//                    cnt++;
+//                }
+//
+//                if (cnt > 1) {
+//                    moveBytes(buf, off, mvSize, delta);
+//
+//                    for (int j = 0; j < cnt; j++) {
+//                        int itemId = offs[i + j] & 0xFF;
+//
+//                        off += delta;
+//
+//                        setItem(buf, itemId, directItemFromOffset(off));
+//                    }
+//
+//                    i += cnt;
+//                }
+//                else {
+//                    moveBytes(buf, off, entrySize, delta);
+//
+//                    int itemId = offs[i] & 0xFF;
+//
+//                    off += delta;
+//
+//                    setItem(buf, itemId, directItemFromOffset(off));
+//                }
             }
 
             prevOff = off;
