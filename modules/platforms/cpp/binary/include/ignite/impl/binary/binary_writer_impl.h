@@ -671,7 +671,7 @@ namespace ignite
                         stream->WriteInt32(idRslvr.GetTypeId());
                         stream->WriteInt32(type.GetHashCode(obj));
 
-                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offsett.
+                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
                         type.Write(writer, obj);

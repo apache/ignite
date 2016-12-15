@@ -88,6 +88,9 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
       <Filter>Code\impl\interop</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_array_identity_resolver.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">
