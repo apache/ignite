@@ -328,7 +328,7 @@ public final class DiscoveryDataContainer implements Serializable {
     }
 
     /**
-     * //TODO this filtering method is just a quick adaptation of functionality implemented earlier in main development line. It should be removed and replaced with using gridCommonData for components that need it.
+     * TODO https://issues.apache.org/jira/browse/IGNITE-4435
      */
     private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
         for (Map<Integer, byte[]> existingData : nodeSpecificDiscoData.values()) {
