@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains <b>Hadoop Accelerator</b> input-output classes.
+ * Contains <b>Hadoop Accelerator</b> API for input-output operations.
  */
 package org.apache.ignite.hadoop.io;
