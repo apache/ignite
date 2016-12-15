@@ -102,9 +102,9 @@
     </category>
     -->
 
-    <!--<category name="org.apache.ignite.spi.discovery">
+    <category name="org.apache.ignite.spi.discovery">
         <level value="DEBUG"/>
-    </category>-->
+    </category>
 
     <!--
     <category name="org.apache.ignite.internal.processors.cache">
