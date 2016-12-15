@@ -61,8 +61,10 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private static final boolean testSensitive = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
     /** Prefix for all suspicious sensitive data */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
-    /** Sensitive patterns */
-    private static final Pattern[] SENSITIVE_PS;
+    /** Sensitive patterns: excluding */
+    private static final Pattern[] EXCLUDE_PATTERNS;
+    /** Sensitive patterns: including */
+    private static final Pattern[] INCLUDE_PATTERNS;
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
@@ -77,23 +79,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     };
 
     static {
-        ArrayList<Pattern> lst = new ArrayList<>();
-        final Class<GridLoggerProxy> cls = GridLoggerProxy.class;
-        try (InputStream inStr = cls.getResourceAsStream(cls.getSimpleName() + ".txt");
-             BufferedReader rdr = new BufferedReader(new InputStreamReader(inStr))) {
-            String ln;
-            while ((ln = rdr.readLine()) != null) {
-                ln = ln.trim();
-                if (ln.isEmpty())
-                    continue;
-                lst.add(Pattern.compile(ln));
-            }
-        }
-        catch (Exception ex) {
-            System.err.println("Error loading sensitive patterns: " + ex);
-            ex.printStackTrace();
-        }
-        SENSITIVE_PS = lst.toArray(new Pattern[lst.size()]);
+        EXCLUDE_PATTERNS = readFromResource("_Exclude.txt");
+        INCLUDE_PATTERNS = readFromResource("_Include.txt");
     }
 
     /** */
@@ -129,6 +116,28 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         this.id8 = id8;
         if (testSensitive && ctgr == null && gridName == null && id8 == null)
             impl.warning("Test sensitive mode is enabled");
+    }
+
+    /** Read sensitive patterns from resource */
+    private static Pattern[] readFromResource(String suffix) {
+        ArrayList<Pattern> lst = new ArrayList<>();
+        final Class<GridLoggerProxy> cls = GridLoggerProxy.class;
+        String resourcePath = cls.getSimpleName() + suffix;
+        try (InputStream inStr = cls.getResourceAsStream(resourcePath);
+             BufferedReader rdr = new BufferedReader(new InputStreamReader(inStr))) {
+            String ln;
+            while ((ln = rdr.readLine()) != null) {
+                ln = ln.trim();
+                if (ln.isEmpty())
+                    continue;
+                lst.add(Pattern.compile(ln));
+            }
+        }
+        catch (Exception ex) {
+            System.err.println("Error loading sensitive patterns from resource " + resourcePath + ": " + ex);
+            ex.printStackTrace();
+        }
+        return lst.toArray(new Pattern[lst.size()]);
     }
 
     /** {@inheritDoc} */
@@ -273,10 +282,16 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private boolean isSensitive(String msg) {
         if (msg == null || msg.isEmpty())
             return false;
-        for (Pattern p : SENSITIVE_PS) {
+        for (Pattern p : EXCLUDE_PATTERNS) {
+            Matcher m = p.matcher(msg);
+            if (m.find())
+                return false;
+        }
+        for (Pattern p : INCLUDE_PATTERNS) {
             Matcher m = p.matcher(msg);
             if (m.find()) {
                 logSensitive("Found: " + m.group());
+                logSensitive("Logger: " + this);
                 return true;
             }
         }
