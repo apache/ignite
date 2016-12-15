@@ -5616,7 +5616,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 // If free port wasn't found.
-                U.closeQuiet(srvCh);
+                try {
+                    srvCh.close();
+                }
+                catch (IOException e) {
+                    log.error("Unable close channel ", e);
+                }
             }
 
             throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
@@ -5636,6 +5641,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             }
             catch (IOException e) {
+                U.closeQuiet(srvCh);
+
                 throw new IgniteSpiException("Failed to open socket channel", e);
             }
         }
