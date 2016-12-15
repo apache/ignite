@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.internal.client.GridClientData;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -28,6 +29,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  */
 public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /** Mocked client data. */
+    /** Test test test **/
     private GridClientData data = allocateInstance0(GridClientDataImpl.class);
 
     /**
