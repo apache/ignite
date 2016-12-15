@@ -167,6 +167,10 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -38:
+                msg = new GridChangeGlobalStateMessageResponse();
+
+                break;
             case -37:
                 msg = new GridDhtAtomicSingleUpdateRequest();
 
@@ -789,11 +793,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 126:
                 msg = new GridNearAtomicSingleUpdateInvokeRequest();
-
-                break;
-            //todo change it
-            case 127:
-                msg = new GridChangeGlobalStateMessageResponse();
 
                 break;
 

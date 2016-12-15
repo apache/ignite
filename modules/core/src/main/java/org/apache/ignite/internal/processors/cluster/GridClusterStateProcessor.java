@@ -44,7 +44,7 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheState;
+import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
@@ -68,16 +68,16 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.CacheState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.CacheState.INACTIVE;
-import static org.apache.ignite.internal.processors.cache.CacheState.TRANSITION;
+import static org.apache.ignite.internal.processors.cache.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cache.ClusterState.TRANSITION;
 
 /**
  *
  */
 public class GridClusterStateProcessor extends GridProcessorAdapter {
     /** Global status. */
-    private volatile CacheState globalState;
+    private volatile ClusterState globalState;
 
     /** Action context. */
     private volatile ChangeGlobalStateContext lastCgsCtx;
@@ -218,7 +218,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         if (ctx.localNodeId().equals(joiningNodeId))
-            globalState = (CacheState)data;
+            globalState = (ClusterState)data;
     }
 
     /**
@@ -312,14 +312,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    public boolean globalState() {
+    public boolean active() {
         return globalState == ACTIVE;
     }
 
     /**
      * @param reqs Requests.
      */
-    public boolean isChangeGlobalState(
+    public boolean changeGlobalState(
         Collection<DynamicCacheChangeRequest> reqs,
         AffinityTopologyVersion topVer
     ) {
