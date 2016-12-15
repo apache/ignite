@@ -44,7 +44,7 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
@@ -159,6 +159,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
+
+    /** Default is @{true} */
+    private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
 
     /**
      * @param ctx Kernal context.
@@ -680,7 +683,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             coctx = cacheObjectContext(space);
 
-            ctx.indexing().store(space, key.value(coctx, false), val.value(coctx, false), expirationTime);
+            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+
+            Object val0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(val) ? val : val.value(coctx, false);
+
+            ctx.indexing().store(space, key0, val0, expirationTime);
         }
 
         if (idx == null)
@@ -1025,7 +1032,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(space);
 
-            ctx.indexing().remove(space, key.value(coctx, false));
+            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+
+            ctx.indexing().remove(space, key0);
         }
 
         if (idx == null)
@@ -1168,11 +1177,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            ctx.indexing().onSwap(
-                spaceName,
-                key.value(
-                    coctx,
-                    false));
+            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+
+            ctx.indexing().onSwap(spaceName, key0);
         }
 
         if (idx == null)
@@ -1207,7 +1214,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            ctx.indexing().onUnswap(spaceName, key.value(coctx, false), val.value(coctx, false));
+            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+
+            Object val0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(val) ? val : val.value(coctx, false);
+
+            ctx.indexing().onUnswap(spaceName, key0, val0);
         }
 
         if (idx == null)
