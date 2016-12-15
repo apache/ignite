@@ -47,10 +47,10 @@ import org.apache.ignite.internal.util.typedef.F;
     private AffinityKeyMapper dfltAffMapper;
 
     /** */
-    private boolean cpyOnGet;
+    private boolean cpyOnGet; // ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES
 
     /** */
-    private boolean storeVal;
+    private boolean storeVal; // ctx.config().isPeerClassLoadingEnabled() || GridQueryProcessor.isEnabled(ccfg) || !ccfg.isCopyOnRead()
 
     /** */
     private boolean p2pEnabled;
