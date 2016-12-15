@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -165,6 +166,8 @@ public class MessageCodeGenerator {
             srcDir = args[0];
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
+
+        gen.generateAndWrite(SnapshotProgressMessage.class);
 
 //        gen.generateAll(true);
 
