@@ -43,6 +43,12 @@ public class DataStreamerCacheUpdaters {
     /** */
     private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
+    /** */
+    private static final StreamReceiver REPLACE = new Replace();
+
+    /** */
+    private static final StreamReceiver REMOVE = new Remove();
+
     /**
      * Updates cache using independent {@link IgniteCache#put(Object, Object)}and
      * {@link IgniteCache#remove(Object)} operations. Thus it is safe from deadlocks but performance
@@ -52,6 +58,25 @@ public class DataStreamerCacheUpdaters {
      */
     public static <K, V> StreamReceiver<K, V> individual() {
         return INDIVIDUAL;
+    }
+
+    /**
+     * Updates cache using independent {@link IgniteCache#replace(Object, Object)} operations.
+     * Thus it is safe from deadlocks but performance is not the best.
+     *
+     * @return Fast SQL UPDATE updater.
+     */
+    public static <K, V> StreamReceiver<K, V> replace() {
+        return REPLACE;
+    }
+
+    /**
+     * Removes from the cache all keys going through it.
+     *
+     * @return Fast SQL DELETE updater.
+     */
+    public static <K, V> StreamReceiver<K, V> remove() {
+        return REMOVE;
     }
 
     /**
@@ -200,6 +225,44 @@ public class DataStreamerCacheUpdaters {
             }
 
             updateAll(cache, rmvAll, putAll);
+        }
+    }
+
+    /**
+     * Simple cache updater implementation. Updates values only for present keys by performing {@link IgniteCache#replace}.
+     */
+    private static class Replace<K, V> implements StreamReceiver<K, V>, InternalUpdater {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
+            assert cache != null;
+            assert !F.isEmpty(entries);
+
+            for (Map.Entry<K, V> e : entries)
+                cache.replace(e.getKey(), e.getValue());
+        }
+    }
+
+    /**
+     * Simple cache updater implementation. Removes keys of given entries, values are ignored.
+     */
+    private static class Remove<K, V> implements StreamReceiver<K, V>, InternalUpdater {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
+            assert cache != null;
+            assert !F.isEmpty(entries);
+
+            Set<K> keys = new HashSet<>(entries.size());
+
+            for (Map.Entry<K, V> e : entries)
+                keys.add(e.getKey());
+
+            cache.removeAll(keys);
         }
     }
 

@@ -142,7 +142,7 @@ public class JdbcStatement implements Statement {
 
         updateCnt = -1;
 
-        return doUpdate(sql, getArgs());
+        return doUpdate(sql, getArgs()).intValue();
     }
 
     /**
@@ -152,7 +152,7 @@ public class JdbcStatement implements Statement {
      * @return Number of affected items.
      * @throws SQLException
      */
-    int doUpdate(String sql, Object[] args) throws SQLException {
+    Long doUpdate(String sql, Object[] args) throws SQLException {
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
@@ -178,7 +178,7 @@ public class JdbcStatement implements Statement {
 
             updateCnt = res;
 
-            return res.intValue();
+            return res;
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();

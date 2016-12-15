@@ -40,6 +40,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -207,6 +209,91 @@ public class DmlStatementsProcessor {
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res)));
+    }
+
+    /**
+     * Perform given statement against given data streamer. Only rows based INSERT and MERGE are supported
+     * as well as key bound UPDATE and DELETE (ones with filter {@code WHERE _key = ?}).
+     *
+     * @param spaceName Space name.
+     * @param streamer Streamer to feed data to.
+     * @param stmt Statement.
+     * @param params Statement arguments.
+     * @return Number of rows in given statement for INSERT and MERGE, {@code 1} otherwise.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    long streamUpdateQuery(String spaceName, IgniteDataStreamer streamer,
+        PreparedStatement stmt, Object[] params) throws IgniteCheckedException {
+        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+
+        assert p != null;
+
+        UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, null);
+
+        if (plan.mode == UpdateMode.INSERT || plan.mode == UpdateMode.MERGE) {
+            if (plan.rowsNum == 0)
+                throw new IgniteSQLException("INSERT and MERGE from subquery are not supported in streaming mode",
+                    IgniteQueryErrorCode.INVALID_STREAMING_STMT);
+
+            assert plan.isLocSubqry;
+
+            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(spaceName, plan.selectQry, F.asList(params),
+                null, false, 0, null);
+
+            final GridCacheContext cctx = plan.tbl.rowDescriptor().context();
+
+            QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    try {
+                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                }
+            }, null);
+
+            cur.fieldsMeta(res.metaData());
+
+            GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
+
+            if (plan.rowsNum == 1) {
+                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next().toArray(), plan.colNames, plan.colTypes,
+                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+
+                streamer.addData(t.getKey(), t.getValue());
+
+                return 1;
+            }
+
+            Map<Object, Object> rows = new LinkedHashMap<>(plan.rowsNum);
+
+            for (List<?> row : cur) {
+                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
+                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+
+                rows.put(t.getKey(), t.getValue());
+            }
+
+            streamer.addData(rows);
+
+            return rows.size();
+        }
+        else {
+            if (plan.fastUpdateArgs == null || plan.fastUpdateArgs.val != FastUpdateArguments.NULL_ARGUMENT)
+                throw new IgniteSQLException("Only key bounded UPDATE and DELETE are supported in streaming mode",
+                    IgniteQueryErrorCode.INVALID_STREAMING_STMT);
+
+            Object key = plan.fastUpdateArgs.key.apply(params);
+
+            // We just supply 0 as "value" in case of DELETE - it will be ignored by stream receiver anyway.
+            Object newVal = plan.mode == UpdateMode.UPDATE ? plan.fastUpdateArgs.newVal.apply(params) : 0;
+
+            streamer.addData(key, newVal);
+
+            return 1;
+        }
     }
 
     /**

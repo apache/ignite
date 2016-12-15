@@ -47,6 +47,9 @@ public final class IgniteQueryErrorCode {
     /** Analysis detected that the statement is trying to directly {@code UPDATE} key or its fields. */
     public final static int KEY_UPDATE = 2003;
 
+    /** Analysis detected that given statement is not suitable for streaming. */
+    public final static int INVALID_STREAMING_STMT = 2004;
+
     /* 3xxx - database API related runtime errors */
 
     /** Required table not found. */

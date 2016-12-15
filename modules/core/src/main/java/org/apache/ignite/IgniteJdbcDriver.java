@@ -292,6 +292,12 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
+    /** DML streaming parameter name. */
+    private static final String PARAM_STREAM = "stream";
+
+    /** DML streaming flush timeout. */
+    private static final String PARAM_STREAM_FLUSH_TIMEOUT = "streamFlushTimeout";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -312,6 +318,12 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
+
+    /** DML streaming property name. */
+    public static final String PROP_STREAM = PROP_PREFIX + PARAM_STREAM;
+
+    /** DML streaming property name. */
+    public static final String PROP_STREAM_FLUSH_TIMEOUT = PROP_PREFIX + PARAM_STREAM_FLUSH_TIMEOUT;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";

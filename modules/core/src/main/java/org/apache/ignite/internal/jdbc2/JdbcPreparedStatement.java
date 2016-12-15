@@ -34,7 +34,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /**
      * H2's parsed statement to retrieve metadata from.
      */
-    private PreparedStatement nativeStatement;
+    PreparedStatement nativeStatement;
 
     /**
      * Creates new prepared statement.

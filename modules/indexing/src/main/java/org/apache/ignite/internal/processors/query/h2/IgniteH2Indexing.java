@@ -55,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -90,6 +92,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -134,6 +137,10 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Delete;
+import org.h2.command.dml.Insert;
+import org.h2.command.dml.Merge;
+import org.h2.command.dml.Update;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -427,7 +434,47 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        return prepareStatement(connectionForSpace(schema), sql, false);
+        return prepareStatement(connectionForSpace(space(schema)), sql, true);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
+        long autoFlushFreq) {
+        Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
+
+        UpdateMode mode;
+
+        if (prep instanceof Merge)
+            mode = UpdateMode.MERGE;
+        else if (prep instanceof Insert)
+            mode = UpdateMode.INSERT;
+        else if (prep instanceof Update)
+            mode = UpdateMode.UPDATE;
+        else if (prep instanceof Delete)
+            mode = UpdateMode.DELETE;
+        else
+            throw new IgniteException("Invalid command type - streaming mode is only for MERGE, INSERT, and fast UPDATE" +
+                "[type=" + prep.getClass().getName() + ']');
+
+        IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
+        streamer.autoFlushFrequency(autoFlushFreq);
+
+        switch (mode) {
+            case MERGE:
+                streamer.allowOverwrite(true);
+                break;
+            case UPDATE:
+                streamer.receiver(DataStreamerCacheUpdaters.replace());
+                break;
+            case INSERT:
+                // No-op as INSERT semantic is maintained by default - present keys are not affected.
+                break;
+            case DELETE:
+                streamer.receiver(DataStreamerCacheUpdaters.replace());
+        }
+
+        return streamer;
     }
 
     /**
@@ -803,7 +850,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
 
-            if (!p.isQuery()) {
+            if (p != null && !p.isQuery()) {
                 GridH2QueryContext.clearThreadLocal();
 
                 SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
@@ -838,6 +885,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (p == null || p.isQuery())
                 GridH2QueryContext.clearThreadLocal();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long streamUpdateQuery(@Nullable String spaceName, String qry,
+        @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
+        final Connection conn = connectionForSpace(spaceName);
+
+        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, F.asList(params), true);
+
+        return dmlProc.streamUpdateQuery(spaceName, streamer, stmt, params);
     }
 
     /**
@@ -1645,13 +1702,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /**
-     * Gets space name from database schema.
-     *
-     * @param schemaName Schema name. Could not be null. Could be empty.
-     * @return Space name. Could be null.
-     */
-    public String space(String schemaName) {
+    /** {@inheritDoc} */
+    @Override public String space(String schemaName) {
         assert schemaName != null;
 
         Schema schema = schemas.get(schemaName);
