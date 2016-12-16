@@ -42,6 +42,7 @@
     using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -805,5 +806,14 @@
         /// Gets or sets the swap space SPI.
         /// </summary>
         public ISwapSpaceSpi SwapSpaceSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets additional plugin lookup paths.
+        /// <para />
+        /// By default, plugins are loaded from assemblies in memory and in directory with Apache.Ignite.exe 
+        /// by scanning for <see cref="IPluginProvider"/> implementations.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<string> PluginPaths { get; set; }
     }
 }
