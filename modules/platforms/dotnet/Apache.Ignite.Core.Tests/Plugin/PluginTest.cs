@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
@@ -25,9 +26,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class PluginTest
     {
-        /** */
-        private const string PluginName = "TestPlugin1";
-
         /// <summary>
         /// Tests the start stop.
         /// </summary>
@@ -39,14 +37,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
             using (var ignite = Ignition.Start(cfg))
             {
                 Assert.Throws<PluginNotFoundException>(() => ignite.GetPlugin<object>("foobar"));
-                Assert.Throws<Exception>(() => ignite.GetPlugin<string>(PluginName));
+                Assert.Throws<Exception>(() => ignite.GetPlugin<string>(TestIgnitePluginProvider.PluginName));
 
-                var plugin = ignite.GetPlugin<TestIgnitePlugin>(PluginName);
+                var plugin = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.IsNotNull(plugin);
 
                 var prov = plugin.Provider;
                 Assert.IsTrue(prov.Started);
-                Assert.AreEqual(PluginName, prov.Name);
+                Assert.AreEqual(TestIgnitePluginProvider.PluginName, prov.Name);
                 Assert.IsNotNull(prov.Context);
 
                 var ctx = prov.Context;
@@ -55,70 +53,5 @@ namespace Apache.Ignite.Core.Tests.Plugin
             }
         }
 
-        public class TestIgnitePlugin
-        {
-            public TestIgnitePluginProvider Provider { get; private set; }
-
-            public TestIgnitePlugin(TestIgnitePluginProvider provider)
-            {
-                Provider = provider;
-            }
-        }
-
-        public class TestIgnitePluginProvider : IPluginProvider
-        {
-            private readonly TestIgnitePlugin _plugin;
-
-
-            public TestIgnitePluginProvider()
-            {
-                _plugin = new TestIgnitePlugin(this);
-            }
-
-            public string Name
-            {
-                get { return PluginName; }
-            }
-
-            public string Copyright
-            {
-                get { return "Copyright (c) FooBar."; }
-            }
-
-            public T GetPlugin<T>() where T : class
-            {
-                var p = _plugin as T;
-
-                if (p != null)
-                    return p;
-
-                throw new Exception("Invalid plugin type: " + typeof(T));
-            }
-
-            public void Start(IPluginContext context)
-            {
-                Context = context;
-            }
-
-            public void Stop(bool cancel)
-            {
-                Stopped = cancel;
-            }
-
-            public void OnIgniteStart()
-            {
-                Started = true;
-
-                Assert.NotNull(Context);
-                Assert.NotNull(Context.Ignite);
-                Assert.NotNull(Context.IgniteConfiguration);
-            }
-
-            public bool Started { get; set; }
-
-            public bool? Stopped { get; set; }
-
-            public IPluginContext Context { get; private set; }
-        }
     }
 }
