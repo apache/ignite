@@ -96,6 +96,10 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTes
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexRebuildTest;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2TableSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
@@ -112,6 +116,12 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
+
+        // H2 tests.
+        suite.addTest(new TestSuite(GridH2TableSelfTest.class));
+        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
+        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
+        suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
 
         // Parsing
         suite.addTestSuite(GridQueryParsingTest.class);
