@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Plugin
         /// </summary>
         /// <typeparam name="T">Plugin instance type.</typeparam>
         /// <returns>Plugin instance.</returns>
-        T GetPlugin<T>();
+        T GetPlugin<T>() where T : class;
 
         /// <summary>
         /// Starts the plugin provider.
