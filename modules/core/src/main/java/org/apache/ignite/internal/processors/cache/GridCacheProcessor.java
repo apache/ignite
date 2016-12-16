@@ -734,6 +734,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             checkConsistency();
 
+            //must be here, because we must start log wal before start first cache
+            if (activeOnStart) {
+                //todo not used explicit lock
+                if (!ctx.clientNode())
+                    sharedCtx.database().lock();
+
+                sharedCtx.wal().onKernalStart(false);
+
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().onKernalStart(false);
+
+                sharedCtx.database().onKernalStart(false);
+            }
+
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
@@ -777,19 +791,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         finally {
             cacheStartedLatch.countDown();
-        }
-
-        if (activeOnStart) {
-            //todo not used explicit lock
-            if (!ctx.clientNode())
-                sharedCtx.database().lock();
-
-            sharedCtx.wal().onKernalStart(false);
-
-            if (sharedCtx.pageStore() != null)
-                sharedCtx.pageStore().onKernalStart(false);
-
-            sharedCtx.database().onKernalStart(false);
         }
 
         // Must call onKernalStart on shared managers after creation of fetched caches.

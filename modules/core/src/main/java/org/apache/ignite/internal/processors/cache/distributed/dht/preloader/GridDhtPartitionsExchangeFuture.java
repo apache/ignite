@@ -1311,8 +1311,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         topSnapshot.set(null);
         singleMsgs.clear();
         fullMsgs.clear();
+        changeGlobalStateExceptions.clear();
         crd = null;
         partReleaseFut = null;
+        changeGlobalStateException = null;
     }
 
     /**
