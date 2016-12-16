@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -84,13 +85,14 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** */
+    @GridToStringInclude
     private IgniteLogger impl;
     /** */
     private String gridName;
     /** */
     private String id8;
     /** */
-    @GridToStringExclude
+    @GridToStringInclude
     private Object ctgr;
 
     /**
