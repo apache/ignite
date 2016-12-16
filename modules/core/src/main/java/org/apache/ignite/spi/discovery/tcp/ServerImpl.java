@@ -30,11 +30,16 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketOption;
 import java.net.SocketTimeoutException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.AlreadyBoundException;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.Channel;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
@@ -7663,7 +7668,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final InputStream in;
 
         /** */
-        private final SocketChannel ch;
+        private final ReadableByteChannel ch;
 
         /** */
         private final BlockingSslHandler sslHnd;
@@ -7681,7 +7686,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         SslInputStream(final InputStream in, final SocketChannel ch, final BlockingSslHandler sslHnd) {
             this.in = in;
-            this.ch = ch;
+            this.ch = Channels.newChannel(in);
             this.sslHnd = sslHnd;
 
             buf = ByteBuffer.allocate(32 * 1024);

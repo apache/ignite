@@ -20,6 +20,8 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAbstractSelfTest;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -33,6 +35,8 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setStatisticsPrintFrequency(1000);
 
         return cfg;
     }
