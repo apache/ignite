@@ -60,7 +60,9 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             _ignite = ignite;
 
-            // TODO: Notify plugins
+            // Notify plugins.
+            foreach (var provider in _pluginTask.Result.Values)
+                provider.OnIgniteStart();
         }
 
         /// <summary>
