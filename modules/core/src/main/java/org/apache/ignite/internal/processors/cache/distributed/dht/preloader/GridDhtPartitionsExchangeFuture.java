@@ -1063,15 +1063,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes, boolean compress) {
         GridCacheVersion last = lastVer.get();
 
-        //todo move
-      /*  if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
-            m.setExceptionsMap(changeGlobalStateExceptions);*/
-
-        return cctx.exchange().createPartitionsFullMessage(
+        GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(
             nodes,
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             compress);
+
+        if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
+            m.setExceptionsMap(changeGlobalStateExceptions);
+
+        return m;
     }
 
     /**
@@ -1173,6 +1174,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (!F.isEmpty(reqs) && err == null)
             for (DynamicCacheChangeRequest req : reqs)
                 cctx.cache().completeStartFuture(req);
+
+        if (exchangeOnChangeGlobalState && err == null)
+            cctx.kernalContext().state().onExchangeDone();
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
@@ -1717,12 +1721,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         updatePartitionFullMap(msg);
-
-        //todo check it
-     /*   ClusterState newState = newClusterState();
-
-        if (newState != null && cctx.kernalContext().cache().active() != newState)
-            cctx.cache().active(newState);*/
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(msg.getExceptionsMap()))
             cctx.kernalContext().state().onFullResponseMessage(msg.getExceptionsMap());

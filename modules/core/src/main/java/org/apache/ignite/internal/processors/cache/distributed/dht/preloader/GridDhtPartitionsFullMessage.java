@@ -197,18 +197,23 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        boolean marshal = (parts != null && partsBytes == null) || (partCntrs != null && partCntrsBytes == null);
+        boolean marshal = (parts != null && partsBytes == null) ||
+            (partCntrs != null && partCntrsBytes == null) ||
+            (exs != null && exsBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
+            byte[] exsBytes0 = null;
 
             if (parts != null && partsBytes == null)
                 partsBytes0 = U.marshal(ctx, parts);
 
-            //todo add exception
             if (partCntrs != null && partCntrsBytes == null)
                 partCntrsBytes0 = U.marshal(ctx, partCntrs);
+
+            if (exs != null && exsBytes == null)
+                exsBytes0 = U.marshal(ctx, exs);
 
             if (compress) {
                 assert !compressed();
@@ -216,9 +221,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 try {
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
+                    byte[] exsBytesZip = U.zip(exsBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
+                    exsBytes0 = exsBytesZip;
 
                     compressed(true);
                 }
@@ -229,6 +236,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
+            exsBytes = exsBytes0;
         }
     }
 
@@ -250,7 +258,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        //todo exception
         if (partsBytes != null && parts == null) {
             if (compressed())
                 parts = U.unmarshalZip(ctx.marshaller(), partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
@@ -297,6 +304,16 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();
+
+        if (exsBytes != null && exs == null){
+            if (compressed())
+                exs = U.unmarshalZip(ctx.marshaller(), exsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                exs = U.unmarshal(ctx, exsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
+
+        if (exs == null)
+            exs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -313,7 +330,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             writer.onHeaderWritten();
         }
 
-        //todo exception
         switch (writer.state()) {
             case 6:
                 if (!writer.writeMap("dupPartsData", dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
@@ -322,18 +338,24 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                if (!writer.writeByteArray("exsBytes", exsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByteArray("partsBytes", partsBytes))
+                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeByteArray("partsBytes", partsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -354,7 +376,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (!super.readFrom(buf, reader))
             return false;
 
-        //todo exception
         switch (reader.state()) {
             case 6:
                 dupPartsData = reader.readMap("dupPartsData", MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
@@ -365,7 +386,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 7:
-                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+                exsBytes = reader.readByteArray("exsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -373,7 +394,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 8:
-                partsBytes = reader.readByteArray("partsBytes");
+                partCntrsBytes = reader.readByteArray("partCntrsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -381,6 +402,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 9:
+                partsBytes = reader.readByteArray("partsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -401,7 +430,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     //todo
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
