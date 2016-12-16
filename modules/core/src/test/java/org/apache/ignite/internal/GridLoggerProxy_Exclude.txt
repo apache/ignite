@@ -1,2 +1,2 @@
 ^Received response to join request \[addr=
-\[msg=.+,\s*res=1\]$
+\[msg=.+,\s*res=\d+\]$
