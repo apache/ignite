@@ -44,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistribu
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -390,7 +392,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException) e);
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         fut.onResult(e);
                 }
@@ -428,6 +430,15 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         // Allow to get cached value from the local node.
         boolean allowLocRead = !forcePrimary || cctx.localNode().equals(affNodes.get(0));
+
+        // When persistence is enabled, only reading from partitions with OWNING state is allowed.
+        if (allowLocRead && cctx.shared().database().persistenceEnabled()) {
+            GridDhtLocalPartition locPart = cctx.topology().localPartition(part, topVer, false);
+
+            GridDhtPartitionState locPartState = locPart != null ? locPart.state() : GridDhtPartitionState.EVICTED;
+
+            allowLocRead = (locPartState == GridDhtPartitionState.OWNING);
+        }
 
         while (true) {
             GridNearCacheEntry entry = allowLocRead ? (GridNearCacheEntry)near.peekEx(key) : null;
@@ -989,7 +1000,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                    @Override public void applyx(
+                        IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion readyTopVer = fut.get();
 
                         // This will append new futures to compound list.
