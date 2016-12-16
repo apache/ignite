@@ -32,7 +32,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [Test]
         public void TestIgniteStartStop()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration()}
+            };
 
             TestIgnitePlugin plugin;
 
