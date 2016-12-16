@@ -202,7 +202,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
             return S.INCLUDE_SENSITIVE ?
                 new SB().a(val).toString() :
-                (val == null ? "null" : val.getClass().toGenericString());
+                (val == null ? "null" : val.getClass().toString());
         }
         catch (Exception e) {
             // No-op.
