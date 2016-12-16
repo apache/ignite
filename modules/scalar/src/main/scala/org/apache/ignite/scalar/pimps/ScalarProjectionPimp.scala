@@ -235,6 +235,18 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
         call$(Seq(s), p)
 
     /**
+     * Synchronous broadcast closure call on this projection with return value.
+     * This call will block until all results are received and ready.
+     *
+     * @param s Closure to call on all nodes in projection.
+     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
+     * @return Sequence of result values from all nodes where given closures were executed.
+     */
+    def bcastCall[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] {
+        toScalaSeq(value.ignite().compute(forPredicate(p)).broadcast(toCallable(r)))
+    }
+		
+    /**
      * Synchronous closure call on this projection with return value.
      * This call will block until all results are received and ready. If this projection
      * is empty than `dflt` closure will be executed and its result returned.
