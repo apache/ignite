@@ -130,6 +130,14 @@ namespace Apache.Ignite.Core.Impl.Plugin
                             typeof(IPluginProvider), provider.GetType().FullName));
                     }
 
+                    if (res.ContainsKey(provider.Name))
+                    {
+                        throw new IgniteException(string.Format("Duplicate plugin name '{0}' is used by " +
+                                                                "plugin providers '{1}' and '{2}'", provider.Name,
+                            provider.GetType().AssemblyQualifiedName,
+                            res[provider.Name].GetType().AssemblyQualifiedName));
+                    }
+
                     provider.Start(this);
 
                     res[provider.Name] = provider;
