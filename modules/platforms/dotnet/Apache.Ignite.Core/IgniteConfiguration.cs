@@ -808,9 +808,7 @@
         public ISwapSpaceSpi SwapSpaceSpi { get; set; }
 
         /// <summary>
-        /// Gets or sets the plugin configurations.
-        /// <para />
-        /// This property is examined by plugin implementations.
+        /// Gets or sets the configurations for plugins to be started.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
