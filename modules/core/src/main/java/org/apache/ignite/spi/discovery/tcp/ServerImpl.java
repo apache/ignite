@@ -7488,7 +7488,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (sslIn == null) {
                 synchronized (this) {
                     if (sslIn == null)
-                        sslIn = new SslInputStream(delegate.getInputStream(), ch, hnd);
+                        sslIn = new SslInputStream(delegate.getInputStream(), hnd);
                 }
             }
 
@@ -7681,12 +7681,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param in Original stream.
-         * @param ch Socket channel.
          * @param sslHnd SSL handler.
          */
-        SslInputStream(final InputStream in, final SocketChannel ch, final BlockingSslHandler sslHnd) {
+        SslInputStream(final InputStream in, final BlockingSslHandler sslHnd) {
             this.in = in;
-            this.ch = Channels.newChannel(in);
+            this.ch = Channels.newChannel(in); // workaround, because SocketChannel ignores timeout
             this.sslHnd = sslHnd;
 
             buf = ByteBuffer.allocate(32 * 1024);

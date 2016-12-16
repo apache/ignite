@@ -20,8 +20,6 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAbstractSelfTest;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -36,50 +34,11 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
 
         cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setStatisticsPrintFrequency(1000);
-
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
-    }
-
-    @Override public void testPut() throws Exception {
-    }
-
-    @Override public void testGetAndPut() throws Exception {
-        super.testGetAndPut();
-    }
-
-    @Override public void testPutStoreEnabled() throws Exception {
-    }
-
-    @Override public void testPutAll() throws Exception {
-    }
-
-    @Override public void testPutAsync() throws Exception {
-    }
-
-    @Override public void testPutAsyncStoreEnabled() throws Exception {
-    }
-
-    @Override public void testInvoke() throws Exception {
-    }
-
-    @Override public void testInvokeAll() throws Exception {
-    }
-
-    @Override public void testInvokeAllOffheapSwap() throws Exception {
-    }
-
-    @Override public void testInvokeAllOffheapTiered() throws Exception {
-    }
-
-    @Override public void testFailsWithNoRetries() throws Exception {
-    }
-
-    @Override public void testFailsWithNoRetriesAsync() throws Exception {
     }
 }
