@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
-            _pluginContext.Ignite = this;
+            _pluginContext.OnStart(this);
 
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);

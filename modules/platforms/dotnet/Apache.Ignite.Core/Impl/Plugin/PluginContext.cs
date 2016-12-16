@@ -47,12 +47,24 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /// <summary>
+        /// Called when Ignite has started.
+        /// </summary>
+        /// <param name="ignite">The ignite.</param>
+        public void OnStart(IIgnite ignite)
+        {
+            Debug.Assert(ignite != null);
+
+            _ignite = ignite;
+
+            // TODO: Notify plugins
+        }
+
+        /// <summary>
         /// Gets the Ignite.
         /// </summary>
         public IIgnite Ignite
         {
             get { return _ignite; }
-            internal set { _ignite = value; }
         }
 
         /// <summary>
