@@ -2202,8 +2202,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> getAndPutAsync0(final K key, final V val,
-        @Nullable final CacheEntryPredicate filter) {
+    public IgniteInternalFuture<V> getAndPutAsync0(final K key,
+        final V val,
+        @Nullable final CacheEntryPredicate filter)
+    {
         return asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
                 return tx.putAsync(ctx, readyTopVer, key, val, true, filter)
@@ -3071,7 +3073,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final IgniteInternalFuture<Boolean> removeAsync(final K key, final V val) {
-        A.notNull(key, "key");
+        A.notNull(key, "val");
 
         return removeAsync(key, ctx.equalsVal(val));
     }

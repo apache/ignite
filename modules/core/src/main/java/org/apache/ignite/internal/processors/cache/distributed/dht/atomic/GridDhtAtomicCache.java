@@ -740,7 +740,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             true,
             UPDATE,
-            false).chain(RET2NULL).get();
+            false).get();
     }
 
     /** {@inheritDoc} */
@@ -1084,6 +1084,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param waitTopFut Whether to wait for topology future.
+     * @param async Async operation flag.
      * @return Completion future.
      */
     @SuppressWarnings("ConstantConditions")
@@ -1200,6 +1201,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param retval Return value flag.
      * @param filter Filter.
      * @param waitTopFut Whether to wait for topology future.
+     * @param async Async operation flag.
      * @return Future.
      */
     private IgniteInternalFuture update0(

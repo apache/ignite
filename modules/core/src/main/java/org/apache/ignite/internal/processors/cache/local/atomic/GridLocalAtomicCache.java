@@ -1468,7 +1468,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected IgniteInternalFuture asyncOp(final Callable<?> op) {
+    private IgniteInternalFuture asyncOp(final Callable<?> op) {
         IgniteInternalFuture fail = asyncOpAcquire();
 
         if (fail != null)
