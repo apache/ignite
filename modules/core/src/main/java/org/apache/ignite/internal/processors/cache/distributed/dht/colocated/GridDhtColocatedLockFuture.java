@@ -482,8 +482,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 IgniteInternalFuture<Boolean> fut = future(i);
 
                 if (!isMini(fut))

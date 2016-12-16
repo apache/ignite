@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
@@ -37,10 +38,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -194,7 +197,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         for (int i = 0; i < gridCount(); i++)
             grid(i).events().localListen(
-                    new SwapUnswapLocalListener(), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
+                new SwapUnswapLocalListener(), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
         jcache().put("key", 1);
 
@@ -202,13 +205,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
             if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
                 jcache(i).localEvict(Collections.singleton("key"));
 
-                assert jcache(i).localPeek("key", ONHEAP) == null;
+                assertNull(jcache(i).localPeek("key", ONHEAP));
 
-                assert jcache(i).get("key") == 1;
+                assertEquals((Integer)1, jcache(i).get("key"));
 
-                assert swapEvts.get() == 1 : "Swap events: " + swapEvts.get();
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return swapEvts.get() == 1 && unswapEvts.get() == 1;
+                    }
+                }, 5000);
 
-                assert unswapEvts.get() == 1 : "Unswap events: " + unswapEvts.get();
+                assertEquals(1, swapEvts.get());
+
+                assertEquals(1, unswapEvts.get());
 
                 break;
             }
@@ -464,11 +473,25 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             switch (evt.type()) {
                 case EVT_CACHE_OBJECT_SWAPPED:
-                    ignite.atomicLong("swapEvts", 0, false).incrementAndGet();
+                    // Run from another thread to avoid deadlock with striped pool.
+                    GridTestUtils.runAsync(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            ignite.atomicLong("swapEvts", 0, false).incrementAndGet();
+
+                            return null;
+                        }
+                    });
 
                     break;
                 case EVT_CACHE_OBJECT_UNSWAPPED:
-                    ignite.atomicLong("unswapEvts", 0, false).incrementAndGet();
+                    // Run from another thread to avoid deadlock with striped pool.
+                    GridTestUtils.runAsync(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            ignite.atomicLong("unswapEvts", 0, false).incrementAndGet();
+
+                            return null;
+                        }
+                    });
 
                     break;
             }
