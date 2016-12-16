@@ -808,16 +808,6 @@
         public ISwapSpaceSpi SwapSpaceSpi { get; set; }
 
         /// <summary>
-        /// Gets or sets additional plugin paths. Paths should refer to dll files,
-        /// and can be absolute or relative to current directory, IGNITE_HOME, or Apache.Ignite.Core.dll location.
-        /// <para />
-        /// By default, plugins are loaded from assemblies in memory and in directory with Apache.Ignite.Core.dll 
-        /// by scanning for <see cref="IPluginProvider"/> implementations.
-        /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<string> PluginPaths { get; set; }
-
-        /// <summary>
         /// Gets or sets the plugin configurations.
         /// <para />
         /// This property is examined by plugin implementations.

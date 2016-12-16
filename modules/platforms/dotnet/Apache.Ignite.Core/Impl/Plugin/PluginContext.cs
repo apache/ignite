@@ -17,11 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
 
@@ -34,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         private readonly IgniteConfiguration _igniteConfiguration;
 
         /** */
-        private readonly Task<Dictionary<string, IPluginProvider>> _pluginTask;
+        private readonly Dictionary<string, IPluginProvider> _pluginProviders;
 
         /** */
         private volatile IIgnite _ignite;
@@ -50,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             _igniteConfiguration = igniteConfiguration;
 
             // Load plugins in a separate thread while Ignite is starting.
-            _pluginTask = Task<Dictionary<string, IPluginProvider>>.Factory.StartNew(LoadPlugins);
+            _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations);
         }
 
         /// <summary>
@@ -80,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             _ignite = ignite;
 
             // Notify plugins.
-            foreach (var provider in _pluginTask.Result.Values)
+            foreach (var provider in _pluginProviders.Values)
                 provider.OnIgniteStart();
         }
 
@@ -93,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             IPluginProvider provider;
 
-            if (!_pluginTask.Result.TryGetValue(name, out provider))
+            if (!_pluginProviders.TryGetValue(name, out provider))
                 throw new PluginNotFoundException(
                     string.Format("Ignite plugin with name '{0}' not found. Make sure that containing assembly " +
                                   "is in '{1}' folder or configure IgniteConfiguration.PluginPaths.", 
@@ -105,47 +102,41 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private Dictionary<string, IPluginProvider> LoadPlugins()
+        private Dictionary<string, IPluginProvider> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations)
         {
             var res = new Dictionary<string, IPluginProvider>();
 
-            // Load all assemblies from config to memory.
-
-            // Load from memory.
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            var providerTypes = assemblies.SelectMany(x => x.GetTypes())
-                .Where(t => !t.IsAbstract && typeof(IPluginProvider).IsAssignableFrom(t));
-
-            foreach (var providerType in providerTypes)
+            if (pluginConfigurations != null)
             {
-                var provider = StartProvider(providerType);
+                foreach (var cfg in pluginConfigurations)
+                {
+                    if (cfg.PluginProviderFactory == null)
+                    {
+                        throw new IgniteException(string.Format("{0}.PluginProviderFactory can not be null",
+                            typeof(IPluginConfiguration).Name));
+                    }
 
-                res[provider.Name] = provider;
+                    var provider = cfg.PluginProviderFactory.CreateInstance();
+
+                    if (provider == null)
+                    {
+                        throw new IgniteException(string.Format("{0}.PluginProviderFactory can not return null",
+                            typeof(IPluginConfiguration).Name));
+                    }
+
+                    if (string.IsNullOrEmpty(provider.Name))
+                    {
+                        throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
+                            typeof(IPluginProvider), provider.GetType().FullName));
+                    }
+
+                    provider.Start(this);
+
+                    res[provider.Name] = provider;
+                }
             }
 
-
-            // Scan current folder + include assemblies from config.
-            // TODO: What's with Web scenario? Shadow copy should copy everything, so that's fine.
-            // TODO: SHould we ditch folder and memory scanning, and accept a list of types instead of paths?
-            // We don't want to load every single thing for sure.
-
             return res;
-        }
-
-        /// <summary>
-        /// Starts the provider.
-        /// </summary>
-        private IPluginProvider StartProvider(Type providerType)
-        {
-            var provider = (IPluginProvider) Activator.CreateInstance(providerType);
-
-            if (string.IsNullOrEmpty(provider.Name))
-                throw new IgniteException("IPluginProvider.Name should not be null or empty: " +
-                                          providerType.AssemblyQualifiedName);
-
-            provider.Start(this);
-            return provider;
         }
     }
 }
