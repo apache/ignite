@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Plugin
 {
     /// <summary>
-    /// Pluggable Ignite component.
+    /// Pluggable Ignite component. Should have parameterless constructor.
     /// <para />
     /// Ignite plugins are loaded according to <see cref="IgniteConfiguration.PluginPaths"/>.
     /// </summary>

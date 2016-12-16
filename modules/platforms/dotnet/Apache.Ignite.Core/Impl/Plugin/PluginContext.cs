@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Plugin;
 
@@ -84,9 +86,30 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private static Dictionary<string, IPluginProvider> LoadPlugins()
+        private Dictionary<string, IPluginProvider> LoadPlugins()
         {
-            return new Dictionary<string, IPluginProvider>();
+            var res = new Dictionary<string, IPluginProvider>();
+
+            // Load from memory.
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            var providerTypes = assemblies.SelectMany(x => x.GetTypes())
+                .Where(t => typeof(IPluginProvider).IsAssignableFrom(t));
+
+            foreach (var providerType in providerTypes)
+            {
+                var provider = (IPluginProvider) Activator.CreateInstance(providerType);
+
+                provider.Start(this);
+
+                res[provider.Name] = provider;
+            }
+
+
+            // Scan folders.
+            // TODO: Test with dynamic assemblies.
+
+            return res;
         }
     }
 }
