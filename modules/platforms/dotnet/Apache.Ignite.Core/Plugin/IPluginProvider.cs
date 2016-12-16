@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Plugin
     /// <summary>
     /// Pluggable Ignite component.
     /// <para />
-    /// Ignite plugins are loaded by scanning the directory with Apache.Ignite.Core.dll
+    /// Ignite plugins are loaded according to <see cref="IgniteConfiguration.PluginPaths"/>.
     /// </summary>
     public interface IPluginProvider
     {
