@@ -43,6 +43,8 @@ namespace Apache.Ignite.Core.Plugin
 
         /// <summary>
         /// Starts the plugin provider.
+        /// <para />
+        /// <see cref="IPluginContext.Ignite"/> can be null until <see cref="OnIgniteStart"/> is called.
         /// </summary>
         /// <param name="context">The context.</param>
         void Start(IPluginContext context);
@@ -52,5 +54,12 @@ namespace Apache.Ignite.Core.Plugin
         /// </summary>
         /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
         void Stop(bool cancel);
+
+        /// <summary>
+        /// Called when Ignite has been started and is fully functional.
+        /// <para />
+        /// Use <see cref="IIgnite.Stopping"/> and <see cref="IIgnite.Stopped"/> to track shutdown process.
+        /// </summary>
+        void OnIgniteStart();
     }
 }

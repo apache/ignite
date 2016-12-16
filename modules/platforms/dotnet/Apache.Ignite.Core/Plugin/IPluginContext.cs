@@ -27,6 +27,11 @@ namespace Apache.Ignite.Core.Plugin
         /// </summary>
         IIgnite Ignite { get; }
 
+        /// <summary>
+        /// Gets the Ignite configuration.
+        /// </summary>
+        IgniteConfiguration IgniteConfiguration { get; }
+
         // TODO: Anything else?
     }
 }
