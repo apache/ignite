@@ -34,24 +34,31 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
 
+            TestIgnitePlugin plugin;
+
             using (var ignite = Ignition.Start(cfg))
             {
                 Assert.Throws<PluginNotFoundException>(() => ignite.GetPlugin<object>("foobar"));
                 Assert.Throws<Exception>(() => ignite.GetPlugin<string>(TestIgnitePluginProvider.PluginName));
 
-                var plugin = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
+                plugin = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.IsNotNull(plugin);
 
                 var prov = plugin.Provider;
                 Assert.IsTrue(prov.Started);
+                Assert.AreEqual(false, prov.Stopped);
                 Assert.AreEqual(TestIgnitePluginProvider.PluginName, prov.Name);
                 Assert.IsNotNull(prov.Context);
 
                 var ctx = prov.Context;
                 Assert.IsNotNull(ctx.Ignite);
                 Assert.AreEqual(cfg, ctx.IgniteConfiguration);
-            }
-        }
 
+                var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
+                Assert.AreEqual(plugin, plugin2);
+            }
+
+            Assert.AreEqual(true, plugin.Provider.Stopped);
+        }
     }
 }
