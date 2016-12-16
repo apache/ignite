@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class PluginTest
     {
+        /** */
         private const string PluginName = "TestPlugin1";
 
         /// <summary>
