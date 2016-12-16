@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
                 var prov = plugin.Provider;
                 Assert.IsTrue(prov.Started);
-                Assert.AreEqual(false, prov.Stopped);
+                Assert.AreEqual(null, prov.Stopped);
                 Assert.AreEqual(TestIgnitePluginProvider.PluginName, prov.Name);
                 Assert.IsNotNull(prov.Context);
 
