@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Plugin
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
     /// Plugin configuration.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IPluginConfiguration
     {
         // No-op.

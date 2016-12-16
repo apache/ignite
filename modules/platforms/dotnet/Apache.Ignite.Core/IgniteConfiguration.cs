@@ -815,5 +815,13 @@
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> PluginPaths { get; set; }
+
+        /// <summary>
+        /// Gets or sets the plugin configurations.
+        /// <para />
+        /// This property is examined by plugin implementations.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
     }
 }
