@@ -328,19 +328,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer);
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx entryExSafe(
-        KeyCacheObject key,
-        AffinityTopologyVersion topVer
-    ) {
-        try {
-            return ctx.affinity().localNode(key, topVer) ? entryEx(key) : null;
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return null;
-        }
-    }
-
     /**
      * @param keys Keys to load.
      * @param readThrough Read through flag.
