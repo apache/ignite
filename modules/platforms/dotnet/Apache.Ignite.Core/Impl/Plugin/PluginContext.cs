@@ -130,7 +130,11 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
 
             // Scan folders.
-            // TODO: Test with dynamic assemblies.
+            // TODO: Is it a good idea to probe directories aggressively like this? What are the other options?
+            // * We can have some kind of a file on disk indicating assemblies to load.
+            // * We can only probe referenced non-system assemblies.
+            // The use case is multiple plugins via NuGet. How do we do this?
+
 
             return res;
         }
