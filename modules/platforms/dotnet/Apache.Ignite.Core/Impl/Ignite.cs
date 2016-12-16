@@ -708,10 +708,11 @@ namespace Apache.Ignite.Core.Impl
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
         /** <inheritdoc /> */
-        public T GetPlugin<T>(string name)
+        public T GetPlugin<T>(string name) where T : class
         {
-            // TODO
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return _pluginContext.GetProvider(name).GetPlugin<T>();
         }
 
         /// <summary>

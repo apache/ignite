@@ -316,6 +316,6 @@ namespace Apache.Ignite.Core
         /// <param name="name">Plugin name.</param>
         /// <exception cref="PluginNotFoundException">When plugin with specified name has not been found.</exception>
         /// <returns>Plugin instance.</returns>
-        T GetPlugin<T>(string name);
+        T GetPlugin<T>(string name) where T : class;
     }
 }

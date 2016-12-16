@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
@@ -53,21 +54,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /// <summary>
-        /// Called when Ignite has started.
-        /// </summary>
-        /// <param name="ignite">The ignite.</param>
-        public void OnStart(IIgnite ignite)
-        {
-            Debug.Assert(ignite != null);
-
-            _ignite = ignite;
-
-            // Notify plugins.
-            foreach (var provider in _pluginTask.Result.Values)
-                provider.OnIgniteStart();
-        }
-
-        /// <summary>
         /// Gets the Ignite.
         /// </summary>
         public IIgnite Ignite
@@ -84,6 +70,39 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /// <summary>
+        /// Called when Ignite has started.
+        /// </summary>
+        /// <param name="ignite">The ignite.</param>
+        public void OnStart(IIgnite ignite)
+        {
+            Debug.Assert(ignite != null);
+
+            _ignite = ignite;
+
+            // Notify plugins.
+            foreach (var provider in _pluginTask.Result.Values)
+                provider.OnIgniteStart();
+        }
+
+        /// <summary>
+        /// Gets the provider.
+        /// </summary>
+        public IPluginProvider GetProvider(string name)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(name));
+
+            IPluginProvider provider;
+
+            if (!_pluginTask.Result.TryGetValue(name, out provider))
+                throw new PluginNotFoundException(
+                    string.Format("Ignite plugin with name '{0}' not found. Make sure that containing assembly " +
+                                  "is in '{1}' folder or configure IgniteConfiguration.PluginPaths.", 
+                                  name, GetType().Assembly.Location));
+
+            return provider;
+        }
+
+        /// <summary>
         /// Loads the plugins.
         /// </summary>
         private Dictionary<string, IPluginProvider> LoadPlugins()
@@ -94,11 +113,15 @@ namespace Apache.Ignite.Core.Impl.Plugin
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
             var providerTypes = assemblies.SelectMany(x => x.GetTypes())
-                .Where(t => typeof(IPluginProvider).IsAssignableFrom(t));
+                .Where(t => !t.IsAbstract && typeof(IPluginProvider).IsAssignableFrom(t));
 
             foreach (var providerType in providerTypes)
             {
                 var provider = (IPluginProvider) Activator.CreateInstance(providerType);
+
+                if (string.IsNullOrEmpty(provider.Name))
+                    throw new IgniteException("IPluginProvider.Name should not be null or empty: " +
+                                              providerType.AssemblyQualifiedName);
 
                 provider.Start(this);
 
