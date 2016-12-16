@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
@@ -27,6 +29,9 @@ namespace Apache.Ignite.Core.Impl.Plugin
     {
         /** */
         private readonly IgniteConfiguration _igniteConfiguration;
+
+        /** */
+        private readonly Task<Dictionary<string, IPluginProvider>> _pluginTask;
 
         /** */
         private volatile IIgnite _ignite;
@@ -41,9 +46,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             _igniteConfiguration = igniteConfiguration;
 
-
-            // TODO: Load plugins (do this asynchronously while Ignite is starting?)
-
+            // Load plugins in a separate thread while Ignite is starting.
+            _pluginTask = Task<Dictionary<string, IPluginProvider>>.Factory.StartNew(LoadPlugins);
         }
 
         /// <summary>
@@ -73,6 +77,14 @@ namespace Apache.Ignite.Core.Impl.Plugin
         public IgniteConfiguration IgniteConfiguration
         {
             get { return _igniteConfiguration; }
+        }
+
+        /// <summary>
+        /// Loads the plugins.
+        /// </summary>
+        private static Dictionary<string, IPluginProvider> LoadPlugins()
+        {
+            return new Dictionary<string, IPluginProvider>();
         }
     }
 }
