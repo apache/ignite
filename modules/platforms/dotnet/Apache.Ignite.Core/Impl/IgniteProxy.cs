@@ -427,7 +427,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public T GetPlugin<T>(string name)
+        public T GetPlugin<T>(string name) where T : class
         {
             return _ignite.GetPlugin<T>(name);
         }
