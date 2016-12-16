@@ -40,5 +40,17 @@ namespace Apache.Ignite.Core.Plugin
         /// <typeparam name="T">Plugin instance type.</typeparam>
         /// <returns>Plugin instance.</returns>
         T GetPlugin<T>();
+
+        /// <summary>
+        /// Starts the plugin provider.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        void Start(IPluginContext context);
+
+        /// <summary>
+        /// Stops the plugin provider.
+        /// </summary>
+        /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
+        void Stop(bool cancel);
     }
 }
