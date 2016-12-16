@@ -18,18 +18,10 @@
 namespace Apache.Ignite.Core.Plugin
 {
     /// <summary>
-    /// Plugin execution context.
+    /// Plugin configuration.
     /// </summary>
-    public interface IPluginContext
+    public interface IPluginConfiguration
     {
-        /// <summary>
-        /// Gets the Ignite.
-        /// </summary>
-        IIgnite Ignite { get; }
-
-        /// <summary>
-        /// Gets the Ignite configuration.
-        /// </summary>
-        IgniteConfiguration IgniteConfiguration { get; }
+        // No-op.
     }
 }
