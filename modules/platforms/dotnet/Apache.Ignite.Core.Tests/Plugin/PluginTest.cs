@@ -27,10 +27,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
     public class PluginTest
     {
         /// <summary>
-        /// Tests a plugin that is in a loaded assembly.
+        /// Tests the plugin life cycle.
         /// </summary>
         [Test]
-        public void TestLoadFromMemory()
+        public void TestIgniteStartStop()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
 
@@ -62,12 +62,12 @@ namespace Apache.Ignite.Core.Tests.Plugin
         }
 
         /// <summary>
-        /// Tests plugin discovery in various locations.
+        /// Tests invalid plugins.
         /// </summary>
         [Test]
-        public void TestLoadFromDisk()
+        public void TestInvalidPlugins()
         {
-            // TODO: Current dir, dll dir, relative path, absolute path, dynamic loading to memory.
+            // TODO: Invalid configuration, invalid name, duplicate name, etc...
         }
     }
 }

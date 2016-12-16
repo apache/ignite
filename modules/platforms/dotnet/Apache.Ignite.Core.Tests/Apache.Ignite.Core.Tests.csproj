@@ -81,6 +81,7 @@
     <Compile Include="Log\NLogLoggerTest.cs" />
     <Compile Include="Plugin\PluginTest.cs" />
     <Compile Include="Plugin\TestIgnitePlugin.cs" />
+    <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />

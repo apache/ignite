@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Plugin
+ namespace Apache.Ignite.Core.Tests.Plugin
 {
-    /// <summary>
-    /// Test Ignite plugin.
-    /// </summary>
-    public class TestIgnitePlugin
-    {
-        /// <summary>
-        /// Gets the provider.
-        /// </summary>
-        public TestIgnitePluginProvider Provider { get; private set; }
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Plugin;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TestIgnitePlugin"/> class.
-        /// </summary>
-        /// <param name="provider">The provider.</param>
-        public TestIgnitePlugin(TestIgnitePluginProvider provider)
+    /// <summary>
+    /// Plugin configuration.
+    /// </summary>
+    public class TestIgnitePluginConfiguration : IPluginConfiguration
+    {
+        /** <inheritdoc /> */
+        public IFactory<IPluginProvider> PluginProviderFactory
         {
-            Provider = provider;
+            get { return new Factory(); }
+        }
+
+        private class Factory : IFactory<TestIgnitePluginProvider>
+        {
+            public TestIgnitePluginProvider CreateInstance()
+            {
+                return new TestIgnitePluginProvider();
+            }
         }
     }
 }
