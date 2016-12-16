@@ -27,10 +27,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
     public class PluginTest
     {
         /// <summary>
-        /// Tests the start stop.
+        /// Tests a plugin that is in a loaded assembly.
         /// </summary>
         [Test]
-        public void TestStartStop()
+        public void TestLoadFromMemory()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
 
@@ -59,6 +59,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
             }
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
+        }
+
+        /// <summary>
+        /// Tests plugin discovery in various locations.
+        /// </summary>
+        [Test]
+        public void TestLoadFromDisk()
+        {
+            // TODO: Current dir, dll dir, relative path, absolute path, dynamic loading to memory.
         }
     }
 }
