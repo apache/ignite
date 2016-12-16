@@ -698,6 +698,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
+        /** <inheritdoc /> */
+        public T GetPlugin<T>(string name)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
