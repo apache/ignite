@@ -109,6 +109,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
         {
             var res = new Dictionary<string, IPluginProvider>();
 
+            // Load all assemblies from config to memory.
+
             // Load from memory.
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
@@ -117,26 +119,33 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             foreach (var providerType in providerTypes)
             {
-                var provider = (IPluginProvider) Activator.CreateInstance(providerType);
-
-                if (string.IsNullOrEmpty(provider.Name))
-                    throw new IgniteException("IPluginProvider.Name should not be null or empty: " +
-                                              providerType.AssemblyQualifiedName);
-
-                provider.Start(this);
+                var provider = StartProvider(providerType);
 
                 res[provider.Name] = provider;
             }
 
 
-            // Scan folders.
-            // TODO: Is it a good idea to probe directories aggressively like this? What are the other options?
-            // * We can have some kind of a file on disk indicating assemblies to load.
-            // * We can only probe referenced non-system assemblies.
-            // The use case is multiple plugins via NuGet. How do we do this?
-
+            // Scan current folder + include assemblies from config.
+            // TODO: What's with Web scenario? Shadow copy should copy everything, so that's fine.
+            // TODO: SHould we ditch folder and memory scanning, and accept a list of types instead of paths?
+            // We don't want to load every single thing for sure.
 
             return res;
+        }
+
+        /// <summary>
+        /// Starts the provider.
+        /// </summary>
+        private IPluginProvider StartProvider(Type providerType)
+        {
+            var provider = (IPluginProvider) Activator.CreateInstance(providerType);
+
+            if (string.IsNullOrEmpty(provider.Name))
+                throw new IgniteException("IPluginProvider.Name should not be null or empty: " +
+                                          providerType.AssemblyQualifiedName);
+
+            provider.Start(this);
+            return provider;
         }
     }
 }
