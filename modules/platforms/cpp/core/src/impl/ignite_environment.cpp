@@ -19,6 +19,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/binary/binary.h"
+#include "ignite/impl/binary/binary_type_updater_impl.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -28,52 +29,70 @@ using namespace ignite::binary;
 
 namespace ignite 
 {
-    namespace impl 
+    namespace impl
     {
         /**
-         * OnStart callback.
-         *
-         * @param target Target environment.
-         * @param proc Processor instance (not used for now).
-         * @param memPtr Memory pointer.
-         */
-        void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
+        * Callback codes.
+        */
+        enum CallbackOp
         {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+            REALLOC = 36,
+            ON_START = 49,
+            ON_STOP = 50 
+        };
 
-            ptr->Get()->OnStartCallback(memPtr);
+        /**
+         * InLongOutLong callback.
+         * 
+         * @param target Target environment.
+         * @param type Operation type.
+         * @param val Value.
+         */
+        long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
+        {
+            if (type == ON_STOP)
+            {
+                SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+                delete ptr;
+            }
+
+            return 0;
         }
 
         /**
-         * OnStop callback.
-         *
+         * InLongOutLong callback.
+         * 
          * @param target Target environment.
+         * @param type Operation type.
+         * @param val1 Value1.
+         * @param val2 Value2.
+         * @param val3 Value3.
+         * @param arg Object arg.
          */
-        void IGNITE_CALL OnStop(void* target)
+        long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2, 
+            long long val3, void* arg)
         {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+            if (type == ON_START)
+            {
+                SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            delete ptr;
+                ptr->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));
+            }
+            else if (type == REALLOC)
+            {
+                SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+                SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
+
+                mem.Get()->Reallocate(static_cast<int32_t>(val2));
+            }
+
+            return 0;
         }
 
-        /**
-         * Memory reallocate callback.
-         *
-         * @param target Target environment.
-         * @param memPtr Memory pointer.
-         * @param cap Required capasity.
-         */
-        void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
-        {
-            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
-
-            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
-
-            mem.Get()->Reallocate(cap);
-        }
-
-        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
-            metaMgr(new BinaryTypeManager())
+        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(0),
+            proc(), metaMgr(new BinaryTypeManager()), metaUpdater(0)
         {
             // No-op.
         }
@@ -81,11 +100,9 @@ namespace ignite
         IgniteEnvironment::~IgniteEnvironment()
         {
             delete latch;
-
-            if (name)
-                delete name;
-
+            delete name;
             delete metaMgr;
+            delete metaUpdater;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -94,21 +111,26 @@ namespace ignite
 
             hnds.target = target;
 
-            hnds.onStart = OnStart;
-            hnds.onStop = OnStop;
+            hnds.inLongOutLong = InLongOutLong;
+            hnds.inLongLongLongObjectOutLong = InLongLongLongObjectOutLong;
 
-            hnds.memRealloc = MemoryReallocate;
-
-            hnds.error = NULL;
+            hnds.error = 0;
 
             return hnds;
         }
 
-        void IgniteEnvironment::Initialize(SharedPointer<JniContext> ctx)
+        void IgniteEnvironment::SetContext(SharedPointer<JniContext> ctx)
         {
             this->ctx = ctx;
+        }
 
+        void IgniteEnvironment::Initialize()
+        {
             latch->CountDown();
+
+            jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
+
+            metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
         }
 
         const char* IgniteEnvironment::InstanceName() const
@@ -160,14 +182,27 @@ namespace ignite
             return metaMgr;
         }
 
-        void IgniteEnvironment::OnStartCallback(long long memPtr)
+        BinaryTypeUpdater* IgniteEnvironment::GetTypeUpdater()
         {
+            return metaUpdater;
+        }
+
+        void IgniteEnvironment::ProcessorReleaseStart()
+        {
+            if (proc.Get())
+                ctx.Get()->ProcessorReleaseStart(proc.Get());
+        }
+
+        void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
+        {
+            this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
+
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
 
             BinaryReaderImpl reader(&stream);
 
-            int32_t nameLen = reader.ReadString(NULL, 0);
+            int32_t nameLen = reader.ReadString(0, 0);
 
             if (nameLen >= 0)
             {
@@ -175,7 +210,7 @@ namespace ignite
                 reader.ReadString(name, nameLen + 1);
             }
             else
-                name = NULL;
+                name = 0;
         }
     }
 }

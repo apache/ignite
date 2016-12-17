@@ -52,6 +52,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override T Read(BinaryReader reader)
         {
+            // Reading and skipping row size in bytes.
+            reader.ReadInt();
+
             int cnt = reader.ReadInt();
 
             return _readerFunc(reader, cnt);

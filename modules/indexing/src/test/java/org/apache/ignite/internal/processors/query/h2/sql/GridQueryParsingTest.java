@@ -40,8 +40,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
+import org.h2.command.dml.Update;
 import org.h2.engine.Session;
+import org.h2.expression.Expression;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.util.StringUtils;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -87,17 +90,26 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         return c;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ignite = startGrid();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        ignite = null;
+
+        super.afterTestsStopped();
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testAllExamples() throws Exception {
+    public void testParseSelectAndUnion() throws Exception {
         checkQuery("select 42");
         checkQuery("select ()");
         checkQuery("select (1)");
@@ -111,6 +123,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select (select 1)");
         checkQuery("select (select 1, select ?)");
         checkQuery("select ((select 1), select ? + ?)");
+        checkQuery("select CURRENT_DATE");
+        checkQuery("select CURRENT_DATE()");
 
         checkQuery("select extract(year from ?)");
         checkQuery("select convert(?, timestamp)");
@@ -254,6 +268,106 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
     }
 
+    /** */
+    public void testParseMerge() throws Exception {
+        /* Plain rows w/functions, operators, defaults, and placeholders. */
+        checkQuery("merge into Person(old, name) values(5, 'John')");
+        checkQuery("merge into Person(name) values(DEFAULT)");
+        checkQuery("merge into Person(name) values(DEFAULT), (null)");
+        checkQuery("merge into Person(name, parentName) values(DEFAULT, null), (?, ?)");
+        checkQuery("merge into Person(old, name) values(5, 'John',), (6, 'Jack')");
+        checkQuery("merge into Person(old, name) values(5 * 3, DEFAULT,)");
+        checkQuery("merge into Person(old, name) values(ABS(-8), 'Max')");
+        checkQuery("merge into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
+        checkQuery("merge into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
+        checkQuery("merge into Person(old, name, parentName) values" +
+            "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
+            "(?, 'AlexanderPushkin', null)," +
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT)");
+        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
+            "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
+        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
+            "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
+        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
+            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
+        checkQuery("merge into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
+            "Person where date='20110312'");
+
+        /* Subqueries. */
+        checkQuery("merge into Person(old, name) select old, parentName from Person");
+        checkQuery("merge into Person(old, name) select old, parentName from Person where old > 5");
+        checkQuery("merge into Person(old, name) select 5, 'John'");
+        checkQuery("merge into Person(old, name) select p1.old, 'Name' from person p1 join person p2 on " +
+            "p2.name = p1.parentName where p2.old > 30");
+        checkQuery("merge into Person(old) select 5 from Person UNION select street from Address limit ? offset ?");
+    }
+
+    /** */
+    public void testParseInsert() throws Exception {
+        /* Plain rows w/functions, operators, defaults, and placeholders. */
+        checkQuery("insert into Person(old, name) values(5, 'John')");
+        checkQuery("insert into Person(name) values(DEFAULT)");
+        checkQuery("insert into Person default values");
+        checkQuery("insert into Person() values()");
+        checkQuery("insert into Person(name) values(DEFAULT), (null)");
+        checkQuery("insert into Person(name) values(DEFAULT),");
+        checkQuery("insert into Person(name, parentName) values(DEFAULT, null), (?, ?)");
+        checkQuery("insert into Person(old, name) values(5, 'John',), (6, 'Jack')");
+        checkQuery("insert into Person(old, name) values(5 * 3, DEFAULT,)");
+        checkQuery("insert into Person(old, name) values(ABS(-8), 'Max')");
+        checkQuery("insert into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
+        checkQuery("insert into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
+        checkQuery("insert into Person(old, name, parentName) values" +
+            "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
+            "(?, 'AlexanderPushkin', null)," +
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT),");
+        checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
+            "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
+        checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
+            "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
+        checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
+            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
+        checkQuery("insert into Person SET old = 5, name = 'John'");
+        checkQuery("insert into Person SET name = CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), old = " +
+            "select (5, 6)");
+        checkQuery("insert into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
+            "Person where date='20110312'");
+
+        /* Subqueries. */
+        checkQuery("insert into Person(old, name) select old, parentName from Person");
+        checkQuery("insert into Person(old, name) direct sorted select old, parentName from Person");
+        checkQuery("insert into Person(old, name) sorted select old, parentName from Person where old > 5");
+        checkQuery("insert into Person(old, name) select 5, 'John'");
+        checkQuery("insert into Person(old, name) select p1.old, 'Name' from person p1 join person p2 on " +
+            "p2.name = p1.parentName where p2.old > 30");
+        checkQuery("insert into Person(old) select 5 from Person UNION select street from Address limit ? offset ?");
+    }
+
+    /** */
+    public void testParseDelete() throws Exception {
+        checkQuery("delete from Person");
+        checkQuery("delete from Person p where p.old > ?");
+        checkQuery("delete from Person where old in (select (40, 41, 42))");
+        checkQuery("delete top 5 from Person where old in (select (40, 41, 42))");
+        checkQuery("delete top ? from Person where old > 5 and length(name) < ?");
+        checkQuery("delete from Person where name in ('Ivan', 'Peter') limit 20");
+        checkQuery("delete from Person where name in ('Ivan', ?) limit ?");
+    }
+
+    /** */
+    public void testParseUpdate() throws Exception {
+        checkQuery("update Person set name='Peter'");
+        checkQuery("update Person per set name='Peter', old = 5");
+        checkQuery("update Person p set name='Peter' limit 20");
+        checkQuery("update Person p set name='Peter', old = length('zzz') limit 20");
+        checkQuery("update Person p set name=DEFAULT, old = null limit ?");
+        checkQuery("update Person p set name=? where old >= ? and old < ? limit ?");
+        checkQuery("update Person p set name=(select a.Street from Address a where a.id=p.addrId), old = (select 42)" +
+            " where old = sqrt(?)");
+        checkQuery("update Person p set (name, old) = (select 'Peter', 42)");
+        checkQuery("update Person p set (name, old) = (select street, id from Address where id > 5 and id <= ?)");
+    }
+
     /**
      *
      */
@@ -306,7 +420,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlQuery gQry = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement gQry = new GridSqlQueryParser().parse(prepared);
 
         String res = gQry.getSQL();
 

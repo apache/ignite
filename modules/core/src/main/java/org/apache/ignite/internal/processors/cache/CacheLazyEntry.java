@@ -191,6 +191,8 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     @Override public <T> T unwrap(Class<T> cls) {
         if (cls.isAssignableFrom(Ignite.class))
             return (T)cctx.kernalContext().grid();
+        else if (cls.isAssignableFrom(GridCacheContext.class))
+            return (T)cctx;
         else if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
 

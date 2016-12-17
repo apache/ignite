@@ -21,8 +21,11 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -139,7 +142,7 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
         assert params != null;
 
         try {
-            paramsBytes = m.marshal(params);
+            paramsBytes = U.marshal(m, params);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -154,7 +157,13 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
         assert paramsBytes != null;
 
         try {
-            params = m.unmarshal(paramsBytes, U.resolveClassLoader(ctx.config()));
+            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+
+            if (m instanceof BinaryMarshaller)
+                // To avoid deserializing of enum types.
+                params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
+            else
+                params = U.unmarshal(m, paramsBytes, ldr);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -72,7 +72,9 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheExpireAndUpdateConsistencyTest.class);
 
+        // Eager ttl expiration tests.
         suite.addTestSuite(GridCacheTtlManagerNotificationTest.class);
+        suite.addTestSuite(IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class);
 
         return suite;
     }

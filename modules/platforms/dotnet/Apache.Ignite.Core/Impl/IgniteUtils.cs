@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -394,7 +393,7 @@ namespace Apache.Ignite.Core.Impl
         /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
         /// </summary>
         /// <returns>The full path of the temporary directory.</returns>
-        private static string GetTempDirectoryName()
+        internal static string GetTempDirectoryName()
         {
             while (true)
             {
@@ -464,7 +463,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(BinaryReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 
@@ -473,7 +472,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
+            var ignite = reader.Marshaller.Ignite;
 
             if (pred == null)
             {

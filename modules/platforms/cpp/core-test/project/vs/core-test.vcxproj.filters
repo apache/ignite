@@ -88,5 +88,8 @@
     <None Include="..\..\config\cache-query.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\invalid.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

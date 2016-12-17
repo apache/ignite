@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -349,14 +350,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         // Fields query
         GridQueryFieldsResult fieldsRes =
             spi.queryLocalSqlFields("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false);
+            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false, 0, null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
 
-        assertTrue(fieldsRes.iterator().hasNext());
+        IgniteSpiCloseableIterator<List<?>> it = fieldsRes.iterator();
 
-        List<?> fields = fieldsRes.iterator().next();
+        assertTrue(it.hasNext());
+
+        List<?> fields = it.next();
 
         assertEquals(4, fields.size());
 
@@ -367,7 +370,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             assertEquals(vals[i++], f);
         }
 
-        assertFalse(fieldsRes.iterator().hasNext());
+        assertFalse(it.hasNext());
 
         // Remove
         spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));
@@ -449,7 +452,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 range *= 3;
 
                 GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, Arrays.<Object>asList(1, range), null,
-                    false);
+                    false, 0, null);
 
                 assert res.iterator().hasNext();
 
@@ -539,7 +542,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /**
          * @return Space name.
          */
-        public String space() {
+        String space() {
             return space;
         }
 
@@ -551,17 +554,29 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(final String name) {
             return new GridQueryProperty() {
+                /** */
                 @Override public Object value(Object key, Object val) throws IgniteCheckedException {
                     return TypeDesc.this.value(name, key, val);
                 }
 
+                /** */
+                @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+                    throw new UnsupportedOperationException();
+                }
+
+                /** */
                 @Override public String name() {
                     return name;
                 }
 
-                @Override
-                public Class<?> type() {
+                /** */
+                @Override public Class<?> type() {
                     return Object.class;
+                }
+
+                /** */
+                @Override public boolean key() {
+                    return false;
                 }
             };
         }
@@ -581,6 +596,18 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return null;
         }
 
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException {
+            assert !F.isEmpty(field);
+
+            assert key instanceof Integer;
+
+            Map<String, Object> m = (Map<String, Object>)val;
+
+            m.put(field, propVal);
+        }
+
         /** */
         @Override public Map<String, GridQueryIndexDescriptor> indexes() {
             return textIdx == null ? Collections.<String, GridQueryIndexDescriptor>emptyMap() :
@@ -595,6 +622,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         @Override public Class<?> keyClass() {
             return Integer.class;
+        }
+
+        /** */
+        @Override public String keyTypeName() {
+            return null;
+        }
+
+        /** */
+        @Override public String valueTypeName() {
+            return null;
         }
 
         /** */

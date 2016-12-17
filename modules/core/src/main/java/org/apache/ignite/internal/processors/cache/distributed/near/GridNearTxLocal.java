@@ -231,7 +231,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void sendFinishReply(boolean commit, @Nullable Throwable err) {
+    @Override protected void sendFinishReply(@Nullable Throwable err) {
         // We are in near transaction, do not send finish reply to local node.
     }
 
@@ -796,6 +796,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut;
 
         if (fut == null) {
+            long timeout = remainingTime();
+
             // Future must be created before any exception can be thrown.
             if (optimistic()) {
                 fut = serializable() ?
@@ -807,6 +809,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
             if (!PREP_FUT_UPD.compareAndSet(this, null, fut))
                 return prepFut;
+
+            if (timeout == -1) {
+                fut.onDone(this, timeoutException());
+
+                return fut;
+            }
         }
         else
             // Prepare was called explicitly.
@@ -945,7 +953,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
+        return writeMap().isEmpty() && (optimistic() || readMap().isEmpty());
     }
 
     /**
@@ -964,8 +972,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Map<UUID, Collection<UUID>> txNodes,
         boolean last
     ) {
+        long timeout = remainingTime();
+
         if (state() != PREPARING) {
-            if (timedOut())
+            if (timeout == -1)
                 return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 
@@ -975,11 +985,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
 
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
+
         init();
 
         GridDhtTxPrepareFuture fut = new GridDhtTxPrepareFuture(
             cctx,
             this,
+            timeout,
             IgniteUuid.randomUuid(),
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
@@ -1048,50 +1062,48 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             return new GridFinishedFuture<IgniteInternalTx>(this);
         }
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (prep == null || prep.isDone()) {
             assert prep != null || optimistic();
 
+            IgniteCheckedException err = null;
+
             try {
                 if (prep != null)
                     prep.get(); // Check for errors of a parent future.
-
-                fut.finish();
-            }
-            catch (IgniteTxOptimisticCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                fut.onError(e);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to prepare transaction: " + this, e);
+                err = e;
 
-                fut.onError(e);
+                U.error(log, "Failed to prepare transaction: " + this, e);
             }
+
+            if (err != null)
+                fut.rollbackOnError(err);
+            else
+                fut.finish(true);
         }
         else
             prep.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
+                    IgniteCheckedException err = null;
+
                     try {
                         f.get(); // Check for errors of a parent future.
-
-                        fut.finish();
-                    }
-                    catch (IgniteTxOptimisticCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                        fut.onError(e);
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to prepare transaction: " + this, e);
+                        err = e;
 
-                        fut.onError(e);
+                        U.error(log, "Failed to prepare transaction: " + this, e);
                     }
+
+                    if (err != null)
+                        fut.rollbackOnError(err);
+                    else
+                        fut.finish(true);
                 }
             });
 
@@ -1107,7 +1119,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Rolling back colocated tx locally: " + this);
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/false);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
@@ -1124,7 +1136,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                         e.getMessage() + ']');
             }
 
-            fut.finish();
+            fut.finish(false);
         }
         else
             prep.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -1137,7 +1149,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                             e.getMessage() + ']');
                     }
 
-                    fut.finish();
+                    fut.finish(false);
                 }
             });
 

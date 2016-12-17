@@ -38,6 +38,7 @@ noinst_HEADERS = \
     ignite/odbc/row.h \
     ignite/odbc/utility.h \
     ignite/odbc/environment.h \
+    ignite/odbc/dsn_config.h \
     ignite/odbc/system/odbc_constants.h \
     ignite/odbc/system/socket_client.h \
     ignite/odbc/meta/primary_key_meta.h \
