@@ -18,8 +18,15 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.UUID;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Basic tests for atomic stamped.
@@ -119,5 +126,50 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends IgniteAt
 
         assertEquals(null, atomic.value());
         assertEquals(null, atomic.stamp());
+    }
+
+    public void testIsolation() throws Exception {
+
+        Ignite ignite = grid(0);
+
+        //configure cache
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("MyCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+
+        // Create cache with given name, if it does not exist.
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        String atomicName = UUID.randomUUID().toString();
+
+        String initVal = "qwerty";
+        String initStamp = "asdf";
+
+        IgniteAtomicStamped<String, String> atomicStamped = ignite.atomicStamped
+                (atomicName, initVal, initStamp, true);
+
+        try(Transaction tx = ignite.transactions().txStart()){
+
+            cache.put(1,1);
+
+            assertEquals(initVal, atomicStamped.value());
+            assertEquals(initStamp, atomicStamped.value());
+            assertEquals(initVal, atomicStamped.get().get1());
+            assertEquals(initStamp, atomicStamped.get().get2());
+
+            atomicStamped.compareAndSet(initVal, "b", initStamp, "d");
+
+            assertEquals("b", atomicStamped.value());
+            assertEquals("d", atomicStamped.stamp());
+
+            tx.rollback();
+
+            assertEquals(0, cache.size());
+        }
+
+        atomicStamped.close();
+
+        assert atomicStamped.removed();
     }
 }

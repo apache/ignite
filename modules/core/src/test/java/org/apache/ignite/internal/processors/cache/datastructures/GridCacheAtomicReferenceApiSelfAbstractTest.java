@@ -18,15 +18,26 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.UUID;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.transactions.Transaction;
+import org.omg.CORBA.TRANSACTION_MODE;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Basic tests for atomic reference.
  */
 public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends IgniteAtomicsAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int gridCount() {
         return 1;
     }
 
@@ -62,8 +73,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
             atomic1.get();
 
             fail();
-        }
-        catch (IllegalStateException | IgniteException e) {
+        } catch (IllegalStateException | IgniteException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }
@@ -126,5 +136,53 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
 
         assertTrue(success);
         assertEquals("newVal", atomic.get());
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+
+        Ignite ignite = grid(0);
+
+        //configure cache
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+
+        // Create cache with given name, if it does not exist.
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        String atomicName = UUID.randomUUID().toString();
+
+        String initValue = "qazwsx";
+
+        IgniteAtomicReference<String> atomicReference = ignite.atomicReference(atomicName, initValue, true);
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+
+            cache.put(1, 1);
+
+            assertEquals(initValue, atomicReference.get());
+
+            atomicReference.compareAndSet(initValue, "aaa");
+
+            assertEquals("aaa", atomicReference.get());
+
+            tx.rollback();
+
+            assertEquals(0, cache.size());
+        }
+
+        atomicReference.compareAndSet("aaa", null);
+
+        assertNull(atomicReference.get());
+
+        atomicReference.close();
+
+        assert atomicReference.removed();
     }
 }
