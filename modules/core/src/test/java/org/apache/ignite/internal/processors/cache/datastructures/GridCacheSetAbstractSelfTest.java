@@ -27,12 +27,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import junit.framework.AssertionFailedError;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSet;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -47,7 +46,9 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -58,13 +59,19 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /** */
     protected static final String SET_NAME = "testSet";
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int gridCount() {
         return 4;
     }
 
-    /** {@inheritDoc} */
-    @Override protected CollectionConfiguration collectionConfiguration() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected CollectionConfiguration collectionConfiguration() {
         CollectionConfiguration colCfg = super.collectionConfiguration();
 
         if (colCfg.getCacheMode() == PARTITIONED)
@@ -73,8 +80,11 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         return colCfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTest() throws Exception {
         IgniteSet<Object> set = grid(0).set(SET_NAME, null);
 
         if (set != null)
@@ -101,8 +111,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 assertSetResourcesCleared();
 
                 return;
-            }
-            catch (AssertionFailedError e) {
+            } catch (AssertionFailedError e) {
                 if (i == MAX_CHECK - 1)
                     throw e;
 
@@ -120,7 +129,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assertSetIteratorsCleared();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal) grid(i);
 
             for (IgniteCache cache : grid.caches()) {
                 CacheDataStructuresManager dsMgr = grid.internalCache(cache.getName()).context().dataStructures();
@@ -132,8 +141,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
                 assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.getName() + ", map=" + map + ']',
-                    0,
-                    map.size());
+                        0,
+                        map.size());
             }
         }
     }
@@ -156,8 +165,11 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected long getTestTimeout() {
         return 2 * 60 * 1000;
     }
 
@@ -207,7 +219,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         set0.close();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
+            @Override
+            public boolean apply() {
                 try {
                     for (int i = 0; i < gridCount(); i++) {
                         if (grid(i).set(SET_NAME, null) != null)
@@ -215,8 +228,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                     }
 
                     return true;
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     fail("Unexpected exception: " + e);
 
                     return true;
@@ -519,8 +531,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 set0.size(); // Trigger weak queue poll.
 
                 assertSetIteratorsCleared();
-            }
-            catch (AssertionFailedError e) {
+            } catch (AssertionFailedError e) {
                 if (i == 9)
                     throw e;
 
@@ -541,8 +552,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < 10; i++) {
             try {
                 assertSetIteratorsCleared();
-            }
-            catch (AssertionFailedError e) {
+            } catch (AssertionFailedError e) {
                 if (i == 9)
                     throw e;
 
@@ -620,8 +630,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 assertSetContent(set, ITEMS);
             }
-        }
-        finally {
+        } finally {
             stopGrid(gridCount());
         }
 
@@ -670,7 +679,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             final int idx = i;
 
             futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override
+                public Void call() throws Exception {
                     IgniteSet<Integer> set = grid(idx).set(SET_NAME, null);
 
                     assertNotNull(set);
@@ -771,14 +781,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         try {
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
+                @Override
+                public Object call() throws Exception {
                     try {
                         while (!stop.get()) {
                             for (Set<Integer> set : sets)
                                 set.add(val.incrementAndGet());
                         }
-                    }
-                    catch (IllegalStateException e) {
+                    } catch (IllegalStateException e) {
                         log.info("Set removed: " + e);
                     }
 
@@ -787,8 +797,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             }, 5, "set-add-thread");
 
             set0.close();
-        }
-        finally {
+        } finally {
             stop.set(true);
         }
 
@@ -800,7 +809,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheMapEntry> entries =
-                (grid(i)).context().cache().internalCache(cctx.name()).map().entries().iterator();
+                    (grid(i)).context().cache().internalCache(cctx.name()).map().entries().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx entry = entries.next();
@@ -817,7 +826,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         for (final Set<Integer> set : sets) {
             GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override
+                public Void call() throws Exception {
                     set.add(10);
 
                     return null;
@@ -838,7 +848,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             set.add(i);
 
         Collection<Integer> c = grid(0).compute().broadcast(new IgniteCallable<Integer>() {
-            @Override public Integer call() throws Exception {
+            @Override
+            public Integer call() throws Exception {
                 assertEquals(SET_NAME, set.name());
 
                 return set.size();
@@ -848,7 +859,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assertEquals(gridCount(), c.size());
 
         for (Integer size : c)
-            assertEquals((Integer)10, size);
+            assertEquals((Integer) 10, size);
     }
 
     /**
@@ -862,21 +873,23 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
             GridTestUtils.assertThrows(
-                log,
-                new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        set1.affinityRun(new IgniteRunnable() {
-                            @Override public void run() {
-                                // No-op.
-                            }
-                        });
+                    log,
+                    new Callable<Void>() {
+                        @Override
+                        public Void call() throws Exception {
+                            set1.affinityRun(new IgniteRunnable() {
+                                @Override
+                                public void run() {
+                                    // No-op.
+                                }
+                            });
 
-                        return null;
-                    }
-                },
-                IgniteException.class,
-                "Failed to execute affinityRun() for non-collocated set: " + set1.name() +
-                    ". This operation is supported only for collocated sets.");
+                            return null;
+                        }
+                    },
+                    IgniteException.class,
+                    "Failed to execute affinityRun() for non-collocated set: " + set1.name() +
+                            ". This operation is supported only for collocated sets.");
         }
 
         colCfg.setCollocated(true);
@@ -888,9 +901,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 @IgniteInstanceResource
                 private IgniteEx ignite;
 
-                @Override public void run() {
+                @Override
+                public void run() {
                     assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
-                        ignite.cluster().localNode(), "Set2"));
+                            ignite.cluster().localNode(), "Set2"));
 
                     assertEquals(100, set2.iterator().next().intValue());
                 }
@@ -909,21 +923,23 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
             GridTestUtils.assertThrows(
-                log,
-                new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        set1.affinityCall(new IgniteCallable<Object>() {
-                            @Override public Object call() {
-                                return null;
-                            }
-                        });
+                    log,
+                    new Callable<Void>() {
+                        @Override
+                        public Void call() throws Exception {
+                            set1.affinityCall(new IgniteCallable<Object>() {
+                                @Override
+                                public Object call() {
+                                    return null;
+                                }
+                            });
 
-                        return null;
-                    }
-                },
-                IgniteException.class,
-                "Failed to execute affinityCall() for non-collocated set: " + set1.name() +
-                    ". This operation is supported only for collocated sets.");
+                            return null;
+                        }
+                    },
+                    IgniteException.class,
+                    "Failed to execute affinityCall() for non-collocated set: " + set1.name() +
+                            ". This operation is supported only for collocated sets.");
         }
 
         colCfg.setCollocated(true);
@@ -935,9 +951,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 @IgniteInstanceResource
                 private IgniteEx ignite;
 
-                @Override public Integer call() {
+                @Override
+                public Integer call() {
                     assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
-                        ignite.cluster().localNode(), "Set2"));
+                            ignite.cluster().localNode(), "Set2"));
 
                     return set2.iterator().next();
                 }
@@ -948,7 +965,52 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
-     * @param set Set.
+     * Implementation of ignite data structures internally uses special system caches, need make sure that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+
+    public void testIsolation() throws Exception {
+        info("Running test [name=" + getName() + ", collectionMemoryMode=" + collectionMemoryMode() + ']');
+        CollectionConfiguration colCfg = collectionConfiguration();
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+
+        cfg.setAtomicityMode(TRANSACTIONAL);
+
+        // Create cache with given name, if it does not exist.
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+        IgniteSet<Integer> set0 = ignite.set(SET_NAME, colCfg);
+
+        assertNotNull(set0);
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            cache.put(1, 1);
+
+            Collection<Integer> items = new ArrayList<>(10_000);
+
+            for (int i = 0; i < 10_000; i++)
+                items.add(i);
+
+            set0.addAll(items);
+
+            tx.rollback();
+
+            assertEquals(0, cache.size());
+
+            assertEquals(10_000, set0.size());
+
+            set0.close();
+        }
+
+
+    }
+
+    /**
+     * @param set  Set.
      * @param size Expected size.
      */
     private void assertSetContent(IgniteSet<Integer> set, int size) {
@@ -964,7 +1026,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
-     * @param arr Array.
+     * @param arr  Array.
      * @param size Expected size.
      */
     private void assertArrayContent(Object[] arr, int size) {
@@ -984,4 +1046,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             assertTrue(found);
         }
     }
+
+
 }

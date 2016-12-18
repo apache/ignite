@@ -33,15 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteCondition;
-import org.apache.ignite.IgniteCountDownLatch;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLock;
-import org.apache.ignite.IgniteLogger;
+
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -54,6 +48,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -61,6 +56,7 @@ import org.junit.rules.ExpectedException;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
@@ -109,6 +105,50 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         checkFailover(true, true);
 
         checkFailover(false, true);
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure that transaction on these system caches do not intersect with transactions started by user.
+     * @throws Exception If failed.
+     */
+
+    public void testIsolation() throws Exception {
+
+        Ignite ignite = grid(0);
+
+        //configure cache
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+
+        // Create cache with given name, if it does not exist.
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        IgniteLock lock = ignite.reentrantLock("lock", true, true, true);
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+
+            cache.put(1, 1);
+
+            boolean success = lock.tryLock(1, MILLISECONDS);
+
+            assertTrue(success);
+
+            tx.rollback();
+
+            assertEquals(0, cache.size());
+
+            assertTrue(lock.isLocked());
+
+            lock.unlock();
+
+            assertFalse(lock.isLocked());
+
+            lock.close();
+
+            assertTrue(lock.removed());
+        }
     }
 
     /**
