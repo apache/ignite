@@ -34,6 +34,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.database.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
@@ -837,7 +838,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             assert dataRow.link() != 0 : dataRow;
 
-            DataRow old = dataTree.put(dataRow);
+            CacheDataRow old = dataTree.put(dataRow);
 
             if (old == null)
                 storageSize.incrementAndGet();
@@ -868,7 +869,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public void remove(KeyCacheObject key, int partId) throws IgniteCheckedException {
-            DataRow dataRow = dataTree.remove(new KeySearchRow(key.hashCode(), key, 0));
+            CacheDataRow dataRow = dataTree.remove(new SearchRow(key));
 
             CacheObject val = null;
             GridCacheVersion ver = null;
@@ -901,7 +902,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public CacheDataRow find(KeyCacheObject key)
             throws IgniteCheckedException {
-            return dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
+            return dataTree.findOne(new SearchRow(key));
         }
 
         /** {@inheritDoc} */
@@ -950,73 +951,99 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private class KeySearchRow extends CacheDataRowAdapter {
+    private class SearchRow implements CacheSearchRow {
+        /** */
+        protected KeyCacheObject key;
+
         /** */
         protected int hash;
 
         /**
-         * @param hash Hash code.
-         * @param key Key.
-         * @param link Link.
+         * @param key
          */
-        KeySearchRow(int hash, KeyCacheObject key, long link) {
-            super(link);
-
+        private SearchRow(KeyCacheObject key) {
             this.key = key;
+
+            hash = key.hashCode();
+        }
+
+        /**
+         * @param hash
+         */
+        private SearchRow(int hash) {
             this.hash = hash;
         }
 
-        /**
-         * Init data.
-         *
-         * @param keyOnly Initialize only key.
-         */
-        protected final void initData(boolean keyOnly) {
-            if (key != null)
-                return;
-
-            assert link() != 0;
-
-            try {
-                initFromLink(cctx, keyOnly);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e.getMessage(), e);
-            }
+        /** {@inheritDoc} */
+        @Override public KeyCacheObject key() {
+            return key;
         }
 
-        /**
-         * @return Key.
-         */
-        @Override public KeyCacheObject key() {
-            initData(true);
+        /** {@inheritDoc} */
+        @Override public long link() {
+            return 0;
+        }
 
-            return key;
+        /** {@inheritDoc} */
+        @Override public int hash() {
+            return hash;
         }
     }
 
     /**
      *
      */
-    private class DataRow extends KeySearchRow {
+    private class SearchTreeRow extends SearchRow {
+        /** */
+        protected final long link;
+
+        /**
+         * @param hash
+         * @param link
+         */
+        private SearchTreeRow(int hash, long link) {
+            super(hash);
+
+            this.link = link;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long link() {
+            return link;
+        }
+    }
+
+    /**
+     *
+     */
+    private class DataRow extends CacheDataRowAdapter {
         /** */
         protected int part = -1;
+
+        /** */
+        private int hash;
 
         /**
          * @param hash Hash code.
          * @param link Link.
          */
         DataRow(int hash, long link) {
-            super(hash, null, link);
+            super(link);
+
+            this.hash = hash;
 
             part = PageIdUtils.partId(link);
 
             // We can not init data row lazily because underlying buffer can be concurrently cleared.
-            initData(false);
+            try {
+                initFromLink(cctx, false);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /**
-         * @param hash Hash code.
          * @param key Key.
          * @param val Value.
          * @param ver Version.
@@ -1024,12 +1051,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param expireTime Expire time.
          */
         DataRow(int hash, KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime) {
-            super(hash, key, 0);
+            super(0);
 
+            this.hash = hash;
+            this.key = key;
             this.val = val;
             this.ver = ver;
             this.part = part;
             this.expireTime = expireTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hash() {
+            return hash;
         }
 
         /** {@inheritDoc} */
@@ -1046,7 +1080,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    protected static class CacheDataTree extends BPlusTree<KeySearchRow, DataRow> {
+    protected static class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         /** */
         private final CacheDataRowStore rowStore;
 
@@ -1063,7 +1097,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheDataTree(
+        private CacheDataTree(
             String name,
             ReuseList reuseList,
             CacheDataRowStore rowStore,
@@ -1085,50 +1119,27 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx, KeySearchRow row)
+        @Override protected int compare(BPlusIO<CacheSearchRow> io, ByteBuffer buf, int idx, CacheSearchRow row)
             throws IgniteCheckedException {
             int hash = ((RowLinkIO)io).getHash(buf, idx);
 
-            int cmp = Integer.compare(hash, row.hash);
+            int cmp = Integer.compare(hash, row.hash());
 
             if (cmp != 0)
                 return cmp;
 
-            KeySearchRow row0 = io.getLookupRow(this, buf, idx);
+            long link = ((RowLinkIO)io).getLink(buf, idx);
 
-            return compareKeys(row0.key(), row.key());
+            return CacheDataRowAdapter.compare(row.key().valueBytes(cctx.cacheObjectContext()), cctx, link);
         }
 
         /** {@inheritDoc} */
-        @Override protected DataRow getRow(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx)
+        @Override protected CacheDataRow getRow(BPlusIO<CacheSearchRow> io, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
             int hash = ((RowLinkIO)io).getHash(buf, idx);
             long link = ((RowLinkIO)io).getLink(buf, idx);
 
             return rowStore.dataRow(hash, link);
-        }
-
-        /**
-         * @param key1 First key.
-         * @param key2 Second key.
-         * @return Compare result.
-         * @throws IgniteCheckedException If failed.
-         */
-        private int compareKeys(CacheObject key1, CacheObject key2) throws IgniteCheckedException {
-            byte[] bytes1 = key1.valueBytes(cctx.cacheObjectContext());
-            byte[] bytes2 = key2.valueBytes(cctx.cacheObjectContext());
-
-            int len = Math.min(bytes1.length, bytes2.length);
-
-            for (int i = 0; i < len; i++) {
-                byte b1 = bytes1[i];
-                byte b2 = bytes2[i];
-
-                if (b1 != b2)
-                    return b1 > b2 ? 1 : -1;
-            }
-
-            return Integer.compare(bytes1.length, bytes2.length);
         }
     }
 
@@ -1149,8 +1160,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param link Link.
          * @return Search row.
          */
-        private KeySearchRow keySearchRow(int hash, long link) {
-            return new KeySearchRow(hash, null, link);
+        private SearchTreeRow keySearchRow(int hash, long link) {
+            return new SearchTreeRow(hash, link);
         }
 
         /**
@@ -1196,7 +1207,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    public static final class DataInnerIO extends BPlusInnerIO<KeySearchRow> implements RowLinkIO {
+    public static final class DataInnerIO extends BPlusInnerIO<CacheSearchRow> implements RowLinkIO {
         /** */
         public static final IOVersions<DataInnerIO> VERSIONS = new IOVersions<>(
             new DataInnerIO(1)
@@ -1210,14 +1221,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, KeySearchRow row) {
+        @Override public void storeByOffset(ByteBuffer buf, int off, CacheSearchRow row) {
             assert row.link() != 0;
 
-            store0(buf, off, row.link(), row.hash);
+            store0(buf, off, row.link(), row.hash());
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
+        @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, ByteBuffer buf, int idx) {
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
 
@@ -1225,7 +1236,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src,
+        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<CacheSearchRow> srcIo, ByteBuffer src,
             int srcIdx) {
             int hash = ((RowLinkIO)srcIo).getHash(src, srcIdx);
             long link = ((RowLinkIO)srcIo).getLink(src, srcIdx);
@@ -1249,7 +1260,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    public static final class DataLeafIO extends BPlusLeafIO<KeySearchRow> implements RowLinkIO {
+    public static final class DataLeafIO extends BPlusLeafIO<CacheSearchRow> implements RowLinkIO {
         /** */
         public static final IOVersions<DataLeafIO> VERSIONS = new IOVersions<>(
             new DataLeafIO(1)
@@ -1263,20 +1274,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, KeySearchRow row) {
+        @Override public void storeByOffset(ByteBuffer buf, int off, CacheSearchRow row) {
             assert row.link() != 0;
 
-            store0(buf, off, row.link(), row.hash);
+            store0(buf, off, row.link(), row.hash());
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src,
+        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<CacheSearchRow> srcIo, ByteBuffer src,
             int srcIdx) {
             store0(dst, offset(dstIdx), getLink(src, srcIdx), getHash(src, srcIdx));
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
+        @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, ByteBuffer buf, int idx) {
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
 

@@ -17,35 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- * Cache data row.
+ *
  */
-public interface CacheDataRow extends CacheSearchRow {
+public interface CacheSearchRow {
     /**
-     * @return Cache value.
+     * @return Cache key.
      */
-    public CacheObject value();
+    public KeyCacheObject key();
 
     /**
-     * @return Cache entry version.
+     * @return Link for this row.
      */
-    public GridCacheVersion version();
+    public long link();
 
-    /**
-     * @return Expire time.
-     */
-    public long expireTime();
-
-    /**
-     * @return Partition for this key.
-     */
-    public int partition();
-
-    /**
-     * @param link Link for this row.
-     */
-    public void link(long link);
+    public int hash();
 }

@@ -515,6 +515,11 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /** {@inheritDoc} */
+    @Override public int hash() {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
     @Override public final int hashCode() {
         throw new IllegalStateException();
     }

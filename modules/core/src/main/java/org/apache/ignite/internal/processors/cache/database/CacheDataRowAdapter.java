@@ -69,6 +69,53 @@ public class CacheDataRowAdapter implements CacheDataRow {
         this.link = link;
     }
 
+    public static int compare(byte[] bytes, GridCacheContext<?, ?> cctx, long link) throws IgniteCheckedException {
+        long nextLink = link;
+        boolean first = true;
+
+        do {
+            try (Page page = page(pageId(nextLink), cctx)) {
+                ByteBuffer buf = page.getForRead(); // Non-empty data page must not be recycled.
+
+                assert buf != null : link;
+
+                try {
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+                    nextLink = io.setPositionAndLimitOnPayload(buf, itemId(nextLink));
+
+                    if (first) {
+                        if (nextLink == 0) {
+                            int len = buf.getInt();
+
+                            byte type = buf.get();
+
+                            int size = Math.min(bytes.length, len);
+
+                            for (int i = 0; i < size; i++) {
+                                byte b1 = buf.get();
+                                byte b2 = bytes[i];
+
+                                if (b1 != b2)
+                                    return b1 > b2 ? 1 : -1;
+                            }
+
+                            return Integer.compare(len, bytes.length);
+                        }
+
+                        first = false;
+                    }
+                }
+                finally {
+                    page.releaseRead();
+                }
+
+                throw new IgniteCheckedException("ERROR");
+            }
+        }
+        while(nextLink != 0);
+    }
+
     /**
      * Read row from data pages.
      *
@@ -180,19 +227,24 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     private void readFullRow(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly) throws IgniteCheckedException {
-        key = coctx.processor().toKeyCacheObject(coctx, buf);
+//        key = coctx.processor().toKeyCacheObject(coctx, buf);
+//
+//        if (keyOnly) {
+//            assert key != null: "key";
+//
+//            return;
+//        }
+        int len = buf.getInt();
 
-        if (keyOnly) {
-            assert key != null: "key";
-
-            return;
+        if (len > 0) {
+            buf.position(buf.position() + len + 1);
         }
 
         val = coctx.processor().toCacheObject(coctx, buf);
         ver = CacheVersionIO.read(buf, false);
         expireTime = buf.getLong();
 
-        assert isReady(): "ready";
+        //assert isReady(): "ready";
     }
 
     /**
@@ -385,6 +437,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public int hash() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheDataRowAdapter.class, this, "link", U.hexLong(link));
     }
@@ -395,7 +452,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Page.
      * @throws IgniteCheckedException If failed.
      */
-    private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
+    private static Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
         return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
     }
 }
