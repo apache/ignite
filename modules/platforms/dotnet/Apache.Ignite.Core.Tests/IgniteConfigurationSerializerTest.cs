@@ -50,6 +50,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
@@ -119,6 +120,11 @@ namespace Apache.Ignite.Core.Tests
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
                             <swapSpaceSpi type='FileSwapSpaceSpi' baseDirectory='abcd' maximumSparsity='0.7' maximumWriteQueueSize='25' readStripesNumber='36' writeBufferSize='47' />
+                            <pluginConfigurations>
+                                <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests'>
+                                  <pluginProviderFactory type='Apache.Ignite.Core.Common.Factory`1[[Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginProvider, Apache.Ignite.Core.Tests]], Apache.Ignite.Core' />
+                                </iPluginConfiguration>
+                            </pluginConfigurations>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -214,6 +220,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(25, swap.MaximumWriteQueueSize);
             Assert.AreEqual(36, swap.ReadStripesNumber);
             Assert.AreEqual(47, swap.WriteBufferSize);
+
+            var plugins = cfg.PluginConfigurations;
+            Assert.IsNotNull(plugins);
+            var pluginCfg = plugins.Cast<TestIgnitePluginConfiguration>().Single();
+            Assert.IsNotNull(pluginCfg.PluginProviderFactory);
         }
 
         /// <summary>
