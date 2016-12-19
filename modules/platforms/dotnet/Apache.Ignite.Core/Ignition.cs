@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core
             {
                 Configuration = cfg;
                 Callbacks = cbs;
-                PluginContext = new PluginContext(cfg);
+                PluginContext = new PluginContext(cfg, cbs.Log);
             }
             /// <summary>
             /// Configuration.
