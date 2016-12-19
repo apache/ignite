@@ -882,6 +882,42 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Grid JVM hard stop.
+     *
+     * @param gridName Grid name.
+     */
+    protected void shutdownGrid(@Nullable String gridName) {
+        assert isMultiJvm();
+
+        try {
+            Ignite ignite = grid(gridName);
+
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
+
+            info(">>> Shutting down grid [name=" + ignite.name() + ']');
+
+            IgniteProcessProxy.shutdown(gridName);
+        }
+        catch (IllegalStateException ignored) {
+            // Ignore error if grid already stopped.
+        }
+        catch (Throwable e) {
+            error("Failed to stop grid [gridName=" + gridName + ']', e);
+
+            stopGridErr = true;
+        }
+    }
+
+    /**
+     * Grid JVM hard stop.
+     *
+     * @param idx Grid index.
+     */
+    protected void shutDownGrid(int idx) {
+        shutdownGrid(getTestGridName(idx));
+    }
+
+    /**
      *
      */
     protected void stopAllGrids() {

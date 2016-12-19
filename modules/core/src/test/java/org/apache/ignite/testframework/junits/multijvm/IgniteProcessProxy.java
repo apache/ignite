@@ -249,6 +249,21 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     * Grid JVM hard stop.
+     *
+     * @param gridName Grid name.
+     */
+    public static void shutdown(String gridName) {
+        IgniteProcessProxy proxy = gridProxies.get(gridName);
+
+        if (proxy != null) {
+            proxy.remoteCompute().withAsync().run(new ShutdownGridTask());
+
+            gridProxies.remove(gridName, proxy);
+        }
+    }
+
+    /**
      * @param locNodeId ID of local node the requested grid instance is managing.
      * @return An instance of named grid. This method never returns {@code null}.
      * @throws IgniteIllegalStateException Thrown if grid was not properly initialized or grid instance was stopped or
@@ -702,6 +717,16 @@ public class IgniteProcessProxy implements IgniteEx {
         /** {@inheritDoc} */
         @Override public ClusterNode call() throws Exception {
             return ((IgniteEx)ignite).localNode();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ShutdownGridTask implements IgniteRunnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            System.exit(1);
         }
     }
 }
