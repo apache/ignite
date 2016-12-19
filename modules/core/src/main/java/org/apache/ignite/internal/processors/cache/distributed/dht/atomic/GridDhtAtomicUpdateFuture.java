@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * DHT atomic cache backup update future.
@@ -126,7 +127,10 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
-        boolean forceTransformBackups) {
+        long ttl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer
+    ) {
         return new GridDhtAtomicUpdateRequest(
             cctx.cacheId(),
             node.id(),
@@ -134,10 +138,10 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             writeVer,
             syncMode,
             topVer,
-            forceTransformBackups,
+            false,
             updateReq.subjectId(),
             updateReq.taskNameHash(),
-            forceTransformBackups ? updateReq.invokeArguments() : null,
+            null,
             cctx.deploymentEnabled(),
             updateReq.keepBinary(),
             updateReq.skipStore());

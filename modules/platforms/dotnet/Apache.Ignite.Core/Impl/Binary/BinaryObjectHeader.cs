@@ -265,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 Debug.Assert(hdr.Version == BinaryUtils.ProtoVer);
                 Debug.Assert(hdr.SchemaOffset <= hdr.Length);
-                Debug.Assert(hdr.SchemaOffset >= Size);
+                Debug.Assert(hdr.SchemaOffset >= Size || !hdr.HasSchema);
 
             }
             else

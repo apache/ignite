@@ -534,11 +534,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasConflictData() {
-        return F.size(conflictVers) > 0 || conflictTtls != null || conflictExpireTimes != null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -613,6 +608,11 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             for (int i = 0; i < keys.size(); i++)
                 keys.get(i).partition(partIds.get(i));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
     }
 
     /** {@inheritDoc} */

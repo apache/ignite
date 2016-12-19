@@ -125,6 +125,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         );
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
     /**
      * @param key Key to add.
      * @param val Optional update value.
@@ -227,15 +232,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasConflictData() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
