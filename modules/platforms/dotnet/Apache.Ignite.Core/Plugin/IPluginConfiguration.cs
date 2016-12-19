@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Plugin
 {
     using System.Diagnostics.CodeAnalysis;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Plugin configuration.
@@ -27,8 +26,8 @@ namespace Apache.Ignite.Core.Plugin
     public interface IPluginConfiguration
     {
         /// <summary>
-        /// Gets the plugin provider factory.
+        /// Creates the plugin provider.
         /// </summary>
-        IFactory<IPluginProvider> PluginProviderFactory { get; }
+        IPluginProvider CreateProvider();
     }
 }

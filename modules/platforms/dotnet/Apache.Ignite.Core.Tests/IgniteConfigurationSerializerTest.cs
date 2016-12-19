@@ -221,8 +221,7 @@ namespace Apache.Ignite.Core.Tests
 
             var plugins = cfg.PluginConfigurations;
             Assert.IsNotNull(plugins);
-            var pluginCfg = plugins.Cast<TestIgnitePluginConfiguration>().Single();
-            Assert.IsNotNull(pluginCfg.PluginProviderFactory);
+            Assert.IsNotNull(plugins.Cast<TestIgnitePluginConfiguration>().SingleOrDefault());
         }
 
         /// <summary>

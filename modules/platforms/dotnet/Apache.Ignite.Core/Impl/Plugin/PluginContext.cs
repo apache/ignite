@@ -120,13 +120,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             {
                 foreach (var cfg in pluginConfigurations)
                 {
-                    if (cfg.PluginProviderFactory == null)
-                    {
-                        throw new IgniteException(string.Format("{0}.PluginProviderFactory can not be null",
-                            typeof(IPluginConfiguration).Name));
-                    }
-
-                    var provider = cfg.PluginProviderFactory.CreateInstance();
+                    var provider = cfg.CreateProvider();
 
                     if (provider == null)
                     {

@@ -77,12 +77,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Action<ICollection<IPluginConfiguration>> check = x => Ignition.Start(
                 new IgniteConfiguration(TestUtils.GetTestConfiguration()) {PluginConfigurations = x});
 
-            // Null factory.
-            var ex = Assert.Throws<IgniteException>(() => check(new[] {new NullFactoryConfig()}));
-            Assert.AreEqual("IPluginConfiguration.PluginProviderFactory can not be null", ex.Message);
-
             // Null factory result.
-            ex = Assert.Throws<IgniteException>(() => check(new[] { new NullFactoryResultConfig() }));
+            var ex = Assert.Throws<IgniteException>(() => check(new[] { new NullFactoryResultConfig() }));
             Assert.AreEqual("IPluginConfiguration.PluginProviderFactory can not return null", ex.Message);
 
             // Empty plugin name.
@@ -105,38 +101,27 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.AreEqual("Failure in plugin provider", ioex.Message);
         }
 
-        private class NullFactoryConfig : IPluginConfiguration
-        {
-            public IFactory<IPluginProvider> PluginProviderFactory
-            {
-                get { return null; } 
-            }
-        }
-
         private class NullFactoryResultConfig : IPluginConfiguration
         {
-            public IFactory<IPluginProvider> PluginProviderFactory
+            public IPluginProvider CreateProvider()
             {
-                get { return new FuncFactory<IPluginProvider>(() => null); } 
+                return null;
             }
         }
 
         private class EmptyNameConfig : IPluginConfiguration
         {
-            public IFactory<IPluginProvider> PluginProviderFactory
+            public IPluginProvider CreateProvider()
             {
-                get { return new FuncFactory<IPluginProvider>(() => new TestIgnitePluginProvider {Name = ""}); } 
+                return new TestIgnitePluginProvider { Name = "" };
             }
         }
 
         private class ExceptionConfig : IPluginConfiguration
         {
-            public IFactory<IPluginProvider> PluginProviderFactory
+            public IPluginProvider CreateProvider()
             {
-                get
-                {
-                    return new FuncFactory<IPluginProvider>(() => new TestIgnitePluginProvider {ThrowError = true});
-                }
+                return new TestIgnitePluginProvider { ThrowError = true };
             }
         }
     }

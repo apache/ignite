@@ -17,7 +17,6 @@
 
  namespace Apache.Ignite.Core.Tests.Plugin
 {
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
@@ -26,9 +25,9 @@
     public class TestIgnitePluginConfiguration : IPluginConfiguration
     {
         /** <inheritdoc /> */
-        public IFactory<IPluginProvider> PluginProviderFactory
+        public IPluginProvider CreateProvider()
         {
-            get { return new Factory<TestIgnitePluginProvider>(); }
+            return new TestIgnitePluginProvider();
         }
     }
 }
