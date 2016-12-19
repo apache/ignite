@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -29,10 +30,7 @@ import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,24 +82,11 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         final IgfsEx igfs = (IgfsEx)ignite.fileSystem(igfsName);
 
         if (user != null) {
-            final GridTuple<Exception> ex = F.t(null);
-
-            T res = IgfsUserContext.doAs(user, new IgniteOutClosure<T>() {
-                @Override public T apply() {
-                    try {
-                        return call0(igfs.context());
-                    }
-                    catch (Exception e) {
-                        ex.set(e);
-                    }
-                    return null;
+            return IgfsUserContext.doAs(user, new Callable<T>() {
+                @Override public T call() throws Exception {
+                    return call0(igfs.context());
                 }
             });
-
-            if (ex.get() != null)
-                throw ex.get();
-
-            return res;
         } else
             return call0(igfs.context());
     }

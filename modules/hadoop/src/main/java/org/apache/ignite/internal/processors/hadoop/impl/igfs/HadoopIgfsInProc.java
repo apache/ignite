@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,6 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Communication with grid in the same process.
  */
 public class HadoopIgfsInProc implements HadoopIgfsEx {
+    /** Counter of references to the ignite instance */
+    private static final AtomicInteger usageCnt = new AtomicInteger(-1);
+
     /** Target IGFS. */
     private final IgfsEx igfs;
 
@@ -68,15 +72,19 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
      *
      * @param igfs Target IGFS.
      * @param log Log.
+     * @param userName User name.
+     * @throws IgniteCheckedException On error.
      */
     public HadoopIgfsInProc(IgfsEx igfs, Log log, String userName) throws IgniteCheckedException {
         this.user = IgfsUtils.fixUserName(userName);
-
         this.igfs = igfs;
-
         this.log = log;
 
         bufSize = igfs.configuration().getBlockSize() * 2;
+
+        if (usageCnt.get() >= 0) {
+            usageCnt.incrementAndGet();
+        }
     }
 
     /** {@inheritDoc} */
@@ -102,6 +110,10 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Failed to notify stream event listener", e);
             }
+        }
+
+        if(usageCnt.decrementAndGet() == 0) {
+            usageCnt.compareAndSet(0, -1);
         }
     }
 

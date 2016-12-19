@@ -21,7 +21,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
@@ -62,6 +65,9 @@ import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsU
  * Wrapper for IGFS server.
  */
 public class HadoopIgfsWrapper implements HadoopIgfs {
+    /** Ignite client reference counter. */
+    private static AtomicInteger refCnt = new AtomicInteger();
+
     /** Delegate. */
     private final AtomicReference<Delegate> delegateRef = new AtomicReference<>();
 
@@ -397,77 +403,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             }
         }
 
-        // 3. Try connecting using shmem.
-        boolean skipLocShmem = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false);
-
-        if (curDelegate == null && !skipLocShmem && !U.isWindows()) {
-            HadoopIgfsEx hadoop = null;
-
-            try {
-                hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log, userName);
-
-                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-            }
-            catch (IOException | IgniteCheckedException e) {
-                if (e instanceof HadoopIgfsCommunicationException)
-                    hadoop.close(true);
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to connect to IGFS using shared memory [port=" + endpoint.port() + ']', e);
-
-                errShmem = e;
-            }
-        }
-
-        // 4. Try local TCP connection.
-        boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
-
-        if (curDelegate == null && !skipLocTcp) {
-            HadoopIgfsEx hadoop = null;
-
-            try {
-                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                    log, userName);
-
-                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-            }
-            catch (IOException | IgniteCheckedException e) {
-                if (e instanceof HadoopIgfsCommunicationException)
-                    hadoop.close(true);
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
-                        ", port=" + endpoint.port() + ']', e);
-
-                errTcp = e;
-            }
-        }
-
-        // 5. Try remote TCP connection.
-        boolean skipRemTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority, false);
-
-        if (curDelegate == null && !skipRemTcp && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
-            HadoopIgfsEx hadoop = null;
-
-            try {
-                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                    log, userName);
-
-                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-            }
-            catch (IOException | IgniteCheckedException e) {
-                if (e instanceof HadoopIgfsCommunicationException)
-                    hadoop.close(true);
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
-                        ", port=" + endpoint.port() + ']', e);
-
-                errTcp = e;
-            }
-        }
-
-        // 6. Try Ignite client
+        // 3. Try Ignite client
         String igniteCliCfgPath = parameter(conf, PARAM_IGFS_ENDPOINT_IGNITE_CFG_PATH, authority, null);
 
         if (curDelegate == null && !F.isEmpty(igniteCliCfgPath)) {
@@ -476,16 +412,15 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             boolean prevCliMode = Ignition.isClientMode();
 
             try {
+                refCnt.incrementAndGet();
+
                 Ignite ignite0;
 
-                boolean cliStarted0 = false;
-
                 try {
+
                     Ignition.setClientMode(true);
 
                     ignite0 = Ignition.start(igniteCliCfgPath);
-
-                    cliStarted0 = true;
                 } catch (IgniteException e) {
                     IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg =
                         IgnitionEx.loadConfiguration(igniteCliCfgPath);
@@ -493,8 +428,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     // Try to get ignite instance if it is already started
                     ignite0 = Ignition.ignite(cfg.get1().getGridName());
 
-                    if (ignite0 == null)
+                    if (ignite0 == null) {
+                        refCnt.decrementAndGet();
+
                         throw e;
+                    }
                 }
                 finally {
                     Ignition.setClientMode(prevCliMode);
@@ -502,10 +440,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
                 final Ignite ignite = ignite0;
 
-                final boolean cliStarted = cliStarted0;
+                if (ignite == null) {
+                    refCnt.decrementAndGet();
 
-                if (ignite == null)
                     throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
+                }
 
                 IgfsEx igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
 
@@ -513,11 +452,10 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     try {
                         hadoop = new HadoopIgfsInProc(igfs, log, userName) {
                             @Override public void close(boolean force) {
-                                if (cliStarted) {
-                                    ignite.close();
+                                super.close(force);
 
-                                    log.info("IGFS Ignite client is stopped.");
-                                }
+                                if(refCnt.decrementAndGet() == 0)
+                                    ignite.close();
                             }
                         };
 
@@ -541,6 +479,76 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                         ", port=" + endpoint.port() + ", igniteCfg=" + igniteCliCfgPath + ']', e);
 
                 errClient = e;
+            }
+        }
+
+        // 4. Try connecting using shmem.
+        boolean skipLocShmem = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false);
+
+        if (curDelegate == null && !skipLocShmem && !U.isWindows()) {
+            HadoopIgfsEx hadoop = null;
+
+            try {
+                hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log, userName);
+
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to IGFS using shared memory [port=" + endpoint.port() + ']', e);
+
+                errShmem = e;
+            }
+        }
+
+        // 5. Try local TCP connection.
+        boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
+
+        if (curDelegate == null && !skipLocTcp) {
+            HadoopIgfsEx hadoop = null;
+
+            try {
+                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                    log, userName);
+
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
+                        ", port=" + endpoint.port() + ']', e);
+
+                errTcp = e;
+            }
+        }
+
+        // 6. Try remote TCP connection.
+        boolean skipRemTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority, false);
+
+        if (curDelegate == null && !skipRemTcp && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+            HadoopIgfsEx hadoop = null;
+
+            try {
+                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                    log, userName);
+
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
+                        ", port=" + endpoint.port() + ']', e);
+
+                errTcp = e;
             }
         }
 
