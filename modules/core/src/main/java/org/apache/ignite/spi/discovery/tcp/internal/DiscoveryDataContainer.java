@@ -249,7 +249,7 @@ public final class DiscoveryDataContainer implements Serializable {
             addDataOnJoin(cmpId, data);
         else {
             if (!unmarshNodeSpecData.containsKey(DEFAULT_KEY))
-                unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<>());
+                unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
 
             unmarshNodeSpecData.get(DEFAULT_KEY).put(cmpId, data);
         }
@@ -264,7 +264,7 @@ public final class DiscoveryDataContainer implements Serializable {
             unmarshNodeSpecData = new HashMap<>();
 
         if (!unmarshNodeSpecData.containsKey(DEFAULT_KEY))
-            unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<>());
+            unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
 
         unmarshNodeSpecData.get(DEFAULT_KEY).put(cmpId, data);
     }
