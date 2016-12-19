@@ -438,6 +438,7 @@
             Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
+            PluginConfigurations = cfg.PluginConfigurations;
         }
 
         /// <summary>

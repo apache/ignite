@@ -183,6 +183,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
                 Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
 
+                Assert.IsNotNull(resCfg.PluginConfigurations);
                 Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
             }
         }
