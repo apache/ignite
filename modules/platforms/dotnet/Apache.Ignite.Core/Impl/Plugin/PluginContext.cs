@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             Debug.Assert(log != null);
 
             _igniteConfiguration = igniteConfiguration;
-            _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations, log);
+            _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations, log.GetLogger(GetType().Name));
         }
 
         /// <summary>
@@ -152,6 +152,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             if (!string.IsNullOrEmpty(provider.Copyright))
                 log.Info("  ^-- " + provider.Copyright);
+
+            log.Info(string.Empty);
         }
 
         /// <summary>
