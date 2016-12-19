@@ -2877,22 +2877,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /**
-     * @param cacheNames Collection of cache names.
-     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @return Ignite future.
-     */
-    public IgniteInternalFuture<?> destroyCachesAsync(Collection<String> cacheNames, boolean checkThreadTx) {
-        guard();
-
-        try {
-            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx);
-        }
-        finally {
-            unguard();
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
         guard();
