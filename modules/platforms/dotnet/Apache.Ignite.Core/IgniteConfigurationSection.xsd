@@ -1168,12 +1168,29 @@
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="iPluginConfiguration" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation>Plugin configuration.</xs:documentation>
+                                </xs:annotation>
                                 <xs:complexType>
                                     <xs:all>
-                                        <xs:element>
-                                            
+                                        <xs:element name="pluginProviderFactory" minOccurs="1" maxOccurs="1">
+                                            <xs:annotation>
+                                                <xs:documentation>Plugin provider factory.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="type" type="xs:string" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
                                         </xs:element>
                                     </xs:all>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
