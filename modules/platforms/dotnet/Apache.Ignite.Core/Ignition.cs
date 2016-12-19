@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
@@ -454,7 +455,7 @@ namespace Apache.Ignite.Core
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
                 _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
-                    _startup.LifecycleBeans, _startup.Callbacks);
+                    _startup.LifecycleBeans, _startup.Callbacks, _startup.PluginContext);
             }
             catch (Exception e)
             {
@@ -730,6 +731,7 @@ namespace Apache.Ignite.Core
             {
                 Configuration = cfg;
                 Callbacks = cbs;
+                PluginContext = new PluginContext(cfg, cbs.Log);
             }
             /// <summary>
             /// Configuration.
@@ -765,6 +767,11 @@ namespace Apache.Ignite.Core
             /// Gets or sets the ignite.
             /// </summary>
             internal Ignite Ignite { get; set; }
+
+            /// <summary>
+            /// Gets or sets the plugin context.
+            /// </summary>
+            internal PluginContext PluginContext { get; set; }
         }
 
         /// <summary>

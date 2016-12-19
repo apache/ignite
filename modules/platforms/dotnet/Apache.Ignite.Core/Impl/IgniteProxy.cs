@@ -427,6 +427,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public T GetPlugin<T>(string name) where T : class
+        {
+            return _ignite.GetPlugin<T>(name);
+        }
+
+        /** <inheritdoc /> */
         public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
         {
             return _ignite.GetAtomicSequence(name, initialValue, create);

@@ -84,6 +84,9 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
+            if (property != null && !property.CanWrite)
+                return;
+
             if (valueType == typeof(IgniteConfiguration))
                 writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
             else
