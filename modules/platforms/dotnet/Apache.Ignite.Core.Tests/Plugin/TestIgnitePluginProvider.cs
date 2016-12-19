@@ -115,6 +115,5 @@ namespace Apache.Ignite.Core.Tests.Plugin
             if (ThrowError)
                 throw new IOException("Failure in plugin provider");
         }
-
     }
 }

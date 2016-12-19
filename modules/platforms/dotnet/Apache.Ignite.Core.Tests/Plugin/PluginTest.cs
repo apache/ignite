@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
@@ -73,7 +74,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [Test]
         public void TestInvalidPlugins()
         {
-            // TODO: Invalid configuration, invalid name, duplicate name, etc...
             Action<ICollection<IPluginConfiguration>> check = x => Ignition.Start(
                 new IgniteConfiguration(TestUtils.GetTestConfiguration()) {PluginConfigurations = x});
 
@@ -101,6 +101,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 ex.Message);
 
             // Provider throws an exception.
+            var ioex = Assert.Throws<IOException>(() => check(new[] { new ExceptionConfig() }));
+            Assert.AreEqual("Failure in plugin provider", ioex.Message);
         }
 
         private class NullFactoryConfig : IPluginConfiguration
@@ -124,6 +126,17 @@ namespace Apache.Ignite.Core.Tests.Plugin
             public IFactory<IPluginProvider> PluginProviderFactory
             {
                 get { return new FuncFactory<IPluginProvider>(() => new TestIgnitePluginProvider {Name = ""}); } 
+            }
+        }
+
+        private class ExceptionConfig : IPluginConfiguration
+        {
+            public IFactory<IPluginProvider> PluginProviderFactory
+            {
+                get
+                {
+                    return new FuncFactory<IPluginProvider>(() => new TestIgnitePluginProvider {ThrowError = true});
+                }
             }
         }
     }
