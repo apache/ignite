@@ -1,2 +1,2 @@
 ^Received response to join request \[addr=
-\[msg(Id)?=.+,\s*res=\d+\]$
+\[(msg(Id)?|job)=.+,\s*res=\d+\]$
