@@ -105,6 +105,16 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const;
 
+                /**
+                 * Get SQL query string.
+                 *
+                 * @return SQL query string.
+                 */
+                const std::string& GetSql() const
+                {
+                    return sql;
+                }
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataQuery);
 

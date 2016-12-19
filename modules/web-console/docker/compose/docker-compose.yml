@@ -26,9 +26,6 @@ backend:
   links:
     # Link mongodb container as with mongodb hostname.
     - mongodb:mongodb
-  ports:
-    # Proxy 3001 port from docker container to 3001 port host machine. (HOST_PORT:DOCKER_PORT)
-    - 3001:3001
   # Restart on crash.
   restart: always  
   environment:
@@ -38,8 +35,6 @@ backend:
     - server_sessionSecret=CHANGE ME
     # URL for mongodb connection
     - mongodb_url=mongodb://mongodb/console
-    # Port for web-agent.
-    - agentServer_port=3001
     # Mail connection settings. Leave empty if no needed. See also settings, https://github.com/nodemailer/nodemailer
     - mail_service=
     - mail_sign=

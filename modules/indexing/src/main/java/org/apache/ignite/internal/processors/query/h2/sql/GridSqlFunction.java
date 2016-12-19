@@ -94,7 +94,10 @@ public class GridSqlFunction extends GridSqlElement {
         if (schema != null)
             buff.append(Parser.quoteIdentifier(schema)).append('.');
 
-        buff.append(Parser.quoteIdentifier(name));
+        // We don't need to quote identifier as long as H2 never does so with function names when generating plan SQL.
+        // On the other hand, quoting identifiers that also serve as keywords (like CURRENT_DATE() and CURRENT_DATE)
+        // turns CURRENT_DATE() into "CURRENT_DATE"(), which is not good.
+        buff.append(name);
 
         if (type == CASE) {
             buff.append(' ').append(child().getSQL());

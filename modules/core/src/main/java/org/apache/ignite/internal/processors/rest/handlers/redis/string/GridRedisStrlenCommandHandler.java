@@ -44,7 +44,12 @@ public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
         STRLEN
     );
 
-    /** {@inheritDoc} */
+    /**
+     * Handler constructor.
+     *
+     * @param log Logger to use.
+     * @param hnd Rest handler.
+     */
     public GridRedisStrlenCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }

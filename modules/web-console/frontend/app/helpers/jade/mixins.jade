@@ -433,10 +433,8 @@ mixin evictionPolicy(model, name, enabled, required, tip)
             {value: "SORTED", label: "Sorted"},\
             {value: undefined, label: "Not set"}\
         ]', tip)
-    span(ng-if=kind ng-init='__ = {};')
-        a.customize(ng-show='__.expanded' ng-click='__.expanded = false') Hide settings
-        a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
-        .panel-details(ng-if='__.expanded')
+    span(ng-show=kind)
+        +showHideLink('expanded', 'settings')
             .details-row
                 +number('Batch size', policy + '.batchSize', name + '+ "batchSize"', enabled, '1', '1',
                     'Number of entries to remove on shrink')
@@ -517,9 +515,9 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
         .fieldSep !{divider}
         .input-tip
             if keyJavaBuiltInTypes
-                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-escape='tableReset()')
+                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-escape='tableReset(false)')
             else
-                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder ignite-on-escape='tableReset()')
+                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder ignite-on-escape='tableReset(false)')
     .col-xs-6.col-sm-6.col-md-6
         -var btnVisible = 'tablePairSaveVisible(' + tbl + ', ' + index + ')'
         -var btnSave = 'tablePairSave(tablePairValid, backupItem, ' + tbl + ', ' + index + ')'
@@ -528,9 +526,9 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
         +btn-save(btnVisible, btnSave)
         .input-tip
             if valueJavaBuiltInTypes
-                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
             else
-                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
 
 //- Mixin for DB dialect.
 mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placeholder)
@@ -553,3 +551,13 @@ mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placehol
             <li>PostgreSQL</li>\
             <li>H2 database</li>\
         </ul>')
+
+//- Mixin for show/hide links.
+mixin showHideLink(name, text)
+    span(ng-init='__ = {};')
+        a.customize(ng-show='__.#{name}' ng-click='__.#{name} = false') Hide #{text}
+        a.customize(ng-hide='__.#{name}' ng-click='__.#{name} = true; ui.loadPanel("#{name}");') Show #{text}
+        div(ng-if='ui.isPanelLoaded("#{name}")')
+            .panel-details(ng-show='__.#{name}')
+                if block
+                    block

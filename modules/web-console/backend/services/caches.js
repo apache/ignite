@@ -87,6 +87,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
      */
     const removeAllBySpaces = (spaceIds) => {
         return mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
+            .then(() => mongo.Cluster.update({space: {$in: spaceIds}}, {$pull: {checkpointSpi: {kind: 'Cache'}}}, {multi: true}).exec())
             .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
             .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec());
     };
@@ -129,6 +130,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
                 return Promise.reject(new errors.IllegalArgumentException('Cache id can not be undefined or null'));
 
             return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
+                .then(() => mongo.Cluster.update({}, {$pull: {checkpointSpi: {kind: 'Cache', Cache: {cache: cacheId}}}}, {multi: true}).exec())
                 .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
                 .then(() => mongo.Cache.remove({_id: cacheId}).exec())
                 .then(convertRemoveStatus);

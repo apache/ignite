@@ -39,8 +39,8 @@ Creating NuGet package:
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-Apache Ignite ASP.NET Output Cache Provider: caches page output in a distributed in-memory cache.
-Ideal for web farms: share cached data between servers effortlessly.
+Output Cache Provider: caches page output in a distributed in-memory cache.
+Session State Store Provider: stores session state data in a distributed in-memory cache.
             
 More info: https://apacheignite-net.readme.io/
         </description>
