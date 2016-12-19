@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] {"127.0.0.1:49900", "127.0.0.1:49901"}
+                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
