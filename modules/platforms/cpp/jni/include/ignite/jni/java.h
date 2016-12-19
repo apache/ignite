@@ -140,8 +140,8 @@ namespace ignite
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
 
-                jclass c_PlatformUtils;
-                jmethodID m_PlatformUtils_getFullStackTrace;
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -157,7 +157,7 @@ namespace ignite
                  * Write error information.
                  */
                 bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen,
-                	char** stackTrace, int* stackTraceLen);
+					char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -372,10 +372,10 @@ namespace ignite
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
-                void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
-                void ProcessorGetCacheNames(jobject obj, long long memPtr);
-                bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
-                void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
+				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
+				void ProcessorGetCacheNames(jobject obj, long long memPtr);
+				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
+				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
                 jobject ProcessorBinaryProcessor(jobject obj);
 
                 long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
