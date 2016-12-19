@@ -121,9 +121,7 @@ namespace Apache.Ignite.Core.Tests
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
                             <swapSpaceSpi type='FileSwapSpaceSpi' baseDirectory='abcd' maximumSparsity='0.7' maximumWriteQueueSize='25' readStripesNumber='36' writeBufferSize='47' />
                             <pluginConfigurations>
-                                <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests'>
-                                  <pluginProviderFactory type='Apache.Ignite.Core.Common.Factory`1[[Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginProvider, Apache.Ignite.Core.Tests]], Apache.Ignite.Core' />
-                                </iPluginConfiguration>
+                                <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
                         </igniteConfig>";
 
