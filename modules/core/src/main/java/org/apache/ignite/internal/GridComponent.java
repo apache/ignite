@@ -87,8 +87,9 @@ public interface GridComponent {
      * Collects discovery data both on joining node before sending {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage} request and on nodes already in grid on receiving {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage}.
      *
      * @param dataContainer container object to store discovery data in.
-     *
-     */public void collectDiscoveryData(DiscoveryDataContainer dataContainer);
+     */
+    //TODO it is better to split this method into two: one collects data on joining node, another one in cluster node; this'll allow to abandon managing lifecycle in DiscoveryDataContainer
+    public void collectDiscoveryData(DiscoveryDataContainer dataContainer);
 
     /**
      * Receives discovery data object from remote nodes (called

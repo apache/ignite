@@ -37,14 +37,13 @@ public interface MarshallerContext {
     /**
      * Gets class for provided type ID.
      *
-     * @param platformId id of a platform the class was registered for.
      * @param typeId Type ID.
      * @param ldr Class loader.
      * @return Class.
      * @throws ClassNotFoundException If class was not found.
      * @throws IgniteCheckedException In case of any other error.
      */
-    public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
+    public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
 
 
     /**

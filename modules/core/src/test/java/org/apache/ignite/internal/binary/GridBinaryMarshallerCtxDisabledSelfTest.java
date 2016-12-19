@@ -94,7 +94,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+        @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
             return null;
         }
 

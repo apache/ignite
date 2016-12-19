@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,10 +57,13 @@ class MappingAcceptedMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-    /**
-     *
-     */
+    /** */
     MarshallerMappingItem getMappingItem() {
         return item;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MappingAcceptedMessage.class, this);
     }
 }

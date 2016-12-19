@@ -64,6 +64,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
      */
     private static final CountDownLatch startLatch = new CountDownLatch(3);
 
+    /** */
     private static volatile boolean busySpinFlag;
 
     /** {@inheritDoc} */
@@ -185,13 +186,15 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
                 if (customMsg != null)
                     //don't want to make this class public, using equality of class name instead of instanceof operator
-                    if ("MappingRejectedMessage".equals(customMsg.getClass().getSimpleName())) {
-                        rejectObserved = true;
+                    if ("MappingProposedMessage".equals(customMsg.getClass().getSimpleName())) {
                         String conflClsName = U.field(customMsg, "conflictingClsName");
-                        if (conflClsName.contains("Organization"))
-                            bbClsRejected = true;
-                        else if (conflClsName.contains("OrganizatioN"))
-                            aaClsRejected = true;
+                        if (conflClsName != null && !conflClsName.isEmpty()) {
+                            rejectObserved = true;
+                            if (conflClsName.contains("Organization"))
+                                bbClsRejected = true;
+                            else if (conflClsName.contains("OrganizatioN"))
+                                aaClsRejected = true;
+                        }
                     }
 
                 delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);

@@ -679,7 +679,7 @@ public class BinaryContext {
         Class cls;
 
         try {
-            cls = marshCtx.getClass(JAVA_ID, typeId, ldr);
+            cls = marshCtx.getClass(typeId, ldr);
 
             desc = descByCls.get(cls);
         }
@@ -846,7 +846,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Serializer for class or {@code null} if none exists.
      */
-    private @Nullable BinarySerializer serializerForClass(Class cls) {
+    @Nullable private BinarySerializer serializerForClass(Class cls) {
         BinarySerializer serializer = defaultSerializer();
 
         if (serializer == null && canUseReflectiveSerializer(cls))

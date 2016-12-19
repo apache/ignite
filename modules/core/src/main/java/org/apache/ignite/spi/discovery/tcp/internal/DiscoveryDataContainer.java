@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+//TODO move to the same package where DiscoverySpi
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Serializable;
@@ -46,6 +47,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * </li>
  * </ol>
  */
+//TODO instead of supporting lifecycle around collecting phase is it better to introduce separate methods to collect discoData on joining node and on "old" node
 public final class DiscoveryDataContainer implements Serializable {
 
     /**
@@ -202,13 +204,13 @@ public final class DiscoveryDataContainer implements Serializable {
 
 
     /** */
-    private Map<Integer, Serializable> unmarshJoiningNodeDiscoData;
+    private transient Map<Integer, Serializable> unmarshJoiningNodeDiscoData;
 
     /** */
-    private Map<Integer, Serializable> unmarshCmnData;
+    private transient Map<Integer, Serializable> unmarshCmnData;
 
     /** */
-    private Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData;
+    private transient Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData;
 
     /**
      * @param joiningNodeId Joining node id.
@@ -247,7 +249,7 @@ public final class DiscoveryDataContainer implements Serializable {
             addDataOnJoin(cmpId, data);
         else {
             if (!unmarshNodeSpecData.containsKey(DEFAULT_KEY))
-                unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
+                unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<>());
 
             unmarshNodeSpecData.get(DEFAULT_KEY).put(cmpId, data);
         }
@@ -262,7 +264,7 @@ public final class DiscoveryDataContainer implements Serializable {
             unmarshNodeSpecData = new HashMap<>();
 
         if (!unmarshNodeSpecData.containsKey(DEFAULT_KEY))
-            unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
+            unmarshNodeSpecData.put(DEFAULT_KEY, new HashMap<>());
 
         unmarshNodeSpecData.get(DEFAULT_KEY).put(cmpId, data);
     }
@@ -362,7 +364,8 @@ public final class DiscoveryDataContainer implements Serializable {
         for (Map.Entry<Integer, Serializable> entry : src.entrySet())
             try {
                 target.put(entry.getKey(), marsh.marshal(entry.getValue()));
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
             }
@@ -427,7 +430,8 @@ public final class DiscoveryDataContainer implements Serializable {
             try {
                 Serializable compData = marsh.unmarshal(binEntry.getValue(), clsLdr);
                 target.put(binEntry.getKey(), compData);
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
                         X.hasCause(e, ClassNotFoundException.class) && clientNode)
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");

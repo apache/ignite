@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *  Used to exchange mapping information on new mapping added or missing mapping requested flows.
@@ -28,56 +29,38 @@ public final class MarshallerMappingItem implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private byte platformId;
+    private final byte platformId;
 
     /** */
-    private int typeId;
+    private final int typeId;
 
     /** */
     private String clsName;
 
     /**
+     * Class name may be null when instance is created to request missing mapping from cluster.
+     *
      * @param platformId Platform id.
      * @param typeId Type id.
      * @param clsName Class name.
      */
-    public MarshallerMappingItem(byte platformId, int typeId, String clsName) {
+    public MarshallerMappingItem(byte platformId, int typeId, @Nullable String clsName) {
         this.platformId = platformId;
         this.typeId = typeId;
         this.clsName = clsName;
     }
 
-    /**
-     * @param typeId Type id.
-     */
-    public void typeId(int typeId) {
-        this.typeId = typeId;
-    }
-
-    /**
-     *
-     */
+    /** */
     public int typeId() {
         return typeId;
     }
 
-    /**
-     *
-     */
+    /** */
     public byte platformId() {
         return platformId;
     }
 
-    /**
-     * @param platformId Platform id.
-     */
-    public void platformId(byte platformId) {
-        this.platformId = platformId;
-    }
-
-    /**
-     *
-     */
+    /** */
     public String className() {
         return clsName;
     }
@@ -107,5 +90,10 @@ public final class MarshallerMappingItem implements Serializable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * 31 * ((int) platformId) + 31 * typeId + (clsName != null ? clsName.hashCode() : 0) ;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "[platformId: " + platformId + ", typeId:" + typeId + ", clsName: " + clsName + "]";
     }
 }

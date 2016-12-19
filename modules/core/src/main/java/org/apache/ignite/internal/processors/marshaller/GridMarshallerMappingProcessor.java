@@ -22,13 +22,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -38,9 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridD
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
 
 /**
@@ -84,42 +79,60 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         discoMgr.setCustomEventListener(MappingAcceptedMessage.class, new MappingAcceptedListener());
 
-        discoMgr.setCustomEventListener(MappingRejectedMessage.class, new MappingRejectedListener());
-
+        //TODO use communication instead of CustomDiscoveryMessage for request-response functionality
         discoMgr.setCustomEventListener(MissingMappingRequestMessage.class, new MissingMappingRequestListener());
 
         discoMgr.setCustomEventListener(MissingMappingResponseMessage.class, new MissingMappingResponseListener());
-
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                //gently cancelling futures to not break any components that are not ready for exception
-                cancelFutures(MappingExchangeResult.createExchangeDisabledResult());
-            }
-        }, EVT_NODE_LEFT, EVT_NODE_SEGMENTED, EVT_NODE_FAILED);
     }
 
     /**
      *
      */
     private final class MarshallerMappingExchangeListener implements CustomEventListener<MappingProposedMessage> {
-
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingProposedMessage msg) {
             if (!ctx.isStopping()) {
-                if (!msg.inConflict() && !msg.duplicated()) {
+                if (msg.duplicated())
+                    return;
+
+                if (!msg.inConflict()) {
                     MarshallerMappingItem item = msg.mappingItem();
                     String conflictingName = marshallerCtx.onMappingProposed(item);
 
                     if (conflictingName != null) {
                         if (conflictingName.equals(item.className()))
                             msg.markDuplicated();
-                        else {
-                            msg.markInConflict();
-                            msg.conflictingClassName(conflictingName);
-                        }
+                        else
+                            msg.conflictingWithClass(conflictingName);
+                    }
+                }
+                else {
+                    UUID origNodeId = msg.origNodeId();
+                    if (origNodeId.equals(ctx.localNodeId())) {
+                        GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.mappingItem());
+
+                        assert fut != null: msg;
+
+                        fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));
+                        mappingExchangeSyncMap.remove(msg.mappingItem(), fut);
                     }
                 }
             }
+        }
+
+        /**
+         * @param mappingItem Mapping item.
+         * @param conflictingClsName Conflicting class name.
+         */
+        private IgniteCheckedException duplicateMappingException(MarshallerMappingItem mappingItem, String conflictingClsName) {
+            return new IgniteCheckedException("Duplicate ID [platformId="
+                    + mappingItem.platformId()
+                    + ", typeId="
+                    + mappingItem.typeId()
+                    + ", oldCls="
+                    + conflictingClsName
+                    + ", newCls="
+                    + mappingItem.className() + "]");
         }
     }
 
@@ -138,39 +151,6 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 fut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
                 mappingExchangeSyncMap.remove(item, fut);
             }
-        }
-    }
-
-    /**
-     *
-     */
-    private final class MappingRejectedListener implements CustomEventListener<MappingRejectedMessage> {
-        /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingRejectedMessage msg) {
-            UUID origNodeId = msg.origNodeId();
-            UUID locNodeId = ctx.localNodeId();
-
-            if (locNodeId.equals(origNodeId)) {
-                GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.getOrigMappingItem());
-
-                if (fut != null)
-                    fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(msg.getOrigMappingItem(), msg.getConflictingClsName())));
-            }
-        }
-
-        /**
-         * @param mappingItem Mapping item.
-         * @param conflictingClsName Conflicting class name.
-         */
-        private IgniteCheckedException duplicateMappingException(MarshallerMappingItem mappingItem, String conflictingClsName) {
-            return new IgniteCheckedException("Duplicate ID [platformId="
-                    + mappingItem.platformId()
-                    + ", typeId="
-                    + mappingItem.typeId()
-                    + ", oldCls="
-                    + conflictingClsName
-                    + ", newCls="
-                    + mappingItem.className() + "]");
         }
     }
 
@@ -217,7 +197,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
          * @param item Item.
          */
         private IgniteCheckedException resolutionFailedException(MarshallerMappingItem item) {
-            return new IgniteCheckedException("Failed to resolve class name for "
+            return new IgniteCheckedException("Failed to resolve class name "
                     + "[platformId="
                     + item.platformId()
                     + ", typeId="
@@ -239,11 +219,12 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         if (marshallerMappings != null)
             for (Map.Entry<Byte, ConcurrentMap<Integer, MappedName>> e : marshallerMappings.entrySet())
-                marshallerCtx.applyPlatformMapping(e.getKey(), e.getValue());
+                marshallerCtx.onMappingDataReceived(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        //TODO cleanup marshaller context impl mappings
         cancelFutures(MappingExchangeResult.createFailureResult(new IgniteClientDisconnectedCheckedException(
                 ctx.cluster().clientReconnectFuture(),
                 "Failed to propose or request mapping, client node disconnected.")));

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 class MappingProposedMessage implements DiscoveryCustomMessage {
-
     /**
      *
      */
@@ -49,6 +50,7 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
     private final UUID origNodeId;
 
     /** */
+    @GridToStringInclude
     private final MarshallerMappingItem mappingItem;
 
     /** */
@@ -62,6 +64,8 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
      * @param origNodeId Orig node id.
      */
     MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+        assert origNodeId != null;
+
         this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
     }
@@ -77,9 +81,8 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         if (status == ProposalStatus.SUCCESSFUL)
             return new MappingAcceptedMessage(mappingItem);
-        else if (status == ProposalStatus.IN_CONFLICT)
-            return new MappingRejectedMessage(mappingItem, conflictingClsName, origNodeId);
-        else return null;
+        else
+            return null;
     }
 
     /** {@inheritDoc} */
@@ -87,45 +90,44 @@ class MappingProposedMessage implements DiscoveryCustomMessage {
         return true;
     }
 
-    /**
-     *
-     */
+    /** */
     MarshallerMappingItem mappingItem() {
         return mappingItem;
     }
 
-    /**
-     *
-     */
+    /** */
+    UUID origNodeId() {
+        return origNodeId;
+    }
+
+    /** */
     boolean inConflict() {
         return status == ProposalStatus.IN_CONFLICT;
     }
 
-    /**
-     *
-     */
+    /** */
     public boolean duplicated() {
         return status == ProposalStatus.DUPLICATED;
     }
 
-    /**
-     *
-     */
-    void markInConflict() {
+    /** */
+    void conflictingWithClass(String conflClsName) {
         status = ProposalStatus.IN_CONFLICT;
+        conflictingClsName = conflClsName;
     }
 
-    /**
-     *
-     */
+    /** */
     void markDuplicated() {
         status = ProposalStatus.DUPLICATED;
     }
 
-    /**
-     * @param conflictingClsName Conflicting class name.
-     */
-    void conflictingClassName(String conflictingClsName) {
-        this.conflictingClsName = conflictingClsName;
+    /** */
+    String conflictingClassName() {
+        return conflictingClsName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MappingProposedMessage.class, this);
     }
 }

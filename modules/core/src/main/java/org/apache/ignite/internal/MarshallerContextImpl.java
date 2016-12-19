@@ -62,10 +62,11 @@ public class MarshallerContextImpl implements MarshallerContext {
     private final Set<String> registeredSysTypes = new HashSet<>();
 
     /** */
+    //TODO replace map with some array implementation to improve performance
     private final ConcurrentMap<Byte, ConcurrentMap<Integer, MappedName>> allCaches = new ConcurrentHashMap8<>();
 
     /** */
-    private ConcurrentMap<Integer, MappedName> dfltCache = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, MappedName> dfltCache = new ConcurrentHashMap8<>();
 
     /** */
     private MarshallerMappingPersistence persistence;
@@ -83,6 +84,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public MarshallerContextImpl(@Nullable List<PluginProvider> plugins) {
         initializeCaches();
+
         try {
             ClassLoader ldr = U.gridClassLoader();
 
@@ -127,27 +129,24 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private void initializeCaches() {
         allCaches.put(JAVA_ID, dfltCache);
     }
 
-    /**
-     *
-     */
-    public HashMap<Byte, ConcurrentMap<Integer, MappedName>> getCachedMappings() {
-        HashMap<Byte, ConcurrentMap<Integer, MappedName>> result = new HashMap<>(allCaches.size());
+    /** */
+    public HashMap<Byte, Map<Integer, MappedName>> getCachedMappings() {
+        HashMap<Byte, Map<Integer, MappedName>> result = U.newHashMap(allCaches.size());
 
         for (Map.Entry<Byte, ConcurrentMap<Integer, MappedName>> e0 : allCaches.entrySet()) {
 
-            ConcurrentMap<Integer, MappedName> res;
+            Map res;
 
             if (e0.getKey() == JAVA_ID) {
                 //filtering out system types from default cache to reduce message size
-                res = new ConcurrentHashMap8<>();
+                res = new HashMap();
                 for (Map.Entry<Integer, MappedName> e1 : e0.getValue().entrySet())
+                    //TODO get rid of registeredSysTypes as a separate entity as it may be expensive to filter stuff in this way
                     if (!registeredSysTypes.contains(e1.getValue().className()))
                         res.put(e1.getKey(), e1.getValue());
             }
@@ -165,11 +164,12 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param platformId Platform id.
      * @param marshallerMapping Marshaller mapping.
      */
-    public void applyPlatformMapping(byte platformId, Map<Integer, MappedName> marshallerMapping) {
+    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMapping) {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
         for (Map.Entry<Integer, MappedName> e : marshallerMapping.entrySet())
             platformCache.putIfAbsent(e.getKey(), new MappedName(e.getValue().className(), true));
+            //TODO assert that value hasn't changed here
     }
 
     /**
@@ -220,7 +220,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         MappedName mappedName = cache.get(typeId);
 
-        if (mappedName != null)
+        if (mappedName != null) {
             if (!mappedName.className().equals(clsName))
                 throw duplicateIdException(platformId, typeId, mappedName.className(), clsName);
             else {
@@ -235,6 +235,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                 return convertXchRes(res);
             }
+        }
         else {
             if (transport.stopping())
                 return false;
@@ -246,6 +247,9 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
     }
 
+    /**
+     * @param res result of exchange.
+     */
     private boolean convertXchRes(MappingExchangeResult res) throws IgniteCheckedException {
         if (res.successful())
             return true;
@@ -298,12 +302,13 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         cache.replace(item.typeId(), new MappedName(item.className(), true));
 
+        //TODO move persisting to a separate thread
         persistence.onMappingAccepted(item.platformId(), item.typeId(), item.className());
     }
 
     /** {@inheritDoc} */
-    @Override public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName = getClassName(platformId, typeId);
+    @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+        String clsName = getClassName(JAVA_ID, typeId);
 
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
@@ -353,8 +358,12 @@ public class MarshallerContextImpl implements MarshallerContext {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
         MappedName mappedName = cache.get(item.typeId());
-        if (mappedName != null && mappedName.className() != null)
+
+        if (mappedName != null) {
+            assert mappedName.accepted() : mappedName;
+
             return mappedName.className();
+        }
 
         return null;
     }
@@ -369,10 +378,8 @@ public class MarshallerContextImpl implements MarshallerContext {
         int typeId = item.typeId();
         MappedName mappedName = cache.get(typeId);
 
-        if (mappedName != null) {
-            assert mappedName.className() != null;
-            assert mappedName.className().equals(resolvedClsName);
-        }
+        if (mappedName != null)
+            assert resolvedClsName.equals(mappedName.className()) : "Class name resolved from cluster: " + resolvedClsName + ", class name from local cache: " + mappedName.className();
         else {
             mappedName = new MappedName(resolvedClsName, true);
             cache.putIfAbsent(typeId, mappedName);

@@ -37,7 +37,7 @@ public final class MarshallerMappingTransport {
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap;
 
     /** */
-    private final AtomicBoolean stopping;
+    private volatile boolean stopping;
 
     /**
      * @param discoMgr Disco manager.
@@ -46,7 +46,7 @@ public final class MarshallerMappingTransport {
     MarshallerMappingTransport(GridDiscoveryManager discoMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
         this.discoMgr = discoMgr;
         this.mappingExchSyncMap = mappingExchSyncMap;
-        stopping = new AtomicBoolean(false);
+        stopping = false;
     }
 
     /**
@@ -90,6 +90,7 @@ public final class MarshallerMappingTransport {
             if (mapping != null) {
                 String mappedClsName = mapping.className();
 
+                //TODO introduce subclass of GridFutureAdapter to encapsulate this logic there
                 if (!mappedClsName.equals(item.className())) {
                     fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(item, mappedClsName)));
                     mappingExchSyncMap.remove(item, fut);
@@ -98,7 +99,7 @@ public final class MarshallerMappingTransport {
                     fut.onDone(MappingExchangeResult.createSuccessfulResult(mappedClsName));
                     mappingExchSyncMap.remove(item, fut);
                 }
-                else if (stopping.get()) {
+                else if (stopping) {
                     fut.onDone(MappingExchangeResult.createExchangeDisabledResult());
                     mappingExchSyncMap.remove(item, fut);
                 }
@@ -158,11 +159,11 @@ public final class MarshallerMappingTransport {
 
     /** */
     public void markStopping() {
-        stopping.set(true);
+        stopping = true;
     }
 
     /** */
     public boolean stopping() {
-        return stopping.get();
+        return stopping;
     }
 }

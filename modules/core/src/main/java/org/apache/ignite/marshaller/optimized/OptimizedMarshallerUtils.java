@@ -161,7 +161,7 @@ class OptimizedMarshallerUtils {
         try {
             mapOff = GridUnsafe.objectFieldOffset(HashSet.class.getDeclaredField("map"));
         }
-        catch (NoSuchFieldException e) {
+        catch (NoSuchFieldException ignored) {
             try {
                 // Workaround for legacy IBM JRE.
                 mapOff = GridUnsafe.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
@@ -265,7 +265,7 @@ class OptimizedMarshallerUtils {
         Class cls;
 
         try {
-            cls = ctx.getClass(JAVA_ID, typeId, ldr);
+            cls = ctx.getClass(typeId, ldr);
         }
         catch (IgniteCheckedException e) {
             throw new IOException("Failed to resolve class for ID: " + typeId, e);
@@ -309,7 +309,7 @@ class OptimizedMarshallerUtils {
                     }
                 }
             }
-            catch (NoSuchFieldException e) {
+            catch (NoSuchFieldException ignored) {
                 // No-op.
             }
             catch (IllegalAccessException e) {

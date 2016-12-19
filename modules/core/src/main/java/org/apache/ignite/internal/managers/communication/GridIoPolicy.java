@@ -41,10 +41,10 @@ public class GridIoPolicy {
     public static final byte UTILITY_CACHE_POOL = 5;
 
     /** IGFS pool. */
-    public static final byte IGFS_POOL = 7;
+    public static final byte IGFS_POOL = 6;
 
     /** Pool for handling distributed index range requests. */
-    public static final byte IDX_POOL = 8;
+    public static final byte IDX_POOL = 7;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.
