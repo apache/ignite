@@ -116,7 +116,7 @@ int main()
                 cache.Put(i, builder.str());
             }
 
-            // Let uset wait for a while while callback is notified about remaining puts.
+            // Let user wait while callback is notified about remaining puts.
             std::cout << std::endl;
             std::cout << ">>> Press 'Enter' to continue..." << std::endl;
             std::cout << std::endl;
