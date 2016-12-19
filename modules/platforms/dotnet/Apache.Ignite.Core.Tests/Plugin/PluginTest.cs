@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
@@ -73,6 +74,20 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void TestInvalidPlugins()
         {
             // TODO: Invalid configuration, invalid name, duplicate name, etc...
+            Action<ICollection<IPluginConfiguration>> check = x => Ignition.Start(
+                new IgniteConfiguration(TestUtils.GetTestConfiguration()) {PluginConfigurations = x});
+
+            // Null factory.
+            var ex = Assert.Throws<IgniteException>(() => check(new[] {new NullFactoryConfig()}));
+            Assert.AreEqual("", ex.Message);
+
+            // Null factory result.
+
+            // Null plugin name.
+
+            // Duplicate plugin name.
+
+            // Plugin throws an exception.
         }
 
         private class NullFactoryConfig : IPluginConfiguration
@@ -82,5 +97,23 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 get { return null; } 
             }
         }
+
+        private class NullFactoryResultConfig : IPluginConfiguration
+        {
+            public IFactory<IPluginProvider> PluginProviderFactory
+            {
+                get { return new NullFactory<IPluginProvider>(); } 
+            }
+
+        }
+
+        private class NullFactory<T> : IFactory<T>
+        {
+            public T CreateInstance()
+            {
+                return default(T);
+            }
+        }
+
     }
 }
