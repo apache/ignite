@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+package org.apache.ignite.hadoop.io;
 
 /**
- *
+ * Partially raw comparator. Compares one deserialized value with serialized value.
  */
-public class CachePartitionedNearEnabledMultiNodeLongTxTimeoutFullApiTest extends
-    GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.getTransactionConfiguration().setDefaultTxTimeout(5 * 60_000);
-
-        return cfg;
-    }
+public interface PartiallyRawComparator<T> {
+    /**
+     * Do compare.
+     *
+     * @param val1 First value (deserialized).
+     * @param val2Buf Second value (serialized).
+     * @return A negative integer, zero, or a positive integer as this object is less than, equal to, or greater
+     *     than the specified object.
+     */
+    int compare(T val1, RawMemory val2Buf);
 }

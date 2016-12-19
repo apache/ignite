@@ -15,27 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains <b>Hadoop Accelerator</b> API for input-output operations.
  */
-public class CachePartitionedNearEnabledMultiNodeLongTxTimeoutFullApiTest extends
-    GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.getTransactionConfiguration().setDefaultTxTimeout(5 * 60_000);
-
-        return cfg;
-    }
-}
+package org.apache.ignite.hadoop.io;
