@@ -370,6 +370,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
+            _pluginContext.Stop(cancel);
+
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();

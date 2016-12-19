@@ -82,6 +82,16 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /// <summary>
+        /// Called when Ignite is about to stop.
+        /// </summary>
+        public void Stop(bool cancel)
+        {
+            // Notify plugins.
+            foreach (var provider in _pluginProviders.Values)
+                provider.Stop(cancel);
+        }
+
+        /// <summary>
         /// Gets the provider.
         /// </summary>
         public IPluginProvider GetProvider(string name)
