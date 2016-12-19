@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,7 +34,6 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -75,9 +73,6 @@ public class JdbcStatement implements Statement {
 
     /** Current updated items count. */
     long updateCnt = -1;
-
-    /** Batch statements. */
-    private List<String> batch;
 
     /**
      * Creates new statement.
@@ -447,27 +442,21 @@ public class JdbcStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        if (F.isEmpty(sql))
-            throw new SQLException("SQL query is empty");
-
-        if (batch == null)
-            batch = new ArrayList<>();
-
-        batch.add(sql);
+        throw new SQLFeatureNotSupportedException("Batching is supported for PreparedStatements only.");
     }
 
     /** {@inheritDoc} */
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        batch = null;
+        throw new SQLFeatureNotSupportedException("Batching is supported for PreparedStatements only.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        throw new SQLFeatureNotSupportedException("Batching is supported for PreparedStatements only.");
     }
 
     /** {@inheritDoc} */

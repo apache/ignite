@@ -50,6 +50,9 @@ public final class IgniteQueryErrorCode {
     /** Analysis detected that given statement is not suitable for streaming. */
     public final static int INVALID_STREAMING_STMT = 2004;
 
+    /** Number of statement parameters does not divide number of given arguments evenly. */
+    public final static int ODD_BATCH_SIZE = 2005;
+
     /* 3xxx - database API related runtime errors */
 
     /** Required table not found. */

@@ -88,4 +88,39 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
 
         assertEquals(false, res);
     }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testBatch() throws SQLException {
+        prepStmt.setString(1, "p1");
+        prepStmt.setInt(2, 1);
+        prepStmt.setString(3, "John");
+        prepStmt.setString(4, "White");
+        prepStmt.setInt(5, 25);
+
+        prepStmt.setString(6, "p2");
+        prepStmt.setInt(7, 2);
+        prepStmt.setString(8, "Joe");
+        prepStmt.setString(9, "Black");
+        prepStmt.setInt(10, 35);
+        prepStmt.addBatch();
+
+        prepStmt.setString(1, "p3");
+        prepStmt.setInt(2, 3);
+        prepStmt.setString(3, "Mike");
+        prepStmt.setString(4, "Green");
+        prepStmt.setInt(5, 40);
+
+        prepStmt.setString(6, "p4");
+        prepStmt.setInt(7, 4);
+        prepStmt.setString(8, "Leah");
+        prepStmt.setString(9, "Grey");
+        prepStmt.setInt(10, 22);
+        prepStmt.addBatch();
+
+        int[] res = prepStmt.executeBatch();
+
+        assertEquals(4, res[0]);
+    }
 }

@@ -215,16 +215,38 @@ public class DmlStatementsProcessor {
      * Perform given statement against given data streamer. Only rows based INSERT and MERGE are supported
      * as well as key bound UPDATE and DELETE (ones with filter {@code WHERE _key = ?}).
      *
-     * @param spaceName Space name.
      * @param streamer Streamer to feed data to.
      * @param stmt Statement.
-     * @param params Statement arguments.
+     * @param args Statement arguments.
      * @return Number of rows in given statement for INSERT and MERGE, {@code 1} otherwise.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("unchecked")
-    long streamUpdateQuery(String spaceName, IgniteDataStreamer streamer,
-        PreparedStatement stmt, Object[] params) throws IgniteCheckedException {
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, Object[] args) throws IgniteCheckedException {
+        args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
+
+        int argsCnt = args.length;
+
+        int paramsCnt;
+
+        try {
+            paramsCnt = stmt.getParameterMetaData().getParameterCount();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        int batchSize;
+
+        if (paramsCnt == 0)
+            batchSize = 1;
+        else if (argsCnt < paramsCnt || argsCnt % paramsCnt != 0)
+            throw new IgniteSQLException("Odd number of query arguments", IgniteQueryErrorCode.ODD_BATCH_SIZE);
+        else
+            batchSize = argsCnt / paramsCnt;
+
+        boolean isBatch = (batchSize > 1);
+
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
 
         assert p != null;
@@ -238,27 +260,53 @@ public class DmlStatementsProcessor {
 
             assert plan.isLocSubqry;
 
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(spaceName, plan.selectQry, F.asList(params),
-                null, false, 0, null);
-
             final GridCacheContext cctx = plan.tbl.rowDescriptor().context();
 
-            QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            QueryCursorImpl<List<?>> cur;
+
+            int pos = 0;
+
+            Object[] stepArgs = args;
+
+            if (isBatch) // Let's not reallocate args sub array on each batch step
+                stepArgs = new Object[paramsCnt];
+
+            final ArrayList<List<?>> data = new ArrayList<>(batchSize * plan.rowsNum);
+
+            for (int i = 0; i < batchSize; i++) {
+                if (isBatch)
+                    System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+
+                final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry,
+                    F.asList(stepArgs), null, false, 0, null);
+
+                QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    /** {@inheritDoc} */
+                    @Override public Iterator<List<?>> iterator() {
+                        try {
+                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }, null);
+
+                data.addAll(stepCur.getAll());
+
+                pos += paramsCnt;
+            }
+
+            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                /** {@inheritDoc} */
                 @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
-                    }
+                    return data.iterator();
                 }
             }, null);
 
-            cur.fieldsMeta(res.metaData());
-
             GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
-            if (plan.rowsNum == 1) {
+            if (!isBatch && plan.rowsNum == 1) {
                 IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next().toArray(), plan.colNames, plan.colTypes,
                     plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
 
@@ -285,14 +333,28 @@ public class DmlStatementsProcessor {
                 throw new IgniteSQLException("Only key bounded UPDATE and DELETE are supported in streaming mode",
                     IgniteQueryErrorCode.INVALID_STREAMING_STMT);
 
-            Object key = plan.fastUpdateArgs.key.apply(params);
+            Object[] stepArgs = args;
 
-            // We just supply 0 as "value" in case of DELETE - it will be ignored by stream receiver anyway.
-            Object newVal = plan.mode == UpdateMode.UPDATE ? plan.fastUpdateArgs.newVal.apply(params) : 0;
+            if (isBatch) // Let's not reallocate args array on each batch step
+                stepArgs = new Object[paramsCnt];
 
-            streamer.addData(key, newVal);
+            int pos = 0;
 
-            return 1;
+            for (int i = 0; i < batchSize; i++) {
+                if (isBatch)
+                    System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+
+                Object key = plan.fastUpdateArgs.key.apply(stepArgs);
+
+                // We just supply 0 as "value" in case of DELETE - it will be ignored by stream receiver anyway.
+                Object newVal = (plan.mode == UpdateMode.UPDATE ? plan.fastUpdateArgs.newVal.apply(stepArgs) : 0);
+
+                streamer.addData(key, newVal);
+
+                pos += paramsCnt;
+            }
+
+            return batchSize;
         }
     }
 
@@ -305,19 +367,43 @@ public class DmlStatementsProcessor {
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(final GridCacheContext cctx, PreparedStatement prepStmt,
         SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel, Object[] failedKeys)
         throws IgniteCheckedException {
         Integer errKeysPos = null;
 
-        Object[] params = fieldsQry.getArgs();
+        Object[] args = U.firstNotNull(fieldsQry.getArgs(), X.EMPTY_OBJECT_ARRAY);
+
+        int argsCnt = args.length;
+
+        int paramsCnt;
+
+        try {
+            paramsCnt = prepStmt.getParameterMetaData().getParameterCount();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        int batchSize;
+
+        if (paramsCnt == 0)
+            batchSize = 1;
+        else if (argsCnt < paramsCnt || argsCnt % paramsCnt != 0)
+            throw new IgniteSQLException("Odd number of query arguments", IgniteQueryErrorCode.ODD_BATCH_SIZE);
+        else
+            batchSize = argsCnt / paramsCnt;
+        
+        boolean isBatch = (batchSize > 1);
 
         if (!F.isEmpty(failedKeys)) {
-            int paramsCnt = F.isEmpty(params) ? 0 : params.length;
-            params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
-            params[paramsCnt] = failedKeys;
-            errKeysPos = paramsCnt; // Last position
+            // We can have failed keys only for non fast UPDATE or DELETE, and batching is not supported for those
+            assert !isBatch;
+            
+            args = Arrays.copyOf(args, argsCnt + 1);
+            args[argsCnt] = failedKeys;
+            errKeysPos = argsCnt; // Last position
         }
 
         UpdatePlan plan = getPlanForStatement(cctx.name(), prepStmt, errKeysPos);
@@ -325,8 +411,12 @@ public class DmlStatementsProcessor {
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
 
-            return new UpdateResult(doSingleUpdate(plan, params), X.EMPTY_OBJECT_ARRAY);
+            return new UpdateResult(doFastUpdate(plan, args, batchSize), X.EMPTY_OBJECT_ARRAY);
         }
+
+        if (isBatch && plan.rowsNum == 0)
+            throw new IgniteSQLException("Invalid statement for batching - only rows based INSERT and MERGE are " +
+                "supported as well as fast UPDATE and DELETE");
 
         assert !F.isEmpty(plan.selectQry);
 
@@ -335,8 +425,10 @@ public class DmlStatementsProcessor {
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // subquery and not some dummy stuff like "select 1, 2, 3;"
         if (!loc && !plan.isLocSubqry) {
+            assert !isBatch;
+
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, fieldsQry.isCollocated())
-                .setArgs(params)
+                .setArgs(args)
                 .setDistributedJoins(fieldsQry.isDistributedJoins())
                 .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
                 .setLocal(fieldsQry.isLocal())
@@ -346,21 +438,45 @@ public class DmlStatementsProcessor {
             cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
         }
         else {
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry, F.asList(params),
-                filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
+            int pos = 0;
+
+            Object[] stepArgs = args;
+
+            if (isBatch) // Let's not reallocate args sub array on each batch step
+                stepArgs = new Object[paramsCnt];
+
+            final ArrayList<List<?>> data = new ArrayList<>(batchSize * plan.rowsNum);
+
+            for (int i = 0; i < batchSize; i++) {
+                if (isBatch)
+                    System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+
+                final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry,
+                    F.asList(stepArgs), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
+
+                QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    /** {@inheritDoc} */
+                    @Override public Iterator<List<?>> iterator() {
+                        try {
+                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }, cancel);
+
+                data.addAll(stepCur.getAll());
+
+                pos += paramsCnt;
+            }
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                /** {@inheritDoc} */
                 @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+                    return data.iterator();
                 }
             }, cancel);
-
-            cur.fieldsMeta(res.metaData());
         }
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
@@ -424,38 +540,106 @@ public class DmlStatementsProcessor {
 
     /**
      * Perform single cache operation based on given args.
-     * @param params Query parameters.
+     * @param args Query parameters.
+     * @param batchSize Batch size.
      * @return 1 if an item was affected, 0 otherwise.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static long doSingleUpdate(UpdatePlan plan, Object[] params) throws IgniteCheckedException {
+    private static long doFastUpdate(UpdatePlan plan, Object[] args, int batchSize) throws IgniteCheckedException {
+        assert batchSize >= 1;
+
         GridCacheContext cctx = plan.tbl.rowDescriptor().context();
 
         FastUpdateArguments singleUpdate = plan.fastUpdateArgs;
 
         assert singleUpdate != null;
 
-        int res;
+        boolean isBatched = (batchSize > 1);
 
-        Object key = singleUpdate.key.apply(params);
-        Object val = singleUpdate.val.apply(params);
-        Object newVal = singleUpdate.newVal.apply(params);
+        // We should only be here if our batch size is right.
+        assert !isBatched || (args.length % batchSize == 0);
 
-        if (newVal != null) { // Single item UPDATE
-            if (val == null) // No _val bound in source query
-                res = cctx.cache().replace(key, newVal) ? 1 : 0;
-            else
-                res = cctx.cache().replace(key, val, newVal) ? 1 : 0;
+        boolean valBounded = (singleUpdate.val != FastUpdateArguments.NULL_ARGUMENT);
+
+        int paramsCnt = args.length / batchSize;
+
+        Object[] fastArgs = args;
+
+        if (isBatched)
+            fastArgs = new Object[paramsCnt];
+
+        if (singleUpdate.newVal != FastUpdateArguments.NULL_ARGUMENT) { // Single item UPDATE
+            int pos = 0;
+
+            long res = 0;
+
+            for (int i = 0; i < batchSize; i++) {
+                if (isBatched)
+                    System.arraycopy(args, pos, fastArgs, 0, paramsCnt);
+
+                Object key = singleUpdate.key.apply(fastArgs);
+                Object newVal = singleUpdate.newVal.apply(fastArgs);
+
+                if (valBounded) {
+                    Object val = singleUpdate.val.apply(fastArgs);
+
+                    res += (cctx.cache().replace(key, val, newVal) ? 1 : 0);
+                }
+                else
+                    res += (cctx.cache().replace(key, newVal) ? 1 : 0);
+
+                pos += paramsCnt;
+            }
+
+            return res;
         }
         else { // Single item DELETE
-            if (val == null) // No _val bound in source query
-                res = cctx.cache().remove(key) ? 1 : 0;
-            else
-                res = cctx.cache().remove(key, val) ? 1 : 0;
-        }
+            LinkedHashMap<Object, Object> m = null;
 
-        return res;
+            int pos = 0;
+
+            if (isBatched)
+                m = new LinkedHashMap();
+
+            Object key = null;
+            Object val = null;
+
+            for (int i = 0; i < batchSize; i++) {
+                if (isBatched)
+                    System.arraycopy(args, pos, fastArgs, 0, paramsCnt);
+
+                key = singleUpdate.key.apply(fastArgs);
+                val = singleUpdate.val.apply(fastArgs);
+
+                if (isBatched) {
+                    m.put(key, val);
+
+                    pos += paramsCnt;
+                }
+            }
+
+            if (isBatched) {
+                if (singleUpdate.val == FastUpdateArguments.NULL_ARGUMENT) {
+                    cctx.cache().removeAll(m.keySet());
+
+                    return m.size();
+                }
+                else {
+                    int res = 0;
+
+                    for (Map.Entry e : m.entrySet())
+                        res += cctx.cache().remove(e.getKey(), e.getValue()) ? 1 : 0;
+
+                    return res;
+                }
+            }
+
+            if (singleUpdate.val == FastUpdateArguments.NULL_ARGUMENT) // No _val bound in source query
+                return cctx.cache().remove(key) ? 1 : 0;
+            else
+                return cctx.cache().remove(key, val) ? 1 : 0;
+        }
     }
 
     /**
@@ -466,7 +650,7 @@ public class DmlStatementsProcessor {
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
-    private UpdateResult doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor, int pageSize)
+    private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         // With DELETE, we have only two columns - key and value.
         long res = 0;
@@ -536,7 +720,7 @@ public class DmlStatementsProcessor {
      *     had been modified concurrently (arguments for a re-run)].
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    private UpdateResult doUpdate(UpdatePlan plan, QueryCursorImpl<List<?>> cursor, int pageSize)
+    private UpdateResult doUpdate(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
@@ -776,7 +960,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private long doMerge(UpdatePlan plan, QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
+    private long doMerge(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
         GridCacheContext cctx = desc.context();
@@ -822,7 +1006,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private long doInsert(UpdatePlan plan, QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
+    private long doInsert(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
         GridCacheContext cctx = desc.context();

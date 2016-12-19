@@ -162,13 +162,14 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         Set<Integer> keys = new HashSet<>();
 
-        for (int i = 0; i < 1000; i++) {
-            int key = ThreadLocalRandom.current().nextInt(1000) + 1;
+        while (keys.size() < 1000) {
+            int key = ThreadLocalRandom.current().nextInt(100000) + 1;
+
+            if (!keys.add(key))
+                continue;
 
             updStmt.setInt(1, key * 2);
             updStmt.setInt(2, key);
-
-            keys.add(key);
 
             updStmt.execute();
         }
@@ -209,13 +210,13 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         Set<Integer> keys = new HashSet<>();
 
-        // Let's tell streamer to remove 1000 random keys.
-        for (int i = 0; i < 1000; i++) {
-            int key = ThreadLocalRandom.current().nextInt(1000) + 1;
+        while (keys.size() < 1000) {
+            int key = ThreadLocalRandom.current().nextInt(100000) + 1;
+
+            if (!keys.add(key))
+                continue;
 
             delStmt.setInt(1, key);
-
-            keys.add(key);
 
             delStmt.execute();
         }
@@ -257,6 +258,186 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         // Let the stream flush.
         U.sleep(1500);
+
+        // Now let's check it's all there.
+        assertEquals(1, grid(0).cache(null).get(1));
+        assertEquals(100000, grid(0).cache(null).get(100000));
+
+        // 5 should still point to 500.
+        assertEquals(500, grid(0).cache(null).get(5));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testStreamedBatchedMerge() throws Exception {
+        PreparedStatement stmt = conn.prepareStatement("merge into Integer(_key, _val) values (?, ?), (?, ?)");
+
+        for (int i = 1; i <= 100000; i += 2) {
+            stmt.setInt(1, i);
+            stmt.setInt(2, i);
+
+            stmt.setInt(3, i + 1);
+            stmt.setInt(4, i + 1);
+
+            stmt.addBatch();
+
+            if ((i + 1) % 10 == 0) {
+                stmt.executeBatch();
+
+                stmt.clearBatch();
+            }
+        }
+
+        // Data is not there yet.
+        assertNull(grid(0).cache(null).get(100000));
+
+        // Let the stream flush.
+        U.sleep(5000);
+
+        // Now let's check it's all there.
+        assertEquals(1, grid(0).cache(null).get(1));
+        assertEquals(100000, grid(0).cache(null).get(100000));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testStreamedBatchedDelete() throws Exception {
+        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
+
+        for (int i = 1; i <= 100000; i++) {
+            stmt.setInt(1, i);
+            stmt.setInt(2, i);
+
+            stmt.executeUpdate();
+        }
+
+        stmt.close();
+
+        PreparedStatement delStmt = conn.prepareStatement("delete from Integer where _key = ?");
+
+        Set<Integer> keys = new HashSet<>();
+
+        // Let's tell streamer to remove 1000 random keys in batches of 100.
+        while (keys.size() < 1000) {
+            int key = ThreadLocalRandom.current().nextInt(100000) + 1;
+
+            if (!keys.add(key))
+                continue;
+
+            delStmt.setInt(1, key);
+
+            delStmt.addBatch();
+
+            if (keys.size() % 100 == 0) {
+                delStmt.executeBatch();
+
+                delStmt.clearBatch();
+            }
+        }
+
+        delStmt.close();
+
+        IgniteCache cache = grid(0).cache(null);
+
+        for (int i = 1; i <= 100000; i++) {
+            Integer val = (Integer) cache.get(i);
+
+            if (keys.contains(i))
+                assertNull(val);
+            else {
+                assertNotNull(val);
+
+                assertEquals(i, (int) val);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testStreamedBatchedUpdate() throws Exception {
+        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
+
+        for (int i = 1; i <= 100000; i++) {
+            stmt.setInt(1, i);
+            stmt.setInt(2, i);
+
+            stmt.executeUpdate();
+        }
+
+        stmt.close();
+
+        PreparedStatement updStmt = conn.prepareStatement("update Integer set _val = ? where _key = ?");
+
+        Set<Integer> keys = new HashSet<>();
+
+        while (keys.size() < 1000) {
+            int key = ThreadLocalRandom.current().nextInt(100000) + 1;
+
+            if (!keys.add(key))
+                continue;
+
+            updStmt.setInt(1, key * 2);
+            updStmt.setInt(2, key);
+
+            updStmt.addBatch();
+
+            if (keys.size() % 100 == 0) {
+                updStmt.executeBatch();
+
+                updStmt.clearBatch();
+            }
+        }
+
+        updStmt.close();
+
+        IgniteCache cache = grid(0).cache(null);
+
+        for (int i = 1; i <= 100000; i++) {
+            Integer val = (Integer) cache.get(i);
+
+            assertNotNull(val);
+
+            if (keys.contains(i))
+                assertEquals(i * 2, (int) val);
+            else
+                assertEquals(i, (int) val);
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testStreamedBatchedInsert() throws Exception {
+        ignite(0).cache(null).put(5, 500);
+
+        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?), (?, ?)");
+
+        for (int i = 1; i <= 100000; i += 2) {
+            stmt.setInt(1, i);
+            stmt.setInt(2, i);
+
+            stmt.setInt(3, i + 1);
+            stmt.setInt(4, i + 1);
+
+            stmt.addBatch();
+
+            if ((i + 1) % 10 == 0) {
+                stmt.executeBatch();
+
+                stmt.clearBatch();
+            }
+        }
+
+        // Data is not there yet.
+        assertNull(grid(0).cache(null).get(100000));
+
+        // Let the stream flush.
+        U.sleep(5000);
 
         // Now let's check it's all there.
         assertEquals(1, grid(0).cache(null).get(1));

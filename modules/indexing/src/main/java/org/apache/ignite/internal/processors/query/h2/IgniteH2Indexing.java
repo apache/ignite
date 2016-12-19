@@ -471,7 +471,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // No-op as INSERT semantic is maintained by default - present keys are not affected.
                 break;
             case DELETE:
-                streamer.receiver(DataStreamerCacheUpdaters.replace());
+                streamer.receiver(DataStreamerCacheUpdaters.remove());
         }
 
         return streamer;
@@ -892,9 +892,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
-        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, F.asList(params), true);
+        final PreparedStatement stmt;
 
-        return dmlProc.streamUpdateQuery(spaceName, streamer, stmt, params);
+        try {
+            stmt = prepareStatement(conn, qry, true);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        return dmlProc.streamUpdateQuery(streamer, stmt, params);
     }
 
     /**

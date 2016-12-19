@@ -767,6 +767,15 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return {@code true} if Indexing module is available and initialized.
+     */
+    boolean isIndexingEnabled() {
+        IgniteCacheProxy cache = ((IgniteCacheProxy) ignite().cache(cacheName()));
+
+        return cache.context().kernalContext().query().moduleEnabled();
+    }
+
+    /**
      * @return Internal statement.
      * @throws SQLException In case of error.
      */

@@ -23,6 +23,9 @@ import java.net.*;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC prepared statement implementation.
@@ -30,6 +33,11 @@ import java.util.*;
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
+
+    /**
+     * Batch arguments.
+     */
+    private List<List<Object>> batchArgs;
 
     /**
      * H2's parsed statement to retrieve metadata from.
@@ -54,8 +62,6 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
     }
-
-
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
@@ -181,7 +187,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        batchArgs = null;
     }
 
     /** {@inheritDoc} */
@@ -200,15 +206,30 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        if (batchArgs == null)
+            batchArgs = new ArrayList<>();
+
+        batchArgs.add(new ArrayList<>(U.firstNotNull(args, Collections.emptyList())));
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        rs = null;
+
+        updateCnt = -1;
+
+        if (batchArgs == null)
+            return U.EMPTY_INTS;
+
+        int res = doUpdate(sql, F.flatCollections(batchArgs).toArray()).intValue();
+
+        batchArgs = null;
+
+        return new int[] { res };
     }
 
     /** {@inheritDoc} */
@@ -439,7 +460,16 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
      * Initialize {@link #args} and increase its capacity and size up to given argument if needed.
      * @param size new expected size.
      */
-    private void ensureArgsSize(int size) {
+    private void ensureArgsSize(int size) throws SQLException {
+        if (conn.isIndexingEnabled()) {
+            int paramsCnt = getNativeStatement().getParameterMetaData().getParameterCount();
+
+            A.ensure(size >= 1 && size <= paramsCnt, "Invalid param index - must be between 1 and " + paramsCnt);
+
+            if (args == null)
+                args = new ArrayList<>(paramsCnt);
+        }
+
         if (args == null)
             args = new ArrayList<>(size);
 
