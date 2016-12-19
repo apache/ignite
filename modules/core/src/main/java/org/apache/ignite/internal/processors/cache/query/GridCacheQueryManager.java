@@ -1539,11 +1539,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (log.isDebugEnabled()) {
                         ClusterNode primaryNode = CU.primaryNode(cctx, key);
 
-                        log.debug("Record [key=" + key +
-                            ", val=" + val +
-                            ", incBackups=" + incBackups +
-                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
-                            ", node=" + U.id8(cctx.localNode().id()) + ']');
+                        log.debug(S.INCLUDE_SENSITIVE ?
+                            "Record [key=" + key +
+                                ", val=" + val +
+                                ", incBackups=" + incBackups +
+                                ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
+                                ", node=" + U.id8(cctx.localNode().id()) + ']' :
+                            "Record [incBackups=" + incBackups +
+                                ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
+                                ", node=" + U.id8(cctx.localNode().id()) + ']');
                     }
 
                     if (val == null) {

@@ -1,1 +1,1 @@
-(^|[^\.-])\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|rows?|fields?|params?|args?|items?|elements?|data|obj|res|result|clause|query|qry|sqlQry|ordinal|entrySet|keys?Set|vals?Set)\b\s*=\s*(?![\w\.\$]*\s*\[)(?!null\b)(?!true\b)(?!false\b)(?!class\s).+?($|[,\[\]])
+(^|[^\.-])\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|rows?|fields?|params?|args?|items?|elements?|data|obj|res|result|clause|query|qry|sqlQry|ordinal|entrySet|keys?Set|vals?Set)\b\s*=\s*(?![\w\.\$]*\s*[\[@])(?!null\b)(?!true\b)(?!false\b)(?!class\s).+?($|[,\[\]])
