@@ -123,10 +123,8 @@ public abstract class DataStructure implements PageLockListener {
      * @throws IgniteCheckedException If failed.
      */
     protected final Page page(long pageId) throws IgniteCheckedException {
-        byte flag = PageIdUtils.flag(pageId);
-
-        assert flag == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
-            flag == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
+        assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
+            PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
         return pageMem.page(cacheId, pageId);
     }

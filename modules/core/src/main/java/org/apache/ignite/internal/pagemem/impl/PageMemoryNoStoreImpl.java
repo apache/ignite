@@ -414,7 +414,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     ByteBuffer wrapPointer(long ptr, int len) {
         ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
 
-        buf.order(ByteOrder.nativeOrder());
+        buf.order(NATIVE_BYTE_ORDER);
 
         return buf;
     }

@@ -1277,7 +1277,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
-
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
 

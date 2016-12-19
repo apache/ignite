@@ -20,12 +20,12 @@ package org.apache.ignite.internal.pagemem.impl;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  *
@@ -162,7 +162,7 @@ public class PageNoStoreImpl implements Page {
      * @return The given buffer back.
      */
     private ByteBuffer reset(ByteBuffer buf) {
-        buf.order(ByteOrder.nativeOrder());
+        buf.order(PageMemory.NATIVE_BYTE_ORDER);
 
         buf.rewind();
 
