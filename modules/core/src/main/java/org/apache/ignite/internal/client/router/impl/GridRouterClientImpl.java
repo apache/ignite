@@ -26,6 +26,7 @@ import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
@@ -187,6 +188,11 @@ public class GridRouterClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public GridClientCompute compute() {
         return clientImpl.compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientClusterState state() {
+        return clientImpl.state();
     }
 
     /** {@inheritDoc} */

@@ -84,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -115,7 +116,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Grid service processor.
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
-public class GridServiceProcessor extends GridProcessorAdapter {
+public class GridServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
@@ -219,18 +220,16 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             assert !ctx.isDaemon();
 
             ctx.continuous().registerStaticRoutine(
-                CU.UTILITY_CACHE_NAME,
-                new ServiceEntriesListener(),
-                null,
-                null);
+                CU.UTILITY_CACHE_NAME, new ServiceEntriesListener(), null, null
+            );
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
 
-        if (ctx.isDaemon())
+        if (ctx.isDaemon() || !activeOnStart)
             return;
 
         IgniteConfiguration cfg = ctx.config();
@@ -244,8 +243,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.isDaemon())
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+        if (ctx.isDaemon() || !activeOnStart)
             return;
 
         cache = ctx.cache().utilityCache();
@@ -260,11 +259,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (!ctx.clientNode()) {
                 assert cache.context().affinityNode();
 
-                cache.context().continuousQueries().executeInternalQuery(new ServiceEntriesListener(),
-                    null,
-                    true,
-                    true,
-                    false);
+                cache.context().continuousQueries().executeInternalQuery(
+                    new ServiceEntriesListener(), null, true, true, false
+                );
             }
             else {
                 assert !ctx.isDaemon();
@@ -308,57 +305,115 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.isDaemon())
-            return;
-
         busyLock.block();
 
-        if (!ctx.clientNode())
-            ctx.event().removeLocalEventListener(topLsnr);
+        try {
+            if (ctx.isDaemon())
+                return;
 
-        Collection<ServiceContextImpl> ctxs = new ArrayList<>();
+            if (!ctx.clientNode())
+                ctx.event().removeLocalEventListener(topLsnr);
 
-        synchronized (locSvcs) {
-            for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
-                ctxs.addAll(ctxs0);
-        }
+            Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
-        for (ServiceContextImpl ctx : ctxs) {
-            ctx.setCancelled(true);
-
-            Service svc = ctx.service();
-
-            if (svc != null)
-                svc.cancel(ctx);
-
-            ctx.executor().shutdownNow();
-        }
-
-        for (ServiceContextImpl ctx : ctxs) {
-            try {
-                if (log.isInfoEnabled() && !ctxs.isEmpty())
-                    log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
-                        U.id8(ctx.executionId()) + ']');
-
-                ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            synchronized (locSvcs) {
+                for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
+                    ctxs.addAll(ctxs0);
             }
-            catch (InterruptedException ignore) {
-                Thread.currentThread().interrupt();
 
-                U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
-                    ctx.name());
+            for (ServiceContextImpl ctx : ctxs) {
+                ctx.setCancelled(true);
+
+                Service svc = ctx.service();
+
+                if (svc != null)
+                    svc.cancel(ctx);
+
+                ctx.executor().shutdownNow();
             }
+
+            for (ServiceContextImpl ctx : ctxs) {
+                try {
+                    if (log.isInfoEnabled() && !ctxs.isEmpty())
+                        log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
+                            U.id8(ctx.executionId()) + ']');
+
+                    ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException ignore) {
+                    Thread.currentThread().interrupt();
+
+                    U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
+                        ctx.name());
+                }
+            }
+
+            U.shutdownNow(GridServiceProcessor.class, depExe, log);
+
+            Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+            cancelFutures(depFuts, err);
+            cancelFutures(undepFuts, err);
+        }finally {
+            busyLock.unblock();
         }
-
-        U.shutdownNow(GridServiceProcessor.class, depExe, log);
-
-        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
-
-        cancelFutures(depFuts, err);
-        cancelFutures(undepFuts, err);
 
         if (log.isDebugEnabled())
             log.debug("Stopped service processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Activate service processor [nodeId=" + ctx.localNodeId() +
+                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
+        start(true);
+
+        onKernalStart(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        if (log.isDebugEnabled())
+            log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
+                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
+        busyLock.block();
+
+        try {
+            if (ctx.isDaemon())
+                return;
+
+            if (!ctx.clientNode())
+                ctx.event().removeLocalEventListener(topLsnr);
+
+            Collection<ServiceContextImpl> ctxs = new ArrayList<>();
+
+            synchronized (locSvcs) {
+                for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
+                    ctxs.addAll(ctxs0);
+            }
+
+            for (ServiceContextImpl ctx : ctxs) {
+                ctx.setCancelled(true);
+
+                Service svc = ctx.service();
+
+                if (svc != null)
+                    svc.cancel(ctx);
+            }
+
+            Exception err = new IgniteCheckedException("Operation has been cancelled (node is in active status).");
+
+            cancelFutures(depFuts, err);
+            cancelFutures(undepFuts, err);
+
+            if (log.isDebugEnabled())
+                log.debug("Deactivate service processor.");
+        }finally {
+            busyLock.unblock();
+        }
     }
 
     /** {@inheritDoc} */

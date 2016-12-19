@@ -41,15 +41,13 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
-import org.apache.ignite.internal.processors.cache.CacheState;
+import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -494,8 +492,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-        treatAllPartitionAsLocal = cctx.kernalContext().cache().globalState() == CacheState.ACTIVATING
-            || (cctx.kernalContext().cache().globalState() == org.apache.ignite.internal.processors.cache.CacheState.ACTIVE
+        ClusterState newState = exchFut.newClusterState();
+
+        treatAllPartitionAsLocal = (newState != null && newState == ClusterState.ACTIVE)
+            || (cctx.kernalContext().state().active()
             && discoEvt.type() == EventType.EVT_NODE_JOINED
             && discoEvt.eventNode().isLocal()
             && !cctx.kernalContext().clientNode()
@@ -680,7 +680,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (locPart != null) {
                         GridDhtPartitionState state = locPart.state();
 
-                        if (state == MOVING && cctx.shared().cache().globalState() == CacheState.ACTIVE) {
+                        if (state == MOVING && cctx.kernalContext().state().active()) {
                             locPart.rent(false);
 
                             updateLocal(p, loc.id(), locPart.state(), updateSeq);
@@ -1592,7 +1592,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @return Checks if any of the local partitions need to be evicted.
      */
     private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
-        if (cctx.shared().cache().globalState() != CacheState.ACTIVE)
+        if (!cctx.kernalContext().state().active())
             return false;
 
         boolean changed = false;

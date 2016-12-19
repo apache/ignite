@@ -50,7 +50,7 @@ public class GridPluginComponent implements GridComponent {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
@@ -60,7 +60,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         plugin.onIgniteStart();
     }
 

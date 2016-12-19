@@ -126,9 +126,9 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         Manager mgr = new Manager(grid().context(), new Spi());
 
-        mgr.start();
+        mgr.start(true);
 
-        mgr.onKernalStart();
+        mgr.onKernalStart(true);
 
         assertTrue(mgr.enabled());
     }
@@ -143,7 +143,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         assertTrue(mgr.enabled());
 
-        mgr.onKernalStart();
+        mgr.onKernalStart(true);
 
         mgr.onKernalStop(false);
 
@@ -163,7 +163,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
             // No-op.
         }
 

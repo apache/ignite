@@ -25,11 +25,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgnitePageStoreManager extends GridCacheSharedManager {
+public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
      * Invoked before starting checkpoint recover.
      */

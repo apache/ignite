@@ -403,7 +403,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         long totSysMemory = -1;
 
         try {
@@ -522,8 +522,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
-                    boolean incMinorTopVer = ctx.cache().onCustomEvent(customMsg,
-                        new AffinityTopologyVersion(topVer, minorTopVer));
+                    boolean incMinorTopVer = ctx.cache().onCustomEvent(
+                        customMsg, new AffinityTopologyVersion(topVer, minorTopVer)
+                    );
 
                     if (incMinorTopVer) {
                         minorTopVer++;

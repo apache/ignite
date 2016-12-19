@@ -85,12 +85,6 @@ public class TrackingPageIO extends PageIO {
 
         int sizeOff = useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + (cntOfPage >> 3);
 
-        short newSize = (short)(countOfChangedPage(buf, nextSnapshotTag, pageSize) + 1);
-
-        buf.putShort(sizeOff, newSize);
-
-        assert newSize == countOfChangedPage(buf, nextSnapshotTag, pageSize);
-
         int idx = sizeOff + SIZE_FIELD_SIZE + (idxToUpdate >> 3);
 
         byte byteToUpdate = buf.get(idx);
@@ -99,9 +93,18 @@ public class TrackingPageIO extends PageIO {
 
         byte newVal =  (byte) (byteToUpdate | updateTemplate);
 
+        if (byteToUpdate == newVal)
+            return false;
+
         buf.put(idx, newVal);
 
-        return newVal != byteToUpdate;
+        short newSize = (short)(buf.getShort(sizeOff) + 1);
+
+        buf.putShort(sizeOff, newSize);
+
+        assert newSize == countOfChangedPage(buf, nextSnapshotTag, pageSize);
+
+        return true;
     }
 
     /**
@@ -149,7 +152,7 @@ public class TrackingPageIO extends PageIO {
                     buf.putLong(sizeOff2 + SIZE_FIELD_SIZE + i, newVal);
                 }
 
-                for (i -= 8; i < len; i ++) {
+                for (; i < len; i ++) {
                     byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
 
                     newSize += Integer.bitCount(newVal & 0xFF);
