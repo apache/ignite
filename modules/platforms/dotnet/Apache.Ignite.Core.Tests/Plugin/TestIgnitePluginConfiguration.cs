@@ -28,15 +28,7 @@
         /** <inheritdoc /> */
         public IFactory<IPluginProvider> PluginProviderFactory
         {
-            get { return new Factory(); }
-        }
-
-        private class Factory : IFactory<TestIgnitePluginProvider>
-        {
-            public TestIgnitePluginProvider CreateInstance()
-            {
-                return new TestIgnitePluginProvider();
-            }
+            get { return new Factory<TestIgnitePluginProvider>(); }
         }
     }
 }

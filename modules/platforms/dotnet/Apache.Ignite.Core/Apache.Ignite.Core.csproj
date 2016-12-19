@@ -85,6 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Common\Factory.cs" />
     <Compile Include="Common\JavaException.cs" />
     <Compile Include="DataStructures\Configuration\Package-Info.cs" />
     <Compile Include="Discovery\Package-Info.cs" />

@@ -17,15 +17,23 @@
 
 namespace Apache.Ignite.Core.Common
 {
+    using System;
+
     /// <summary>
-    /// Factory that produces instances of a specific type.
+    /// Factory that produces instances of a specific type using default constructor.
     /// </summary>
-    public interface IFactory<out T>
+    [Serializable]
+    public class Factory<T> : IFactory<T> where T : new()
     {
         /// <summary>
         /// Creates an instance of the cache store.
         /// </summary>
-        /// <returns>New instance of the cache store.</returns>
-        T CreateInstance();
+        /// <returns>
+        /// New instance of the cache store.
+        /// </returns>
+        public T CreateInstance()
+        {
+            return new T();
+        }
     }
 }

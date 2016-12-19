@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
@@ -72,6 +73,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void TestInvalidPlugins()
         {
             // TODO: Invalid configuration, invalid name, duplicate name, etc...
+        }
+
+        private class NullFactoryConfig : IPluginConfiguration
+        {
+            public IFactory<IPluginProvider> PluginProviderFactory
+            {
+                get { return null; } 
+            }
         }
     }
 }
