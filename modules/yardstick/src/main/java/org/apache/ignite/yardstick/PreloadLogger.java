@@ -89,7 +89,8 @@ public class PreloadLogger implements Runnable {
         long cacheSize = cache.sizeLong();
 
         long recentlyLoaded = cacheSize - cntrs.get(cacheName);
-        String recLoaded = recentlyLoaded == 0 ? String.valueOf(recentlyLoaded) : "+" + recentlyLoaded;
+        String recLoaded = recentlyLoaded <= 0 ?  '(' + String.valueOf(recentlyLoaded) + ')'
+            : "(+" + recentlyLoaded + ')';
 
         BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
 
@@ -117,7 +118,7 @@ public class PreloadLogger implements Runnable {
         }
 
         // Should look like "Preload:%-20s%-8d\t(%s)"
-        strFmt = "Preload:%-" + (longestName + 4) + "s%-8d\t(%s)";
+        strFmt = "Preload:%-" + (longestName + 4) + "s%12d%16s";
     }
 
     /**
