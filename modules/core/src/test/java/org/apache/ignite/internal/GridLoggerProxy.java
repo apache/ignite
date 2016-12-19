@@ -18,7 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,7 +73,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         }
     };
     /** */
-    private static ThreadLocal<StringBuilder> sbLocal = new ThreadLocal<StringBuilder>() {
+    private static ThreadLocal<StringBuilder> sbLoc = new ThreadLocal<StringBuilder>() {
         @Override protected StringBuilder initialValue() {
             return new StringBuilder(SENSITIVE_PREFIX);
         }
@@ -124,8 +124,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private static Pattern[] readFromResource(String suffix) {
         ArrayList<Pattern> lst = new ArrayList<>();
         final Class<GridLoggerProxy> cls = GridLoggerProxy.class;
-        String resourcePath = cls.getSimpleName() + suffix;
-        try (InputStream inStr = cls.getResourceAsStream(resourcePath);
+        String resPath = cls.getSimpleName() + suffix;
+        try (InputStream inStr = cls.getResourceAsStream(resPath);
              BufferedReader rdr = new BufferedReader(new InputStreamReader(inStr))) {
             String ln;
             while ((ln = rdr.readLine()) != null) {
@@ -136,7 +136,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             }
         }
         catch (Exception ex) {
-            System.err.println("Error loading sensitive patterns from resource " + resourcePath + ": " + ex);
+            System.err.println("Error loading sensitive patterns from resource " + resPath + ": " + ex);
             ex.printStackTrace();
         }
         return lst.toArray(new Pattern[lst.size()]);
@@ -247,7 +247,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
-     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME}
+     * Enriches the log message with grid name if {@link IgniteSystemProperties#IGNITE_LOG_GRID_NAME}
      * system property is set.
      *
      * @param m Message to enrich.
@@ -262,8 +262,9 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * All sensitive data will be logged with {@link #SENSITIVE_PREFIX}
      */
     private void testSensitive(String m) {
-        if (isSensitive(m))
-            logSensitive(m);
+        String f = findSensitive(m);
+        if (f != null)
+            logSensitive(f, m);
     }
 
     /**
@@ -271,47 +272,52 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * All sensitive data will be logged with {@link #SENSITIVE_PREFIX}
      */
     private void testSensitive(String m, Throwable e) {
-        if (isSensitive(m))
-            logSensitive(m, e);
+        String f = findSensitive(m);
+        if (f != null)
+            logSensitive(f, m, e);
         while (e != null) {
-            if (isSensitive(e.getMessage()))
-                logSensitive(m, e);
+            f = findSensitive(e.getMessage());
+            if (f != null)
+                logSensitive(f, m, e);
             e = e.getCause();
         }
     }
 
-    /** Checking the message by sensitive patterns */
-    private boolean isSensitive(String msg) {
+    /**
+     * Check the message by sensitive patterns
+     *
+     * @return the matching string was found or {@code null} if not match
+     */
+    private String findSensitive(String msg) {
         if (msg == null || msg.isEmpty())
-            return false;
+            return null;
         for (Pattern p : EXCLUDE_PATTERNS) {
             Matcher m = p.matcher(msg);
             if (m.find())
-                return false;
+                return null;
         }
         for (Pattern p : INCLUDE_PATTERNS) {
             Matcher m = p.matcher(msg);
-            if (m.find()) {
-                logSensitive("Found: " + m.group());
-                logSensitive("Logger: " + this);
-                return true;
-            }
+            if (m.find())
+                return m.group();
         }
-        return false;
+        return null;
     }
 
     /** Logging the message with {@link #SENSITIVE_PREFIX} */
-    private void logSensitive(String m) {
-        logSensitive(m, null);
+    private void logSensitive(String f, String m) {
+        logSensitive(f, m, null);
     }
 
     /** Logging the message and the exception with {@link #SENSITIVE_PREFIX} */
-    private void logSensitive(String m, Throwable e) {
-        StringBuilder sb = sbLocal.get();
+    private void logSensitive(String f, String m, Throwable e) {
+        StringBuilder sb = sbLoc.get();
         sb.setLength(SENSITIVE_PREFIX.length());
-        sb.append(m);
+        sb.append("Found: ").append(f).
+            append(", category = ").append(ctgr).
+            append(", message:\n").append(m);
         if (e != null)
-            sb.append(". ").append(e.getClass()).append(": ").append(e.getMessage());
+            sb.append("exception:\n").append(e.getClass()).append(": ").append(e.getMessage());
         impl.error(sb.toString());
     }
 

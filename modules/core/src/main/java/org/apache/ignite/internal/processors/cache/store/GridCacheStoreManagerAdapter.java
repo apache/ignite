@@ -565,7 +565,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
+                log.debug(S.INCLUDE_SENSITIVE ?
+                    "Storing value in cache store [key=" + key + ", val=" + val + ']' :
+                    "Storing value in cache store"
+                );
 
             sessionInit0(tx);
 
@@ -590,7 +593,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Stored value in cache store [key=" + key + ", val=" + val + ']');
+                log.debug(S.INCLUDE_SENSITIVE ?
+                    "Stored value in cache store [key=" + key + ", val=" + val + ']' :
+                    "Stored value in cache store"
+                );
 
             return true;
         }
@@ -667,7 +673,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Removing value from cache store [key=" + key + ']');
+                log.debug(S.INCLUDE_SENSITIVE ?
+                    "Removing value from cache store [key=" + key + ']' :
+                    "Removing value from cache store"
+                );
 
             sessionInit0(tx);
 
@@ -692,7 +701,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Removed value from cache store [key=" + key + ']');
+                log.debug(S.INCLUDE_SENSITIVE ?
+                    "Removed value from cache store [key=" + key + ']' :
+                    "Removed value from cache store"
+                );
 
             return true;
         }
