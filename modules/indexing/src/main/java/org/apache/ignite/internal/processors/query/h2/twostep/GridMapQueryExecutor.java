@@ -548,8 +548,7 @@ public class GridMapQueryExecutor {
                 .distributedJoins(distributedJoins)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
-                .reservations(reserved)
-                .segment(segmentId);
+                .reservations(reserved);
 
             List<GridH2Table> snapshotedTbls = null;
 

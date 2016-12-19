@@ -22,8 +22,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -31,6 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.IndexType;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
+
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
  * Stripped snapshotable tree index
@@ -153,15 +157,18 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
 
     /** {@inheritDoc} */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
-        if (!isSnapshotEnabled())
-            return tree();
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = null;
 
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
+        if (isSnapshotEnabled())
+            res = threadLocalSnapshot();
 
-        if (res == null)
-            res = tree();
+        if (res != null)
+            return res;
 
-        return res;
+        if(qCtx.get() != null)
+            return segments[qCtx.get().segment()];
+
+        return tree();
     }
 
     /** {@inheritDoc} */
@@ -223,14 +230,42 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
         //TODO: avoid iteration
         GridH2Row res;
 
-        for(int i = 0; i < segments.length; i++) {
+        for (int i = 0; i < segments.length; i++) {
             res = segments[i].remove(comparable);
 
-            if(res != null)
+            if (res != null)
                 return res;
         }
 
         return null;
+    }
+
+    /**
+     * Range request can be run in separate thread, so we need to restore GridH2QueryContext,
+     * but GridH2QueryContext does not allow to have same context instance in different threads.
+     * See {@link GridH2QueryContext#set(GridH2QueryContext)}
+     *
+     * TODO: this ugly thing should be refactored */
+    ThreadLocal<GridH2QueryContext> qCtx = new ThreadLocal<>();
+
+    /**
+     * @param node Requesting node.
+     * @param msg Request message.
+     */
+    protected void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
+        GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
+            msg.originNodeId(),
+            msg.queryId(),
+            msg.segment(),
+            MAP);
+
+        qCtx.set(qctx);
+        try {
+            super.onIndexRangeRequest(node, msg);
+        }
+        finally {
+            qCtx.remove();
+        }
     }
 
     /** */
@@ -298,7 +333,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
     @Override public void destroy() {
         assert threadLocalSnapshot() == null;
 
-        for(int i = 0; i < segments.length; i++) {
+        for (int i = 0; i < segments.length; i++) {
             if (segments[i] instanceof AutoCloseable)
                 U.closeQuiet((AutoCloseable)segments[i]);
         }

@@ -2642,7 +2642,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
 
-            boolean allowIndexSegmentation = !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled();
+            boolean allowIndexSegmentation = !cctx.isReplicated();// && cctx.config().isIndexSegmentationEnabled();
 
             if (allowIndexSegmentation && segments > 1)
                 return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, segments);

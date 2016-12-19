@@ -79,9 +79,6 @@ public class GridH2QueryContext {
     private UUID[] partsNodes;
 
     /** */
-    private int segmentId;
-
-    /** */
     private boolean distributedJoins;
 
     /** */
@@ -246,16 +243,7 @@ public class GridH2QueryContext {
 
     /** @return index segment Id */
     public int segment() {
-        return segmentId;
-    }
-
-    /**
-     * @param seg index segment Id
-     */
-    public GridH2QueryContext segment(int seg) {
-        this.segmentId = seg;
-
-        return this;
+        return key.segmentIdx;
     }
 
     /**
@@ -338,8 +326,8 @@ public class GridH2QueryContext {
      * @param batchLookupId Batch lookup ID.
      * @param src Range source.
      */
-    public synchronized void putSource(UUID ownerId, int batchLookupId, Object src) {
-        SourceKey srcKey = new SourceKey(ownerId, batchLookupId);
+    public synchronized void putSource(UUID ownerId, int segmentId, int batchLookupId, Object src) {
+        SourceKey srcKey = new SourceKey(ownerId, segmentId, batchLookupId);
 
         if (src != null) {
             if (sources == null)
@@ -357,11 +345,11 @@ public class GridH2QueryContext {
      * @return Range source.
      */
     @SuppressWarnings("unchecked")
-    public synchronized <T> T getSource(UUID ownerId, int batchLookupId) {
+    public synchronized <T> T getSource(UUID ownerId, int segmentId, int batchLookupId) {
         if (sources == null)
             return null;
 
-        return (T)sources.get(new SourceKey(ownerId, batchLookupId));
+        return (T)sources.get(new SourceKey(ownerId, segmentId, batchLookupId));
     }
 
     /**
@@ -632,14 +620,17 @@ public class GridH2QueryContext {
         UUID ownerId;
 
         /** */
+        int segmentId;
+        /** */
         int batchLookupId;
 
         /**
          * @param ownerId Owner node ID.
          * @param batchLookupId Batch lookup ID.
          */
-        SourceKey(UUID ownerId, int batchLookupId) {
+        SourceKey(UUID ownerId, int segmentId, int batchLookupId) {
             this.ownerId = ownerId;
+            this.segmentId = segmentId;
             this.batchLookupId = batchLookupId;
         }
 
@@ -647,12 +638,14 @@ public class GridH2QueryContext {
         @Override public boolean equals(Object o) {
             SourceKey srcKey = (SourceKey)o;
 
-            return batchLookupId == srcKey.batchLookupId && ownerId.equals(srcKey.ownerId);
+            return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId && ownerId.equals(srcKey.ownerId);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return 31 * ownerId.hashCode() + batchLookupId;
+            int hash = ownerId.hashCode();
+            hash = 31 * hash + segmentId;
+            return 31 * hash + batchLookupId;
         }
     }
 }

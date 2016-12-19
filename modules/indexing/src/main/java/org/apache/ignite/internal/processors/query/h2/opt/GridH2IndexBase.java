@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -429,7 +430,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Kernal context.
      */
-    private GridKernalContext kernalContext() {
+    protected GridKernalContext kernalContext() {
         return getTable().rowDescriptor().context().kernalContext();
     }
 
@@ -437,18 +438,20 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param node Requesting node.
      * @param msg Request message.
      */
-    private void onIndexRangeRequest(ClusterNode node, GridH2IndexRangeRequest msg) {
+    protected void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
+        final int segmentId = msg.segment();
+
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
             msg.originNodeId(),
             msg.queryId(),
-            msg.segment(),
+            segmentId,
             MAP);
 
         GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
 
         res.originNodeId(msg.originNodeId());
         res.queryId(msg.queryId());
-        res.segment(msg.segment());
+        res.segment(segmentId);
         res.batchLookupId(msg.batchLookupId());
 
         if (qctx == null)
@@ -467,7 +470,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 }
                 else {
                     // This is request to fetch next portion of data.
-                    src = qctx.getSource(node.id(), msg.batchLookupId());
+                    src = qctx.getSource(node.id(), segmentId, msg.batchLookupId());
 
                     assert src != null;
                 }
@@ -493,11 +496,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 if (src.hasMoreRows()) {
                     // Save source for future fetches.
                     if (msg.bounds() != null)
-                        qctx.putSource(node.id(), msg.batchLookupId(), src);
+                        qctx.putSource(node.id(), segmentId, msg.batchLookupId(), src);
                 }
                 else if (msg.bounds() == null) {
                     // Drop saved source.
-                    qctx.putSource(node.id(), msg.batchLookupId(), null);
+                    qctx.putSource(node.id(), segmentId, msg.batchLookupId(), null);
                 }
 
                 assert !ranges.isEmpty();
@@ -520,7 +523,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param node Responded node.
      * @param msg Response message.
      */
-    private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
+    protected void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
             msg.originNodeId(), msg.queryId(),
             msg.segment(),
@@ -555,7 +558,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param batchLookupId Batch lookup ID.
      * @return Index range request.
      */
-    private static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId) {
+    protected GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId) {
         GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
 
         req.originNodeId(qctx.originNodeId());
