@@ -513,6 +513,10 @@ public class JdbcConnection implements Connection {
             IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
                 nativeStmt, streamFlushTimeout);
 
+            // Null streamer means that given statement can't be streamed and should be processed in ordinary way.
+            if (streamer == null)
+                return new JdbcPreparedStatement(this, sql);
+
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }
 

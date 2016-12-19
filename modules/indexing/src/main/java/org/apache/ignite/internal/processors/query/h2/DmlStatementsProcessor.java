@@ -253,6 +253,10 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, null);
 
+        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().namex()))
+            throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
+                " in connection options", IgniteQueryErrorCode.CROSS_CACHE_STREAMING);
+
         if (plan.mode == UpdateMode.INSERT || plan.mode == UpdateMode.MERGE) {
             if (plan.rowsNum == 0)
                 throw new IgniteSQLException("INSERT and MERGE from subquery are not supported in streaming mode",
@@ -315,7 +319,7 @@ public class DmlStatementsProcessor {
                 return 1;
             }
 
-            Map<Object, Object> rows = new LinkedHashMap<>(plan.rowsNum);
+            Map<Object, Object> rows = new LinkedHashMap<>(plan.rowsNum * batchSize);
 
             for (List<?> row : cur) {
                 final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
@@ -333,26 +337,37 @@ public class DmlStatementsProcessor {
                 throw new IgniteSQLException("Only key bounded UPDATE and DELETE are supported in streaming mode",
                     IgniteQueryErrorCode.INVALID_STREAMING_STMT);
 
-            Object[] stepArgs = args;
+            if (!isBatch) {
+                Object key = plan.fastUpdateArgs.key.apply(args);
 
-            if (isBatch) // Let's not reallocate args array on each batch step
-                stepArgs = new Object[paramsCnt];
+                // We just supply 0 as "value" in case of DELETE - it will be ignored by stream receiver anyway.
+                Object newVal = (plan.mode == UpdateMode.UPDATE ? plan.fastUpdateArgs.newVal.apply(args) : 0);
+
+                streamer.addData(key, newVal);
+
+                return 1;
+            }
+
+            Object[] stepArgs = new Object[paramsCnt];
 
             int pos = 0;
 
+            Map<Object, Object> m = new LinkedHashMap<>(batchSize);
+
             for (int i = 0; i < batchSize; i++) {
-                if (isBatch)
-                    System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+                System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
 
                 Object key = plan.fastUpdateArgs.key.apply(stepArgs);
 
                 // We just supply 0 as "value" in case of DELETE - it will be ignored by stream receiver anyway.
                 Object newVal = (plan.mode == UpdateMode.UPDATE ? plan.fastUpdateArgs.newVal.apply(stepArgs) : 0);
 
-                streamer.addData(key, newVal);
+                m.put(key, newVal);
 
                 pos += paramsCnt;
             }
+
+            streamer.addData(m);
 
             return batchSize;
         }

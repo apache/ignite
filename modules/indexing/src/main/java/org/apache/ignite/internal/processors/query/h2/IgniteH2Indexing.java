@@ -454,8 +454,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (prep instanceof Delete)
             mode = UpdateMode.DELETE;
         else
-            throw new IgniteException("Invalid command type - streaming mode is only for MERGE, INSERT, and fast UPDATE" +
-                "[type=" + prep.getClass().getName() + ']');
+            return null;
 
         IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
         streamer.autoFlushFrequency(autoFlushFreq);

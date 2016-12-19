@@ -53,6 +53,10 @@ public final class IgniteQueryErrorCode {
     /** Number of statement parameters does not divide number of given arguments evenly. */
     public final static int ODD_BATCH_SIZE = 2005;
 
+    /** Attempt to run a streamed DML query against the cache different than the one statement's streamer
+     * is pinned to. */
+    public final static int CROSS_CACHE_STREAMING = 2006;
+
     /* 3xxx - database API related runtime errors */
 
     /** Required table not found. */
