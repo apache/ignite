@@ -88,9 +88,17 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Empty plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[] { new EmptyNameConfig() }));
             Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
-                            typeof(TestIgnitePluginProvider).FullName, ex.Message);
+                            typeof(TestIgnitePluginProvider).AssemblyQualifiedName, ex.Message);
 
             // Duplicate plugin name.
+            ex = Assert.Throws<IgniteException>(() => check(new[]
+            {
+                new TestIgnitePluginConfiguration(),
+                new TestIgnitePluginConfiguration()
+            }));
+            Assert.AreEqual(string.Format("Duplicate plugin name 'TestPlugin1' is used by plugin providers " +
+                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider).AssemblyQualifiedName),
+                ex.Message);
 
             // Plugin throws an exception.
         }

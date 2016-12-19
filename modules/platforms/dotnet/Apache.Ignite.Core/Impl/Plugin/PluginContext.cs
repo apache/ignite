@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
                     if (string.IsNullOrEmpty(provider.Name))
                     {
                         throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
-                            typeof(IPluginProvider), provider.GetType().FullName));
+                            typeof(IPluginProvider), provider.GetType().AssemblyQualifiedName));
                     }
 
                     if (res.ContainsKey(provider.Name))
