@@ -267,6 +267,9 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var prop in type.GetProperties())
             {
+                if (!prop.CanWrite)
+                    continue;  // Read-only properties are not configured in XML.
+
                 var propType = prop.PropertyType;
 
                 var isCollection = propType.IsGenericType &&
@@ -748,7 +751,8 @@ namespace Apache.Ignite.Core.Tests
                     WriteBufferSize = 66,
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
-                }
+                },
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
             };
         }
 
