@@ -85,7 +85,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
             ex = Assert.Throws<IgniteException>(() => check(new[] { new NullFactoryResultConfig() }));
             Assert.AreEqual("IPluginConfiguration.PluginProviderFactory can not return null", ex.Message);
 
-            // Null plugin name.
+            // Empty plugin name.
+            ex = Assert.Throws<IgniteException>(() => check(new[] { new EmptyNameConfig() }));
+            Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
+                            typeof(TestIgnitePluginProvider).FullName, ex.Message);
 
             // Duplicate plugin name.
 
@@ -104,16 +107,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             public IFactory<IPluginProvider> PluginProviderFactory
             {
-                get { return new NullFactory<IPluginProvider>(); } 
+                get { return new FuncFactory<IPluginProvider>(() => null); } 
             }
-
         }
 
-        private class NullFactory<T> : IFactory<T>
+        private class EmptyNameConfig : IPluginConfiguration
         {
-            public T CreateInstance()
+            public IFactory<IPluginProvider> PluginProviderFactory
             {
-                return default(T);
+                get { return new FuncFactory<IPluginProvider>(() => new TestIgnitePluginProvider {Name = ""}); } 
             }
         }
     }
