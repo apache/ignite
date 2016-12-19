@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
+    using System.IO;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
@@ -65,6 +66,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** <inheritdoc /> */
         public void Start(IPluginContext context)
         {
+            Throw();
+
             Context = context;
         }
 
@@ -98,5 +101,20 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// Gets the context.
         /// </summary>
         public IPluginContext Context { get; private set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether error should be thrown from provider methods.
+        /// </summary>
+        public bool ThrowError { get; set; }
+
+        /// <summary>
+        /// Throws an error when <see cref="ThrowError"/> is <c>true</c>.
+        /// </summary>
+        private void Throw()
+        {
+            if (ThrowError)
+                throw new IOException("Failure in plugin provider");
+        }
+
     }
 }

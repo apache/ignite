@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                                           "'{0}' and '{0}'", typeof(TestIgnitePluginProvider).AssemblyQualifiedName),
                 ex.Message);
 
-            // Plugin throws an exception.
+            // Provider throws an exception.
         }
 
         private class NullFactoryConfig : IPluginConfiguration
