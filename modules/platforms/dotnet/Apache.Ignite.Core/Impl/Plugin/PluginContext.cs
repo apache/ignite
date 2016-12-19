@@ -46,7 +46,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             _igniteConfiguration = igniteConfiguration;
 
-            // Load plugins in a separate thread while Ignite is starting.
             _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations);
         }
 
@@ -124,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
                     if (provider == null)
                     {
-                        throw new IgniteException(string.Format("{0}.PluginProviderFactory can not return null",
+                        throw new IgniteException(string.Format("{0}.CreateProvider can not return null",
                             typeof(IPluginConfiguration).Name));
                     }
 

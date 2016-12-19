@@ -17,8 +17,11 @@
 
 namespace Apache.Ignite.Core.Common
 {
+    using System;
+
     /// <summary>
     /// Factory that produces instances of a specific type.
+    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
     /// </summary>
     public interface IFactory<out T>
     {
