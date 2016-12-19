@@ -160,22 +160,23 @@ public class HadoopDataInStream extends InputStream implements DataInput {
     @Override public String readLine() throws IOException {
         SB sb = new SB();
 
-        int b;
-
-        while ((b = read()) >= 0) {
-            char c = (char)b;
+        while (buf.remaining() > 0) {
+            char c = (char)readByte();
 
             switch (c) {
                 case '\n':
                     return sb.toString();
 
                 case '\r':
-                    b = read();
+                    if (buf.remaining() == 0)
+                        return sb.toString();
 
-                    if (b < 0 || b == '\n')
+                    c = (char)readByte();
+
+                    if (c == '\n')
                         return sb.toString();
                     else
-                        sb.a((char)b);
+                        sb.a(c);
 
                     break;
 

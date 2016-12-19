@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataOutput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOutStream;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -29,18 +33,50 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
+    private static final int BUFF_SIZE = 4 * 1024;
 
+
+    /**
+     * @throws IOException If failed.
+     */
     public void testStreams() throws IOException {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
         HadoopDataOutStream out = new HadoopDataOutStream(mem);
 
-        int size = 4 * 1024;
+        final long ptr = mem.allocate(BUFF_SIZE);
 
-        final long ptr = mem.allocate(size);
+        out.buffer().set(ptr, BUFF_SIZE);
 
-        out.buffer().set(ptr, size);
+        write(out);
 
+        HadoopDataInStream in = new HadoopDataInStream(mem);
+
+        in.buffer().set(ptr, out.buffer().pointer() - ptr);
+
+        checkRead(in);
+    }
+
+    /**
+     * @throws IOException If failed.
+     */
+    public void testDirectStreams() throws IOException {
+        HadoopDirectDataOutput out = new HadoopDirectDataOutput(BUFF_SIZE);
+
+        write(out);
+
+        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+
+        HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
+
+        checkRead(in);
+    }
+
+    /**
+     * @param out Data output.
+     * @throws IOException On error.
+     */
+    private void write(DataOutput out) throws IOException {
         out.writeBoolean(false);
         out.writeBoolean(true);
         out.writeBoolean(false);
@@ -84,20 +120,25 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
         out.writeLong(Long.MIN_VALUE);
         out.writeLong(0);
         out.writeLong(-1L);
-        out.write(new byte[]{1,2,3});
-        out.write(new byte[]{0,1,2,3}, 1, 2);
+        out.write(new byte[] {1, 2, 3});
+        out.write(new byte[] {0, 1, 2, 3}, 1, 2);
         out.writeUTF("mom washes rum");
 
-        HadoopDataInStream in = new HadoopDataInStream(mem);
+        String strs = "String 1\nString 2\r\nThe Last String";
+        out.write(strs.getBytes(), 0, strs.length());
+    }
 
-        in.buffer().set(ptr, out.buffer().pointer());
-
+    /**
+     * @param in Data input.
+     * @throws IOException On error.
+     */
+    private void checkRead(DataInput in) throws IOException {
         assertEquals(false, in.readBoolean());
         assertEquals(true, in.readBoolean());
         assertEquals(false, in.readBoolean());
-        assertEquals(17, in.read());
-        assertEquals(121, in.read());
-        assertEquals(0xfa, in.read());
+        assertEquals(17, in.readUnsignedByte());
+        assertEquals(121, in.readUnsignedByte());
+        assertEquals(0xfa, in.readUnsignedByte());
         assertEquals(17, in.readByte());
         assertEquals(121, in.readByte());
         assertEquals((byte)0xfa, in.readByte());
@@ -138,16 +179,20 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         byte[] b = new byte[3];
 
-        in.read(b);
+        in.readFully(b);
 
-        assertTrue(Arrays.equals(new byte[]{1,2,3}, b));
+        assertTrue(Arrays.equals(new byte[] {1, 2, 3}, b));
 
         b = new byte[4];
 
-        in.read(b, 1, 2);
+        in.readFully(b, 1, 2);
 
-        assertTrue(Arrays.equals(new byte[]{0, 1, 2, 0}, b));
+        assertTrue(Arrays.equals(new byte[] {0, 1, 2, 0}, b));
 
         assertEquals("mom washes rum", in.readUTF());
+
+        assertEquals("String 1", in.readLine());
+        assertEquals("String 2", in.readLine());
+        assertEquals("The Last String", in.readLine());
     }
 }
