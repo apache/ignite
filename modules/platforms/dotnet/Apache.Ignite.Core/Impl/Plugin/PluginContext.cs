@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
@@ -37,16 +38,17 @@ namespace Apache.Ignite.Core.Impl.Plugin
         private volatile IIgnite _ignite;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginContext"/> class.
+        /// Initializes a new instance of the <see cref="PluginContext" /> class.
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration.</param>
-        public PluginContext(IgniteConfiguration igniteConfiguration)
+        /// <param name="log">The log.</param>
+        public PluginContext(IgniteConfiguration igniteConfiguration, ILogger log)
         {
             Debug.Assert(igniteConfiguration != null);
+            Debug.Assert(log != null);
 
             _igniteConfiguration = igniteConfiguration;
-
-            _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations);
+            _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations, log);
         }
 
         /// <summary>
@@ -111,44 +113,71 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private Dictionary<string, IPluginProvider> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations)
+        private Dictionary<string, IPluginProvider> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations, 
+            ILogger log)
         {
             var res = new Dictionary<string, IPluginProvider>();
 
-            if (pluginConfigurations != null)
+            log.Info("Configured .NET plugins:");
+
+            if (pluginConfigurations != null && pluginConfigurations.Count > 0)
             {
                 foreach (var cfg in pluginConfigurations)
                 {
                     var provider = cfg.CreateProvider();
 
-                    if (provider == null)
-                    {
-                        throw new IgniteException(string.Format("{0}.CreateProvider can not return null",
-                            typeof(IPluginConfiguration).Name));
-                    }
+                    ValidateProvider(provider, res);
 
-                    if (string.IsNullOrEmpty(provider.Name))
-                    {
-                        throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
-                            typeof(IPluginProvider), provider.GetType().AssemblyQualifiedName));
-                    }
+                    LogProviderInfo(log, provider);
 
-                    if (res.ContainsKey(provider.Name))
-                    {
-                        throw new IgniteException(string.Format("Duplicate plugin name '{0}' is used by " +
-                                                                "plugin providers '{1}' and '{2}'", provider.Name,
-                            provider.GetType().AssemblyQualifiedName,
-                            res[provider.Name].GetType().AssemblyQualifiedName));
-                    }
-
-                    // TODO: Log copyright, see Java
                     provider.Start(this);
 
                     res[provider.Name] = provider;
                 }
             }
+            else
+            {
+                log.Info("  ^-- None");
+            }
 
             return res;
+        }
+
+        /// <summary>
+        /// Logs the provider information.
+        /// </summary>
+        private static void LogProviderInfo(ILogger log, IPluginProvider provider)
+        {
+            log.Info("  ^-- " + provider.Name + " " + provider.GetType().Assembly.GetName().Version);
+
+            if (!string.IsNullOrEmpty(provider.Copyright))
+                log.Info("  ^-- " + provider.Copyright);
+        }
+
+        /// <summary>
+        /// Validates the provider.
+        /// </summary>
+        private static void ValidateProvider(IPluginProvider provider, Dictionary<string, IPluginProvider> res)
+        {
+            if (provider == null)
+            {
+                throw new IgniteException(string.Format("{0}.CreateProvider can not return null",
+                    typeof(IPluginConfiguration).Name));
+            }
+
+            if (string.IsNullOrEmpty(provider.Name))
+            {
+                throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
+                    typeof(IPluginProvider), provider.GetType().AssemblyQualifiedName));
+            }
+
+            if (res.ContainsKey(provider.Name))
+            {
+                throw new IgniteException(string.Format("Duplicate plugin name '{0}' is used by " +
+                                                        "plugin providers '{1}' and '{2}'", provider.Name,
+                    provider.GetType().AssemblyQualifiedName,
+                    res[provider.Name].GetType().AssemblyQualifiedName));
+            }
         }
     }
 }
