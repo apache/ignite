@@ -201,9 +201,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
-        synchronized (futs) {
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+        synchronized (sync) {
+            int size = futuresCountNoLock();
+
+            for (int i = 0; i < size; i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (isMini(fut) && !fut.isDone()) {
                     MiniFuture miniFut = (MiniFuture)fut;
@@ -232,10 +234,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+            for (int i = size - 1; i >= 0; i--) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -686,9 +690,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (keyLockFut != null)
                 keys = new HashSet<>(keyLockFut.lockKeys);
             else {
-                if (futs != null && !futs.isEmpty()) {
-                    for (int i = 0; i < futs.size(); i++) {
-                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+                synchronized (sync) {
+                    int size = futuresCountNoLock();
+
+                    for (int i = 0; i < size; i++) {
+                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                         if (isMini(fut) && !fut.isDone()) {
                             MiniFuture miniFut = (MiniFuture)fut;
@@ -895,7 +901,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                         else
                             remap();
-                    } else {
+                    }
+                    else {
                         parent.onPrepareResponse(m, res);
 
                         // Proceed prepare before finishing mini future.

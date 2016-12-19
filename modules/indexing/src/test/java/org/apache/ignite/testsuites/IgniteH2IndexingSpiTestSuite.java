@@ -18,10 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexRebuildTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2TableSelfTest;
 
 /**
  * H2 indexing SPI tests.
@@ -34,17 +30,7 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("H2 Indexing SPI Test Suite");
 
-        // H2 Optimized table test.
-        suite.addTest(new TestSuite(GridH2TableSelfTest.class));
-
-        // H2 Indexing in-memory.
-        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
-
-        // H2 Off-heap memory.
-        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
-
-        // Index rebuilding.
-        suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
+        // No-op.
 
         return suite;
     }

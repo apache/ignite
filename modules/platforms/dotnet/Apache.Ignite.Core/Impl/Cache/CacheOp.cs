@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         LocalClearAll = 21,
         Lock = 22,
         LockAll = 23,
-        Metrics = 24,
+        LocalMetrics = 24,
         Peek = 25,
         Put = 26,
         PutAll = 27,
@@ -103,6 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         InvokeAsync = 79,
         InvokeAllAsync = 80,
         PutIfAbsentAsync = 81,
-        Extension = 82
+        Extension = 82,
+        GlobalMetrics = 83
     }
 }
