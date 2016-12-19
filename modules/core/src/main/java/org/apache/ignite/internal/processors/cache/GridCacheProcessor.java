@@ -1286,10 +1286,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         U.startLifecycleAware(lifecycleAwares(cfg, cfgStore));
 
+        boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
+
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL ||
-            !GridCacheUtils.isNearEnabled(cfg));
+        GridCacheSwapManager swapMgr = new GridCacheSwapManager(
+            affNode && (cfg.getCacheMode() == LOCAL || !GridCacheUtils.isNearEnabled(cfg)));
         GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
@@ -1301,8 +1303,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
 
         storeMgr.initialize(cfgStore, sesHolders);
-
-        boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
@@ -1427,7 +1427,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * 7. GridCacheTtlManager.
              * ===============================================
              */
-            swapMgr = new GridCacheSwapManager(true);
+            swapMgr = new GridCacheSwapManager(affNode);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);

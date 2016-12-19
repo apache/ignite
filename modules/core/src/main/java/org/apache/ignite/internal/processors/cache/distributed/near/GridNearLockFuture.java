@@ -325,7 +325,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             timeout,
             !inTx(),
             inTx(),
-            implicitSingleTx()
+            implicitSingleTx(),
+            false
         );
 
         if (inTx()) {

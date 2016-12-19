@@ -43,9 +43,7 @@ import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.ExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.session.GenericBatchExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.session.LoadCacheCustomQueryWorker;
-import org.apache.ignite.cache.store.cassandra.session.transaction.DeleteMutation;
-import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
-import org.apache.ignite.cache.store.cassandra.session.transaction.WriteMutation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -515,5 +513,10 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     private List<Mutation> mutations() {
         //noinspection unchecked
         return (List<Mutation>)storeSes.properties().get(TRANSACTION_BUFFER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CassandraCacheStore.class, this);
     }
 }
