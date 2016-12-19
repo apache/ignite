@@ -35,6 +35,7 @@
   <ItemGroup>
     <None Include="..\..\config\cache-query.xml" />
     <None Include="..\..\config\cache-test.xml" />
+    <None Include="..\..\config\invalid.xml" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cache_test.cpp" />

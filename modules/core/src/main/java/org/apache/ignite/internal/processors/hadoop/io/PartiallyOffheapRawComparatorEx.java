@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+package org.apache.ignite.internal.processors.hadoop.io;
 
 /**
- *
+ * Special version of raw comparator allowing direct access to the underlying memory.
  */
-public class CachePartitionedNearEnabledMultiNodeLongTxTimeoutFullApiTest extends
-    GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.getTransactionConfiguration().setDefaultTxTimeout(5 * 60_000);
-
-        return cfg;
-    }
+public interface PartiallyOffheapRawComparatorEx<T> {
+    /**
+     * Perform compare.
+     *
+     * @param val1 First value.
+     * @param val2Ptr Pointer to the second value data.
+     * @param val2Len Length of the second value data.
+     * @return Result.
+     */
+    int compare(T val1, long val2Ptr, int val2Len);
 }

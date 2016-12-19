@@ -27,7 +27,7 @@ using namespace ignite;
 using namespace cache;
 using namespace boost::unit_test;
 
-void InitConfig(IgniteConfiguration& cfg)
+void InitConfig(IgniteConfiguration& cfg, const char* config)
 {
     cfg.jvmOpts.push_back("-Xdebug");
     cfg.jvmOpts.push_back("-Xnoagent");
@@ -45,7 +45,7 @@ void InitConfig(IgniteConfiguration& cfg)
 
     char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
-    cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
+    cfg.springCfgPath = std::string(cfgPath).append("/").append(config);
 }
 
 BOOST_AUTO_TEST_SUITE(InteropTestSuite)
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 {
     IgniteConfiguration cfg;
 
-    InitConfig(cfg);
+    InitConfig(cfg, "cache-test.xml");
 
     Ignite ignite = Ignition::Start(cfg);
 
@@ -141,6 +141,17 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 
     // This is a valid UTF-8 code point. Should be supported in default mode.
     BOOST_CHECK_EQUAL(initialValue, cachedValue);
+
+    Ignition::StopAll(false);
+}
+
+BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
+{
+    IgniteConfiguration cfg;
+
+    InitConfig(cfg, "invalid.xml");
+
+    BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
 
     Ignition::StopAll(false);
 }
