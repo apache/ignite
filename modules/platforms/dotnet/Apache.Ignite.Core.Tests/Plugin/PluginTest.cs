@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // Null factory result.
             var ex = Assert.Throws<IgniteException>(() => check(new[] { new NullFactoryResultConfig() }));
-            Assert.AreEqual("IPluginConfiguration.PluginProviderFactory can not return null", ex.Message);
+            Assert.AreEqual("IPluginConfiguration.CreateProvider can not return null", ex.Message);
 
             // Empty plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[] { new EmptyNameConfig() }));
