@@ -116,6 +116,5 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 return default(T);
             }
         }
-
     }
 }

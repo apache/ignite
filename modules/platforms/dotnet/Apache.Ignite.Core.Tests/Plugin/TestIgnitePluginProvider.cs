@@ -33,18 +33,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** */
         private readonly TestIgnitePlugin _plugin;
 
+        /** */
+        private readonly string _pluginName;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TestIgnitePluginProvider"/> class.
         /// </summary>
-        public TestIgnitePluginProvider()
+        public TestIgnitePluginProvider(string pluginName = null)
         {
+            _pluginName = PluginName;
             _plugin = new TestIgnitePlugin(this);
         }
         
         /** <inheritdoc /> */
         public string Name
         {
-            get { return PluginName; }
+            get { return _pluginName; }
         }
 
         /** <inheritdoc /> */
