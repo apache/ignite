@@ -148,6 +148,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
                             res[provider.Name].GetType().AssemblyQualifiedName));
                     }
 
+                    // TODO: Log copyright, see Java
                     provider.Start(this);
 
                     res[provider.Name] = provider;
