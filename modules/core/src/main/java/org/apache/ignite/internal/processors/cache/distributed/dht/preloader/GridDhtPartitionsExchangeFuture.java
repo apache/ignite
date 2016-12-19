@@ -1601,12 +1601,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
                     cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
 
-                //todo check it
-                /*ClusterState newState = newClusterState();
-
-                if (newState != null && cctx.kernalContext().cache().active() != newState)
-                    cctx.cache().active(newState);*/
-
                 onDone(exchangeId().topologyVersion());
             }
         }

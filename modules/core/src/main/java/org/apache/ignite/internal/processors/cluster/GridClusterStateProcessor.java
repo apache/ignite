@@ -372,14 +372,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         if (actx.activate) {
             try {
                 if (!ctx.clientNode()) {
-                    sharedCtx.wal().onDeActivate(ctx);
-
                     sharedCtx.database().onDeActivate(ctx);
 
                     if (sharedCtx.pageStore() != null)
                         sharedCtx.pageStore().onDeActivate(ctx);
 
-                    sharedCtx.database().onDeActivate(ctx);
+                    sharedCtx.wal().onDeActivate(ctx);
                 }
 
                 cacheProc.onKernalStopCaches(true);
