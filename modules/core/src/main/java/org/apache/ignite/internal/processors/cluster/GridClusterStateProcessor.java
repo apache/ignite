@@ -331,7 +331,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             if (req.globalStateChange()) {
                 ChangeGlobalStateContext cgsCtx = lastCgsCtx;
 
-                assert cgsCtx != null;
+                assert cgsCtx != null : "reqs: " + Arrays.toString(reqs.toArray());
 
                 cgsCtx.topologyVersion(topVer);
 
@@ -426,18 +426,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 sharedCtx.database().lock();
 
                 sharedCtx.wal().onActivate(ctx);
-
-                if (sharedCtx.pageStore() != null) {
-                    for (DynamicCacheChangeRequest req : cgsCtx.batch.requests()) {
-                        if (req.startCacheConfiguration() != null && CU.isSystemCache(req.startCacheConfiguration().getName()))
-                            sharedCtx.pageStore().initializeForCache(req.startCacheConfiguration());
-                    }
-
-                    for (DynamicCacheChangeRequest req : cgsCtx.batch.requests()) {
-                        if (req.startCacheConfiguration() != null && !CU.isSystemCache(req.startCacheConfiguration().getName()))
-                            sharedCtx.pageStore().initializeForCache(req.startCacheConfiguration());
-                    }
-                }
 
                 sharedCtx.database().onActivate(ctx);
 
