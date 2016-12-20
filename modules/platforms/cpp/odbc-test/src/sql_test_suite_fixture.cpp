@@ -132,7 +132,7 @@ namespace ignite
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
-    }
+    }    
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected)
@@ -284,5 +284,22 @@ namespace ignite
         SQL_TIMESTAMP_STRUCT res;
 
         CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t>>(const char* request, const std::vector<int8_t>& expected)
+    {
+        SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
+        SQLLEN resLen = 0;
+        
+        CheckSingleResult0(request, SQL_C_BINARY, res, ODBC_BUFFER_SIZE, &resLen);
+
+        BOOST_REQUIRE_EQUAL(resLen, expected.size());
+
+        if (resLen > 0)
+        {
+            std::vector<int8_t> actual(res, res + resLen);
+            BOOST_REQUIRE_EQUAL_COLLECTIONS(expected.begin(), expected.end(), actual.begin(), actual.end());
+        }
     }
 }

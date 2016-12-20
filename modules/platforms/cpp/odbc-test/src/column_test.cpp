@@ -287,4 +287,187 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
     BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestColumnByteArray)
+{
+	ignite::impl::interop::InteropUnpooledMemory mem(4096);
+	ignite::impl::interop::InteropOutputStream outStream(&mem);
+	ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+
+    std::vector<int8_t> data = { 65,66,67,68,69,70,71,72,73,74 }; //A,B,C..J
+	writer.WriteInt8Array(&data[0], data.size());
+
+	outStream.Synchronize();
+
+	ignite::impl::interop::InteropInputStream inStream(&mem);
+	ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+
+	Column column(reader);
+
+	BOOST_REQUIRE(column.IsValid());
+
+	BOOST_REQUIRE(column.GetSize() == data.size());
+
+	BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+
+	std::vector<int8_t> buf(data.size());
+	SqlLen reslen = 0;
+	int* offset = 0;
+
+	ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen, &offset);
+
+	BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
+
+	BOOST_REQUIRE(column.IsValid());
+
+	BOOST_REQUIRE(column.GetSize() == data.size());
+
+	BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+
+	BOOST_REQUIRE_EQUAL_COLLECTIONS(buf.begin(), buf.end(), data.begin(), data.end());
+
+    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_NO_DATA);
+
+    BOOST_REQUIRE(column.IsValid());
+
+    BOOST_REQUIRE(column.GetSize() == data.size());
+
+    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
+{
+    ignite::impl::interop::InteropUnpooledMemory mem(4096);
+    ignite::impl::interop::InteropOutputStream outStream(&mem);
+    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+
+    std::vector<int8_t> data = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    BOOST_REQUIRE(0 == data.size() % 2);
+
+    writer.WriteInt8Array(&data[0], data.size());
+
+    outStream.Synchronize();
+
+    ignite::impl::interop::InteropInputStream inStream(&mem);
+    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+
+    Column column(reader);
+
+    BOOST_REQUIRE(column.IsValid());
+
+    BOOST_REQUIRE(column.GetSize() == data.size());
+
+    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+
+    std::vector<int8_t> buf(data.size()/2);
+    SqlLen reslen = 0;
+    int* offset = 0;
+
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen, &offset);
+
+    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
+
+    BOOST_REQUIRE(column.IsValid());
+
+    BOOST_REQUIRE(column.GetSize() == data.size());
+
+    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size() - buf.size());
+
+    std::vector<int8_t> result(buf);
+
+    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
+
+    BOOST_REQUIRE(column.IsValid());
+
+    BOOST_REQUIRE(column.GetSize() == data.size());
+
+    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+
+    result.insert(std::end(result), std::begin(buf), std::end(buf));
+
+    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_NO_DATA);
+
+    BOOST_REQUIRE(column.IsValid());
+
+    BOOST_REQUIRE(column.GetSize() == data.size());
+
+    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(result.begin(), result.end(), data.begin(), data.end());
+}
+
+BOOST_AUTO_TEST_CASE(TestColumnByteArrayTwoColumns)
+{
+    ignite::impl::interop::InteropUnpooledMemory mem(4096);
+    ignite::impl::interop::InteropOutputStream outStream(&mem);
+    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+
+    std::vector<int8_t> data1 = { 65,66,67,68,69,70,71,72,73,74 }; //A,B,C...J
+    std::vector<int8_t> data2 = { 97,98,99,100,101,102,103,104,105,106 }; //a,b,c...j
+    writer.WriteInt8Array(&data1[0], data1.size());
+    writer.WriteInt8Array(&data2[0], data2.size());
+
+    outStream.Synchronize();
+
+    ignite::impl::interop::InteropInputStream inStream(&mem);
+    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+
+    Column column1(reader);
+    inStream.Position(column1.GetEndPosition());
+    Column column2(reader);
+
+    BOOST_REQUIRE(column1.IsValid());
+
+    BOOST_REQUIRE(column1.GetSize() == data1.size());
+
+    BOOST_REQUIRE(column1.GetUnreadDataLength() == data1.size());
+
+    BOOST_REQUIRE(column2.IsValid());
+
+    BOOST_REQUIRE(column2.GetSize() == data2.size());
+
+    BOOST_REQUIRE(column2.GetUnreadDataLength() == data2.size());
+
+    int8_t buf[1024] = {};
+    SqlLen reslen = 0;
+    int* offset = 0;
+
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf, sizeof(buf), &reslen, &offset);
+
+    BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
+
+    BOOST_REQUIRE(column1.IsValid());
+
+    BOOST_REQUIRE(column1.GetSize() == data1.size());
+
+    BOOST_REQUIRE(column1.GetUnreadDataLength() == 0);
+
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(buf, buf + reslen, data1.begin(), data1.end());
+
+    BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SQL_RESULT_NO_DATA);
+
+    BOOST_REQUIRE(column1.IsValid());
+
+    BOOST_REQUIRE(column1.GetSize() == data1.size());
+
+    BOOST_REQUIRE(column1.GetUnreadDataLength() == 0);
+
+    BOOST_REQUIRE(column2.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
+
+    BOOST_REQUIRE(column2.IsValid());
+
+    BOOST_REQUIRE(column2.GetSize() == data1.size());
+
+    BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
+
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(buf, buf + reslen, data2.begin(), data2.end());
+
+    BOOST_REQUIRE(column2.ReadToBuffer(reader, appBuf) == SQL_RESULT_NO_DATA);
+
+    BOOST_REQUIRE(column2.IsValid());
+
+    BOOST_REQUIRE(column2.GetSize() == data1.size());
+
+    BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

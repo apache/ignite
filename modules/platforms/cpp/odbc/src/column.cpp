@@ -33,7 +33,7 @@ namespace
 
         switch (hdr)
         {
-            case IGNITE_TYPE_BINARY:
+            case IGNITE_TYPE_BINARY:			
             {
                 // Header field + Length field + Object itself + Offset field
                 len = 1 + 4 + stream.ReadInt32() + 4;
@@ -247,7 +247,7 @@ namespace ignite
                 }
 
                 case IGNITE_TYPE_BINARY:
-                case IGNITE_TYPE_OBJECT:
+                case IGNITE_TYPE_OBJECT:				
                 {
                     int32_t len;
 
@@ -283,10 +283,23 @@ namespace ignite
 
                 case IGNITE_TYPE_TIMESTAMP:
                 {
-                    reader.ReadTimestamp();
+					reader.ReadTimestamp();
 
                     sizeTmp = 12;
 
+                    break;
+                }
+
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    reader.ReadInt8(); //skip hdr
+                    
+                    sizeTmp = reader.ReadInt32();
+                    assert(sizeTmp >= 0);
+                    
+                    startPosTmp = stream->Position();
+                    stream->Position(stream->Position() + sizeTmp);
+                    
                     break;
                 }
 
@@ -424,7 +437,7 @@ namespace ignite
                 }
 
                 case IGNITE_TYPE_BINARY:
-                case IGNITE_TYPE_OBJECT:
+                case IGNITE_TYPE_OBJECT:				
                 {
                     int32_t len;
 
@@ -470,6 +483,20 @@ namespace ignite
 
                     dataBuf.PutTimestamp(ts);
 
+                    break;
+                }				
+
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    stream->Position(startPos + offset);
+                    int32_t maxRead = std::min(GetUnreadDataLength(), static_cast<int32_t>(dataBuf.GetSize()));
+                    std::vector<int8_t> data(maxRead);
+
+                    stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
+                                        
+                    int32_t written = dataBuf.PutBinaryData(data.data(), data.size());
+
+                    IncreaseOffset(written);
                     break;
                 }
 
