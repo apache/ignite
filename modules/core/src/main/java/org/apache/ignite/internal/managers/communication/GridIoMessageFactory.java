@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
@@ -167,11 +168,15 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -38:
+            case -39:
                 msg = new SnapshotProgressMessage();
 
                 break;
 
+            case -38:
+                msg = new GridChangeGlobalStateMessageResponse();
+
+                break;
             case -37:
                 msg = new GridDhtAtomicSingleUpdateRequest();
 

@@ -323,6 +323,6 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page.
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
-        return new FullPageId(mem.allocatePage(0, 1, PageIdAllocator.FLAG_DATA), 0);
+        return new FullPageId(mem.allocatePage(-1, 1, PageIdAllocator.FLAG_DATA), -1);
     }
 }

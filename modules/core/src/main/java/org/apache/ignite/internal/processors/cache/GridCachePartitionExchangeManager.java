@@ -220,14 +220,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
 
-                    assert
-                        e.type() != EVT_NODE_JOINED || n.order() > loc.order() :
+                    assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() :
                         "Node joined with smaller-than-local " +
                             "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
-                    exchId = exchangeId(n.id(),
-                        affinityTopologyVersion(e),
-                        e.type());
+                    exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                     exchFut = exchangeFuture(exchId, e, null, null);
                 }
@@ -261,7 +258,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!F.isEmpty(valid)) {
+                        //todo think about refactoring
+                        if (!F.isEmpty(valid) && !(valid.size() == 1 && valid.iterator().next().globalStateChange())) {
                             exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                             exchFut = exchangeFuture(exchId, e, valid, null);
@@ -1284,10 +1282,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             else {
                 if (msg.client()) {
-                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
-                        null,
-                        null,
-                        null);
+                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(
+                        msg.exchangeId(), null, null, null);
 
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
@@ -1739,7 +1735,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!exchFut.skipPreload() && cctx.cache().globalState() == CacheState.ACTIVE) {
+                        if (!exchFut.skipPreload() && cctx.kernalContext().state().active()) {
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {

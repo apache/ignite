@@ -237,7 +237,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();

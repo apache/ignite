@@ -20,17 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 /**
  *
  */
-public enum CacheState {
+public enum ClusterState {
     /**
      * Cache is inactive. No operations are allowed, no partition assignments or rebalancing is performed.
      */
     INACTIVE,
 
-    /** Cache is inactive. But process of it activation in progress. */
-    ACTIVATING,
-
     /**
      * Cache is active and operations. There are no lost partitions.
      */
-    ACTIVE
+    ACTIVE,
+
+    /**
+     * Cache is inactive. But process of it activation in progress.
+     */
+    TRANSITION
 }
