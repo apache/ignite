@@ -269,8 +269,11 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param nativeStmt Native statement.
      * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
+     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
+     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
      * {@code null} if given statement is a query.
      */
-    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq);
+    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+        int nodeBufSize, int nodeParOps);
 }

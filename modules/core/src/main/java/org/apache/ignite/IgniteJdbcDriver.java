@@ -293,10 +293,16 @@ public class IgniteJdbcDriver implements Driver {
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
     /** DML streaming parameter name. */
-    private static final String PARAM_STREAM = "stream";
+    private static final String PARAM_STREAMING = "streaming";
 
-    /** DML streaming flush timeout. */
-    private static final String PARAM_STREAM_FLUSH_TIMEOUT = "streamFlushTimeout";
+    /** DML streaming auto flush frequency. */
+    private static final String PARAM_STREAMING_FLUSH_FREQ = "streamingFlushFreq";
+
+    /** DML streaming node buffer size. */
+    private static final String PARAM_STREAMING_NODE_BUFFER_SIZE = "streamingBufSize";
+
+    /** DML streaming parallel operations per node. */
+    private static final String PARAM_STREAMING_NODE_PAR_OPS = "streamingParOps";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
@@ -320,10 +326,16 @@ public class IgniteJdbcDriver implements Driver {
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** DML streaming property name. */
-    public static final String PROP_STREAM = PROP_PREFIX + PARAM_STREAM;
+    public static final String PROP_STREAM = PROP_PREFIX + PARAM_STREAMING;
 
-    /** DML streaming property name. */
-    public static final String PROP_STREAM_FLUSH_TIMEOUT = PROP_PREFIX + PARAM_STREAM_FLUSH_TIMEOUT;
+    /** DML stream auto flush frequency property name. */
+    public static final String PROP_STREAM_FLUSH_FREQ = PROP_PREFIX + PARAM_STREAMING_FLUSH_FREQ;
+
+    /** DML stream node buffer size property name. */
+    public static final String PROP_STREAM_NODE_BUFFER_SIZE = PROP_PREFIX + PARAM_STREAMING_NODE_BUFFER_SIZE;
+
+    /** DML stream parallel operations per node property name. */
+    public static final String PROP_STREAM_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_NODE_PAR_OPS;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";

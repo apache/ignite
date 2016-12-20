@@ -78,7 +78,9 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAM;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAM_FLUSH_TIMEOUT;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAM_FLUSH_FREQ;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAM_NODE_BUFFER_SIZE;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAM_NODE_PAR_OPS;
 
 /**
  * JDBC connection implementation.
@@ -130,6 +132,12 @@ public class JdbcConnection implements Connection {
     /** Auto flush frequency for streaming. */
     private final long streamFlushTimeout;
 
+    /** Node buffer size for data streamer. */
+    private final int streamNodeBufSize;
+
+    /** Parallel ops count per node for data streamer. */
+    private final int streamNodeParOps;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -153,7 +161,11 @@ public class JdbcConnection implements Connection {
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAM));
 
-        streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAM_FLUSH_TIMEOUT, "0"));
+        streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAM_FLUSH_FREQ, "0"));
+
+        streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAM_NODE_BUFFER_SIZE, "0"));
+
+        streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAM_NODE_PAR_OPS, "0"));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -511,7 +523,7 @@ public class JdbcConnection implements Connection {
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
             IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
-                nativeStmt, streamFlushTimeout);
+                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps);
 
             // Null streamer means that given statement can't be streamed and should be processed in ordinary way.
             if (streamer == null)

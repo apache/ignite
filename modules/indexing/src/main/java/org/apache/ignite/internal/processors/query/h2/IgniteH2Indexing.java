@@ -440,7 +440,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
-        long autoFlushFreq) {
+        long autoFlushFreq, int nodeBufSize, int nodeParOps) {
         Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
 
         UpdateMode mode;
@@ -458,6 +458,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
         streamer.autoFlushFrequency(autoFlushFreq);
+
+        if (nodeBufSize > 0)
+            streamer.perNodeBufferSize(nodeBufSize);
+
+        if (nodeParOps > 0)
+            streamer.perNodeParallelOperations(nodeParOps);
 
         switch (mode) {
             case MERGE:
