@@ -17,51 +17,38 @@
 
 /**
  * @file
- * Declares ignite::cache::CacheEntry class.
+ * Declares ignite::cache::event::CacheEntryEvent class.
  */
 
-#ifndef _IGNITE_CACHE_CACHE_ENTRY
-#define _IGNITE_CACHE_CACHE_ENTRY
+#ifndef _IGNITE_CACHE_EVENT_CACHE_ENTRY_EVENT
+#define _IGNITE_CACHE_EVENT_CACHE_ENTRY_EVENT
 
-#include <ignite/common/common.h>
+#include <ignite/binary/binary_raw_reader.h>
+#include <ignite/cache/cache_entry.h>
 
 namespace ignite
 {
     namespace cache
     {
         /**
-         * %Cache entry class template.
+         * Cache entry event class template.
          *
          * Both key and value types should be default-constructable,
          * copy-constructable and assignable.
          */
         template<typename K, typename V>
-        class CacheEntry
+        class CacheEntryEvent : public CacheEntry<K, V>
         {
         public:
             /**
              * Default constructor.
              *
-             * Creates instance with both key and value default-constructed.
+             * Creates instance with all fields default-constructed.
              */
-            CacheEntry() :
-                key(),
-                val(),
-                hasValue(false)
-            {
-                // No-op.
-            }
-
-            /**
-             * Constructor.
-             *
-             * @param key Key.
-             * @param val Value.
-             */
-            CacheEntry(const K& key, const V& val) :
-                key(key),
-                val(val),
-                hasValue(true)
+            CacheEntryEvent() :
+                CacheEntry<K, V>(),
+                oldVal(),
+                hasOldValue(false)
             {
                 // No-op.
             }
@@ -71,10 +58,10 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            CacheEntry(const CacheEntry& other) :
-                key(other.key),
-                val(other.val),
-                hasValue(other.hasValue)
+            CacheEntryEvent(const CacheEntryEvent<K, V>& other) :
+                CacheEntry<K, V>(other),
+                oldVal(other.oldVal),
+                hasOldValue(other.hasOldValue)
             {
                 // No-op.
             }
@@ -82,7 +69,7 @@ namespace ignite
             /**
              * Destructor.
              */
-            virtual ~CacheEntry()
+            virtual ~CacheEntryEvent()
             {
                 // No-op.
             }
@@ -91,60 +78,62 @@ namespace ignite
              * Assignment operator.
              *
              * @param other Other instance.
+             * @return *this.
              */
-            CacheEntry& operator=(const CacheEntry& other) 
+            CacheEntryEvent& operator=(const CacheEntryEvent<K, V>& other)
             {
                 if (this != &other)
                 {
-                    key = other.key;
-                    val = other.val;
-                    hasValue = other.hasValue;
+                    CacheEntry<K, V>::operator=(other);
+
+                    oldVal = other.oldVal;
+                    hasOldValue = other.hasOldValue;
                 }
 
                 return *this;
             }
 
             /**
-             * Get key.
+             * Get old value.
              *
-             * @return Key.
+             * @return Old value.
              */
-            const K& GetKey() const
+            const V& GetOldValue() const
             {
-                return key;
+                return oldVal;
             }
 
             /**
-             * Get value.
+             * Check if the old value exists.
              *
-             * @return Value.
+             * @return True, if the old value exists.
              */
-            const V& GetValue() const
+            bool HasOldValue() const
             {
-                return val;
+                return hasOldValue;
             }
 
             /**
-             * Check if the value exists.
+             * Reads cache event using provided raw reader.
              *
-             * @return True, if the value exists.
+             * @param reader Reader to use.
              */
-            bool HasValue() const
+            void Read(binary::BinaryRawReader& reader)
             {
-                return hasValue;
+                this->key = reader.ReadObject<K>();
+
+                this->hasOldValue = reader.TryReadObject(this->oldVal);
+                this->hasValue = reader.TryReadObject(this->val);
             }
 
-        protected:
-            /** Key. */
-            K key;
+        private:
+            /** Old value. */
+            V oldVal;
 
-            /** Value. */
-            V val;
-
-            /** Indicates whether value exists */
-            bool hasValue;
+            /** Indicates whether old value exists */
+            bool hasOldValue;
         };
     }
 }
 
-#endif //_IGNITE_CACHE_CACHE_ENTRY
+#endif //_IGNITE_CACHE_EVENT_CACHE_ENTRY_EVENT
