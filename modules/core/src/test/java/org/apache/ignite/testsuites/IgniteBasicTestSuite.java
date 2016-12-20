@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.cluster.ClusterAttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -148,6 +149,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(MarshallerContextSelfTest.class);
 
         suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
+
+        suite.addTestSuite(ClusterAttributeNodeFilterSelfTest.class);
 
         return suite;
     }
