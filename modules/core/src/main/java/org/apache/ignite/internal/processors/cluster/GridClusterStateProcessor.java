@@ -315,6 +315,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      *
      */
     public boolean active() {
+        ChangeGlobalStateContext actx = lastCgsCtx;
+
+        if (actx != null && !actx.activate && globalState == TRANSITION)
+            return true;
+
+        if (actx != null && actx.activate && globalState == TRANSITION)
+            return false;
+
         return globalState == ACTIVE;
     }
 
