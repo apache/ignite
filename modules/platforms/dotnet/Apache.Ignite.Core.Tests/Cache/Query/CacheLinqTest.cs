@@ -123,8 +123,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(Person),
                     typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics)),
-                GridName = gridName,
-                JvmOptions = { "-Duser.timezone=UTC" }
+                GridName = gridName
             };
         }
 
