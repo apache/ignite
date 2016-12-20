@@ -41,9 +41,9 @@ import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
@@ -122,8 +122,8 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            msgC.run();
+        @Override public void onMessage(UUID nodeId, Message msg, BackPressureTracker tracker) {
+            tracker.deregisterMessage();
 
             assertTrue(msg instanceof GridTestMessage);
 

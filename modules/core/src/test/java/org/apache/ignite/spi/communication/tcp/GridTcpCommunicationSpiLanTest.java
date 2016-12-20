@@ -29,8 +29,8 @@ import mx4j.tools.adaptor.http.HttpAdaptor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
@@ -107,8 +107,8 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            msgC.run();
+        @Override public void onMessage(UUID nodeId, Message msg, BackPressureTracker tracker) {
+            tracker.deregisterMessage();
 
             if (msg instanceof GridTestMessage) {
                 GridTestMessage testMsg = (GridTestMessage)msg;

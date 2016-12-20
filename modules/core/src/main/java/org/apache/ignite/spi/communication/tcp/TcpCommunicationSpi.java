@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.ipc.IpcToNioAdapter;
 import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesException;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.nio.BackPressureNioTracker;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
@@ -123,6 +124,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -308,11 +310,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Default socket write timeout. */
     public static final long DFLT_SOCK_WRITE_TIMEOUT = 2000;
 
-    /** No-op runnable. */
-    private static final IgniteRunnable NOOP = new IgniteRunnable() {
-        @Override public void run() {
-            // No-op.
-        }
+    /** No-op back pressure tracker. */
+    private static final BackPressureTracker NOOP = new BackPressureTracker() {
+        @Override public void registerMessage() {}
+
+        @Override public void deregisterMessage() {}
     };
 
     /** Node ID message type. */
@@ -584,26 +586,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
 
-                    IgniteRunnable c;
+                    BackPressureTracker tracker;
 
                     if (msgQueueLimit > 0) {
-                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
+                        tracker = ses.meta(TRACKER_META);
 
                         if (tracker == null) {
-                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
-                                new GridNioMessageTracker(ses, msgQueueLimit));
+                            BackPressureTracker old = ses.addMeta(TRACKER_META, tracker =
+                                new BackPressureNioTracker(new GridNioMessageTracker(ses, msgQueueLimit)));
 
                             assert old == null;
                         }
 
-                        tracker.onMessageReceived();
-
-                        c = tracker;
+                        tracker.registerMessage();
                     }
                     else
-                        c = NOOP;
+                        tracker = NOOP;
 
-                    notifyListener(sndId, msg, c);
+                    notifyListener(sndId, msg, tracker);
                 }
             }
 
@@ -2792,14 +2792,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      * @param sndId Sender ID.
      * @param msg Communication message.
-     * @param msgC Closure to call when message processing finished.
+     * @param tracker Back pressure tracker.
      */
-    protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
+    protected void notifyListener(UUID sndId, Message msg, BackPressureTracker tracker) {
         CommunicationListener<Message> lsnr = this.lsnr;
 
         if (lsnr != null)
             // Notify listener of a new message.
-            lsnr.onMessage(sndId, msg, msgC);
+            lsnr.onMessage(sndId, msg, tracker);
         else if (log.isDebugEnabled())
             log.debug("Received communication message without any registered listeners (will ignore, " +
                 "is node stopping?) [senderNodeId=" + sndId + ", msg=" + msg + ']');

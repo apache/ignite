@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.spi.communication.BackPressureTracker;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Utility class that allows to ignore back-pressure control for threads that are processing messages.
  */
@@ -27,6 +30,9 @@ public class GridNioBackPressureControl {
             return Boolean.FALSE;
         }
     };
+
+    /** Thread local back pressure tracker of messages, associated with one connection. */
+    private static ThreadLocal<BackPressureTracker> threadTracker = new ThreadLocal<>();
 
     /**
      * @return Flag indicating whether current thread is processing message.
@@ -40,5 +46,19 @@ public class GridNioBackPressureControl {
      */
     public static void threadProcessingMessage(boolean processing) {
         threadProcMsg.set(processing);
+    }
+
+    /**
+     * @return Thread local back pressure tracker of messages, associated with one connection.
+     */
+    @Nullable public static BackPressureTracker threadTracker() {
+        return threadTracker.get();
+    }
+
+    /**
+     * @param tracker Thread local back pressure tracker of messages, associated with one connection.
+     */
+    public static void threadTracker(BackPressureTracker tracker) {
+        threadTracker.set(tracker);
     }
 }

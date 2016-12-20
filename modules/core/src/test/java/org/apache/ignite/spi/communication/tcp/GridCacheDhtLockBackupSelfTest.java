@@ -30,10 +30,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -281,10 +281,10 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, Message msg,
-            IgniteRunnable msgC) {
+            BackPressureTracker tracker) {
             checkAwaitMessageType(msg, sndId);
 
-            super.notifyListener(sndId, msg, msgC);
+            super.notifyListener(sndId, msg, tracker);
         }
     }
 }

@@ -17,30 +17,17 @@
 
 package org.apache.ignite.spi.communication;
 
-import java.io.Serializable;
-import java.util.UUID;
-
 /**
- * Listener SPI notifies IO manager with.
- * <p>
- * {@link CommunicationSpi} should ignore very first 4 bytes received from
- * sender node and pass the rest of the message to the listener.
+ * Tracks received and processed messages.
  */
-public interface CommunicationListener<T extends Serializable> {
+public interface BackPressureTracker {
     /**
-     * <b>NOTE:</b> {@link CommunicationSpi} should ignore very first 4 bytes received from
-     * sender node and pass the rest of the received message to the listener.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     * @param tracker Back pressure tracker.
+     * Invoked when new message received.
      */
-    public void onMessage(UUID nodeId, T msg, BackPressureTracker tracker);
+    public void registerMessage();
 
     /**
-     * Callback invoked when connection with remote node is lost.
-     *
-     * @param nodeId Node ID.
+     * Invoked when message processed.
      */
-    public void onDisconnected(UUID nodeId);
+    public void deregisterMessage();
 }
