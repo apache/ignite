@@ -801,8 +801,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
         if (!p.isQuery()) {
-            GridH2QueryContext.clearThreadLocal();
-
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
             if (params != null)
