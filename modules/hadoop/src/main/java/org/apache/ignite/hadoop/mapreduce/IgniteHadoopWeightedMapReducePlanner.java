@@ -212,10 +212,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             if (IgniteFileSystem.IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
                 HadoopIgfsEndpoint endpoint = new HadoopIgfsEndpoint(split0.file().getAuthority());
 
-                IgfsEx igfs = null;
-
-                if (F.eq(ignite.name(), endpoint.grid()))
-                    igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
+                IgfsEx igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
 
                 if (igfs != null && !igfs.isProxy(split0.file())) {
                     IgfsPath path = new IgfsPath(split0.file());

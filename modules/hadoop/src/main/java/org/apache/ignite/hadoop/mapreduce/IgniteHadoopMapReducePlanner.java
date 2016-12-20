@@ -123,6 +123,7 @@ public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner
      * @param nodes Nodes.
      * @param nodeLoads Node load tracker.
      * @return Node ID.
+     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
     private UUID nodeForSplit(HadoopInputSplit split, Collection<UUID> topIds, Map<String, Collection<UUID>> nodes,
@@ -133,10 +134,7 @@ public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner
             if (IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
                 HadoopIgfsEndpoint endpoint = new HadoopIgfsEndpoint(split0.file().getAuthority());
 
-                IgfsEx igfs = null;
-
-                if (F.eq(ignite.name(), endpoint.grid()))
-                    igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
+                IgfsEx igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
 
                 if (igfs != null && !igfs.isProxy(split0.file())) {
                     IgfsPath path = new IgfsPath(split0.file());

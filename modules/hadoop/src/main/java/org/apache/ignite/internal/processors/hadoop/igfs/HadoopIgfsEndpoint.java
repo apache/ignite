@@ -38,9 +38,6 @@ public class HadoopIgfsEndpoint {
     /** IGFS name. */
     private final String igfsName;
 
-    /** Grid name. */
-    private final String gridName;
-
     /** Host. */
     private final String host;
 
@@ -66,9 +63,6 @@ public class HadoopIgfsEndpoint {
             if (endpoint.igfs() != null)
                 sb.append(endpoint.igfs());
 
-            if (endpoint.grid() != null)
-                sb.append(":").append(endpoint.grid());
-
             return new URI(uri.getScheme(), sb.length() != 0 ? sb.toString() : null, endpoint.host(), endpoint.port(),
                 uri.getPath(), uri.getQuery(), uri.getFragment());
         }
@@ -93,29 +87,16 @@ public class HadoopIgfsEndpoint {
 
         if (tokens.length == 1) {
             igfsName = null;
-            gridName = null;
 
             hostPort = hostPort(connStr, connStr);
         }
         else if (tokens.length == 2) {
             String authStr = tokens[0];
 
-            if (authStr.isEmpty()) {
-                gridName = null;
+            if (authStr.isEmpty())
                 igfsName = null;
-            }
-            else {
-                String[] authTokens = authStr.split(":", -1);
-
-                igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
-
-                if (authTokens.length == 1)
-                    gridName = null;
-                else if (authTokens.length == 2)
-                    gridName = F.isEmpty(authTokens[1]) ? null : authTokens[1];
-                else
-                    throw new IgniteCheckedException("Invalid connection string format: " + connStr);
-            }
+            else
+                igfsName = authStr;
 
             hostPort = hostPort(connStr, tokens[1]);
         }
@@ -173,13 +154,6 @@ public class HadoopIgfsEndpoint {
      */
     @Nullable public String igfs() {
         return igfsName;
-    }
-
-    /**
-     * @return Grid name.
-     */
-    @Nullable public String grid() {
-        return gridName;
     }
 
     /**
