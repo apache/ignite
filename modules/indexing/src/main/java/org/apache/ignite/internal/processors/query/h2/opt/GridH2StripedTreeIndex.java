@@ -157,18 +157,15 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
 
     /** {@inheritDoc} */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = null;
+        if (!isSnapshotEnabled())
+            return tree();
 
-        if (isSnapshotEnabled())
-            res = threadLocalSnapshot();
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
 
-        if (res != null)
-            return res;
+        if (res == null)
+            res = tree();
 
-        if(qCtx.get() != null)
-            return segments[qCtx.get().segment()];
-
-        return tree();
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -238,34 +235,6 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
         }
 
         return null;
-    }
-
-    /**
-     * Range request can be run in separate thread, so we need to restore GridH2QueryContext,
-     * but GridH2QueryContext does not allow to have same context instance in different threads.
-     * See {@link GridH2QueryContext#set(GridH2QueryContext)}
-     *
-     * TODO: this ugly thing should be refactored */
-    ThreadLocal<GridH2QueryContext> qCtx = new ThreadLocal<>();
-
-    /**
-     * @param node Requesting node.
-     * @param msg Request message.
-     */
-    protected void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
-        GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
-            msg.originNodeId(),
-            msg.queryId(),
-            msg.segment(),
-            MAP);
-
-        qCtx.set(qctx);
-        try {
-            super.onIndexRangeRequest(node, msg);
-        }
-        finally {
-            qCtx.remove();
-        }
     }
 
     /** */
