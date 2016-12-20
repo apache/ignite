@@ -289,6 +289,16 @@ namespace ignite
                         }
 
                         /**
+                         * Check if the query has listener.
+                         *
+                         * @return True if the query has listener.
+                         */
+                        bool HasListener() const
+                        {
+                            return !lsnr.IsNull();
+                        }
+
+                        /**
                          * Get cache entry event listener.
                          *
                          * @return Cache entry event listener.

@@ -44,6 +44,7 @@ namespace ignite
                         env(env),
                         handle(handle),
                         javaRef(javaRef),
+                        mutex(),
                         extracted(false)
                     {
                         // No-op.
@@ -60,6 +61,8 @@ namespace ignite
 
                     QueryCursorImpl* ContinuousQueryHandleImpl::GetInitialQueryCursor(IgniteError& err)
                     {
+                        CsLockGuard guard(mutex);
+
                         if (extracted)
                         {
                             err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,

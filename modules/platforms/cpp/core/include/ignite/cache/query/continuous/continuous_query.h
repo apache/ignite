@@ -101,7 +101,6 @@ namespace ignite
                         // No-op.
                     }
 
-
                     /**
                      * Set local flag.
                      *
@@ -203,7 +202,7 @@ namespace ignite
                      *     node where continuous query execution has been
                      *     started.
                      */
-                    void SetListener(event::CacheEntryEventListener<K, V>& val)
+                    void SetListener(Reference<event::CacheEntryEventListener<K, V>> lsnr)
                     {
                         impl.Get()->SetListener(val);
                     }

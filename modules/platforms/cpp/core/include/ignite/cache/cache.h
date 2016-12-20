@@ -1370,6 +1370,14 @@ namespace ignite
             {
                 using namespace impl::cache::query::continuous;
 
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
                 ContinuousQueryHandleImpl* cqImpl;
                 cqImpl = impl.Get()->QueryContinuous(qry.impl, err);
 
@@ -1414,6 +1422,14 @@ namespace ignite
                 const Q& initialQry, IgniteError& err)
             {
                 using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
 
                 ContinuousQueryHandleImpl* cqImpl;
                 cqImpl = impl.Get()->QueryContinuous(qry.impl, initialQry, err);

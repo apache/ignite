@@ -86,6 +86,9 @@ namespace ignite
                         /** Shared pointer to query. Kept for query to live long enough. */
                         SP_ContinuousQueryImplBase qry;
 
+                        /** Mutex. */
+                        common::concurrent::CriticalSection mutex;
+
                         /** Cursor extracted. */
                         bool extracted;
                     };
