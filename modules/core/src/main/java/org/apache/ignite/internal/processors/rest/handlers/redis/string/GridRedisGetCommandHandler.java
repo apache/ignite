@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -44,9 +46,21 @@ public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
         GET
     );
 
-    /** {@inheritDoc} */
-    public GridRedisGetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    /** Grid context. */
+    private final GridKernalContext ctx;
+
+    /**
+     * Handler constructor.
+     *
+     * @param log Logger to use.
+     * @param hnd Rest handler.
+     * @param ctx Context.
+     */
+    public GridRedisGetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
+        GridKernalContext ctx) {
         super(log, hnd);
+
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -70,8 +84,20 @@ public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        if (restRes.getResponse() == null)
-            return GridRedisProtocolParser.nil();
+        if (restRes.getResponse() == null) {
+            // check if an atomic long with the key exists (related to incr/decr).
+            IgniteAtomicLong l = ctx.grid().atomicLong(params.get(0), 0, false);
+
+            long val;
+            try {
+                val = l.get();
+            }
+            catch (Exception ignored) {
+                return GridRedisProtocolParser.nil();
+            }
+
+            return GridRedisProtocolParser.toBulkString(val);
+        }
 
         if (restRes.getResponse() instanceof String)
             return GridRedisProtocolParser.toBulkString(restRes.getResponse());

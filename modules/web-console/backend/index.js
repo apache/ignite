@@ -82,9 +82,11 @@ Promise.all([injector('settings'), injector('app'), injector('agent-manager'), i
         server.on('listening', _onListening.bind(null, server.address()));
 
         app.listen(server);
+
+        agentMgr.attach(server);
         browserMgr.attach(server);
 
-        // Start agent server.
+        // Start legacy agent server.
         const agentServer = settings.agent.SSLOptions
             ? https.createServer(settings.agent.SSLOptions) : http.createServer();
 
@@ -92,7 +94,7 @@ Promise.all([injector('settings'), injector('app'), injector('agent-manager'), i
         agentServer.on('error', _onError.bind(null, settings.agent.port));
         agentServer.on('listening', _onListening.bind(null, agentServer.address()));
 
-        agentMgr.attach(agentServer);
+        agentMgr.attachLegacy(agentServer);
 
         // Used for automated test.
         if (process.send)

@@ -140,15 +140,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final GridCacheMvccCallback cb = new GridCacheMvccCallback() {
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked"})
-        @Override public void onOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate prev,
-            final GridCacheMvccCandidate owner) {
+        @Override public void onOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate owner) {
             int nested = nestedLsnrCalls.get();
 
             if (nested < MAX_NESTED_LSNR_CALLS) {
                 nestedLsnrCalls.set(nested + 1);
 
                 try {
-                    notifyOwnerChanged(entry, prev, owner);
+                    notifyOwnerChanged(entry, owner);
                 }
                 finally {
                     nestedLsnrCalls.set(nested);
@@ -157,7 +156,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             else {
                 cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
-                        notifyOwnerChanged(entry, prev, owner);
+                        notifyOwnerChanged(entry, owner);
                     }
                 }, true);
             }
@@ -182,19 +181,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param entry Entry to notify callback for.
-     * @param prev Previous lock owner.
      * @param owner Current lock owner.
      */
-    private void notifyOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate prev,
-        final GridCacheMvccCandidate owner) {
+    private void notifyOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate owner) {
         assert entry != null;
-        assert owner != prev : "New and previous owner are identical instances: " + owner;
-        assert owner == null || prev == null || !owner.version().equals(prev.version()) :
-            "New and previous owners have identical versions [owner=" + owner + ", prev=" + prev + ']';
 
         if (log.isDebugEnabled())
-            log.debug("Received owner changed callback [" + entry.key() + ", owner=" + owner + ", prev=" +
-                prev + ']');
+            log.debug("Received owner changed callback [" + entry.key() + ", owner=" + owner + ']');
 
         if (owner != null && (owner.local() || owner.nearLocal())) {
             Collection<GridCacheMvccFuture<?>> futCol = mvccFuts.get(owner.version());
@@ -226,7 +219,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Lock future not found for owner change callback (will try transaction futures) [owner=" +
-                owner + ", prev=" + prev + ", entry=" + entry + ']');
+                owner + ", entry=" + entry + ']');
 
         // If no future was found, delegate to transaction manager.
         if (cctx.tm().onOwnerChanged(entry, owner)) {

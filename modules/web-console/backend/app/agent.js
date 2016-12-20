@@ -297,6 +297,23 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Node ids.
+         * @param {Number} since Metrics since.
+         * @returns {Promise}
+         */
+        queryDetailMetrics(demo, nids, since) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheQueryDetailMetricsCollectorTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', since);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
          * @param {String} cacheName Cache name.
          * @returns {Promise}
          */
@@ -634,6 +651,19 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 });
         }
 
+        attachLegacy(srv) {
+            /**
+             * @type {socketIo.Server}
+             */
+            const io = socketio(srv);
+
+            io.on('connection', (socket) => {
+                socket.on('agent:auth', (data, cb) => {
+                    return cb('You are using an older version of the agent. Please reload agent archive');
+                });
+            });
+        }
+
         /**
          * @param {http.Server|https.Server} srv Server instance that we want to attach agent handler.
          */
@@ -646,7 +676,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
             /**
              * @type {socketIo.Server}
              */
-            this._socket = socketio(this._server);
+            this._socket = socketio(this._server, {path: '/agents'});
 
             this._socket.on('connection', (socket) => {
                 socket.on('agent:auth', (data, cb) => {
