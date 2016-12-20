@@ -38,22 +38,24 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
         touch(txEntry.cached(), null);
     }
 
+    private static final GridCacheVersion VER = new GridCacheVersion();
+
     /** {@inheritDoc} */
     @Override public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
         if (e.detached())
             return;
 
         try {
-            if (e.markObsoleteIfEmpty(null) || e.obsolete()) {
-                e.context().cache().removeEntry(e);
+//            if (e.markObsoleteIfEmpty(null) || e.obsolete()) {
+//                e.context().cache().removeEntry(e);
+//
+//                return;
+//            }
 
-                return;
-            }
+            boolean evicted = e.evictInternal(VER, null);
 
-            boolean evicted = e.evictInternal(cctx.versions().next(), null);
-
-            if (evicted)
-                cctx.cache().removeEntry(e);
+//            if (evicted)
+//                cctx.cache().removeEntry(e);
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);

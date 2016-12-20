@@ -273,6 +273,20 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return seg.acquirePage(cacheId, pageId, false);
     }
 
+    @Override
+    public Page readPage(int cacheId, long pageId) throws IgniteCheckedException {
+        Segment seg = segment(pageId);
+
+        return seg.acquireReadPage(cacheId, pageId, false);
+    }
+
+    @Override
+    public long pageAddr(int cacheId, long pageId) throws IgniteCheckedException {
+        Segment seg = segment(pageId);
+
+        return seg.address(cacheId, pageId);
+    }
+
     /** {@inheritDoc} */
     @Override public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
         Segment seg = segment(pageId);
@@ -534,6 +548,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
         }
 
+        long address(int cacheId, long pageId) {
+            return absolute(pageId) + PageMemoryNoStoreImpl.PAGE_OVERHEAD;
+        }
+
         /**
          * @param pageId Page ID to pin.
          * @return Pinned page impl.
@@ -542,27 +560,53 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         private PageNoStoreImpl acquirePage(int cacheId, long pageId, boolean restore) {
             long absPtr = absolute(pageId);
 
-            long marker = GridUnsafe.getLong(absPtr);
+//            long marker = GridUnsafe.getLong(absPtr);
+//
+//            if (marker != PAGE_MARKER)
+//                throw new IllegalStateException("Page was not allocated [absPtr=" + U.hexLong(absPtr) +
+//                    ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) +
+//                    ", marker=" + U.hexLong(marker) + ']');
+//
+//            while (true) {
+//                long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
+//
+//                if (pinCnt < 0)
+//                    throw new IllegalStateException("Page has been deallocated [absPtr=" + U.hexLong(absPtr) +
+//                        ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) + ", pinCnt=" + pinCnt + ']');
+//
+//                if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt + 1))
+//                    break;
+//            }
+//
+//            acquiredPages.incrementAndGet();
 
-            if (marker != PAGE_MARKER)
-                throw new IllegalStateException("Page was not allocated [absPtr=" + U.hexLong(absPtr) +
-                    ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) +
-                    ", marker=" + U.hexLong(marker) + ']');
+            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, idx, absPtr, cacheId, pageId, restore, true);
+        }
 
-            while (true) {
-                long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
+        private PageNoStoreImpl acquireReadPage(int cacheId, long pageId, boolean restore) {
+            long absPtr = absolute(pageId);
 
-                if (pinCnt < 0)
-                    throw new IllegalStateException("Page has been deallocated [absPtr=" + U.hexLong(absPtr) +
-                        ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) + ", pinCnt=" + pinCnt + ']');
+//            long marker = GridUnsafe.getLong(absPtr);
+//
+//            if (marker != PAGE_MARKER)
+//                throw new IllegalStateException("Page was not allocated [absPtr=" + U.hexLong(absPtr) +
+//                    ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) +
+//                    ", marker=" + U.hexLong(marker) + ']');
+//
+//            while (true) {
+//                long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
+//
+//                if (pinCnt < 0)
+//                    throw new IllegalStateException("Page has been deallocated [absPtr=" + U.hexLong(absPtr) +
+//                        ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) + ", pinCnt=" + pinCnt + ']');
+//
+//                if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt + 1))
+//                    break;
+//            }
+//
+//            acquiredPages.incrementAndGet();
 
-                if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt + 1))
-                    break;
-            }
-
-            acquiredPages.incrementAndGet();
-
-            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, idx, absPtr, cacheId, pageId, restore);
+            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, idx, absPtr, cacheId, pageId, restore, false);
         }
 
         /**

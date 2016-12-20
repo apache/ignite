@@ -44,7 +44,7 @@ import sun.misc.Unsafe;
  */
 public abstract class GridUnsafe {
     /** Unsafe. */
-    private static final Unsafe UNSAFE = unsafe();
+    public static final Unsafe UNSAFE = unsafe();
 
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
@@ -84,6 +84,22 @@ public abstract class GridUnsafe {
      */
     private GridUnsafe() {
         // No-op.
+    }
+
+    public static long getLong(long buf, int off) {
+        return UNSAFE.getLong(buf + off);
+    }
+
+    public static int getInt(long buf, int off) {
+        return UNSAFE.getInt(buf + off);
+    }
+
+    public static byte getByte(long buf, int off) {
+        return UNSAFE.getByte(buf + off);
+    }
+
+    public static short getShort(long buf, int off) {
+        return UNSAFE.getShort(buf + off);
     }
 
     /**

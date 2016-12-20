@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesLis
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Base format for all the page types.
@@ -170,6 +171,10 @@ public abstract class PageIO {
         return buf.getShort(TYPE_OFF) & 0xFFFF;
     }
 
+    public static int getType(long buf) {
+        return GridUnsafe.UNSAFE.getShort(buf + TYPE_OFF) & 0xFFFF;
+    }
+
     /**
      * @param buf Buffer.
      * @param type Type.
@@ -204,6 +209,10 @@ public abstract class PageIO {
      */
     public static long getPageId(ByteBuffer buf) {
         return buf.getLong(PAGE_ID_OFF);
+    }
+
+    public static long getPageId(long buf) {
+        return GridUnsafe.getLong(buf, PAGE_ID_OFF);
     }
 
     /**
@@ -301,6 +310,12 @@ public abstract class PageIO {
         int ver = getVersion(buf);
 
         return getPageIO(type, ver);
+    }
+
+    public static <Q extends PageIO> Q getPageIO(long buf) throws IgniteCheckedException {
+        int type = getType(buf);
+
+        return getPageIO(type, 1);
     }
 
     /**

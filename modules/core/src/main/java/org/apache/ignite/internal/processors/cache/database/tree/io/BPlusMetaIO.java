@@ -18,14 +18,17 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * IO routines for B+Tree meta pages.
  */
 public class BPlusMetaIO extends PageIO {
+    public static final BPlusMetaIO VERSION1 = new BPlusMetaIO(1);
+
     /** */
     public static final IOVersions<BPlusMetaIO> VERSIONS = new IOVersions<>(
-        new BPlusMetaIO(1)
+        VERSION1
     );
 
     /** */
@@ -56,6 +59,10 @@ public class BPlusMetaIO extends PageIO {
      */
     public int getLevelsCount(ByteBuffer buf) {
         return buf.get(LVLS_OFF);
+    }
+
+    public int getLevelsCount(long buf) {
+        return GridUnsafe.getByte(buf, LVLS_OFF);
     }
 
     /**
@@ -95,6 +102,10 @@ public class BPlusMetaIO extends PageIO {
         return buf.getLong(offset(lvl));
     }
 
+    public long getFirstPageId(long buf, int lvl) {
+        return GridUnsafe.getLong(buf, offset(lvl));
+    }
+
     /**
      * @param buf    Buffer.
      * @param lvl    Level.
@@ -113,6 +124,14 @@ public class BPlusMetaIO extends PageIO {
      * @return Root level.
      */
     public int getRootLevel(ByteBuffer buf) {
+        int lvls = getLevelsCount(buf); // The highest level page is root.
+
+        assert lvls > 0 : lvls;
+
+        return lvls - 1;
+    }
+
+    public int getRootLevel(long buf) {
         int lvls = getLevelsCount(buf); // The highest level page is root.
 
         assert lvls > 0 : lvls;

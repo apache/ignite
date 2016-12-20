@@ -119,7 +119,7 @@ public class OffheapReadWriteLock {
                     return false;
 
                 if (canReadLock(state)) {
-                    if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, 1, 0, 0)))
+                    if (GridUnsafe.compareAndSwapLong(null, lock, state, incLock(state)))
                         return true;
                     else
                         // Retry CAS, do not count as spin cycle.
@@ -153,11 +153,13 @@ public class OffheapReadWriteLock {
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
-            if (lockCount(state) <= 0)
+            int lockCnt = lockCount(state);
+
+            if (lockCnt <= 0)
                 throw new IllegalMonitorStateException("Attempted to release a read lock while not holding it " +
                     "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
-            long updated = updateState(state, -1, 0, 0);
+            long updated = decLock(state, lockCnt);
 
             assert updated != 0;
 
@@ -574,6 +576,35 @@ public class OffheapReadWriteLock {
 
         if (writersWait > MAX_WAITERS)
             throw new IllegalStateException("Failed to add write waiter (too many waiting threads): " + MAX_WAITERS);
+
+        assert readersWait >= 0 : readersWait;
+        assert writersWait >= 0 : writersWait;
+        assert lock >= -1;
+
+        return buildState(writersWait, readersWait, tag, lock);
+    }
+
+    private long incLock(long state) {
+        int lock = lockCount(state);
+        int tag = tag(state);
+        int readersWait = readersWaitCount(state);
+        int writersWait = writersWaitCount(state);
+
+        lock++;
+
+        assert readersWait >= 0 : readersWait;
+        assert writersWait >= 0 : writersWait;
+        assert lock >= -1;
+
+        return buildState(writersWait, readersWait, tag, lock);
+    }
+
+    private long decLock(long state, int lock) {
+        int tag = tag(state);
+        int readersWait = readersWaitCount(state);
+        int writersWait = writersWaitCount(state);
+
+        lock--;
 
         assert readersWait >= 0 : readersWait;
         assert writersWait >= 0 : writersWait;

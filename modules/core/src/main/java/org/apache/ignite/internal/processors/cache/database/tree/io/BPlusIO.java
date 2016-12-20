@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Abstract IO routines for B+Tree pages.
@@ -88,6 +89,10 @@ public abstract class BPlusIO<L> extends PageIO {
         return buf.getLong(FORWARD_OFF);
     }
 
+    public final long getForward(long buf) {
+        return GridUnsafe.getLong(buf, FORWARD_OFF);
+    }
+
     /**
      * @param buf Buffer.
      * @param pageId Forward page ID.
@@ -106,6 +111,10 @@ public abstract class BPlusIO<L> extends PageIO {
         return buf.getLong(REMOVE_ID_OFF);
     }
 
+    public final long getRemoveId(long buf) {
+        return GridUnsafe.getLong(buf, REMOVE_ID_OFF);
+    }
+
     /**
      * @param buf Buffer.
      * @param rmvId Remove ID.
@@ -122,6 +131,14 @@ public abstract class BPlusIO<L> extends PageIO {
      */
     public final int getCount(ByteBuffer buf) {
         int cnt = buf.getShort(CNT_OFF) & 0xFFFF;
+
+        assert cnt >= 0: cnt;
+
+        return cnt;
+    }
+
+    public final int getCount(long buf) {
+        int cnt = GridUnsafe.getShort(buf, CNT_OFF) & 0xFFFF;
 
         assert cnt >= 0: cnt;
 

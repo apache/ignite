@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Utility to read and write {@link GridCacheVersion} instances.
@@ -136,6 +137,20 @@ public class CacheVersionIO {
         int nodeOrderDrId = buf.getInt();
         long globalTime = buf.getLong();
         long order = buf.getLong();
+
+        return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+    }
+
+    public static GridCacheVersion read(long buf, boolean allowNull) throws IgniteCheckedException {
+        byte protoVer = checkProtocolVersion(GridUnsafe.getByte(buf, 0), allowNull);
+
+        if (protoVer == NULL_PROTO_VER)
+            return null;
+
+        int topVer = GridUnsafe.getInt(buf, 1);
+        int nodeOrderDrId = GridUnsafe.getInt(buf, 5);
+        long globalTime = GridUnsafe.getInt(buf, 9);
+        long order = GridUnsafe.getInt(buf, 17);
 
         return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
     }

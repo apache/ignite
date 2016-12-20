@@ -30,10 +30,12 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import sun.misc.Unsafe;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -70,6 +72,40 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     public static int compare(byte[] bytes, GridCacheContext<?, ?> cctx, long link) throws IgniteCheckedException {
+        long nextLink = link;
+        boolean first = true;
+
+        do {
+            long buf = cctx.shared().database().pageMemory().pageAddr(cctx.cacheId(), pageId(nextLink));
+
+            DataPageIO io = DataPageIO.VERSION1;
+
+            long addr = io.getPositionOnPayload(buf, itemId(nextLink));
+
+            addr = addr + buf;
+
+            int len = GridUnsafe.UNSAFE.getInt(addr);
+
+            //byte type = buf.get();
+
+            int size = Math.min(bytes.length, len);
+
+            addr += 5;
+
+            for (int i = 0; i < size; i++) {
+                byte b1 = GridUnsafe.UNSAFE.getByte(addr++);
+                byte b2 = bytes[i];
+
+                if (b1 != b2)
+                    return b1 > b2 ? 1 : -1;
+            }
+
+            return Integer.compare(len, bytes.length);
+        }
+        while(nextLink != 0);
+    }
+
+    public static int compare0(byte[] bytes, GridCacheContext<?, ?> cctx, long link) throws IgniteCheckedException {
         long nextLink = link;
         boolean first = true;
 
@@ -124,6 +160,35 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
+        assert cctx != null : "cctx";
+        assert link != 0 : "link";
+        assert key == null : "key";
+
+        final CacheObjectContext coctx = cctx.cacheObjectContext();
+
+        long nextLink = link;
+        IncompleteObject<?> incomplete = null;
+        boolean first = true;
+
+        long buf = cctx.shared().database().pageMemory().pageAddr(cctx.cacheId(), pageId(nextLink));
+
+        DataPageIO io = DataPageIO.VERSION1;
+
+        long addr = io.getPositionOnPayload(buf, itemId(nextLink));
+
+        addr = addr + buf;
+
+        readFullRow(coctx, addr, keyOnly);
+    }
+
+    /**
+     * Read row from data pages.
+     *
+     * @param cctx Cache context.
+     * @param keyOnly {@code true} If need to read only key object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final void initFromLink0(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
         assert cctx != null : "cctx";
         assert link != 0 : "link";
         assert key == null : "key";
@@ -243,6 +308,37 @@ public class CacheDataRowAdapter implements CacheDataRow {
         val = coctx.processor().toCacheObject(coctx, buf);
         ver = CacheVersionIO.read(buf, false);
         expireTime = buf.getLong();
+
+        //assert isReady(): "ready";
+    }
+
+    private void readFullRow(CacheObjectContext coctx, long buf, boolean keyOnly) throws IgniteCheckedException {
+//        key = coctx.processor().toKeyCacheObject(coctx, buf);
+//
+//        if (keyOnly) {
+//            assert key != null: "key";
+//
+//            return;
+//        }
+        int len = GridUnsafe.getInt(buf, 0);
+
+        // skip key type and bytes.
+        buf += len + 5;
+
+        len = GridUnsafe.getInt(buf, 0);
+        byte type = GridUnsafe.getByte(buf, 4);
+
+        byte[] data = U.copyMemory(buf + 5, len);
+
+        val = coctx.processor().toCacheObject(coctx, type, data);
+
+        buf += len + 5;
+
+        ver = CacheVersionIO.read(buf, false);
+
+        buf += 25;
+
+        expireTime = GridUnsafe.getLong(buf);
 
         //assert isReady(): "ready";
     }

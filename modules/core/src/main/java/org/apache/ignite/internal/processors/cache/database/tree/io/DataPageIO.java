@@ -27,15 +27,18 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import sun.misc.Unsafe;
 
 /**
  * Data pages IO.
  */
 public class DataPageIO extends PageIO {
+    public static final DataPageIO VERSION1 = new DataPageIO(1);
     /** */
     public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
-        new DataPageIO(1)
+        VERSION1
     );
 
     /** */
@@ -245,6 +248,10 @@ public class DataPageIO extends PageIO {
         return buf.get(DIRECT_CNT_OFF) & 0xFF;
     }
 
+    private int getDirectCount(long buf) {
+        return GridUnsafe.UNSAFE.getByte(buf + DIRECT_CNT_OFF) & 0xFF;
+    }
+
     /**
      * @param buf Buffer.
      * @param cnt Indirect count.
@@ -279,6 +286,10 @@ public class DataPageIO extends PageIO {
         return buf.get(INDIRECT_CNT_OFF) & 0xFF;
     }
 
+    private int getIndirectCount(long buf) {
+        return GridUnsafe.UNSAFE.getByte(buf + INDIRECT_CNT_OFF) & 0xFF;
+    }
+
     /**
      * @param buf Buffer.
      * @return Number of free entry slots.
@@ -295,6 +306,26 @@ public class DataPageIO extends PageIO {
      * @return Found index of indirect item.
      */
     private int findIndirectItemIndex(ByteBuffer buf, int itemId, int directCnt, int indirectCnt) {
+        int low = directCnt;
+        int high = directCnt + indirectCnt - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+
+            int cmp = Integer.compare(itemId(getItem(buf, mid)), itemId);
+
+            if (cmp < 0)
+                low = mid + 1;
+            else if (cmp > 0)
+                high = mid - 1;
+            else
+                return mid; // found
+        }
+
+        throw new IllegalStateException("Item not found: " + itemId);
+    }
+
+    private int findIndirectItemIndex(long buf, int itemId, int directCnt, int indirectCnt) {
         int low = directCnt;
         int high = directCnt + indirectCnt - 1;
 
@@ -390,6 +421,27 @@ public class DataPageIO extends PageIO {
         return b.toString();
     }
 
+    private int getDataOffset(long buf, int itemId) {
+        assert checkIndex(itemId): itemId;
+
+        int directCnt = getDirectCount(buf);
+
+        if (itemId >= directCnt) { // Need to do indirect lookup.
+            int indirectCnt = getIndirectCount(buf);
+
+            int indirectItemIdx = findIndirectItemIndex(buf, itemId, directCnt, indirectCnt);
+
+            assert indirectItemIdx >= directCnt : indirectItemIdx + " " + directCnt;
+            assert indirectItemIdx < directCnt + indirectCnt: indirectItemIdx + " " + directCnt + " " + indirectCnt;
+
+            itemId = directItemIndex(getItem(buf, indirectItemIdx));
+
+            assert itemId >= 0 && itemId < directCnt: itemId + " " + directCnt + " " + indirectCnt; // Direct item.
+        }
+
+        return directItemToOffset(getItem(buf, itemId));
+    }
+
     /**
      * @param buf Buffer.
      * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
@@ -463,6 +515,19 @@ public class DataPageIO extends PageIO {
         return nextLink;
     }
 
+    public long getPositionOnPayload(long buf, final int itemId) {
+        int dataOff = getDataOffset(buf, itemId);
+
+        boolean fragmented = false;
+        //long nextLink = 0;//fragmented ? getNextFragmentLink(buf, dataOff) : 0;
+
+//        int payloadSize = getPageEntrySize(buf, dataOff, 0);
+//        buf.position(dataOff + PAYLOAD_LEN_SIZE + (fragmented ? LINK_SIZE : 0));
+//        buf.limit(buf.position() + payloadSize);
+
+        return dataOff + PAYLOAD_LEN_SIZE;
+    }
+
     /**
      * @param buf Buffer.
      * @param idx Item index.
@@ -470,6 +535,10 @@ public class DataPageIO extends PageIO {
      */
     private short getItem(ByteBuffer buf, int idx) {
         return buf.getShort(itemOffset(idx));
+    }
+
+    private short getItem(long buf, int idx) {
+        return GridUnsafe.UNSAFE.getShort(buf + itemOffset(idx));
     }
 
     /**

@@ -43,6 +43,8 @@ public interface Page extends AutoCloseable {
      */
     public ByteBuffer getForRead();
 
+    public long getForReadAddr();
+
     /**
      * Releases reserved page. Released page can be evicted from RAM after flushing modifications to disk.
      */
@@ -84,4 +86,6 @@ public interface Page extends AutoCloseable {
      * Release page.
      */
     @Override public void close();
+
+    public long address();
 }

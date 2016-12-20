@@ -211,6 +211,16 @@ public class MetadataStorage implements MetaStore {
             return Integer.compare(len, row.idxName.length);
         }
 
+        @Override
+        protected int compare(BPlusIO<IndexItem> io, long buf, int idx, IndexItem row) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected IndexItem getRow(BPlusIO<IndexItem> io, long buf, int idx) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
         /** {@inheritDoc} */
         @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final ByteBuffer buf,
             final int idx) throws IgniteCheckedException {

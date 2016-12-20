@@ -1206,6 +1206,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             return Long.compare(n1, n2);
         }
 
+        @Override
+        protected int compare(BPlusIO<Long> io, long buf, int idx, Long row) throws IgniteCheckedException {
+            return 0;
+        }
+
+        @Override
+        protected Long getRow(BPlusIO<Long> io, long buf, int idx) throws IgniteCheckedException {
+            return null;
+        }
+
         /** {@inheritDoc} */
         @Override protected Long getRow(BPlusIO<Long> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
             assert io.canGetRow() : io;

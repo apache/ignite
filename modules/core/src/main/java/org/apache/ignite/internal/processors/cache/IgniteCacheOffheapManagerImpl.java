@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -1133,6 +1134,28 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return CacheDataRowAdapter.compare(row.key().valueBytes(cctx.cacheObjectContext()), cctx, link);
         }
 
+        @Override
+        protected CacheDataRow getRow(BPlusIO<CacheSearchRow> io, long buf, int idx) throws IgniteCheckedException {
+            int hash = ((RowLinkIO)io).getHash(buf, idx);
+            long link = ((RowLinkIO)io).getLink(buf, idx);
+
+            return rowStore.dataRow(hash, link);
+        }
+
+        @Override
+        protected int compare(BPlusIO<CacheSearchRow> io, long buf, int idx, CacheSearchRow row) throws IgniteCheckedException {
+            int hash = ((RowLinkIO)io).getHash(buf, idx);
+
+            int cmp = Integer.compare(hash, row.hash());
+
+            if (cmp != 0)
+                return cmp;
+
+            long link = ((RowLinkIO)io).getLink(buf, idx);
+
+            return CacheDataRowAdapter.compare(row.key().valueBytes(cctx.cacheObjectContext()), cctx, link);
+        }
+
         /** {@inheritDoc} */
         @Override protected CacheDataRow getRow(BPlusIO<CacheSearchRow> io, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
@@ -1196,12 +1219,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          */
         public long getLink(ByteBuffer buf, int idx);
 
+        public long getLink(long buf, int idx);
+
         /**
          * @param buf Buffer.
          * @param idx Index.
          * @return Key hash code.
          */
         public int getHash(ByteBuffer buf, int idx);
+
+        public int getHash(long buf, int idx);
     }
 
     /**
@@ -1251,9 +1278,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return buf.getLong(offset(idx));
         }
 
+        @Override
+        public long getLink(long buf, int idx) {
+            assert idx < getCount(buf) : idx;
+
+            return GridUnsafe.getLong(buf, offset(idx));
+        }
+
         /** {@inheritDoc} */
         @Override public int getHash(ByteBuffer buf, int idx) {
             return buf.getInt(offset(idx) + 8);
+        }
+
+        @Override public int getHash(long buf, int idx) {
+            return GridUnsafe.getInt(buf, offset(idx) + 8);
         }
     }
 
@@ -1304,6 +1342,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public int getHash(ByteBuffer buf, int idx) {
             return buf.getInt(offset(idx) + 8);
+        }
+
+        @Override public long getLink(long buf, int idx) {
+            assert idx < getCount(buf) : idx;
+
+            return GridUnsafe.getLong(buf, offset(idx));
+        }
+
+        @Override public int getHash(long buf, int idx) {
+            return GridUnsafe.getInt(buf, offset(idx) + 8);
         }
     }
 
@@ -1413,6 +1461,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             long link = ((PendingRowIO)io).getLink(buf, idx);
 
             return Long.compare(link, row.link);
+        }
+
+        @Override
+        protected int compare(BPlusIO<PendingRow> io, long buf, int idx, PendingRow row) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        protected PendingRow getRow(BPlusIO<PendingRow> io, long buf, int idx) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */

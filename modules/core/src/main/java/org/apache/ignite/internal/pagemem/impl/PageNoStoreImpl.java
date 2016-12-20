@@ -57,7 +57,7 @@ public class PageNoStoreImpl implements Page {
      * @param absPtr Absolute pointer.
      */
     public PageNoStoreImpl(
-        PageMemoryNoStoreImpl pageMem, int segIdx, long absPtr, int cacheId, long pageId, boolean noTagCheck
+        PageMemoryNoStoreImpl pageMem, int segIdx, long absPtr, int cacheId, long pageId, boolean noTagCheck, boolean needBuf
     ) {
         this.pageMem = pageMem;
         this.segIdx = segIdx;
@@ -67,7 +67,14 @@ public class PageNoStoreImpl implements Page {
         this.pageId = pageId;
         this.noTagCheck = noTagCheck;
 
-        buf = pageMem.wrapPointer(absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD, pageMem.pageSize());
+        if (needBuf)
+            buf = pageMem.wrapPointer(absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD, pageMem.pageSize());
+        else
+            buf = null;
+    }
+
+    @Override public long address() {
+        return absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD;
     }
 
     /** {@inheritDoc} */
@@ -86,6 +93,13 @@ public class PageNoStoreImpl implements Page {
             return reset(buf.asReadOnlyBuffer());
 
         return null;
+    }
+
+    @Override public long getForReadAddr() {
+        if (pageMem.readLockPage(absPtr, PageIdUtils.tag(pageId)))
+            return absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD;
+
+        return -1L;
     }
 
     /** {@inheritDoc} */
