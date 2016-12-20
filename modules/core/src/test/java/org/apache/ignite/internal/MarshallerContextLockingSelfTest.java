@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -39,7 +40,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
     private InnerLogger innerLog;
 
-    private GridKernalContext ctx;
+    private GridTestKernalContext ctx;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -53,6 +54,8 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                 return innerLog;
             }
         };
+
+        ctx.setSystemExecutorService(Executors.newFixedThreadPool(12));
     }
 
     /**
@@ -64,7 +67,8 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                 GridTestClassLoader classLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
-                    MarshallerMappingPersistence.class.getName(),
+                    MappingStoreTask.class.getName(),
+                    MarshallerMappingFileStore.class.getName(),
                     MarshallerMappingTransport.class.getName()
                 );
 
@@ -82,9 +86,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
         assertTrue(InternalExecutor.counter.get() == 0);
 
-        assertTrue(innerLog.contains("File already locked"));
-
         assertTrue(!innerLog.contains("Exception"));
+
+        assertTrue(innerLog.contains("File already locked"));
     }
 
     /**
@@ -105,7 +109,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 400; i++)
                 marshallerContext.onMappingAccepted(item);
         }
     }

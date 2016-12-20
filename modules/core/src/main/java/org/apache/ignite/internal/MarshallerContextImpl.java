@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,7 +69,10 @@ public class MarshallerContextImpl implements MarshallerContext {
     private final ConcurrentMap<Integer, MappedName> dfltCache = new ConcurrentHashMap8<>();
 
     /** */
-    private MarshallerMappingPersistence persistence;
+    private MarshallerMappingFileStore fileStore;
+
+    /** */
+    private ExecutorService execSrvc;
 
     /** */
     private MarshallerMappingTransport transport;
@@ -297,13 +300,12 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param item Item.
      */
-    public void onMappingAccepted(MarshallerMappingItem item) {
+    public void onMappingAccepted(final MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
         cache.replace(item.typeId(), new MappedName(item.className(), true));
 
-        //TODO move persisting to a separate thread
-        persistence.onMappingAccepted(item.platformId(), item.typeId(), item.className());
+        execSrvc.submit(new MappingStoreTask(fileStore, item));
     }
 
     /** {@inheritDoc} */
@@ -326,7 +328,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (mappedName != null)
             clsName = mappedName.className();
         else {
-            clsName = persistence.onMappingMiss(platformId, typeId);
+            clsName = fileStore.readMapping(platformId, typeId);
             if (clsName != null)
                 cache.putIfAbsent(typeId, new MappedName(clsName, true));
             else
@@ -414,9 +416,11 @@ public class MarshallerContextImpl implements MarshallerContext {
         assert ctx != null;
 
         IgniteConfiguration cfg = ctx.config();
+        String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-        persistence = new MarshallerMappingPersistence(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()), ctx.log(MarshallerMappingPersistence.class));
+        fileStore = new MarshallerMappingFileStore(workDir, ctx.log(MarshallerMappingFileStore.class));
         this.transport = transport;
+        execSrvc = ctx.getSystemExecutorService();
         isClientNode = ctx.clientNode();
     }
 

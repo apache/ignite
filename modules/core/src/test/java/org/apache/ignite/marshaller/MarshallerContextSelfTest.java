@@ -19,6 +19,7 @@ package org.apache.ignite.marshaller;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -37,9 +38,10 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
     private GridTestKernalContext ctx;
 
-    @Override
-    protected void beforeTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         ctx = newContext();
+        ctx.setSystemExecutorService(Executors.newSingleThreadExecutor());
     }
 
     /**

@@ -17,12 +17,12 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides capabilities of sending custom discovery events to propose new mapping or request missing mapping to {@link MarshallerContextImpl}.
@@ -54,7 +54,7 @@ public final class MarshallerMappingTransport {
      * @param cache Cache.
      */
     public GridFutureAdapter<MappingExchangeResult> awaitMappingAcceptance(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) {
-        GridFutureAdapter<MappingExchangeResult> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(item);
 
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
         if (oldFut != null)
@@ -65,10 +65,8 @@ public final class MarshallerMappingTransport {
         assert mappedName != null;
 
         //double check whether mapping is accepted, first check was in MarshallerContextImpl::registerClassName
-        if (mappedName.accepted()) {
+        if (mappedName.accepted())
             fut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
-            mappingExchSyncMap.remove(item, fut);
-        }
 
         return fut;
     }
@@ -78,7 +76,8 @@ public final class MarshallerMappingTransport {
      * @param cache Cache.
      */
     public GridFutureAdapter<MappingExchangeResult> proposeMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
-        GridFutureAdapter<MappingExchangeResult> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(item);
+
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
 
         if (oldFut != null)
@@ -90,19 +89,12 @@ public final class MarshallerMappingTransport {
             if (mapping != null) {
                 String mappedClsName = mapping.className();
 
-                //TODO introduce subclass of GridFutureAdapter to encapsulate this logic there
-                if (!mappedClsName.equals(item.className())) {
+                if (!mappedClsName.equals(item.className()))
                     fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(item, mappedClsName)));
-                    mappingExchSyncMap.remove(item, fut);
-                }
-                else if (mapping.accepted()) {
+                else if (mapping.accepted())
                     fut.onDone(MappingExchangeResult.createSuccessfulResult(mappedClsName));
-                    mappingExchSyncMap.remove(item, fut);
-                }
-                else if (stopping) {
+                else if (stopping)
                     fut.onDone(MappingExchangeResult.createExchangeDisabledResult());
-                    mappingExchSyncMap.remove(item, fut);
-                }
 
                 return fut;
             }
@@ -119,7 +111,7 @@ public final class MarshallerMappingTransport {
      * @param cache Cache.
      */
     public GridFutureAdapter<MappingExchangeResult> requestMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
-        GridFutureAdapter<MappingExchangeResult> newFut = new GridFutureAdapter<>();
+        MappingExchangeResultFuture newFut = new MappingExchangeResultFuture(item);
 
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, newFut);
 
@@ -130,7 +122,6 @@ public final class MarshallerMappingTransport {
             MappedName mappedName = cache.get(item.typeId());
             if (mappedName != null) {
                 newFut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
-                mappingExchSyncMap.remove(item, newFut);
 
                 return newFut;
             }
@@ -165,5 +156,35 @@ public final class MarshallerMappingTransport {
     /** */
     public boolean stopping() {
         return stopping;
+    }
+
+    /**
+     * Future to wait for mapping exchange result to arrive. Removes itself from map when completed.
+     */
+    private class MappingExchangeResultFuture extends GridFutureAdapter<MappingExchangeResult> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final MarshallerMappingItem mappingItem;
+
+        /**
+         * @param mappingItem Mapping item.
+         */
+        private MappingExchangeResultFuture(MarshallerMappingItem mappingItem) {
+            this.mappingItem = mappingItem;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable MappingExchangeResult res, @Nullable Throwable err) {
+            assert res != null;
+
+            boolean done = super.onDone(res, null);
+
+            if (done)
+                mappingExchSyncMap.remove(mappingItem, this);
+
+            return done;
+        }
     }
 }

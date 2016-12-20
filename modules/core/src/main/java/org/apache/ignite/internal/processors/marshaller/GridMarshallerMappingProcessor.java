@@ -114,7 +114,6 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                         assert fut != null: msg;
 
                         fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));
-                        mappingExchangeSyncMap.remove(msg.mappingItem(), fut);
                     }
                 }
             }
@@ -147,10 +146,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 
-            if (fut != null) {
-                fut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
-                mappingExchangeSyncMap.remove(item, fut);
-            }
+            assert fut != null : msg;
+
+            fut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
         }
     }
 
@@ -224,7 +222,6 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        //TODO cleanup marshaller context impl mappings
         cancelFutures(MappingExchangeResult.createFailureResult(new IgniteClientDisconnectedCheckedException(
                 ctx.cluster().clientReconnectFuture(),
                 "Failed to propose or request mapping, client node disconnected.")));

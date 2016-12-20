@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * It writes new mapping when it is accepted by all grid members and reads mapping when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
-final class MarshallerMappingPersistence {
+final class MarshallerMappingFileStore {
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -55,7 +55,7 @@ final class MarshallerMappingPersistence {
     /**
      * @param log Logger.
      */
-    MarshallerMappingPersistence(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
+    MarshallerMappingFileStore(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
         workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
         this.log = log;
     }
@@ -65,7 +65,7 @@ final class MarshallerMappingPersistence {
      * @param typeId Type id.
      * @param typeName Type name.
      */
-    void onMappingAccepted(byte platformId, int typeId, String typeName) {
+    void writeMapping(byte platformId, int typeId, String typeName) {
         String fileName = getFileName(platformId, typeId);
 
         Lock lock = fileLock(fileName);
@@ -107,7 +107,7 @@ final class MarshallerMappingPersistence {
      * @param platformId Platform id.
      * @param typeId Type id.
      */
-    String onMappingMiss(byte platformId, int typeId) throws IgniteCheckedException {
+    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
         String fileName = getFileName(platformId, typeId);
 
         Lock lock = fileLock(fileName);
