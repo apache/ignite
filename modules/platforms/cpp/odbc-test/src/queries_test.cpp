@@ -288,6 +288,77 @@ struct QueriesTestSuiteFixture
         return res;
     }
 
+    static std::string getTestString(int64_t ind)
+    {
+        std::stringstream builder;
+
+        builder << "String#" << ind;
+
+        return builder.str();
+    }
+
+    /**
+     * Insert requested number of TestType vlaues with all defaults except
+     * for the strFields, which are generated using getTestString().
+     *
+     * @param num Number of records to insert.
+     * @param merge Set to true to use merge instead.
+     */
+    void InsertTestStrings(int recordsNum, bool merge = false)
+    {
+        SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
+        SQLCHAR mergeReq[] = "MERGE INTO TestType(_key, strField) VALUES(?, ?)";
+
+        SQLRETURN ret;
+
+        ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int64_t key = 0;
+        char strField[1024] = { 0 };
+        SQLLEN strFieldLen = 0;
+
+        // Binding parameters.
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, sizeof(strField),
+            sizeof(strField), &strField, sizeof(strField), &strFieldLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Inserting values.
+        for (SQLSMALLINT i = 0; i < recordsNum; ++i)
+        {
+            key = i + 1;
+            std::string val = getTestString(i);
+
+            strncpy(strField, val.c_str(), sizeof(strField));
+            strFieldLen = SQL_NTS;
+
+            ret = SQLExecute(stmt);
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            ret = SQLMoreResults(stmt);
+
+            if (ret != SQL_NO_DATA)
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        }
+
+        // Resetting parameters.
+        ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -937,6 +1008,271 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
 
     BOOST_CHECK_GT(rowsNum, 0);
     BOOST_CHECK_LT(rowsNum, entriesNum);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    const int recordsNum = 100;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum);
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    // Binding columns.
+    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int selectedRecordsNum = 0;
+
+    ret = SQL_SUCCESS;
+
+    while (ret == SQL_SUCCESS)
+    {
+        ret = SQLFetch(stmt);
+
+        if (ret == SQL_NO_DATA)
+            break;
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        std::string expectedStr = getTestString(selectedRecordsNum);
+        int64_t expectedKey = selectedRecordsNum + 1;
+
+        BOOST_CHECK_EQUAL(key, expectedKey);
+
+        BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+        ++selectedRecordsNum;
+    }
+
+    BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    const int recordsNum = 100;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum);
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    SQLCHAR updateReq[] = "UPDATE TestType SET strField = 'Updated value' WHERE _key = 42";
+
+    SQLRETURN ret = SQLExecDirect(stmt, updateReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int selectedRecordsNum = 0;
+
+    ret = SQL_SUCCESS;
+
+    while (ret == SQL_SUCCESS)
+    {
+        ret = SQLFetch(stmt);
+
+        if (ret == SQL_NO_DATA)
+            break;
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int64_t expectedKey = selectedRecordsNum + 1;
+        std::string expectedStr;
+
+        BOOST_CHECK_EQUAL(key, expectedKey);
+
+        if (expectedKey == 42)
+            expectedStr = "Updated value";
+        else
+            expectedStr = getTestString(selectedRecordsNum);
+
+        BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+        ++selectedRecordsNum;
+    }
+
+    BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    const int recordsNum = 100;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum);
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    SQLCHAR updateReq[] = "DELETE FROM TestType WHERE (_key % 2) = 1";
+
+    SQLRETURN ret = SQLExecDirect(stmt, updateReq, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int selectedRecordsNum = 0;
+
+    ret = SQL_SUCCESS;
+
+    while (ret == SQL_SUCCESS)
+    {
+        ret = SQLFetch(stmt);
+
+        if (ret == SQL_NO_DATA)
+            break;
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int64_t expectedKey = (selectedRecordsNum + 1) * 2;
+        std::string expectedStr = getTestString(expectedKey - 1);
+
+        BOOST_CHECK_EQUAL(key, expectedKey);
+        BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+        ++selectedRecordsNum;
+    }
+
+    BOOST_CHECK_EQUAL(recordsNum / 2, selectedRecordsNum);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    const int recordsNum = 100;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum / 2);
+
+    // Merging values.
+    InsertTestStrings(recordsNum, true);
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    // Binding columns.
+    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int selectedRecordsNum = 0;
+
+    ret = SQL_SUCCESS;
+
+    while (ret == SQL_SUCCESS)
+    {
+        ret = SQLFetch(stmt);
+
+        if (ret == SQL_NO_DATA)
+            break;
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        std::string expectedStr = getTestString(selectedRecordsNum);
+        int64_t expectedKey = selectedRecordsNum + 1;
+
+        BOOST_CHECK_EQUAL(key, expectedKey);
+
+        BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+        ++selectedRecordsNum;
+    }
+
+    BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

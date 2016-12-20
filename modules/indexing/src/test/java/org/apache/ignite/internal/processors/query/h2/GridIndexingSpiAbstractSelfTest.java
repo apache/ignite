@@ -547,7 +547,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /**
          * @return Space name.
          */
-        public String space() {
+        String space() {
             return space;
         }
 
@@ -559,17 +559,29 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(final String name) {
             return new GridQueryProperty() {
+                /** */
                 @Override public Object value(Object key, Object val) throws IgniteCheckedException {
                     return TypeDesc.this.value(name, key, val);
                 }
 
+                /** */
+                @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+                    throw new UnsupportedOperationException();
+                }
+
+                /** */
                 @Override public String name() {
                     return name;
                 }
 
-                @Override
-                public Class<?> type() {
+                /** */
+                @Override public Class<?> type() {
                     return Object.class;
+                }
+
+                /** */
+                @Override public boolean key() {
+                    return false;
                 }
             };
         }
@@ -589,6 +601,18 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return null;
         }
 
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException {
+            assert !F.isEmpty(field);
+
+            assert key instanceof Integer;
+
+            Map<String, Object> m = (Map<String, Object>)val;
+
+            m.put(field, propVal);
+        }
+
         /** */
         @Override public Map<String, GridQueryIndexDescriptor> indexes() {
             return textIdx == null ? Collections.<String, GridQueryIndexDescriptor>emptyMap() :
@@ -603,6 +627,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         @Override public Class<?> keyClass() {
             return Integer.class;
+        }
+
+        /** */
+        @Override public String keyTypeName() {
+            return null;
+        }
+
+        /** */
+        @Override public String valueTypeName() {
+            return null;
         }
 
         /** */

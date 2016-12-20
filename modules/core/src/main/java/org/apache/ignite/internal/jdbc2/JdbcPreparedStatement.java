@@ -31,8 +31,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** SQL query. */
     private final String sql;
 
-    /** Arguments count. */
-    private final int argsCnt;
+    /**
+     * H2's parsed statement to retrieve metadata from.
+     */
+    private PreparedStatement nativeStatement;
 
     /**
      * Creates new prepared statement.
@@ -44,12 +46,21 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         super(conn);
 
         this.sql = sql;
-
-        argsCnt = sql.replaceAll("[^?]", "").length();
     }
 
     /** {@inheritDoc} */
+    @Override public void addBatch(String sql) throws SQLException {
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
+    }
+
+
+
+    /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
+        ensureNotClosed();
+
         ResultSet rs = executeQuery(sql);
 
         args = null;
@@ -61,7 +72,11 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public int executeUpdate() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        int res = executeUpdate(sql);
+
+        args = null;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -163,6 +178,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
+    @Override public void clearBatch() throws SQLException {
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType) throws SQLException {
         setArgument(paramIdx, x);
     }
@@ -181,7 +203,12 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] executeBatch() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -223,7 +250,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Meta data for prepared statement is not supported.");
+        return getNativeStatement().getMetaData();
     }
 
     /** {@inheritDoc} */
@@ -255,7 +282,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Meta data for prepared statement is not supported.");
+        return getNativeStatement().getParameterMetaData();
     }
 
     /** {@inheritDoc} */
@@ -400,12 +427,36 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (paramIdx < 1 || paramIdx > argsCnt)
+        if (paramIdx < 1)
             throw new SQLException("Parameter index is invalid: " + paramIdx);
 
-        if (args == null)
-            args = new Object[argsCnt];
+        ensureArgsSize(paramIdx);
 
-        args[paramIdx - 1] = val;
+        args.set(paramIdx - 1, val);
+    }
+
+    /**
+     * Initialize {@link #args} and increase its capacity and size up to given argument if needed.
+     * @param size new expected size.
+     */
+    private void ensureArgsSize(int size) {
+        if (args == null)
+            args = new ArrayList<>(size);
+
+        args.ensureCapacity(size);
+
+        while (args.size() < size)
+            args.add(null);
+    }
+
+    /**
+     * @return H2's prepared statement to get metadata from.
+     * @throws SQLException if failed.
+     */
+    private PreparedStatement getNativeStatement() throws SQLException {
+        if (nativeStatement != null)
+            return nativeStatement;
+
+        return (nativeStatement = conn.prepareNativeStatement(sql));
     }
 }
