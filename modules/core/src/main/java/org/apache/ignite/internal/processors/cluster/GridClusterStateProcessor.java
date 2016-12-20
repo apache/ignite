@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -421,11 +422,25 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.info("Start activation process [nodeId=" + this.ctx.localNodeId() + ", client=" + client +
                 ", topVer=" + cgsCtx.topVer + "]");
 
+        Collection<CacheConfiguration> cfgs = new ArrayList<>();
+
+        for (DynamicCacheChangeRequest req : cgsCtx.batch.requests())
+            if (req.startCacheConfiguration() != null)
+                cfgs.add(req.startCacheConfiguration());
+
         try {
             if (!client) {
                 sharedCtx.database().lock();
 
                 sharedCtx.wal().onActivate(ctx);
+
+                for (CacheConfiguration cfg : cfgs)
+                    if (CU.isSystemCache(cfg.getName()))
+                        sharedCtx.pageStore().initializeForCache(cfg);
+
+                for (CacheConfiguration cfg : cfgs)
+                    if (!CU.isSystemCache(cfg.getName()))
+                        sharedCtx.pageStore().initializeForCache(cfg);
 
                 sharedCtx.database().onActivate(ctx);
 
@@ -464,15 +479,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             ctx.dataStructures().onDeActivate(ctx);
 
             ctx.service().onDeActivate(ctx);
-
-            if (!client) {
-                sharedCtx.database().onDeActivate(ctx);
-
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onDeActivate(ctx);
-
-                sharedCtx.wal().onDeActivate(ctx);
-            }
 
             if (log.isInfoEnabled())
                 log.info("Success deactivate services, dataStructures, database, pageStore, wal [id=" + ctx.localNodeId() + ", client=" +
@@ -547,9 +553,26 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.info("Success final deactivate [nodeId="
                 + ctx.localNodeId() + ", client=" + client + ", topVer=" + cgsCtx.topVer + "]");
 
-        globalState = INACTIVE;
+        Exception ex = null;
 
-        sendChangeGlobalStateResponse(cgsCtx.requestId, cgsCtx.initiatingNodeId, null);
+        try {
+            if (!client) {
+                sharedCtx.database().onDeActivate(ctx);
+
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().onDeActivate(ctx);
+
+                sharedCtx.wal().onDeActivate(ctx);
+            }
+        }
+        catch (Exception e) {
+            ex = e;
+        }
+        finally {
+            globalState = INACTIVE;
+        }
+
+        sendChangeGlobalStateResponse(cgsCtx.requestId, cgsCtx.initiatingNodeId, ex);
 
         this.lastCgsCtx = null;
     }

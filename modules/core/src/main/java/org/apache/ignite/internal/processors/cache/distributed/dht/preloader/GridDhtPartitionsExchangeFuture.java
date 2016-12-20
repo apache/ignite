@@ -651,16 +651,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
-
         GridClusterStateProcessor stateProc = cctx.kernalContext().state();
 
-        if (exchangeOnChangeGlobalState = stateProc.changeGlobalState(reqs, topologyVersion())){
+        if (exchangeOnChangeGlobalState = stateProc.changeGlobalState(reqs, topologyVersion())) {
             changeGlobalStateException = stateProc.onChangeGlobalState();
 
             if (crd && changeGlobalStateException != null)
                 changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateException);
         }
+
+        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly) {
             boolean clientCacheStarted = false;
@@ -1393,9 +1393,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
                         changeGlobalStateExceptions.put(node.id(), msg.getException());
-                }
 
-                allReceived = remaining.isEmpty();
+                    allReceived = remaining.isEmpty();
+                }
             }
             else
                 singleMsgs.put(node, msg);
