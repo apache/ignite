@@ -23,6 +23,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/**
+ * Message for exchange of snapshot creation/restoration progress between nodes.
+ */
 public class SnapshotProgressMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -33,22 +36,31 @@ public class SnapshotProgressMessage implements Message {
     /** */
     private double progress;
 
+    /** */
     public SnapshotProgressMessage() {
     }
 
+    /** */
     public SnapshotProgressMessage(long snapshotId, double progress) {
         this.snapshotId = snapshotId;
         this.progress = progress;
     }
 
+    /**
+     * @return Snapshot ID.
+     */
     public long snapshotId() {
         return snapshotId;
     }
 
+    /**
+     * @return Snapshot creation/restoration progress.
+     */
     public double progress() {
         return progress;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -77,6 +89,7 @@ public class SnapshotProgressMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -105,14 +118,17 @@ public class SnapshotProgressMessage implements Message {
         return reader.afterMessageRead(SnapshotProgressMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return -38;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op
     }
