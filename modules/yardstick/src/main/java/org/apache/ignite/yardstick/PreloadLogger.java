@@ -87,12 +87,10 @@ public class PreloadLogger implements Runnable {
         String cacheName = cache.getName();
 
         long cacheSize = cache.sizeLong();
+        long delta = cacheSize - cntrs.get(cacheName);
 
-        long recentlyLoaded = cacheSize - cntrs.get(cacheName);
-        String recLoaded = recentlyLoaded <= 0 ?  '(' + String.valueOf(recentlyLoaded) + ')'
-            : "(+" + recentlyLoaded + ')';
-
-        BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize, recLoaded));
+        BenchmarkUtils.println(cfg, String.format(strFmt, cacheName, cacheSize,
+            "(" + (delta > 0 ? "+" : "") + delta + ")"));
 
         cntrs.put(cacheName, cacheSize);
     }
