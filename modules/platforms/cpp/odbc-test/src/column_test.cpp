@@ -293,7 +293,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArray)
     ignite::impl::interop::InteropOutputStream outStream(&mem);
     ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
 
-    std::vector<int8_t> data = { 65,66,67,68,69,70,71,72,73,74 }; //A,B,C..J
+    const int8_t bytes[] = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    std::vector<int8_t> data(bytes, bytes + sizeof(bytes) / sizeof(bytes[0]));
     writer.WriteInt8Array(&data[0], data.size());
 
     outStream.Synchronize();
@@ -340,7 +341,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
     ignite::impl::interop::InteropOutputStream outStream(&mem);
     ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
 
-    std::vector<int8_t> data = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    const int8_t bytes[] = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    std::vector<int8_t> data(bytes, bytes + sizeof(bytes)/sizeof(bytes[0]));
     BOOST_REQUIRE(0 == data.size() % 2);
 
     writer.WriteInt8Array(&data[0], data.size());
@@ -401,8 +403,10 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayTwoColumns)
     ignite::impl::interop::InteropOutputStream outStream(&mem);
     ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
 
-    std::vector<int8_t> data1 = { 65,66,67,68,69,70,71,72,73,74 }; //A,B,C...J
-    std::vector<int8_t> data2 = { 97,98,99,100,101,102,103,104,105,106 }; //a,b,c...j
+    const int8_t bytes1[] = { 65,66,67,68,69,70,71,72,73,74 }; //A,B,C...J
+    const int8_t bytes2[] = { 97,98,99,100,101,102,103,104,105,106 }; //a,b,c...j
+    std::vector<int8_t> data1(bytes1, bytes1 + sizeof(bytes1)/sizeof(bytes1[0]));
+    std::vector<int8_t> data2(bytes2, bytes2 + sizeof(bytes2)/sizeof(bytes2[0]));
     writer.WriteInt8Array(&data1[0], data1.size());
     writer.WriteInt8Array(&data2[0], data2.size());
 

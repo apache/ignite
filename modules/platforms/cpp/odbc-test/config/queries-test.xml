@@ -64,7 +64,7 @@
                                         <entry key="guidField" value="java.util.UUID"/>
                                         <entry key="dateField" value="java.util.Date"/>
                                         <entry key="timestampField" value="java.sql.Timestamp"/>
-                                        <entry key="i8ArrayField" value="java.lang.byte[]"/>
+                                        <entry key="i8ArrayField" value="[B"/>
                                     </map>
                                 </property>
 

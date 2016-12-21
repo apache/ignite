@@ -60,7 +60,8 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
 BOOST_AUTO_TEST_CASE(TestByteArraySelect)
 {
     TestType in;
-    in.i8ArrayField = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    const int8_t data[] = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    in.i8ArrayField.assign(data, data + sizeof(data)/sizeof(data[0]));
     testCache.Put(1, in);
 
     TestType out = testCache.Get(1);
@@ -78,8 +79,10 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParam)
     
     TestType in;
     in.i8Field = 101;
-    in.i8ArrayField = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J
-    //in.i8ArrayField = { 0x4a,0x49,0x48,0x47,0x46,0x45,0x44,0x43,0x42,0x41 }; // J..A
+
+    const int8_t data[] = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J
+    in.i8ArrayField.assign(data, data + sizeof(data) / sizeof(data[0]));
+
     testCache.Put(1, in);   
 
     SQLLEN colLen = 0;
@@ -122,7 +125,8 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 {
     SQLRETURN ret;
 
-    std::vector<int8_t> paramData = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J   
+    const int8_t data[] = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J
+    std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
     SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
