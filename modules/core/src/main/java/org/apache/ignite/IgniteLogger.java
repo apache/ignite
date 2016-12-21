@@ -146,9 +146,9 @@ public interface IgniteLogger {
     public boolean isInfoEnabled();
 
     /**
-     * Tests whether {@code info} and {@code debug} levels are turned off.
+     * Tests whether Logger is in "Quiet mode".
      *
-     * @return Whether {@code info} and {@code debug} levels are turned off.
+     * @return {@code true} "Quiet mode" is enabled, {@code false} otherwise
      */
     public boolean isQuiet();
 
