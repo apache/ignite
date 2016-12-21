@@ -58,6 +58,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -214,7 +215,17 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     @SuppressWarnings("unchecked")
     private void map(AffinityTopologyVersion topVer) {
-        ClusterNode node = mapKeyToNode(topVer);
+        boolean allowLocalRead = true;
+
+        if (cctx.shared().database().persistenceEnabled()) {
+            GridDhtLocalPartition locPart = cctx.topology().localPartition(key, false);
+
+            GridDhtPartitionState locPartState = locPart != null ? locPart.state() : EVICTED;
+
+            allowLocalRead = (locPartState == OWNING);
+        }
+
+        ClusterNode node = mapKeyToNode(topVer, allowLocalRead);
 
         if (node == null) {
             assert isDone() : this;
@@ -225,7 +236,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         if (isDone())
             return;
 
-        if (node.isLocal()) {
+        if (node.isLocal() && allowLocalRead) {
             Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
 
             final GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cctx.dht().getDhtAsync(node.id(),
@@ -336,7 +347,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer, boolean allowLocalRead) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
@@ -347,7 +358,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return null;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = allowLocalRead && (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.allowFastLocalRead(part, affNodes, topVer);
 
         if (fastLocGet && localGet(topVer, part))
@@ -485,13 +496,13 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (skipVals)
                     setSkipValueResult(true, verVal.version());
                 else
-                    setResult(verVal.value() , verVal.version());
+                    setResult(verVal.value(), verVal.version());
             }
             else {
                 if (skipVals)
                     setSkipValueResult(false, null);
                 else
-                    setResult(null , null);
+                    setResult(null, null);
             }
         }
         else {
