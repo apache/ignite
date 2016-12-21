@@ -76,31 +76,36 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean first = true;
 
         do {
-            long buf = cctx.shared().database().pageMemory().pageAddr(cctx.cacheId(), pageId(nextLink));
+            long buf = cctx.shared().database().pageMemory().readLockPageAddr(cctx.cacheId(), pageId(nextLink));
 
-            DataPageIO io = DataPageIO.VERSION1;
+            try {
+                DataPageIO io = DataPageIO.VERSION1;
 
-            long addr = io.getPositionOnPayload(buf, itemId(nextLink));
+                long addr = io.getPositionOnPayload(buf, itemId(nextLink));
 
-            addr = addr + buf;
+                addr = addr + buf;
 
-            int len = GridUnsafe.UNSAFE.getInt(addr);
+                int len = GridUnsafe.UNSAFE.getInt(addr);
 
-            //byte type = buf.get();
+                //byte type = buf.get();
 
-            int size = Math.min(bytes.length, len);
+                int size = Math.min(bytes.length, len);
 
-            addr += 5;
+                addr += 5;
 
-            for (int i = 0; i < size; i++) {
-                byte b1 = GridUnsafe.UNSAFE.getByte(addr++);
-                byte b2 = bytes[i];
+                for (int i = 0; i < size; i++) {
+                    byte b1 = GridUnsafe.UNSAFE.getByte(addr++);
+                    byte b2 = bytes[i];
 
-                if (b1 != b2)
-                    return b1 > b2 ? 1 : -1;
+                    if (b1 != b2)
+                        return b1 > b2 ? 1 : -1;
+                }
+
+                return Integer.compare(len, bytes.length);
             }
-
-            return Integer.compare(len, bytes.length);
+            finally {
+                cctx.shared().database().pageMemory().releaseReadLock(buf);
+            }
         }
         while(nextLink != 0);
     }
@@ -170,15 +175,20 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IncompleteObject<?> incomplete = null;
         boolean first = true;
 
-        long buf = cctx.shared().database().pageMemory().pageAddr(cctx.cacheId(), pageId(nextLink));
+        long buf = cctx.shared().database().pageMemory().readLockPageAddr(cctx.cacheId(), pageId(nextLink));
 
-        DataPageIO io = DataPageIO.VERSION1;
+        try {
+            DataPageIO io = DataPageIO.VERSION1;
 
-        long addr = io.getPositionOnPayload(buf, itemId(nextLink));
+            long addr = io.getPositionOnPayload(buf, itemId(nextLink));
 
-        addr = addr + buf;
+            addr = addr + buf;
 
-        readFullRow(coctx, addr, keyOnly);
+            readFullRow(coctx, addr, keyOnly);
+        }
+        finally {
+            cctx.shared().database().pageMemory().releaseReadLock(buf);
+        }
     }
 
     /**

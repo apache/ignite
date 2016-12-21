@@ -39,6 +39,10 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
 
     public Page readPage(int cacheId, long pageId) throws IgniteCheckedException;
 
+    public long readLockPageAddr(int cacheId, long pageId) throws IgniteCheckedException;
+
+    public void releaseReadLock(long absPtr) throws IgniteCheckedException;
+
     public long pageAddr(int cacheId, long pageId) throws IgniteCheckedException;
 
     /**

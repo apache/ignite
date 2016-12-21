@@ -154,7 +154,7 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        pageMem.releasePage(this);
+        //pageMem.releasePage(this);
     }
 
     /**

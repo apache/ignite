@@ -281,6 +281,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     @Override
+    public long readLockPageAddr(int cacheId, long pageId) throws IgniteCheckedException {
+        Segment seg = segment(pageId);
+
+        long absPtr = seg.absolute(pageId);
+
+        if (readLockPage(absPtr, PageIdUtils.tag(pageId)))
+            return absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD;
+
+        return -1L;
+    }
+
+    @Override
+    public void releaseReadLock(long absPtr) throws IgniteCheckedException {
+        readUnlockPage(absPtr - PageMemoryNoStoreImpl.PAGE_OVERHEAD);
+    }
+
+    @Override
     public long pageAddr(int cacheId, long pageId) throws IgniteCheckedException {
         Segment seg = segment(pageId);
 
