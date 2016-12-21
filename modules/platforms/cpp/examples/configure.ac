@@ -56,6 +56,7 @@ AC_CONFIG_FILES([ \
     putget-example/Makefile \
     odbc-example/Makefile \
     query-example/Makefile \
+    continuous-query-example/Makefile \
 ])
 
 AC_OUTPUT

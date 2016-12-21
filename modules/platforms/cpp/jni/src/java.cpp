@@ -1357,13 +1357,13 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr) {
+            jobject JniContext::CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(
                     obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObject, type, memPtr);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, err);
 
                 return LocalToGlobal(env, res);
             }
