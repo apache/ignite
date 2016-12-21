@@ -28,6 +28,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1059,10 +1060,28 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                             try {
                                 CacheObject val0 = cctx.toCacheObject(val);
 
+                                long ttl = CU.TTL_ETERNAL;
+                                long expireTime = CU.EXPIRE_TIME_ETERNAL;
+
+                                ExpiryPolicy expiry = cctx.expiry();
+
+                                if (expiry != null) {
+                                    ttl = CU.toTtl(expiry.getExpiryForCreation());
+
+                                    if (ttl == CU.TTL_ZERO)
+                                        expireTime = CU.expireTimeInPast();
+                                    else {
+                                        if (ttl == CU.TTL_NOT_CHANGED)
+                                            ttl = CU.TTL_ETERNAL;
+
+                                        expireTime = CU.toExpireTime(ttl);
+                                    }
+                                }
+
                                 entry0.initialValue(val0,
                                     ver,
-                                    0,
-                                    0,
+                                    ttl,
+                                    expireTime,
                                     false,
                                     topVer,
                                     GridDrType.DR_LOAD,
