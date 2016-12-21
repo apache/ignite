@@ -86,12 +86,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-4371
-        return Integer.MIN_VALUE;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

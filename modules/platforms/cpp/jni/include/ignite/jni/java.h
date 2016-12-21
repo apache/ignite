@@ -389,7 +389,7 @@ namespace ignite
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject Acquire(jobject obj);
 

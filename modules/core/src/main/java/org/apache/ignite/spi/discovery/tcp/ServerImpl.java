@@ -2771,7 +2771,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 sock = spi.openSocket(addr, timeoutHelper);
 
-                                out = new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize());
+                                out = spi.socketStream(sock);
 
                                 openSock = true;
 
