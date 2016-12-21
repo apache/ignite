@@ -59,13 +59,15 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** Whether or not to log grid name. */
     private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
     /** Test sensitive mode. */
-    private static final boolean testSensitive = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
+    private static final boolean TEST_SENSITIVE = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
     /** Prefix for all suspicious sensitive data */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
     /** Sensitive patterns: excluding */
     private static final Pattern[] EXCLUDE_PATTERNS;
     /** Sensitive patterns: including */
     private static final Pattern[] INCLUDE_PATTERNS;
+    /** Excluding logger categories */
+    private static final Pattern EXCLUDE_CATEGORY_P = Pattern.compile("Test($|\\$)|\\.tests?\\.");
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
@@ -94,6 +96,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** */
     @GridToStringInclude
     private Object ctgr;
+    /** Whether testing sensitive is enabled for the logger */
+    private boolean testSensitive;
 
     /**
      * No-arg constructor is required by externalization.
@@ -116,7 +120,8 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         this.ctgr = ctgr;
         this.gridName = gridName;
         this.id8 = id8;
-        if (testSensitive && ctgr == null && gridName == null && id8 == null)
+        this.testSensitive = TEST_SENSITIVE && (ctgr == null || !EXCLUDE_CATEGORY_P.matcher(ctgr.toString()).find());
+        if (TEST_SENSITIVE && ctgr == null && gridName == null && id8 == null)
             impl.warning("Test sensitive mode is enabled");
     }
 
