@@ -78,7 +78,8 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParam)
     
     TestType in;
     in.i8Field = 101;
-    in.i8ArrayField = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    in.i8ArrayField = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J
+    //in.i8ArrayField = { 0x4a,0x49,0x48,0x47,0x46,0x45,0x44,0x43,0x42,0x41 }; // J..A
     testCache.Put(1, in);   
 
     SQLLEN colLen = 0;
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParam)
 
     std::vector<int8_t> paramData(in.i8ArrayField);
     SQLLEN paramLen = paramData.size();
-    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, paramData.size(), paramData.size(), &paramData[0], paramData.size(), &paramLen);
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), paramData.size(), &paramData[0], paramData.size(), &paramLen);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -115,6 +116,72 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParam)
 
     ret = SQLFetch(stmt);
     BOOST_REQUIRE(ret == SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
+{
+    SQLRETURN ret;
+
+    std::vector<int8_t> paramData = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J   
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 1;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    
+    SQLLEN paramLen = paramData.size();
+
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), paramData.size(), &paramData[0], paramData.size(), &paramLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    TestType out = testCache.Get(key);
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(out.i8ArrayField.begin(), out.i8ArrayField.end(), paramData.begin(), paramData.end());
+}
+
+BOOST_AUTO_TEST_CASE(TestByteParamInsert)
+{
+    SQLRETURN ret;
+
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";;
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 1;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int8_t data = 2;
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TINYINT, SQL_TINYINT, 0, 0, &data, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    TestType out = testCache.Get(key);
+    BOOST_REQUIRE_EQUAL(out.i8Field, data);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

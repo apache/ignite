@@ -74,7 +74,7 @@ namespace ignite
         Guid guidField;
         Date dateField;
         Timestamp timestampField;
-		std::vector<int8_t> i8ArrayField;
+        std::vector<int8_t> i8ArrayField;
     };
 }
 
@@ -108,14 +108,14 @@ namespace ignite
                     writer.WriteGuid("guidField", obj.guidField);
                     writer.WriteDate("dateField", obj.dateField);
                     writer.WriteTimestamp("timestampField", obj.timestampField);
-					if (obj.i8ArrayField.empty())
-					{
-						writer.WriteNull("i8ArrayField");
-					}
-					else
-					{
-						writer.WriteInt8Array("i8ArrayField", &obj.i8ArrayField[0], obj.i8ArrayField.size());
-					}
+                    if (obj.i8ArrayField.empty())
+                    {
+                        writer.WriteNull("i8ArrayField");
+                    }
+                    else
+                    {
+                        writer.WriteInt8Array("i8ArrayField", &obj.i8ArrayField[0], obj.i8ArrayField.size());
+                    }
                 }
                 else
                 {
@@ -130,7 +130,7 @@ namespace ignite
                     writer.WriteNull("guidField");
                     writer.WriteNull("dateField");
                     writer.WriteNull("timestampField");
-					writer.WriteNull("i8ArrayField");
+                    writer.WriteNull("i8ArrayField");
                 }
             }
 
@@ -151,14 +151,14 @@ namespace ignite
                 TestType result(i8Field, i16Field, i32Field, i64Field, strField,
                     floatField, doubleField, boolField, guidField, dateField,
                     timestampField);
-				
-				int32_t len = reader.ReadInt8Array("i8ArrayField", nullptr, 0);
-				if (len > 0)
-				{
-					result.i8ArrayField = std::vector<int8_t>(len);
-					reader.ReadInt8Array("i8ArrayField", &result.i8ArrayField[0], len);					
-				}
-				return result;
+                
+                int32_t len = reader.ReadInt8Array("i8ArrayField", nullptr, 0);
+                if (len > 0)
+                {
+                    result.i8ArrayField = std::vector<int8_t>(len);
+                    reader.ReadInt8Array("i8ArrayField", &result.i8ArrayField[0], len);
+                }
+                return result;
             }
 
         IGNITE_BINARY_TYPE_END

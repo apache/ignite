@@ -283,7 +283,7 @@ namespace ignite
 
                 case IGNITE_TYPE_TIMESTAMP:
                 {
-					reader.ReadTimestamp();
+                    reader.ReadTimestamp();
 
                     sizeTmp = 12;
 

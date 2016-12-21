@@ -289,41 +289,41 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 
 BOOST_AUTO_TEST_CASE(TestColumnByteArray)
 {
-	ignite::impl::interop::InteropUnpooledMemory mem(4096);
-	ignite::impl::interop::InteropOutputStream outStream(&mem);
-	ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    ignite::impl::interop::InteropUnpooledMemory mem(4096);
+    ignite::impl::interop::InteropOutputStream outStream(&mem);
+    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
 
     std::vector<int8_t> data = { 65,66,67,68,69,70,71,72,73,74 }; //A,B,C..J
-	writer.WriteInt8Array(&data[0], data.size());
+    writer.WriteInt8Array(&data[0], data.size());
 
-	outStream.Synchronize();
+    outStream.Synchronize();
 
-	ignite::impl::interop::InteropInputStream inStream(&mem);
-	ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    ignite::impl::interop::InteropInputStream inStream(&mem);
+    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
 
-	Column column(reader);
+    Column column(reader);
 
-	BOOST_REQUIRE(column.IsValid());
+    BOOST_REQUIRE(column.IsValid());
 
-	BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE(column.GetSize() == data.size());
 
-	BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
 
-	std::vector<int8_t> buf(data.size());
-	SqlLen reslen = 0;
-	int* offset = 0;
+    std::vector<int8_t> buf(data.size());
+    SqlLen reslen = 0;
+    int* offset = 0;
 
-	ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen, &offset);
+    ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_BINARY, &buf[0], buf.size(), &reslen, &offset);
 
-	BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
+    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
-	BOOST_REQUIRE(column.IsValid());
+    BOOST_REQUIRE(column.IsValid());
 
-	BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE(column.GetSize() == data.size());
 
-	BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
 
-	BOOST_REQUIRE_EQUAL_COLLECTIONS(buf.begin(), buf.end(), data.begin(), data.end());
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(buf.begin(), buf.end(), data.begin(), data.end());
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_NO_DATA);
 
