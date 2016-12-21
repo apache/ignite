@@ -15,26 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Extended version of secondary file system with missing methods.
  *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
  */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
-    /**
-     * Set times for the given path.
-     *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
-     */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+public class GridCachePartitionedNoStripedPoolMultiNodeFullApiSelfTest extends
+    GridCachePartitionedMultiNodeFullApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setStripedPoolSize(-1);
+
+        return cfg;
+    }
 }

@@ -450,58 +450,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
-        return dht.getAndPutIfAbsent(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
-        return dht.getAndPutIfAbsentAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
-        return dht.putIfAbsent(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
-        return dht.putIfAbsentAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
         return dht.tryGetAndPut(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
-        return dht.getAndReplace(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
-        return dht.getAndReplaceAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(K key, V val) throws IgniteCheckedException {
-        return dht.replace(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
-        return dht.replaceAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return dht.replace(key, oldVal, newVal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
-        return dht.replaceAsync(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
@@ -569,6 +519,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean remove(K key, @Nullable CacheEntryPredicate filter) throws IgniteCheckedException {
+        return dht.remove(key, filter);
+    }
+
+    /** {@inheritDoc} */
     @Override public V getAndRemove(K key) throws IgniteCheckedException {
         return dht.getAndRemove(key);
     }
@@ -599,16 +554,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, @Nullable CacheEntryPredicate filter) {
         return dht.removeAsync(key, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean remove(K key, V val) throws IgniteCheckedException {
-        return dht.remove(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        return dht.removeAsync(key, val);
     }
 
     /** {@inheritDoc} */

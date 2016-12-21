@@ -869,7 +869,7 @@ namespace Apache.Ignite.Core.Impl
                 throw;
             }
 
-            fut.SetTarget(futTarget);
+            fut.SetTarget(new Listenable(futTarget, _marsh));
 
             return fut;
         }
