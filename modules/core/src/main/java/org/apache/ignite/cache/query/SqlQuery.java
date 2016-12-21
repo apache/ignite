@@ -149,7 +149,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * @param alias table alias for type that is used in query.
-     * @return
+     * @return {@code this} For chaining.
      */
     public SqlQuery<K, V> setAlias(String alias) {
         this.alias = alias;
