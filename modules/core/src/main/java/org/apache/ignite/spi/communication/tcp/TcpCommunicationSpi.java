@@ -1872,7 +1872,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (msgQueueLimit == 0)
             U.quietAndWarn(log, "Message queue limit is set to 0 which may lead to " +
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
-                "due to message queues growth on sender and reciever sides.");
+                "due to message queues growth on sender and receiver sides.");
 
         registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
 
