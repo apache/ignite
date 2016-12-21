@@ -118,7 +118,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         super.prepareMarshal(ctx);
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = U.marshal(ctx, err);
     }
 
     /** {@inheritDoc} */
@@ -126,7 +126,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
