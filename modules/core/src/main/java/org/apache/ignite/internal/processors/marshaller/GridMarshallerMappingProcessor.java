@@ -25,11 +25,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
@@ -37,6 +40,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
+import static org.apache.ignite.internal.GridTopic.TOPIC_MAPPING_MARSH;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  * Processor responsible for managing custom {@link org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage} events for exchanging marshalling mappings between nodes in grid.
@@ -72,17 +77,88 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
-        MarshallerMappingTransport transport = new MarshallerMappingTransport(discoMgr, mappingExchangeSyncMap);
+        GridIoManager ioMgr = ctx.io();
+
+        MarshallerMappingTransport transport = new MarshallerMappingTransport(discoMgr, ioMgr, mappingExchangeSyncMap);
         marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
         discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
 
         discoMgr.setCustomEventListener(MappingAcceptedMessage.class, new MappingAcceptedListener());
 
-        //TODO use communication instead of CustomDiscoveryMessage for request-response functionality
-        discoMgr.setCustomEventListener(MissingMappingRequestMessage.class, new MissingMappingRequestListener());
+        if (!ctx.clientNode())
+            ioMgr.addMessageListener(TOPIC_MAPPING_MARSH, new MissingMappingRequestListener(ioMgr));
+        else
+            ioMgr.addMessageListener(TOPIC_MAPPING_MARSH, new MissingMappingResponseListener());
+    }
 
-        discoMgr.setCustomEventListener(MissingMappingResponseMessage.class, new MissingMappingResponseListener());
+    /**
+     *
+     */
+    private final class MissingMappingRequestListener implements GridMessageListener {
+        /** */
+        private final GridIoManager ioMgr;
+
+        /**
+         * @param ioMgr Io manager.
+         */
+        MissingMappingRequestListener(GridIoManager ioMgr) {
+            this.ioMgr = ioMgr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMessage(UUID nodeId, Object msg) {
+            assert msg instanceof MissingMappingRequestMessage : msg;
+
+            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
+
+            byte platformId = msg0.platformId();
+            int typeId = msg0.typeId();
+
+            String resolvedClsName = marshallerCtx.resolveMissedMapping(platformId, typeId);
+
+            try {
+                ioMgr.send(nodeId, TOPIC_MAPPING_MARSH, new MissingMappingResponseMessage(platformId, typeId, resolvedClsName), SYSTEM_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send missing mapping response.", e);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private final class MissingMappingResponseListener implements GridMessageListener {
+        /** {@inheritDoc} */
+        @Override public void onMessage(UUID nodeId, Object msg) {
+            assert msg instanceof MissingMappingResponseMessage : msg;
+
+            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;
+
+            byte platformId = msg0.platformId();
+            int typeId = msg0.typeId();
+            String resolvedClsName = msg0.className();
+
+            MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, null);
+
+            GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
+
+            if (fut != null) {
+                if (resolvedClsName != null) {
+                    marshallerCtx.onMissedMappingResolved(item, resolvedClsName);
+
+                    fut.onDone(MappingExchangeResult.createSuccessfulResult(resolvedClsName));
+                }
+                else
+                    fut.onDone(MappingExchangeResult.createFailureResult(
+                            new IgniteCheckedException(
+                                    "Failed to resolve mapping [platformId: "
+                                            + platformId
+                                            + ", typeId: "
+                                            + typeId + "]")));
+            }
+        }
     }
 
     /**
@@ -146,61 +222,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 
-            assert fut != null : msg;
-
-            fut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
-        }
-    }
-
-    /**
-     *
-     */
-    private final class MissingMappingRequestListener implements CustomEventListener<MissingMappingRequestMessage> {
-        /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MissingMappingRequestMessage msg) {
-            if (!ctx.clientNode()
-                    && !msg.resolved())
-                msg.resolvedClsName(
-                        marshallerCtx.resolveMissedMapping(msg.mappingItem()));
-        }
-    }
-
-    /**
-     *
-     */
-    private final class MissingMappingResponseListener implements CustomEventListener<MissingMappingResponseMessage> {
-        /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MissingMappingResponseMessage msg) {
-            UUID locNodeId = ctx.localNodeId();
-            if (ctx.clientNode() && locNodeId.equals(msg.origNodeId())) {
-                String resolvedClsName = msg.resolvedClassName();
-
-                if (resolvedClsName != null) {
-                    marshallerCtx.onMissedMappingResolved(msg.marshallerMappingItem(), resolvedClsName);
-
-                    GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.marshallerMappingItem());
-
-                    if (fut != null)
-                        fut.onDone(MappingExchangeResult.createSuccessfulResult(resolvedClsName));
-                }
-                else {
-                    GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.marshallerMappingItem());
-                    if (fut != null)
-                        fut.onDone(MappingExchangeResult.createFailureResult(resolutionFailedException(msg.marshallerMappingItem())));
-                }
-            }
-        }
-
-        /**
-         * @param item Item.
-         */
-        private IgniteCheckedException resolutionFailedException(MarshallerMappingItem item) {
-            return new IgniteCheckedException("Failed to resolve class name "
-                    + "[platformId="
-                    + item.platformId()
-                    + ", typeId="
-                    + item.typeId()
-                    + "]");
+            if (fut != null)
+                fut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
         }
     }
 

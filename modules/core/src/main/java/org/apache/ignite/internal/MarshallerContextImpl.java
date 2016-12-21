@@ -171,8 +171,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
         for (Map.Entry<Integer, MappedName> e : marshallerMapping.entrySet())
-            platformCache.putIfAbsent(e.getKey(), new MappedName(e.getValue().className(), true));
-            //TODO assert that value hasn't changed here
+            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
     }
 
     /**
@@ -354,12 +353,13 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * @param item Item.
+     * @param platformId Platform id.
+     * @param typeId Type id.
      */
-    public String resolveMissedMapping(MarshallerMappingItem item) {
-        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
+    public String resolveMissedMapping(byte platformId, int typeId) {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
-        MappedName mappedName = cache.get(item.typeId());
+        MappedName mappedName = cache.get(typeId);
 
         if (mappedName != null) {
             assert mappedName.accepted() : mappedName;

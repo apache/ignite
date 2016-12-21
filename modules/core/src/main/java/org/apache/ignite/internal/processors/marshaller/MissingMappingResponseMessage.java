@@ -16,74 +16,152 @@
  */
 package org.apache.ignite.internal.processors.marshaller;
 
-import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-class MissingMappingResponseMessage implements DiscoveryCustomMessage {
+public class MissingMappingResponseMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private byte platformId;
 
     /** */
-    private String resolvedClsName;
+    private int typeId;
 
     /** */
-    private MarshallerMappingItem item;
-
-    /** */
-    private UUID origNodeId;
+    private String clsName;
 
     /**
-     * @param origNodeId Orig node id.
-     * @param item Item.
-     * @param resolvedClsName Resolved class name.
+     * Default constructor.
      */
-    MissingMappingResponseMessage(UUID origNodeId, MarshallerMappingItem item, String resolvedClsName) {
-        this.origNodeId = origNodeId;
-        this.item = item;
-        this.resolvedClsName = resolvedClsName;
+    public MissingMappingResponseMessage() {
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param clsName Class name.
+     */
+    MissingMappingResponseMessage(byte platformId, int typeId, String clsName) {
+        this.platformId = platformId;
+        this.typeId = typeId;
+        this.clsName = clsName;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeByte("platformId", platformId))
+                    return false;
+
+                writer.incrementState();
+            case 1:
+                if (!writer.writeInt("typeId", typeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeString("clsName", clsName))
+                    return false;
+
+                writer.incrementState();
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                platformId = reader.readByte("platformId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                typeId = reader.readInt("typeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                clsName = reader.readString("clsName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+        }
+
+        return reader.afterMessageRead(MissingMappingResponseMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
+    @Override public byte directType() {
+        return 121;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MissingMappingResponseMessage.class, this);
     }
 
     /**
      *
      */
-    String resolvedClassName() {
-        return resolvedClsName;
+    public byte platformId() {
+        return platformId;
     }
 
     /**
      *
      */
-    UUID origNodeId() {
-        return origNodeId;
+    public int typeId() {
+        return typeId;
     }
 
     /**
      *
      */
-    MarshallerMappingItem marshallerMappingItem() {
-        return item;
+    public String className() {
+        return clsName;
     }
 }

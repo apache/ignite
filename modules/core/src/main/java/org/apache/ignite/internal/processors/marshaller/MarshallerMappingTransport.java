@@ -18,9 +18,14 @@ package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +39,9 @@ public final class MarshallerMappingTransport {
     private final GridDiscoveryManager discoMgr;
 
     /** */
+    private final GridIoManager ioMgr;
+
+    /** */
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap;
 
     /** */
@@ -43,9 +51,11 @@ public final class MarshallerMappingTransport {
      * @param discoMgr Disco manager.
      * @param mappingExchSyncMap Mapping exch sync map.
      */
-    MarshallerMappingTransport(GridDiscoveryManager discoMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
+    MarshallerMappingTransport(GridDiscoveryManager discoMgr, GridIoManager ioMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
         this.discoMgr = discoMgr;
+        this.ioMgr = ioMgr;
         this.mappingExchSyncMap = mappingExchSyncMap;
+
         stopping = false;
     }
 
@@ -127,8 +137,10 @@ public final class MarshallerMappingTransport {
             }
         }
 
-        discoMgr.sendCustomEvent(
-                new MissingMappingRequestMessage(item, discoMgr.localNode().id()));
+        //if this node fails right before sending request, I need to repeat this with next oldestNode
+        ClusterNode oldestNode = discoMgr.oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
+
+        ioMgr.send(oldestNode, GridTopic.TOPIC_MAPPING_MARSH, new MissingMappingRequestMessage(item.platformId(), item.typeId()), GridIoPolicy.SYSTEM_POOL);
 
         return newFut;
     }
