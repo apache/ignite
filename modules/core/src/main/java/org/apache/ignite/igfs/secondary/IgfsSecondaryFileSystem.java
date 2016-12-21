@@ -192,4 +192,14 @@ public interface IgfsSecondaryFileSystem {
      * @throws IgniteException In case of error.
      */
     public long usedSpaceSize() throws IgniteException;
+
+    /**
+     * Set times for the given path.
+     *
+     * @param path Path.
+     * @param accessTime Access time.
+     * @param modificationTime Modification time.
+     * @throws IgniteException If failed.
+     */
+    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
 }
