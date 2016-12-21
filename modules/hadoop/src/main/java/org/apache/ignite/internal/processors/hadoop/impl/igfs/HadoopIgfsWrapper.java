@@ -382,7 +382,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         boolean skipInProc = parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false);
 
         if (!skipInProc) {
-            IgfsEx igfs = getIgfsEx(endpoint.grid(), endpoint.igfs());
+            IgfsEx igfs = getIgfsEx(endpoint.igfs());
 
             if (igfs != null) {
                 HadoopIgfsEx hadoop = null;
@@ -489,7 +489,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log, userName);
+                hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.igfs(), log, userName);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
@@ -511,7 +511,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.igfs(),
                     log, userName);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
@@ -535,7 +535,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.igfs(),
                     log, userName);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
@@ -634,20 +634,21 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
     /**
      * Helper method to find Igfs of the given name in the given Ignite instance.
      *
-     * @param gridName The name of the grid to check.
      * @param igfsName The name of Igfs.
      * @return The file system instance, or null if not found.
      */
-    private static IgfsEx getIgfsEx(@Nullable String gridName, @Nullable String igfsName) {
-        if (Ignition.state(gridName) == STARTED) {
-            try {
-                for (IgniteFileSystem fs : Ignition.ignite(gridName).fileSystems()) {
-                    if (F.eq(fs.name(), igfsName))
-                        return (IgfsEx)fs;
+    private static IgfsEx getIgfsEx(@Nullable String igfsName) {
+        for (Ignite ignite : Ignition.allGrids()) {
+            if (Ignition.state(ignite.name()) == STARTED) {
+                try {
+                    for (IgniteFileSystem fs : ignite.fileSystems()) {
+                        if (F.eq(fs.name(), igfsName))
+                            return (IgfsEx)fs;
+                    }
                 }
-            }
-            catch (IgniteIllegalStateException ignore) {
-                // May happen if the grid state has changed:
+                catch (IgniteIllegalStateException ignore) {
+                    // May happen if the grid state has changed:
+                }
             }
         }
 
