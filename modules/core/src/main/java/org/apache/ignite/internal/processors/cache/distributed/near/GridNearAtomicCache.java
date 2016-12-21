@@ -41,10 +41,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -126,10 +126,10 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param res Update response.
      */
     public void processNearAtomicUpdateResponse(
-        GridNearAtomicUpdateRequest req,
+        GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res
     ) {
-        if (F.size(res.failedKeys()) == req.keys().size())
+        if (F.size(res.failedKeys()) == req.size())
             return;
 
         /*
@@ -152,11 +152,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        for (int i = 0; i < req.keys().size(); i++) {
+        for (int i = 0; i < req.size(); i++) {
             if (F.contains(skipped, i))
                 continue;
 
-            KeyCacheObject key = req.keys().get(i);
+            KeyCacheObject key = req.key(i);
 
             if (F.contains(failed, key))
                 continue;
@@ -302,14 +302,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      */
     public void processDhtAtomicUpdateRequest(
         UUID nodeId,
-        GridDhtAtomicUpdateRequest req,
+        GridDhtAtomicAbstractUpdateRequest req,
         GridDhtAtomicUpdateResponse res
     ) {
         GridCacheVersion ver = req.writeVersion();
 
         assert ver != null;
-
-        Collection<KeyCacheObject> backupKeys = req.keys();
 
         boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
@@ -329,7 +327,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             break;
                         }
 
-                        if (F.contains(backupKeys, key)) { // Reader became backup.
+                        if (req.hasKey(key)) { // Reader became backup.
                             if (entry.markObsolete(ver))
                                 removeEntry(entry);
 

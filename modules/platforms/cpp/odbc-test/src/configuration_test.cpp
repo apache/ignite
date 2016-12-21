@@ -37,6 +37,7 @@ namespace
     const uint16_t testServerPort = 4242;
     const std::string testCacheName = "TestCache";
     const std::string testDsn = "Ignite DSN";
+    const int32_t testPageSize = 4321;
     const bool testDistributedJoins = true;
     const bool testEnforceJoinOrder = true;
 
@@ -96,6 +97,7 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
     BOOST_CHECK_EQUAL(cfg.GetCache(), testCacheName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
+    BOOST_CHECK_EQUAL(cfg.GetPageSize(), testPageSize);
     BOOST_CHECK_EQUAL(cfg.IsDistributedJoins(), testDistributedJoins);
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), testEnforceJoinOrder);
 
@@ -105,7 +107,8 @@ void CheckConnectionConfig(const Configuration& cfg)
                 << "cache=" << testCacheName << ';'
                 << "distributed_joins=" << (testDistributedJoins ? "true" : "false") << ';'
                 << "driver={" << testDriverName << "};"
-                << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false") << ';';
+                << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false") << ';'
+                << "page_size=" << testPageSize << ';';
 
     const std::string& expectedStr = constructor.str();
 
@@ -120,6 +123,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
     BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), Configuration::DefaultValue::port);
+    BOOST_CHECK_EQUAL(cfg.GetPageSize(), Configuration::DefaultValue::pageSize);
     BOOST_CHECK_EQUAL(cfg.IsDistributedJoins(), false);
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), false);
 }
@@ -133,6 +137,7 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::port);
     BOOST_CHECK_NE(testCacheName, Configuration::DefaultValue::cache);
     BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
+    BOOST_CHECK_NE(testPageSize, Configuration::DefaultValue::pageSize);
     BOOST_CHECK_NE(testDistributedJoins, Configuration::DefaultValue::distributedJoins);
     BOOST_CHECK_NE(testEnforceJoinOrder, Configuration::DefaultValue::enforceJoinOrder);
 }
@@ -147,7 +152,8 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
                 << "ADDRESS=" << testAddress << ';'
                 << "CACHE=" << testCacheName << ';'
                 << "DISTRIBUTED_JOINS=" << (testDistributedJoins ? "TRUE" : "FALSE") << ';'
-                << "ENFORCE_JOIN_ORDER=" << (testEnforceJoinOrder ? "TRUE" : "FALSE");
+                << "ENFORCE_JOIN_ORDER=" << (testEnforceJoinOrder ? "TRUE" : "FALSE") << ';'
+                << "PAGE_SIZE=" << testPageSize;
 
     const std::string& connectStr = constructor.str();
 
@@ -164,6 +170,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
 
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
+                << "page_size=" << testPageSize << ';'
                 << "cache=" << testCacheName << ';'
                 << "distributed_joins=" << (testDistributedJoins ? "true" : "false") << ';'
                 << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false");
@@ -183,6 +190,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
 
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
+                << "page_size=" << testPageSize << ';'
                 << "cache=" << testCacheName << ';'
                 << "distributed_joins=" << (testDistributedJoins ? "true" : "false") << ';'
                 << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false");
@@ -202,6 +210,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
 
     constructor << "Driver={" << testDriverName << "};"
                 << "Address=" << testAddress << ';'
+                << "Page_Size=" << testPageSize << ';'
                 << "Cache=" << testCacheName << ';'
                 << "Distributed_Joins=" << (testDistributedJoins ? "True" : "False") << ';'
                 << "Enforce_Join_Order=" << (testEnforceJoinOrder ? "True" : "False");
@@ -221,6 +230,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
 
     constructor << "DRIVER = {" << testDriverName << "} ;\n"
                 << " ADDRESS =" << testAddress << "; "
+                << "   PAGE_SIZE= " << testPageSize << ';'
                 << "CACHE = \n\r" << testCacheName << ';'
                 << "   DISTRIBUTED_JOINS=" << (testDistributedJoins ? "TRUE" : "FALSE") << ';'
                 << "ENFORCE_JOIN_ORDER=   " << (testEnforceJoinOrder ? "TRUE  " : "FALSE  ");

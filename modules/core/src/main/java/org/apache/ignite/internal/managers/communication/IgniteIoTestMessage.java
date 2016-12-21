@@ -53,8 +53,8 @@ public class IgniteIoTestMessage implements Message {
     }
 
     /**
-     * @param id ID.
-     * @param req {@code True} for request.
+     * @param id Message ID.
+     * @param req Request flag.
      * @param payload Payload.
      */
     public IgniteIoTestMessage(long id, boolean req, byte[] payload) {
@@ -64,14 +64,15 @@ public class IgniteIoTestMessage implements Message {
     }
 
     /**
-     * @return Process from NIO thread flag.
+     * @return {@code True} if message should be processed from NIO thread
+     * (otherwise message is submitted to system pool).
      */
     public boolean processFromNioThread() {
         return isFlag(FLAG_PROC_FROM_NIO);
     }
 
     /**
-     * @param procFromNioThread Process from NIO thread flag.
+     * @param procFromNioThread {@code True} if message should be processed from NIO thread.
      */
     public void processFromNioThread(boolean procFromNioThread) {
         setFlag(procFromNioThread, FLAG_PROC_FROM_NIO);
@@ -112,7 +113,7 @@ public class IgniteIoTestMessage implements Message {
     }
 
     /**
-     * @return {@code True} for request.
+     * @return {@code true} if this is request.
      */
     public boolean request() {
         return req;
@@ -213,7 +214,7 @@ public class IgniteIoTestMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 126;
+        return -43;
     }
 
     /** {@inheritDoc} */

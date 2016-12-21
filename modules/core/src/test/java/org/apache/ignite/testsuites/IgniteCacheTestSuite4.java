@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynam
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynamicStartTxTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartTxTest;
+import org.apache.ignite.internal.processors.cache.CacheSwapUnswapGetTest;
+import org.apache.ignite.internal.processors.cache.CacheSwapUnswapGetTestSmallQueueSize;
 import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheLockTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallingNodeJoinSelfTest;
@@ -97,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPreloadSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearOnlyTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearReadCommittedTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
@@ -298,6 +301,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         // TODO GG-11148.
         // suite.addTestSuite(CacheSwapUnswapGetTest.class);
+        // suite.addTestSuite(CacheSwapUnswapGetTestSmallQueueSize.class);
 
         suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);
@@ -321,6 +325,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CachePutIfAbsentTest.class);
 
         suite.addTestSuite(MarshallerCacheJobRunNodeRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheNearOnlyTxTest.class);
 
         return suite;
     }

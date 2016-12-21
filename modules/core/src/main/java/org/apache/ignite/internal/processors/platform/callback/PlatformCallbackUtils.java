@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.callback;
 
-import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
 
 /**
  * Platform callback utility methods. Implemented in target platform. All methods in this class must be
@@ -37,10 +37,9 @@ public class PlatformCallbackUtils {
      * @param envPtr Environment pointer.
      * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
-     * @param cb Callback.
      * @return Result.
      */
-    static native int cacheStoreInvoke(long envPtr, long objPtr, long memPtr, Object cb);
+    static native int cacheStoreInvoke(long envPtr, long objPtr, long memPtr);
 
     /**
      * @param envPtr Environment pointer.
@@ -227,7 +226,7 @@ public class PlatformCallbackUtils {
      * @param memPtr Stream pointer.
      * @param keepBinary Binary flag.
      */
-    static native void dataStreamerStreamReceiverInvoke(long envPtr, long ptr, Object cache, long memPtr,
+    static native void dataStreamerStreamReceiverInvoke(long envPtr, long ptr, PlatformTargetProxy cache, long memPtr,
         boolean keepBinary);
 
     /**
@@ -505,7 +504,7 @@ public class PlatformCallbackUtils {
      * @param baseFunc Optional func for base calls.
      * @return Affinity function pointer.
      */
-    static native long affinityFunctionInit(long envPtr, long memPtr, PlatformAffinityFunctionTarget baseFunc);
+    static native long affinityFunctionInit(long envPtr, long memPtr, PlatformTargetProxy baseFunc);
 
     /**
      * Gets the partition from affinity function.

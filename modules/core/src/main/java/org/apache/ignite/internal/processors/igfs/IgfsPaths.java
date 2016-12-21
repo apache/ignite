@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
@@ -75,7 +74,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-            new JdkMarshaller().marshal(payload, out);
+            U.marshal(new JdkMarshaller(), payload, out);
 
             payloadBytes = out.toByteArray();
         }
@@ -106,7 +105,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayInputStream in = new ByteArrayInputStream(payloadBytes);
 
-            return new JdkMarshaller().unmarshal(in, clsLdr);
+            return U.unmarshal(new JdkMarshaller(), in, clsLdr);
         }
     }
 
@@ -144,9 +143,7 @@ public class IgfsPaths implements Externalizable {
             pathModes = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                IgfsPath path = new IgfsPath();
-
-                path.readExternal(in);
+                IgfsPath path = IgfsUtils.readPath(in);
 
                 pathModes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }

@@ -41,20 +41,21 @@ namespace ignite
             const std::string Configuration::Key::distributedJoins  = "distributed_joins";
             const std::string Configuration::Key::enforceJoinOrder  = "enforce_join_order";
             const std::string Configuration::Key::protocolVersion   = "protocol_version";
+            const std::string Configuration::Key::pageSize          = "page_size";
 
-            const std::string Configuration::DefaultValue::dsn             = "Apache Ignite DSN";
-            const std::string Configuration::DefaultValue::driver          = "Apache Ignite";
-            const std::string Configuration::DefaultValue::cache           = "";
-            const std::string Configuration::DefaultValue::address         = "";
-            const std::string Configuration::DefaultValue::server          = "";
+            const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
+            const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
+            const std::string Configuration::DefaultValue::cache    = "";
+            const std::string Configuration::DefaultValue::address  = "";
+            const std::string Configuration::DefaultValue::server   = "";
 
-            const uint16_t Configuration::DefaultValue::port = 10800;
+            const uint16_t Configuration::DefaultValue::port    = 10800;
+            const int32_t Configuration::DefaultValue::pageSize = 1024;
 
             const bool Configuration::DefaultValue::distributedJoins = false;
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
-
 
             Configuration::Configuration() :
                 arguments()
@@ -94,11 +95,6 @@ namespace ignite
                     endPoint.host = GetStringValue(Key::server, DefaultValue::server);
                     endPoint.port = static_cast<uint16_t>(GetIntValue(Key::port, DefaultValue::port));
                 }
-            }
-
-            void Configuration::FillFromConnectString(const std::string& str)
-            {
-                FillFromConnectString(str.data(), str.size());
             }
 
             std::string Configuration::ToConnectString() const
@@ -153,6 +149,28 @@ namespace ignite
             void Configuration::SetTcpPort(uint16_t port)
             {
                 arguments[Key::port] = common::LexicalCast<std::string>(port);
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.port = port;
+            }
+
+            void Configuration::SetHost(const std::string& server)
+            {
+                arguments[Key::server] = server;
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.host = server;
+            }
+
+            void Configuration::SetAddress(const std::string& address)
+            {
+                arguments[Key::address] = address;
+
+                ParseAddress(address, endPoint);
             }
 
             ProtocolVersion Configuration::GetProtocolVersion() const
@@ -163,11 +181,6 @@ namespace ignite
                     return ProtocolVersion::FromString(it->second);
 
                 return DefaultValue::protocolVersion;
-            }
-
-            void Configuration::SetProtocolVersion(const std::string& version)
-            {
-                arguments[Key::protocolVersion] = version;
             }
 
             const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
@@ -252,7 +265,7 @@ namespace ignite
 
                         utility::IntoLower(key);
 
-                        if (value.front() == '{' && value.back() == '}')
+                        if (value[0] == '{' && value[value.size() - 1] == '}')
                             value = value.substr(1, value.size() - 2);
 
                         args[key] = value;

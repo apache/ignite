@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -57,12 +58,12 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -72,13 +73,16 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -258,7 +262,7 @@ public class GridReduceQueryExecutor {
     private void onFail(ClusterNode node, GridQueryFailResponse msg) {
         QueryRun r = runs.get(msg.queryRequestId());
 
-        fail(r, node.id(), msg.error());
+        fail(r, node.id(), msg.error(), msg.failCode());
     }
 
     /**
@@ -266,9 +270,15 @@ public class GridReduceQueryExecutor {
      * @param nodeId Failed node ID.
      * @param msg Error message.
      */
-    private void fail(QueryRun r, UUID nodeId, String msg) {
-        if (r != null)
-            r.state(new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg), nodeId);
+    private void fail(QueryRun r, UUID nodeId, String msg, byte failCode) {
+        if (r != null) {
+            CacheException e = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
+
+            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
+                e.addSuppressed(new QueryCancelledException());
+
+            r.state(e, nodeId);
+        }
     }
 
     /**
@@ -326,7 +336,7 @@ public class GridReduceQueryExecutor {
         catch (Exception e) {
             U.error(log, "Error in message.", e);
 
-            fail(r, node.id(), "Error in message.");
+            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR);
 
             return;
         }
@@ -369,17 +379,10 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param cctx Cache context.
-     * @return {@code true} If cache context
+     * @return {@code True} If cache has partitions in {@link GridDhtPartitionState#MOVING} state.
      */
     private boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
-        GridDhtPartitionFullMap fullMap = cctx.topology().partitionMap(false);
-
-        for (GridDhtPartitionMap2 map : fullMap.values()) {
-            if (map.hasMovingPartitions())
-                return true;
-        }
-
-        return false;
+        return cctx.topology().hasMovingPartitions();
     }
 
     /**
@@ -464,13 +467,17 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @param keepPortable Keep portable.
      * @param enforceJoinOrder Enforce join order of tables.
-     * @return Cursor.
+     * @param timeoutMillis Timeout in milliseconds.
+     * @param cancel Query cancel.
+     * @return Rows iterator.
      */
     public Iterator<List<?>> query(
         GridCacheContext<?, ?> cctx,
         GridCacheTwoStepQuery qry,
         boolean keepPortable,
-        boolean enforceJoinOrder
+        boolean enforceJoinOrder,
+        int timeoutMillis,
+        GridQueryCancel cancel
     ) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
@@ -524,6 +531,8 @@ public class GridReduceQueryExecutor {
                 nodes = Collections.singleton(F.rand(nodes));
             }
 
+            final Collection<ClusterNode> finalNodes = nodes;
+
             int tblIdx = 0;
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
@@ -558,6 +567,8 @@ public class GridReduceQueryExecutor {
             runs.put(qryReqId, r);
 
             try {
+                cancel.checkCancelled();
+
                 if (ctx.clientDisconnected()) {
                     throw new CacheException("Query was cancelled, client node disconnected.",
                         new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
@@ -573,24 +584,48 @@ public class GridReduceQueryExecutor {
                         mapQrys.add(new GridCacheSqlQuery("EXPLAIN " + mapQry.query(), mapQry.parameters()));
                 }
 
-                boolean retry = false;
+                IgniteProductVersion minNodeVer = cctx.shared().exchange().minimumNodeVersion(topVer);
 
+                final boolean oldStyle = minNodeVer.compareToIgnoreTimestamp(DISTRIBUTED_JOIN_SINCE) < 0;
                 final boolean distributedJoins = qry.distributedJoins();
 
+                cancel.set(new Runnable() {
+                    @Override public void run() {
+                        send(finalNodes, new GridQueryCancelRequest(qryReqId), null, false);
+                    }
+                });
+
+                boolean retry = false;
+
+                if (oldStyle && distributedJoins)
+                    throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
+
                 if (send(nodes,
-                    new GridH2QueryRequest()
-                        .requestId(qryReqId)
-                        .topologyVersion(topVer)
-                        .pageSize(r.pageSize)
-                        .caches(qry.caches())
-                        .tables(distributedJoins ? qry.tables() : null)
-                        .partitions(convert(partsMap))
-                        .queries(mapQrys)
-                        .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
-                    null,
+                    oldStyle ?
+                        new GridQueryRequest(qryReqId,
+                            r.pageSize,
+                            space,
+                            mapQrys,
+                            topVer,
+                            extraSpaces(space, qry.spaces()),
+                            null,
+                            timeoutMillis) :
+                        new GridH2QueryRequest()
+                            .requestId(qryReqId)
+                            .topologyVersion(topVer)
+                            .pageSize(r.pageSize)
+                            .caches(qry.caches())
+                            .tables(distributedJoins ? qry.tables() : null)
+                            .partitions(convert(partsMap))
+                            .queries(mapQrys)
+                            .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
+                            .timeout(timeoutMillis),
+                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
                     distributedJoins)
-                ) {
+                    ) {
                     awaitAllReplies(r, nodes);
+
+                    cancel.checkCancelled();
 
                     Object state = r.state.get();
 
@@ -600,6 +635,9 @@ public class GridReduceQueryExecutor {
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
+
+                            if (wasCancelled(err))
+                                throw new QueryCancelledException(); // Throw correct exception.
 
                             throw new CacheException("Failed to run map query remotely.", err);
                         }
@@ -643,6 +681,8 @@ public class GridReduceQueryExecutor {
                         resIter = res.iterator();
                     }
                     else {
+                        cancel.checkCancelled();
+
                         UUID locNodeId = ctx.localNodeId();
 
                         h2.setupConnection(r.conn, false, enforceJoinOrder);
@@ -660,9 +700,11 @@ public class GridReduceQueryExecutor {
                                 r.conn,
                                 rdc.query(),
                                 F.asList(rdc.parameters()),
-                                false);
+                                false,
+                                timeoutMillis,
+                                cancel);
 
-                            resIter = new Iter(res);
+                            resIter = new IgniteH2Indexing.FieldsIterator(res);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -671,30 +713,23 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (retry) {
-                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
-
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
                     continue;
                 }
 
-                final Collection<ClusterNode> finalNodes = nodes;
-
-                return new GridQueryCacheObjectsIterator(resIter, cctx, keepPortable) {
-                    @Override public void close() throws Exception {
-                        super.close();
-
-                        if (distributedJoins || !allIndexesFetched(r.idxs))
-                            send(finalNodes, new GridQueryCancelRequest(qryReqId), null, false);
-                    }
-                };
+                return new GridQueryCacheObjectsIterator(resIter, cctx, keepPortable);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.conn);
 
-                if (e instanceof CacheException)
+                if (e instanceof CacheException) {
+                    if (wasCancelled((CacheException)e))
+                        throw new CacheException("Failed to run reduce query locally.", new QueryCancelledException());
+
                     throw (CacheException)e;
+                }
 
                 Throwable cause = e;
 
@@ -709,6 +744,9 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
+                // Make sure any activity related to current attempt is cancelled.
+                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
+
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
 
@@ -731,6 +769,41 @@ public class GridReduceQueryExecutor {
         }
 
         return true;
+    }
+
+    /**
+     * Returns true if the exception is triggered by query cancel.
+     *
+     * @param e Exception.
+     * @return {@code true} if exception is caused by cancel.
+     */
+    private boolean wasCancelled(CacheException e) {
+        return X.hasSuppressed(e, QueryCancelledException.class);
+    }
+
+    /**
+     * @param nodes Query nodes.
+     * @param r Query run.
+     * @param qryReqId Query id.
+     * @param distributedJoins Distributed join flag.
+     */
+    private void cancelRemoteQueriesIfNeeded(Collection<ClusterNode> nodes,
+        QueryRun r,
+        long qryReqId,
+        boolean distributedJoins)
+    {
+        // For distributedJoins need always send cancel request to cleanup resources.
+        if (distributedJoins)
+            send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+        else {
+            for (GridMergeIndex idx : r.idxs) {
+                if (!idx.fetchedAll()) {
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -1036,7 +1109,7 @@ public class GridReduceQueryExecutor {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null, false);
+            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null, false, 0, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1055,7 +1128,9 @@ public class GridReduceQueryExecutor {
             c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters()),
-            false);
+            false,
+            0,
+            null);
 
         lists.add(F.asList(getPlan(rs)));
 
@@ -1103,6 +1178,26 @@ public class GridReduceQueryExecutor {
             locNodeHnd,
             QUERY_POOL,
             runLocParallel);
+    }
+
+    /**
+     * @param msg Message to copy.
+     * @param node Node.
+     * @param partsMap Partitions map.
+     * @return Copy of message with partitions set.
+     */
+    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> partsMap) {
+        assert partsMap != null;
+
+        GridQueryRequest res = new GridQueryRequest((GridQueryRequest)msg);
+
+        IntArray parts = partsMap.get(node);
+
+        assert parts != null : node;
+
+        res.partitions(toArray(parts));
+
+        return res;
     }
 
     /**
@@ -1250,7 +1345,7 @@ public class GridReduceQueryExecutor {
                 latch.countDown();
 
             for (GridMergeIndex idx : idxs) // Fail all merge indexes.
-                idx.fail(nodeId);
+                idx.fail(nodeId, o instanceof CacheException ? (CacheException) o : null);
         }
 
         /**
@@ -1290,6 +1385,25 @@ public class GridReduceQueryExecutor {
             Collections.addAll(res, row);
 
             return res;
+        }
+    }
+    /**
+     *
+     */
+    private class ExplicitPartitionsSpecializer implements IgniteBiClosure<ClusterNode,Message,Message> {
+        /** */
+        private final Map<ClusterNode,IntArray> partsMap;
+
+        /**
+         * @param partsMap Partitions map.
+         */
+        private ExplicitPartitionsSpecializer(Map<ClusterNode,IntArray> partsMap) {
+            this.partsMap = partsMap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Message apply(ClusterNode n, Message msg) {
+            return copy(msg, n, partsMap);
         }
     }
 }

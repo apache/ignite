@@ -50,6 +50,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -63,14 +64,32 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
+import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
+    /** */
+    private static final byte SWAP_TYP_NONE = 0;
+
+    /** */
+    private static final byte SWAP_TYP_FILE = 1;
+
     /**
      * Write .Net configuration to the stream.
      *
@@ -160,6 +179,7 @@ public class PlatformConfigurationUtils {
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
+        ccfg.setStatisticsEnabled(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -182,8 +202,43 @@ public class PlatformConfigurationUtils {
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         ccfg.setAffinity(readAffinityFunction(in));
+        ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
         return ccfg;
+    }
+
+    /**
+     * Reads the expiry policy factory.
+     *
+     * @param in Reader.
+     * @return Expiry policy factory.
+     */
+    private static Factory<? extends ExpiryPolicy> readExpiryPolicyFactory(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        return new PlatformExpiryPolicyFactory(in.readLong(), in.readLong(), in.readLong());
+    }
+
+    /**
+     * Writes the policy factory.
+     *
+     * @param out Writer.
+     */
+    private static void writeExpiryPolicyFactory(BinaryRawWriter out, Factory<? extends ExpiryPolicy> factory) {
+        if (!(factory instanceof PlatformExpiryPolicyFactory)) {
+            out.writeBoolean(false);
+
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        PlatformExpiryPolicyFactory f = (PlatformExpiryPolicyFactory)factory;
+
+        out.writeLong(f.getCreate());
+        out.writeLong(f.getUpdate());
+        out.writeLong(f.getAccess());
     }
 
     /**
@@ -207,7 +262,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Eviction policy.
      */
-    public static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
+    private static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -282,7 +337,7 @@ public class PlatformConfigurationUtils {
      * @param cfg NearCacheConfiguration.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+    private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
@@ -377,7 +432,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReader in) {
+    private static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -428,7 +483,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Query index.
      */
-    public static QueryIndex readQueryIndex(BinaryRawReader in) {
+    private static QueryIndex readQueryIndex(BinaryRawReader in) {
         QueryIndex res = new QueryIndex();
 
         res.setName(in.readString());
@@ -467,6 +522,7 @@ public class PlatformConfigurationUtils {
         String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
         if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
         if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean()) cfg.setFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -534,6 +590,27 @@ public class PlatformConfigurationUtils {
 
             cfg.setTransactionConfiguration(tx);
         }
+
+        byte swapType = in.readByte();
+
+        switch (swapType) {
+            case SWAP_TYP_FILE: {
+                FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+                swap.setBaseDirectory(in.readString());
+                swap.setMaximumSparsity(in.readFloat());
+                swap.setMaxWriteQueueSize(in.readInt());
+                swap.setReadStripesNumber(in.readInt());
+                swap.setWriteBufferSize(in.readInt());
+
+                cfg.setSwapSpaceSpi(swap);
+
+                break;
+            }
+
+            default:
+                assert swapType == SWAP_TYP_NONE;
+        }
     }
 
     /**
@@ -542,7 +619,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    public static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         int len = in.readInt();
 
         if (len == 0)
@@ -574,7 +651,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    public static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
+    private static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
         boolean hasConfig = in.readBoolean();
 
         if (!hasConfig)
@@ -700,6 +777,7 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
+        writer.writeBoolean(ccfg.isStatisticsEnabled());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
@@ -729,6 +807,7 @@ public class PlatformConfigurationUtils {
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
+        writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
     }
 
     /**
@@ -833,6 +912,7 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
         w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true); w.writeLong(cfg.getFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -918,6 +998,23 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
+
+        SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
+
+        if (swap instanceof FileSwapSpaceSpiMBean) {
+            w.writeByte(SWAP_TYP_FILE);
+
+            FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
+
+            w.writeString(fileSwap.getBaseDirectory());
+            w.writeFloat(fileSwap.getMaximumSparsity());
+            w.writeInt(fileSwap.getMaxWriteQueueSize());
+            w.writeInt(fileSwap.getReadStripesNumber());
+            w.writeInt(fileSwap.getWriteBufferSize());
+        }
+        else {
+            w.writeByte(SWAP_TYP_NONE);
+        }
 
         w.writeString(cfg.getIgniteHome());
 

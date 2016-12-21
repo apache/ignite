@@ -124,6 +124,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -136,6 +137,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -172,14 +174,15 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
@@ -187,6 +190,7 @@ import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
+import static org.apache.ignite.internal.IgniteComponentType.HADOOP_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
@@ -208,8 +212,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
@@ -653,26 +657,35 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param utilityCachePool Utility cache pool.
      * @param execSvc Executor service.
      * @param sysExecSvc System executor service.
+     * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc Reset executor service.
+     * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final IgniteConfiguration cfg,
+    public void start(
+        final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
+        final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
-        GridAbsClosure errHnd)
-        throws IgniteCheckedException {
+        GridAbsClosure errHnd
+    )
+        throws IgniteCheckedException
+    {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -770,20 +783,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 marshCachePool,
                 execSvc,
                 sysExecSvc,
+                stripedExecSvc,
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc,
+                affExecSvc,
+                idxExecSvc,
                 callbackExecSvc,
-                plugins);
+                plugins
+            );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
 
             startProcessor(clusterProc);
-
-            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             U.onGridStart();
 
@@ -813,7 +828,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
+            addHelper(HADOOP_HELPER.createIfInClassPath(ctx, false));
+
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
+
+            startProcessor(new PoolProcessor(ctx));
 
             // Closure processor should be started before all others
             // (except for resource processor), as many components can depend on it.
@@ -869,7 +888,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor((GridProcessor)createHadoopComponent());
+            startProcessor(createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
@@ -879,6 +898,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
+
+            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             gw.writeLock();
 
@@ -968,24 +989,51 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             starveTask = ctx.timeout().schedule(new Runnable() {
                 /** Last completed task count. */
-                private long lastCompletedCnt;
+                private long lastCompletedCntPub;
+
+                /** Last completed task count. */
+                private long lastCompletedCntSys;
 
                 @Override public void run() {
-                    if (!(execSvc instanceof ThreadPoolExecutor))
-                        return;
+                    if (execSvc instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
-                    ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+                        lastCompletedCntPub = checkPoolStarvation(exec, lastCompletedCntPub, "public");
+                    }
 
+                    if (sysExecSvc instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
+
+                        lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
+                    }
+
+                    if (stripedExecSvc != null)
+                        stripedExecSvc.checkStarvation();
+                }
+
+                /**
+                 * @param exec Thread pool executor to check.
+                 * @param lastCompletedCnt Last completed tasks count.
+                 * @param pool Pool name for message.
+                 * @return Current completed tasks count.
+                 */
+                private long checkPoolStarvation(
+                    ThreadPoolExecutor exec,
+                    long lastCompletedCnt,
+                    String pool
+                ) {
                     long completedCnt = exec.getCompletedTaskCount();
 
                     // If all threads are active and no task has completed since last time and there is
                     // at least one waiting request, then it is possible starvation.
                     if (exec.getPoolSize() == exec.getActiveCount() && completedCnt == lastCompletedCnt &&
                         !exec.getQueue().isEmpty())
-                        LT.warn(log, null, "Possible thread pool starvation detected (no task completed in last " +
-                            interval + "ms, is executorService pool size large enough?)");
+                        LT.warn(
+                            log,
+                            "Possible thread pool starvation detected (no task completed in last " +
+                                interval + "ms, is " + pool + " thread pool size large enough?)");
 
-                    lastCompletedCnt = completedCnt;
+                    return completedCnt;
                 }
             }, interval, interval);
         }
@@ -1110,6 +1158,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, longOpDumpTimeout, longOpDumpTimeout);
         }
 
+        ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
+
         ctx.performance().logSuggestions(log, gridName);
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
@@ -1117,7 +1167,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackStart(rtBean);
 
         if (!isDaemon())
-            ctx.discovery().ackTopology();
+            ctx.discovery().ackTopology(localNode().order());
     }
 
     /**
@@ -1143,7 +1193,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         else {
             HadoopProcessorAdapter cmp = null;
 
-            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+            if (!ctx.hadoopHelper().isNoOp() && cfg.isPeerClassLoadingEnabled()) {
                 U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
                     "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
                     "to use Hadoop module).");
@@ -1613,7 +1663,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isRestEnabled() {
         assert cfg != null;
 
-        return cfg.getConnectorConfiguration() != null;
+        return cfg.getConnectorConfiguration() != null &&
+            // By default rest processor doesn't start on client nodes.
+            (!isClientNode() || (isClientNode() && IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT)));
+    }
+
+    /**
+     * @return {@code True} if node client or daemon otherwise {@code false}.
+     */
+    private boolean isClientNode() {
+        return cfg.isClientMode() || cfg.isDaemon();
     }
 
     /**
@@ -1775,6 +1834,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (log.isInfoEnabled()) {
             log.info("OS: " + U.osString());
             log.info("OS user: " + System.getProperty("user.name"));
+
+            int jvmPid = U.jvmPid();
+
+            log.info("PID: " + (jvmPid == -1 ? "N/A" : jvmPid));
         }
     }
 
@@ -2507,6 +2570,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
+        A.notNull(cacheCfgs, "cacheCfgs");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCaches(cacheCfgs,
+                true,
+                true).get();
+
+            List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
+
+            for (CacheConfiguration cacheCfg : cacheCfgs)
+                createdCaches.add(ctx.cache().publicJCache(cacheCfg.getName()));
+
+            return createdCaches;
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
         guard();
@@ -2541,6 +2631,32 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) {
+        A.notNull(cacheCfgs, "cacheCfgs");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCaches(cacheCfgs,
+                false,
+                true).get();
+
+            List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
+
+            for (CacheConfiguration cacheCfg : cacheCfgs)
+                createdCaches.add(ctx.cache().publicJCache(cacheCfg.getName()));
+
+            return createdCaches;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2711,6 +2827,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void destroyCaches(Collection<String> cacheNames) {
+        IgniteInternalFuture stopFut = destroyCachesAsync(cacheNames, true);
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+    }
+
     /**
      * @param cacheName Cache name.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
@@ -2721,6 +2849,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.cache().dynamicDestroyCache(cacheName, checkThreadTx);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * @param cacheNames Collection of cache names.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Ignite future.
+     */
+    public IgniteInternalFuture<?> destroyCachesAsync(Collection<String> cacheNames, boolean checkThreadTx) {
+        guard();
+
+        try {
+            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx);
         }
         finally {
             unguard();

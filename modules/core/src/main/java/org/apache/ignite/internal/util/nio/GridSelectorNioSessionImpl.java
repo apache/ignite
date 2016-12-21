@@ -20,7 +20,9 @@ package org.apache.ignite.internal.util.nio;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
@@ -37,11 +39,14 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */
-    private final ConcurrentLinkedDeque8<GridNioFuture<?>> queue = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque8<SessionWriteRequest> queue = new ConcurrentLinkedDeque8<>();
 
     /** Selection key associated with this session. */
     @GridToStringExclude
     private SelectionKey key;
+
+    /** Current worker thread. */
+    private volatile GridNioWorker worker;
 
     /** Worker index for server */
     private final int selectorIdx;
@@ -66,13 +71,19 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final IgniteLogger log;
 
     /** */
+    private List<GridNioServer.SessionChangeRequest> pendingStateChanges;
+
+    /** */
     final AtomicBoolean procWrite = new AtomicBoolean();
+
+    /** */
+    private Object sysMsg;
 
     /**
      * Creates session instance.
      *
      * @param log Logger.
-     * @param selectorIdx Selector index for this session.
+     * @param worker NIO worker thread.
      * @param filterChain Filter chain that will handle requests.
      * @param locAddr Local address.
      * @param rmtAddr Remote address.
@@ -83,7 +94,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     GridSelectorNioSessionImpl(
         IgniteLogger log,
-        int selectorIdx,
+        GridNioWorker worker,
         GridNioFilterChain filterChain,
         InetSocketAddress locAddr,
         InetSocketAddress rmtAddr,
@@ -94,7 +105,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     ) {
         super(filterChain, locAddr, rmtAddr, accepted);
 
-        assert selectorIdx >= 0;
+        assert worker != null;
         assert sndQueueLimit >= 0;
 
         assert locAddr != null : "GridSelectorNioSessionImpl should have local socket address.";
@@ -104,7 +115,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         this.log = log;
 
-        this.selectorIdx = selectorIdx;
+        this.worker = worker;
 
         sem = sndQueueLimit > 0 ? new Semaphore(sndQueueLimit) : null;
 
@@ -119,6 +130,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             this.readBuf = readBuf;
         }
+    }
+
+    /**
+     * @return Worker.
+     */
+    GridNioWorker worker() {
+        return worker;
     }
 
     /**
@@ -154,10 +172,88 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
-     * @return Selector index.
+     * @param from Current session worker.
+     * @param fut Move future.
+     * @return {@code True} if session move was scheduled.
      */
-    int selectorIndex() {
-        return selectorIdx;
+    boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
+        synchronized (this) {
+            if (log.isDebugEnabled())
+                log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
+
+            GridNioWorker worker0 = worker;
+
+            if (worker0 != from)
+                return false;
+
+            worker.offer(fut);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param fut Future.
+     */
+    void offerStateChange(GridNioServer.SessionChangeRequest fut) {
+        synchronized (this) {
+            if (log.isDebugEnabled())
+                log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
+
+            GridNioWorker worker0 = worker;
+
+            if (worker0 == null) {
+                if (pendingStateChanges == null)
+                    pendingStateChanges = new ArrayList<>();
+
+                pendingStateChanges.add(fut);
+            }
+            else
+                worker0.offer(fut);
+        }
+    }
+
+    /**
+     * @param moveFrom Current session worker.
+     */
+    void startMoveSession(GridNioWorker moveFrom) {
+        synchronized (this) {
+            assert this.worker == moveFrom;
+
+            if (log.isDebugEnabled())
+                log.debug("Started moving [ses=" + this + ", from=" + moveFrom + ']');
+
+            List<GridNioServer.SessionChangeRequest> sesReqs = moveFrom.clearSessionRequests(this);
+
+            worker = null;
+
+            if (sesReqs != null) {
+                if (pendingStateChanges == null)
+                    pendingStateChanges = new ArrayList<>();
+
+                pendingStateChanges.addAll(sesReqs);
+            }
+        }
+    }
+
+    /**
+     * @param moveTo New session worker.
+     */
+    void finishMoveSession(GridNioWorker moveTo) {
+        synchronized (this) {
+            assert worker == null;
+
+            if (log.isDebugEnabled())
+                log.debug("Finishing moving [ses=" + this + ", to=" + moveTo + ']');
+
+            worker = moveTo;
+
+            if (pendingStateChanges != null) {
+                moveTo.offer(pendingStateChanges);
+
+                pendingStateChanges = null;
+            }
+        }
     }
 
     /**
@@ -166,7 +262,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request.
      * @return Updated size of the queue.
      */
-    int offerSystemFuture(GridNioFuture<?> writeFut) {
+    int offerSystemFuture(SessionWriteRequest writeFut) {
         writeFut.messageThread(true);
 
         boolean res = queue.offerFirst(writeFut);
@@ -186,7 +282,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request to add.
      * @return Updated size of the queue.
      */
-    int offerFuture(GridNioFuture<?> writeFut) {
+    int offerFuture(SessionWriteRequest writeFut) {
         boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
 
         if (sem != null && !msgThread)
@@ -204,7 +300,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @param futs Futures to resend.
      */
-    void resend(Collection<GridNioFuture<?>> futs) {
+    void resend(Collection<SessionWriteRequest> futs) {
         assert queue.isEmpty() : queue.size();
 
         boolean add = queue.addAll(futs);
@@ -215,8 +311,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @return Message that is in the head of the queue, {@code null} if queue is empty.
      */
-    @Nullable GridNioFuture<?> pollFuture() {
-        GridNioFuture<?> last = queue.poll();
+    @Nullable SessionWriteRequest pollFuture() {
+        SessionWriteRequest last = queue.poll();
 
         if (last != null) {
             if (sem != null && !last.messageThread())
@@ -224,14 +320,14 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             if (outRecovery != null) {
                 if (!outRecovery.add(last)) {
-                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
+                    LT.warn(log, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
                         "[remoteAddr=" + remoteAddress() +
                         ", queueLimit=" + outRecovery.queueLimit() + ']');
 
                     if (log.isDebugEnabled())
                         log.debug("Unacknowledged messages queue size overflow, will attempt to reconnect " +
                             "[remoteAddr=" + remoteAddress() +
-                            ", queueSize=" + outRecovery.messagesFutures().size() +
+                            ", queueSize=" + outRecovery.messagesRequests().size() +
                             ", queueLimit=" + outRecovery.queueLimit() + ']');
 
                     close();
@@ -246,7 +342,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param fut Future.
      * @return {@code True} if future was removed from queue.
      */
-    boolean removeFuture(GridNioFuture<?> fut) {
+    boolean removeFuture(SessionWriteRequest fut) {
         assert closed();
 
         return queue.removeLastOccurrence(fut);
@@ -264,7 +360,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @return Write requests.
      */
-    Collection<GridNioFuture<?>> writeQueue() {
+    Collection<SessionWriteRequest> writeQueue() {
         return queue;
     }
 
@@ -297,6 +393,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         if (!accepted() && val instanceof GridNioRecoveryDescriptor) {
             outRecovery = (GridNioRecoveryDescriptor)val;
 
+            if (!outRecovery.pairedConnections())
+                inRecovery = outRecovery;
+
             outRecovery.onConnected();
 
             return null;
@@ -318,6 +417,31 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     void onClosed() {
         if (sem != null)
             sem.release(1_000_000);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void systemMessage(Object sysMsg) {
+        this.sysMsg = sysMsg;
+    }
+
+    /**
+     * @return {@code True} if have pending system message to send.
+     */
+    boolean hasSystemMessage() {
+        return sysMsg != null;
+    }
+
+    /**
+     * Gets and clears pending system message.
+     *
+     * @return Pending system message.
+     */
+    Object systemMessage() {
+        Object ret = sysMsg;
+
+        sysMsg = null;
+
+        return ret;
     }
 
     /** {@inheritDoc} */

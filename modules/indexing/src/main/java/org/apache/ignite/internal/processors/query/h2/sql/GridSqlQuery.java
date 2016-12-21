@@ -25,7 +25,7 @@ import org.h2.util.StringUtils;
 /**
  * Select query.
  */
-public abstract class GridSqlQuery {
+public abstract class GridSqlQuery extends GridSqlStatement {
     /** */
     protected boolean distinct;
 
@@ -34,29 +34,6 @@ public abstract class GridSqlQuery {
 
     /** */
     protected GridSqlElement offset;
-
-    /** */
-    protected GridSqlElement limit;
-
-    /** */
-    private boolean explain;
-
-    /**
-     * @param explain Explain.
-     * @return {@code this}.
-     */
-    public GridSqlQuery explain(boolean explain) {
-        this.explain = explain;
-
-        return this;
-    }
-
-    /**
-     * @return {@code true} If explain.
-     */
-    public boolean explain() {
-        return explain;
-    }
 
     /**
      * @return Offset.
@@ -73,20 +50,6 @@ public abstract class GridSqlQuery {
     }
 
     /**
-     * @param limit Limit.
-     */
-    public void limit(GridSqlElement limit) {
-        this.limit = limit;
-    }
-
-    /**
-     * @return Limit.
-     */
-    public GridSqlElement limit() {
-        return limit;
-    }
-
-    /**
      * @return Distinct.
      */
     public boolean distinct() {
@@ -99,11 +62,6 @@ public abstract class GridSqlQuery {
     public void distinct(boolean distinct) {
         this.distinct = distinct;
     }
-
-    /**
-     * @return Generate sql.
-     */
-    public abstract String getSQL();
 
     /**
      * @return Sort.

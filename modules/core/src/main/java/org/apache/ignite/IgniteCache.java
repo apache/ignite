@@ -43,9 +43,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.store.CacheStore;
@@ -298,6 +300,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cursor.
      * @see ScanQuery
      * @see SqlQuery
+     * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
      */
@@ -332,6 +335,24 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Metrics.
      */
     public QueryMetrics queryMetrics();
+
+    /**
+     * Reset query metrics.
+     */
+    public void resetQueryMetrics();
+
+    /**
+     * Gets query detail metrics.
+     * Query detail metrics could be enabled via {@link CacheConfiguration#setQueryDetailMetricsSize(int)} method.
+     *
+     * @return Metrics.
+     */
+    public Collection<? extends QueryDetailMetrics> queryDetailMetrics();
+
+    /**
+     * Reset query detail metrics.
+     */
+    public void resetQueryDetailMetrics();
 
     /**
      * Attempts to evict all entries associated with keys. Note,

@@ -29,6 +29,7 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,7 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
@@ -834,6 +835,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -891,7 +894,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
-            old = this.val;
+            old = oldValPresent ? oldVal : this.val;
 
             if (intercept) {
                 val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
@@ -1025,6 +1028,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -1086,7 +1091,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (startVer && (retval || intercept || lsnrCol != null))
                 unswap();
 
-            old = val;
+            old = oldValPresent ? oldVal : val;
 
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
@@ -1584,7 +1589,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final String taskName,
         @Nullable final CacheObject prevVal,
         @Nullable final Long updateCntr,
-        @Nullable GridDhtAtomicUpdateFuture fut
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic();
 
@@ -2982,11 +2987,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (val == null) {
                     skipQryNtf = true;
 
-                    if (cctx.deferredDelete() && !isInternal()) {
-                        assert !deletedUnlocked();
-
+                    if (cctx.deferredDelete() && !deletedUnlocked() && !isInternal())
                         deletedUnlocked(true);
-                    }
                 }
                 else if (deletedUnlocked())
                     deletedUnlocked(false);
@@ -3115,41 +3117,42 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer)
+        GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
 
         checkObsolete();
 
         if (curVer == null || curVer.equals(ver)) {
             if (val != this.val) {
-                GridCacheMvcc mvcc = mvccExtras();
+                        GridCacheMvcc mvcc = mvccExtras();
 
-                if (mvcc != null && !mvcc.isEmpty())
-                    return null;
+                        if (mvcc != null && !mvcc.isEmpty())
+                            return null;
 
-                if (newVer == null)
-                    newVer = cctx.versions().next();
+                        if (newVer == null)
+                            newVer = cctx.versions().next();
 
-                long ttl = ttlExtras();
+                        long ttl = ttlExtras();
 
-                long expTime = CU.toExpireTime(ttl);
+                        long expTime = CU.toExpireTime(ttl);
 
-                // Detach value before index update.
-                val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+                        // Detach value before index update.
+                        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
-                if (val != null) {
-                    storeValue(val, expTime, newVer);
+                        if (val != null) {
+                            storeValue(val, expTime, newVer);
 
-                    if (deletedUnlocked())
-                        deletedUnlocked(false);
+                            if (deletedUnlocked())
+                                deletedUnlocked(false);
+                        }
+
+                        // Version does not change for load ops.
+                        update(val, expTime, ttl, newVer, true);
+
+                        return newVer;
+                    }
                 }
-
-                // Version does not change for load ops.
-                update(val, expTime, ttl, newVer, true);
-
-                return newVer;
-            }
-        }
 
         return null;
     }

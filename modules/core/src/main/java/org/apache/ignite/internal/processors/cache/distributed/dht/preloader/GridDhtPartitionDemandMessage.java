@@ -200,7 +200,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         super.prepareMarshal(ctx);
 
         if (topic != null && topicBytes == null)
-            topicBytes = ctx.marshaller().marshal(topic);
+            topicBytes = U.marshal(ctx, topic);
     }
 
     /** {@inheritDoc} */
@@ -208,7 +208,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         super.finishUnmarshal(ctx, ldr);
 
         if (topicBytes != null && topic == null)
-            topic = ctx.marshaller().unmarshal(topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

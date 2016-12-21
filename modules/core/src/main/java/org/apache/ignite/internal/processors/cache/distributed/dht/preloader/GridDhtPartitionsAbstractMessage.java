@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +32,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Request for single partition info.
  */
-abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
+public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
+    /** */
+    public static final IgniteProductVersion PART_MAP_COMPRESS_SINCE = IgniteProductVersion.fromString("1.6.11");
+
+    /** */
+    protected static final byte COMPRESSED_FLAG_MASK = 1;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,6 +47,9 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
 
     /** Last used cache version. */
     private GridCacheVersion lastVer;
+
+    /** */
+    private byte flags;
 
     /**
      * Required by {@link Externalizable}.
@@ -87,6 +97,20 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
         return lastVer;
     }
 
+    /**
+     * @return {@code True} if message data is compressed.
+     */
+    protected final boolean compressed() {
+        return (flags & COMPRESSED_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param compressed {@code True} if message data is compressed.
+     */
+    protected final void compressed(boolean compressed) {
+        flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -109,6 +133,12 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
@@ -139,6 +169,14 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 lastVer = reader.readMessage("lastVer");
 
                 if (!reader.isLastRead())

@@ -101,6 +101,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         cleanupWorker = new CleanupWorker();
 
         pendingEntries = cctx.config().getNearConfiguration() != null ? new GridConcurrentSkipListSetEx() : null;
+
+        cctx.shared().ttl().register(this);
     }
 
     /**
@@ -122,6 +124,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     @Override protected void onKernalStop0(boolean cancel) {
         U.cancel(cleanupWorker);
         U.join(cleanupWorker, log);
+
+        pendingEntries.clear();
+
+        cctx.shared().ttl().unregister(this);
     }
 
     /**

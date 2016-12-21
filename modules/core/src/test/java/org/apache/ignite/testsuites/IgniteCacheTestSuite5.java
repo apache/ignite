@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.CacheSerializableTransactions
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapCleanupTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteActiveOnSta
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 
 /**
@@ -63,11 +65,13 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
 
+        suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
+
+        suite.addTestSuite(CacheRebalancingSelfTest.class);
+
         suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
         suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
         suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
-
-        suite.addTestSuite(CacheRebalancingSelfTest.class);
 
         return suite;
     }

@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -126,9 +127,6 @@ public class IgfsUtils {
     /** Flag: this is a file. */
     private static final byte FLAG_FILE = 0x2;
 
-    /**
-     * Static initializer.
-     */
     static {
         TRASH_IDS = new IgniteUuid[TRASH_CONCURRENCY];
 
@@ -750,6 +748,21 @@ public class IgfsUtils {
     }
 
     /**
+     * Read non-null path from the input.
+     *
+     * @param in Input.
+     * @return IGFS path.
+     * @throws IOException If failed.
+     */
+    public static IgfsPath readPath(ObjectInput in) throws IOException {
+        IgfsPath res = new IgfsPath();
+
+        res.readExternal(in);
+
+        return res;
+    }
+
+    /**
      * Write IgfsFileAffinityRange.
      *
      * @param writer Writer
@@ -878,7 +891,7 @@ public class IgfsUtils {
 
         ArrayList<T2<IgfsPath, IgfsMode>> resModes = new ArrayList<>(modes.size() + 1);
 
-        resModes.add(new T2<>(new IgfsPath("/"), dfltMode));
+        resModes.add(new T2<>(IgfsPath.ROOT, dfltMode));
 
         for (T2<IgfsPath, IgfsMode> mode : modes) {
             assert mode.getKey() != null;

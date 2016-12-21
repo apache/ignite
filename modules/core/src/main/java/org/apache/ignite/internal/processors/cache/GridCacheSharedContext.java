@@ -108,6 +108,9 @@ public class GridCacheSharedContext<K, V> {
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
 
+    /** Ttl cleanup manager. */
+    private GridCacheSharedTtlCleanupManager ttlMgr;
+
     /** Cache contexts map. */
     private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -153,6 +156,7 @@ public class GridCacheSharedContext<K, V> {
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
+     * @param ttlMgr Ttl cleanup manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
      */
@@ -168,12 +172,13 @@ public class GridCacheSharedContext<K, V> {
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
         GridCacheIoManager ioMgr,
+        GridCacheSharedTtlCleanupManager ttlMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -275,7 +280,8 @@ public class GridCacheSharedContext<K, V> {
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
-            ioMgr);
+            ioMgr,
+            ttlMgr);
 
         this.mgrs = mgrs;
 
@@ -299,13 +305,14 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param mgrs Managers list.
      * @param txMgr Transaction manager.
+     * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
-     * @param jtaMgr JTA manager.
+     * @param ttlMgr Ttl cleanup manager.
      */
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
@@ -318,7 +325,8 @@ public class GridCacheSharedContext<K, V> {
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
-        GridCacheIoManager ioMgr) {
+        GridCacheIoManager ioMgr,
+        GridCacheSharedTtlCleanupManager ttlMgr) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -330,6 +338,7 @@ public class GridCacheSharedContext<K, V> {
         this.exchMgr = add(mgrs, exchMgr);
         this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
+        this.ttlMgr = add(mgrs, ttlMgr);
     }
 
     /**
@@ -547,6 +556,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Ttl cleanup manager.
+     * */
+    public GridCacheSharedTtlCleanupManager ttl() {
+        return ttlMgr;
+    }
+
+    /**
      * @return Cache deployment manager.
      */
     public GridCacheDeploymentManager<K, V> deploy() {
@@ -674,6 +690,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
+        f.add(mvcc().finishDataStreamerUpdates());
 
         f.markInitialized();
 
