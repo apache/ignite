@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin;
@@ -32,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         private readonly IgniteConfiguration _igniteConfiguration;
 
         /** */
-        private readonly Dictionary<string, PluginProviderWrapper> _pluginProviders;
+        private readonly Dictionary<string, IPluginProviderProxy> _pluginProviders;
 
         /** */
         private volatile IIgnite _ignite;
@@ -67,8 +68,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
             get { return _igniteConfiguration; }
         }
 
-        public IPluginConfiguration PluginConfiguration { get; private set; }
-
         /// <summary>
         /// Called when Ignite has started.
         /// </summary>
@@ -97,11 +96,11 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Gets the provider.
         /// </summary>
-        public PluginProviderWrapper GetProvider(string name)
+        public IPluginProviderProxy GetProvider(string name)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
 
-            PluginProviderWrapper provider;
+            IPluginProviderProxy provider;
 
             if (!_pluginProviders.TryGetValue(name, out provider))
                 throw new PluginNotFoundException(
@@ -115,10 +114,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private Dictionary<string, PluginProviderWrapper> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations, 
+        private Dictionary<string, IPluginProviderProxy> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations, 
             ILogger log)
         {
-            var res = new Dictionary<string, PluginProviderWrapper>();
+            var res = new Dictionary<string, IPluginProviderProxy>();
 
             log.Info("Configured .NET plugins:");
 
@@ -126,8 +125,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             {
                 foreach (var cfg in pluginConfigurations)
                 {
-                    // TODO: Create from attribute
-                    PluginProviderWrapper provider = new PluginProviderWrapper();
+                    var provider = CreateProviderProxy(cfg);
 
                     ValidateProvider(provider, res);
 
@@ -149,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Logs the provider information.
         /// </summary>
-        private static void LogProviderInfo(ILogger log, PluginProviderWrapper provider)
+        private static void LogProviderInfo(ILogger log, IPluginProviderProxy provider)
         {
             log.Info("  ^-- " + provider.Name + " " + provider.GetType().Assembly.GetName().Version);
 
@@ -162,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Validates the provider.
         /// </summary>
-        private static void ValidateProvider(PluginProviderWrapper provider, Dictionary<string, PluginProviderWrapper> res)
+        private static void ValidateProvider(IPluginProviderProxy provider, Dictionary<string, IPluginProviderProxy> res)
         {
             if (provider == null)
             {
@@ -173,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             if (string.IsNullOrEmpty(provider.Name))
             {
                 throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
-                    typeof(PluginProviderWrapper), provider.GetType().AssemblyQualifiedName));
+                    typeof(IPluginProviderProxy), provider.GetType().AssemblyQualifiedName));
             }
 
             if (res.ContainsKey(provider.Name))
@@ -183,6 +181,46 @@ namespace Apache.Ignite.Core.Impl.Plugin
                     provider.GetType().AssemblyQualifiedName,
                     res[provider.Name].GetType().AssemblyQualifiedName));
             }
+        }
+
+        /// <summary>
+        /// Creates the provider proxy.
+        /// </summary>
+        private static IPluginProviderProxy CreateProviderProxy(IPluginConfiguration pluginConfiguration)
+        {
+            Debug.Assert(pluginConfiguration != null);
+
+            var cfgType = pluginConfiguration.GetType();
+
+            var attributes = cfgType.GetCustomAttributes(true).OfType<PluginProviderTypeAttribute>().ToArray();
+
+            if (attributes.Length == 0)
+            {
+                throw new IgniteException(string.Format("{0} of type {1} has no {2}",
+                    typeof(IPluginConfiguration), cfgType, typeof(PluginProviderTypeAttribute)));
+
+            }
+
+            if (attributes.Length > 1)
+            {
+                throw new IgniteException(string.Format("{0} of type {1} has more than one {2}",
+                    typeof(IPluginConfiguration), cfgType, typeof(PluginProviderTypeAttribute)));
+            }
+
+            var providerType = attributes[0].PluginProviderType;
+
+            var iface = providerType.GetInterfaces()
+                .SingleOrDefault(i => i.IsGenericType &&
+                                      i.GetGenericTypeDefinition() == typeof(IPluginProvider<>) &&
+                                      i.GetGenericArguments()[0] == cfgType);
+
+            if (iface == null)
+            {
+                throw new IgniteException(string.Format("{0} does not implement {1}",
+                    providerType, typeof(IPluginProvider<>).MakeGenericType(cfgType)));
+            }
+
+            return null; // TODO
         }
     }
 }

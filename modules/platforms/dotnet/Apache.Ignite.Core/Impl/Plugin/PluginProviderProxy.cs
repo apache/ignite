@@ -20,41 +20,59 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
-    /// Plugin context.
+    /// Wraps user-defined generic <see cref="IPluginProvider{TConfig}"/>.
     /// </summary>
-    internal class PluginContext<T> : IPluginContext<T> where T : IPluginConfiguration
+    internal class PluginProviderProxy<T>  : IPluginProviderProxy where T : IPluginConfiguration
     {
         /** */
         private readonly T _pluginConfiguration;
 
         /** */
-        private readonly PluginProcessor _pluginProcessor;
+        private readonly IPluginProvider<T> _pluginProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginContext{T}"/> class.
+        /// Initializes a new instance of the <see cref="PluginProviderProxy{T}"/> class.
         /// </summary>
-        public PluginContext(PluginProcessor pluginProcessor, T pluginConfiguration)
+        public PluginProviderProxy(T pluginConfiguration, IPluginProvider<T> pluginProvider)
         {
-            _pluginProcessor = pluginProcessor;
             _pluginConfiguration = pluginConfiguration;
+            _pluginProvider = pluginProvider;
         }
 
         /** <inheritdoc /> */
-        public IIgnite Ignite
+        public void Start(PluginProcessor pluginProcessor)
         {
-            get { return _pluginProcessor.Ignite; }
+            _pluginProvider.Start(new PluginContext<T>(pluginProcessor, _pluginConfiguration));
         }
 
         /** <inheritdoc /> */
-        public IgniteConfiguration IgniteConfiguration
+        public string Name
         {
-            get { return _pluginProcessor.IgniteConfiguration; }
+            get { return _pluginProvider.Name; }
         }
 
         /** <inheritdoc /> */
-        public T PluginConfiguration
+        public string Copyright
         {
-            get { return _pluginConfiguration; }
+            get { return _pluginProvider.Copyright; }
+        }
+
+        /** <inheritdoc /> */
+        public TPlugin GetPlugin<TPlugin>() where TPlugin : class
+        {
+            return _pluginProvider.GetPlugin<TPlugin>();
+        }
+
+        /** <inheritdoc /> */
+        public void Stop(bool cancel)
+        {
+            _pluginProvider.Stop(cancel);
+        }
+
+        /** <inheritdoc /> */
+        public void OnIgniteStart()
+        {
+            _pluginProvider.OnIgniteStart();
         }
     }
 }
