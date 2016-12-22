@@ -14,18 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,25 +33,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class MarshallerMappingTransport {
     /** */
-    private final GridDiscoveryManager discoMgr;
+    private final GridKernalContext ctx;
 
     /** */
-    private final GridIoManager ioMgr;
+    private final GridDiscoveryManager discoMgr;
 
     /** */
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap;
 
     /** */
+    private final ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap;
+
+    /** */
     private volatile boolean stopping;
 
     /**
-     * @param discoMgr Disco manager.
+     * @param ctx Context.
      * @param mappingExchSyncMap Mapping exch sync map.
+     * @param clientReqSyncMap Client request sync map.
      */
-    MarshallerMappingTransport(GridDiscoveryManager discoMgr, GridIoManager ioMgr, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap) {
-        this.discoMgr = discoMgr;
-        this.ioMgr = ioMgr;
+    MarshallerMappingTransport(GridKernalContext ctx, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap, ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap) {
+        this.ctx = ctx;
+        discoMgr = ctx.discovery();
         this.mappingExchSyncMap = mappingExchSyncMap;
+        this.clientReqSyncMap = clientReqSyncMap;
 
         stopping = false;
     }
@@ -120,27 +122,23 @@ public final class MarshallerMappingTransport {
      * @param item Item.
      * @param cache Cache.
      */
-    public GridFutureAdapter<MappingExchangeResult> requestMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) throws IgniteCheckedException {
-        MappingExchangeResultFuture newFut = new MappingExchangeResultFuture(item);
+    public GridFutureAdapter<MappingExchangeResult> requestMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) {
+        ClientRequestFuture newFut = new ClientRequestFuture(ctx, item, clientReqSyncMap);
 
-        GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, newFut);
+        ClientRequestFuture oldFut = clientReqSyncMap.putIfAbsent(item, newFut);
 
         if (oldFut != null)
             return oldFut;
 
-        if (oldFut == null) {
-            MappedName mappedName = cache.get(item.typeId());
-            if (mappedName != null) {
-                newFut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
+        MappedName mappedName = cache.get(item.typeId());
 
-                return newFut;
-            }
+        if (mappedName != null) {
+            newFut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
+
+            return newFut;
         }
 
-        //if this node fails right before sending request, I need to repeat this with next oldestNode
-        ClusterNode oldestNode = discoMgr.oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
-
-        ioMgr.send(oldestNode, GridTopic.TOPIC_MAPPING_MARSH, new MissingMappingRequestMessage(item.platformId(), item.typeId()), GridIoPolicy.SYSTEM_POOL);
+        newFut.requestMapping();
 
         return newFut;
     }

@@ -190,6 +190,7 @@ public final class DiscoveryDataContainer implements Serializable {
 
     /** */
     private UUID joiningNodeId;
+
     /** */
     private boolean clientNode;
 
@@ -201,7 +202,6 @@ public final class DiscoveryDataContainer implements Serializable {
 
     /** */
     private Map<UUID, Map<Integer, byte[]>> nodeSpecificDiscoData = new LinkedHashMap<>();
-
 
     /** */
     private transient Map<Integer, Serializable> unmarshJoiningNodeDiscoData;

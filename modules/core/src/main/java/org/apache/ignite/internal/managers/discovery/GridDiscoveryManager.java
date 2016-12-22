@@ -1546,6 +1546,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCache().allNodes();
     }
 
+    /** @return all alive server nodes is topology */
+    public Collection<ClusterNode> aliveSrvNodes() {
+        return discoCache().aliveSrvNodes();
+    }
+
     /** @return Full topology size. */
     public int size() {
         return discoCache().allNodes().size();
@@ -2529,6 +2534,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Highest node order. */
         private final long maxOrder;
 
+        /** Alive server nodes */
+        private final Collection<ClusterNode> aliveSrvNodes;
+
         /**
          * Cached alive nodes list. As long as this collection doesn't accept {@code null}s use {@link
          * #maskNull(String)} before passing raw cache names to it.
@@ -2579,6 +2587,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             aliveRmtCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
             aliveSrvNodesWithCaches = new ConcurrentSkipListMap<>(GridNodeOrderComparator.INSTANCE);
             nodesByVer = new TreeMap<>();
+
+            List<ClusterNode> aliveSrvNodesList = new ArrayList<>(allNodes.size());
 
             long maxOrder0 = 0;
 
@@ -2631,8 +2641,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                if (hasCaches && alive(node.id()) && !CU.clientNode(node))
-                    aliveSrvNodesWithCaches.put(node, Boolean.TRUE);
+                if (alive(node.id()) && !CU.clientNode(node)) {
+                    aliveSrvNodesList.add(node);
+
+                    if (hasCaches)
+                        aliveSrvNodesWithCaches.put(node, Boolean.TRUE);
+                }
 
                 IgniteProductVersion nodeVer = U.productVersion(node);
 
@@ -2663,6 +2677,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             maxOrder = maxOrder0;
+
+            aliveSrvNodes = Collections.unmodifiableList(aliveSrvNodesList);
 
             allCacheNodes = Collections.unmodifiableMap(cacheMap);
             rmtCacheNodes = Collections.unmodifiableMap(rmtCacheMap);
@@ -2758,6 +2774,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         Collection<ClusterNode> cacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, allCacheNodes.get(cacheName));
+        }
+
+        /**
+         * Gets all alive server nodes.
+         */
+        Collection<ClusterNode> aliveSrvNodes() {
+            return aliveSrvNodes;
         }
 
         /**

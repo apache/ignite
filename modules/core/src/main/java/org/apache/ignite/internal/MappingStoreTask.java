@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -25,20 +26,32 @@ class MappingStoreTask implements Runnable {
     /** Store to put item to. */
     private final MarshallerMappingFileStore fileStore;
 
-    /** Item to be stored. */
-    private final MarshallerMappingItem item;
+    /** */
+    private final byte platformId;
+
+    /** */
+    private final int typeId;
+
+    /** */
+    private final String clsName;
 
     /**
      * @param fileStore File store.
-     * @param item Item.
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param clsName Class name.
      */
-    public MappingStoreTask(MarshallerMappingFileStore fileStore, MarshallerMappingItem item) {
+    MappingStoreTask(MarshallerMappingFileStore fileStore, byte platformId, int typeId, String clsName) {
+        assert clsName != null;
+
         this.fileStore = fileStore;
-        this.item = item;
+        this.platformId = platformId;
+        this.typeId = typeId;
+        this.clsName = clsName;
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        fileStore.writeMapping(item.platformId(), item.typeId(), item.className());
+        fileStore.writeMapping(platformId, typeId, clsName);
     }
 }

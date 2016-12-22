@@ -304,7 +304,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         cache.replace(item.typeId(), new MappedName(item.className(), true));
 
-        execSrvc.submit(new MappingStoreTask(fileStore, item));
+        execSrvc.submit(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), item.className()));
     }
 
     /** {@inheritDoc} */
@@ -328,6 +328,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             clsName = mappedName.className();
         else {
             clsName = fileStore.readMapping(platformId, typeId);
+
             if (clsName != null)
                 cache.putIfAbsent(typeId, new MappedName(clsName, true));
             else
@@ -385,6 +386,8 @@ public class MarshallerContextImpl implements MarshallerContext {
         else {
             mappedName = new MappedName(resolvedClsName, true);
             cache.putIfAbsent(typeId, mappedName);
+
+            execSrvc.submit(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), resolvedClsName));
         }
     }
 
