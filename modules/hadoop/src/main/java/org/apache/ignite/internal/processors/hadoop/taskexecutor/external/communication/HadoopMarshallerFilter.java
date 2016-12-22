@@ -59,7 +59,7 @@ public class HadoopMarshallerFilter extends GridNioFilterAdapter {
     @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
         assert msg instanceof HadoopMessage : "Invalid message type: " + msg;
 
-        return proceedSessionWrite(ses, U.marshal(marsh, msg), fut);
+        return proceedSessionWrite(ses, marshaller.marshal(msg), fut);
     }
 
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
