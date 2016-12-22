@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
@@ -283,9 +282,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 try {
                     cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send one phase commit ack to backup node because it left grid: " + nodeId);
+                }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to send one phase commit ack to backup node [backup=" +
-                        nodeId + ']', e);
+                    log.error("Failed to send one phase commit ack to backup node [backup=" + nodeId + ']', e);
                 }
                 finally {
                     cctx.kernalContext().gateway().readUnlock();
@@ -1190,8 +1192,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Commits a transaction.
      *
      * @param tx Transaction to commit.
+     * @throws IgniteCheckedException If failed.
      */
-    public void commitTx(IgniteInternalTx tx) {
+    public void commitTx(IgniteInternalTx tx) throws IgniteCheckedException {
         assert tx != null;
         assert tx.state() == COMMITTING : "Invalid transaction state for commit from tm [state=" + tx.state() +
             ", expected=COMMITTING, tx=" + tx + ']';
@@ -1209,12 +1212,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
 
         // 1. Make sure that committed version has been recorded.
-        if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
+        if (!(committed || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
             uncommitTx(tx);
 
             tx.errorWhenCommitting();
 
-            throw new IgniteException("Missing commit version (consider increasing " +
+            throw new IgniteCheckedException("Missing commit version (consider increasing " +
                 IGNITE_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() +
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }

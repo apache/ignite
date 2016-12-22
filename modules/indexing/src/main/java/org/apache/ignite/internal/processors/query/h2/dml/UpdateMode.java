@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client;
+package org.apache.ignite.internal.processors.query.h2.dml;
 
 /**
- *  Interface for manage state of grid cluster.
+ * DML statement execution plan type - MERGE/INSERT from rows or subquery,
+ * or UPDATE/DELETE from subquery or literals/params based.
  */
-public interface GridClientClusterState {
-    /**
-     * @param active {@code True} activate, {@code False} deactivate.
-     */
-    public void active(boolean active) throws GridClientException;
+public enum UpdateMode {
+    /** */
+    MERGE,
 
-    /**
-     * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
-     */
-    public boolean active() throws GridClientException;
+    /** */
+    INSERT,
+
+    /** */
+    UPDATE,
+
+    /** */
+    DELETE,
 }

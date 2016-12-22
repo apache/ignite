@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -32,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -114,6 +118,9 @@ public class OdbcRequestHandler {
 
                 case GET_TABLES_META:
                     return getTablesMeta(reqId, (OdbcQueryGetTablesMetaRequest)req);
+
+                case GET_PARAMS_META:
+                    return getParamsMeta(reqId, (OdbcQueryGetParamsMetaRequest)req);
             }
 
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
@@ -131,26 +138,33 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(long reqId, OdbcHandshakeRequest req) {
-        OdbcProtocolVersion version = req.version();
+        try {
+            OdbcProtocolVersion version = req.version();
 
-        if (version.isUnknown()) {
-            IgniteProductVersion ver = ctx.grid().version();
+            if (version.isUnknown()) {
+                IgniteProductVersion ver = ctx.grid().version();
 
-            String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
+                String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+                OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+
+                return new OdbcResponse(res);
+            }
+
+            OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
+
+            if (version.isDistributedJoinsSupported()) {
+                distributedJoins = req.distributedJoins();
+                enforceJoinOrder = req.enforceJoinOrder();
+            }
 
             return new OdbcResponse(res);
         }
+        catch (Exception e) {
+            U.error(log, "Failed to perform handshake [reqId=" + reqId + ", req=" + req + ']', e);
 
-        OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
-
-        if (version.isDistributedJoinsSupported()) {
-            distributedJoins = req.distributedJoins();
-            enforceJoinOrder = req.enforceJoinOrder();
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
         }
-
-        return new OdbcResponse(res);
     }
 
     /**
@@ -187,14 +201,12 @@ public class OdbcRequestHandler {
             IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 
             if (cache == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Cache doesn't exist (did you configure it?): " +
+                    req.cacheName());
 
-            QueryCursor qryCur = cache.query(qry);
+            QueryCursor qryCur = cache.withKeepBinary().query(qry);
 
-            Iterator iter = qryCur.iterator();
-
-            qryCursors.put(qryId, new IgniteBiTuple<>(qryCur, iter));
+            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
@@ -207,7 +219,7 @@ public class OdbcRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + reqId + ", req=" + req + ']', e);
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -220,10 +232,14 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse closeQuery(long reqId, OdbcQueryCloseRequest req) {
         try {
-            QueryCursor cur = qryCursors.get(req.queryId()).get1();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
-            if (cur == null)
+            if (tuple == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+
+            QueryCursor cur = tuple.get1();
+
+            assert(cur != null);
 
             cur.close();
 
@@ -238,7 +254,7 @@ public class OdbcRequestHandler {
 
             U.error(log, "Failed to close SQL query [reqId=" + reqId + ", req=" + req.queryId() + ']', e);
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -251,24 +267,34 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse fetchQuery(long reqId, OdbcQueryFetchRequest req) {
         try {
-            Iterator cur = qryCursors.get(req.queryId()).get2();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
-            if (cur == null)
+            if (tuple == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+
+            Iterator iter = tuple.get2();
+
+            if (iter == null) {
+                QueryCursor cur = tuple.get1();
+
+                iter = cur.iterator();
+
+                tuple.put(cur, iter);
+            }
 
             List<Object> items = new ArrayList<>();
 
-            for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
-                items.add(cur.next());
+            for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
+                items.add(iter.next());
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !cur.hasNext());
+            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !iter.hasNext());
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + reqId + ", req=" + req + ']', e);
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -325,7 +351,7 @@ public class OdbcRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + reqId + ", req=" + req + ']', e);
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
         }
     }
 
@@ -370,7 +396,96 @@ public class OdbcRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + reqId + ", req=" + req + ']', e);
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * {@link OdbcQueryGetParamsMetaRequest} command handler.
+     *
+     * @param reqId Request ID.
+     * @param req Get params metadata request.
+     * @return Response.
+     */
+    private OdbcResponse getParamsMeta(long reqId, OdbcQueryGetParamsMetaRequest req) {
+        try {
+            PreparedStatement stmt = ctx.query().prepareNativeStatement(req.cacheName(), req.query());
+
+            ParameterMetaData pmd = stmt.getParameterMetaData();
+
+            byte[] typeIds = new byte[pmd.getParameterCount()];
+
+            for (int i = 1; i <= pmd.getParameterCount(); ++i) {
+                int sqlType = pmd.getParameterType(i);
+
+                typeIds[i - 1] = sqlTypeToBinary(sqlType);
+            }
+
+            OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get params metadata [reqId=" + reqId + ", req=" + req + ']', e);
+
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * Convert {@link java.sql.Types} to binary type constant (See {@link GridBinaryMarshaller} constants).
+     *
+     * @param sqlType SQL type.
+     * @return Binary type.
+     */
+    private static byte sqlTypeToBinary(int sqlType) {
+        switch (sqlType) {
+            case Types.BIGINT:
+                return GridBinaryMarshaller.LONG;
+
+            case Types.BOOLEAN:
+                return GridBinaryMarshaller.BOOLEAN;
+
+            case Types.DATE:
+                return GridBinaryMarshaller.DATE;
+
+            case Types.DOUBLE:
+                return GridBinaryMarshaller.DOUBLE;
+
+            case Types.FLOAT:
+            case Types.REAL:
+                return GridBinaryMarshaller.FLOAT;
+
+            case Types.NUMERIC:
+            case Types.DECIMAL:
+                return GridBinaryMarshaller.DECIMAL;
+
+            case Types.INTEGER:
+                return GridBinaryMarshaller.INT;
+
+            case Types.SMALLINT:
+                return GridBinaryMarshaller.SHORT;
+
+            case Types.TIME:
+            case Types.TIMESTAMP:
+                return GridBinaryMarshaller.TIMESTAMP;
+
+            case Types.TINYINT:
+                return GridBinaryMarshaller.BYTE;
+
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGNVARCHAR:
+                return GridBinaryMarshaller.STRING;
+
+            case Types.NULL:
+                return GridBinaryMarshaller.NULL;
+
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+            default:
+                return GridBinaryMarshaller.BYTE_ARR;
         }
     }
 

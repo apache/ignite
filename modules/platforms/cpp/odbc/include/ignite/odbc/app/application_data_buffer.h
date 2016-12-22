@@ -311,7 +311,7 @@ namespace ignite
                  * @return Size of the data that is going to be provided
                  *     at execution.
                  */
-                size_t GetDataAtExecSize() const;
+                SqlLen GetDataAtExecSize() const;
 
                 /**
                  * Get size of the input buffer.
@@ -319,7 +319,7 @@ namespace ignite
                  * @return Input buffer size, or zero if the data is going
                  *     to be provided at execution.
                  */
-                size_t GetInputSize() const;
+                SqlLen GetInputSize() const;
 
                 /**
                  * Get buffer type.

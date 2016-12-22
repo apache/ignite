@@ -157,7 +157,7 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage{
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -38;
+        return -46;
     }
 
     /** {@inheritDoc} */

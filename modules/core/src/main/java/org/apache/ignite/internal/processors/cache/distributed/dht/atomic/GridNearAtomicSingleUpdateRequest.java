@@ -127,6 +127,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         );
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
     /**
      * @param key Key to add.
      * @param val Optional update value.

@@ -126,8 +126,9 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 boolean expiredRemains = false;
 
                 for (GridCacheTtlManager mgr : mgrs) {
-                    if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                        expiredRemains = true;
+                    // TODO
+//                    if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+//                        expiredRemains = true;
 
                     if (isCancelled())
                         return;
