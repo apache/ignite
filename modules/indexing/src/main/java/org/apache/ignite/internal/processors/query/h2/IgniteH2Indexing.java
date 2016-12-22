@@ -774,31 +774,38 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
-        initLocalQueryContext(conn, enforceJoinOrder, filters);
+        setupConnection(conn, false, enforceJoinOrder);
+
+        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+
+        List<GridQueryFieldMetadata> meta;
 
         try {
-            final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+            meta = meta(stmt.getMetaData());
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Cannot prepare query metadata", e);
+        }
 
-            List<GridQueryFieldMetadata> meta;
+        final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+            .filter(filters).distributedJoins(false);
 
-            try {
-                meta = meta(stmt.getMetaData());
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException("Cannot prepare query metadata", e);
-            }
+        return new GridQueryFieldsResultAdapter(meta, null) {
+            @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
+                assert GridH2QueryContext.get() == null;
 
-            return new GridQueryFieldsResultAdapter(meta, null) {
-                @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException{
+                GridH2QueryContext.set(ctx);
+
+                try {
                     ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
 
                     return new FieldsIterator(rs);
                 }
-            };
-        }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
-        }
+                finally {
+                    GridH2QueryContext.clearThreadLocal();
+                }
+            }
+        };
     }
 
     /**
@@ -996,7 +1003,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
                     ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
 
-                LT.warn(log, null, longMsg, msg);
+                LT.warn(log, longMsg, msg);
             }
 
             return rs;
@@ -1025,17 +1032,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param conn Connection.
-     * @param enforceJoinOrder Enforce join order of tables.
-     * @param filter Filter.
-     */
-    private void initLocalQueryContext(Connection conn, boolean enforceJoinOrder, IndexingQueryFilter filter) {
-        setupConnection(conn, false, enforceJoinOrder);
-
-        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
-    }
-
-    /**
      * @param conn Connection to use.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
@@ -1061,7 +1057,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Connection conn = connectionForThread(tbl.schemaName());
 
-        initLocalQueryContext(conn, false, filter);
+        setupConnection(conn, false, false);
+
+        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
 
         try {
             ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, null);

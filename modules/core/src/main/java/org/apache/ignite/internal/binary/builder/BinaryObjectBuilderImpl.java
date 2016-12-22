@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -385,13 +386,26 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             if (((BinaryValueWithType)newVal).value() == null)
                 nullFieldVal = true;
         }
+        // Detect Enum and Enum array type.
+        else if (newVal instanceof BinaryEnumObjectImpl)
+            newFldTypeId = GridBinaryMarshaller.ENUM;
+        else if (newVal.getClass().isArray() && newVal.getClass().getComponentType() == BinaryObject.class) {
+            BinaryObject[] arr = (BinaryObject[])newVal;
+
+            newFldTypeId = arr.length > 0 && arr[0] instanceof BinaryEnumObjectImpl ?
+                GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
+        }
         else
             newFldTypeId = BinaryUtils.typeByClass(newVal.getClass());
 
         if (oldFldTypeName == null) {
             // It's a new field, we have to add it to metadata.
-            if (fieldsMeta == null)
-                fieldsMeta = new HashMap<>();
+            if (fieldsMeta == null) {
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fieldsMeta = new TreeMap<>();
+                else
+                    fieldsMeta = new LinkedHashMap<>();
+            }
 
             fieldsMeta.put(name, newFldTypeId);
         }
@@ -522,11 +536,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
-        if (assignedVals == null)
+        if (assignedVals == null) {
             if (BinaryUtils.FIELDS_SORTED_ORDER)
                 assignedVals = new TreeMap<>();
             else
                 assignedVals = new LinkedHashMap<>();
+        }
 
         Object oldVal = assignedVals.put(name, val);
 
