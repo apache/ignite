@@ -203,4 +203,13 @@ class PlatformCallbackOp {
 
     /** */
     public static final int ComputeJobExecuteLocal = 61;
+
+    /** */
+    public static final int CachePluginCreate = 62;
+
+    /** */
+    public static final int CachePluginDestroy = 63;
+
+    /** */
+    public static final int CachePluginIgniteStart = 64;
 }

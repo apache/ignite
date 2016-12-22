@@ -22,9 +22,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -41,10 +43,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Impl.Plugin.Cache;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin.Cache;
     using Apache.Ignite.Core.Services;
     using UU = UnmanagedUtils;
 
@@ -78,12 +82,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         // ReSharper disable once CollectionNeverQueried.Local
         private readonly List<Delegate> _delegates = new List<Delegate>(5);
 
+        /** Max op code. */
+        private static readonly int MaxOpCode = Enum.GetValues(typeof(UnmanagedCallbackOp)).Cast<int>().Max();
+
         /** Handlers array. */
-        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[MaxOpCode + 1];
 
         /** Handlers array. */
         private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers
-            = new InLongLongLongObjectOutLongHandler[62];
+            = new InLongLongLongObjectOutLongHandler[MaxOpCode + 1];
 
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
@@ -100,6 +107,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         /** Log. */
         private readonly ILogger _log;
+
+        /** Config. */
+        private IgniteConfiguration _igniteConfiguration;
 
         /** Error type: generic. */
         private const int ErrGeneric = 1;
@@ -130,10 +140,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Constructor.
         /// </summary>
         /// <param name="log">Logger.</param>
-        public UnmanagedCallbacks(ILogger log)
+        /// <param name="igniteConfiguration">Ignite configuration.</param>
+        public UnmanagedCallbacks(ILogger log, IgniteConfiguration igniteConfiguration)
         {
             Debug.Assert(log != null);
+            Debug.Assert(igniteConfiguration != null);
             _log = log;
+            _igniteConfiguration = igniteConfiguration;
 
             var cbs = new UnmanagedCallbackHandlers
             {
@@ -232,6 +245,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
             AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
+            AddHandler(UnmanagedCallbackOp.CachePluginCreate, CachePluginCreate);
+            AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
+            AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
         }
 
         /// <summary>
@@ -1201,6 +1217,54 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private long AffinityFunctionDestroy(long ptr)
         {
             _handleRegistry.Release(ptr);
+
+            return 0;
+        }
+
+        #endregion
+
+        #region PLUGINS
+
+        private long CachePluginCreate(long objPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(objPtr).GetStream())
+            {
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+
+                var cachePluginCfg = reader.ReadObject<ICachePluginConfiguration>();
+                var igniteCfg = new IgniteConfiguration(reader, _igniteConfiguration);
+                var cacheCfg = new CacheConfiguration(reader);
+
+                var pluginCtx = new CachePluginContext(igniteCfg, cacheCfg, cachePluginCfg, () => _ignite);
+
+                var pluginProvider = cachePluginCfg.CreateProvider(pluginCtx);
+
+                if (pluginProvider == null)
+                    throw new IgniteException(string.Format("{0}.CreateProvider should not return null.", 
+                        typeof(ICachePluginProvider).Name));
+
+                pluginProvider.Start();
+
+                return _handleRegistry.Allocate(pluginProvider);
+            }
+        }
+
+        private long CachePluginDestroy(long objPtr, long cancel, long unused, void* arg)
+        {
+            var pluginProvider = _handleRegistry.Get<ICachePluginProvider>(objPtr, true);
+
+            pluginProvider.Stop(cancel != 0);
+
+            _ignite.HandleRegistry.Release(objPtr);
+
+            return 0;
+        }
+
+        private long CachePluginIgniteStart(long objPtr)
+        {
+            var pluginProvider = _handleRegistry.Get<ICachePluginProvider>(objPtr, true);
+
+            pluginProvider.OnIgniteStart();
 
             return 0;
         }

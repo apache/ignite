@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core
                 // 2. Create context.
                 IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks(log);
+                var cbs = new UnmanagedCallbacks(log, cfg);
 
                 IgniteManager.CreateJvmContext(cfg, cbs, log);
                 log.Debug("JVM started.");

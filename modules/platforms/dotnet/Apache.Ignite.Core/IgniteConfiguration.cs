@@ -44,7 +44,6 @@
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
-    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -174,11 +173,16 @@
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
+        /// Initializes a new instance of the <see cref="IgniteConfiguration" /> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader)
+        /// <param name="baseConfig">The base configuration.</param>
+        internal IgniteConfiguration(IBinaryRawReader binaryReader, IgniteConfiguration baseConfig)
         {
+            Debug.Assert(binaryReader != null);
+            Debug.Assert(baseConfig != null);
+
+            CopyLocalProperties(baseConfig);
             Read(binaryReader);
         }
 
@@ -327,7 +331,7 @@
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(BinaryReader r)
+        private void ReadCore(IBinaryRawReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -400,19 +404,15 @@
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        private void Read(IBinaryRawReader binaryReader)
         {
-            var r = binaryReader;
-
-            CopyLocalProperties(r.Marshaller.Ignite.Configuration);
-
-            ReadCore(r);
+            ReadCore(binaryReader);
 
             // Misc
-            IgniteHome = r.ReadString();
+            IgniteHome = binaryReader.ReadString();
 
-            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()

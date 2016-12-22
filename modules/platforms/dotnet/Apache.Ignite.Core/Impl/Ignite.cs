@@ -646,7 +646,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeInput();
 
-                return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+                return new IgniteConfiguration(_marsh.StartUnmarshal(stream), _cfg);
             }
         }
 
