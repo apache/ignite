@@ -1342,20 +1342,46 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
 }
 
+template<size_t n, size_t k>
+void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
+{
+    std::string catalog(columns[0], columnsLen[0]);
+    std::string schema(columns[1], columnsLen[1]);
+    std::string table(columns[2], columnsLen[2]);
+    std::string tableType(columns[3], columnsLen[3]);
+
+    BOOST_CHECK_EQUAL(catalog, std::string(""));
+    BOOST_CHECK_EQUAL(tableType, std::string("TABLE"));
+    BOOST_CHECK_EQUAL(columnsLen[4], SQL_NULL_DATA);
+
+    if (schema == "\"cache\"")
+    {
+        BOOST_CHECK_EQUAL(table, std::string("TestType"));
+    }
+    else if (schema == "\"cache2\"")
+    {
+        BOOST_CHECK_EQUAL(table, std::string("ComplexType"));
+    }
+    else
+    {
+        BOOST_FAIL("Unknown schema: " + schema);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(TestTablesMeta)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
 
     SQLRETURN ret;
 
-    const size_t columnsNum = 5;
+    enum { COLUMNS_NUM = 5 };
 
     // Five collumns: TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS
-    char columns[columnsNum][ODBC_BUFFER_SIZE];
-    SQLLEN columnsLen[columnsNum];
+    char columns[COLUMNS_NUM][ODBC_BUFFER_SIZE];
+    SQLLEN columnsLen[COLUMNS_NUM];
 
     // Binding columns.
-    for (size_t i = 0; i < columnsNum; ++i)
+    for (size_t i = 0; i < COLUMNS_NUM; ++i)
     {
         columnsLen[i] = ODBC_BUFFER_SIZE;
 
@@ -1380,21 +1406,13 @@ BOOST_AUTO_TEST_CASE(TestTablesMeta)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(std::string(columns[0], columnsLen[0]), std::string(""));
-    BOOST_CHECK_EQUAL(std::string(columns[1], columnsLen[1]), std::string("\"cache\""));
-    BOOST_CHECK_EQUAL(std::string(columns[2], columnsLen[2]), std::string("TestType"));
-    BOOST_CHECK_EQUAL(std::string(columns[3], columnsLen[3]), std::string("TABLE"));
-    BOOST_CHECK_EQUAL(columnsLen[4], SQL_NULL_DATA);
+    CheckMeta<COLUMNS_NUM, ODBC_BUFFER_SIZE>(columns, columnsLen);
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(std::string(columns[0], columnsLen[0]), std::string(""));
-    BOOST_CHECK_EQUAL(std::string(columns[1], columnsLen[1]), std::string("\"cache2\""));
-    BOOST_CHECK_EQUAL(std::string(columns[2], columnsLen[2]), std::string("ComplexType"));
-    BOOST_CHECK_EQUAL(std::string(columns[3], columnsLen[3]), std::string("TABLE"));
-    BOOST_CHECK_EQUAL(columnsLen[4], SQL_NULL_DATA);
+    CheckMeta<COLUMNS_NUM, ODBC_BUFFER_SIZE>(columns, columnsLen);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
