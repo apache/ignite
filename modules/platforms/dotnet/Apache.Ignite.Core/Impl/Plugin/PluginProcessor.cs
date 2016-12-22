@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -220,7 +221,12 @@ namespace Apache.Ignite.Core.Impl.Plugin
                     providerType, typeof(IPluginProvider<>).MakeGenericType(cfgType)));
             }
 
-            return null; // TODO
+            var pluginProvider = Activator.CreateInstance(providerType);
+
+            var providerProxyType = typeof(PluginProviderProxy<>).MakeGenericType(cfgType);
+
+            return (IPluginProviderProxy) Activator.CreateInstance(
+                providerProxyType, pluginConfiguration, pluginProvider);
         }
     }
 }
