@@ -172,6 +172,11 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -45:
+                msg = new BackupFinishedMessage();
+
+                break;
+
             case -44:
                 msg = new TcpCommunicationSpi.HandshakeMessage2();
 
@@ -219,11 +224,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case -27:
                 msg = new GridDhtTxOnePhaseCommitAckRequest();
-
-                break;
-
-            case -27:
-                msg = new BackupFinishedMessage();
 
                 break;
 
@@ -832,13 +832,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-36..-44]- this
             case 125:
                 msg = new TcpCommunicationSpi.HandshakeMessage2();
 
                 break;
 
-            // [-3..119] [124-125] - this
             case 126:
                 msg = new IgniteIoTestMessage();
 

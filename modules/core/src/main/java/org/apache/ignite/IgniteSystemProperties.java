@@ -521,22 +521,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
 
     /**
-     * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
-     * the natural order is used.
-     * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
-     */
-    @Deprecated
-    public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
-
-    /**
-     * Whether Ignite can access unaligned memory addresses.
-     * <p>
-     * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
-     */
-    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
-
-    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

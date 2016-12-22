@@ -30,9 +30,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Queue;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -96,6 +98,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
@@ -804,13 +807,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (!cacheCtx.isLocal() && cacheCtx.started()) {
                 GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
-                m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
+                m.addFullPartitionsMap(cacheCtx.cacheId(), locMap, null);
             }
         }
 
         // It is important that client topologies be added after contexts.
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
-            m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
+            m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true), null);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -887,7 +890,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
                             locMap.nodeOrder(),
                             locMap.updateSequence(),
-                            locMap);
+                            locMap,
+                            true);
                     }
 
                     addFullPartitionsMap(m,
@@ -973,14 +977,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
 
-                m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
+                m.addLocalPartitionMap(cacheCtx.cacheId(), locMap, null);
             }
         }
 
         for (GridClientPartitionTopology top : clientTops.values()) {
             GridDhtPartitionMap2 locMap = top.localPartitionMap();
 
-            m.addLocalPartitionMap(top.cacheId(), locMap);
+            m.addLocalPartitionMap(top.cacheId(), locMap, null);
         }
 
         if (log.isDebugEnabled())
@@ -1024,9 +1028,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
-
-                if (targetNode.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                    locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 addPartitionMap(m,
                     dupData,

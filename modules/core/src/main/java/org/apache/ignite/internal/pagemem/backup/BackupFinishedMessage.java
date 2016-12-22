@@ -118,7 +118,7 @@ public class BackupFinishedMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -27;
+        return -45;
     }
 
     /** {@inheritDoc} */

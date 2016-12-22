@@ -1383,7 +1383,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (updateSingleMap) {
             try {
-                updatePartitionSingleMap(msg);
+                updatePartitionSingleMap(node, msg);
             }
             finally {
                 synchronized (mux) {
@@ -1400,7 +1400,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (allReceived) {
             awaitSingleMapUpdates();
 
-            onAllReceived(false);
+            onAllReceived();
         }
     }
 

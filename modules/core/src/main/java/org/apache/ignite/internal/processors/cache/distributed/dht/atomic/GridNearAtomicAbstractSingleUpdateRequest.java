@@ -65,6 +65,8 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x40;
 
+    private static final int RECOVERY_FLAG_MASK = 0x80;
+
     /** Target node ID. */
     @GridDirectTransient
     protected UUID nodeId;
@@ -139,6 +141,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean clientReq,
         boolean addDepInfo
     ) {
@@ -161,6 +164,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         skipStore(skipStore);
         keepBinary(keepBinary);
         clientRequest(clientReq);
+        recovery(recovery);
     }
 
     /** {@inheritDoc} */
@@ -372,6 +376,14 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      */
     public void hasPrimary(boolean val) {
         setFlag(val, HAS_PRIMARY_FLAG_MASK);
+    }
+
+    @Override public boolean recovery() {
+        return isFlag(RECOVERY_FLAG_MASK);
+    }
+
+    public void recovery(boolean val) {
+        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /** {@inheritDoc} */

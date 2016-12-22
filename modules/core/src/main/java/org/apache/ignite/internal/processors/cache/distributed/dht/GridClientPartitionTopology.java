@@ -925,12 +925,23 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+    @Override public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros) {
         lock.readLock().lock();
 
         try {
-            return new HashMap<>(cntrMap);
-        }
+            if (skipZeros) {
+                Map<Integer, T2<Long, Long>> res = U.newHashMap(cntrMap.size());
+
+                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
+                    if (!e.getValue().get1().equals(ZERO) || !e.getValue().get2().equals(ZERO))
+                        res.put(e.getKey(), e.getValue());
+                }
+
+                return res;
+            }
+            else
+                return new HashMap<>(cntrMap);
+}
         finally {
             lock.readLock().unlock();
         }

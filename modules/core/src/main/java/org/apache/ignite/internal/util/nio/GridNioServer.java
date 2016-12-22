@@ -667,13 +667,6 @@ public class GridNioServer<T> {
     }
 
     /**
-     * @return Sessions.
-     */
-    public Collection<? extends GridNioSession> sessions() {
-        return sessions;
-    }
-
-    /**
      * @param ses Session.
      * @param op Operation.
      * @return Future for operation.
@@ -3232,16 +3225,6 @@ public class GridNioServer<T> {
          */
         public Builder<T> gridName(@Nullable String gridName) {
             this.gridName = gridName;
-
-            return this;
-        }
-
-        /**
-         * @param srvName Logical server name for threads identification.
-         * @return This for chaining.
-         */
-        public Builder<T> serverName(@Nullable String srvName) {
-            this.srvName = srvName;
 
             return this;
         }

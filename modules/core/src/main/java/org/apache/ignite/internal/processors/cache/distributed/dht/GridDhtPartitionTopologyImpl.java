@@ -450,7 +450,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     locPart.own();
 
-                    updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                    updateLocal(p, locPart.state(), updateSeq);
                 }
             }
         }
@@ -1469,7 +1469,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
 
                         if (marked)
-                            updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
+                            updateLocal(locPart.id(), locPart.state(), updSeq);
 
                         changed |= marked;
                     }
@@ -1534,7 +1534,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             boolean marked = locPart.own();
 
                             if (marked)
-                                updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
+                                updateLocal(locPart.id(), locPart.state(), updSeq);
                         }
 
                         for (UUID nodeId : nodeIds) {

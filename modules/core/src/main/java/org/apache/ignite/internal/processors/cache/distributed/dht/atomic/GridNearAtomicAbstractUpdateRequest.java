@@ -128,6 +128,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      */
     public abstract boolean hasPrimary();
 
+    public abstract boolean recovery();
+
     /**
      * @param res Response.
      * @return {@code True} if current response was {@code null}.
