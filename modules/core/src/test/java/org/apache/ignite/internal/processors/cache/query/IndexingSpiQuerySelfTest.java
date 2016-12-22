@@ -272,6 +272,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
      */
     private static class MyBinaryIndexingSpi extends MyIndexingSpi {
 
+        /** {@inheritDoc} */
         @Override public void store(@Nullable String spaceName, Object key, Object val,
             long expirationTime) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
@@ -281,14 +282,17 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             super.store(spaceName, ((BinaryObject)key).deserialize(), ((BinaryObject)val).deserialize(), expirationTime);
         }
 
+        /** {@inheritDoc} */
         @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
         }
 
+        /** {@inheritDoc} */
         @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
         }
 
+        /** {@inheritDoc} */
         @Override
         public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
