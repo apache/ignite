@@ -648,7 +648,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -37;
+        return -36;
     }
 
     /** {@inheritDoc} */

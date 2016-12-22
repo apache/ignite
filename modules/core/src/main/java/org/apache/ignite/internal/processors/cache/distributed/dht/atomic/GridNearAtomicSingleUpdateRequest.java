@@ -347,7 +347,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -36;
+        return 125;
     }
 
     /** {@inheritDoc} */
