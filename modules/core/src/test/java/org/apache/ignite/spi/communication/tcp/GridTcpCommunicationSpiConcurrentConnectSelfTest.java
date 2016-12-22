@@ -82,6 +82,9 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /** */
     private int connectionsPerNode = 1;
 
+    /** */
+    private boolean pairedConnections = true;
+
     /**
      *
      */
@@ -165,9 +168,26 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     public void testMultithreaded_10Connections() throws Exception {
         connectionsPerNode = 10;
 
-        int threads = Runtime.getRuntime().availableProcessors() * 5;
+        testMultithreaded();
+    }
 
-        concurrentConnect(threads, 10, 10, false, false);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreaded_NoPairedConnections() throws Exception {
+        pairedConnections = false;
+
+        testMultithreaded();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreaded_10ConnectionsNoPaired() throws Exception {
+        pairedConnections = false;
+        connectionsPerNode = 10;
+
+        testMultithreaded();
     }
 
     /**
@@ -324,17 +344,19 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                         final GridNioServer srv = U.field(spi, "nioSrvr");
 
+                        final int conns = pairedConnections ? 2 : 1;
+
                         GridTestUtils.waitForCondition(new GridAbsPredicate() {
                             @Override public boolean apply() {
                                 Collection sessions = U.field(srv, "sessions");
 
-                                return sessions.size() == 2 * connectionsPerNode;
+                                return sessions.size() == conns * connectionsPerNode;
                             }
                         }, 5000);
 
                         Collection sessions = U.field(srv, "sessions");
 
-                        assertEquals(2 * connectionsPerNode, sessions.size());
+                        assertEquals(conns * connectionsPerNode, sessions.size());
                     }
 
                     assertEquals(expMsgs, lsnr.cntr.get());
@@ -364,6 +386,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         spi.setConnectTimeout(10_000);
         spi.setSharedMemoryPort(-1);
         spi.setConnectionsPerNode(connectionsPerNode);
+        spi.setUsePairedConnections(pairedConnections);
 
         return spi;
     }

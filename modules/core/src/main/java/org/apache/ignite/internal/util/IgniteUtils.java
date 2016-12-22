@@ -492,10 +492,37 @@ public abstract class IgniteUtils {
     /** Object.toString() */
     private static Method toStringMtd;
 
-    /**
-     * Initializes enterprise check.
+    /** Empty local Ignite name. */
+    public static final String LOC_IGNITE_NAME_EMPTY = new String();
+
+    /** Local Ignite name thread local. */
+    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
+        @Override protected String initialValue() {
+            return LOC_IGNITE_NAME_EMPTY;
+        }
+    };
+
+    /** */
+    private static final boolean assertionsEnabled;
+
+    /*
+     *
      */
     static {
+        boolean assertionsEnabled0 = true;
+
+        try {
+            assert false;
+
+            assertionsEnabled0 = false;
+        }
+        catch (AssertionError ignored) {
+            assertionsEnabled0 = true;
+        }
+        finally {
+            assertionsEnabled = assertionsEnabled0;
+        }
+
         String osName = System.getProperty("os.name");
 
         String osLow = osName.toLowerCase();
@@ -1267,6 +1294,27 @@ public abstract class IgniteUtils {
             deadlockedThreadsIds = Collections.emptySet();
 
         return deadlockedThreadsIds;
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @param sb Builder.
+     */
+    public static void printStackTrace(long threadId, GridStringBuilder sb) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        ThreadInfo threadInfo = mxBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+
+        printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
+    }
+
+    /**
+     * @return {@code true} if there is java level deadlock.
+     */
+    public static boolean deadlockPresent() {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        return !F.isEmpty(mxBean.findDeadlockedThreads());
     }
 
     /**
@@ -6144,6 +6192,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return {@code True} if assertions enabled.
+     */
+    public static boolean assertionsEnabled() {
+        return assertionsEnabled;
+    }
+
+    /**
      * Gets OS JDK string.
      *
      * @return OS JDK string.
@@ -8334,6 +8389,18 @@ public abstract class IgniteUtils {
      * @return Absolute value.
      */
     public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
         i = Math.abs(i);
 
         return i < 0 ? 0 : i;

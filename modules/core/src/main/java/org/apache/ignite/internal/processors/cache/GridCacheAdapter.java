@@ -293,6 +293,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
+    /** */
+    protected volatile boolean asyncToggled;
+
     /** {@inheritDoc} */
     @Override public String name() {
         return cacheCfg.getName();
@@ -366,6 +369,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         init();
 
         aff = new GridCacheAffinityImpl<>(ctx);
+    }
+
+    /**
+     * Toggles async flag if someone calls {@code withAsync()}
+     * on proxy and since that we have to properly handle all cache
+     * operations (sync and async) to put them in proper sequence.
+     *
+     * TODO: https://issues.apache.org/jira/browse/IGNITE-4393
+     */
+    void toggleAsync() {
+        if (!asyncToggled)
+            asyncToggled = true;
     }
 
     /**
@@ -1156,7 +1171,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 execSvc = Executors.newFixedThreadPool(jobs.size() - 1);
 
                 for (int i = 1; i < jobs.size(); i++)
-                    execSvc.submit(jobs.get(i));
+                    execSvc.execute(jobs.get(i));
             }
 
             try {
@@ -2622,6 +2637,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Put future.
      */
     public IgniteInternalFuture<Boolean> putAsync(K key, V val, @Nullable CacheEntryPredicate filter) {
+        A.notNull(key, "key", val, "val");
+
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2642,8 +2659,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public IgniteInternalFuture<Boolean> putAsync0(final K key, final V val,
         @Nullable final CacheEntryPredicate filter) {
-        A.notNull(key, "key", val, "val");
-
         if (keyCheck)
             validateCacheKey(key);
 
@@ -4497,6 +4512,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Failed future if waiting was interrupted.
      */
     @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire() {
+        if (!asyncToggled)
+            return null;
+
         try {
             if (asyncOpsSem != null)
                 asyncOpsSem.acquire();
@@ -4515,7 +4533,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Releases asynchronous operations permit, if limited.
      */
     protected void asyncOpRelease() {
-        if (asyncOpsSem != null)
+        if (asyncOpsSem != null && asyncToggled)
             asyncOpsSem.release();
     }
 

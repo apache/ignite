@@ -332,6 +332,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAsync() {
+        if (delegate instanceof GridCacheAdapter)
+            ((GridCacheAdapter)delegate).toggleAsync();
+
+        return super.withAsync();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
         return skipStore();
     }

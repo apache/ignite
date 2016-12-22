@@ -247,7 +247,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                     try {
                         // Must process query callback in a separate thread to avoid deadlocks.
-                        evtProcSvc.submit(new EventHandler() {
+                        evtProcSvc.execute(new EventHandler() {
                             @Override protected void body() throws IgniteCheckedException {
                                 processJobMetadataUpdates(evts);
                             }
@@ -271,7 +271,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 try {
                     // Must process discovery callback in a separate thread to avoid deadlock.
-                    evtProcSvc.submit(new EventHandler() {
+                    evtProcSvc.execute(new EventHandler() {
                         @Override protected void body() {
                             processNodeLeft((DiscoveryEvent)evt);
                         }

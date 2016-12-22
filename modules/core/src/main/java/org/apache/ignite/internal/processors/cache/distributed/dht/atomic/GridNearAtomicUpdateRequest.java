@@ -682,6 +682,11 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
