@@ -136,7 +136,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param lastSuccessfulFullSnapshotId Last successful full snapshot id.
      */
-    public void  setLastSuccessfulFullSnapshotId(@NotNull ByteBuffer buf, long lastSuccessfulFullSnapshotId) {
+    public void setLastSuccessfulFullSnapshotId(@NotNull ByteBuffer buf, long lastSuccessfulFullSnapshotId) {
         buf.putLong(LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF, lastSuccessfulFullSnapshotId);
     }
 
