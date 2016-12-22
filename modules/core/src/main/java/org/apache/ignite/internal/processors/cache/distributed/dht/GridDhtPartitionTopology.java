@@ -216,9 +216,9 @@ public interface GridDhtPartitionTopology {
      * @param exchId Exchange ID.
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
-     * @return {@code True} if topology state changed.
+     * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
+    public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap);
 
@@ -226,13 +226,11 @@ public interface GridDhtPartitionTopology {
      * @param exchId Exchange ID.
      * @param parts Partitions.
      * @param cntrMap Partition update counters.
-     * @param checkEvictions Check evictions flag.
-     * @return {@code True} if topology state changed.
+     * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    @Nullable public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
+    @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
-        boolean checkEvictions);
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
 
     /**
      * Checks if there is at least one owner for each partition in the cache topology.
@@ -277,6 +275,12 @@ public interface GridDhtPartitionTopology {
      * @param updateSeq Update sequence increment flag.
      */
     public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
+
+    /**
+     * @param nodeId Node to get partitions for.
+     * @return Partitions for node.
+     */
+    @Nullable public GridDhtPartitionMap2 partitions(UUID nodeId);
 
     /**
      * Prints memory stats.

@@ -1429,7 +1429,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
 
                         if (marked)
-                            updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
+                            updateLocal(locPart.id(), locPart.state(), updSeq);
 
                         changed |= marked;
                     }
@@ -1494,7 +1494,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             boolean marked = locPart.own();
 
                             if (marked)
-                                updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
+                                updateLocal(locPart.id(), locPart.state(), updSeq);
                         }
 
                         for (UUID nodeId : nodeIds) {
@@ -1574,6 +1574,42 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             if (updateSeq)
                 node2part = new GridDhtPartitionFullMap(node2part, this.updateSeq.incrementAndGet());
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * @param updateSeq Update sequence.
+     * @return {@code True} if state changed.
+     */
+    private boolean checkEvictions(long updateSeq) {
+        AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
+
+        boolean changed = false;
+
+        if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
+            List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
+
+            changed = checkEvictions(updateSeq, aff);
+
+            updateRebalanceVersion(aff);
+        }
+
+        return changed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkEvictions() {
+        lock.writeLock().lock();
+
+        try {
+            long updateSeq = this.updateSeq.incrementAndGet();
+
+            node2part.newUpdateSequence(updateSeq);
+
+            checkEvictions(updateSeq);
         }
         finally {
             lock.writeLock().unlock();
@@ -1824,15 +1860,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Nullable @Override public GridDhtPartitionMap2 partitions(UUID nodeId) {
-            lock.readLock().lock();
+        lock.readLock().lock();
 
-            try {
-                return node2part.get(nodeId);
-            }
-            finally {
-                lock.readLock().unlock();
-            }
+        try {
+            return node2part.get(nodeId);
         }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros) {
