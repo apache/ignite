@@ -759,6 +759,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 CacheConfiguration[] newCacheCfg = new CacheConfiguration[cacheCfgs.length];
 
+                boolean apply = false;
+
                 for (int i = 0; i < cacheCfgs.length; i++) {
                     CacheConfiguration conf = cacheCfgs[i];
 
@@ -771,12 +773,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             newCacheCfg[i] = c;
 
+                            apply = true;
+
                             break;
                         }
                     }
                 }
 
-                ctx.config().setCacheConfiguration(newCacheCfg);
+                if (apply)
+                    ctx.config().setCacheConfiguration(newCacheCfg);
 
                 activeOnStart = ctx.state().active();
             }
