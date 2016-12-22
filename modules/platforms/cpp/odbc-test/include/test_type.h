@@ -37,7 +37,7 @@ namespace ignite
             doubleField(0.0),
             boolField(false),
             dateField(),
-            timestampField()			
+            timestampField()
         {
             // No-op.
         }
@@ -57,7 +57,7 @@ namespace ignite
             boolField(boolField),
             guidField(guidField),
             dateField(dateField),
-            timestampField(timestampField)			
+            timestampField(timestampField)
         {
             // No-op.
         }
@@ -114,7 +114,7 @@ namespace ignite
                     }
                     else
                     {
-                        writer.WriteInt8Array("i8ArrayField", &obj.i8ArrayField[0], obj.i8ArrayField.size());
+                        writer.WriteInt8Array("i8ArrayField", &obj.i8ArrayField[0], static_cast<int32_t>(obj.i8ArrayField.size()));
                     }
                 }
                 else
@@ -151,11 +151,11 @@ namespace ignite
                 TestType result(i8Field, i16Field, i32Field, i64Field, strField,
                     floatField, doubleField, boolField, guidField, dateField,
                     timestampField);
-                
-                int32_t len = reader.ReadInt8Array("i8ArrayField", nullptr, 0);
+
+                int32_t len = reader.ReadInt8Array("i8ArrayField", 0, 0);
                 if (len > 0)
                 {
-                    result.i8ArrayField = std::vector<int8_t>(len);
+                    result.i8ArrayField.resize(len);
                     reader.ReadInt8Array("i8ArrayField", &result.i8ArrayField[0], len);
                 }
                 return result;

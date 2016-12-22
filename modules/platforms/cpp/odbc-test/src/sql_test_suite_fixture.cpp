@@ -132,7 +132,7 @@ namespace ignite
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
-    }    
+    }
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected)
@@ -291,7 +291,7 @@ namespace ignite
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
         SQLLEN resLen = 0;
-        
+
         CheckSingleResult0(request, SQL_C_BINARY, res, ODBC_BUFFER_SIZE, &resLen);
 
         BOOST_REQUIRE_EQUAL(resLen, expected.size());

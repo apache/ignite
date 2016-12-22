@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
 BOOST_AUTO_TEST_CASE(TestByteArraySelect)
 {
     TestType in;
-    const int8_t data[] = { 65,66,67,68,69,70,71,72,73,74 }; // A,B,C..J
+    const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     in.i8ArrayField.assign(data, data + sizeof(data)/sizeof(data[0]));
     testCache.Put(1, in);
 
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParam)
     TestType in;
     in.i8Field = 101;
 
-    const int8_t data[] = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J
+    const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     in.i8ArrayField.assign(data, data + sizeof(data) / sizeof(data[0]));
 
     testCache.Put(1, in);   
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParam)
 
     std::vector<int8_t> paramData(in.i8ArrayField);
     SQLLEN paramLen = paramData.size();
-    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), paramData.size(), &paramData[0], paramData.size(), &paramLen);
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), 0, &paramData[0], paramData.size(), &paramLen);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 {
     SQLRETURN ret;
 
-    const int8_t data[] = { 0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a }; // A,B,C..J
+    const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
     SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
 
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
     
     SQLLEN paramLen = paramData.size();
 
-    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), paramData.size(), &paramData[0], paramData.size(), &paramLen);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), 0, &paramData[0], paramData.size(), &paramLen);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

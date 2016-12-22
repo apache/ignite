@@ -144,19 +144,19 @@ namespace ignite
             else
                 res.clear();
         }
-        
+
         std::string HexDump(const char* data, size_t count)
         {
             std::stringstream  dump;
             size_t cnt = 0;
-            std::for_each(data, data + count, [&dump, &cnt](int8_t c) -> void
+            for(const char* p = data, *e = data + count; p != e; ++p)
             {
                 if (cnt++ % 16 == 0)
                 {
                     dump << std::endl;
                 }
-                dump << std::hex << std::setfill('0') << std::setw(2) << (int)c << " ";
-            });
+                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
+            }
             return dump.str();
         }
     }
