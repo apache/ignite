@@ -174,8 +174,10 @@ public interface CacheStoreManager extends GridCacheManager {
 
     /**
      * End session initiated by write-behind store.
+     *
+     * @throws IgniteCheckedException If failed.
      */
-    public void writeBehindSessionInit();
+    public void writeBehindSessionInit() throws IgniteCheckedException;
 
     /**
      * End session initiated by write-behind store.

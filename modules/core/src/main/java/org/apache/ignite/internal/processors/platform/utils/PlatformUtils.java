@@ -501,6 +501,8 @@ public class PlatformUtils {
 
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(lsnrPtr);
+
             int cntPos = writer.reserveInt();
 
             int cnt = 0;
@@ -515,7 +517,7 @@ public class PlatformUtils {
 
             out.synchronize();
 
-            ctx.gateway().continuousQueryListenerApply(lsnrPtr, mem.pointer());
+            ctx.gateway().continuousQueryListenerApply(mem.pointer());
         }
         catch (Exception e) {
             throw toCacheEntryListenerException(e);
@@ -538,11 +540,13 @@ public class PlatformUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
+            out.writeLong(filterPtr);
+
             writeCacheEntryEvent(ctx.writer(out), evt);
 
             out.synchronize();
 
-            return ctx.gateway().continuousQueryFilterApply(filterPtr, mem.pointer()) == 1;
+            return ctx.gateway().continuousQueryFilterApply(mem.pointer()) == 1;
         }
         catch (Exception e) {
             throw toCacheEntryListenerException(e);
