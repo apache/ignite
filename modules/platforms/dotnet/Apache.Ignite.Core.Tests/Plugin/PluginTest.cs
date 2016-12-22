@@ -77,8 +77,13 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Action<ICollection<IPluginConfiguration>> check = x => Ignition.Start(
                 new IgniteConfiguration(TestUtils.GetTestConfiguration()) {PluginConfigurations = x});
 
+            // Missing attribute.
+            var ex = Assert.Throws<IgniteException>(() => check(new[] { new NoAttributeConfig(),  }));
+            Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
+                            typeof(TestIgnitePluginProvider).AssemblyQualifiedName, ex.Message);
+
             // Empty plugin name.
-            var ex = Assert.Throws<IgniteException>(() => check(new[] { new EmptyNameConfig() }));
+            ex = Assert.Throws<IgniteException>(() => check(new[] {new EmptyNameConfig()}));
             Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
                             typeof(TestIgnitePluginProvider).AssemblyQualifiedName, ex.Message);
 
@@ -93,18 +98,42 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 ex.Message);
 
             // Provider throws an exception.
-            var ioex = Assert.Throws<IOException>(() => check(new[] { new ExceptionConfig() }));
+            var ioex = Assert.Throws<IOException>(() => check(new[] {new ExceptionConfig()}));
             Assert.AreEqual("Failure in plugin provider", ioex.Message);
         }
 
-        private class EmptyNameConfig : IPluginConfiguration
+        private class NoAttributeConfig : IPluginConfiguration
         {
-            // TODO
+            // No-op.
         }
 
+        [PluginProviderType(typeof(NoNamePluginProvider))]
+        private class EmptyNameConfig : IPluginConfiguration
+        {
+            // No-op.
+        }
+
+        private class NoNamePluginProvider : TestIgnitePluginProvider
+        {
+            public NoNamePluginProvider()
+            {
+                Name = "";
+            }
+        }
+
+        [PluginProviderType(typeof(ExceptionPluginProvider))]
         private class ExceptionConfig : IPluginConfiguration
         {
-            // TODO
+            // No-op.
         }
+
+        private class ExceptionPluginProvider : TestIgnitePluginProvider
+        {
+            public ExceptionPluginProvider()
+            {
+                ThrowError = true;
+            }
+        }
+
     }
 }
