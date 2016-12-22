@@ -156,14 +156,14 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
     }
 
     /** {@inheritDoc} */
-    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int seg) {
         if (!isSnapshotEnabled())
-            return tree();
+            return segments[seg];
 
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
 
         if (res == null)
-            res = tree();
+            return segments[seg];
 
         return res;
     }

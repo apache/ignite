@@ -50,7 +50,7 @@ public abstract class GridH2AbstractTreeIndex extends GridH2IndexBase implements
 
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
-            return treeForRead().size();
+            return treeForRead(threadLocalSegment()).size();
 
         Iterator<GridH2Row> iter = doFind(null, false, null);
 
@@ -140,7 +140,7 @@ public abstract class GridH2AbstractTreeIndex extends GridH2IndexBase implements
      */
     @SuppressWarnings("unchecked")
     private Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = treeForRead();
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = treeForRead(threadLocalSegment());
 
         return doFind0(t, first, includeFirst, last, threadLocalFilter());
     }

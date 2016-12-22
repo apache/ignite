@@ -325,6 +325,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
         return qctx != null ? qctx.filter() : null;
     }
 
+    protected static int threadLocalSegment() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        return qctx != null ? qctx.segment() : 0;
+    }
+
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
@@ -446,82 +452,69 @@ public abstract class GridH2IndexBase extends BaseIndex {
         res.segment(msg.segment());
         res.batchLookupId(msg.batchLookupId());
 
-        final GridH2QueryContext prev = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(), msg.originNodeId(),
+            msg.queryId(), msg.segment(), MAP);
 
-        GridH2QueryContext qctx = prev;
+        if (qctx == null)
+            res.status(STATUS_NOT_FOUND);
+        else {
+            try {
+                RangeSource src;
 
-        // Restore context if request runs from other thread.
-        if (prev == null)
-            qctx = GridH2QueryContext.setExisted(kernalContext().localNodeId(), msg.originNodeId(),
-                msg.queryId(), msg.segment(), MAP);
+                if (msg.bounds() != null) {
+                    // This is the first request containing all the search rows.
+                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
 
-        try {
+                    assert !msg.bounds().isEmpty() : "empty bounds";
 
-            if (qctx == null)
-                res.status(STATUS_NOT_FOUND);
-            else {
-                try {
-                    RangeSource src;
-
-                    if (msg.bounds() != null) {
-                        // This is the first request containing all the search rows.
-                        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
-
-                        assert !msg.bounds().isEmpty() : "empty bounds";
-
-                        src = new RangeSource(msg.bounds(), snapshot0, qctx.filter());
-                    }
-                    else {
-                        // This is request to fetch next portion of data.
-                        src = qctx.getSource(node.id(), msg.segment(), msg.batchLookupId());
-
-                        assert src != null;
-                    }
-
-                    List<GridH2RowRange> ranges = new ArrayList<>();
-
-                    int maxRows = qctx.pageSize();
-
-                    assert maxRows > 0 : maxRows;
-
-                    while (maxRows > 0) {
-                        GridH2RowRange range = src.next(maxRows);
-
-                        if (range == null)
-                            break;
-
-                        ranges.add(range);
-
-                        if (range.rows() != null)
-                            maxRows -= range.rows().size();
-                    }
-
-                    if (src.hasMoreRows()) {
-                        // Save source for future fetches.
-                        if (msg.bounds() != null)
-                            qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
-                    }
-                    else if (msg.bounds() == null) {
-                        // Drop saved source.
-                        qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
-                    }
-
-                    assert !ranges.isEmpty();
-
-                    res.ranges(ranges);
-                    res.status(STATUS_OK);
+                    src = new RangeSource(msg.bounds(), msg.segment(), snapshot0, qctx.filter());
                 }
-                catch (Throwable th) {
-                    U.error(log, "Failed to process request: " + msg, th);
+                else {
+                    // This is request to fetch next portion of data.
+                    src = qctx.getSource(node.id(), msg.segment(), msg.batchLookupId());
 
-                    res.error(th.getClass() + ": " + th.getMessage());
-                    res.status(STATUS_ERROR);
+                    assert src != null;
                 }
+
+                List<GridH2RowRange> ranges = new ArrayList<>();
+
+                int maxRows = qctx.pageSize();
+
+                assert maxRows > 0 : maxRows;
+
+                while (maxRows > 0) {
+                    GridH2RowRange range = src.next(maxRows);
+
+                    if (range == null)
+                        break;
+
+                    ranges.add(range);
+
+                    if (range.rows() != null)
+                        maxRows -= range.rows().size();
+                }
+
+                if (src.hasMoreRows()) {
+                    // Save source for future fetches.
+                    if (msg.bounds() != null)
+                        qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
+                }
+                else if (msg.bounds() == null) {
+                    // Drop saved source.
+                    qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
+                }
+
+                assert !ranges.isEmpty();
+
+                res.ranges(ranges);
+                res.status(STATUS_OK);
             }
-        }
-        finally {
-            if (prev == null)
-                GridH2QueryContext.clearThreadLocal();
+            catch (Throwable th) {
+                U.error(log, "Failed to process request: " + msg, th);
+
+                res.error(th.getClass() + ": " + th.getMessage());
+                res.status(STATUS_ERROR);
+            }
         }
 
         send(singletonList(node), res);
@@ -1381,6 +1374,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
+        private final int segment;
+
         /** */
         final IndexingQueryFilter filter;
 
@@ -1391,9 +1386,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
          */
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
+            int segment,
             ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree,
             IndexingQueryFilter filter
         ) {
+            this.segment = segment;
             this.filter = filter;
             this.tree = tree;
             boundsIter = bounds.iterator();
@@ -1451,7 +1448,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 SearchRow first = toSearchRow(bounds.first());
                 SearchRow last = toSearchRow(bounds.last());
 
-                ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead();
+                ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead(segment);
 
                 curRange = doFind0(t, first, true, last, filter);
 
@@ -1470,7 +1467,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Snapshot for current thread if there is one.
      */
-    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int segment) {
         throw new UnsupportedOperationException();
     }
 

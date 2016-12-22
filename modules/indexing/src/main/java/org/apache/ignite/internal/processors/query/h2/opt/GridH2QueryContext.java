@@ -382,32 +382,6 @@ public class GridH2QueryContext {
          qctx.set(x);
     }
 
-
-    /**
-     * Set existed context to current thread.
-     *
-     * @param locNodeId Local node ID.
-     * @param nodeId The node who initiated the query.
-     * @param qryId The query ID.
-     * @param type Query type.
-     * @return Query context.
-     */
-    @Nullable public static GridH2QueryContext setExisted(
-        UUID locNodeId,
-        UUID nodeId,
-        long qryId,
-        int threadIdx,
-        GridH2QueryType type
-    ) {
-        GridH2QueryContext x = qctxs.get(new Key(locNodeId, nodeId, qryId, threadIdx, type));
-
-        assert x != null;
-
-        qctx.set(x);
-
-        return x;
-    }
-
     /**
      * Drops current thread local context.
      */

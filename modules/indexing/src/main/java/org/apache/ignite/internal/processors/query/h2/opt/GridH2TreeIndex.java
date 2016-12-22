@@ -136,7 +136,7 @@ public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
     }
 
     /** {@inheritDoc} */
-    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int i) {
         if (!isSnapshotEnabled())
             return tree;
 
