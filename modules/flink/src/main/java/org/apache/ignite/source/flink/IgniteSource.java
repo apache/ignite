@@ -57,7 +57,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private UUID rmtLsnrId;
 
     /** Flag for stopped state. */
-    private volatile boolean stopped = false;
+    private transient volatile boolean stopped = false;
 
     /** Max number of events taken from the buffer at once. */
     private int evtBatchSize = DFLT_EVT_BATCH_SIZE;

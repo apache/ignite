@@ -120,11 +120,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     private void checkIgniteSource(final int evtCount, final int parallelismCnt,
         IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
-
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        env.getConfig().disableSysoutLogging();
-        env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
+        IgniteCache cache = ignite.getOrCreateCache(TEST_CACHE);
 
         final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE);
 
@@ -134,7 +130,10 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         igniteSrc.start(filter, EventType.EVT_CACHE_OBJECT_PUT);
 
-        IgniteCache cache = ignite.getOrCreateCache(TEST_CACHE);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        env.getConfig().disableSysoutLogging();
+        env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
 
         DataStream<CacheEvent> stream = env.addSource(igniteSrc).setParallelism(parallelismCnt);
 
@@ -154,19 +153,24 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             List<CacheEvent> resultList = new ArrayList<>();
 
             @Override public void invoke(CacheEvent evt) throws Exception {
-                resultList.add(evt);
+                resultList.add(evt.key());
 
                 Collections.sort(resultList);
 
-                if (parallelismCnt == 1)
+                if (parallelismCnt == 1) {
                     assertEquals(eventList, resultList);
+                    igniteSrc.cancel();
+                }
                 else {
                     for (Integer i : eventList) {
                         assertTrue(resultList.contains(i));
+                        igniteSrc.cancel();
                     }
                 }
             }
         });
+
+        env.execute();
     }
 }
 
