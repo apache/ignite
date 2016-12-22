@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Impl.Plugin
     /// <summary>
     /// Plugin context.
     /// </summary>
-    internal class PluginContext : IPluginContext
+    internal class PluginContext
     {
         /** */
         private readonly IgniteConfiguration _igniteConfiguration;
 
         /** */
-        private readonly Dictionary<string, IPluginProvider> _pluginProviders;
+        private readonly Dictionary<string, PluginProviderWrapper> _pluginProviders;
 
         /** */
         private volatile IIgnite _ignite;
@@ -67,6 +67,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
             get { return _igniteConfiguration; }
         }
 
+        public IPluginConfiguration PluginConfiguration { get; private set; }
+
         /// <summary>
         /// Called when Ignite has started.
         /// </summary>
@@ -95,11 +97,11 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Gets the provider.
         /// </summary>
-        public IPluginProvider GetProvider(string name)
+        public PluginProviderWrapper GetProvider(string name)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
 
-            IPluginProvider provider;
+            PluginProviderWrapper provider;
 
             if (!_pluginProviders.TryGetValue(name, out provider))
                 throw new PluginNotFoundException(
@@ -113,10 +115,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private Dictionary<string, IPluginProvider> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations, 
+        private Dictionary<string, PluginProviderWrapper> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations, 
             ILogger log)
         {
-            var res = new Dictionary<string, IPluginProvider>();
+            var res = new Dictionary<string, PluginProviderWrapper>();
 
             log.Info("Configured .NET plugins:");
 
@@ -124,7 +126,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
             {
                 foreach (var cfg in pluginConfigurations)
                 {
-                    var provider = cfg.CreateProvider();
+                    // TODO: Create from attribute
+                    PluginProviderWrapper provider = new PluginProviderWrapper();
 
                     ValidateProvider(provider, res);
 
@@ -146,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Logs the provider information.
         /// </summary>
-        private static void LogProviderInfo(ILogger log, IPluginProvider provider)
+        private static void LogProviderInfo(ILogger log, PluginProviderWrapper provider)
         {
             log.Info("  ^-- " + provider.Name + " " + provider.GetType().Assembly.GetName().Version);
 
@@ -159,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Validates the provider.
         /// </summary>
-        private static void ValidateProvider(IPluginProvider provider, Dictionary<string, IPluginProvider> res)
+        private static void ValidateProvider(PluginProviderWrapper provider, Dictionary<string, PluginProviderWrapper> res)
         {
             if (provider == null)
             {
@@ -170,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             if (string.IsNullOrEmpty(provider.Name))
             {
                 throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
-                    typeof(IPluginProvider), provider.GetType().AssemblyQualifiedName));
+                    typeof(PluginProviderWrapper), provider.GetType().AssemblyQualifiedName));
             }
 
             if (res.ContainsKey(provider.Name))
