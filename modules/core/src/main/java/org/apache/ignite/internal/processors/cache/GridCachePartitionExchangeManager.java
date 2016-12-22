@@ -863,10 +863,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     ready = cacheCtx.started();
 
                 if (ready) {
-                    GridAffinityAssignmentCache affCache = cacheCtx.affinity().affinityCache();
-
-                    if (affCache != null) {
-                        GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
+                    GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
                     addFullPartitionsMap(m,
                         dupData,
@@ -875,11 +872,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         locMap,
                         cacheCtx.affinity().affinityCache().similarAffinityKey());
 
-                        if (exchId != null)
-                            m.addPartitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
-                    }
-                    else
-                        assert cctx.cacheContext(cacheCtx.cacheId()) == null : cacheCtx.name();
+                    if (exchId != null)
+                        m.addPartitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
                 }
             }
         }
@@ -949,20 +943,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             id,
             cctx.kernalContext().clientNode(),
             false);
-
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal()) {
-                GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
-
-                m.addLocalPartitionMap(cacheCtx.cacheId(), locMap, null);
-            }
-        }
-
-        for (GridClientPartitionTopology top : clientTops.values()) {
-            GridDhtPartitionMap2 locMap = top.localPartitionMap();
-
-            m.addLocalPartitionMap(top.cacheId(), locMap, null);
-        }
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
