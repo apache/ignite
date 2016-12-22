@@ -1079,7 +1079,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
-        final String qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
+        final String qry, String alias, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
         final IndexingQueryFilter filter) throws IgniteCheckedException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
@@ -1087,33 +1087,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to find SQL table for type: " + type.name(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        String sql = generateQuery(qry, null, tbl);
-
-        Connection conn = connectionForThread(tbl.schemaName());
-
-        initLocalQueryContext(conn, false, filter);
-
-        try {
-            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, null);
-
-            return new KeyValIterator(rs);
-        }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
-        final SqlQuery<K, V> qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
-        final IndexingQueryFilter filter) throws IgniteCheckedException {
-        final TableDescriptor tbl = tableDescriptor(spaceName, type);
-
-        if (tbl == null)
-            throw new CacheException("Failed to find SQL table for type: " + type.name());
-
-        String sql = generateQuery(qry.getSql(), qry.getAlias(), tbl);
+        String sql = generateQuery(qry, alias, tbl);
 
         Connection conn = connectionForThread(tbl.schemaName());
 

@@ -141,13 +141,17 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
-     * Table alias for type
+     * Sets table alias for type.
+     *
+     * @return Table alias.
      */
     public String getAlias() {
         return alias;
     }
 
     /**
+     * Gets table alias for type.
+     *
      * @param alias table alias for type that is used in query.
      * @return {@code this} For chaining.
      */
