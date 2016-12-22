@@ -683,9 +683,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             coctx = cacheObjectContext(space);
 
-            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
-            Object val0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(val) ? val : val.value(coctx, false);
+            Object val0 = unwrap(val, coctx);
 
             ctx.indexing().store(space, key0, val0, expirationTime);
         }
@@ -740,6 +740,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Unwrap CacheObject if needed.
+     */
+    private Object unwrap(CacheObject key, CacheObjectContext coctx) {
+        return isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
     }
 
     /**
@@ -1032,7 +1039,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(space);
 
-            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
             ctx.indexing().remove(space, key0);
         }
@@ -1177,7 +1184,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
             ctx.indexing().onSwap(spaceName, key0);
         }
@@ -1214,9 +1221,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            Object key0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
-            Object val0 = isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(val) ? val : val.value(coctx, false);
+            Object val0 = unwrap(val, coctx);
 
             ctx.indexing().onUnswap(spaceName, key0, val0);
         }
