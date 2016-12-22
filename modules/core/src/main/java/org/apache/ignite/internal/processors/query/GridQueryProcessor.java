@@ -745,8 +745,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Unwrap CacheObject if needed.
      */
-    private Object unwrap(CacheObject key, CacheObjectContext coctx) {
-        return isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+    private Object unwrap(CacheObject obj, CacheObjectContext coctx) {
+        return isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(obj) ? obj : obj.value(coctx, false);
     }
 
     /**
