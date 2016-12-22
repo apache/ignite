@@ -466,7 +466,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get0(K key, boolean deserializeBinary, boolean needVer) throws IgniteCheckedException {
+    @Nullable public V get0(K key, boolean deserializeBinary, boolean needVer) throws IgniteCheckedException {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (keyCheck)
@@ -549,12 +549,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected Map<K, V> getAll0(Collection<? extends K> keys, boolean deserializeBinary, boolean needVer)
         throws IgniteCheckedException {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
             true,
             null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
+            opCtx != null && opCtx.recovery(),
             false,
             true,
             needVer,
@@ -580,6 +583,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             skipVals,
             canRemap,
             needVer,

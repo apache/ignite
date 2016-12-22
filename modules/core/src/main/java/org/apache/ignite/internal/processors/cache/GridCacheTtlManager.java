@@ -125,7 +125,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         U.cancel(cleanupWorker);
         U.join(cleanupWorker, log);
 
-        pendingEntries.clear();
+        if (pendingEntries != null)
+            pendingEntries.clear();
 
         cctx.shared().ttl().unregister(this);
     }

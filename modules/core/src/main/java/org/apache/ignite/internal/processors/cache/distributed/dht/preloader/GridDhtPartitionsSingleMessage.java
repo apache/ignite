@@ -221,7 +221,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 GridDhtPartitionMap2 map1 = parts.get(e.getKey());
 
                 assert map1 != null : e.getKey();
-                assert F.isEmpty(map1.map());
                 assert !map1.hasMovingPartitions();
 
                 GridDhtPartitionMap2 map2 = parts.get(e.getValue());

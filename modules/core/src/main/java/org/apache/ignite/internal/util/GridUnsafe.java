@@ -1081,6 +1081,17 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Copies memory.
+     *
+     * @param src Source.
+     * @param dst Dst.
+     * @param len Length.
+     */
+    public static void copyMemory(long src, long dst, long len) {
+        UNSAFE.copyMemory(src, dst, len);
+    }
+
+    /**
      * Sets all bytes in a given block of memory to a copy of another block.
      *
      * @param srcBase Source base.

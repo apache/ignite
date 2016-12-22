@@ -9183,6 +9183,9 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+        if (1 == 1)
+            return resolveWorkDirectory(defaultWorkDirectory(), path, delIfExist);
+
         if (path == null) {
             String ggWork0 = igniteWork;
 

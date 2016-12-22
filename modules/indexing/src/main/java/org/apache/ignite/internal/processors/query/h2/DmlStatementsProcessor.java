@@ -145,7 +145,7 @@ public class DmlStatementsProcessor {
 
                 if (opCtx == null)
                     // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
+                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
                 else if (!opCtx.isKeepBinary())
                     newOpCtx = opCtx.keepBinary();
 
