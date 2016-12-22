@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
-    /// Plugin context.
+    /// Plugin processor.
     /// </summary>
-    internal class PluginContext
+    internal class PluginProcessor
     {
         /** */
         private readonly IgniteConfiguration _igniteConfiguration;
@@ -38,11 +38,11 @@ namespace Apache.Ignite.Core.Impl.Plugin
         private volatile IIgnite _ignite;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginContext" /> class.
+        /// Initializes a new instance of the <see cref="PluginProcessor" /> class.
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration.</param>
         /// <param name="log">The log.</param>
-        public PluginContext(IgniteConfiguration igniteConfiguration, ILogger log)
+        public PluginProcessor(IgniteConfiguration igniteConfiguration, ILogger log)
         {
             Debug.Assert(igniteConfiguration != null);
             Debug.Assert(log != null);

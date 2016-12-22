@@ -409,7 +409,7 @@
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
     <Compile Include="Impl\Binary\TypeResolver.cs" />
-    <Compile Include="Impl\Plugin\PluginContext.cs" />
+    <Compile Include="Impl\Plugin\PluginProcessor.cs" />
     <Compile Include="Impl\Plugin\PluginProviderWrapper.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />

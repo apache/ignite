@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl
             new TaskCompletionSource<bool>();
 
         /** Plugin context. */
-        private PluginContext _pluginContext;
+        private PluginProcessor _pluginProcessor;
 
         /// <summary>
         /// Constructor.
@@ -110,16 +110,16 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        /// <param name="pluginContext"></param>
+        /// <param name="pluginProcessor"></param>
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh, 
-            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs, PluginContext pluginContext)
+            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs, PluginProcessor pluginProcessor)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
             Debug.Assert(marsh != null);
             Debug.Assert(lifecycleBeans != null);
             Debug.Assert(cbs != null);
-            Debug.Assert(pluginContext != null);
+            Debug.Assert(pluginProcessor != null);
 
             _cfg = cfg;
             _name = name;
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl
             _marsh = marsh;
             _lifecycleBeans = lifecycleBeans;
             _cbs = cbs;
-            _pluginContext = pluginContext;
+            _pluginProcessor = pluginProcessor;
 
             marsh.Ignite = this;
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
-            _pluginContext.OnStart(this);
+            _pluginProcessor.OnStart(this);
 
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
-            _pluginContext.Stop(cancel);
+            _pluginProcessor.Stop(cancel);
 
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
@@ -714,7 +714,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return _pluginContext.GetProvider(name).GetPlugin<T>();
+            return _pluginProcessor.GetProvider(name).GetPlugin<T>();
         }
 
         /// <summary>

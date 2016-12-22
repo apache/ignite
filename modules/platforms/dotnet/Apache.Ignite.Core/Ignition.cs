@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
                 _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
-                    _startup.LifecycleBeans, _startup.Callbacks, _startup.PluginContext);
+                    _startup.LifecycleBeans, _startup.Callbacks, _startup.PluginProcessor);
             }
             catch (Exception e)
             {
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core
             {
                 Configuration = cfg;
                 Callbacks = cbs;
-                PluginContext = new PluginContext(cfg, cbs.Log);
+                PluginProcessor = new PluginProcessor(cfg, cbs.Log);
             }
             /// <summary>
             /// Configuration.
@@ -771,7 +771,7 @@ namespace Apache.Ignite.Core
             /// <summary>
             /// Gets or sets the plugin context.
             /// </summary>
-            internal PluginContext PluginContext { get; set; }
+            internal PluginProcessor PluginProcessor { get; set; }
         }
 
         /// <summary>

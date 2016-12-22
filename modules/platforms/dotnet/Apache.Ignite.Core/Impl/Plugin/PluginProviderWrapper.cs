@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     /// </summary>
     internal class PluginProviderWrapper
     {
-        public void Start(PluginContext pluginContext)
+        public void Start(PluginProcessor pluginProcessor)
         {
             // TODO
         }
