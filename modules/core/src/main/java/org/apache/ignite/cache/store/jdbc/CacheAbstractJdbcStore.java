@@ -626,7 +626,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     (cacheName == null && type.getCacheName() == null))
                     cacheTypes.add(type);
 
-            entryMappings = U.newHashMap(cacheTypes.size());
+            entryMappings = U.newLinkedHashMap(cacheTypes.size());
 
             if (!cacheTypes.isEmpty()) {
                 boolean binarySupported = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
