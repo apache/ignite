@@ -348,14 +348,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
                     cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                         @Override public void run() {
-                            try {
-                                AffinityTopologyVersion topVer = fut.get();
-
-                                map(topVer);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
+                            mapOnTopology();
                         }
                     });
                 }
@@ -410,6 +403,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 }
 
                 topVer = fut.topologyVersion();
+
+                beforeMap(topVer);
             }
             else {
                 if (waitTopFut) {
@@ -439,7 +434,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    protected void map(AffinityTopologyVersion topVer) {
+    @Override protected void map(AffinityTopologyVersion topVer) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
@@ -448,11 +443,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
             return;
         }
-
-        Exception err = null;
-        GridNearAtomicAbstractUpdateRequest singleReq0 = null;
-
-        GridCacheVersion futVer = cctx.versions().next(topVer);
 
         GridCacheVersion updVer;
 
@@ -470,16 +460,19 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         else
             updVer = null;
 
+        Exception err = null;
+        GridNearAtomicAbstractUpdateRequest singleReq0 = null;
+
+        GridCacheVersion futVer = cctx.versions().next(topVer);
+
         try {
             singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
 
             synchronized (mux) {
-                assert this.futVer == null : this;
-                assert this.topVer == AffinityTopologyVersion.ZERO : this;
+                assert this.futVer != null : this;
+                assert this.topVer == topVer : this;
 
-                this.topVer = topVer;
                 this.updVer = updVer;
-                this.futVer = futVer;
 
                 resCnt = 0;
 
@@ -494,14 +487,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             onDone(err);
 
             return;
-        }
-
-        if (storeFuture()) {
-            if (!cctx.mvcc().addAtomicFuture(futVer, this)) {
-                assert isDone() : this;
-
-                return;
-            }
         }
 
         // Optimize mapping for single key.

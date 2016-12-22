@@ -456,14 +456,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
                     cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                         @Override public void run() {
-                            try {
-                                AffinityTopologyVersion topVer = fut.get();
-
-                                map(topVer, remapKeys);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
+                            mapOnTopology();
                         }
                     });
                 }
@@ -519,6 +512,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 }
 
                 topVer = fut.topologyVersion();
+
+                beforeMap(topVer);
             }
             else {
                 if (waitTopFut) {
@@ -544,7 +539,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             cache.topology().readUnlock();
         }
 
-        map(topVer, null);
+        map(topVer, remapKeys);
     }
 
     /**
@@ -602,7 +597,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    protected void map(AffinityTopologyVersion topVer) {
+    @Override protected void map(AffinityTopologyVersion topVer) {
         map(topVer, null);
     }
 
@@ -620,14 +615,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             return;
         }
 
-        Exception err = null;
-        GridNearAtomicFullUpdateRequest singleReq0 = null;
-        Map<UUID, GridNearAtomicFullUpdateRequest> mappings0 = null;
-
-        int size = keys.size();
-
-        GridCacheVersion futVer = cctx.versions().next(topVer);
-
         GridCacheVersion updVer;
 
         // Assign version on near node in CLOCK ordering mode even if fastMap is false.
@@ -643,6 +630,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
         else
             updVer = null;
+
+        Exception err = null;
+        GridNearAtomicFullUpdateRequest singleReq0 = null;
+        Map<UUID, GridNearAtomicFullUpdateRequest> mappings0 = null;
+
+        int size = keys.size();
 
         try {
             if (size == 1 && !fastMap) {
@@ -676,12 +669,10 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
 
             synchronized (mux) {
-                assert this.futVer == null : this;
-                assert this.topVer == AffinityTopologyVersion.ZERO : this;
+                assert this.futVer != null : this;
+                assert this.topVer == topVer : this;
 
-                this.topVer = topVer;
                 this.updVer = updVer;
-                this.futVer = futVer;
 
                 resCnt = 0;
 
@@ -699,14 +690,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             onDone(err);
 
             return;
-        }
-
-        if (storeFuture()) {
-            if (!cctx.mvcc().addAtomicFuture(futVer, this)) {
-                assert isDone() : this;
-
-                return;
-            }
         }
 
         // Optimize mapping for single key.
