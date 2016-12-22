@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
@@ -70,7 +71,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
         ccfg.setCacheMode(cacheMode);
         ccfg.setMemoryMode(cacheMemoryMode);
         ccfg.setEagerTtl(true);
-        ccfg.setSwapEnabled(false);
         ccfg.setEvictionPolicy(new FifoEvictionPolicy(ENTRIES_LIMIT, 100));
         ccfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.HOURS, 12)));
 
@@ -128,9 +128,12 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return (cctx.isSwapOrOffheapEnabled()) ?
-                        ENTRIES_TO_PUT == cctx.ttl().pendingSize() :
-                        ENTRIES_LIMIT == cctx.ttl().pendingSize();
+                    try {
+                        return ENTRIES_LIMIT == cctx.ttl().pendingSize();
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
                 }
             }, 3_000);
 
@@ -140,18 +143,11 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
             final String firstKey = "Some test entry key#0";
             final String lastKey = "Some test entry key#" + ENTRIES_TO_PUT;
 
-            if (cctx.isSwapOrOffheapEnabled()) {
-                assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
+            assertFalse("first key should be evicted", cache.containsKey(firstKey));
 
-                assertEquals(ENTRIES_TO_PUT, cctx.ttl().pendingSize());
-            }
-            else {
-                assertFalse("first key should be evicted", cache.containsKey(firstKey));
+            assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
 
-                assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
-
-                assertEquals("Ttl Manager should NOT track evicted entries", ENTRIES_LIMIT, cctx.ttl().pendingSize());
-            }
+            assertEquals("Ttl Manager should NOT track evicted entries", ENTRIES_LIMIT, cctx.ttl().pendingSize());
         }
         finally {
             Ignition.stopAll(true);

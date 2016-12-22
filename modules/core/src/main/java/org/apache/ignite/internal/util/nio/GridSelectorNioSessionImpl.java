@@ -48,9 +48,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Current worker thread. */
     private volatile GridNioWorker worker;
 
-    /** Worker index for server */
-    private final int selectorIdx;
-
     /** Semaphore. */
     @GridToStringExclude
     private final Semaphore sem;
