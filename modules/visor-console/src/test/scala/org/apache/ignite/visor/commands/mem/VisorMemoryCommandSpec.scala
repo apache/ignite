@@ -79,4 +79,18 @@ class VisorMemoryCommandSpec extends FunSpec with Matchers {
             visor.mlist()
         }
     }
+
+    describe("A 'mcompact' visor command") {
+        it("should compact variable") {
+
+            visor.mset("key1", "value1")
+            visor.mset("key2", "value2")
+            visor.mset("key3", "value3")
+
+            visor mclear "key2"
+
+            visor.mcompact()
+            visor.mlist()
+        }
+    }
 }

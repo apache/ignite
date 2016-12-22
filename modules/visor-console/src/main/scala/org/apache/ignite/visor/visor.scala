@@ -388,6 +388,23 @@ object visor extends VisorTag {
     )
 
     addHelp(
+        name = "mcompact",
+        shortInfo = "Fills gap in Visor console memory variable.",
+        longInfo = Seq(
+            "Finds and fills gap in Visor console memory variable."
+        ),
+        spec = Seq(
+            "mcompact"
+        ),
+        examples = Seq(
+            "mcompact" ->
+                "Fills gap in Visor console memory variable."
+        ),
+        emptyArgs = mcompact,
+        withArgs = _ => wrongArgs("mcompact")
+    )
+
+    addHelp(
         name = "help",
         shortInfo = "Prints Visor console help.",
         aliases = Seq("?"),
@@ -613,6 +630,36 @@ object visor extends VisorTag {
      */
     def mlist() {
         mlist("")
+    }
+
+    /**
+      * ==Command==
+      * Fills gap in Visor console memory variable.
+      *
+      * ==Examples==
+      * <ex>mcompact</ex>
+      * Fills gap in Visor console memory variable.
+      */
+    def mcompact() {
+        if (ignite == null)
+            NA
+        else {
+            clearNamespace("n")
+
+            ignite.cluster.nodes().foreach(n => {
+                setVar(nid8(n), "n")
+
+                val ip = sortAddresses(n.addresses()).headOption
+
+                if (ip.isDefined)
+                    setVar(ip.get, "h")
+            })
+
+            val onHost = ignite.cluster.forHost(ignite.localNode())
+
+            Option(onHost.forServers().forOldest().node()).foreach(n => msetOpt("nl", nid8(n)))
+            Option(ignite.cluster.forOthers(onHost).forServers.forOldest().node()).foreach(n => msetOpt("nr", nid8(n)))
+        }
     }
 
     /**
