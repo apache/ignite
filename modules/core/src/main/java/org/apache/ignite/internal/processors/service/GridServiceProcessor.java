@@ -153,7 +153,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private final List<ComputeJobContext> pendingJobCtxs = new ArrayList<>(0);
 
     /** Deployment executor service. */
-    private final ExecutorService depExe;
+    private volatile ExecutorService depExe;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -244,7 +244,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
-        if (ctx.isDaemon() || !activeOnStart)
+        if (ctx.isDaemon() || !ctx.state().active())
             return;
 
         cache = ctx.cache().utilityCache();
@@ -368,6 +368,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             log.debug("Activate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.gridName(), "srvc-deploy"));
+
         start(true);
 
         onKernalStart(true);
@@ -379,41 +381,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
-        busyLock.block();
-
-        try {
-            if (ctx.isDaemon())
-                return;
-
-            if (!ctx.clientNode())
-                ctx.event().removeLocalEventListener(topLsnr);
-
-            Collection<ServiceContextImpl> ctxs = new ArrayList<>();
-
-            synchronized (locSvcs) {
-                for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
-                    ctxs.addAll(ctxs0);
-            }
-
-            for (ServiceContextImpl ctx : ctxs) {
-                ctx.setCancelled(true);
-
-                Service svc = ctx.service();
-
-                if (svc != null)
-                    svc.cancel(ctx);
-            }
-
-            Exception err = new IgniteCheckedException("Operation has been cancelled (node is in active status).");
-
-            cancelFutures(depFuts, err);
-            cancelFutures(undepFuts, err);
-
-            if (log.isDebugEnabled())
-                log.debug("Deactivate service processor.");
-        }finally {
-            busyLock.unblock();
-        }
+        onKernalStop(true);
     }
 
     /** {@inheritDoc} */
