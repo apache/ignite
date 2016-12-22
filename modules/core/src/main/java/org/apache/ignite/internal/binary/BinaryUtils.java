@@ -2228,7 +2228,9 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return new BinaryTypeProxy(ctx, obj.typeId());
+        String clsName = obj instanceof BinaryEnumObjectImpl ? ((BinaryEnumObjectImpl)obj).className() : null;
+
+        return new BinaryTypeProxy(ctx, obj.typeId(), clsName);
     }
 
     /**
