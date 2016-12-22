@@ -470,12 +470,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
+    private void addTypeByName(CacheConfiguration<?, ?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
-        else if (desc.tableAlias() != null)
-            typesByName.put(new TypeName(ccfg.getName(), desc.tableAlias()), desc);
     }
 
     /** {@inheritDoc} */
@@ -555,10 +553,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     it.remove();
 
                     typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
-
-                    if(entry.getValue().tableAlias() != null)
-                        typesByName.remove(new TypeName(cctx.name(), entry.getValue().tableAlias()));
-
                 }
             }
         }
