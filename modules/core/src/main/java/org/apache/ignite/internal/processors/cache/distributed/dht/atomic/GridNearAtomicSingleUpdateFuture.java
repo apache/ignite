@@ -585,6 +585,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     taskNameHash,
                     skipStore,
                     keepBinary,
+                    recovery,
                     cctx.kernalContext().clientNode(),
                     cctx.deploymentEnabled());
             }
