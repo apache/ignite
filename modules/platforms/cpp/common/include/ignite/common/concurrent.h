@@ -19,6 +19,7 @@
 #define _IGNITE_COMMON_CONCURRENT
 
 #include <cassert>
+#include <utility>
 
 #include "ignite/common/concurrent_os.h"
 
@@ -121,10 +122,15 @@ namespace ignite
             public:
                 friend class EnableSharedFromThis<T>;
 
+                template<typename T2>
+                friend class SharedPointer;
+
                 /**
                  * Constructor.
                  */
-                SharedPointer() : impl(0)
+                SharedPointer() :
+                    ptr(0),
+                    impl(0)
                 {
                     // No-op.
                 }
@@ -133,17 +139,17 @@ namespace ignite
                  * Constructor.
                  *
                  * @param ptr Raw pointer.
+                 * @param deleter Delete function.
                  */
-                explicit SharedPointer(T* ptr)
+                SharedPointer(T* ptr, void(*deleter)(T*) = &SharedPointerDefaultDeleter<T>) :
+                    ptr(ptr),
+                    impl(0)
                 {
                     if (ptr)
                     {
-                        void(*deleter)(T*) = (void(*)(T*)) &SharedPointerDefaultDeleter<T>;
                         impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
                         ImplEnableShared(ptr, impl);
                     }
-                    else
-                        impl = 0;
                 }
 
                 /**
@@ -152,15 +158,16 @@ namespace ignite
                  * @param ptr Raw pointer.
                  * @param deleter Delete function.
                  */
-                SharedPointer(T* ptr, void(*deleter)(T*))
+                template<typename T2>
+                SharedPointer(T2* ptr, void(*deleter)(T2*) = &SharedPointerDefaultDeleter<T2>) :
+                    ptr(ptr),
+                    impl(0)
                 {
                     if (ptr)
                     {
                         impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
                         ImplEnableShared(ptr, impl);
                     }
-                    else
-                        impl = 0;
                 }
 
                 /**
@@ -169,6 +176,21 @@ namespace ignite
                  * @param other Instance to copy.
                  */
                 SharedPointer(const SharedPointer& other) :
+                    ptr(other.ptr),
+                    impl(other.impl)
+                {
+                    if (impl)
+                        impl->Increment();
+                }
+
+                /**
+                 * Copy constructor.
+                 *
+                 * @param other Instance to copy.
+                 */
+                template<typename T2>
+                SharedPointer(const SharedPointer<T2>& other) :
+                    ptr(other.ptr),
                     impl(other.impl)
                 {
                     if (impl)
@@ -186,8 +208,23 @@ namespace ignite
                     {
                         SharedPointer tmp(other);
 
-                        std::swap(impl, tmp.impl);
+                        Swap(tmp);
                     }
+
+                    return *this;
+                }
+
+                /**
+                 * Assignment operator.
+                 *
+                 * @param other Other instance.
+                 */
+                template<typename T2>
+                SharedPointer& operator=(const SharedPointer<T2>& other)
+                {
+                    SharedPointer<T> tmp(other);
+
+                    Swap(tmp);
 
                     return *this;
                 }
@@ -199,13 +236,15 @@ namespace ignite
                 {
                     if (impl && impl->Decrement())
                     {
-                        T* ptr = Get();
+                        void* ptr0 = impl->Pointer();
 
-                        void(*deleter)(T*) = reinterpret_cast<void(*)(T*)>(impl->Deleter());
+                        void(*deleter)(void*) = impl->Deleter();
 
-                        deleter(ptr);
+                        deleter(ptr0);
 
                         delete impl;
+
+                        ptr = 0;
                     }
                 }
 
@@ -216,7 +255,7 @@ namespace ignite
                  */
                 T* Get()
                 {
-                    return impl ? static_cast<T*>(impl->Pointer()) : 0;
+                    return ptr;
                 }
 
                 /**
@@ -226,7 +265,7 @@ namespace ignite
                  */
                 const T* Get() const
                 {
-                    return impl ? static_cast<T*>(impl->Pointer()) : 0;
+                    return ptr;
                 }
 
                 /**
@@ -245,7 +284,30 @@ namespace ignite
                     return impl != 0;
                 }
 
+                /**
+                 * Swap pointer content with another instance.
+                 *
+                 * @param other Other instance.
+                 */
+                void Swap(SharedPointer& other)
+                {
+                    if (this != &other)
+                    {
+                        T* ptrTmp = ptr;
+                        SharedPointerImpl* implTmp = impl;
+
+                        ptr = other.ptr;
+                        impl = other.impl;
+
+                        other.ptr = ptrTmp;
+                        other.impl = implTmp;
+                    }
+                }
+
             private:
+                /* Pointer. */
+                T* ptr;
+
                 /** Implementation. */
                 SharedPointerImpl* impl;
             };

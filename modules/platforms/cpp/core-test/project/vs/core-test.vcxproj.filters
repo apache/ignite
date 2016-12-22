@@ -58,6 +58,12 @@
     <ClCompile Include="..\..\src\interop_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\continuous_query_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\reference_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
@@ -86,6 +92,9 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\invalid.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

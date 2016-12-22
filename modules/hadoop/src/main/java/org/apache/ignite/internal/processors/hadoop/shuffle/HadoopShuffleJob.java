@@ -76,7 +76,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  */
 public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
-    private static final int DFLT_SHUFFLE_MSG_SIZE = 128 * 1024;
+    private static final int DFLT_SHUFFLE_MSG_SIZE = 1024 * 1024;
 
     /** */
     private final HadoopJob job;
