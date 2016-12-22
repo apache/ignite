@@ -32,7 +32,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_common_la_LDFLAGS = \
     -no-undefined \

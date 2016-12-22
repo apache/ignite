@@ -374,7 +374,9 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 
     BOOST_REQUIRE(column.GetUnreadDataLength() == data.size() - buf.size());
 
-    std::vector<int8_t> result(buf);
+    std::vector<int8_t> result;
+    result.reserve(data.size());
+    std::copy(buf.begin(), buf.end(), std::back_inserter(result));
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_SUCCESS);
 
@@ -383,8 +385,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
     BOOST_REQUIRE(column.GetSize() == data.size());
 
     BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
-
-    result.insert(std::end(result), std::begin(buf), std::end(buf));
+    
+    std::copy(buf.begin(), buf.end(), std::back_inserter(result));
 
     BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SQL_RESULT_NO_DATA);
 

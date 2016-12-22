@@ -287,7 +287,7 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t>>(const char* request, const std::vector<int8_t>& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected)
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
         SQLLEN resLen = 0;

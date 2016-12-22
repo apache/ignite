@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(TestByteArraySelect)
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.i8ArrayField.begin(), in.i8ArrayField.end(), out.i8ArrayField.begin(), out.i8ArrayField.end());
 
-    CheckSingleResult<std::vector<int8_t>>("SELECT i8ArrayField FROM TestType", in.i8ArrayField);
+    CheckSingleResult<std::vector<int8_t> >("SELECT i8ArrayField FROM TestType", in.i8ArrayField);
 }
 
 BOOST_AUTO_TEST_CASE(TestByteArrayParam)
