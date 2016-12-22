@@ -55,6 +55,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -697,6 +698,13 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return {@code true} if target node has DML support, {@code false} otherwise.
+     */
+    boolean isDmlSupported() {
+        return ignite.version().greaterThanEqual(1, 8, 0);
+    }
+
+    /**
      * @return Local query flag.
      */
     boolean isLocalQuery() {
@@ -733,6 +741,15 @@ public class JdbcConnection implements Connection {
      */
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
+    }
+
+    /**
+     * @param sql Query.
+     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     */
+    PreparedStatement prepareNativeStatement(String sql) throws SQLException {
+        return ((IgniteCacheProxy) ignite().cache(cacheName())).context()
+            .kernalContext().query().prepareNativeStatement(cacheName(), sql);
     }
 
     /**

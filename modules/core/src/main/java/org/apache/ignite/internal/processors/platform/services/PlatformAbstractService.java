@@ -110,13 +110,15 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
+
             writer.writeBoolean(srvKeepBinary);
 
             writeServiceContext(ctx, writer);
 
             out.synchronize();
 
-            platformCtx.gateway().serviceExecute(ptr, mem.pointer());
+            platformCtx.gateway().serviceExecute(mem.pointer());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -133,13 +135,15 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
+
             writer.writeBoolean(srvKeepBinary);
 
             writeServiceContext(ctx, writer);
 
             out.synchronize();
 
-            platformCtx.gateway().serviceCancel(ptr, mem.pointer());
+            platformCtx.gateway().serviceCancel(mem.pointer());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -173,10 +177,11 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         assert ptr != 0;
         assert platformCtx != null;
 
-        try (PlatformMemory outMem = platformCtx.memory().allocate()) {
-            PlatformOutputStream out = outMem.output();
+        try (PlatformMemory mem = platformCtx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
             writer.writeBoolean(srvKeepBinary);
             writer.writeString(mthdName);
 
@@ -192,17 +197,15 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             out.synchronize();
 
-            try (PlatformMemory inMem = platformCtx.memory().allocate()) {
-                PlatformInputStream in = inMem.input();
+            platformCtx.gateway().serviceInvokeMethod(mem.pointer());
 
-                platformCtx.gateway().serviceInvokeMethod(ptr, outMem.pointer(), inMem.pointer());
+            PlatformInputStream in = mem.input();
 
-                in.synchronize();
+            in.synchronize();
 
-                BinaryRawReaderEx reader = platformCtx.reader(in);
+            BinaryRawReaderEx reader = platformCtx.reader(in);
 
-                return PlatformUtils.readInvocationResult(platformCtx, reader);
-            }
+            return PlatformUtils.readInvocationResult(platformCtx, reader);
         }
     }
 

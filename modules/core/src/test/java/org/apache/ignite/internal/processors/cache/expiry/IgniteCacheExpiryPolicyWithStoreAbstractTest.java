@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -167,6 +169,44 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
             U.sleep(600);
 
             checkExpired(key);
+        }
+        finally {
+            cache.removeAll();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetReadThrough() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        List<Integer> keys = new ArrayList<>();
+
+        keys.add(primaryKeys(cache, 1, 100_000).get(0));
+        // TODO https://issues.apache.org/jira/browse/IGNITE-3699
+        // TODO: test 'get' inside transactions, 'get' for cache.withAsyncPolicy.
+        //keys.add(backupKeys(cache, 1, 100_000).get(0));
+        //keys.add(nearKeys(cache, 1, 100_000).get(0));
+
+        for (Integer key : keys)
+            storeMap.put(key, 100);
+
+        try {
+            for (Integer key : keys) {
+                Integer res = cache.get(key);
+
+                assertEquals((Integer)100, res);
+
+                checkTtl(key, 500, true);
+
+                assertEquals((Integer)100, res);
+            }
+
+            U.sleep(600);
+
+            for (Integer key : keys)
+                checkExpired(key);
         }
         finally {
             cache.removeAll();
