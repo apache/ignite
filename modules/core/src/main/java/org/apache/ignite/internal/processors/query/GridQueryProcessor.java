@@ -686,9 +686,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             coctx = cacheObjectContext(space);
 
-            Object key0 = ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
-            Object val0 = ctx.cacheObjects().isBinaryObject(val) ? val : val.value(coctx, false);
+            Object val0 = unwrap(val, coctx);
 
             ctx.indexing().store(space, key0, val0, expirationTime);
         }
@@ -1047,7 +1047,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(space);
 
-            Object key0 = ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
             ctx.indexing().remove(space, key0);
         }
@@ -1192,7 +1192,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            Object key0 = ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
             ctx.indexing().onSwap(spaceName, key0);
         }
@@ -1214,6 +1214,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Unwrap non-binary CacheObject.
+     */
+    private Object unwrap(CacheObject key, CacheObjectContext coctx) {
+        return ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+    }
+
+    /**
      * Will be called when entry for key will be unswapped.
      *
      * @param spaceName Space name.
@@ -1229,9 +1236,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            Object key0 = ctx.cacheObjects().isBinaryObject(key) ? key : key.value(coctx, false);
+            Object key0 = unwrap(key, coctx);
 
-            Object val0 = ctx.cacheObjects().isBinaryObject(val) ? val : val.value(coctx, false);
+            Object val0 = unwrap(val, coctx);
 
             ctx.indexing().onUnswap(spaceName, key0, val0);
         }
