@@ -32,11 +32,11 @@ public interface GridQueryTypeDescriptor {
     public String name();
 
     /**
-     * Gets type alias.
+     * Gets table alias for type.
      *
-     * @return Type alias.
+     * @return Table alias.
      */
-    public String alias();
+    public String tableAlias();
 
     /**
      * Gets mapping from field name to its type.

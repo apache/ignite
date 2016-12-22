@@ -253,7 +253,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
                     desc.name(simpleValType);
-                    desc.alias(qryEntity.getTableName());
+                    desc.tableAlias(qryEntity.getTableName());
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -474,8 +474,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
-        else if (desc.alias() != null)
-            typesByName.put(new TypeName(ccfg.getName(), desc.alias()), desc);
+        else if (desc.tableAlias() != null)
+            typesByName.put(new TypeName(ccfg.getName(), desc.tableAlias()), desc);
     }
 
     /** {@inheritDoc} */
@@ -556,8 +556,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
 
-                    if(entry.getValue().alias() != null)
-                        typesByName.remove(new TypeName(cctx.name(), entry.getValue().alias()));
+                    if(entry.getValue().tableAlias() != null)
+                        typesByName.remove(new TypeName(cctx.name(), entry.getValue().tableAlias()));
 
                 }
             }
@@ -2222,7 +2222,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private String name;
 
         /** */
-        private String alias;
+        private String tblAlias;
 
         /** Value field names and types with preserved order. */
         @GridToStringInclude
@@ -2291,12 +2291,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             this.name = name;
         }
 
-        public String alias() {
-            return alias;
+        /**
+         * Gets table alias for type.
+         * @return Table alias for type.
+         */
+        public String tableAlias() {
+            return tblAlias;
         }
 
-        public void alias(String alias) {
-            this.alias = alias;
+        /**
+         * Sets table name for type.
+         *
+         * @param tblalias Table alias.
+         */
+        public void tableAlias(String tblalias) {
+            this.tblAlias = tblalias;
         }
 
         /** {@inheritDoc} */

@@ -2430,9 +2430,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final String fullTblName;
 
         /** */
-        private final String tableName;
-
-        /** */
         private final GridQueryTypeDescriptor type;
 
         /** */
@@ -2452,9 +2449,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.type = type;
             this.schema = schema;
 
-            this.tableName = escapeName(type.alias() != null ? type.alias() : type.name(), schema.escapeAll());
+            String tblName = escapeName(type.tableAlias() != null ? type.tableAlias() : type.name(), schema.escapeAll());
 
-            fullTblName = schema.schemaName + "." + this.tableName;
+            fullTblName = schema.schemaName + "." + tblName;
         }
 
         /**
@@ -2469,13 +2466,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          */
         String fullTableName() {
             return fullTblName;
-        }
-
-        /**
-         * @return Database table name.
-         */
-        String tableName() {
-            return tableName;
         }
 
         /**
@@ -2804,7 +2794,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          */
         public void add(TableDescriptor tbl) {
             if (tbls.putIfAbsent(tbl.typeName(), tbl) != null)
-                throw new IllegalStateException("Table already registered: " + tbl.tableName());
+                throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
         }
 
         /**

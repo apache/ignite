@@ -201,7 +201,7 @@ public class QueryEntity implements Serializable {
 
 
     /**
-     * Gets table name for this query pair.
+     * Gets table name for this query entity.
      *
      * @return table name
      */
@@ -210,7 +210,7 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Sets table name for this query pair.
+     * Sets table name for this query entity.
      * @param tableName table name
      */
     public void setTableName(String tableName) {
