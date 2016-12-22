@@ -470,6 +470,7 @@
     <Compile Include="Plugin\IPluginContext.cs" />
     <Compile Include="Plugin\IPluginProvider.cs" />
     <Compile Include="Plugin\PluginNotFoundException.cs" />
+    <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\Package-Info.cs" />

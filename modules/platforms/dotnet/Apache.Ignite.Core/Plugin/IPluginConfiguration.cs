@@ -20,14 +20,11 @@ namespace Apache.Ignite.Core.Plugin
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Plugin configuration.
+    /// Plugin configuration marker interface.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IPluginConfiguration
     {
-        /// <summary>
-        /// Creates the plugin provider.
-        /// </summary>
-        IPluginProvider CreateProvider();
+        // No-op.
     }
 }

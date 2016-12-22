@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// Test provider.
     /// </summary>
     // ReSharper disable once ClassNeverInstantiated.Global
-    public class TestIgnitePluginProvider : IPluginProvider
+    public class TestIgnitePluginProvider : IPluginProvider<TestIgnitePluginConfiguration>
     {
         /** */
         public const string PluginName = "TestPlugin1";
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         }
 
         /** <inheritdoc /> */
-        public void Start(IPluginContext context)
+        public void Start(IPluginContext<TestIgnitePluginConfiguration> context)
         {
             Throw();
 
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// <summary>
         /// Gets the context.
         /// </summary>
-        public IPluginContext Context { get; private set; }
+        public IPluginContext<TestIgnitePluginConfiguration> Context { get; private set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether error should be thrown from provider methods.

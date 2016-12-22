@@ -17,24 +17,35 @@
 
 namespace Apache.Ignite.Core.Plugin
 {
+    using System;
+    using Apache.Ignite.Core.Impl.Common;
+
     /// <summary>
-    /// Plugin execution context.
+    /// When applied to <see cref="IPluginConfiguration"/>, defines the type of
+    /// <see cref="IPluginProvider{T}"/> to instantiate.
     /// </summary>
-    public interface IPluginContext<out T> where T : IPluginConfiguration
+    public class PluginProviderTypeAttribute : Attribute
     {
-        /// <summary>
-        /// Gets the Ignite.
-        /// </summary>
-        IIgnite Ignite { get; }
+        /** */
+        private readonly Type _pluginProviderType;
 
         /// <summary>
-        /// Gets the Ignite configuration.
+        /// Initializes new instance of <see cref="PluginProviderTypeAttribute"/> class.
         /// </summary>
-        IgniteConfiguration IgniteConfiguration { get; }
+        /// <param name="pluginProviderType">Type of the plugin provider.</param>
+        public PluginProviderTypeAttribute(Type pluginProviderType)
+        {
+            IgniteArgumentCheck.NotNull(pluginProviderType, "pluginProviderType");
+
+            _pluginProviderType = pluginProviderType;
+        }
 
         /// <summary>
-        /// Gets the plugin configuration.
+        /// Gets the plugin provider type.
         /// </summary>
-        T PluginConfiguration { get; }
+        public Type PluginProviderType
+        {
+            get { return _pluginProviderType; }
+        }
     }
 }

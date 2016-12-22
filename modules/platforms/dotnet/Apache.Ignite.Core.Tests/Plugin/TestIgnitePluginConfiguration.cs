@@ -22,12 +22,9 @@
     /// <summary>
     /// Plugin configuration.
     /// </summary>
+    [PluginProviderType(typeof(TestIgnitePluginProvider))]
     public class TestIgnitePluginConfiguration : IPluginConfiguration
     {
-        /** <inheritdoc /> */
-        public IPluginProvider CreateProvider()
-        {
-            return new TestIgnitePluginProvider();
-        }
+        // No-op.
     }
 }

@@ -103,26 +103,17 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         private class NullFactoryResultConfig : IPluginConfiguration
         {
-            public IPluginProvider CreateProvider()
-            {
-                return null;
-            }
+            // TODO
         }
 
         private class EmptyNameConfig : IPluginConfiguration
         {
-            public IPluginProvider CreateProvider()
-            {
-                return new TestIgnitePluginProvider { Name = "" };
-            }
+            // TODO
         }
 
         private class ExceptionConfig : IPluginConfiguration
         {
-            public IPluginProvider CreateProvider()
-            {
-                return new TestIgnitePluginProvider { ThrowError = true };
-            }
+            // TODO
         }
     }
 }

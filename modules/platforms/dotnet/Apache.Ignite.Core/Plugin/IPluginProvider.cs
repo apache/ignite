@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Plugin
     /// <para />
     /// Ignite plugins are loaded according to <see cref="IgniteConfiguration.PluginConfigurations"/>.
     /// </summary>
-    public interface IPluginProvider
+    public interface IPluginProvider<in TConfig> where TConfig : IPluginConfiguration
     {
         /// <summary>
         /// Gets the plugin name. Plugins can be retrieved by name via <see cref="IIgnite.GetPlugin{T}"/>.
@@ -44,10 +44,10 @@ namespace Apache.Ignite.Core.Plugin
         /// <summary>
         /// Starts the plugin provider.
         /// <para />
-        /// <see cref="IPluginContext.Ignite"/> can be null until <see cref="OnIgniteStart"/> is called.
+        /// <see cref="IPluginContext{T}.Ignite"/> can be null until <see cref="OnIgniteStart"/> is called.
         /// </summary>
         /// <param name="context">The context.</param>
-        void Start(IPluginContext context);
+        void Start(IPluginContext<TConfig> context);
 
         /// <summary>
         /// Stops the plugin provider.
