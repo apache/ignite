@@ -497,7 +497,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     private AffinityInfo affinityInfoFromNode(@Nullable String cacheName, AffinityTopologyVersion topVer, ClusterNode n)
         throws IgniteCheckedException {
         GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
-            .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
+            .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/, 0).get();
 
         AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
         AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
