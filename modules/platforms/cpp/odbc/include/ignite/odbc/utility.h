@@ -35,21 +35,17 @@
 #include "ignite/impl/binary/binary_writer_impl.h"
 
 
-#ifdef ODBC_DEBUG
-
 extern FILE* log_file;
-void logInit(const char*);
+bool logInit();
 
-#   define LOG_MSG(fmt, ...)                                        \
-    do {                                                            \
-        logInit(ODBC_LOG_PATH);                                     \
-        fprintf(log_file, "%s: " fmt, __FUNCTION__, ##__VA_ARGS__);   \
-        fflush(log_file);                                           \
-    } while (false)
-
-#else
-#   define LOG_MSG(...)
-#endif
+#   define LOG_MSG(param)                                   \
+    if (logInit())                                          \
+    {                                                       \
+        std::stringstream builder;                          \
+        builder << __FUNCTION__ << ": " << ##param << "\n"; \
+        fprintf(log_file, builder.str().c_str());           \
+        fflush(log_file);                                   \
+    }
 
 namespace ignite
 {

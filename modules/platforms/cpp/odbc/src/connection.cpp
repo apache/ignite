@@ -65,6 +65,13 @@ namespace ignite
 
         void Connection::GetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen)
         {
+            LOG_MSG("SQLGetInfo called: "
+                << type << " ("
+                << config::ConnectionInfo::InfoTypeToString(type) << "), "
+                << std::hex << reinterpret_cast<size_t>(buf) << ", "
+                << buflen << ", "
+                << std::hex << reinterpret_cast<size_t>(reslen));
+
             IGNITE_ODBC_API_CALL(InternalGetInfo(type, buf, buflen, reslen));
         }
 
@@ -204,7 +211,7 @@ namespace ignite
             {
                 int res = socket.Send(data + sent, len - sent);
 
-                LOG_MSG("Sent: %d\n", res);
+                LOG_MSG("Sent: " << res);
 
                 if (res <= 0)
                     return sent;
@@ -257,8 +264,7 @@ namespace ignite
                 size_t received = len - remain;
 
                 int res = socket.Receive(buffer + received, remain);
-                LOG_MSG("Receive res: %d\n", res);
-                LOG_MSG("remain: %d\n", remain);
+                LOG_MSG("Receive res: " << res << " remain: " << remain);
 
                 if (res <= 0)
                     return received;
@@ -343,7 +349,7 @@ namespace ignite
 
             if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
             {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                LOG_MSG("Error: " << rsp.GetError().c_str());
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
 
@@ -354,7 +360,7 @@ namespace ignite
 
             if (!rsp.IsAccepted())
             {
-                LOG_MSG("Hanshake message has been rejected.\n");
+                LOG_MSG("Hanshake message has been rejected.");
 
                 std::stringstream constructor;
 

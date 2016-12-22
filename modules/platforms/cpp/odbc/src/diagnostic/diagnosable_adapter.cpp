@@ -41,7 +41,7 @@ namespace ignite
 
             void DiagnosableAdapter::AddStatusRecord(SqlState sqlState, const std::string& message)
             {
-                LOG_MSG("Adding new record: %s\n", message.c_str());
+                LOG_MSG("Adding new record: " << message);
 
                 AddStatusRecord(sqlState, message, 0, 0);
             }

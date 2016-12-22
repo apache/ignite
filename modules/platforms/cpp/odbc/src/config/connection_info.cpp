@@ -42,8 +42,6 @@ namespace ignite
         namespace config
         {
 
-#ifdef ODBC_DEBUG
-
 #define DBG_STR_CASE(x) case x: return #x
 
             const char * ConnectionInfo::InfoTypeToString(InfoType type)
@@ -102,7 +100,6 @@ namespace ignite
             }
 
 #undef DBG_STR_CASE
-#endif
 
             ConnectionInfo::ConnectionInfo() : strParams(), intParams(),
                 shortParams()

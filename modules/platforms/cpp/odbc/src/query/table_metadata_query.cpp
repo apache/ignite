@@ -218,7 +218,7 @@ namespace ignite
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
-                    LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                    LOG_MSG("Error: " << rsp.GetError());
 
                     diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 
@@ -229,11 +229,10 @@ namespace ignite
 
                 for (size_t i = 0; i < meta.size(); ++i)
                 {
-                    LOG_MSG("[%d] CatalogName: %s\n", i, meta[i].GetCatalogName().c_str());
-                    LOG_MSG("[%d] SchemaName:  %s\n", i, meta[i].GetSchemaName().c_str());
-                    LOG_MSG("[%d] TableName:   %s\n", i, meta[i].GetTableName().c_str());
-                    LOG_MSG("[%d] TableType:   %s\n", i, meta[i].GetTableType().c_str());
-                    LOG_MSG("\n");
+                    LOG_MSG("\n[" << i << "] CatalogName: " << meta[i].GetCatalogName()
+                         << "\n[" << i << "] SchemaName:  " << meta[i].GetSchemaName()
+                         << "\n[" << i << "] TableName:   " << meta[i].GetTableName()
+                         << "\n[" << i << "] TableType:   " << meta[i].GetTableType());
                 }
 
                 return SQL_RESULT_SUCCESS;

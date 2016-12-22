@@ -22,19 +22,17 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
-#ifdef ODBC_DEBUG
-
 FILE* log_file = NULL;
+static const char* ignite_odbc_log_path = getenv("IGNITE_ODBC_LOG_PATH");
 
-void logInit(const char* path)
+bool logInit()
 {
-    if (!log_file)
+    if (!log_file && ignite_odbc_log_path)
     {
-        log_file = fopen(path, "w");
+        log_file = fopen(ignite_odbc_log_path, "w");
     }
+    return log_file != 0;
 }
-
-#endif //ODBC_DEBUG
 
 namespace ignite
 {
