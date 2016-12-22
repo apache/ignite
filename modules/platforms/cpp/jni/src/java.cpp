@@ -1552,7 +1552,7 @@ namespace ignite
                 if (consoleWriteHandlers.size() > 0) {
                     ConsoleWriteHandler consoleWrite = consoleWriteHandlers.at(0);
 
-                    const char* strChars = env->GetStringUTFChars(str, nullptr);
+                    const char* strChars = env->GetStringUTFChars(str, 0);
                     const int strCharsLen = env->GetStringUTFLength(str);
 
                     consoleWrite(strChars, strCharsLen, isErr);

@@ -29,7 +29,7 @@ namespace ignite
         }
 
         HandleRegistrySegment::HandleRegistrySegment() : 
-            map(new std::map<int64_t, SharedPointer<HandleRegistryEntry>>()), mux(new CriticalSection())
+            map(new std::map<int64_t, SharedPointer<HandleRegistryEntry> >()), mux(new CriticalSection())
         {
             // No-op.
         }
