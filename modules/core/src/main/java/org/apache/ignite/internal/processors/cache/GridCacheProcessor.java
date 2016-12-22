@@ -755,33 +755,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             //if we start as inactive node, and join to active cluster, we must registrate all caches which
             //was receive on join
             if (!ctx.isDaemon() && currentStatus && !activeOnStart) {
-                CacheConfiguration[] cacheCfgs = ctx.config().getCacheConfiguration();
+                List<CacheConfiguration> tmpCacheCfg = new ArrayList<>();
 
-                CacheConfiguration[] newCacheCfg = new CacheConfiguration[cacheCfgs.length];
-
-                boolean apply = false;
-
-                for (int i = 0; i < cacheCfgs.length; i++) {
-                    CacheConfiguration conf = cacheCfgs[i];
-
+                for (CacheConfiguration conf : ctx.config().getCacheConfiguration()) {
                     for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                         CacheConfiguration c = desc.cacheConfiguration();
-                        IgnitePredicate filter = conf.getNodeFilter();
+                        IgnitePredicate filter = c.getNodeFilter();
 
                         if (c.getName().equals(conf.getName()) &&
-                            (desc.receivedOnDiscovery() || CU.isSystemCache(c.getName()))) {
+                            ((desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) ||
+                                CU.isSystemCache(c.getName()))) {
 
-                            newCacheCfg[i] = c;
-
-                            apply = true;
+                            tmpCacheCfg.add(c);
 
                             break;
                         }
                     }
                 }
 
-                if (apply)
+                if (!tmpCacheCfg.isEmpty()) {
+                    CacheConfiguration[] newCacheCfg = new CacheConfiguration[tmpCacheCfg.size()];
+
+                    tmpCacheCfg.toArray(newCacheCfg);
+
                     ctx.config().setCacheConfiguration(newCacheCfg);
+                }
 
                 activeOnStart = ctx.state().active();
             }
