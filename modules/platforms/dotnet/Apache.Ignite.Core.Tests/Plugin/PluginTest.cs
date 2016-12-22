@@ -77,12 +77,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Action<ICollection<IPluginConfiguration>> check = x => Ignition.Start(
                 new IgniteConfiguration(TestUtils.GetTestConfiguration()) {PluginConfigurations = x});
 
-            // Null factory result.
-            var ex = Assert.Throws<IgniteException>(() => check(new[] { new NullFactoryResultConfig() }));
-            Assert.AreEqual("IPluginConfiguration.CreateProvider can not return null", ex.Message);
-
             // Empty plugin name.
-            ex = Assert.Throws<IgniteException>(() => check(new[] { new EmptyNameConfig() }));
+            var ex = Assert.Throws<IgniteException>(() => check(new[] { new EmptyNameConfig() }));
             Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
                             typeof(TestIgnitePluginProvider).AssemblyQualifiedName, ex.Message);
 
@@ -99,11 +95,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Provider throws an exception.
             var ioex = Assert.Throws<IOException>(() => check(new[] { new ExceptionConfig() }));
             Assert.AreEqual("Failure in plugin provider", ioex.Message);
-        }
-
-        private class NullFactoryResultConfig : IPluginConfiguration
-        {
-            // TODO
         }
 
         private class EmptyNameConfig : IPluginConfiguration
