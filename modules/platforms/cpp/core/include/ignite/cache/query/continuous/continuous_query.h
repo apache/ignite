@@ -204,7 +204,7 @@ namespace ignite
                      */
                     void SetListener(Reference<event::CacheEntryEventListener<K, V>> lsnr)
                     {
-                        impl.Get()->SetListener(val);
+                        impl.Get()->SetListener(lsnr);
                     }
 
                     /**
