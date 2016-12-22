@@ -80,6 +80,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulFullSnapshotId(buf, 0);
         setLastSuccessfulSnapshotId(buf, 0);
         setNextSnapshotTag(buf, 1);
+        setLastSuccessfulSnapshotTag(buf, 0);
         setLastAllocatedIndex(buf, 0);
         setCandidateAllocatedIndex(buf, 0);
     }
@@ -135,7 +136,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param lastSuccessfulFullSnapshotId Last successful full snapshot id.
      */
-    public void setLastSuccessfulFullSnapshotId(@NotNull ByteBuffer buf, long lastSuccessfulFullSnapshotId) {
+    public void  setLastSuccessfulFullSnapshotId(@NotNull ByteBuffer buf, long lastSuccessfulFullSnapshotId) {
         buf.putLong(LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF, lastSuccessfulFullSnapshotId);
     }
 

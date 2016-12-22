@@ -48,8 +48,10 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
     /** Error. */
     private Exception err;
 
+    /** Full snapshot. */
     private boolean fullSnapshot;
 
+    /** Last full snapshot id for cache. */
     private Map<Integer, Long> lastFullSnapshotIdForCache = new HashMap<>();
 
     /**
@@ -125,11 +127,16 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        System.out.println("StartFullSnapshotAckDiscoveryMessage - " + fullSnapshot);
         return new StartFullSnapshotAckDiscoveryMessage(globalSnapshotId, fullSnapshot, lastFullSnapshotIdForCache, cacheNames, err, initiatorId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
+    }
+
+    public void fullSnapshot(boolean b) {
+        fullSnapshot = b;
     }
 }
