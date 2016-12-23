@@ -492,6 +492,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         AffinityTopologyVersion topVer;
 
+        GridCacheVersion futVer;
+
         try {
             if (cache.topology().stopping()) {
                 onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
@@ -513,7 +515,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                 topVer = fut.topologyVersion();
 
-                beforeMap(topVer);
+                futVer = addAtomicFuture(topVer);
             }
             else {
                 if (waitTopFut) {
@@ -539,7 +541,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             cache.topology().readUnlock();
         }
 
-        map(topVer, remapKeys);
+        if (futVer != null)
+            map(topVer, futVer, remapKeys);
     }
 
     /**
@@ -597,15 +600,17 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(AffinityTopologyVersion topVer) {
-        map(topVer, null);
+    @Override protected void map(AffinityTopologyVersion topVer, GridCacheVersion futVer) {
+        map(topVer, futVer, null);
     }
 
     /**
      * @param topVer Topology version.
      * @param remapKeys Keys to remap.
      */
-    void map(AffinityTopologyVersion topVer, @Nullable Collection<KeyCacheObject> remapKeys) {
+    void map(AffinityTopologyVersion topVer,
+        GridCacheVersion futVer,
+        @Nullable Collection<KeyCacheObject> remapKeys) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
@@ -669,10 +674,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
 
             synchronized (mux) {
-                assert this.futVer != null : this;
-                assert this.topVer == topVer : this;
+                assert this.futVer == null : this;
+                assert this.topVer == AffinityTopologyVersion.ZERO : this;
 
+                this.topVer = topVer;
                 this.updVer = updVer;
+                this.futVer = futVer;
 
                 resCnt = 0;
 

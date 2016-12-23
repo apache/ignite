@@ -383,6 +383,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         AffinityTopologyVersion topVer;
 
+        GridCacheVersion futVer;
+
         try {
             if (cache.topology().stopping()) {
                 onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
@@ -404,7 +406,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
                 topVer = fut.topologyVersion();
 
-                beforeMap(topVer);
+                futVer = addAtomicFuture(topVer);
             }
             else {
                 if (waitTopFut) {
@@ -430,11 +432,12 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             cache.topology().readUnlock();
         }
 
-        map(topVer);
+        if (futVer != null)
+            map(topVer, futVer);
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(AffinityTopologyVersion topVer) {
+    @Override protected void map(AffinityTopologyVersion topVer, GridCacheVersion futVer) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
@@ -467,10 +470,12 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
 
             synchronized (mux) {
-                assert this.futVer != null : this;
-                assert this.topVer == topVer : this;
+                assert this.futVer == null : this;
+                assert this.topVer == AffinityTopologyVersion.ZERO : this;
 
+                this.topVer = topVer;
                 this.updVer = updVer;
+                this.futVer = futVer;
 
                 resCnt = 0;
 
