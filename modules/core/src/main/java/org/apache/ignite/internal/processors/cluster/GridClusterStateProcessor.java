@@ -379,6 +379,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         // revert change if activation request fail
         if (actx.activate) {
             try {
+                cacheProc.onKernalStopCaches(true);
+
+                cacheProc.stopCaches(true);
+
+                sharedCtx.affinity().removeAllCacheInfo();
+
                 if (!ctx.clientNode()) {
                     sharedCtx.database().onDeActivate(ctx);
 
@@ -387,12 +393,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                     sharedCtx.wal().onDeActivate(ctx);
                 }
-
-                cacheProc.onKernalStopCaches(true);
-
-                cacheProc.stopCaches(true);
-
-                sharedCtx.affinity().removeAllCacheInfo();
             }
             catch (Exception e) {
                 for (Map.Entry<UUID, Exception> entry : exs.entrySet())

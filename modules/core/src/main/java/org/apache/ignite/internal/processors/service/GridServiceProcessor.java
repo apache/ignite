@@ -376,10 +376,14 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
+        cancelFutures(depFuts, new IgniteCheckedException("Failed to deploy service, cluster in active."));
+
+        cancelFutures(undepFuts, new IgniteCheckedException("Failed to undeploy service, cluster in active."));
 
         onKernalStop(true);
     }
