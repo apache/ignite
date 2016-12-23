@@ -127,7 +127,6 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        System.out.println("StartFullSnapshotAckDiscoveryMessage - " + fullSnapshot);
         return new StartFullSnapshotAckDiscoveryMessage(globalSnapshotId, fullSnapshot, lastFullSnapshotIdForCache, cacheNames, err, initiatorId);
     }
 
@@ -136,7 +135,10 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
         return true;
     }
 
-    public void fullSnapshot(boolean b) {
-        fullSnapshot = b;
+    /**
+     * @param full full snapshot.
+     */
+    public void fullSnapshot(boolean full) {
+        fullSnapshot = full;
     }
 }
