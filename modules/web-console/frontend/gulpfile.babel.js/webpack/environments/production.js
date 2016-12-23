@@ -37,8 +37,7 @@ export default () => {
         devtool: 'cheap-source-map',
         output: {
             publicPath: '/',
-            filename: '[name].[chunkhash].js',
-            path: destDir
+            filename: '[name].[chunkhash].js'
         },
         plugins
     };

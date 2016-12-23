@@ -24,12 +24,14 @@ import previewPanel from './configuration/preview-panel.directive.js';
 import ConfigurationSummaryCtrl from './configuration/summary/summary.controller';
 import ConfigurationResource from './configuration/Configuration.resource';
 import summaryTabs from './configuration/summary/summary-tabs.directive';
+import IgniteSummaryZipper from './configuration/summary/summary-zipper.service';
 
 angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
     // Summary screen
     .directive(...summaryTabs)
     // Services.
+    .service('IgniteSummaryZipper', IgniteSummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)
     // Configure state provider.
     .config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
