@@ -128,7 +128,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         super.start(activeOnStart);
 
-        //todo get file lock if active on start true
         globalState = activeOnStart ? ACTIVE : INACTIVE;
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
@@ -380,6 +379,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         // revert change if activation request fail
         if (actx.activate) {
             try {
+                cacheProc.onKernalStopCaches(true);
+
+                cacheProc.stopCaches(true);
+
+                sharedCtx.affinity().removeAllCacheInfo();
+
                 if (!ctx.clientNode()) {
                     sharedCtx.database().onDeActivate(ctx);
 
@@ -388,12 +393,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                     sharedCtx.wal().onDeActivate(ctx);
                 }
-
-                cacheProc.onKernalStopCaches(true);
-
-                cacheProc.stopCaches(true);
-
-                sharedCtx.affinity().removeAllCacheInfo();
             }
             catch (Exception e) {
                 for (Map.Entry<UUID, Exception> entry : exs.entrySet())
@@ -440,7 +439,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             if (!client) {
                 sharedCtx.database().lock();
 
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().onActivate(ctx);
+
                 sharedCtx.wal().onActivate(ctx);
+
+                sharedCtx.database().initDataBase();
 
                 for (CacheConfiguration cfg : cfgs)
                     if (CU.isSystemCache(cfg.getName()))
@@ -451,9 +455,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                         sharedCtx.pageStore().initializeForCache(cfg);
 
                 sharedCtx.database().onActivate(ctx);
-
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onActivate(ctx);
             }
 
             if (log.isInfoEnabled())
@@ -571,6 +572,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                     sharedCtx.pageStore().onDeActivate(ctx);
 
                 sharedCtx.wal().onDeActivate(ctx);
+
+                sharedCtx.affinity().removeAllCacheInfo();
             }
         }
         catch (Exception e) {

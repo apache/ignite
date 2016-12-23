@@ -95,7 +95,7 @@ export default ['domainsController', [
 
                         break;
 
-                    case 'indexes':
+                    case 'table-indexes':
                         if ($scope.tableIndexSaveVisible(field, index))
                             return $scope.tableIndexSave(field, index, stopEdit);
 
@@ -1355,6 +1355,9 @@ export default ['domainsController', [
             if (!LegacyUtils.domainForStoreConfigured(item) && !LegacyUtils.domainForQueryConfigured(item) && item.queryMetadata === 'Configuration')
                 return ErrorPopover.show('query-title', 'SQL query domain model should be configured', $scope.ui, 'query');
 
+            if (!LegacyUtils.domainForStoreConfigured(item) && item.generatePojo)
+                return ErrorPopover.show('store-title', 'Domain model for cache store should be configured when generation of POJO classes is enabled', $scope.ui, 'store');
+
             return true;
         }
 
@@ -1437,7 +1440,8 @@ export default ['domainsController', [
         }
 
         function _newNameIsValidJavaClass(newName) {
-            return LegacyUtils.isValidJavaClass('New name for value type', newName, false, 'copy-new-nameInput');
+            return !$scope.backupItem.generatePojo ||
+                LegacyUtils.isValidJavaClass('New name for value type', newName, false, 'copy-new-nameInput');
         }
 
         // Save domain model with new name.

@@ -3117,41 +3117,42 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer)
+        GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
 
         checkObsolete();
 
         if (curVer == null || curVer.equals(ver)) {
             if (val != this.val) {
-                GridCacheMvcc mvcc = mvccExtras();
+                        GridCacheMvcc mvcc = mvccExtras();
 
-                if (mvcc != null && !mvcc.isEmpty())
-                    return null;
+                        if (mvcc != null && !mvcc.isEmpty())
+                            return null;
 
-                if (newVer == null)
-                    newVer = cctx.versions().next();
+                        if (newVer == null)
+                            newVer = cctx.versions().next();
 
-                long ttl = ttlExtras();
+                        long ttl = ttlExtras();
 
-                long expTime = CU.toExpireTime(ttl);
+                        long expTime = CU.toExpireTime(ttl);
 
-                // Detach value before index update.
-                val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+                        // Detach value before index update.
+                        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
-                if (val != null) {
-                    storeValue(val, expTime, newVer);
+                        if (val != null) {
+                            storeValue(val, expTime, newVer);
 
-                    if (deletedUnlocked())
-                        deletedUnlocked(false);
+                            if (deletedUnlocked())
+                                deletedUnlocked(false);
+                        }
+
+                        // Version does not change for load ops.
+                        update(val, expTime, ttl, newVer, true);
+
+                        return newVer;
+                    }
                 }
-
-                // Version does not change for load ops.
-                update(val, expTime, ttl, newVer, true);
-
-                return newVer;
-            }
-        }
 
         return null;
     }

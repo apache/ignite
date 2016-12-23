@@ -75,6 +75,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public void initDataBase() throws IgniteCheckedException{
+
+    }
+
+    /**
      * @return Node-global free list.
      */
     public FreeList globalFreeList() {

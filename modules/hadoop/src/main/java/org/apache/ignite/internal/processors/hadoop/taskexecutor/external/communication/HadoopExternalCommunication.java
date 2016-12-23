@@ -1306,11 +1306,11 @@ public class HadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
             if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
-            return proceedSessionWrite(ses, msg);
+            return proceedSessionWrite(ses, msg, fut);
         }
 
         /** {@inheritDoc} */

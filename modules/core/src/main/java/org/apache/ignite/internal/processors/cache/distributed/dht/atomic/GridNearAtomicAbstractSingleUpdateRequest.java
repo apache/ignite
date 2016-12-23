@@ -65,7 +65,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x40;
 
-    /** Return value flag. */
+    /** Recovery flag mask. */
     private static final int RECOVERY_FLAG_MASK = 0x80;
 
     /** Target node ID. */
@@ -164,8 +164,8 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         returnValue(retval);
         skipStore(skipStore);
         keepBinary(keepBinary);
-        recovery(recovery);
         clientRequest(clientReq);
+        recovery(recovery);
     }
 
     /** {@inheritDoc} */
@@ -365,18 +365,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         setFlag(val, KEEP_BINARY_FLAG_MASK);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean recovery() {
-        return isFlag(RECOVERY_FLAG_MASK);
-    }
-
-    /**
-     * Sets keepBinary flag value.
-     */
-    public void recovery(boolean val) {
-        setFlag(val, RECOVERY_FLAG_MASK);
-    }
-
     /**
      * @return Flag indicating whether this request contains primary keys.
      */
@@ -389,6 +377,18 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      */
     public void hasPrimary(boolean val) {
         setFlag(val, HAS_PRIMARY_FLAG_MASK);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return isFlag(RECOVERY_FLAG_MASK);
+    }
+
+    /**
+     * Sets recovery flag value.
+     */
+    public void recovery(boolean val) {
+        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /** {@inheritDoc} */

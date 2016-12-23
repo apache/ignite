@@ -76,6 +76,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 import org.jsr166.LongAdder8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
@@ -437,6 +438,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (isRestEnabled()) {
+            if (notStartOnClient()) {
+                U.quietAndInfo(log, "REST protocols do not start on client node. " +
+                    "To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.");
+
+                return;
+            }
+
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
@@ -470,6 +478,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 }
             }
         }
+    }
+
+    /**
+     * @return {@code True} if rest processor should not start on client node.
+     */
+    private boolean notStartOnClient() {
+        return ctx.clientNode() && !IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT);
     }
 
     /** {@inheritDoc} */

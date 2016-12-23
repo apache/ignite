@@ -155,7 +155,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -511,10 +510,27 @@ public abstract class IgniteUtils {
         }
     };
 
-    /**
-     * Initializes enterprise check.
+    /** */
+    private static final boolean assertionsEnabled;
+
+    /*
+     *
      */
     static {
+        boolean assertionsEnabled0 = true;
+
+        try {
+            assert false;
+
+            assertionsEnabled0 = false;
+        }
+        catch (AssertionError ignored) {
+            assertionsEnabled0 = true;
+        }
+        finally {
+            assertionsEnabled = assertionsEnabled0;
+        }
+
         String osName = System.getProperty("os.name");
 
         String osLow = osName.toLowerCase();
@@ -552,7 +568,7 @@ public abstract class IgniteUtils {
             mac = true;
         else {
             // UNIXs flavors tokens.
-            for (CharSequence os : new String[]{"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
+            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
                 if (osLow.contains(os)) {
                     unix = true;
 
@@ -664,7 +680,7 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        Class<?>[] evtHolderClasses = new Class[]{EventType.class, DiscoveryCustomEvent.class};
+        Class<?>[] evtHolderClasses = new Class[] {EventType.class, DiscoveryCustomEvent.class};
 
         for (Class<?> cls : evtHolderClasses) {
             for (Field field : cls.getFields()) {
@@ -1239,7 +1255,7 @@ public abstract class IgniteUtils {
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
-                    "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+                "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
 
         ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
@@ -1286,6 +1302,27 @@ public abstract class IgniteUtils {
             deadlockedThreadsIds = Collections.emptySet();
 
         return deadlockedThreadsIds;
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @param sb Builder.
+     */
+    public static void printStackTrace(long threadId, GridStringBuilder sb) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        ThreadInfo threadInfo = mxBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+
+        printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
+    }
+
+    /**
+     * @return {@code true} if there is java level deadlock.
+     */
+    public static boolean deadlockPresent() {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        return !F.isEmpty(mxBean.findDeadlockedThreads());
     }
 
     /**
@@ -1464,7 +1501,8 @@ public abstract class IgniteUtils {
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        } finally {
+        }
+        finally {
             if (ctor != null && set)
                 ctor.setAccessible(false);
         }
@@ -1498,7 +1536,8 @@ public abstract class IgniteUtils {
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        } finally {
+        }
+        finally {
             if (set)
                 ctor.setAccessible(false);
         }
@@ -1850,11 +1889,13 @@ public abstract class IgniteUtils {
         for (Future<?> fut : futs) {
             try {
                 fut.get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
+            }
+            catch (ExecutionException e) {
                 throw new IgniteException(e);
             }
         }
@@ -2199,7 +2240,8 @@ public abstract class IgniteUtils {
         }
         catch (NoSuchAlgorithmException | KeyManagementException e) {
             throw new IOException("Failed to open HTTPs connection [url=" + url.toString() + ", msg=" + e + ']', e);
-        } finally {
+        }
+        finally {
             close(in, null);
             close(out, null);
         }
@@ -2213,7 +2255,7 @@ public abstract class IgniteUtils {
      * @return Array with one X509TrustManager implementation of trust manager.
      */
     private static TrustManager[] getTrustManagers() {
-        return new TrustManager[]{
+        return new TrustManager[] {
             new X509TrustManager() {
                 @Nullable @Override public X509Certificate[] getAcceptedIssuers() {
                     return null;
@@ -3268,7 +3310,7 @@ public abstract class IgniteUtils {
 
         int cnt = 0;
 
-        for (int n; (n = in.read(buf)) > 0;) {
+        for (int n; (n = in.read(buf)) > 0; ) {
             out.write(buf, 0, n);
 
             cnt += n;
@@ -3293,7 +3335,7 @@ public abstract class IgniteUtils {
 
         int cnt = 0;
 
-        for (int n; (n = in.read(buf)) > 0;) {
+        for (int n; (n = in.read(buf)) > 0; ) {
             out.write(buf, 0, n);
 
             cnt += n;
@@ -4400,7 +4442,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendJvmId(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)){
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String jvmId = ManagementFactory.getRuntimeMXBean().getName();
 
             sb.a("jvmId=").a(jvmId).a(',');
@@ -5107,7 +5149,8 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
+        ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
         if (size == -1)
@@ -5382,7 +5425,7 @@ public abstract class IgniteUtils {
         Set<E> set = new HashSet(size, 1.0f);
 
         for (int i = 0; i < size; i++)
-            set.add((E) in.readObject());
+            set.add((E)in.readObject());
 
         return set;
     }
@@ -5787,7 +5830,7 @@ public abstract class IgniteUtils {
             // We need to find common classloader for all elements AND the collection itself
             Collection<Object> tmpC = new ArrayList<>();
 
-            for (Object e: c)
+            for (Object e : c)
                 tmpC.add(e);
 
             tmpC.add(c);
@@ -6187,6 +6230,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return {@code True} if assertions enabled.
+     */
+    public static boolean assertionsEnabled() {
+        return assertionsEnabled;
+    }
+
+    /**
      * Gets OS JDK string.
      *
      * @return OS JDK string.
@@ -6519,7 +6569,7 @@ public abstract class IgniteUtils {
             String p2 = part2[idx];
 
             int cmp = (p1.matches("\\d+") && p2.matches("\\d+"))
-                        ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
+                ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
 
             if (cmp != 0)
                 return cmp;
@@ -8359,7 +8409,7 @@ public abstract class IgniteUtils {
             sb.append(" [");
 
             for (int i = 0; i < args.length / 2; i++) {
-                sb.append(args[ i * 2]).append('=').append(args[i * 2 + 1]);
+                sb.append(args[i * 2]).append('=').append(args[i * 2 + 1]);
                 sb.append(", ");
             }
 
@@ -8377,6 +8427,18 @@ public abstract class IgniteUtils {
      * @return Absolute value.
      */
     public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
         i = Math.abs(i);
 
         return i < 0 ? 0 : i;
@@ -8895,7 +8957,7 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address :sockAddr)
+        for (InetSocketAddress address : sockAddr)
             resolved.addAll(resolveAddress(addrRslvr, address));
 
         return resolved;
@@ -9796,7 +9858,6 @@ public abstract class IgniteUtils {
     public static <T extends Comparable<? super T>> T max(T t0, T t1) {
         return t0.compareTo(t1) > 0 ? t0 : t1;
     }
-
 
     /**
      * Unmarshals object from the input stream using given class loader.

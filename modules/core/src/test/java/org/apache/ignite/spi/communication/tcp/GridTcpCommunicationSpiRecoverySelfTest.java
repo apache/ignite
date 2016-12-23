@@ -649,6 +649,13 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /**
+     * @return {@code True}.
+     */
+    protected boolean usePairedConnections() {
+        return true;
+    }
+
+    /**
      * @param idx SPI index.
      * @return SPI instance.
      */
@@ -664,6 +671,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         spi.setSocketSendBuffer(512);
         spi.setSocketReceiveBuffer(512);
         spi.setConnectionsPerNode(1);
+        spi.setUsePairedConnections(usePairedConnections());
 
         return spi;
     }

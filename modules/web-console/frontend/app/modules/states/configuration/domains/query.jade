@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'query'
 -var model = 'backupItem'
@@ -41,15 +41,15 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
         .col-xs-8.col-sm-8.col-md-8
             label.fieldSep /
             .input-tip
-                button.select-toggle.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' ignite-on-enter-focus-move='{{::"#{direction}S" + #{idAddition}}}' ng-model=fieldNameModel placeholder='{{fields("#{prefix}", #{fieldNameModel}).length > 0 ? "Choose field" : "No fields configured"}}' bs-select bs-options='item.value as item.label for item in fields("#{prefix}", #{fieldNameModel})' ng-disabled='fields("#{prefix}", #{fieldNameModel}).length === 0' ignite-on-escape='tableReset()' tabindex='0')
+                button.select-toggle.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' ignite-on-enter-focus-move='{{::"#{direction}S" + #{idAddition}}}' ng-model=fieldNameModel placeholder='{{fields("#{prefix}", #{fieldNameModel}).length > 0 ? "Choose field" : "No fields configured"}}' bs-select bs-options='item.value as item.label for item in fields("#{prefix}", #{fieldNameModel})' ng-disabled='fields("#{prefix}", #{fieldNameModel}).length === 0' ignite-on-escape='tableReset(false)' tabindex='0')
         .col-xs-4.col-sm-4.col-md-4
             +btn-save(btnVisible, btnSave)
             .input-tip
-                button.select-toggle.form-control(id='{{::"#{direction}" + #{idAddition}}}' ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()' tabindex='0')
+                button.select-toggle.form-control(id='{{::"#{direction}" + #{idAddition}}}' ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)' tabindex='0')
     .col-xs-12(ng-if='!(#{sortAvailable})')
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' ng-model=fieldNameModel placeholder='{{fields("#{prefix}", #{fieldNameModel}).length > 0 ? "Choose index field" : "No fields configured"}}' bs-select bs-options='item.value as item.label for item in fields("#{prefix}", #{fieldNameModel})' ng-disabled='fields("#{prefix}", #{fieldNameModel}).length === 0' ignite-on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' ng-model=fieldNameModel placeholder='{{fields("#{prefix}", #{fieldNameModel}).length > 0 ? "Choose index field" : "No fields configured"}}' bs-select bs-options='item.value as item.label for item in fields("#{prefix}", #{fieldNameModel})' ng-disabled='fields("#{prefix}", #{fieldNameModel}).length === 0' ignite-on-escape='tableReset(false)' tabindex='0')
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle)
@@ -137,11 +137,11 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                                                     .col-sm-7
                                                         label.fieldSep /
                                                         .input-tip
-                                                            input.form-control(id='curIndexName{{$index}}' type='text' ignite-on-enter-focus-move='curIndexType{{$index}}' ng-model='indexesTbl.curIndexName' placeholder='Index name' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                                                            input.form-control(id='curIndexName{{$index}}' type='text' ignite-on-enter-focus-move='curIndexType{{$index}}' ng-model='indexesTbl.curIndexName' placeholder='Index name' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
                                                     .col-sm-5
                                                         +btn-save('tableIndexSaveVisible(indexesTbl, $index)', 'tableIndexSave(indexesTbl, $index)')
                                                         .input-tip
-                                                            button.select-toggle.form-control(id='curIndexType{{$index}}' bs-select ng-model='indexesTbl.curIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                                                            button.select-toggle.form-control(id='curIndexType{{$index}}' bs-select ng-model='indexesTbl.curIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
                                                 .margin-left-dflt
                                                     table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
                                                         tbody
@@ -163,10 +163,10 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                                                 .col-sm-7
                                                     .fieldSep /
                                                     .input-tip
-                                                        input#newIndexName.form-control(type='text' ignite-on-enter-focus-move='newIndexType' ng-model='indexesTbl.newIndexName' placeholder='Index name' ignite-on-enter='tableIndexSaveVisible(indexesTbl, -1) && tableIndexSave(indexesTbl, -1)' ignite-on-escape='tableReset()')
+                                                        input#newIndexName.form-control(type='text' ignite-on-enter-focus-move='newIndexType' ng-model='indexesTbl.newIndexName' placeholder='Index name' ignite-on-enter='tableIndexSaveVisible(indexesTbl, -1) && tableIndexSave(indexesTbl, -1)' ignite-on-escape='tableReset(false)')
                                                 .col-sm-5
                                                     +btn-save('tableIndexSaveVisible(indexesTbl, -1)', 'tableIndexSave(indexesTbl, -1)')
                                                     .input-tip
-                                                        button#newIndexType.select-toggle.form-control(bs-select ng-model='indexesTbl.newIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                                                        button#newIndexType.select-toggle.form-control(bs-select ng-model='indexesTbl.newIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
             .col-sm-6
                 +preview-xml-java(model, 'domainModelQuery')

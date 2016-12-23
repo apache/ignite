@@ -120,7 +120,7 @@ public class SnapshotProgressMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -39;
+        return -47;
     }
 
     /** {@inheritDoc} */

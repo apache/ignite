@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Grid future implementation.
@@ -40,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
         /** */
-        private volatile IUnmanagedTarget _unmanagedTarget;
+        private volatile Listenable _listenable;
 
         /// <summary>
         /// Constructor.
@@ -84,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cancellationToken">The cancellation token.</param>
         public Task<T> GetTask(CancellationToken cancellationToken)
         {
-            Debug.Assert(_unmanagedTarget != null);
+            Debug.Assert(_listenable != null);
 
             // OnTokenCancel will fire even if cancellationToken is already cancelled.
             cancellationToken.Register(OnTokenCancel);
@@ -169,11 +168,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Sets unmanaged future target for cancellation.
         /// </summary>
-        internal void SetTarget(IUnmanagedTarget target)
+        internal void SetTarget(Listenable target)
         {
             Debug.Assert(target != null);
 
-            _unmanagedTarget = target;
+            _listenable = target;
         }
 
         /// <summary>
@@ -181,8 +180,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private void OnTokenCancel()
         {
-            if (_unmanagedTarget != null)
-                UnmanagedUtils.ListenableCancel(_unmanagedTarget);
+            if (_listenable != null)
+                _listenable.Cancel();
         }
     }
 }

@@ -3346,7 +3346,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         long ptr = GridUnsafe.allocateMemory(arr.length);
 
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
 
         return ptr;
     }
