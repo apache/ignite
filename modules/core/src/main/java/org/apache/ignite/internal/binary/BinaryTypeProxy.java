@@ -45,10 +45,11 @@ public class BinaryTypeProxy implements BinaryType {
     private volatile BinaryType target;
 
     /**
-     * Constrcutor.
+     * Constructor.
      *
      * @param ctx Context.
      * @param typeId Type ID.
+     * @param clsName Class name.
      */
     public BinaryTypeProxy(BinaryContext ctx, int typeId, @Nullable String clsName) {
         this.ctx = ctx;
@@ -98,7 +99,7 @@ public class BinaryTypeProxy implements BinaryType {
         if (target == null) {
             synchronized (this) {
                 if (target == null) {
-                    if (typeId == 0 && clsName != null)
+                    if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID && clsName != null)
                         typeId = ctx.userTypeMapper(clsName).typeId(clsName);
 
                     target = ctx.metadata(typeId);
