@@ -99,7 +99,7 @@ public class BinaryTypeProxy implements BinaryType {
             synchronized (this) {
                 if (target == null) {
                     if (typeId == 0 && clsName != null)
-                        typeId = ctx.userTypeMapper(clsName).typeId(clsName);
+                        typeId = ctx.typeId(clsName);
 
                     target = ctx.metadata(typeId);
 
