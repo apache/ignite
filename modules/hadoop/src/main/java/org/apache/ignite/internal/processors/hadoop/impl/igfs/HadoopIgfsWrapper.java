@@ -70,7 +70,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
     private static final int IDLE_STATE = -1;
 
     /** Ignite client reference counters. */
-    private static final String CLIENT_NAME_PREFIX = "hadoop-igfs-cli-node-";
+    private static final String DFLT_CLIENT_NODE_NAME = "hadoop-igfs-cli-node";
 
     /** Ignite client reference counters (node name, reference count). */
     private static ConcurrentMap<String, Integer> refCnts = new ConcurrentHashMap8<>();
@@ -420,12 +420,17 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
                 String nodeName = cfg.getGridName();
 
+                if (nodeName == null) {
+                    nodeName = DFLT_CLIENT_NODE_NAME;
+                    cfg.setGridName(nodeName);
+                }
+
                 boolean createNode = needNewClient(nodeName);
 
                 if (createNode) {
                     cfg.setClientMode(true);
 
-                    Ignite ignite;
+                    Ignite ignite = null;
 
                     try {
                         ignite = Ignition.getOrStart(cfg);
@@ -433,7 +438,12 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     catch (IgniteException e) {
 
                         // Try to get ignite instance if it is already started
-                        ignite = Ignition.ignite(nodeName);
+                        try {
+                            ignite = Ignition.ignite(nodeName);
+                        }
+                        catch (Exception supressedEx) {
+                            e.addSuppressed(supressedEx);
+                        }
 
                         if (ignite == null) {
                             if (!refCnts.remove(nodeName, IDLE_STATE))
@@ -632,23 +642,36 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * Otherwise returns {@code false}.
      */
     private static boolean needNewClient(String nodeName) {
+        long timeBegin = U.currentTimeMillis();
         while (true) {
             Integer cnt = refCnts.get(nodeName);
 
             if (cnt == null) {
                 cnt = refCnts.putIfAbsent(nodeName, IDLE_STATE);
-                if (cnt == null)
+                if (cnt == null) {
+//                    System.out.println("+++ " + Thread.currentThread().getName()+ " NEED CREATE "
+//                        + nodeName);
                     return true;
+                }
             }
             else {
                 if (cnt > 0)
-                    if(refCnts.replace(nodeName, cnt, cnt + 1))
+                    if(refCnts.replace(nodeName, cnt, cnt + 1)) {
+//                        System.out.println("+++ " + Thread.currentThread().getName()+ " REGISTER "
+//                            + nodeName + ":" + Integer.toString(cnt + 1));
                         return false;
+                    }
             }
 
-            LockSupport.park();
+            LockSupport.parkNanos(0L);
+
+//            if (U.currentTimeMillis() - timeBegin > 5000) {
+//                System.out.println("+++ " + Thread.currentThread().getName() + " WAIT " + nodeName + " cnt = " + cnt);
+//                timeBegin = U.currentTimeMillis();
+//            }
         }
     }
+
 
     /**
      *
@@ -678,7 +701,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
          */
         public static HadoopIgfsInProcWithIgniteRefsCount create(String igfsName, Log log, String userName)
             throws IgniteCheckedException {
-            return create(igfsName, log, userName, true);
+            return create(igfsName, log, userName, false);
         }
 
         /**
@@ -702,10 +725,26 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                                 if (!refAlreadyRegistered) {
                                     Integer cnt = refCnts.get(ignite.name());
 
-                                    if (cnt != null && cnt >= 0) {
-                                        while (!refCnts.replace(ignite.name(), cnt, cnt + 1))
+                                    if (cnt != null) {
+                                        while (true) {
+                                            if (cnt == null)
+                                                return null;
+                                            else if (cnt >= 0 && refCnts.replace(ignite.name(), cnt, cnt + 1))
+                                                break;
+
+                                            LockSupport.parkNanos(0L);
+
                                             cnt = refCnts.get(ignite.name());
+                                        }
+//                                        System.out.println("+++ " + Thread.currentThread().getName()+ " REGISTER at create "
+//                                            + ignite.name() + ":" + Integer.toString(cnt + 1));
+                                    } else {
+//                                        System.out.println("+++ " + Thread.currentThread().getName()+ " NOT COUNTED "
+//                                            + ignite.name());
                                     }
+                                } else {
+//                                    System.out.println("+++ " + Thread.currentThread().getName() + " ALREADY REGISTERED "
+//                                        + ignite.name());
                                 }
 
                                 return new HadoopIgfsInProcWithIgniteRefsCount((IgfsEx)fs, log, userName);
@@ -736,7 +775,13 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 while (!refCnts.replace(gridName, cnt, cnt - 1))
                     cnt = refCnts.get(gridName);
 
+//                System.out.println("+++ " + Thread.currentThread().getName()+ " UNREGISTER "
+//                    + gridName + ":" + Integer.toString(cnt - 1));
+
+
                 if (refCnts.replace(gridName, 0, IDLE_STATE)) {
+//                    System.out.println("+++ " + Thread.currentThread().getName()+ " CLOSE "
+//                        + gridName);
                     if (refCnts.remove(gridName, IDLE_STATE))
                         G.stop(gridName, false);
                     else

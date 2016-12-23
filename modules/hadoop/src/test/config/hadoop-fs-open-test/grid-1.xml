@@ -51,8 +51,7 @@
         Configuration of Ignite node.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="clientMode" value="true"/>
-        <property name="gridName" value="test-IGFS-cli"/>
+        <property name="gridName" value="IGFS-cli-1"/>
 
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
@@ -97,37 +96,26 @@
         -->
         <property name="connectorConfiguration">
             <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
-                <property name="port" value="11211"/>
+                <property name="port" value="11212"/>
             </bean>
         </property>
 
+        <!--
+            Configure one IGFS file system instance named "igfs" on this node.
+        -->
         <property name="fileSystemConfiguration">
             <list>
-                <!--
-                    Configure PRIMARY IGFS file system instance named "igfs"
-                -->
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <!-- IGFS name you will use to access IGFS through Hadoop API. -->
-                    <property name="name" value="igfs"/>
+                    <property name="name" value="igfs-1"/>
 
                     <!-- Caches with these names must be configured. -->
                     <property name="metaCacheName" value="replicated"/>
                     <property name="dataCacheName" value="partitioned"/>
                     <property name="blockSize" value="524288"/>
-                    <property name="defaultMode" value="DUAL_ASYNC"/>
+                    <property name="defaultMode" value="PRIMARY"/>
+                    <property name="ipcEndpointEnabled" value="false"/>
 
-                    <property name="secondaryFileSystem">
-                        <bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">
-                            <property name="defaultUserName" value="secondary-default"/>
-
-                            <property name="fileSystemFactory">
-                                <bean class="org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory">
-                                    <property name="uri" value="igfs://igfs_secondary@127.0.0.1:11500/"/>
-                                    <property name="configPaths" value="/work/core-site-test.xml"/>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
                 </bean>
             </list>
         </property>
@@ -138,11 +126,14 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <value>127.0.0.1:47500..47509</value>
+                                <value>127.0.0.1:47600..47609</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="localAddress" value="127.0.0.1"/>
+                <property name="localPort" value="47600"/>
+                <property name="joinTimeout" value="5000"/>
             </bean>
         </property>
 
