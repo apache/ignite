@@ -88,6 +88,7 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
+        <module>modules/yardstick</module>
     </modules>
 
     <profiles>
@@ -344,6 +345,29 @@
                                         </replaceregexp>
 
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
+
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/">
+                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
+                                        </copy>
+
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks/src" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/src/">
+                                            <fileset dir="${basedir}/modules/yardstick/src"/>
+                                        </copy>
+
+                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
+                                              tofile="${basedir}/target/release-package/benchmarks/pom.xml"/>
+
+                                        <copy file="${basedir}/modules/yardstick/README-standalone.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/README.txt"/>
+
+                                        <replaceregexp file="${basedir}/target/release-package/benchmarks/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
 
                                         <!--
                                         Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
