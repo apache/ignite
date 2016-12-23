@@ -65,6 +65,9 @@ import org.jetbrains.annotations.Nullable;
  * {@code cpu-group} and {@code memory-group} attributes set to value {@code high}.
  */
 public class AttributeNodeFilter implements IgnitePredicate<ClusterNode> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Attributes. */
     private final Map<String, Object> attrs;
 
