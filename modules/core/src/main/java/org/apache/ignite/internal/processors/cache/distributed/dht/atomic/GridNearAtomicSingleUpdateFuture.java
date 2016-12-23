@@ -381,7 +381,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     @Override protected void mapOnTopology() {
         cache.topology().readLock();
 
-        AffinityTopologyVersion topVer = null;
+        AffinityTopologyVersion topVer;
 
         try {
             if (cache.topology().stopping()) {
@@ -462,8 +462,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         Exception err = null;
         GridNearAtomicAbstractUpdateRequest singleReq0 = null;
-
-        GridCacheVersion futVer = cctx.versions().next(topVer);
 
         try {
             singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
