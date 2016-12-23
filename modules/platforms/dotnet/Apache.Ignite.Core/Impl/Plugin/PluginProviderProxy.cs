@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     /// <summary>
     /// Wraps user-defined generic <see cref="IPluginProvider{TConfig}"/>.
     /// </summary>
-    internal class PluginProviderProxy<T>  : IPluginProviderProxy where T : IPluginConfiguration
+    internal class PluginProviderProxy<T> : IPluginProviderProxy where T : IPluginConfiguration
     {
         /** */
         private readonly T _pluginConfiguration;

@@ -25,6 +25,9 @@
     [PluginProviderType(typeof(TestIgnitePluginProvider))]
     public class TestIgnitePluginConfiguration : IPluginConfiguration
     {
-        // No-op.
+        /// <summary>
+        /// Custom plugin property.
+        /// </summary>
+        public string PluginProperty { get; set; }
     }
 }

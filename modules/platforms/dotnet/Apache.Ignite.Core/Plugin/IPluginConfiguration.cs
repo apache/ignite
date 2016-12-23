@@ -21,6 +21,9 @@ namespace Apache.Ignite.Core.Plugin
 
     /// <summary>
     /// Plugin configuration marker interface.
+    /// <para />
+    /// Implementations should be linked to corresponding <see cref="IPluginProvider{TConfig}"/>
+    /// via <see cref="PluginProviderTypeAttribute"/>.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IPluginConfiguration

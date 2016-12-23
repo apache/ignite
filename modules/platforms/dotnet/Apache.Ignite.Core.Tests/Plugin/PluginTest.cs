@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration()}
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration {PluginProperty = "barbaz"}}
             };
 
             TestIgnitePlugin plugin;
@@ -60,6 +60,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 var ctx = prov.Context;
                 Assert.IsNotNull(ctx.Ignite);
                 Assert.AreEqual(cfg, ctx.IgniteConfiguration);
+                Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
 
                 var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.AreEqual(plugin, plugin2);
