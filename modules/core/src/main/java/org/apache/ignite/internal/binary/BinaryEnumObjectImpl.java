@@ -196,13 +196,14 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public String toString() {
+        if (!S.INCLUDE_SENSITIVE)
+            return ord >= 0 ? "BinaryEnum" : "null";
+
         // 1. Try deserializing the object.
         try {
             Object val = deserialize();
 
-            return S.INCLUDE_SENSITIVE ?
-                new SB().a(val).toString() :
-                (val == null ? "null" : val.getClass().toString());
+            return new SB().a(val).toString();
         }
         catch (Exception e) {
             // No-op.
@@ -219,18 +220,12 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         }
 
         if (type != null)
-            return S.INCLUDE_SENSITIVE ?
-                type.typeName() + "[ordinal=" + ord  + ']' :
-                type.typeName();
+            return S.toString(type.typeName(), "ordinal", ord, true);
         else {
             if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-                return S.INCLUDE_SENSITIVE ?
-                    "BinaryEnum[clsName=" + clsName + ", ordinal=" + ord + ']' :
-                    "BinaryEnum[clsName=" + clsName + ']';
+                return S.toString("BinaryEnum", "clsName", clsName, true, "ordinal", ord, true);
             else
-                return S.INCLUDE_SENSITIVE ?
-                    "BinaryEnum[typeId=" + typeId + ", ordinal=" + ord + ']' :
-                    "BinaryEnum[typeId=" + typeId + ']';
+                return S.toString("BinaryEnum", "typeId", typeId, true, "ordinal", ord, true);
         }
     }
 

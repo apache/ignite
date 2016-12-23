@@ -812,9 +812,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.INCLUDE_SENSITIVE ?
-                key(ptr) + "=" + getValue() :
-                getClass().getSimpleName();
+            return key(ptr) + "=" + getValue();
         }
     }
 

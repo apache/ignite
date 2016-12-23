@@ -116,8 +116,6 @@ public class GridBoundedConcurrentLinkedHashMap<K, V> extends ConcurrentLinkedHa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.INCLUDE_SENSITIVE ?
-            S.toString(GridBoundedConcurrentLinkedHashMap.class, this, "entrySet", keySet()) :
-            S.toString(GridBoundedConcurrentLinkedHashMap.class, this);
+        return S.toString(GridBoundedConcurrentLinkedHashMap.class, this, "entrySet", keySet());
     }
 }

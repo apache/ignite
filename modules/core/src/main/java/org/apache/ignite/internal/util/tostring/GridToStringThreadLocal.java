@@ -32,6 +32,9 @@ class GridToStringThreadLocal {
     /** */
     private Object[] addVals = new Object[5];
 
+    /** */
+    private boolean[] addSens = new boolean[5];
+
     /**
      * @return String builder.
      */
@@ -51,5 +54,12 @@ class GridToStringThreadLocal {
      */
     Object[] getAdditionalValues() {
         return addVals;
+    }
+
+    /**
+     * @return Additional values.
+     */
+    boolean[] getAdditionalSensitives() {
+        return addSens;
     }
 }

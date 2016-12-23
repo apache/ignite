@@ -75,8 +75,6 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.INCLUDE_SENSITIVE ?
-            S.toString(OdbcQueryExecuteRequest.class, this, "args", Arrays.toString(args)) :
-            S.toString(OdbcQueryExecuteRequest.class, this);
+        return S.toString(OdbcQueryExecuteRequest.class, this, "args", args, true);
     }
 }

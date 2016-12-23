@@ -565,10 +565,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug(S.INCLUDE_SENSITIVE ?
-                    "Storing value in cache store [key=" + key + ", val=" + val + ']' :
-                    "Storing value in cache store"
-                );
+                log.debug(S.toString("Storing value in cache store",
+                    "key", key, true, "val", val, true));
 
             sessionInit0(tx);
 
@@ -593,10 +591,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug(S.INCLUDE_SENSITIVE ?
-                    "Stored value in cache store [key=" + key + ", val=" + val + ']' :
-                    "Stored value in cache store"
-                );
+                log.debug(S.toString("Stored value in cache store",
+                    "key", key, true, "val", val, true));
 
             return true;
         }
@@ -673,10 +669,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug(S.INCLUDE_SENSITIVE ?
-                    "Removing value from cache store [key=" + key + ']' :
-                    "Removing value from cache store"
-                );
+                log.debug(S.toString("Removing value from cache store", "key", key, true));
 
             sessionInit0(tx);
 
@@ -701,10 +694,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug(S.INCLUDE_SENSITIVE ?
-                    "Removed value from cache store [key=" + key + ']' :
-                    "Removed value from cache store"
-                );
+                log.debug(S.toString("Removed value from cache store", "key", key, true));
 
             return true;
         }

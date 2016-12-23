@@ -221,8 +221,10 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             meta = null;
         }
 
-        if (meta == null)
-            return BinaryObject.class.getSimpleName() +  " [idHash=" + idHash + ", hash=" + hash + ", typeId=" + typeId() + ']';
+        if (meta == null || !S.INCLUDE_SENSITIVE)
+            return S.toString(S.INCLUDE_SENSITIVE ? BinaryObject.class.getSimpleName() : "BinaryObject",
+                "idHash", idHash, false, "hash", hash, false,
+                "typeId", typeId(), true);
 
         handles.put(this, idHash);
 
@@ -231,14 +233,13 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         if (meta.fieldNames() != null) {
             buf.a(" [idHash=").a(idHash).a(", hash=").a(hash);
 
-            if (S.INCLUDE_SENSITIVE)
-                for (String name : meta.fieldNames()) {
-                    Object val = field(ctx, name);
+            for (String name : meta.fieldNames()) {
+                Object val = field(ctx, name);
 
-                    buf.a(", ").a(name).a('=');
+                buf.a(", ").a(name).a('=');
 
-                    appendValue(val, buf, ctx, handles);
-                }
+                appendValue(val, buf, ctx, handles);
+            }
 
             buf.a(']');
         }

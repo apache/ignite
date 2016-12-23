@@ -339,9 +339,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.INCLUDE_SENSITIVE ?
-                S.toString(HashEntry.class, this, "key", key, "val", val) :
-                S.toString(HashEntry.class, this);
+            return S.toString(HashEntry.class, this, "key", key, "val", val);
         }
     }
 
@@ -1792,13 +1790,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      */
     public ConcurrentLinkedDeque8<HashEntry<K, V>> queue() {
         return entryQ;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.INCLUDE_SENSITIVE ?
-            super.toString() :
-            getClass().getSimpleName() + " [size=" + size() + "]";
     }
 
     /**

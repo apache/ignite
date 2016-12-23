@@ -177,8 +177,8 @@ public class GridCacheVersionConflictContext<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return state == State.MERGE && S.INCLUDE_SENSITIVE ?
-            S.toString(GridCacheVersionConflictContext.class, this, "mergeValue", mergeVal) :
+        return state == State.MERGE ?
+            S.toString(GridCacheVersionConflictContext.class, this, "mergeValue", mergeVal, true) :
             S.toString(GridCacheVersionConflictContext.class, this);
     }
 
