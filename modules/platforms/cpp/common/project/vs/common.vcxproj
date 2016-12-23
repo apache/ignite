@@ -171,10 +171,12 @@
     <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\bits.h" />
+    <ClInclude Include="..\..\include\ignite\common\reference_impl.h" />
     <ClInclude Include="..\..\include\ignite\common\utils.h" />
     <ClInclude Include="..\..\include\ignite\date.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\ignite_error.h" />
+    <ClInclude Include="..\..\include\ignite\reference.h" />
     <ClInclude Include="..\..\include\ignite\timestamp.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\common.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h" />

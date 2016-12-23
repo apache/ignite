@@ -71,7 +71,7 @@ public enum HadoopJobProperty {
     /**
      * Size in bytes of single memory page which will be allocated for data structures in shuffle.
      * <p>
-     * By default is {@code 32 * 1024}.
+     * Defaults to {@code 1Mb}.
      */
     SHUFFLE_OFFHEAP_PAGE_SIZE("ignite.shuffle.offheap.page.size"),
 
@@ -98,7 +98,7 @@ public enum HadoopJobProperty {
     /**
      * Defines approximate size in bytes of shuffle message which will be passed over wire from mapper to reducer.
      * <p>
-     * Defaults to 128Kb.
+     * Defaults to {@code 1Mb}.
      */
     SHUFFLE_MSG_SIZE("ignite.shuffle.message.size"),
 
