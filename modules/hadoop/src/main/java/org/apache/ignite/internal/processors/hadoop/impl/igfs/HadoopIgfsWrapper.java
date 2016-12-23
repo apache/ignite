@@ -642,33 +642,20 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * Otherwise returns {@code false}.
      */
     private static boolean needNewClient(String nodeName) {
-        long timeBegin = U.currentTimeMillis();
         while (true) {
             Integer cnt = refCnts.get(nodeName);
 
             if (cnt == null) {
                 cnt = refCnts.putIfAbsent(nodeName, IDLE_STATE);
-                if (cnt == null) {
-//                    System.out.println("+++ " + Thread.currentThread().getName()+ " NEED CREATE "
-//                        + nodeName);
+                if (cnt == null)
                     return true;
-                }
             }
             else {
-                if (cnt > 0)
-                    if(refCnts.replace(nodeName, cnt, cnt + 1)) {
-//                        System.out.println("+++ " + Thread.currentThread().getName()+ " REGISTER "
-//                            + nodeName + ":" + Integer.toString(cnt + 1));
-                        return false;
-                    }
+                if (cnt > 0 && refCnts.replace(nodeName, cnt, cnt + 1))
+                    return false;
             }
 
             LockSupport.parkNanos(0L);
-
-//            if (U.currentTimeMillis() - timeBegin > 5000) {
-//                System.out.println("+++ " + Thread.currentThread().getName() + " WAIT " + nodeName + " cnt = " + cnt);
-//                timeBegin = U.currentTimeMillis();
-//            }
         }
     }
 
@@ -736,15 +723,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
                                             cnt = refCnts.get(ignite.name());
                                         }
-//                                        System.out.println("+++ " + Thread.currentThread().getName()+ " REGISTER at create "
-//                                            + ignite.name() + ":" + Integer.toString(cnt + 1));
-                                    } else {
-//                                        System.out.println("+++ " + Thread.currentThread().getName()+ " NOT COUNTED "
-//                                            + ignite.name());
                                     }
-                                } else {
-//                                    System.out.println("+++ " + Thread.currentThread().getName() + " ALREADY REGISTERED "
-//                                        + ignite.name());
                                 }
 
                                 return new HadoopIgfsInProcWithIgniteRefsCount((IgfsEx)fs, log, userName);
@@ -771,17 +750,10 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             if (cnt != null) {
                 // The node was created by this HadoopIgfsWrapper.
                 // The node must be stopped when there are not opened filesystems that are used one.
-
                 while (!refCnts.replace(gridName, cnt, cnt - 1))
                     cnt = refCnts.get(gridName);
 
-//                System.out.println("+++ " + Thread.currentThread().getName()+ " UNREGISTER "
-//                    + gridName + ":" + Integer.toString(cnt - 1));
-
-
                 if (refCnts.replace(gridName, 0, IDLE_STATE)) {
-//                    System.out.println("+++ " + Thread.currentThread().getName()+ " CLOSE "
-//                        + gridName);
                     if (refCnts.remove(gridName, IDLE_STATE))
                         G.stop(gridName, false);
                     else
