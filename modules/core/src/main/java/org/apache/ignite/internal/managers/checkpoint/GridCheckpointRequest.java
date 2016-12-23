@@ -19,8 +19,6 @@ package org.apache.ignite.internal.managers.checkpoint;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;

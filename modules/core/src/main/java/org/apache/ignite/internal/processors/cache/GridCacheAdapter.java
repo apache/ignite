@@ -2571,7 +2571,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return S.toString("putxAsync", "key", key, true, "val", val, true,
+                return S.toString("putxAsync",
+                    "key", key, true,
+                    "val", val, true,
                     "filter", filter, false);
             }
         });

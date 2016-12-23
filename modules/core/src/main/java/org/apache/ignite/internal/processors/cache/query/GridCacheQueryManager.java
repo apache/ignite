@@ -1549,7 +1549,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     if (val == null) {
                         if (log.isDebugEnabled())
-                            log.debug(S.toString("Unsuitable record value", "val",val, true));
+                            log.debug(S.toString("Unsuitable record value", "val", val, true));
 
                         continue;
                     }

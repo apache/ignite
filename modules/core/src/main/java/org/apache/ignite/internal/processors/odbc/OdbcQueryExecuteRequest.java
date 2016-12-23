@@ -22,8 +22,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-
 /**
  * ODBC query execute request.
  */

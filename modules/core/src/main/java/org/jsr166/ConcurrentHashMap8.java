@@ -15,8 +15,6 @@
 
 package org.jsr166;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.Arrays;

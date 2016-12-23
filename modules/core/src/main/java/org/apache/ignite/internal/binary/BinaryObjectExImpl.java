@@ -223,7 +223,8 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         if (meta == null || !S.INCLUDE_SENSITIVE)
             return S.toString(S.INCLUDE_SENSITIVE ? BinaryObject.class.getSimpleName() : "BinaryObject",
-                "idHash", idHash, false, "hash", hash, false,
+                "idHash", idHash, false,
+                "hash", hash, false,
                 "typeId", typeId(), true);
 
         handles.put(this, idHash);

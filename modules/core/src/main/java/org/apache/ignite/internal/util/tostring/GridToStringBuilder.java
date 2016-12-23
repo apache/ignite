@@ -118,10 +118,19 @@ public class GridToStringBuilder {
      * @param val4 Additional parameter value.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, String name1, Object val1,
-        String name2, Object val2, String name3, Object val3, String name4, Object val4) {
-        return toString(cls, obj, name0, val0, false, name1, val1, false, name2, val2, false, name3,
-            val3, false, name4, val4, false);
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0,
+        String name1, Object val1,
+        String name2, Object val2,
+        String name3, Object val3,
+        String name4, Object val4) {
+        return toString(cls,
+            obj,
+            name0, val0, false,
+            name1, val1, false,
+            name2, val2, false,
+            name3, val3, false,
+            name4, val4, false);
     }
 
     /**
@@ -142,10 +151,12 @@ public class GridToStringBuilder {
      * @param val4 Additional parameter value.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, boolean sens0, String name1,
-        Object val1, boolean sens1, String name2, Object val2, boolean sens2, String name3, Object val3, boolean sens3,
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0, boolean sens0,
+        String name1, Object val1, boolean sens1,
+        String name2, Object val2, boolean sens2,
+        String name3, Object val3, boolean sens3,
         String name4, Object val4, boolean sens4) {
-
         assert cls != null;
         assert obj != null;
         assert name0 != null;
@@ -207,9 +218,15 @@ public class GridToStringBuilder {
      * @param val3 Additional parameter value.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, String name1, Object val1,
-        String name2, Object val2, String name3, Object val3) {
-        return toString(cls, obj, name0, val0, false, name1, val1, false, name2, val2, false,
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0,
+        String name1, Object val1,
+        String name2, Object val2,
+        String name3, Object val3) {
+        return toString(cls, obj,
+            name0, val0, false,
+            name1, val1, false,
+            name2, val2, false,
             name3, val3, false);
     }
 
@@ -233,10 +250,11 @@ public class GridToStringBuilder {
      * @param sens3 Property sensitive flag.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, boolean sens0, String name1,
-        Object val1, boolean sens1, String name2, Object val2, boolean sens2, String name3, Object val3,
-        boolean sens3) {
-
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0, boolean sens0,
+        String name1, Object val1, boolean sens1,
+        String name2, Object val2, boolean sens2,
+        String name3, Object val3, boolean sens3) {
         assert cls != null;
         assert obj != null;
         assert name0 != null;
@@ -292,9 +310,15 @@ public class GridToStringBuilder {
      * @param val2 Additional parameter value.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, String name1, Object val1,
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0,
+        String name1, Object val1,
         String name2, Object val2) {
-        return toString(cls, obj, name0, val0, false, name1, val1, false, name2, val2, false);
+        return toString(cls,
+            obj,
+            name0, val0, false,
+            name1, val1, false,
+            name2, val2, false);
     }
 
     /**
@@ -314,9 +338,10 @@ public class GridToStringBuilder {
      * @param sens2 Property sensitive flag.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, boolean sens0, String name1,
-        Object val1, boolean sens1, String name2, Object val2, boolean sens2) {
-
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0, boolean sens0,
+        String name1, Object val1, boolean sens1,
+        String name2, Object val2, boolean sens2) {
         assert cls != null;
         assert obj != null;
         assert name0 != null;
@@ -366,7 +391,9 @@ public class GridToStringBuilder {
      * @param val1 Additional parameter value.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, String name1, Object val1) {
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0,
+        String name1, Object val1) {
         return toString(cls, obj, name0, val0, false, name1, val1, false);
     }
 
@@ -384,9 +411,9 @@ public class GridToStringBuilder {
      * @param sens1 Property sensitive flag.
      * @return String presentation of the given object.
      */
-    public static <T> String toString(Class<T> cls, T obj, String name0, Object val0, boolean sens0, String name1,
-        Object val1, boolean sens1) {
-
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0, boolean sens0,
+        String name1, Object val1, boolean sens1) {
         assert cls != null;
         assert obj != null;
         assert name0 != null;
@@ -526,14 +553,17 @@ public class GridToStringBuilder {
      * @param obj Object for which to get string presentation.
      * @param addNames Names of additional values to be included.
      * @param addVals Additional values to be included.
-     * @param addSens Sensitive flag of values or {@code null} if all values is not sensitive.
+     * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
      * @return String presentation of the given object.
      * @param <T> Type of object.
      */
     @SuppressWarnings({"unchecked"})
-    private static <T> String toStringImpl(Class<T> cls, SB buf, T obj, Object[] addNames, Object[] addVals,
-        boolean[] addSens, int addLen) {
+    private static <T> String toStringImpl(Class<T> cls, SB buf, T obj,
+        Object[] addNames,
+        Object[] addVals,
+        @Nullable boolean[] addSens,
+        int addLen) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
@@ -568,6 +598,7 @@ public class GridToStringBuilder {
                 buf.a(name).a('=');
 
                 Class<?> fieldType = field.getType();
+
                 if (fieldType.isArray())
                     buf.a(arrayToString(fieldType, field.get(obj)));
                 else {
@@ -620,10 +651,9 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Returns string representation of an array
-     *
-     * @param arrType type of the array
-     * @param arr array object
+     * @param arrType Type of the array.
+     * @param arr Array object.
+     * @return String representation of an array.
      */
     private static String arrayToString(Class arrType, Object arr) {
         if (arrType.equals(byte[].class))
@@ -722,9 +752,9 @@ public class GridToStringBuilder {
      * @param sens1 Property sensitive flag.
      * @return String presentation.
      */
-    public static String toString(String str, String name0, @Nullable Object val0, boolean sens0,
+    public static String toString(String str,
+        String name0, @Nullable Object val0, boolean sens0,
         String name1, @Nullable Object val1, boolean sens1) {
-
         assert name0 != null;
         assert name1 != null;
 
@@ -762,23 +792,6 @@ public class GridToStringBuilder {
      * @param str Output prefix or {@code null} if empty.
      * @param name0 Property name.
      * @param val0 Property value.
-     * @param name1 Property name.
-     * @param val1 Property value.
-     * @param name2 Property name.
-     * @param val2 Property value.
-     * @return String presentation.
-     */
-    public static String toString(String str, String name0, @Nullable Object val0, String name1,
-        @Nullable Object val1, String name2, @Nullable Object val2) {
-        return toString(str, name0, val0, name1, val1, name2, val2);
-    }
-
-    /**
-     * Produces uniformed output of string with context properties
-     *
-     * @param str Output prefix or {@code null} if empty.
-     * @param name0 Property name.
-     * @param val0 Property value.
      * @param sens0 Property sensitive flag.
      * @param name1 Property name.
      * @param val1 Property value.
@@ -788,9 +801,10 @@ public class GridToStringBuilder {
      * @param sens2 Property sensitive flag.
      * @return String presentation.
      */
-    public static String toString(String str, String name0, @Nullable Object val0, boolean sens0,
-        String name1, @Nullable Object val1, boolean sens1, String name2, @Nullable Object val2, boolean sens2) {
-
+    public static String toString(String str,
+        String name0, @Nullable Object val0, boolean sens0,
+        String name1, @Nullable Object val1, boolean sens1,
+        String name2, @Nullable Object val2, boolean sens2) {
         assert name0 != null;
         assert name1 != null;
         assert name2 != null;
@@ -832,25 +846,6 @@ public class GridToStringBuilder {
      * @param str Output prefix or {@code null} if empty.
      * @param name0 Property name.
      * @param val0 Property value.
-     * @param name1 Property name.
-     * @param val1 Property value.
-     * @param name2 Property name.
-     * @param val2 Property value.
-     * @param name3 Property name.
-     * @param val3 Property value.
-     * @return String presentation.
-     */
-    public static String toString(String str, String name0, @Nullable Object val0, String name1,
-        @Nullable Object val1, String name2, @Nullable Object val2, String name3, @Nullable Object val3) {
-        return toString(str, name0, val0, name1, val1, name2, val2, name3, val3);
-    }
-
-    /**
-     * Produces uniformed output of string with context properties
-     *
-     * @param str Output prefix or {@code null} if empty.
-     * @param name0 Property name.
-     * @param val0 Property value.
      * @param sens0 Property sensitive flag.
      * @param name1 Property name.
      * @param val1 Property value.
@@ -863,10 +858,11 @@ public class GridToStringBuilder {
      * @param sens3 Property sensitive flag.
      * @return String presentation.
      */
-    public static String toString(String str, String name0, @Nullable Object val0, boolean sens0,
-        String name1, @Nullable Object val1, boolean sens1, String name2, @Nullable Object val2, boolean sens2,
+    public static String toString(String str,
+        String name0, @Nullable Object val0, boolean sens0,
+        String name1, @Nullable Object val1, boolean sens1,
+        String name2, @Nullable Object val2, boolean sens2,
         String name3, @Nullable Object val3, boolean sens3) {
-
         assert name0 != null;
         assert name1 != null;
         assert name2 != null;
@@ -912,28 +908,6 @@ public class GridToStringBuilder {
      * @param str Output prefix or {@code null} if empty.
      * @param name0 Property name.
      * @param val0 Property value.
-     * @param name1 Property name.
-     * @param val1 Property value.
-     * @param name2 Property name.
-     * @param val2 Property value.
-     * @param name3 Property name.
-     * @param val3 Property value.
-     * @param name4 Property name.
-     * @param val4 Property value.
-     * @return String presentation.
-     */
-    public static String toString(String str, String name0, @Nullable Object val0, String name1,
-        @Nullable Object val1, String name2, @Nullable Object val2, String name3, @Nullable Object val3, String name4,
-        @Nullable Object val4) {
-        return toString(str, name0, val0, name1, val1, name2, val2, name3, val3, name4, val4);
-    }
-
-    /**
-     * Produces uniformed output of string with context properties
-     *
-     * @param str Output prefix or {@code null} if empty.
-     * @param name0 Property name.
-     * @param val0 Property value.
      * @param sens0 Property sensitive flag.
      * @param name1 Property name.
      * @param val1 Property value.
@@ -949,10 +923,12 @@ public class GridToStringBuilder {
      * @param sens4 Property sensitive flag.
      * @return String presentation.
      */
-    public static String toString(String str, String name0, @Nullable Object val0, boolean sens0,
-        String name1, @Nullable Object val1, boolean sens1, String name2, @Nullable Object val2, boolean sens2,
-        String name3, @Nullable Object val3, boolean sens3, String name4, @Nullable Object val4, boolean sens4) {
-
+    public static String toString(String str,
+        String name0, @Nullable Object val0, boolean sens0,
+        String name1, @Nullable Object val1, boolean sens1,
+        String name2, @Nullable Object val2, boolean sens2,
+        String name3, @Nullable Object val3, boolean sens3,
+        String name4, @Nullable Object val4, boolean sens4) {
         assert name0 != null;
         assert name1 != null;
         assert name2 != null;
@@ -1024,24 +1000,38 @@ public class GridToStringBuilder {
         return buf.toString();
     }
 
-    /** Append additional values to the buffer */
-    @SuppressWarnings({"TooBroadScope"})
-    private static void appendVals(SB buf, boolean first, Object[] addNames, Object[] addVals, boolean[] addSens,
-        int addLen) {
+    /**
+     * Append additional values to the buffer.
+     *
+     * @param buf Buffer.
+     * @param first First value flag.
+     * @param addNames Names of additional values to be included.
+     * @param addVals Additional values to be included.
+     * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
+     * @param addLen How many additional values will be included.
+     */
+    private static void appendVals(SB buf,
+        boolean first,
+        Object[] addNames,
+        Object[] addVals,
+        boolean[] addSens,
+        int addLen)
+    {
         if (addLen > 0) {
-            Object addVal;
-            GridToStringInclude incAnn;
             for (int i = 0; i < addLen; i++) {
-                addVal = addVals[i];
+                Object addVal = addVals[i];
 
                 if (addVal != null) {
                     if (addSens != null && addSens[i] && !INCLUDE_SENSITIVE)
                         continue;
-                    incAnn = addVal.getClass().getAnnotation(GridToStringInclude.class);
+
+                    GridToStringInclude incAnn = addVal.getClass().getAnnotation(GridToStringInclude.class);
+
                     if (incAnn != null && incAnn.sensitive() && !INCLUDE_SENSITIVE)
                         continue;
 
                     Class<?> cls = addVal.getClass();
+
                     if (cls.isArray())
                         addVal = arrayToString(cls, addVal);
                 }
@@ -1067,7 +1057,7 @@ public class GridToStringBuilder {
 
         String key = cls.getName() + System.identityHashCode(cls.getClassLoader());
 
-        GridToStringClassDescriptor cd = null;
+        GridToStringClassDescriptor cd;
 
         rwLock.readLock().lock();
 
@@ -1088,6 +1078,7 @@ public class GridToStringBuilder {
 
                 final GridToStringInclude incFld = f.getAnnotation(GridToStringInclude.class);
                 final GridToStringInclude incType = type.getAnnotation(GridToStringInclude.class);
+
                 if (incFld != null || incType != null) {
                     // Information is not sensitive when both the field and the field type are not sensitive.
                     // When @GridToStringInclude is not present then the flag is false by default for that attribute.

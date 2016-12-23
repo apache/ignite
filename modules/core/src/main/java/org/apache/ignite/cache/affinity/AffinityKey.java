@@ -65,7 +65,7 @@ public class AffinityKey<K> implements Externalizable {
 
     /** Affinity key. */
     @AffinityKeyMapped
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object affKey;
 
     /**

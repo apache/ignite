@@ -564,9 +564,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
             val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug(S.toString("Storing value in cache store",
-                    "key", key, true, "val", val, true));
+                    "key", key, true,
+                    "val", val, true));
+            }
 
             sessionInit0(tx);
 
@@ -590,9 +592,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 sessionEnd0(tx, threwEx);
             }
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug(S.toString("Stored value in cache store",
-                    "key", key, true, "val", val, true));
+                    "key", key, true,
+                    "val", val, true));
+            }
 
             return true;
         }
