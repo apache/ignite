@@ -82,6 +82,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.NotNull(Context);
             Assert.NotNull(Context.Ignite);
             Assert.NotNull(Context.IgniteConfiguration);
+            Assert.NotNull(Context.PluginConfiguration);
         }
 
         /// <summary>
