@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -59,14 +62,13 @@ public class MarshallerContextImpl implements MarshallerContext {
     private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
 
     /** */
-    private final Set<String> registeredSysTypes = new HashSet<>();
+    private final Map<Integer, MappedName> sysTypesMap = new HashMap<>();
 
     /** */
-    //TODO replace map with some array implementation to improve performance
-    private final ConcurrentMap<Byte, ConcurrentMap<Integer, MappedName>> allCaches = new ConcurrentHashMap8<>();
+    private final Collection<String> sysTypesSet = new HashSet<>();
 
     /** */
-    private final ConcurrentMap<Integer, MappedName> dfltCache = new ConcurrentHashMap8<>();
+    private final List<ConcurrentMap<Integer, MappedName>> allCaches = new CopyOnWriteArrayList<>();
 
     /** */
     private MarshallerMappingFileStore fileStore;
@@ -85,7 +87,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param plugins Plugins.
      */
-    public MarshallerContextImpl(@Nullable List<PluginProvider> plugins) {
+    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins) {
         initializeCaches();
 
         try {
@@ -134,30 +136,23 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private void initializeCaches() {
-        allCaches.put(JAVA_ID, dfltCache);
+        allCaches.add(new CombinedMap(new ConcurrentHashMap8<Integer, MappedName>(), sysTypesMap));
     }
 
     /** */
-    public HashMap<Byte, Map<Integer, MappedName>> getCachedMappings() {
-        HashMap<Byte, Map<Integer, MappedName>> result = U.newHashMap(allCaches.size());
+    public ArrayList<Map<Integer, MappedName>> getCachedMappings() {
+        ArrayList<Map<Integer, MappedName>> result = new ArrayList<>(allCaches.size());
 
-        for (Map.Entry<Byte, ConcurrentMap<Integer, MappedName>> e0 : allCaches.entrySet()) {
-
+        for (int i = 0; i < allCaches.size(); i++) {
             Map res;
 
-            if (e0.getKey() == JAVA_ID) {
-                //filtering out system types from default cache to reduce message size
-                res = new HashMap();
-                for (Map.Entry<Integer, MappedName> e1 : e0.getValue().entrySet())
-                    //TODO get rid of registeredSysTypes as a separate entity as it may be expensive to filter stuff in this way
-                    if (!registeredSysTypes.contains(e1.getValue().className()))
-                        res.put(e1.getKey(), e1.getValue());
-            }
+            if (i == JAVA_ID)
+                res = ((CombinedMap) allCaches.get(JAVA_ID)).userMap;
             else
-                res = e0.getValue();
+                res = allCaches.get(i);
 
             if (!res.isEmpty())
-                result.put(e0.getKey(), res);
+                result.add(res);
         }
 
         return result;
@@ -180,7 +175,9 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param fileName File name.
      */
     private void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
-        if (!dfltCache.containsKey(clsName.hashCode()))
+        ConcurrentMap cache = getCacheFor(JAVA_ID);
+
+        if (!cache.containsKey(clsName.hashCode()))
             throw new IgniteException("Failed to read class name from class names properties file. " +
                 "Make sure class names properties file packaged with ignite binaries is not corrupted " +
                 "[clsName=" + clsName + ", fileName=" + fileName + ", ldr=" + ldr + ']');
@@ -206,12 +203,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                 MappedName oldClsName;
 
-                if ((oldClsName = dfltCache.put(typeId, new MappedName(clsName, true))) != null) {
+                if ((oldClsName = sysTypesMap.put(typeId, new MappedName(clsName, true))) != null) {
                     if (!oldClsName.className().equals(clsName))
                         throw new IgniteException("Duplicate type ID [id=" + typeId + ", oldClsName=" + oldClsName + ", clsName=" + clsName + ']');
                 }
 
-                registeredSysTypes.add(clsName);
+                sysTypesSet.add(clsName);
             }
         }
     }
@@ -321,8 +318,9 @@ public class MarshallerContextImpl implements MarshallerContext {
     @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
-        String clsName;
         MappedName mappedName = cache.get(typeId);
+
+        String clsName;
 
         if (mappedName != null)
             clsName = mappedName.className();
@@ -339,7 +337,7 @@ public class MarshallerContextImpl implements MarshallerContext {
                         clsName = fut.get().className();
                     }
                     else
-                        clsName = cache.get(typeId).className();
+                        clsName = mappedName.className();
 
                     if (clsName == null)
                         throw new ClassNotFoundException("Requesting mapping from grid failed for [platformId=" + platformId + ", typeId=" + typeId + "]");
@@ -393,22 +391,52 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemType(String typeName) {
-        return registeredSysTypes.contains(typeName);
+        return sysTypesSet.contains(typeName);
     }
 
     /**
      * @param platformId Platform id.
      */
     private ConcurrentMap<Integer, MappedName> getCacheFor(byte platformId) {
-        ConcurrentMap<Integer, MappedName> map = (platformId == JAVA_ID) ? dfltCache : allCaches.get(platformId);
+        ConcurrentMap<Integer, MappedName> map;
 
-        if (map != null)
-            return map;
+        if (platformId < allCaches.size()) {
+            map = allCaches.get(platformId);
 
-        map = new ConcurrentHashMap8<>();
-        ConcurrentMap<Integer, MappedName> oldMap = allCaches.putIfAbsent(platformId, map);
+            if (map != null)
+                return map;
+        }
 
-        return oldMap != null ? oldMap : map;
+        synchronized (this) {
+            int size = allCaches.size();
+
+            if (platformId < size) {
+                map = allCaches.get(platformId);
+
+                if (map == null) {
+                    map = new ConcurrentHashMap8<>();
+                    allCaches.set(platformId, map);
+                }
+            }
+            else {
+                map = new ConcurrentHashMap8<>();
+
+                putAtIndex(map, allCaches, platformId, size);
+            }
+        }
+
+        return map;
+    }
+
+    private static void putAtIndex(ConcurrentMap<Integer, MappedName> map, List<ConcurrentMap<Integer, MappedName>> allCaches, byte targetIdx, int size) {
+        int lastIndex = size - 1;
+
+        int nullElemsToAdd = targetIdx - lastIndex - 1;
+
+        for (int i = 0; i < nullElemsToAdd; i++)
+            allCaches.add(null);
+
+        allCaches.add(map);
     }
 
     /**
@@ -432,5 +460,110 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public void onMarshallerProcessorStop() {
         transport.markStopping();
+    }
+
+    /**
+     *
+     */
+    static final class CombinedMap implements ConcurrentMap<Integer, MappedName> {
+        /** */
+        private final ConcurrentMap<Integer, MappedName> userMap;
+
+        /** */
+        private final Map<Integer, MappedName> sysMap;
+
+        /**
+         * @param userMap User map.
+         * @param sysMap System map.
+         */
+        CombinedMap(ConcurrentMap<Integer, MappedName> userMap, Map<Integer, MappedName> sysMap) {
+            this.userMap = userMap;
+            this.sysMap = sysMap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsKey(Object key) {
+            return userMap.containsKey(key) || sysMap.containsKey(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsValue(Object val) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MappedName get(Object key) {
+            MappedName mappedName = userMap.get(key);
+
+            if (mappedName != null)
+                return mappedName;
+
+            return sysMap.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MappedName put(Integer key, MappedName val) {
+            return userMap.put(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MappedName remove(Object key) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void putAll(Map<? extends Integer, ? extends MappedName> m) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<Integer> keySet() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<MappedName> values() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<Entry<Integer, MappedName>> entrySet() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MappedName putIfAbsent(Integer key, MappedName val) {
+            return userMap.putIfAbsent(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(Object key, Object val) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replace(Integer key, MappedName oldVal, MappedName newVal) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MappedName replace(Integer key, MappedName val) {
+            return userMap.replace(key, val);
+        }
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Contains mapped class name and boolean flag showing whether this mapping was accepted by other nodes or not.
@@ -53,5 +54,10 @@ public final class MappedName implements Serializable {
      */
     public boolean accepted() {
         return accepted;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MappedName.class, this);
     }
 }

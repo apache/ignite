@@ -127,6 +127,8 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         String clsName = Organization.class.getName();
         int hash = clsName.hashCode();
 
+        stopGrid(1);
+
         assertEquals(clsName, new String(Files.readAllBytes(Paths.get(TMP_DIR, "marshaller", Integer.toString(hash) + ".classname0"))));
     }
 

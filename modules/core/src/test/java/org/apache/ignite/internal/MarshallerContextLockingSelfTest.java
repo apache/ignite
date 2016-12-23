@@ -67,6 +67,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                 GridTestClassLoader classLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
+                    MarshallerContextImpl.CombinedMap.class.getName(),
                     MappingStoreTask.class.getName(),
                     MarshallerMappingFileStore.class.getName(),
                     MarshallerMappingTransport.class.getName()

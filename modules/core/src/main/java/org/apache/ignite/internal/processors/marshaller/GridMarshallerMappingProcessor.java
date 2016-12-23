@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -256,11 +257,15 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Byte, ConcurrentMap<Integer, MappedName>> marshallerMappings = (Map<Byte, ConcurrentMap<Integer, MappedName>>) data.commonData();
+        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>) data.commonData();
 
-        if (marshallerMappings != null)
-            for (Map.Entry<Byte, ConcurrentMap<Integer, MappedName>> e : marshallerMappings.entrySet())
-                marshallerCtx.onMappingDataReceived(e.getKey(), e.getValue());
+        if (mappings != null) {
+            for (int i = 0; i < mappings.size(); i++) {
+                Map<Integer, MappedName> map;
+                if ((map = mappings.get(i)) != null)
+                    marshallerCtx.onMappingDataReceived((byte) i, map);
+            }
+        }
     }
 
     /** {@inheritDoc} */
