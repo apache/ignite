@@ -722,7 +722,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                         for (IgniteFileSystem fs : ignite.fileSystems()) {
                             if (F.eq(fs.name(), igfsName)) {
 
-                                if (!refAlreadyRegistered) {
+                                if (!refAlreadyRegistered && ignite.name() != null) {
                                     Integer cnt = refCnts.get(ignite.name());
 
                                     if (cnt != null) {
