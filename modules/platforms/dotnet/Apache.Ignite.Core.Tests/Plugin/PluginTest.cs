@@ -94,8 +94,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 new TestIgnitePluginConfiguration()
             }));
             Assert.AreEqual(string.Format("Duplicate plugin name 'TestPlugin1' is used by plugin providers " +
-                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider).AssemblyQualifiedName),
-                ex.Message);
+                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
 
             // Provider throws an exception.
             var ioex = Assert.Throws<IOException>(() => check(new[] {new ExceptionConfig()}));
@@ -129,13 +128,18 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // No-op.
         }
 
-        private class ExceptionPluginProvider : TestIgnitePluginProvider
+        private class ExceptionPluginProvider : IPluginProvider<ExceptionConfig>
         {
-            public ExceptionPluginProvider()
+            public string Name { get { return "errPlugin"; } }
+            public string Copyright { get { return null; } }
+            public T GetPlugin<T>() where T : class { return default(T); }
+            public void Stop(bool cancel) { /* No-op. */ }
+            public void OnIgniteStart() { /* No-op. */ }
+
+            public void Start(IPluginContext<ExceptionConfig> context)
             {
-                ThrowError = true;
+                throw new IOException("Failure in plugin provider");
             }
         }
-
     }
 }
