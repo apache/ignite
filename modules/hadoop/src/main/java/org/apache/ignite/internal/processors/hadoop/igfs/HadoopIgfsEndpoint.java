@@ -20,9 +20,13 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -32,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS endpoint abstraction.
  */
 public class HadoopIgfsEndpoint {
+    /** Logger. */
+    private static final Log LOG = LogFactory.getLog(HadoopIgfsEndpoint.class);
+
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
@@ -95,8 +102,17 @@ public class HadoopIgfsEndpoint {
 
             if (authStr.isEmpty())
                 igfsName = null;
-            else
-                igfsName = authStr;
+            else {
+                String[] authTokens = authStr.split(":", -1);
+
+                igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
+
+                if (authTokens.length == 2)
+                    LOG.warn("Grid name is not used but it is defined at connection string. " +
+                        "This format is deprecated. [connStr=" + connStr + ']');
+                else if (authTokens.length > 2)
+                    throw new IgniteCheckedException("Invalid connection string format: " + connStr);
+            }
 
             hostPort = hostPort(connStr, tokens[1]);
         }
