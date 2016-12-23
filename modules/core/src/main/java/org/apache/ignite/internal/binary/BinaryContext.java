@@ -923,7 +923,7 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryInternalMapper userTypeMapper(int typeId) {
+    BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
         return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
@@ -933,7 +933,7 @@ public class BinaryContext {
      * @param clsName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryInternalMapper userTypeMapper(String clsName) {
+    BinaryInternalMapper userTypeMapper(String clsName) {
         BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
         if (mapper != null)
