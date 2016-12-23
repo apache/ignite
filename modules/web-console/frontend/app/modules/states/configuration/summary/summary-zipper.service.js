@@ -15,37 +15,23 @@
  * limitations under the License.
  */
 
-export default class ScanFilter {
-    static $inject = ['$rootScope', '$q', '$modal'];
+import Worker from 'worker?inline=true!./summary.worker';
 
-    constructor($root, $q, $modal) {
-        this.deferred = null;
-        this.$q = $q;
+export default ['$q', function($q) {
+    return function({ cluster, data }) {
+        const defer = $q.defer();
+        const worker = new Worker();
 
-        const scope = $root.$new();
+        worker.postMessage({ cluster, data });
 
-        scope.ui = {};
-
-        scope.ok = () => {
-            this.deferred.resolve({filter: scope.ui.filter, caseSensitive: !!scope.ui.caseSensitive});
-
-            this.modal.hide();
+        worker.onmessage = (e) => {
+            defer.resolve(e.data);
         };
 
-        scope.$hide = () => {
-            this.modal.hide();
-
-            this.deferred.reject();
+        worker.onerror = (err) => {
+            defer.reject(err);
         };
 
-        this.modal = $modal({templateUrl: '/scan-filter-input.html', scope, placement: 'center', show: false});
-    }
-
-    open() {
-        this.deferred = this.$q.defer();
-
-        this.modal.$promise.then(this.modal.show);
-
-        return this.deferred.promise;
-    }
-}
+        return defer.promise;
+    };
+}];

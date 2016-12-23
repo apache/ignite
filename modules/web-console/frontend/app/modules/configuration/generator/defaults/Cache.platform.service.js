@@ -49,12 +49,8 @@ const DFLT_CACHE = {
     }
 };
 
-export default function() {
-    this.append = (dflts) => {
-        _.merge(DFLT_CACHE, dflts);
-    };
-
-    this.$get = ['igniteCacheDefaults', (cacheDefaults) => {
-        return _.merge({}, cacheDefaults, DFLT_CACHE);
-    }];
+export default class IgniteCachePlatformDefaults {
+    constructor() {
+        Object.assign(this, DFLT_CACHE);
+    }
 }

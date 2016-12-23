@@ -14,63 +14,38 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.row(ng-controller='adminController')
+mixin grid-settings()
+    i.fa.fa-bars(data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
+    ul.select.dropdown-menu(role='menu')
+        li(ng-repeat='item in ctrl.gridOptions.categories|filter:{selectable:true}')
+            a(ng-click='ctrl.toggleColumns(item, !item.visible)')
+                i.fa.fa-check-square-o.pull-left(ng-if='item.visible')
+                i.fa.fa-square-o.pull-left(ng-if='!item.visible')
+                span {{::item.name}}
+        li.divider
+        li
+            a(ng-click='ctrl.selectAllColumns()') Select all
+        li
+            a(ng-click='ctrl.clearAllColumns()') Clear all
+        li.divider
+        li
+            a(ng-click='$hide()') Close
+
+.admin-page.row(ng-controller='adminController')
     .docs-content.greedy
         .docs-header
             h1 List of registered users
             hr
         .docs-body
-            .col-xs-12
-                table.table.table-striped.table-vertical-middle.admin(st-table='displayedUsers' st-safe-src='users')
-                    thead
-                        tr
-                            th.header(colspan='10')
-                                .col-xs-3
-                                    input.form-control(type='text' st-search='label' placeholder='Filter users...')
-                                .col-xs-9.admin-summary.text-right(colspan='10')
-                                    strong Total users: {{ users.length }}
-                                .col-xs-offset-6.col-xs-6.text-right
-                                    div(st-pagination st-items-by-page='15' st-displayed-pages='5' st-template='../templates/pagination.html')
-                        tr
-                            th(st-sort='userName') User
-                            th(st-sort='email') Email
-                            th(st-sort='company') Company
-                            th(st-sort='country') Country
-                            th.col-xs-2(st-sort='lastLogin' st-sort-default='reverse') Last login
-                            th.text-nowrap(st-sort='counters.clusters' st-descending-first bs-tooltip='"Clusters count"' data-placement='top')
-                                i.fa.fa-sitemap()
-                            th.text-nowrap(st-sort='counters.models' st-descending-first bs-tooltip='"Models count"' data-placement='top')
-                                i.fa.fa-object-group()
-                            th.text-nowrap(st-sort='counters.caches' st-descending-first bs-tooltip='"Caches count"' data-placement='top')
-                                i.fa.fa-database()
-                            th.text-nowrap(st-sort='counters.igfs' st-descending-first bs-tooltip='"IGFS count"' data-placement='top')
-                                i.fa.fa-folder-o()
-                            th(width='1%') Actions
-                    tbody
-                        tr(ng-repeat='row in displayedUsers track by row._id')
-                            td {{::row.userName}}
-                            td
-                                a(ng-href='mailto:{{::row.email}}') {{::row.email}}
-                            td {{::row.company}}
-                            td {{::row.countryCode}}
-                            td {{::row.lastLogin | date:'medium'}}
-                            td {{::row.counters.clusters}}
-                            td {{::row.counters.models}}
-                            td {{::row.counters.caches}}
-                            td {{::row.counters.igfs}}
-                            td.text-center
-                                a.btn.btn-default.dropdown-toggle(bs-dropdown='' ng-show='row._id != user._id' data-placement='bottom-right')
-                                    i.fa.fa-gear &nbsp;
-                                    span.caret
-                                ul.dropdown-menu(role='menu')
-                                    li
-                                        a(ng-click='becomeUser(row)') Become this user
-                                    li
-                                        a(ng-click='toggleAdmin(row)' ng-if='row.admin && row._id !== user._id') Revoke admin
-                                        a(ng-click='toggleAdmin(row)' ng-if='!row.admin && row._id !== user._id')  Grant admin
-                                    li
-                                        a(ng-click='removeUser(row)') Remove user
-                    tfoot
-                        tr
-                            td.text-right(colspan='10')
-                                div(st-pagination st-items-by-page='15' st-displayed-pages='5' st-template='../templates/pagination.html')
+            .row
+                .col-xs-12
+                    .panel.panel-default
+                        .panel-heading.ui-grid-settings
+                            +grid-settings
+                            label Total users: 
+                                strong {{ users.length }}&nbsp;&nbsp;&nbsp;
+                            label Showing users: 
+                                strong {{ ctrl.gridApi.grid.getVisibleRows().length }}
+                                sub(ng-show='users.length === ctrl.gridApi.grid.getVisibleRows().length') all
+                        .panel-collapse
+                            .grid(ui-grid='ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-pinning)
