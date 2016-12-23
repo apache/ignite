@@ -580,7 +580,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testSimpleCustomTableName() throws Exception {
-        IgniteCache<Integer, Object> cache = ignite().cache(null);
+        final IgniteCache<Integer, Object> cache = ignite().cache(null);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -614,7 +614,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testMixedCustomTableName() throws Exception {
-        IgniteCache<Integer, Object> cache = ignite().cache(null);
+        final IgniteCache<Integer, Object> cache = ignite().cache(null);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
