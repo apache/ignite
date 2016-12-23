@@ -79,13 +79,13 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // Missing attribute.
             var ex = Assert.Throws<IgniteException>(() => check(new[] { new NoAttributeConfig(),  }));
-            Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
-                            typeof(TestIgnitePluginProvider).AssemblyQualifiedName, ex.Message);
+            Assert.AreEqual(string.Format("{0} of type {1} has no {2}", typeof(IPluginConfiguration),
+                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.Message);
 
             // Empty plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[] {new EmptyNameConfig()}));
-            Assert.AreEqual("Apache.Ignite.Core.Plugin.IPluginProvider.Name should not be null or empty: " +
-                            typeof(TestIgnitePluginProvider).AssemblyQualifiedName, ex.Message);
+            Assert.AreEqual(string.Format("{0}.Name should not be null or empty: {1}", typeof(IPluginProvider<>),
+                typeof(EmptyNamePluginProvider)), ex.Message);
 
             // Duplicate plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[]
@@ -107,18 +107,20 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // No-op.
         }
 
-        [PluginProviderType(typeof(NoNamePluginProvider))]
+        [PluginProviderType(typeof(EmptyNamePluginProvider))]
         private class EmptyNameConfig : IPluginConfiguration
         {
             // No-op.
         }
 
-        private class NoNamePluginProvider : TestIgnitePluginProvider
+        private class EmptyNamePluginProvider : IPluginProvider<EmptyNameConfig>
         {
-            public NoNamePluginProvider()
-            {
-                Name = "";
-            }
+            public string Name { get { return null; } }
+            public string Copyright { get { return null; } }
+            public T GetPlugin<T>() where T : class { return default(T); }
+            public void Start(IPluginContext<EmptyNameConfig> context) { /* No-op. */ }
+            public void Stop(bool cancel) { /* No-op. */ }
+            public void OnIgniteStart() { /* No-op. */ }
         }
 
         [PluginProviderType(typeof(ExceptionPluginProvider))]

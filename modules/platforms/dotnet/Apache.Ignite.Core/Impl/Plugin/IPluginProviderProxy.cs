@@ -61,5 +61,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// Use <see cref="IIgnite.Stopping"/> and <see cref="IIgnite.Stopped"/> to track shutdown process.
         /// </summary>
         void OnIgniteStart();
+
+        /// <summary>
+        /// Gets the underlying provider.
+        /// </summary>
+        object Provider { get; }
     }
 }

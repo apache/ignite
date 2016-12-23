@@ -74,5 +74,11 @@ namespace Apache.Ignite.Core.Impl.Plugin
         {
             _pluginProvider.OnIgniteStart();
         }
+
+        /** <inheritdoc /> */
+        public object Provider
+        {
+            get { return _pluginProvider; }
+        }
     }
 }

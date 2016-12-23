@@ -172,15 +172,14 @@ namespace Apache.Ignite.Core.Impl.Plugin
             if (string.IsNullOrEmpty(provider.Name))
             {
                 throw new IgniteException(string.Format("{0}.Name should not be null or empty: {1}",
-                    typeof(IPluginProviderProxy), provider.GetType().AssemblyQualifiedName));
+                    typeof(IPluginProvider<>), provider.Provider.GetType()));
             }
 
             if (res.ContainsKey(provider.Name))
             {
                 throw new IgniteException(string.Format("Duplicate plugin name '{0}' is used by " +
                                                         "plugin providers '{1}' and '{2}'", provider.Name,
-                    provider.GetType().AssemblyQualifiedName,
-                    res[provider.Name].GetType().AssemblyQualifiedName));
+                    provider.Provider.GetType(), res[provider.Name].Provider.GetType()));
             }
         }
 
