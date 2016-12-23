@@ -275,7 +275,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         // Optimization to avoid going through compound future,
         // if getAsync() has been completed and no other futures added to this
         // compound future.
-        if (fut.isDone() && futuresCount() == 0) {
+        if (fut.isDone() && !hasFutures()) {
             if (fut.error() != null)
                 onDone(fut.error());
             else
