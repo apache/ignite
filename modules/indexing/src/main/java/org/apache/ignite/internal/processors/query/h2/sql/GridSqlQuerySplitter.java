@@ -165,7 +165,11 @@ public class GridSqlQuerySplitter {
 
         final Prepared prepared = prepared(stmt);
 
-        GridSqlQuery qry = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
+
+        assert gridStmt instanceof GridSqlQuery;
+
+        GridSqlQuery qry = (GridSqlQuery) gridStmt;
 
         qry = collectAllTables(qry, schemas, tbls);
 
@@ -177,6 +181,7 @@ public class GridSqlQuerySplitter {
         // nullifying or updating things, have to make sure that we will not need them in the original form later.
         final GridSqlSelect mapQry = wrapUnion(qry);
 
+        //TODO: Prohibit query with joining segmented table with non-segmented
         GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocatedGrpBy);
 
         res.reduceQuery(rdc);

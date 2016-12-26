@@ -55,7 +55,7 @@ public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
         IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols,
-            pk ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false, false));
+            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         final GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -136,7 +136,7 @@ public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
     }
 
     /** {@inheritDoc} */
-    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int i) {
         if (!isSnapshotEnabled())
             return tree;
 

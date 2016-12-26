@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'checkpoint'
 -var model = 'backupItem.checkpointSpi'
@@ -26,7 +26,7 @@ include ../../../../../app/helpers/jade/mixins.jade
         label Checkpointing
         ignite-form-field-tooltip.tipLabel
             | Checkpointing provides an ability to save an intermediate job state#[br]
-            | #[a(href="http://apacheignite.gridgain.org/docs/checkpointing" target="_blank") More info]
+            | #[a(href="http://apacheignite.readme.io/docs/checkpointing" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -61,10 +61,10 @@ include ../../../../../app/helpers/jade/mixins.jade
                                     </ul>')
                                     +table-remove-button(model, 'Remove Checkpoint SPI')
 
-                            div(ng-if='model.kind === "FS"')
+                            div(ng-show='model.kind === "FS"')
                                 include ./checkpoint/fs.jade
 
-                            div(ng-if='model.kind === "Cache"')
+                            div(ng-show='model.kind === "Cache"')
                                 .settings-row
                                     +dropdown-required-empty('Cache:', 'model.Cache.cache', '"checkpointCacheCache"+ $index', 'true', 'true',
                                         'Choose cache', 'No caches configured for current cluster', 'clusterCaches', 'Cache to use for storing checkpoints')

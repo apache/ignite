@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
@@ -112,8 +111,8 @@ public class GridReduceQueryExecutor {
     /** */
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
-    /** TODO: add parametr to configuration */
-    public final int queryLocalParallelismLevel;
+    /** */
+    public int sqlQryParallelismLvl;
 
     /** */
     private GridKernalContext ctx;
@@ -174,9 +173,8 @@ public class GridReduceQueryExecutor {
     /**
      * @param busyLock Busy lock.
      */
-    public GridReduceQueryExecutor(GridSpinBusyLock busyLock, int queryLocalParallelismLevel) {
+    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
         this.busyLock = busyLock;
-        this.queryLocalParallelismLevel = queryLocalParallelismLevel;
     }
 
     /**
@@ -189,6 +187,8 @@ public class GridReduceQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridReduceQueryExecutor.class);
+
+        sqlQryParallelismLvl = ctx.config().getSqlQueryParallelismLevel();
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -573,12 +573,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes, queryLocalParallelismLevel);
+                idx.setSources(nodes, sqlQryParallelismLvl);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * queryLocalParallelismLevel);
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * sqlQryParallelismLvl);
 
             runs.put(qryReqId, r);
 
@@ -616,35 +616,30 @@ public class GridReduceQueryExecutor {
                 if (oldStyle && distributedJoins)
                     throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
 
-                boolean send = true;
+                if (send(nodes,
+                    oldStyle ?
+                        new GridQueryRequest(qryReqId,
+                            r.pageSize,
+                            space,
+                            mapQrys,
+                            topVer,
+                            extraSpaces(space, qry.spaces()),
+                            null,
+                            timeoutMillis) :
+                        new GridH2QueryRequest()
+                            .requestId(qryReqId)
+                            .topologyVersion(topVer)
+                            .pageSize(r.pageSize)
+                            .caches(qry.caches())
+                            .tables(distributedJoins ? qry.tables() : null)
+                            .partitions(convert(partsMap))
+                            .queries(mapQrys)
+                            .threads(sqlQryParallelismLvl)
+                            .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
+                            .timeout(timeoutMillis),
+                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
+                    distributedJoins)) {
 
-                for (int threadIdx = 0; threadIdx < queryLocalParallelismLevel; threadIdx++) {
-                    send &= send(nodes,
-                        oldStyle ?
-                            new GridQueryRequest(qryReqId,
-                                r.pageSize,
-                                space,
-                                mapQrys,
-                                topVer,
-                                extraSpaces(space, qry.spaces()),
-                                null,
-                                timeoutMillis) :
-                            new GridH2QueryRequest()
-                                .requestId(qryReqId)
-                                .topologyVersion(topVer)
-                                .pageSize(r.pageSize)
-                                .caches(qry.caches())
-                                .tables(distributedJoins ? qry.tables() : null)
-                                .partitions(convert(partsMap))
-                                .queries(mapQrys)
-                                .segmentId(threadIdx)
-                                .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
-                                .timeout(timeoutMillis),
-                        oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
-                        distributedJoins || queryLocalParallelismLevel > 1);
-                }
-
-                if (send) {
                     awaitAllReplies(r, nodes);
 
                     cancel.checkCancelled();
@@ -726,7 +721,7 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new Iter(res);
+                            resIter = new IgniteH2Indexing.FieldsIterator(res);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -1382,31 +1377,6 @@ public class GridReduceQueryExecutor {
 
             for (GridMergeIndex idx : idxs) // Fail all merge indexes.
                 idx.fail(e);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Iter extends GridH2ResultSetIterator<List<?>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param data Data array.
-         * @throws IgniteCheckedException If failed.
-         */
-        protected Iter(ResultSet data) throws IgniteCheckedException {
-            super(data, true, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected List<?> createRow() {
-            ArrayList<Object> res = new ArrayList<>(row.length);
-
-            Collections.addAll(res, row);
-
-            return res;
         }
     }
 

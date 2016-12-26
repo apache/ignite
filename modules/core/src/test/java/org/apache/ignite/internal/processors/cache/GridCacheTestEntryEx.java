@@ -64,22 +64,10 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param ctx Context.
      * @param key Key.
      */
-    public GridCacheTestEntryEx(GridCacheContext ctx, Object key) {
+    GridCacheTestEntryEx(GridCacheContext ctx, Object key) {
         mvcc = new GridCacheMvcc(ctx);
 
         this.key = ctx.toCacheKeyObject(key);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param key Key.
-     * @param val Value.
-     */
-    public GridCacheTestEntryEx(GridCacheContext ctx, Object key, Object val) {
-        mvcc = new GridCacheMvcc(ctx);
-
-        this.key = ctx.toCacheKeyObject(key);
-        this.val = ctx.toCacheObject(val);
     }
 
     /** {@inheritDoc} */
@@ -146,7 +134,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @return New lock candidate if lock was added, or current owner if lock was reentered,
      *      or <tt>null</tt> if lock was owned by another thread and timeout is negative.
      */
-    @Nullable public GridCacheMvccCandidate addLocal(
+    @Nullable GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
         long timeout,
@@ -159,6 +147,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
             timeout,
             reenter,
             tx,
+            false,
             false
         );
     }
@@ -169,14 +158,13 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param nodeId Node ID.
      * @param threadId Thread ID.
      * @param ver Lock version.
-     * @param timeout Lock acquire timeout.
      * @param ec Not used.
      * @param tx Transaction flag.
      * @return Remote candidate.
      */
-    public GridCacheMvccCandidate addRemote(UUID nodeId, long threadId, GridCacheVersion ver, long timeout,
+    GridCacheMvccCandidate addRemote(UUID nodeId, long threadId, GridCacheVersion ver,
         boolean ec, boolean tx) {
-        return mvcc.addRemote(this, nodeId, null, threadId, ver, timeout, tx, true, false);
+        return mvcc.addRemote(this, nodeId, null, threadId, ver, tx, true, false);
     }
 
     /**
@@ -185,20 +173,19 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param nodeId Node ID.
      * @param threadId Thread ID.
      * @param ver Lock version.
-     * @param timeout Lock acquire timeout.
      * @param tx Transaction flag.
      * @return Remote candidate.
      */
-    public GridCacheMvccCandidate addNearLocal(UUID nodeId, long threadId, GridCacheVersion ver, long timeout,
+    GridCacheMvccCandidate addNearLocal(UUID nodeId, long threadId, GridCacheVersion ver,
         boolean tx) {
-        return mvcc.addNearLocal(this, nodeId, null, threadId, ver, timeout, tx, true);
+        return mvcc.addNearLocal(this, nodeId, null, threadId, ver, tx, true, false);
     }
 
     /**
      *
      * @param baseVer Base version.
      */
-    public void salvageRemote(GridCacheVersion baseVer) {
+    void salvageRemote(GridCacheVersion baseVer) {
         mvcc.salvageRemote(baseVer);
     }
 
@@ -210,17 +197,16 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param baseVer Base version.
      * @param committedVers Committed versions relative to base.
      * @param rolledbackVers Rolled back versions relative to base.
-     * @return Lock owner.
      */
-    @Nullable public GridCacheMvccCandidate orderCompleted(GridCacheVersion baseVer,
+    void orderCompleted(GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
-        return mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
+        mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
     }
 
     /**
      * @param ver Version.
      */
-    public void doneRemote(GridCacheVersion ver) {
+    void doneRemote(GridCacheVersion ver) {
         mvcc.doneRemote(ver, Collections.<GridCacheVersion>emptyList(),
             Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList());
     }
@@ -229,16 +215,15 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param baseVer Base version.
      * @param owned Owned.
      */
-    public void orderOwned(GridCacheVersion baseVer, GridCacheVersion owned) {
+    void orderOwned(GridCacheVersion baseVer, GridCacheVersion owned) {
         mvcc.markOwned(baseVer, owned);
     }
 
     /**
      * @param ver Lock version to acquire or set to ready.
-     * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheVersion ver) {
-        return mvcc.readyLocal(ver);
+    void readyLocal(GridCacheVersion ver) {
+        mvcc.readyLocal(ver);
     }
 
     /**
@@ -247,44 +232,33 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param pending Pending versions.
-     * @return Lock owner.
      */
-    @Nullable public GridCacheMvccCandidate readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped,
+    void readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pending) {
-        return mvcc.readyNearLocal(ver, mapped, committedVers, rolledbackVers, pending);
+        mvcc.readyNearLocal(ver, mapped, committedVers, rolledbackVers, pending);
     }
 
     /**
      * @param cand Candidate to set to ready.
-     * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheMvccCandidate cand) {
-        return mvcc.readyLocal(cand);
-    }
-
-    /**
-     * Local local release.
-     * @return Removed lock candidate or <tt>null</tt> if candidate was not removed.
-     */
-    @Nullable public GridCacheMvccCandidate releaseLocal() {
-        return releaseLocal(Thread.currentThread().getId());
+    void readyLocal(GridCacheMvccCandidate cand) {
+        mvcc.readyLocal(cand);
     }
 
     /**
      * Local release.
      *
      * @param threadId ID of the thread.
-     * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate releaseLocal(long threadId) {
-        return mvcc.releaseLocal(threadId);
+    void releaseLocal(long threadId) {
+        mvcc.releaseLocal(threadId);
     }
 
     /**
      *
      */
-    public void recheckLock() {
+    void recheckLock() {
         mvcc.recheck();
     }
 
@@ -594,8 +568,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         long timeout,
         @Nullable GridCacheVersion serOrder,
         GridCacheVersion serReadVer,
-        boolean keepBinary) {
-        assert false; return false;
+        boolean read) {
+        assert false;
+        return false;
     }
 
     /** @inheritDoc */
@@ -765,7 +740,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    public Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
+    Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
         return mvcc.localCandidates(reentries, exclude);
     }
 
@@ -793,7 +768,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /**
      * @return Any MVCC owner.
      */
-    public GridCacheMvccCandidate anyOwner() {
+    GridCacheMvccCandidate anyOwner() {
         return mvcc.anyOwner();
     }
 

@@ -22,8 +22,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -31,6 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.IndexType;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
+
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
  * Stripped snapshotable tree index
@@ -152,14 +156,14 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
     }
 
     /** {@inheritDoc} */
-    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int seg) {
         if (!isSnapshotEnabled())
-            return tree();
+            return segments[seg];
 
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
 
         if (res == null)
-            res = tree();
+            return segments[seg];
 
         return res;
     }
@@ -223,10 +227,10 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
         //TODO: avoid iteration
         GridH2Row res;
 
-        for(int i = 0; i < segments.length; i++) {
+        for (int i = 0; i < segments.length; i++) {
             res = segments[i].remove(comparable);
 
-            if(res != null)
+            if (res != null)
                 return res;
         }
 
@@ -298,7 +302,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
     @Override public void destroy() {
         assert threadLocalSnapshot() == null;
 
-        for(int i = 0; i < segments.length; i++) {
+        for (int i = 0; i < segments.length; i++) {
             if (segments[i] instanceof AutoCloseable)
                 U.closeQuiet((AutoCloseable)segments[i]);
         }

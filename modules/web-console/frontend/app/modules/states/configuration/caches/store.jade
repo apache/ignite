@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'store'
 -var model = 'backupItem'
@@ -87,6 +87,24 @@ mixin hibernateField(name, model, items, valid, save, newItem)
                                     +dialect('Dialect:', pojoStoreFactory + '.dialect', '"pojoDialect"', required,
                                         'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect',
                                         'Choose JDBC dialect')
+                                .details-row
+                                    +number('Batch size:', pojoStoreFactory + '.batchSize', '"pojoBatchSize"', true, '512', '1',
+                                        'Maximum batch size for writeAll and deleteAll operations')
+                                .details-row
+                                    +number('Thread count:', pojoStoreFactory + '.maximumPoolSize', '"pojoMaximumPoolSize"', true, 'availableProcessors', '1',
+                                        'Maximum workers thread count.<br/>\
+                                        These threads are responsible for load cache.')
+                                .details-row
+                                    +number('Maximum write attempts:', pojoStoreFactory + '.maximumWriteAttempts', '"pojoMaximumWriteAttempts"', true, '2', '0',
+                                        'Maximum write attempts in case of database error')
+                                .details-row
+                                    +number('Parallel load threshold:', pojoStoreFactory + '.parallelLoadCacheMinimumThreshold', '"pojoParallelLoadCacheMinimumThreshold"', true, '512', '0',
+                                        'Parallel load cache minimum threshold.<br/>\
+                                        If <b>0</b> then load sequentially.')
+                                .details-row
+                                    +java-class('Hasher', pojoStoreFactory + '.hasher', '"pojoHasher"', 'true', 'false', 'Hash calculator')
+                                .details-row
+                                    +java-class('Transformer', pojoStoreFactory + '.transformer', '"pojoTransformer"', 'true', 'false', 'Types transformer')
                                 .details-row
                                     +checkbox('Escape table and filed names', pojoStoreFactory + '.sqlEscapeAll', '"sqlEscapeAll"',
                                         'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
