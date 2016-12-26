@@ -74,12 +74,10 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1252,8 +1250,17 @@ public class GridCacheUtils {
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
      */
-    public static boolean isIgfsCache(@Nullable String cacheName) {
-        return IgfsUtils.isIgfsCache(cacheName);
+    public static boolean matchIgfsCacheName(@Nullable String cacheName) {
+        return IgfsUtils.matchIgfsCacheName(cacheName);
+    }
+
+    /**
+     * @param cfg Grid configuration.
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        return IgfsUtils.isIgfsCache(cfg, cacheName);
     }
 
     /**

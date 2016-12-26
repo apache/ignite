@@ -115,7 +115,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfNoCacheIsConfigured() throws Exception {
+    public void testLocalIfNoDataCacheIsConfigured() throws Exception {
         FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
 
         igfsCfg1.setName("igfs");
@@ -128,7 +128,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfNoMetadataCacheIsConfigured() throws Exception {
+    public void testLocalIfNoMetaCacheIsConfigured() throws Exception {
         FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
 
         igfsCfg1.setName("igfs");

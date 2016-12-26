@@ -188,7 +188,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 if (proxyCache(cacheName))
                     continue;
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cacheName))) {
+                if (arg.systemCaches() || !(isSystemCache(cacheName)
+                    || isIgfsCache(ignite.configuration(), cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
@@ -227,7 +228,15 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
                 FileSystemConfiguration igfsCfg = igfs.configuration();
 
-                if (proxyCache(igfsCfg.getDataCacheName()) || proxyCache(igfsCfg.getMetaCacheName()))
+                String metaCacheName = igfsCfg.getMetaCacheConfiguration() != null ?
+                    igfsCfg.getMetaCacheConfiguration().getName() :
+                    igfsCfg.getMetaCacheName();
+
+                String dataCacheName = igfsCfg.getDataCacheConfiguration() != null ?
+                    igfsCfg.getDataCacheConfiguration().getName() :
+                    igfsCfg.getDataCacheName();
+
+                if (proxyCache(dataCacheName) || proxyCache(metaCacheName))
                     continue;
 
                 try {

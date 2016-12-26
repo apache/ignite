@@ -189,8 +189,8 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         while (true) {
             affKey = new IgniteUuid(uuid, idx);
 
-            if (grid(0).affinity(grid(0).igfsx("igfs").configuration().getDataCacheName()).mapKeyToNode(affKey)
-                .id().equals(grid(0).localNode().id()))
+            if (grid(0).affinity(grid(0).igfsx("igfs").configuration().getDataCacheConfiguration()
+                .getName()).mapKeyToNode(affKey).id().equals(grid(0).localNode().id()))
                 break;
 
             idx++;
@@ -217,8 +217,9 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testCreateFileFragmented() throws Exception {
         IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
-        String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheName();
-        final String dataCacheName = grid(0).igfsx("igfs").configuration().getDataCacheName();
+        String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();
+        final String dataCacheName = grid(0).igfsx("igfs").configuration().getDataCacheConfiguration()
+            .getName();
 
         IgfsFragmentizerManager fragmentizer = impl.context().fragmentizer();
 

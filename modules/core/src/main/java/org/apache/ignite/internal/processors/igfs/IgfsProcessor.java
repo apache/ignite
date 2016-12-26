@@ -56,8 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
@@ -104,9 +102,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             CacheConfiguration[] cacheCfgs = igniteCfg.getCacheConfiguration();
 
+            String metaCacheName = cfg.getMetaCacheConfiguration() != null ? cfg.getMetaCacheConfiguration().getName() :
+                cfg.getMetaCacheName();
+
             if (cacheCfgs != null) {
                 for (CacheConfiguration cacheCfg : cacheCfgs) {
-                    if (F.eq(cacheCfg.getName(), cfg.getMetaCacheName())) {
+                    if (F.eq(cacheCfg.getName(), metaCacheName)) {
                         metaClient = false;
 
                         break;
@@ -155,7 +156,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         assert igniteCfg.getFileSystemConfiguration() != null;
 
         for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
-            CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
+
+            String dataCacheName = igfsCfg.getDataCacheConfiguration() != null ?
+                igfsCfg.getDataCacheConfiguration().getName() :
+                igfsCfg.getDataCacheName();
+
+            CacheConfiguration cacheCfg = cacheCfgs.get(dataCacheName);
 
             if (cacheCfg == null)
                 continue; // No cache for the given IGFS configuration.
@@ -171,8 +177,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 igfsCfg.getName(),
                 igfsCfg.getBlockSize(),
                 ((IgfsGroupDataBlocksKeyMapper)affMapper).getGroupSize(),
-                igfsCfg.getMetaCacheName(),
-                igfsCfg.getDataCacheName(),
+                igfsCfg.getMetaCacheConfiguration() != null ? igfsCfg.getMetaCacheConfiguration().getName() :
+                    igfsCfg.getMetaCacheName(),
+                dataCacheName,
                 igfsCfg.getDefaultMode(),
                 igfsCfg.getPathModes(),
                 igfsCfg.isFragmentizerEnabled()));

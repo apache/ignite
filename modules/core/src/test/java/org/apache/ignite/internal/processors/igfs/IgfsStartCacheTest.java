@@ -109,8 +109,8 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     public void testCacheStart() throws Exception {
         Ignite g0 = G.start(config(true, 0));
 
-        String dataCacheName = ((IgniteEx)g0).igfsx("igfs").configuration().getDataCacheName();
-        String metaCacheName = ((IgniteEx)g0).igfsx("igfs").configuration().getMetaCacheName();
+        String dataCacheName = ((IgniteEx)g0).igfsx("igfs").configuration().getDataCacheConfiguration().getName();
+        String metaCacheName = ((IgniteEx)g0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();
 
         checkIgfsCaches(g0, dataCacheName, metaCacheName);
 

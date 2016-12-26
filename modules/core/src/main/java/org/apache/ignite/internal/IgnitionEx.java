@@ -2092,7 +2092,7 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.isIgfsCache(ccfg.getName()))
+                    if (CU.matchIgfsCacheName(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot match the template \""
                             + IgfsUtils.IGFS_CACHE_PREFIX + "<igfs_name>(" + IgfsUtils.DATA_CACHE_SUFFIX + "|"
                             + IgfsUtils.META_CACHE_SUFFIX

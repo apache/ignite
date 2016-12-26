@@ -121,7 +121,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                g.cache(((IgniteKernal)g).igfsx("igfs").configuration().getMetaCacheName());
+                g.cache(((IgniteKernal)g).igfsx("igfs").configuration().getMetaCacheConfiguration().getName());
 
                 return null;
             }
@@ -129,7 +129,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                g.cache(((IgniteKernal)g).igfsx("igfs").configuration().getDataCacheName());
+                g.cache(((IgniteKernal)g).igfsx("igfs").configuration().getDataCacheConfiguration().getName());
 
                 return null;
             }

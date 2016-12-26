@@ -338,7 +338,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                if (F.eq(ctx.name(), igfsCfg.getDataCacheName())) {
+                String dataCacheName = igfsCfg.getDataCacheConfiguration() != null ?
+                    igfsCfg.getDataCacheConfiguration().getName() :
+                    igfsCfg.getDataCacheName();
+
+                if (F.eq(ctx.name(), dataCacheName)) {
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
                         igfsDataCacheSize = new LongAdder8();

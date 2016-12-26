@@ -92,7 +92,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         assert cfgs.length == 1;
 
-        metaCacheName = cfgs[0].getMetaCacheName();
+        metaCacheName = cfgs[0].getMetaCacheConfiguration().getName();
 
         metaCache = ((IgniteKernal)grid).internalCache(metaCacheName);
     }
@@ -683,8 +683,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     public void testDeleteCacheConsistency() throws Exception {
         IgfsPath path = new IgfsPath("/someFile");
 
-        String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheName();
-        String dataCacheName = grid(0).igfsx("igfs").configuration().getDataCacheName();
+        String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();
+        String dataCacheName = grid(0).igfsx("igfs").configuration().getDataCacheConfiguration().getName();
 
         try (IgfsOutputStream out = igfs.create(path, true)) {
             out.write(new byte[10 * 1024 * 1024]);
@@ -781,7 +781,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             @Override public boolean apply() {
                 int metaSize = 0;
 
-                for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
+                for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheConfiguration().getName())
+                    .keySet()) {
                     if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
                         metaSize++;
                 }

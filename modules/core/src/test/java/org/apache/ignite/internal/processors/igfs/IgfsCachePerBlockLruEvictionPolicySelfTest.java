@@ -153,7 +153,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
         igfsPrimary = (IgfsImpl)g.fileSystem(IGFS_PRIMARY);
 
         dataCache = igfsPrimary.context().kernalContext().cache().internalCache(
-            igfsPrimary.context().configuration().getDataCacheName());
+            igfsPrimary.context().configuration().getDataCacheConfiguration().getName());
     }
 
     /**

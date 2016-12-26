@@ -717,8 +717,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                internalCaches.add(maskNull(igfsCfg.getMetaCacheName()));
-                internalCaches.add(maskNull(igfsCfg.getDataCacheName()));
+                internalCaches.add(maskNull(igfsCfg.getMetaCacheConfiguration() != null ?
+                    igfsCfg.getMetaCacheConfiguration().getName() :
+                    igfsCfg.getMetaCacheName()));
+
+                internalCaches.add(maskNull(igfsCfg.getDataCacheConfiguration() != null ?
+                    igfsCfg.getDataCacheConfiguration().getName() :
+                    igfsCfg.getDataCacheName()));
             }
         }
 

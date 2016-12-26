@@ -276,7 +276,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
-            IgniteInternalCache cache = g.cachex(g.igfsx(IGFS_NAME).configuration().getDataCacheName()).cache();
+            IgniteInternalCache cache = g.cachex(g.igfsx(IGFS_NAME).configuration().getDataCacheConfiguration()
+                .getName()).cache();
 
             assert cache.isIgfsDataCache();
         }
@@ -539,7 +540,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         Collection<UUID> ids = new HashSet<>();
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.affinity(grid.igfsx(IGFS_NAME).configuration().getDataCacheName()).isPrimaryOrBackup(node, key))
+            if (grid.affinity(grid.igfsx(IGFS_NAME).configuration().getDataCacheConfiguration().getName())
+                .isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }
 
@@ -565,8 +567,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      */
     private GridCacheAdapter<IgfsBlockKey, byte[]> cache(UUID nodeId) {
         IgniteEx g = (IgniteEx)G.ignite(nodeId);
-        return (GridCacheAdapter<IgfsBlockKey, byte[]>)g.cachex(g.igfsx(IGFS_NAME).configuration().getDataCacheName())
-            .<IgfsBlockKey, byte[]>cache();
+        return (GridCacheAdapter<IgfsBlockKey, byte[]>)g.cachex(g.igfsx(IGFS_NAME).configuration()
+            .getDataCacheConfiguration().getName()).<IgfsBlockKey, byte[]>cache();
     }
 
     /**

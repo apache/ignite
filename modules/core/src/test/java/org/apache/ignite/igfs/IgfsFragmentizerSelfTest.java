@@ -245,7 +245,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
                     IgniteEx g = grid(i);
 
                     GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(
-                        g.igfsx("igfs").configuration().getDataCacheName());
+                        g.igfsx("igfs").configuration().getDataCacheConfiguration().getName());
 
                     assertTrue("Data cache is not empty [keys=" + cache.keySet() +
                         ", node=" + g.localNode().id() + ']', cache.isEmpty());

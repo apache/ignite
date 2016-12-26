@@ -33,7 +33,6 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
@@ -372,9 +371,33 @@ public class IgfsUtils {
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
      */
-    public static boolean isIgfsCache(@Nullable String cacheName) {
-        return cacheName != null && cacheName.startsWith(IGFS_CACHE_PREFIX)
-            && (cacheName.endsWith(DATA_CACHE_SUFFIX) || cacheName.endsWith(META_CACHE_SUFFIX));
+    public static boolean matchIgfsCacheName(@Nullable String cacheName) {
+        return  (cacheName != null && cacheName.startsWith(IGFS_CACHE_PREFIX)
+            && (cacheName.endsWith(DATA_CACHE_SUFFIX) || cacheName.endsWith(META_CACHE_SUFFIX)));
+    }
+
+    /**
+     * @param cfg Grid configuration.
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        if (matchIgfsCacheName(cacheName))
+            return true;
+
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+
+        if (igfsCfgs != null) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
+                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
+                if (igfsCfg != null) {
+                    if (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName()))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -384,8 +407,6 @@ public class IgfsUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static void prepareCacheConfigurations(IgniteConfiguration cfg) throws IgniteCheckedException {
-        validateIgfsCacheLinkageConfigurations(cfg);
-
         FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
         List<CacheConfiguration> ccfgs = new ArrayList<>(Arrays.asList(cfg.getCacheConfiguration()));
 
@@ -394,131 +415,79 @@ public class IgfsUtils {
                 if (igfsCfg == null)
                     continue;
 
-                String linkedMetaCacheName = igfsCfg.getLinkedMetaCacheName();
+                String metaCacheName = igfsCfg.getMetaCacheName();
+
                 CacheConfiguration ccfgMeta = igfsCfg.getMetaCacheConfiguration();
-                boolean addMetaCache = true;
+
+                CacheConfiguration effectiveMetaCacheCfg = ccfgMeta;
 
                 if (ccfgMeta == null) {
-                    if(linkedMetaCacheName != null) {
-                        ccfgMeta = config(cfg, linkedMetaCacheName);
-
-                        assert ccfgMeta != null : cfg;
-
-                        addMetaCache = false;
-                    }
-                    else
+                    if(metaCacheName != null)
+                        effectiveMetaCacheCfg = config(cfg, metaCacheName);
+                    else {
                         ccfgMeta = defaultMetaCacheConfig();
 
-                    igfsCfg.setMetaCacheConfiguration(ccfgMeta);
+                        igfsCfg.setMetaCacheConfiguration(ccfgMeta);
+
+                        effectiveMetaCacheCfg = ccfgMeta;
+                    }
                 }
 
-                String linkedDataCacheName = igfsCfg.getLinkedDataCacheName();
+                if (effectiveMetaCacheCfg == null)
+                    throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + igfsCfg);
+
+                if (ccfgMeta != null) {
+                    ccfgMeta.setName(IGFS_CACHE_PREFIX + igfsCfg.getName() + META_CACHE_SUFFIX);
+
+                    ccfgs.add(ccfgMeta);
+                }
+
+                String dataCacheName = igfsCfg.getDataCacheName();
+
                 CacheConfiguration ccfgData = igfsCfg.getDataCacheConfiguration();
-                boolean addDataCache = true;
+
+                CacheConfiguration effectiveDataCacheCfg = ccfgData;
 
                 if (ccfgData == null) {
-                    if(linkedDataCacheName != null) {
-                        ccfgData = config(cfg, linkedDataCacheName);
-
-                        assert ccfgMeta != null : cfg;
-
-                        addDataCache = false;
-                    }
-                    else
+                    if(dataCacheName != null)
+                        effectiveDataCacheCfg = config(cfg, dataCacheName);
+                    else {
                         ccfgData = defaultDataCacheConfig();
 
-                    igfsCfg.setDataCacheConfiguration(ccfgData);
+                        igfsCfg.setDataCacheConfiguration(ccfgData);
+
+                        effectiveDataCacheCfg = ccfgData;
+                    }
                 }
 
-                // Set system names
-                ccfgMeta.setName(igfsCfg.getMetaCacheName());
-                ccfgData.setName(igfsCfg.getDataCacheName());
+                if (effectiveDataCacheCfg == null)
+                    throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
+
+                if (ccfgData != null) {
+                    ccfgData.setName(IGFS_CACHE_PREFIX + igfsCfg.getName() + DATA_CACHE_SUFFIX);
+
+                    ccfgs.add(ccfgData);
+                }
+
 
                 // No copy-on-read.
-                ccfgMeta.setCopyOnRead(false);
-                ccfgData.setCopyOnRead(false);
+                effectiveMetaCacheCfg.setCopyOnRead(false);
+                effectiveDataCacheCfg.setCopyOnRead(false);
 
                 // Always full-sync to maintain consistency.
-                ccfgMeta.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-                ccfgData.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                effectiveMetaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                effectiveDataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                 // Set co-located affinity mapper if needed.
-                if (igfsCfg.isColocateMetadata() && ccfgMeta.getAffinityMapper() == null)
-                    ccfgMeta.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+                if (igfsCfg.isColocateMetadata() && effectiveMetaCacheCfg.getAffinityMapper() == null)
+                    effectiveMetaCacheCfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
 
                 // Set affinity mapper if needed.
-                if (ccfgData.getAffinityMapper() == null)
-                    ccfgData.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
-
-                if (addMetaCache)
-                    ccfgs.add(ccfgMeta);
-
-                if (addDataCache)
-                    ccfgs.add(ccfgData);
+                if (effectiveDataCacheCfg.getAffinityMapper() == null)
+                    effectiveDataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
             }
 
             cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-        }
-    }
-
-    /**
-     * Validates linkage of pre-configured IGFS caches.
-     *
-     * @param igniteCfg Ignite config.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static void validateIgfsCacheLinkageConfigurations(IgniteConfiguration igniteCfg)
-        throws IgniteCheckedException {
-
-        if (igniteCfg.getFileSystemConfiguration() == null || igniteCfg.getFileSystemConfiguration().length == 0)
-            return;
-
-        Collection<String> cfgNames = new HashSet<>();
-        Collection<String> metaCacheNames = new HashSet<>();
-        Collection<String> dataCacheNames = new HashSet<>();
-
-        for (FileSystemConfiguration cfg : igniteCfg.getFileSystemConfiguration()) {
-            String name = cfg.getName();
-
-            String dataCacheName = cfg.getLinkedDataCacheName();
-
-            if (dataCacheName != null) {
-                CacheConfiguration dataCacheCfg = config(igniteCfg, dataCacheName);
-                if (dataCacheNames.contains(dataCacheName)) {
-                    throw new IgniteCheckedException("Data cache names should be different for different IGFS instances " +
-                        "configuration (fix configuration " + cfg + ')');
-                }
-
-                if (dataCacheCfg == null)
-                    throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
-            }
-
-            String metaCacheName = cfg.getLinkedMetaCacheName();
-            if (metaCacheName != null) {
-                CacheConfiguration metaCacheCfg = config(igniteCfg, metaCacheName);
-
-                if (metaCacheNames.contains(metaCacheName)) {
-                    throw new IgniteCheckedException("Meta cache names should be different for different IGFS instances " +
-                        "configuration (fix configuration " + cfg + ')');
-                }
-
-                if (metaCacheCfg == null)
-                    throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
-            }
-
-            if (dataCacheName == null && metaCacheName == null)
-                continue;
-
-            if (F.eq(dataCacheName, metaCacheName)
-                || dataCacheNames.contains(metaCacheName)
-                || metaCacheNames.contains(dataCacheName)) {
-                throw new IgniteCheckedException("Meta cache and data cache should be different " +
-                    "(fix configuration " + cfg + ')');
-            }
-
-            cfgNames.add(name);
-            dataCacheNames.add(dataCacheName);
-            metaCacheNames.add(metaCacheName);
         }
     }
 
@@ -536,8 +505,6 @@ public class IgfsUtils {
         return null;
     }
 
-
-
     /**
      * Validates local IGFS configurations. Compares attributes only for IGFSes with same name.
      *
@@ -551,6 +518,8 @@ public class IgfsUtils {
             return;
 
         Collection<String> cfgNames = new HashSet<>();
+        Collection<String> metaCacheNames = new HashSet<>();
+        Collection<String> dataCacheNames = new HashSet<>();
 
         for (FileSystemConfiguration cfg : igniteCfg.getFileSystemConfiguration()) {
             String name = cfg.getName();
@@ -560,27 +529,51 @@ public class IgfsUtils {
                     "assign unique name to each): " + name);
 
             CacheConfiguration dataCacheCfg = cfg.getDataCacheConfiguration();
+
+            String dataCacheName = cfg.getDataCacheName();
+
+            if (dataCacheCfg == null && dataCacheName != null && dataCacheNames.contains(dataCacheName)) {
+                throw new IgniteCheckedException("Data cache names should be different for different " +
+                    "IGFS instances configuration (fix configuration " + cfg + ')');
+            }
+
             CacheConfiguration metaCacheCfg = cfg.getMetaCacheConfiguration();
 
-            if (dataCacheCfg == null)
-                throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
+            String metaCacheName = cfg.getMetaCacheName();
 
-            if (GridQueryProcessor.isEnabled(dataCacheCfg))
+            if (metaCacheCfg == null && metaCacheName != null && metaCacheNames.contains(metaCacheName)) {
+                throw new IgniteCheckedException("Meta cache names should be different for different " +
+                    "IGFS instances configuration (fix configuration " + cfg + ')');
+            }
+
+            if (dataCacheCfg == null && metaCacheCfg == null) {
+                dataCacheNames.add(dataCacheName);
+                metaCacheNames.add(metaCacheName);
+
+                if (F.eq(dataCacheName, metaCacheName)
+                    || dataCacheNames.contains(metaCacheName)
+                    || metaCacheNames.contains(dataCacheName)) {
+                    throw new IgniteCheckedException("Meta cache and data cache should be different " +
+                        "(fix configuration " + cfg + ')');
+                }
+            }
+
+            CacheConfiguration effectiveMetaCacheCfg = metaCacheCfg != null ? metaCacheCfg
+                : config(igniteCfg, metaCacheName);
+
+            CacheConfiguration effectiveDataCacheCfg = dataCacheCfg != null ? dataCacheCfg
+                : config(igniteCfg, dataCacheName);
+
+            if (GridQueryProcessor.isEnabled(effectiveDataCacheCfg))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
-            if (metaCacheCfg == null)
-                throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
-
-            if (GridQueryProcessor.isEnabled(metaCacheCfg))
+            if (GridQueryProcessor.isEnabled(effectiveMetaCacheCfg))
                 throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
 
-            if (metaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
+            if (effectiveMetaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
                 throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 
-            if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
-                throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
-
-            if (!(dataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
+            if (!(effectiveDataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
                 throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
                     IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 

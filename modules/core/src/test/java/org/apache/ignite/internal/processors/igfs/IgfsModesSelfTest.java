@@ -598,7 +598,8 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             assert !igfsSecondary.exists(file);
         }
 
-        int cacheSize = grid.cachex(grid.igfsx("igfs").configuration().getDataCacheName()).size();
+        int cacheSize = grid.cachex(grid.igfsx("igfs").configuration().getDataCacheConfiguration()
+            .getName()).size();
 
         if (primaryNotUsed)
             assert cacheSize == 0;
