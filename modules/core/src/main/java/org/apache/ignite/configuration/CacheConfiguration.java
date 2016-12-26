@@ -2115,7 +2115,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * If @{true} sql index allowed to be segmented, otherwise index will have single segment.
      * Flag value is @{false} by default. Flag has no affect to Replicated cache as it can't be partitioned.
      * </p>
-     * Note: Number of parts determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel().
+     * Note: Number of parts determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel()}.
      *
      * @return Index segmentation allowed flag
      */
@@ -2129,7 +2129,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * If @{true} sql index allowed to be segmented, otherwise index will have single segment.
      * Flag value is @{false} by default. Flag has no affect to Replicated cache as it can't be partitioned.
      * </p>
-     * Note: Number of parts determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel().
+     * Note: Number of parts determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel()}.
      *
      * @param idxSegmentationEnabled Index segmentation allowed flag
      * @return {@code this} for chaining.
