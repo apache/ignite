@@ -61,6 +61,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -1504,10 +1505,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param entries Entries.
          * @param reqTopVer Request topology version.
          * @param curFut Current future.
+         * @param plc Policy.
          */
         private void localUpdate(final Collection<DataStreamerEntry> entries,
             final AffinityTopologyVersion reqTopVer,
-            final GridFutureAdapter<Object> curFut) {
+            final GridFutureAdapter<Object> curFut,
+            final byte plc) {
             try {
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
@@ -1568,7 +1571,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     else {
                         fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                                localUpdate(entries, reqTopVer, curFut);
+                                localUpdate(entries, reqTopVer, curFut, plc);
                             }
                         });
                     }
@@ -1614,7 +1617,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             byte plc = DataStreamProcessor.ioPolicy(ioPlcRslvr, node);
 
-            if (isLocNode && plc == GridIoPolicy.PUBLIC_POOL)
+            if (isLocNode)
                 localUpdate(entries, topVer, curFut, plc);
             else {
                 try {
