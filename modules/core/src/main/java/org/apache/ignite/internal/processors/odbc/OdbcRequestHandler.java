@@ -388,7 +388,7 @@ public class OdbcRequestHandler {
                     if (!matches("TABLE", req.tableType()))
                         continue;
 
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName, table.name(), "TABLE");
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, cacheName, table.name(), "TABLE");
 
                     if (!meta.contains(tableMeta))
                         meta.add(tableMeta);
