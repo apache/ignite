@@ -1012,6 +1012,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             final IgniteCache<String, String> cache = ignite.cache(null);
 
             IgniteDataStreamer<String, String> ldr = client.dataStreamer(null);
+
             try {
                 ldr.receiver(new StringStringStreamReceiver());
 
