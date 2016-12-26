@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.index.Cursor;
@@ -492,16 +494,84 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
         if (qctx == null)
             return;
 
-        Map<RangeKey, RangeStream> streams = qctx.getStreams(msg.batchLookupId());
+        Map<SegmentKey, RangeStream> streams = qctx.getStreams(msg.batchLookupId());
 
         if (streams == null)
             return;
 
-        RangeStream stream = streams.get(new RangeKey(node.id(), msg.segment()));
+        RangeStream stream = streams.get(new SegmentKey(node, msg.segment()));
 
         assert stream != null;
 
         stream.onResponse(msg);
+    }
+
+    /**
+     * @param qctx Query context.
+     * @param cctx Cache context.
+     * @return Collection of nodes for broadcasting.
+     */
+    private List<SegmentKey> broadcastSegments(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
+        Map<UUID, int[]> partMap = qctx.partitionsMap();
+
+        List<ClusterNode> nodes;
+
+        if (partMap == null)
+            nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
+        else {
+            nodes = new ArrayList<>(partMap.size());
+
+            GridKernalContext ctx = kernalContext();
+
+            for (UUID nodeId : partMap.keySet()) {
+                ClusterNode node = ctx.discovery().node(nodeId);
+
+                if (node == null)
+                    throw new GridH2RetryException("Failed to find node.");
+
+                nodes.add(node);
+            }
+        }
+
+        if (F.isEmpty(nodes))
+            throw new GridH2RetryException("Failed to collect affinity nodes.");
+
+        List<SegmentKey> res = new ArrayList<>(nodes.size() * segments.length);
+
+        for(ClusterNode node: nodes) {
+            for (int seg = 0; seg < segments.length; seg++)
+                res.add(new SegmentKey(node, seg));
+        }
+
+        return res;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qctx Query context.
+     * @param affKeyObj Affinity key.
+     * @return Cluster nodes or {@code null} if affinity key is a null value.
+     */
+    private SegmentKey rangeSegment(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Object affKeyObj) {
+        assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
+
+        ClusterNode node;
+
+        int partition = cctx.affinity().partition(affKeyObj);
+
+        if (qctx.partitionsMap() != null) {
+            // If we have explicit partitions map, we have to use it to calculate affinity node.
+            UUID nodeId = qctx.nodeForPartition(partition, cctx);
+
+            node = cctx.discovery().node(nodeId);
+        }
+        else // Get primary node for current topology version.
+            node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+
+        if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
+            throw new GridH2RetryException("Failed to find node.");
+
+        return new SegmentKey(node, segment(partition));
     }
 
 
@@ -523,25 +593,23 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
 
         /**
          * @param rangeId Range ID.
-         * @param nodes Remote nodes.
+         * @param segmentKeys Remote nodes.
          * @param rangeStreams Range streams.
          */
-        BroadcastCursor(int rangeId, Collection<ClusterNode> nodes, Map<RangeKey, RangeStream> rangeStreams) {
+        BroadcastCursor(int rangeId, Collection<SegmentKey> segmentKeys, Map<SegmentKey, RangeStream> rangeStreams) {
 
             this.rangeId = rangeId;
 
-            streams = new RangeStream[nodes.size() * segments.length];
+            streams = new RangeStream[segmentKeys.size()];
 
             int i = 0;
 
-            for (ClusterNode node : nodes) {
-                for (int seg = 0; seg < segments.length; seg++) {
-                    RangeStream stream = rangeStreams.get(new RangeKey(node.id(), seg));
+            for (SegmentKey segmentKey : segmentKeys) {
+                    RangeStream stream = rangeStreams.get(segmentKey);
 
                     assert stream != null;
 
                     streams[i++] = stream;
-                }
             }
         }
 
@@ -655,10 +723,10 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
         int batchLookupId;
 
         /** */
-        Map<RangeKey, RangeStream> rangeStreams = Collections.emptyMap();
+        Map<SegmentKey, RangeStream> rangeStreams = Collections.emptyMap();
 
         /** */
-        List<ClusterNode> broadcastNodes;
+        List<SegmentKey> broadcastSegments;
 
         /** */
         List<Future<Cursor>> res = Collections.emptyList();
@@ -749,7 +817,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
 
             Object affKey = affColId == -1 ? null : getAffinityKey(firstRow, lastRow);
 
-            List<ClusterNode> nodes;
+            List<SegmentKey> segmentKeys;
             Future<Cursor> fut;
 
             if (affKey != null) {
@@ -757,17 +825,17 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
                 if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
                     return false;
 
-                nodes = F.asList(rangeNode(cctx, qctx, affKey));
+                segmentKeys = F.asList(rangeSegment(cctx, qctx, affKey));
             }
             else {
                 // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
-                if (broadcastNodes == null)
-                    broadcastNodes = broadcastNodes(qctx, cctx); //TODO: replace with list of segments
+                if (broadcastSegments == null)
+                    broadcastSegments = broadcastSegments(qctx, cctx); //TODO: replace with list of segments
 
-                nodes = broadcastNodes;
+                segmentKeys = broadcastSegments;
             }
 
-            assert !F.isEmpty(nodes) : nodes;
+            assert !F.isEmpty(segmentKeys) : segmentKeys;
 
             final int rangeId = res.size();
 
@@ -779,24 +847,21 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
             GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
 
             // Add range to every message of every participating node.
-            for (int i = 0; i < nodes.size(); i++) {
-                for (int seg = 0; seg < segments.length; seg++) {
-                    ClusterNode node = nodes.get(i);
-                    assert node != null;
+            for (int i = 0; i < segmentKeys.size(); i++) {
+                    SegmentKey segment = segmentKeys.get(i);
+                    assert segment != null;
 
-                    RangeKey rangeKey = new RangeKey(node.id(), seg);
-
-                    RangeStream stream = rangeStreams.get(rangeKey);
+                    RangeStream stream = rangeStreams.get(segment);
 
                     List<GridH2RowRangeBounds> bounds;
 
                     if (stream == null) {
-                        stream = new RangeStream(qctx, node);
+                        stream = new RangeStream(qctx, segment.node);
 
-                        stream.req = createRequest(qctx, batchLookupId, seg);
+                        stream.req = createRequest(qctx, batchLookupId, segment.segmentId);
                         stream.req.bounds(bounds = new ArrayList<>());
 
-                        rangeStreams.put(rangeKey, stream);
+                        rangeStreams.put(segment, stream);
                     }
                     else
                         bounds = stream.req.bounds();
@@ -806,10 +871,9 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
                     // If at least one node will have a full batch then we are ok.
                     if (bounds.size() >= qctx.pageSize())
                         batchFull = true;
-                }
             }
 
-            fut = new DoneFuture<>(new BroadcastCursor(rangeId, nodes, rangeStreams));
+            fut = new DoneFuture<>(new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
 
             res.add(fut);
 
@@ -861,7 +925,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
             batchLookupId = 0;
 
             rangeStreams = Collections.emptyMap();
-            broadcastNodes = null;
+            broadcastSegments = null;
             batchFull = false;
             findCalled = false;
             res = Collections.emptyList();
@@ -874,14 +938,17 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
     }
 
     /** */
-    private class RangeKey {
+    private class SegmentKey {
         /** */
-        UUID nodeId;
-        /** */
-        int segmentId;
+        final ClusterNode node;
 
-        public RangeKey(UUID nodeId, int segmentId) {
-            this.nodeId = nodeId;
+        /** */
+        final int segmentId;
+
+        public SegmentKey(ClusterNode node, int segmentId) {
+            assert node != null;
+
+            this.node = node;
             this.segmentId = segmentId;
         }
 
@@ -891,16 +958,14 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            RangeKey key = (RangeKey)o;
+            SegmentKey key = (SegmentKey)o;
 
-            if (segmentId != key.segmentId)
-                return false;
-            return nodeId != null ? nodeId.equals(key.nodeId) : key.nodeId == null;
+            return segmentId == key.segmentId && node.id().equals(key.node.id());
 
         }
 
         @Override public int hashCode() {
-            int result = nodeId != null ? nodeId.hashCode() : 0;
+            int result = node.hashCode();
             result = 31 * result + segmentId;
             return result;
         }

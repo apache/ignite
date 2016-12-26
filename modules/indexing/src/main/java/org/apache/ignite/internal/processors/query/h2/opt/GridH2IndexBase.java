@@ -568,7 +568,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param cctx Cache context.
      * @return Collection of nodes for broadcasting.
      */
-    protected List<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
+    private List<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
         Map<UUID, int[]> partMap = qctx.partitionsMap();
 
         List<ClusterNode> res;
@@ -602,7 +602,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param affKeyObj Affinity key.
      * @return Cluster nodes or {@code null} if affinity key is a null value.
      */
-    protected ClusterNode rangeNode(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Object affKeyObj) {
+    private ClusterNode rangeNode(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Object affKeyObj) {
         assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
 
         ClusterNode node;
