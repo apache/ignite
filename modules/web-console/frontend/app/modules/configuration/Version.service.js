@@ -22,7 +22,7 @@ const VERSION_MATCHER = /(\d+)\.(\d+)\.(\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)
 
 const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
-export default class Version {
+export default class IgniteVersion {
     /**
      * Tries to parse product version from it's string representation.
      *
@@ -70,7 +70,7 @@ export default class Version {
         if (res !== 0)
             return res;
 
-        return numberComparator(pa.revTs, pb.maintenance);
+        return numberComparator(pa.revTs, pb.revTs);
     }
 
     /**
@@ -79,7 +79,7 @@ export default class Version {
      */
     productVersion() {
         return {
-            ignite: '1.7.0'
+            ignite: '1.8.0'
         };
     }
 

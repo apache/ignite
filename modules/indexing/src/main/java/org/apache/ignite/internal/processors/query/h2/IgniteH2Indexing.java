@@ -799,11 +799,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         setupConnection(conn, false, enforceJoinOrder);
 
-        Prepared p = null;
-
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
-        p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
         if (!p.isQuery()) {
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
@@ -834,8 +832,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 assert GridH2QueryContext.get() == null;
 
                 GridH2QueryContext.set(ctx);
+
                 try {
-                    final ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
+                    ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
 
                     return new FieldsIterator(rs);
                 }

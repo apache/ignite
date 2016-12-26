@@ -143,7 +143,7 @@ public class KafkaStreamer<K, V> extends StreamAdapter<MessageAndMetadata<byte[]
 
         // Now create an object to consume the messages.
         for (final KafkaStream<byte[], byte[]> stream : streams) {
-            executor.submit(new Runnable() {
+            executor.execute(new Runnable() {
                 @Override public void run() {
                     while (!stopped) {
                         try {
