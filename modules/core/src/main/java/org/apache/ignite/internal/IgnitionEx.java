@@ -1820,7 +1820,7 @@ public class IgnitionEx {
                     p2pExecSvc,
                     mgmtExecSvc,
                     igfsExecSvc,
-                    dataStreamerExecSvc
+                    dataStreamerExecSvc,
                     restExecSvc,
                     affExecSvc,
                     idxExecSvc,
