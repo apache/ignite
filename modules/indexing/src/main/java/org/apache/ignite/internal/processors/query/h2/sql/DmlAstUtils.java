@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -67,7 +66,7 @@ public final class DmlAstUtils {
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
      * @param desc Row descriptor.
-     * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
+     * @return Subquery or pseudo-SELECT to evaluate inserted expressions, or {@code null} no query needs to be run.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
         GridSqlQuery subQry, GridH2RowDescriptor desc) {
@@ -81,6 +80,8 @@ public final class DmlAstUtils {
             sel.from(from);
 
             GridSqlArray[] args = new GridSqlArray[cols.length];
+
+            boolean noQry = true;
 
             for (int i = 0; i < cols.length; i++) {
                 GridSqlArray arr = new GridSqlArray(rows.size());
@@ -105,9 +106,17 @@ public final class DmlAstUtils {
             for (GridSqlElement[] row : rows) {
                 assert cols.length == row.length;
 
-                for (int i = 0; i < row.length; i++)
+                for (int i = 0; i < row.length; i++) {
+                    GridSqlElement el = row[i];
+
+                    noQry &= (el instanceof GridSqlConst || el instanceof GridSqlParameter);
+
                     args[i].addChild(row[i]);
+                }
             }
+
+            if (noQry)
+                return null;
 
             return sel;
         }
@@ -202,9 +211,9 @@ public final class DmlAstUtils {
             return FastUpdateArguments.NULL_ARGUMENT;
 
         if (el instanceof GridSqlConst)
-            return new ValueArgument(((GridSqlConst)el).value().getObject());
+            return new FastUpdateArguments.ValueArgument(((GridSqlConst)el).value().getObject());
         else
-            return new ParamArgument(((GridSqlParameter)el).index());
+            return new FastUpdateArguments.ParamArgument(((GridSqlParameter)el).index());
     }
 
     /**
@@ -576,41 +585,5 @@ public final class DmlAstUtils {
                 return false;
             }
         });
-    }
-
-    /** Simple constant value based operand. */
-    private final static class ValueArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final Object val;
-
-        /** */
-        private ValueArgument(Object val) {
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            return val;
-        }
-    }
-
-    /** Simple constant value based operand. */
-    private final static class ParamArgument implements FastUpdateArgument {
-        /** Value to return. */
-        private final int paramIdx;
-
-        /** */
-        private ParamArgument(int paramIdx) {
-            assert paramIdx >= 0;
-
-            this.paramIdx = paramIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            assert arg.length > paramIdx;
-
-            return arg[paramIdx];
-        }
     }
 }
