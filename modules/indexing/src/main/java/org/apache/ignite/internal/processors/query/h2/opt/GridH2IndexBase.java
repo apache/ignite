@@ -98,7 +98,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
  */
 public abstract class GridH2IndexBase extends BaseIndex {
     /** */
-    private static final Object EXPLICIT_NULL = new Object();
+    protected static final Object EXPLICIT_NULL = new Object();
 
     /** */
     private static final AtomicLong idxIdGen = new AtomicLong();
@@ -116,7 +116,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     private GridMessageListener msgLsnr;
 
     /** */
-    private IgniteLogger log;
+    protected IgniteLogger log;
 
     /** */
     private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
@@ -325,12 +325,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         return qctx != null ? qctx.filter() : null;
     }
 
-    protected static int threadLocalSegment() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        return qctx != null ? qctx.segment() : 0;
-    }
-
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
@@ -397,7 +391,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param nodes Nodes.
      * @param msg Message.
      */
-    private void send(Collection<ClusterNode> nodes, Message msg) {
+    protected void send(Collection<ClusterNode> nodes, Message msg) {
         if (!getTable().rowDescriptor().indexing().send(msgTopic,
             -1,
             nodes,
@@ -436,7 +430,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Kernal context.
      */
-    private GridKernalContext kernalContext() {
+    protected GridKernalContext kernalContext() {
         return getTable().rowDescriptor().context().kernalContext();
     }
 
@@ -444,7 +438,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param node Requesting node.
      * @param msg Request message.
      */
-    private void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
+    protected void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
         GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
 
         res.originNodeId(msg.originNodeId());
@@ -453,7 +447,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         res.batchLookupId(msg.batchLookupId());
 
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(), msg.originNodeId(),
-            msg.queryId(), msg.segment(), MAP);
+            msg.queryId(), msg.originSegmentId(), MAP);
 
         if (qctx == null)
             res.status(STATUS_NOT_FOUND);
@@ -467,7 +461,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), snapshot0, qctx.filter());
+                    src = new RangeSource(msg.bounds(), snapshot0, qctx.filter());
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -524,7 +518,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param node Responded node.
      * @param msg Response message.
      */
-    private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
+    protected void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
             msg.originNodeId(), msg.queryId(),
             msg.segment(),
@@ -550,7 +544,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param v2 Second value.
      * @return {@code true} If they equal.
      */
-    private boolean equal(Value v1, Value v2) {
+    protected boolean equal(Value v1, Value v2) {
         return v1 == v2 || (v1 != null && v2 != null && v1.compareTypeSafe(v2, getDatabase().getCompareMode()) == 0);
     }
 
@@ -564,7 +558,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         req.originNodeId(qctx.originNodeId());
         req.queryId(qctx.queryId());
-        req.segment(qctx.segment());
         req.batchLookupId(batchLookupId);
 
         return req;
@@ -575,7 +568,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param cctx Cache context.
      * @return Collection of nodes for broadcasting.
      */
-    private List<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
+    protected List<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
         Map<UUID, int[]> partMap = qctx.partitionsMap();
 
         List<ClusterNode> res;
@@ -609,7 +602,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param affKeyObj Affinity key.
      * @return Cluster nodes or {@code null} if affinity key is a null value.
      */
-    private ClusterNode rangeNode(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Object affKeyObj) {
+    protected ClusterNode rangeNode(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Object affKeyObj) {
         assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
 
         ClusterNode node;
@@ -633,7 +626,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Row.
      * @return Row message.
      */
-    private GridH2RowMessage toRowMessage(Row row) {
+    protected GridH2RowMessage toRowMessage(Row row) {
         if (row == null)
             return null;
 
@@ -663,7 +656,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param msg Row message.
      * @return Search row.
      */
-    private SearchRow toSearchRow(GridH2RowMessage msg) {
+    protected SearchRow toSearchRow(GridH2RowMessage msg) {
         if (msg == null)
             return null;
 
@@ -694,7 +687,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Search row.
      * @return Row message.
      */
-    private GridH2RowMessage toSearchRowMessage(SearchRow row) {
+    protected GridH2RowMessage toSearchRowMessage(SearchRow row) {
         if (row == null)
             return null;
 
@@ -725,7 +718,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param msg Message.
      * @return Row.
      */
-    private Row toRow(GridH2RowMessage msg) {
+    protected Row toRow(GridH2RowMessage msg) {
         if (msg == null)
             return null;
 
@@ -1374,8 +1367,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
-        private final int segment;
-
         /** */
         final IndexingQueryFilter filter;
 
@@ -1386,11 +1377,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          */
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
-            int segment,
             ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree,
             IndexingQueryFilter filter
         ) {
-            this.segment = segment;
             this.filter = filter;
             this.tree = tree;
             boundsIter = bounds.iterator();
@@ -1448,7 +1437,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 SearchRow first = toSearchRow(bounds.first());
                 SearchRow last = toSearchRow(bounds.last());
 
-                ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead(segment);
+                ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead();
 
                 curRange = doFind0(t, first, true, last, filter);
 
@@ -1467,7 +1456,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Snapshot for current thread if there is one.
      */
-    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int segment) {
+    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
         throw new UnsupportedOperationException();
     }
 

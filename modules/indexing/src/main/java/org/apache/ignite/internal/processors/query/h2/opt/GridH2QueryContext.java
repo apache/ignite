@@ -621,6 +621,7 @@ public class GridH2QueryContext {
 
         /** */
         int segmentId;
+
         /** */
         int batchLookupId;
 
@@ -638,7 +639,8 @@ public class GridH2QueryContext {
         @Override public boolean equals(Object o) {
             SourceKey srcKey = (SourceKey)o;
 
-            return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId && ownerId.equals(srcKey.ownerId);
+            return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&
+                ownerId.equals(srcKey.ownerId);
         }
 
         /** {@inheritDoc} */
