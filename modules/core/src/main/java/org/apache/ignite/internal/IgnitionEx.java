@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1459,6 +1460,9 @@ public class IgnitionEx {
         /** System executor service. */
         private ThreadPoolExecutor sysExecSvc;
 
+        /** */
+        private StripedExecutor stripedExecSvc;
+
         /** Management executor service. */
         private ThreadPoolExecutor mgmtExecSvc;
 
@@ -1482,6 +1486,9 @@ public class IgnitionEx {
 
         /** Affinity executor service. */
         private ThreadPoolExecutor affExecSvc;
+
+        /** Indexing pool. */
+        private ThreadPoolExecutor idxExecSvc;
 
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
@@ -1640,6 +1647,8 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
+            validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
+
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
                 cfg.getGridName(),
@@ -1650,8 +1659,8 @@ public class IgnitionEx {
 
             execSvc.allowCoreThreadTimeOut(true);
 
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
+            validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
+
             sysExecSvc = new IgniteThreadPoolExecutor(
                 "sys",
                 cfg.getGridName(),
@@ -1662,10 +1671,15 @@ public class IgnitionEx {
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
+            if (cfg.getStripedPoolSize() > 0)
+                stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getGridName(), "sys", log);
+
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             // Note, that we do not pre-start threads here as management pool may
             // not be needed.
+            validateThreadPoolSize(cfg.getManagementThreadPoolSize(), "management");
+
             mgmtExecSvc = new IgniteThreadPoolExecutor(
                 "mgmt",
                 cfg.getGridName(),
@@ -1680,6 +1694,7 @@ public class IgnitionEx {
             // maximum threads has no effect.
             // Note, that we do not pre-start threads here as class loading pool may
             // not be needed.
+            validateThreadPoolSize(cfg.getPeerClassLoadingThreadPoolSize(), "peer class loading");
             p2pExecSvc = new IgniteThreadPoolExecutor(
                 "p2p",
                 cfg.getGridName(),
@@ -1702,6 +1717,8 @@ public class IgnitionEx {
             dataStreamerExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
+            validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
+
             igfsExecSvc = new IgniteThreadPoolExecutor(
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
@@ -1713,12 +1730,16 @@ public class IgnitionEx {
             igfsExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that we do not pre-start threads here as this pool may not be needed.
+            validateThreadPoolSize(cfg.getAsyncCallbackPoolSize(), "async callback");
+
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),
                 cfg.getGridName(),
                 "callback");
 
             if (myCfg.getConnectorConfiguration() != null) {
+                validateThreadPoolSize(myCfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
+
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest",
                     myCfg.getGridName(),
@@ -1731,6 +1752,8 @@ public class IgnitionEx {
                 restExecSvc.allowCoreThreadTimeOut(true);
             }
 
+            validateThreadPoolSize(myCfg.getUtilityCacheThreadPoolSize(), "utility cache");
+
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility",
                 cfg.getGridName(),
@@ -1740,6 +1763,8 @@ public class IgnitionEx {
                 new LinkedBlockingQueue<Runnable>());
 
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
+
+            validateThreadPoolSize(myCfg.getMarshallerCacheThreadPoolSize(), "marshaller cache");
 
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
                 "marshaller-cache",
@@ -1761,6 +1786,19 @@ public class IgnitionEx {
 
             affExecSvc.allowCoreThreadTimeOut(true);
 
+            if (IgniteComponentType.INDEXING.inClassPath()) {
+                int cpus = Runtime.getRuntime().availableProcessors();
+
+                idxExecSvc = new IgniteThreadPoolExecutor(
+                    "idx",
+                    cfg.getGridName(),
+                    cpus,
+                    cpus * 2,
+                    3000L,
+                    new LinkedBlockingQueue<Runnable>(1000)
+                );
+            }
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1772,13 +1810,27 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, dataStreamerExecSvc, restExecSvc, affExecSvc, callbackExecSvc,
+                grid0.start(
+                    myCfg,
+                    utilityCacheExecSvc,
+                    marshCacheExecSvc,
+                    execSvc,
+                    sysExecSvc,
+                    stripedExecSvc,
+                    p2pExecSvc,
+                    mgmtExecSvc,
+                    igfsExecSvc,
+                    dataStreamerExecSvc
+                    restExecSvc,
+                    affExecSvc,
+                    idxExecSvc,
+                    callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    });
+                    }
+                );
 
                 state = STARTED;
 
@@ -1832,6 +1884,19 @@ public class IgnitionEx {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
                         "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
+            }
+        }
+
+        /**
+         * @param poolSize an actual value in the configuration.
+         * @param poolName a name of the pool like 'management'.
+         * @throws IgniteCheckedException If the poolSize is wrong.
+         */
+        private static void validateThreadPoolSize(int poolSize, String poolName)
+            throws IgniteCheckedException {
+            if (poolSize <= 0) {
+                throw new IgniteCheckedException("Invalid " + poolName + " thread pool size" +
+                    " (must be greater than 0), actual value: " + poolSize);
             }
         }
 
@@ -2017,7 +2082,7 @@ public class IgnitionEx {
             if (userCaches != null && userCaches.length > 0) {
                 if (!U.discoOrdered(cfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
-                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
+                        "cannot be used with cache (use SPI with @DiscoverySpiOrderSupport annotation, " +
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
@@ -2383,6 +2448,10 @@ public class IgnitionEx {
 
             sysExecSvc = null;
 
+            U.shutdownNow(getClass(), stripedExecSvc, log);
+
+            stripedExecSvc = null;
+
             U.shutdownNow(getClass(), mgmtExecSvc, log);
 
             mgmtExecSvc = null;
@@ -2415,6 +2484,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), affExecSvc, log);
 
             affExecSvc = null;
+
+            U.shutdownNow(getClass(), idxExecSvc, log);
+
+            idxExecSvc = null;
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 

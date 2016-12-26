@@ -29,10 +29,8 @@ import org.apache.spark.{Logging, SparkContext}
  *
  * @param sparkContext Spark context.
  * @param cfgF Configuration factory.
- * @tparam K Key type.
- * @tparam V Value type.
  */
-class IgniteContext[K, V](
+class IgniteContext(
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
     standalone: Boolean = true
@@ -105,7 +103,7 @@ class IgniteContext[K, V](
      * @param cacheName Cache name.
      * @return `IgniteRDD` instance.
      */
-    def fromCache(cacheName: String): IgniteRDD[K, V] = {
+    def fromCache[K, V](cacheName: String): IgniteRDD[K, V] = {
         new IgniteRDD[K, V](this, cacheName, null, false)
     }
 
@@ -116,7 +114,7 @@ class IgniteContext[K, V](
      * @param cacheCfg Cache configuration to use.
      * @return `IgniteRDD` instance.
      */
-    def fromCache(cacheCfg: CacheConfiguration[K, V]) = {
+    def fromCache[K, V](cacheCfg: CacheConfiguration[K, V]) = {
         new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg, false)
     }
 

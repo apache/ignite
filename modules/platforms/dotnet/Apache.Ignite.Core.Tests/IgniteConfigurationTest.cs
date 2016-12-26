@@ -22,7 +22,10 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -31,6 +34,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -69,6 +73,14 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
+            CheckDefaultValueAttributes(new RendezvousAffinityFunction());
+            CheckDefaultValueAttributes(new FairAffinityFunction());
+            CheckDefaultValueAttributes(new NearCacheConfiguration());
+            CheckDefaultValueAttributes(new FifoEvictionPolicy());
+            CheckDefaultValueAttributes(new LruEvictionPolicy());
+            CheckDefaultValueAttributes(new AtomicConfiguration());
+            CheckDefaultValueAttributes(new TransactionConfiguration());
+            CheckDefaultValueAttributes(new FileSwapSpaceSpi());
         }
 
         /// <summary>
@@ -159,6 +171,16 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
+
+                Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
+
+                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
+                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
+                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
+                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
+                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
+                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
+                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
             }
         }
 
@@ -375,6 +397,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkTimeout, cfg.NetworkTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
+            Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
         }
 
         /// <summary>
@@ -385,13 +408,13 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props.Where(p => p.Name != "SelectorsCount"))
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
 
                 if (attr != null)
-                    Assert.AreEqual(attr.Value, propValue);
+                    Assert.AreEqual(attr.Value, propValue, string.Format("{0}.{1}", obj.GetType(), prop.Name));
                 else if (prop.PropertyType.IsValueType)
                     Assert.AreEqual(Activator.CreateInstance(prop.PropertyType), propValue);
                 else
@@ -481,6 +504,15 @@ namespace Apache.Ignite.Core.Tests
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
+                },
+                FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    ReadStripesNumber = 64,
+                    MaximumWriteQueueSize = 8,
+                    WriteBufferSize = 9,
+                    BaseDirectory = Path.GetTempPath(),
+                    MaximumSparsity = 11.22f
                 }
             };
         }

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Transactions;
 
@@ -214,11 +213,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => DoOutOp(OpCommitAsync, (IBinaryStream s) =>
-            {
-                s.WriteLong(tx.Id);
-                s.WriteLong(futId);
-            })).Task;
+            return DoOutOpAsync(OpCommitAsync, w => w.WriteLong(tx.Id));
         }
 
         /// <summary>
@@ -226,11 +221,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => DoOutOp(OpRollbackAsync, (IBinaryStream s) =>
-            {
-                s.WriteLong(tx.Id);
-                s.WriteLong(futId);
-            })).Task;
+            return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
         }
     }
 }

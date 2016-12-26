@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -32,6 +35,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -43,39 +47,48 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
  * Map query executor.
@@ -108,7 +121,7 @@ public class GridMapQueryExecutor {
     private IgniteH2Indexing h2;
 
     /** */
-    private ConcurrentMap<UUID, ConcurrentMap<Long, QueryResults>> qryRess = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, NodeResults> qryRess = new ConcurrentHashMap8<>();
 
     /** */
     private final GridSpinBusyLock busyLock;
@@ -135,17 +148,21 @@ public class GridMapQueryExecutor {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
+        final UUID locNodeId = ctx.localNodeId();
+
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                ConcurrentMap<Long,QueryResults> nodeRess = qryRess.remove(nodeId);
+                GridH2QueryContext.clearAfterDeadNode(locNodeId, nodeId);
+
+                NodeResults nodeRess = qryRess.remove(nodeId);
 
                 if (nodeRess == null)
                     return;
 
-                for (QueryResults ress : nodeRess.values())
-                    ress.cancel();
+                for (QueryResults ress : nodeRess.results().values())
+                    ress.cancel(true);
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -155,6 +172,9 @@ public class GridMapQueryExecutor {
                     return;
 
                 try {
+                    if (msg instanceof GridCacheQueryMarshallable)
+                        ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
+
                     GridMapQueryExecutor.this.onMessage(nodeId, msg);
                 }
                 finally {
@@ -179,12 +199,14 @@ public class GridMapQueryExecutor {
 
             boolean processed = true;
 
-            if (msg instanceof GridQueryRequest)
-                onQueryRequest(node, (GridQueryRequest)msg);
+            if (msg instanceof GridH2QueryRequest)
+                onQueryRequest(node, (GridH2QueryRequest)msg);
             else if (msg instanceof GridQueryNextPageRequest)
                 onNextPageRequest(node, (GridQueryNextPageRequest)msg);
             else if (msg instanceof GridQueryCancelRequest)
                 onCancel(node, (GridQueryCancelRequest)msg);
+            else if (msg instanceof GridQueryRequest)
+                onQueryRequest(node, (GridQueryRequest)msg);
             else
                 processed = false;
 
@@ -201,46 +223,43 @@ public class GridMapQueryExecutor {
      * @param msg Message.
      */
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
-        ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
+        long qryReqId = msg.queryRequestId();
 
-        QueryResults results = nodeRess.remove(msg.queryRequestId());
+        NodeResults nodeRess = resultsForNode(node.id());
+
+        boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+
+        if (!clear) {
+            nodeRess.onCancel(qryReqId);
+
+            GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        }
+
+        QueryResults results = nodeRess.results().remove(qryReqId);
 
         if (results == null)
             return;
 
-        results.cancel();
+        results.cancel(true);
     }
 
     /**
      * @param nodeId Node ID.
      * @return Results for node.
      */
-    private ConcurrentMap<Long, QueryResults> resultsForNode(UUID nodeId) {
-        ConcurrentMap<Long, QueryResults> nodeRess = qryRess.get(nodeId);
+    private NodeResults resultsForNode(UUID nodeId) {
+        NodeResults nodeRess = qryRess.get(nodeId);
 
         if (nodeRess == null) {
-            nodeRess = new ConcurrentHashMap8<>();
+            nodeRess = new NodeResults();
 
-            ConcurrentMap<Long, QueryResults> old = qryRess.putIfAbsent(nodeId, nodeRess);
+            NodeResults old = qryRess.putIfAbsent(nodeId, nodeRess);
 
             if (old != null)
                 nodeRess = old;
         }
 
         return nodeRess;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Cache context or {@code null} if none.
-     */
-    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName) {
-        GridCacheAdapter<?,?> cache = ctx.cache().internalCache(cacheName);
-
-        if (cache == null)
-            return null;
-
-        return cache.context();
     }
 
     /**
@@ -253,7 +272,7 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param cacheNames Cache names.
+     * @param cacheIds Cache IDs.
      * @param topVer Topology version.
      * @param explicitParts Explicit partitions list.
      * @param reserved Reserved list.
@@ -261,7 +280,7 @@ public class GridMapQueryExecutor {
      * @throws IgniteCheckedException If failed.
      */
     private boolean reservePartitions(
-        Collection<String> cacheNames,
+        List<Integer> cacheIds,
         AffinityTopologyVersion topVer,
         final int[] explicitParts,
         List<GridReservable> reserved
@@ -270,8 +289,8 @@ public class GridMapQueryExecutor {
 
         Collection<Integer> partIds = wrap(explicitParts);
 
-        for (String cacheName : cacheNames) {
-            GridCacheContext<?, ?> cctx = cacheContext(cacheName);
+        for (int i = 0; i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
 
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
@@ -393,132 +412,231 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      */
     private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
-        ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
+        List<Integer> cacheIds;
+
+        if (req.extraSpaces() != null) {
+            cacheIds = new ArrayList<>(req.extraSpaces().size() + 1);
+
+            cacheIds.add(CU.cacheId(req.space()));
+
+            for (String extraSpace : req.extraSpaces())
+                cacheIds.add(CU.cacheId(extraSpace));
+        }
+        else
+            cacheIds = Collections.singletonList(CU.cacheId(req.space()));
+
+        onQueryRequest0(node,
+            req.requestId(),
+            req.queries(),
+            cacheIds,
+            req.topologyVersion(),
+            null,
+            req.partitions(),
+            null,
+            req.pageSize(),
+            false,
+            req.timeout());
+    }
+
+    /**
+     * @param node Node.
+     * @param req Query request.
+     */
+    private void onQueryRequest(ClusterNode node, GridH2QueryRequest req) {
+        Map<UUID,int[]> partsMap = req.partitions();
+        int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
+
+        onQueryRequest0(node,
+            req.requestId(),
+            req.queries(),
+            req.caches(),
+            req.topologyVersion(),
+            partsMap,
+            parts,
+            req.tables(),
+            req.pageSize(),
+            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+            req.timeout());
+    }
+
+    /**
+     * @param node Node authored request.
+     * @param reqId Request ID.
+     * @param qrys Queries to execute.
+     * @param cacheIds Caches which will be affected by these queries.
+     * @param topVer Topology version.
+     * @param partsMap Partitions map for unstable topology.
+     * @param parts Explicit partitions for current node.
+     * @param tbls Tables.
+     * @param pageSize Page size.
+     * @param distributedJoins Can we expect distributed joins to be ran.
+     */
+    private void onQueryRequest0(
+        ClusterNode node,
+        long reqId,
+        Collection<GridCacheSqlQuery> qrys,
+        List<Integer> cacheIds,
+        AffinityTopologyVersion topVer,
+        Map<UUID, int[]> partsMap,
+        int[] parts,
+        Collection<String> tbls,
+        int pageSize,
+        boolean distributedJoins,
+        int timeout
+    ) {
+        // Prepare to run queries.
+        GridCacheContext<?, ?> mainCctx = ctx.cache().context().cacheContext(cacheIds.get(0));
+
+        if (mainCctx == null)
+            throw new CacheException("Failed to find cache.");
+
+        NodeResults nodeRess = resultsForNode(node.id());
 
         QueryResults qr = null;
 
         List<GridReservable> reserved = new ArrayList<>();
 
         try {
-            // Unmarshall query params.
-            Collection<GridCacheSqlQuery> qrys;
-
-            try {
-                qrys = req.queries();
-
-                if (!node.isLocal()) {
-                    Marshaller m = ctx.config().getMarshaller();
-
-                    for (GridCacheSqlQuery qry : qrys)
-                        qry.unmarshallParams(m, ctx);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to unmarshall parameters.", e);
-            }
-
-            List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
-
-            // Topology version can be null in rolling restart with previous version!
-            final AffinityTopologyVersion topVer = req.topologyVersion();
-
             if (topVer != null) {
                 // Reserve primary for topology version or explicit partitions.
-                if (!reservePartitions(caches, topVer, req.partitions(), reserved)) {
-                    sendRetry(node, req.requestId());
+                if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
+                    sendRetry(node, reqId);
 
                     return;
                 }
             }
 
-            // Prepare to run queries.
-            GridCacheContext<?,?> mainCctx = cacheContext(req.space());
+            qr = new QueryResults(reqId, qrys.size(), mainCctx);
 
-            if (mainCctx == null)
-                throw new CacheException("Failed to find cache: " + req.space());
-
-            qr = new QueryResults(req.requestId(), qrys.size(), mainCctx);
-
-            if (nodeRess.put(req.requestId(), qr) != null)
+            if (nodeRess.results().put(reqId, qr) != null)
                 throw new IllegalStateException();
 
-            h2.setFilters(h2.backupFilter(caches, topVer, req.partitions()));
+            // Prepare query context.
+            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
+                node.id(),
+                reqId,
+                mainCctx.isReplicated() ? REPLICATED : MAP)
+                .filter(h2.backupFilter(topVer, parts))
+                .partitionsMap(partsMap)
+                .distributedJoins(distributedJoins)
+                .pageSize(pageSize)
+                .topologyVersion(topVer)
+                .reservations(reserved);
 
-            // TODO Prepare snapshots for all the needed tables before the run.
+            List<GridH2Table> snapshotedTbls = null;
 
-            // Run queries.
-            int i = 0;
+            if (!F.isEmpty(tbls)) {
+                snapshotedTbls = new ArrayList<>(tbls.size());
 
-            for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(),
-                        h2.connectionForSpace(req.space()),
-                        qry.query(),
-                        F.asList(qry.parameters()),
-                        true,
-                        req.timeout(),
+                for (String identifier : tbls) {
+                    GridH2Table tbl = h2.dataTable(identifier);
+
+                    Objects.requireNonNull(tbl, identifier);
+
+                    tbl.snapshotIndexes(qctx);
+
+                    snapshotedTbls.add(tbl);
+                }
+            }
+
+            Connection conn = h2.connectionForSpace(mainCctx.name());
+
+            // Here we enforce join order to have the same behavior on all the nodes.
+            h2.setupConnection(conn, distributedJoins, true);
+
+            GridH2QueryContext.set(qctx);
+
+            // qctx is set, we have to release reservations inside of it.
+            reserved = null;
+
+            try {
+                if (nodeRess.cancelled(reqId)) {
+                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+
+                    nodeRess.results().remove(reqId);
+
+                    throw new QueryCancelledException();
+                }
+
+                // Run queries.
+                int i = 0;
+
+                boolean evt = ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+
+                for (GridCacheSqlQuery qry : qrys) {
+                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
+                        F.asList(qry.parameters()), true,
+                        timeout,
                         qr.cancels[i]);
 
-                if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    ctx.event().record(new CacheQueryExecutedEvent<>(
-                        node,
-                        "SQL query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL.name(),
-                        mainCctx.namex(),
-                        null,
-                        qry.query(),
-                        null,
-                        null,
-                        qry.parameters(),
-                        node.id(),
-                        null));
+                    if (evt) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            node,
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            mainCctx.namex(),
+                            null,
+                            qry.query(),
+                            null,
+                            null,
+                            qry.parameters(),
+                            node.id(),
+                            null));
+                    }
+
+                    assert rs instanceof JdbcResultSet : rs.getClass();
+
+                    qr.addResult(i, qry, node.id(), rs);
+
+                    if (qr.canceled) {
+                        qr.result(i).close();
+
+                        throw new QueryCancelledException();
+                    }
+
+                    // Send the first page.
+                    sendNextPage(nodeRess, node, qr, i, pageSize);
+
+                    i++;
                 }
+            }
+            finally {
+                GridH2QueryContext.clearThreadLocal();
 
-                assert rs instanceof JdbcResultSet : rs.getClass();
+                if (!distributedJoins)
+                    qctx.clearContext(false);
 
-                qr.addResult(i, qry, node.id(), rs);
-
-                if (qr.canceled) {
-                    qr.result(i).close();
-
-                    return;
+                if (!F.isEmpty(snapshotedTbls)) {
+                    for (GridH2Table dataTbl : snapshotedTbls)
+                        dataTbl.releaseSnapshots();
                 }
-
-                // Send the first page.
-                sendNextPage(nodeRess, node, qr, i, req.pageSize());
-
-                i++;
             }
         }
         catch (Throwable e) {
             if (qr != null) {
-                nodeRess.remove(req.requestId(), qr);
+                nodeRess.results().remove(reqId, qr);
 
-                qr.cancel();
+                qr.cancel(false);
             }
 
-            U.error(log, "Failed to execute local query: " + req, e);
+            if (X.hasCause(e, GridH2RetryException.class))
+                sendRetry(node, reqId);
+            else {
+                U.error(log, "Failed to execute local query.", e);
 
-            sendError(node, req.requestId(), e);
+                sendError(node, reqId, e);
 
-            if (e instanceof Error)
-                throw (Error)e;
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
         }
         finally {
-            h2.setFilters(null);
-
-            // Release reserved partitions.
-            for (GridReservable r : reserved)
-                r.release();
-
-            // Ensure all cancels state is correct.
-            if (qr != null)
-                for (int i = 0; i < qr.cancels.length; i++) {
-                    GridQueryCancel cancel = qr.cancels[i];
-
-                    if (cancel != null)
-                        cancel.setCompleted();
-                }
+            if (reserved != null) {
+                // Release reserved partitions.
+                for (int i = 0; i < reserved.size(); i++)
+                    reserved.get(i).release();
+            }
         }
     }
 
@@ -531,8 +649,11 @@ public class GridMapQueryExecutor {
         try {
             GridQueryFailResponse msg = new GridQueryFailResponse(qryReqId, err);
 
-            if (node.isLocal())
+            if (node.isLocal()) {
+                U.error(log, "Failed to run map query on local node.", err);
+
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+            }
             else
                 ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
         }
@@ -548,23 +669,36 @@ public class GridMapQueryExecutor {
      * @param req Request.
      */
     private void onNextPageRequest(ClusterNode node, GridQueryNextPageRequest req) {
-        ConcurrentMap<Long, QueryResults> nodeRess = qryRess.get(node.id());
+        NodeResults nodeRess = qryRess.get(node.id());
 
-        QueryResults qr = nodeRess == null ? null : nodeRess.get(req.queryRequestId());
+        if (nodeRess == null) {
+            sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
 
-        if (qr == null || qr.canceled)
+            return;
+        } else if (nodeRess.cancelled(req.queryRequestId())) {
+            sendError(node, req.queryRequestId(), new QueryCancelledException());
+
+            return;
+        }
+
+        QueryResults qr = nodeRess.results().get(req.queryRequestId());
+
+        if (qr == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
+        else if (qr.canceled)
+            sendError(node, req.queryRequestId(), new QueryCancelledException());
         else
             sendNextPage(nodeRess, node, qr, req.query(), req.pageSize());
     }
 
     /**
+     * @param nodeRess Results.
      * @param node Node.
      * @param qr Query results.
      * @param qry Query.
      * @param pageSize Page size.
      */
-    private void sendNextPage(ConcurrentMap<Long, QueryResults> nodeRess, ClusterNode node, QueryResults qr, int qry,
+    private void sendNextPage(NodeResults nodeRess, ClusterNode node, QueryResults qr, int qry,
         int pageSize) {
         QueryResult res = qr.result(qry);
 
@@ -580,14 +714,14 @@ public class GridMapQueryExecutor {
             res.close();
 
             if (qr.isAllClosed())
-                nodeRess.remove(qr.qryReqId, qr);
+                nodeRess.results().remove(qr.qryReqId, qr);
         }
 
         try {
             boolean loc = node.isLocal();
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
-                page == 0 ? res.rowCount : -1 ,
+                page == 0 ? res.rowCnt : -1 ,
                 res.cols,
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
                 loc ? rows : null);
@@ -607,22 +741,26 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param reqId Request ID.
-     * @throws IgniteCheckedException If failed.
      */
-    private void sendRetry(ClusterNode node, long reqId) throws IgniteCheckedException {
-        boolean loc = node.isLocal();
+    private void sendRetry(ClusterNode node, long reqId) {
+        try {
+            boolean loc = node.isLocal();
 
-        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId,
             /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
-            loc ? null : Collections.<Message>emptyList(),
-            loc ? Collections.<Value[]>emptyList() : null);
+                loc ? null : Collections.<Message>emptyList(),
+                loc ? Collections.<Value[]>emptyList() : null);
 
-        msg.retry(h2.readyTopologyVersion());
+            msg.retry(h2.readyTopologyVersion());
 
-        if (loc)
-            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-        else
-            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+            if (loc)
+                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+            else
+                ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to send retry message: " + e.getMessage());
+        }
     }
 
     /**
@@ -633,6 +771,44 @@ public class GridMapQueryExecutor {
         for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
             if (F.eq(grpKey.get1(), cacheName))
                 reservations.remove(grpKey);
+        }
+    }
+
+
+    /**
+     *
+     */
+    private static class NodeResults {
+        /** */
+        private final ConcurrentMap<Long, QueryResults> res = new ConcurrentHashMap8<>();
+
+        /** */
+        private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =
+            new GridBoundedConcurrentLinkedHashMap<>(1024, 1024, 0.75f, 64, PER_SEGMENT_Q);
+
+        /**
+         * @return All results.
+         */
+        ConcurrentMap<Long, QueryResults> results() {
+            return res;
+        }
+
+        /**
+         * @param qryId Query ID.
+         * @return {@code False} if query was already cancelled.
+         */
+        boolean cancelled(long qryId) {
+            return qryHist.get(qryId) != null;
+        }
+
+        /**
+         * @param qryId Query ID.
+         * @return {@code True} if cancelled.
+         */
+        boolean onCancel(long qryId) {
+            Boolean old = qryHist.putIfAbsent(qryId, Boolean.FALSE);
+
+            return old == null;
         }
     }
 
@@ -707,7 +883,7 @@ public class GridMapQueryExecutor {
         /**
          * Cancels the query.
          */
-        void cancel() {
+        void cancel(boolean forceQryCancel) {
             if (canceled)
                 return;
 
@@ -722,10 +898,12 @@ public class GridMapQueryExecutor {
                     continue;
                 }
 
-                GridQueryCancel cancel = cancels[i];
+                if (forceQryCancel) {
+                    GridQueryCancel cancel = cancels[i];
 
-                if (cancel != null)
-                    cancel.cancel();
+                    if (cancel != null)
+                        cancel.cancel();
+                }
             }
         }
     }
@@ -756,7 +934,10 @@ public class GridMapQueryExecutor {
         private int page;
 
         /** */
-        private final int rowCount;
+        private final int rowCnt;
+
+        /** */
+        private boolean cpNeeded;
 
         /** */
         private volatile boolean closed;
@@ -767,11 +948,12 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?,?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
+        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
             this.rs = rs;
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
+            this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -780,7 +962,7 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException(e); // Must not happen.
             }
 
-            rowCount = res.getRowCount();
+            rowCnt = res.getRowCount();
             cols = res.getVisibleColumnCount();
         }
 
@@ -802,6 +984,33 @@ public class GridMapQueryExecutor {
                     return true;
 
                 Value[] row = res.currentRow();
+
+                if (cpNeeded) {
+                    boolean copied = false;
+
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
+
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+
+                            GridCacheContext cctx = valCacheObj.getCacheContext();
+
+                            if (cctx != null && cctx.needValueCopy()) {
+                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
+                                    @Override public Object getObject() {
+                                        return getObject(true);
+                                    }
+                                };
+
+                                copied = true;
+                            }
+                        }
+                    }
+
+                    if (i == 0 && !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
+                }
 
                 assert row != null;
 

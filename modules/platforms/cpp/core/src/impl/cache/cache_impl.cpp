@@ -26,9 +26,11 @@ using namespace ignite::java;
 using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
+using namespace ignite::cache::query::continuous;
 using namespace ignite::impl;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::cache::query;
+using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
@@ -88,6 +90,9 @@ namespace ignite
 
             /** Operation: PutIfAbsent. */
             const int32_t OP_PUT_IF_ABSENT = 28;
+
+            /** Operation: CONTINUOUS query. */
+            const int32_t OP_QRY_CONTINUOUS = 29;
 
             /** Operation: SCAN query. */
             const int32_t OP_QRY_SCAN = 30;
@@ -159,17 +164,17 @@ namespace ignite
 
             void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError* err)
             {
-                OutInOp(OP_LOCAL_PEEK, inOp, outOp, err);
+                OutInOpX(OP_LOCAL_PEEK, inOp, outOp, err);
             }
 
             void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET, inOp, outOp, err);
+                OutInOpX(OP_GET, inOp, outOp, err);
             }
 
             void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_ALL, inOp, outOp, err);
+                OutInOpX(OP_GET_ALL, inOp, outOp, err);
             }
 
             void CacheImpl::Put(InputOperation& inOp, IgniteError* err)
@@ -184,17 +189,17 @@ namespace ignite
 
             void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_PUT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_REPLACE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REPLACE, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_REMOVE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REMOVE, inOp, outOp, err);
             }
 
             bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError* err)
@@ -204,7 +209,7 @@ namespace ignite
 
             void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
             }
 
             bool CacheImpl::Replace(InputOperation& inOp, IgniteError* err)
@@ -300,6 +305,32 @@ namespace ignite
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const SqlQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const TextQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const ScanQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                IgniteError& err)
+            {
+                struct { void Write(BinaryRawWriter&) const { }} dummy;
+
+                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
             }
         }
     }

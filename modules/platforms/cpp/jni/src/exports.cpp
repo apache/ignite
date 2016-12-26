@@ -93,11 +93,11 @@ extern "C" {
     void*IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepPortable) {
         return ctx->ProcessorDataStreamer(static_cast<jobject>(obj), name, keepPortable);
     }
-    
+
     void* IGNITE_CALL IgniteProcessorTransactions(gcj::JniContext* ctx, void* obj) {
         return ctx->ProcessorTransactions(static_cast<jobject>(obj));
     }
-        
+
     void* IGNITE_CALL IgniteProcessorCompute(gcj::JniContext* ctx, void* obj, void* prj) {
         return ctx->ProcessorCompute(static_cast<jobject>(obj), static_cast<jobject>(prj));
     }
@@ -142,6 +142,18 @@ extern "C" {
         return ctx->TargetInLongOutLong(static_cast<jobject>(obj), opType, val);
     }
 
+    bool IGNITE_CALL IgniteProcessorLoggerIsLevelEnabled(gcj::JniContext* ctx, void* obj, int level) {
+        return ctx->ProcessorLoggerIsLevelEnabled(static_cast<jobject>(obj), level);
+    }
+
+    void IGNITE_CALL IgniteProcessorLoggerLog(gcj::JniContext* ctx, void* obj, int level, char* message, char* category, char* errorInfo) {
+        ctx->ProcessorLoggerLog(static_cast<jobject>(obj), level, message, category, errorInfo);
+    }
+
+    void* IGNITE_CALL IgniteProcessorBinaryProcessor(gcj::JniContext* ctx, void* obj) {
+        return ctx->ProcessorBinaryProcessor(static_cast<jobject>(obj));
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
@@ -174,14 +186,6 @@ extern "C" {
         ctx->TargetListenFutureForOperation(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    void* IGNITE_CALL IgniteTargetListenFutureAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ) {
-        return ctx->TargetListenFutureAndGet(static_cast<jobject>(obj), futId, typ);
-    }
-
-    void* IGNITE_CALL IgniteTargetListenFutureForOperationAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId) {
-        return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
-    }
-
     void* IGNITE_CALL IgniteAcquire(gcj::JniContext* ctx, void* obj) {
         return ctx->Acquire(static_cast<jobject>(obj));
     }
@@ -210,11 +214,11 @@ extern "C" {
         ctx->DestroyJvm();
     }
 
-    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj) {
-        return ctx->ListenableCancel(static_cast<jobject>(obj));
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::SetConsoleHandler(consoleHandler);
     }
 
-    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
-        return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::RemoveConsoleHandler(consoleHandler);
     }
 }

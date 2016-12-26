@@ -54,5 +54,14 @@ namespace Apache.Ignite.Core.DataStructures.Configuration
         /// </summary>
         [DefaultValue(DefaultAtomicSequenceReserveSize)]
         public int AtomicSequenceReserveSize { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AtomicConfiguration" /> class.
+        /// </summary>
+        public AtomicConfiguration()
+        {
+            CacheMode = DefaultCacheMode;
+            AtomicSequenceReserveSize = DefaultAtomicSequenceReserveSize;
+        }
     }
 }

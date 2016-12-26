@@ -89,6 +89,8 @@ class WebSessionV2 implements HttpSession {
     private final HttpSession genuineSes;
 
     /**
+     * Constructs new web session.
+     *
      * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.

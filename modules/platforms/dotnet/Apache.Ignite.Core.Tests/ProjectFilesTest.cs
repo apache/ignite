@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using NUnit.Framework;
 
     /// <summary>
@@ -42,6 +43,67 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that release build settings are correct: XML docs are generated.
+        /// </summary>
+        [Test]
+        public void TestCsprojReleaseDocs()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("DocumentationFile"), 
+                "Missing XML doc in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that release build settings are correct: there are no DEBUG/TRACE constants.
+        /// </summary>
+        [Test]
+        public void TestCsprojBuildSettings()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"), 
+                "Invalid constants in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that release build settings are correct: debug information is disabled.
+        /// </summary>
+        [Test]
+        public void TestCsprojPdbSettings()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<DebugType>none</DebugType>"), 
+                "Invalid DebugType in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that release build settings are correct: debug information is disabled.
+        /// </summary>
+        [Test]
+        public void TestCsprojOptimizeCode()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<Optimize>true</Optimize>"), 
+                "Invalid optimize setting in release mode: ");
+        }
+
+        /// <summary>
+        /// Gets the csproj files that go to the release binary package.
+        /// </summary>
+        private static IEnumerable<FileInfo> GetReleaseCsprojFiles()
+        {
+            return GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x => x.Name != "Apache.Ignite.csproj" &&
+                            !x.Name.Contains("Test") &&
+                            !x.Name.Contains("Example") &&
+                            !x.Name.Contains("Benchmark"));
+        }
+
+        /// <summary>
+        /// Gets the release section.
+        /// </summary>
+        private static string GetReleaseSection(string csproj)
+        {
+            return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>", 
+                RegexOptions.Singleline).Value;
+        }
+
+        /// <summary>
         /// Tests that tools version is compatible with VS2010.
         /// </summary>
         [Test]
@@ -56,14 +118,15 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests that there are no Cyrillic C instead of English C (which are on the same keyboard key).
+        /// Tests that there are no non-ASCII chars.
         /// </summary>
         [Test]
-        public void TestCyrillicChars()
+        public void TestAsciiChars()
         {
-            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories)
+                .Where(x => x.Name != "BinaryStringTest.cs" && x.Name != "BinarySelfTest.cs");
 
-            CheckFiles(srcFiles, x => x.Contains('\u0441') || x.Contains('\u0421'), "Files with Cyrillic 'C': ");
+            CheckFiles(srcFiles, x => x.Any(ch => ch > 255), "Files with non-ASCII chars: ");
         }
 
         /// <summary>
@@ -74,7 +137,7 @@ namespace Apache.Ignite.Core.Tests
             var invalidFiles = files.Where(x => isInvalid(File.ReadAllText(x.FullName))).ToArray();
 
             Assert.AreEqual(0, invalidFiles.Length,
-                errorText + string.Join(", ", invalidFiles.Select(x => x.FullName)));
+                errorText + string.Join("\n ", invalidFiles.Select(x => x.FullName)));
         }
 
         /// <summary>

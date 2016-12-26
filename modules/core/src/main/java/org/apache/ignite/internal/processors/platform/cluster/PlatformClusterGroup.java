@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.platform.cluster;
 
 import java.util.Collection;
 import java.util.UUID;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -28,7 +30,10 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class PlatformClusterGroup extends PlatformAbstractTarget {
-    /** */
-    private static final int OP_ALL_METADATA = 1;
-
     /** */
     private static final int OP_FOR_ATTRIBUTE = 2;
 
@@ -58,9 +60,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_FOR_NODE_IDS = 7;
 
     /** */
-    private static final int OP_METADATA = 8;
-
-    /** */
     private static final int OP_METRICS = 9;
 
     /** */
@@ -77,9 +76,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_TOPOLOGY = 14;
-
-    /** */
-    private static final int OP_SCHEMA = 15;
 
     /** */
     private static final int OP_FOR_OTHERS = 16;
@@ -102,6 +98,12 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_RESET_METRICS = 22;
 
+    /** */
+    private static final int OP_FOR_SERVERS = 23;
+
+    /** */
+    private static final int OP_CACHE_METRICS = 24;
+
     /** Projection. */
     private final ClusterGroupEx prj;
 
@@ -119,15 +121,10 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_METRICS:
                 platformCtx.writeClusterMetrics(writer, prj.metrics());
-
-                break;
-
-            case OP_ALL_METADATA:
-                platformCtx.writeAllMetadata(writer);
 
                 break;
 
@@ -138,7 +135,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "deprecation"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_METRICS_FILTERED: {
@@ -197,14 +194,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_METADATA: {
-                int typeId = reader.readInt();
-
-                platformCtx.writeMetadata(writer, typeId);
-
-                break;
-            }
-
             case OP_TOPOLOGY: {
                 long topVer = reader.readLong();
 
@@ -213,11 +202,12 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_SCHEMA: {
-                int typeId = reader.readInt();
-                int schemaId = reader.readInt();
+            case OP_CACHE_METRICS: {
+                String cacheName = reader.readString();
 
-                platformCtx.writeSchema(writer, typeId, schemaId);
+                IgniteCache cache = platformCtx.kernalContext().grid().cache(cacheName);
+
+                PlatformCache.writeCacheMetrics(writer, cache.metrics(prj));
 
                 break;
             }
@@ -228,7 +218,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
@@ -239,7 +229,8 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_FOR_NODE_IDS: {
                 Collection<UUID> ids = PlatformUtils.readCollection(reader);
@@ -283,8 +274,8 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInObjectStreamOutObjectStream(
-            int type, @Nullable Object arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(
+            int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
             throws IgniteCheckedException {
         switch (type) {
             case OP_FOR_OTHERS: {
@@ -300,7 +291,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
             case OP_FOR_REMOTES:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRemotes());
@@ -316,13 +307,16 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
             case OP_FOR_YOUNGEST:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
+
+            case OP_FOR_SERVERS:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
         }
 
         return super.processOutObject(type);
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_RESET_METRICS: {
                 assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
@@ -360,7 +354,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
+     *      topology history. Currently only {@link TcpDiscoverySpi}
      *      supports topology history.
      */
     private Collection<ClusterNode> topology(long topVer) {

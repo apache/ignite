@@ -17,50 +17,57 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Holds query cancel state.
  */
 public class GridQueryCancel {
-    /** */
-    private volatile boolean cancelled;
+    /** No-op runnable indicating cancelled state. */
+    private static final Runnable CANCELLED = new Runnable() {
+        @Override public void run() {
+            // No-op.
+        }
+    };
 
     /** */
-    private volatile boolean completed;
+    private static final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
 
     /** */
     private volatile Runnable clo;
 
     /**
-     * Sets a cancel closure. The closure must be idempotent to multiple invocations.
+     * Sets a cancel closure.
      *
      * @param clo Clo.
      */
-    public void set(Runnable clo) throws QueryCancelledException{
-        checkCancelled();
+    public void set(Runnable clo) throws QueryCancelledException {
+        assert clo != null;
 
-        this.clo = clo;
+        while(true) {
+            Runnable tmp = this.clo;
+
+            if (tmp == CANCELLED)
+                throw new QueryCancelledException();
+
+            if (STATE_UPDATER.compareAndSet(this, tmp, clo))
+                return;
+        }
     }
 
     /**
-     * Spins until a query is completed.
-     * Only one thread can enter this method.
-     * This is guaranteed by {@link org.apache.ignite.internal.processors.cache.QueryCursorImpl}
+     * Executes cancel closure.
      */
     public void cancel() {
-        cancelled = true;
+        while(true) {
+            Runnable tmp = this.clo;
 
-        int attempt = 0;
+            if (STATE_UPDATER.compareAndSet(this, tmp, CANCELLED)) {
+                if (tmp != null)
+                    tmp.run();
 
-        while (!completed) {
-            if (clo != null) clo.run();
-
-            try {
-                U.sleep(++attempt * 10);
-            } catch (IgniteInterruptedCheckedException ignored) {
                 return;
             }
         }
@@ -69,16 +76,8 @@ public class GridQueryCancel {
     /**
      * Stops query execution if a user requested cancel.
      */
-    public void checkCancelled() throws QueryCancelledException{
-        if (cancelled)
+    public void checkCancelled() throws QueryCancelledException {
+        if (clo == CANCELLED)
             throw new QueryCancelledException();
-    }
-
-    /**
-     * Sets completed state.
-     * The method must be called then a query is completed by any reason, typically in final block.
-     */
-    public void setCompleted() {
-        completed = true;
     }
 }

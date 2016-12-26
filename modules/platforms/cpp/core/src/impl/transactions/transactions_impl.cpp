@@ -119,6 +119,11 @@ namespace ignite
                     val = reader.ReadInt64();
                 }
 
+                virtual void SetNull()
+                {
+                    // No-op.
+                }
+
                 /**
                 * Get value.
                 *
@@ -215,6 +220,11 @@ namespace ignite
                     int32_t rollbacks = reader.ReadInt32();
 
                     val = TransactionMetrics(commitTime, rollbackTime, commits, rollbacks);
+                }
+
+                virtual void SetNull()
+                {
+                    // No-op.
                 }
 
                 /**

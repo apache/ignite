@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var paths = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
                 .Select(File.ReadAllText)
-                .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.xml").OfType<Match>())
+                .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.config").OfType<Match>())
                 .Where(match => match.Success)
                 .Select(match => PathUtil.GetFullConfigPath(match.Value))
                 .Distinct()

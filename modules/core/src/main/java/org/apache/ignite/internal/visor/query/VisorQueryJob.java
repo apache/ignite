@@ -161,6 +161,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
                 qry.setPageSize(arg.pageSize());
                 qry.setLocal(arg.local());
+                qry.setDistributedJoins(arg instanceof VisorQueryArgV2 && ((VisorQueryArgV2)arg).distributedJoins());
 
                 long start = U.currentTimeMillis();
 
@@ -196,7 +197,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 }
             }
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             return new IgniteBiTuple<>(new VisorExceptionWrapper(e), null);
         }
     }

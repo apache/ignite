@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,8 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -154,8 +154,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * @return Port to use for rest. Needs to be changed over time
-     *      because Jetty has some delay before port unbind.
+     * @return Port to use for rest. Needs to be changed over time because Jetty has some delay before port unbind.
      */
     protected abstract int restPort();
 
@@ -339,7 +338,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testNullMapKeyAndValue()  throws Exception {
+    public void testNullMapKeyAndValue() throws Exception {
         Map<String, String> map1 = new HashMap<>();
         map1.put(null, null);
         map1.put("key", "value");
@@ -372,7 +371,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleObject()  throws Exception {
+    public void testSimpleObject() throws Exception {
         SimplePerson p = new SimplePerson(1, "Test", java.sql.Date.valueOf("1977-01-26"), 1000.55, 39, "CIO", 25);
 
         jcache().put("simplePersonKey", p);
@@ -1004,18 +1003,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
-    private void testMetadata(Collection<GridCacheSqlMetadata> metas) throws Exception {
-        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
-
-        String cacheNameArg = F.first(metas).cacheName();
-
-        if (cacheNameArg != null)
-            params.put("cacheName", cacheNameArg);
-
-        String ret = content(params);
-
-        info("Cache metadata result: " + ret);
-
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas, String ret) throws Exception {
         JsonNode arr = jsonResponse(ret);
 
         assertTrue(arr.isArray());
@@ -1100,9 +1088,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertNotNull("Should have configured public cache!", cache);
 
-        Collection<GridCacheSqlMetadata> meta = cache.context().queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-        testMetadata(meta);
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        testMetadata(metas, ret);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+
+        info("Cache metadata with cacheName parameter: " + ret);
+
+        testMetadata(metas, ret);
     }
 
     /**
@@ -1118,7 +1116,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        testMetadata(metas);
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        testMetadata(metas, ret);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+
+        info("Cache metadata with cacheName parameter: " + ret);
+
+        testMetadata(metas, ret);
     }
 
     /**
@@ -1679,11 +1687,59 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
+    public void testDistributedJoinsQuery() throws Exception {
+        String qry = "select * from Person, \"organization\".Organization " +
+            "where \"organization\".Organization.id = Person.orgId " +
+            "and \"organization\".Organization.name = ?";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "Person");
+        params.put("distributedJoins", "true");
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry, CHARSET));
+        params.put("arg1", "o1");
+
+        String ret = content(params);
+
+        JsonNode items = jsonResponse(ret).get("items");
+
+        assertEquals(2, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSqlFieldsQuery() throws Exception {
         String qry = "select concat(firstName, ' ', lastName) from Person";
 
         Map<String, String> params = new HashMap<>();
         params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry, CHARSET));
+
+        String ret = content(params);
+
+        JsonNode items = jsonResponse(ret).get("items");
+
+        assertEquals(4, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributedJoinsSqlFieldsQuery() throws Exception {
+        String qry = "select * from \"person\".Person p, \"organization\".Organization o where o.id = p.orgId";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("distributedJoins", "true");
         params.put("pageSize", "10");
         params.put("cacheName", "person");
         params.put("qry", URLEncoder.encode(qry, CHARSET));
@@ -1823,6 +1879,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     private void initCache() {
+        CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");
+
+        orgCacheCfg.setIndexedTypes(Integer.class, Organization.class);
+
+        IgniteCache<Integer, Organization> orgCache = ignite(0).getOrCreateCache(orgCacheCfg);
+
+        orgCache.clear();
+
+        Organization o1 = new Organization(1, "o1");
+        Organization o2 = new Organization(2, "o2");
+
+        orgCache.put(1, o1);
+        orgCache.put(2, o2);
+
         CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
 
         personCacheCfg.setIndexedTypes(Integer.class, Person.class);
@@ -1831,10 +1901,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         personCache.clear();
 
-        Person p1 = new Person("John", "Doe", 2000);
-        Person p2 = new Person("Jane", "Doe", 1000);
-        Person p3 = new Person("John", "Smith", 1000);
-        Person p4 = new Person("Jane", "Smith", 2000);
+        Person p1 = new Person(1, "John", "Doe", 2000);
+        Person p2 = new Person(1, "Jane", "Doe", 1000);
+        Person p3 = new Person(2, "John", "Smith", 1000);
+        Person p4 = new Person(2, "Jane", "Smith", 2000);
 
         personCache.put(p1.getId(), p1);
         personCache.put(p2.getId(), p2);
@@ -1848,6 +1918,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals(2, personCache.query(qry).getAll().size());
     }
 
+
+    /**
+     * Organization class.
+     */
+    public static class Organization implements Serializable {
+        /** Organization ID (indexed). */
+        @QuerySqlField(index = true)
+        private Integer id;
+
+        /** First name (not-indexed). */
+        @QuerySqlField(index = true)
+        private String name;
+
+        /**
+         * @param id Id.
+         * @param name Name.
+         */
+        Organization(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /**
+         * @return Id.
+         */
+        public Integer getId() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+    }
+
     /**
      * Person class.
      */
@@ -1858,6 +1965,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         /** Person ID (indexed). */
         @QuerySqlField(index = true)
         private Integer id;
+
+        /** Organization id. */
+        @QuerySqlField(index = true)
+        private Integer orgId;
 
         /** First name (not-indexed). */
         @QuerySqlField
@@ -1876,12 +1987,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param lastName Last name.
          * @param salary Salary.
          */
-        Person(String firstName, String lastName, double salary) {
+        Person(Integer orgId, String firstName, String lastName, double salary) {
             id = PERSON_ID++;
 
+            this.orgId = orgId;
             this.firstName = firstName;
             this.lastName = lastName;
             this.salary = salary;
+        }
+
+        /**
+         * @return Organization ID.
+         */
+        public Integer getOrganizationId() {
+            return orgId;
         }
 
         /**
@@ -1897,6 +2016,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         public String getLastName() {
             return lastName;
         }
+
         /**
          * @return Salary.
          */
@@ -2011,7 +2131,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument argument(Class cls, Object ... vals) {
+        public VisorGatewayArgument argument(Class cls, Object... vals) {
             put("p" + idx++, cls.getName());
 
             for (Object val : vals)
@@ -2027,7 +2147,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument collection(Class cls, Object ... vals) {
+        public VisorGatewayArgument collection(Class cls, Object... vals) {
             put("p" + idx++, Collection.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
@@ -2085,7 +2205,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument set(Class cls, Object ... vals) {
+        public VisorGatewayArgument set(Class cls, Object... vals) {
             put("p" + idx++, Set.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
@@ -30,9 +31,13 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.jetbrains.annotations.Nullable;
@@ -57,7 +62,7 @@ import java.util.Map;
  * method in .NET during node startup. Refer to its documentation for
  * details.
  */
-public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, PlatformCacheStore {
+public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, PlatformCacheStore, LifecycleAware {
     /** Load cache operation code. */
     private static final byte OP_LOAD_CACHE = (byte)0;
 
@@ -96,12 +101,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     private Map<String, ?> props;
 
     /** Native factory. */
+    @GridToStringInclude
     private final Object nativeFactory;
 
     /** Interop processor. */
+    @GridToStringExclude
     protected PlatformContext platformCtx;
 
     /** Pointer to native store. */
+    @GridToStringExclude
     protected long ptr;
 
     /**
@@ -329,6 +337,18 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        assert platformCtx != null;
+
+        platformCtx.gateway().cacheStoreDestroy(ptr);
+    }
+
     /**
      * Initialize the store.
      *
@@ -382,7 +402,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         if (sesPtr == null) {
             // Session is not deployed yet, do that.
-            sesPtr = platformCtx.gateway().cacheStoreSessionCreate(ptr);
+            sesPtr = platformCtx.gateway().cacheStoreSessionCreate();
 
             ses.properties().put(KEY_SES, sesPtr);
         }
@@ -405,11 +425,20 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
+
             task.apply(writer);
 
             out.synchronize();
 
-            int res = platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer());
+            int res = platformCtx.gateway().cacheStoreInvoke(mem.pointer());
+
+            if (res != 0) {
+                // Read error
+                Object nativeErr = platformCtx.reader(mem.input()).readObjectDetached();
+
+                throw platformCtx.createNativeException(nativeErr);
+            }
 
             if (readClo != null) {
                 BinaryRawReaderEx reader = platformCtx.reader(mem);
@@ -421,14 +450,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         }
     }
 
-    /**
-     * Destroys interop-aware component.
-     *
-     * @param ctx Context.
-     */
-    public void destroy(GridKernalContext ctx) {
-        assert ctx != null;
-
-        platformCtx.gateway().cacheStoreDestroy(ptr);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformDotNetCacheStore.class, this);
     }
 }

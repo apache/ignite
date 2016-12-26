@@ -534,6 +534,72 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPutRemovePeekPollUnbounded() throws Exception {
+        // Random queue name.
+        String queueName = UUID.randomUUID().toString();
+
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+
+        for (int i = 0; i < QUEUE_CAPACITY; i++)
+            queue.put("Item-" + i);
+
+        assertEquals(QUEUE_CAPACITY, queue.size());
+
+        queue.remove("Item-1");
+
+        assertEquals(QUEUE_CAPACITY - 1, queue.size());
+
+        assertEquals("Item-0", queue.peek());
+        assertEquals("Item-0", queue.poll());
+        assertEquals("Item-2", queue.poll());
+
+        assertEquals(0, queue.size());
+
+        queue.clear();
+
+        assertTrue(queue.isEmpty());
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRemovePeek() throws Exception {
+        // Random queue name.
+        String queueName = UUID.randomUUID().toString();
+
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+
+        for (int i = 0; i < 5; i++)
+            queue.put("Item-" + i);
+
+        queue.remove("Item-1");
+
+        assertEquals("Item-0", queue.peek());
+
+        queue.remove("Item-2");
+
+        assertEquals("Item-0", queue.peek());
+
+        queue.remove("Item-0");
+
+        assertEquals("Item-3", queue.peek());
+
+        queue.remove("Item-4");
+
+        assertEquals("Item-3", queue.peek());
+
+        queue.remove("Item-3");
+
+        assertNull(queue.peek());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testReuseCache() throws Exception {

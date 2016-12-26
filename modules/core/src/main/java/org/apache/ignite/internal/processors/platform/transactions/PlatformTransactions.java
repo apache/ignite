@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.transactions;
 
-import java.sql.Timestamp;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -27,7 +24,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
@@ -35,6 +31,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
+
+import java.sql.Timestamp;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Native transaction wrapper implementation.
@@ -95,21 +95,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /**
-     * Listens to the transaction future and notifies .NET int future.
-     */
-    private void listenAndNotifyIntFuture(final long futId, final Transaction asyncTx) {
-        IgniteFuture fut = asyncTx.future().chain(new C1<IgniteFuture, Object>() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public Object apply(IgniteFuture fut) {
-                return null;
-            }
-        });
-
-        PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, this);
-    }
-
-    /**
      * Register transaction.
      *
      * @param tx Transaction.
@@ -138,10 +123,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
     /**
      * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
      * @return Transaction state.
      */
-    private int txClose(long id) throws IgniteCheckedException {
+    private int txClose(long id) {
         Transaction tx = tx(id);
 
         try {
@@ -169,7 +153,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_COMMIT:
                 tx(val).commit();
@@ -200,9 +184,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         long txId = reader.readLong();
-        long futId = reader.readLong();
 
         final Transaction asyncTx = (Transaction)tx(txId).withAsync();
 
@@ -222,13 +205,22 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 return super.processInStreamOutLong(type, reader);
         }
 
-        listenAndNotifyIntFuture(futId, asyncTx);
+        // Future result is the tx itself, we do not want to return it to the platform.
+        IgniteFuture fut = asyncTx.future().chain(new C1<IgniteFuture, Object>() {
+            private static final long serialVersionUID = 0L;
+
+            @Override public Object apply(IgniteFuture fut) {
+                return null;
+            }
+        });
+
+        readAndListenFuture(reader, fut);
 
         return TRUE;
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_START: {
                 TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());
@@ -253,7 +245,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();

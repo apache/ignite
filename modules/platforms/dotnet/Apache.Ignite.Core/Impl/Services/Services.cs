@@ -17,12 +17,12 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -51,9 +51,6 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpDescriptors = 5;
 
         /** */
-        private const int OpWithAsync = 6;
-
-        /** */
         private const int OpWithServerKeepBinary = 7;
 
         /** */
@@ -66,6 +63,18 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpCancelAll = 10;
 
         /** */
+        private const int OpDeployAsync = 11;
+
+        /** */
+        private const int OpDeployMultipleAsync = 12;
+
+        /** */
+        private const int OpCancelAsync = 13;
+
+        /** */
+        private const int OpCancelAllAsync = 14;
+
+        /** */
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker binary flag. */
@@ -73,9 +82,6 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** Server binary flag. */
         private readonly bool _srvKeepBinary;
-
-        /** Async instance. */
-        private readonly Lazy<Services> _asyncInstance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -94,20 +100,6 @@ namespace Apache.Ignite.Core.Impl.Services
             _clusterGroup = clusterGroup;
             _keepBinary = keepBinary;
             _srvKeepBinary = srvKeepBinary;
-
-            _asyncInstance = new Lazy<Services>(() => new Services(this));
-        }
-
-        /// <summary>
-        /// Initializes a new async instance.
-        /// </summary>
-        /// <param name="services">The services.</param>
-        private Services(Services services) : base(UU.TargetOutObject(services.Target, OpWithAsync), 
-            services.Marshaller)
-        {
-            _clusterGroup = services.ClusterGroup;
-            _keepBinary = services._keepBinary;
-            _srvKeepBinary = services._srvKeepBinary;
         }
 
         /** <inheritDoc /> */
@@ -134,14 +126,6 @@ namespace Apache.Ignite.Core.Impl.Services
             get { return _clusterGroup; }
         }
 
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private Services AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
-        }
-
         /** <inheritDoc /> */
         public void DeployClusterSingleton(string name, IService service)
         {
@@ -154,9 +138,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployClusterSingletonAsync(string name, IService service)
         {
-            AsyncInstance.DeployClusterSingleton(name, service);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
-            return AsyncInstance.GetTask();
+            return DeployMultipleAsync(name, service, 1, 1);
         }
 
         /** <inheritDoc /> */
@@ -171,9 +156,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployNodeSingletonAsync(string name, IService service)
         {
-            AsyncInstance.DeployNodeSingleton(name, service);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
-            return AsyncInstance.GetTask();
+            return DeployMultipleAsync(name, service, 0, 1);
         }
 
         /** <inheritDoc /> */
@@ -197,9 +183,19 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            AsyncInstance.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
+            IgniteArgumentCheck.NotNull(affinityKey, "affinityKey");
 
-            return AsyncInstance.GetTask();
+            return DeployAsync(new ServiceConfiguration
+            {
+                Name = name,
+                Service = service,
+                CacheName = cacheName,
+                AffinityKey = affinityKey,
+                TotalCount = 1,
+                MaxPerNodeCount = 1
+            });
         }
 
         /** <inheritDoc /> */
@@ -220,9 +216,16 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            AsyncInstance.DeployMultiple(name, service, totalCount, maxPerNodeCount);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync(OpDeployMultipleAsync, w =>
+            {
+                w.WriteString(name);
+                w.WriteObject(service);
+                w.WriteInt(totalCount);
+                w.WriteInt(maxPerNodeCount);
+            });
         }
 
         /** <inheritDoc /> */
@@ -230,28 +233,15 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutOp(OpDeploy, w =>
-            {
-                w.WriteString(configuration.Name);
-                w.WriteObject(configuration.Service);
-                w.WriteInt(configuration.TotalCount);
-                w.WriteInt(configuration.MaxPerNodeCount);
-                w.WriteString(configuration.CacheName);
-                w.WriteObject(configuration.AffinityKey);
-
-                if (configuration.NodeFilter != null)
-                    w.WriteObject(configuration.NodeFilter);
-                else
-                    w.WriteObject<object>(null);
-            });
+            DoOutOp(OpDeploy, w => WriteServiceConfiguration(configuration, w));
         }
 
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            AsyncInstance.Deploy(configuration);
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w));
         }
 
         /** <inheritDoc /> */
@@ -265,9 +255,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAsync(string name)
         {
-            AsyncInstance.Cancel(name);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync(OpCancelAsync, w => w.WriteString(name));
         }
 
         /** <inheritDoc /> */
@@ -279,9 +269,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            AsyncInstance.CancelAll();
-
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync(OpCancelAllAsync);
         }
 
         /** <inheritDoc /> */
@@ -329,18 +317,17 @@ namespace Apache.Ignite.Core.Impl.Services
                 {
                     bool hasVal = r.ReadBool();
 
-                    if (hasVal)
-                    {
-                        var count = r.ReadInt();
+                    if (!hasVal)
+                        return new T[0];
+
+                    var count = r.ReadInt();
                         
-                        var res = new List<T>(count);
+                    var res = new List<T>(count);
 
-                        for (var i = 0; i < count; i++)
-                            res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                    for (var i = 0; i < count; i++)
+                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
 
-                        return res;
-                    }
-                    return null;
+                    return res;
                 });
         }
 
@@ -391,6 +378,27 @@ namespace Apache.Ignite.Core.Impl.Services
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
                 (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
+        }
+
+        /// <summary>
+        /// Writes the service configuration.
+        /// </summary>
+        private static void WriteServiceConfiguration(ServiceConfiguration configuration, IBinaryRawWriter w)
+        {
+            Debug.Assert(configuration != null);
+            Debug.Assert(w != null);
+
+            w.WriteString(configuration.Name);
+            w.WriteObject(configuration.Service);
+            w.WriteInt(configuration.TotalCount);
+            w.WriteInt(configuration.MaxPerNodeCount);
+            w.WriteString(configuration.CacheName);
+            w.WriteObject(configuration.AffinityKey);
+
+            if (configuration.NodeFilter != null)
+                w.WriteObject(configuration.NodeFilter);
+            else
+                w.WriteObject<object>(null);
         }
     }
 }

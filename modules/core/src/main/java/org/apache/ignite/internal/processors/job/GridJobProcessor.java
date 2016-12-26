@@ -1519,7 +1519,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean reserve() throws IgniteCheckedException {
+        @Override public boolean reserve() {
             boolean reserved = false;
 
             try {
@@ -1569,7 +1569,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                     finally {
                         if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
-                            throw new IgniteCheckedException("Failed partition reservation. " +
+                            throw new IgniteException("Failed partition reservation. " +
                                 "Partition is not primary on the node. [partition=" + partId + ", cacheName=" + cctx.name() +
                                 ", nodeId=" + ctx.localNodeId() + ", topology=" + topVer + ']');
                     }

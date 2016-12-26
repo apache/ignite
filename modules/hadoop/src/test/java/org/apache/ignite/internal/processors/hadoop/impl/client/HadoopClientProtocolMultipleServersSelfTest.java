@@ -23,8 +23,8 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -44,8 +44,6 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
@@ -80,14 +78,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap =
-            GridTestUtils.getFieldValue(IgniteHadoopClientProtocolProvider.class, "cliMap");
-
-        for(IgniteInternalFuture<GridClient> fut : cliMap.values())
-            fut.get().close();
-
-        cliMap.clear();
 
         super.afterTest();
     }
@@ -127,26 +117,31 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     private void checkJobSubmit(Configuration conf) throws Exception {
         final Job job = Job.getInstance(conf);
 
-        job.setJobName(JOB_NAME);
+        try {
+            job.setJobName(JOB_NAME);
 
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(IntWritable.class);
 
-        job.setInputFormatClass(TextInputFormat.class);
-        job.setOutputFormatClass(OutFormat.class);
+            job.setInputFormatClass(TextInputFormat.class);
+            job.setOutputFormatClass(OutFormat.class);
 
-        job.setMapperClass(TestMapper.class);
-        job.setReducerClass(TestReducer.class);
+            job.setMapperClass(TestMapper.class);
+            job.setReducerClass(TestReducer.class);
 
-        job.setNumReduceTasks(0);
+            job.setNumReduceTasks(0);
 
-        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
 
-        job.submit();
+            job.submit();
 
-        job.waitForCompletion(false);
+            job.waitForCompletion(false);
 
-        assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : job.getStatus().getState();
+            assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : job.getStatus().getState();
+        }
+        finally {
+            job.getCluster().close();
+        }
     }
 
     /**
@@ -170,18 +165,25 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void testSingleAddress() throws Exception {
-        // Don't use REST_PORT to test connection fails if the only this port is configured
-        restPort = REST_PORT + 1;
+        try {
+            // Don't use REST_PORT to test connection fails if the only this port is configured
+            restPort = REST_PORT + 1;
 
-        startGrids(gridCount());
+            startGrids(gridCount());
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    checkJobSubmit(configSingleAddress());
-                    return null;
-                }
-            },
-            GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
+                        checkJobSubmit(configSingleAddress());
+                        return null;
+                    }
+                },
+                GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
+        }
+        finally {
+            FileSystem fs = FileSystem.get(configSingleAddress());
+
+            fs.close();
+        }
     }
 
     /**

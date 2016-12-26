@@ -21,7 +21,6 @@
 #include <jni.h>
 
 #include "ignite/common/common.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {
@@ -93,7 +92,7 @@ namespace ignite
 
             typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
-            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, const char* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
@@ -107,89 +106,27 @@ namespace ignite
             typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
 
+            typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
+
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
+            typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
+            
+            typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long long val);
+            typedef long long(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, long long val1, long long val2, long long val3, void* arg);
+
             /**
              * JNI handlers holder.
              */
             struct JniHandlers {
                 void* target;
 
-                CacheStoreCreateHandler cacheStoreCreate;
-                CacheStoreInvokeHandler cacheStoreInvoke;
-                CacheStoreDestroyHandler cacheStoreDestroy;
-                CacheStoreSessionCreateHandler cacheStoreSessionCreate;
-
-                CacheEntryFilterCreateHandler cacheEntryFilterCreate;
-                CacheEntryFilterApplyHandler cacheEntryFilterApply;
-                CacheEntryFilterDestroyHandler cacheEntryFilterDestroy;
-
-                CacheInvokeHandler cacheInvoke;
-
-                ComputeTaskMapHandler computeTaskMap;
-                ComputeTaskJobResultHandler computeTaskJobRes;
-                ComputeTaskReduceHandler computeTaskReduce;
-                ComputeTaskCompleteHandler computeTaskComplete;
-                ComputeJobSerializeHandler computeJobSerialize;
-                ComputeJobCreateHandler computeJobCreate;
-                ComputeJobExecuteHandler computeJobExec;
-                ComputeJobCancelHandler computeJobCancel;
-                ComputeJobDestroyHandler computeJobDestroy;
-
-                ContinuousQueryListenerApplyHandler contQryLsnrApply;
-                ContinuousQueryFilterCreateHandler contQryFilterCreate;
-                ContinuousQueryFilterApplyHandler contQryFilterApply;
-                ContinuousQueryFilterReleaseHandler contQryFilterRelease;
-
-                DataStreamerTopologyUpdateHandler dataStreamerTopologyUpdate;
-                DataStreamerStreamReceiverInvokeHandler streamReceiverInvoke;
-
-                FutureByteResultHandler futByteRes;
-                FutureBoolResultHandler futBoolRes;
-                FutureShortResultHandler futShortRes;
-                FutureCharResultHandler futCharRes;
-                FutureIntResultHandler futIntRes;
-                FutureFloatResultHandler futFloatRes;
-                FutureLongResultHandler futLongRes;
-                FutureDoubleResultHandler futDoubleRes;
-                FutureObjectResultHandler futObjRes;
-                FutureNullResultHandler futNullRes;
-                FutureErrorHandler futErr;
-
-                LifecycleEventHandler lifecycleEvt;
-
-                MemoryReallocateHandler memRealloc;
-
-                MessagingFilterCreateHandler messagingFilterCreate;
-                MessagingFilterApplyHandler messagingFilterApply;
-                MessagingFilterDestroyHandler messagingFilterDestroy;
-                
-                EventFilterCreateHandler eventFilterCreate;
-                EventFilterApplyHandler eventFilterApply;
-                EventFilterDestroyHandler eventFilterDestroy;
-
-                ServiceInitHandler serviceInit;
-                ServiceExecuteHandler serviceExecute;
-                ServiceCancelHandler serviceCancel;
-                ServiceInvokeMethodHandler serviceInvokeMethod;
-
-                ClusterNodeFilterApplyHandler clusterNodeFilterApply;
-
-                NodeInfoHandler nodeInfo;
-
-                OnStartHandler onStart;
-                OnStopHandler onStop;
                 ErrorHandler error;
 
-                ExtensionCallbackInLongOutLongHandler extensionCallbackInLongOutLong;
-                ExtensionCallbackInLongLongOutLongHandler extensionCallbackInLongLongOutLong;
+                LoggerLogHandler loggerLog;
+                LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
 
-                OnClientDisconnectedHandler onClientDisconnected;
-                OnClientReconnectedHandler onClientReconnected;
-
-                AffinityFunctionInitHandler affinityFunctionInit;
-                AffinityFunctionPartitionHandler affinityFunctionPartition;
-                AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
-                AffinityFunctionRemoveNodeHandler affinityFunctionRemoveNode;
-                AffinityFunctionDestroyHandler affinityFunctionDestroy;
+                InLongOutLongHandler inLongOutLong;
+                InLongLongLongObjectOutLongHandler inLongLongLongObjectOutLong;
             };
 
             /**
@@ -202,6 +139,9 @@ namespace ignite
                 jclass c_Throwable;
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
+
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -216,7 +156,8 @@ namespace ignite
                 /**
                  * Write error information.
                  */
-                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen);
+                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen,
+					char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -256,6 +197,9 @@ namespace ignite
                 jmethodID m_PlatformProcessor_getCacheNames;
                 jmethodID m_PlatformProcessor_atomicSequence;
                 jmethodID m_PlatformProcessor_atomicReference;
+                jmethodID m_PlatformProcessor_loggerIsLevelEnabled;
+                jmethodID m_PlatformProcessor_loggerLog;
+                jmethodID m_PlatformProcessor_binaryProcessor;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inLongOutLong;
@@ -267,16 +211,10 @@ namespace ignite
                 jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
-                jmethodID m_PlatformTarget_listenFutureAndGet;
-                jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
 
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
-
-                jclass c_PlatformListenable;
-                jmethodID m_PlatformListenable_cancel;
-                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -393,6 +331,8 @@ namespace ignite
                 static int Reallocate(long long memPtr, int cap);
                 static void Detach();
                 static void Release(jobject obj);
+                static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
+                static int RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
@@ -434,6 +374,9 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
+				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
+				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
+                jobject ProcessorBinaryProcessor(jobject obj);
 
                 long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
@@ -444,14 +387,9 @@ namespace ignite
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetListenFuture(jobject obj, long long futId, int typ);
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
-                void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
-                void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
-                
-                jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
-                bool ListenableCancel(jobject obj);
-                bool ListenableIsCancelled(jobject obj);
+                jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject Acquire(jobject obj);
 
@@ -547,6 +485,14 @@ namespace ignite
             JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
+
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr);
+
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr);
+            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
+
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val);
+            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg);
         }
     }
 }

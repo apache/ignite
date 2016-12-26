@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text.RegularExpressions;
@@ -36,6 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private bool _runDbConsole;
 
         /** */
-        private static readonly DateTime StartDateTime = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime StartDateTime = new DateTime(2000, 5, 17, 15, 4, 5, DateTimeKind.Utc);
 
         /// <summary>
         /// Fixture set up.
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime};
             roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
-            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
+            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddHours(5432)};
         }
 
         /// <summary>
@@ -333,14 +333,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests aggregates with all clause.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-2563")]
         public void TestAggregatesAll()
         {
             var ints = GetPersonCache().AsCacheQueryable().Select(x => x.Key);
 
-            Assert.IsTrue(ints.Where(x => x > -10).All(x => x < PersonCount && x >= 0));
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<NotSupportedException>(() => ints.Where(x => x > -10)
+                .All(x => x < PersonCount && x >= 0));
 
-            Assert.IsFalse(ints.All(x => x < PersonCount / 2));
+            Assert.IsTrue(ex.Message.StartsWith("Operator is not supported: All"));
         }
 
         /// <summary>
@@ -418,6 +419,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var res = persons.Join(roles, person => person.Key, role => role.Key.Foo, (person, role) => role)
                 .ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
+            Assert.AreEqual(101, res[0].Key.Bar);
+        }
+
+        /// <summary>
+        /// Tests the cross cache join.
+        /// </summary>
+        [Test]
+        public void TestCrossCacheJoinInline()
+        {
+            var res = GetPersonCache().AsCacheQueryable().Join(GetRoleCache().AsCacheQueryable(), 
+                person => person.Key, role => role.Key.Foo, (person, role) => role).ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
             Assert.AreEqual(101, res[0].Key.Bar);
@@ -515,7 +529,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Tests the multiple from.
+        /// Tests query with multiple from clause.
         /// </summary>
         [Test]
         public void TestMultipleFrom()
@@ -535,6 +549,53 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = filtered.ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        /// <summary>
+        /// Tests query with multiple from clause with inline query sources.
+        /// </summary>
+        [Test]
+        public void TestMultipleFromInline()
+        {
+            var filtered =
+                from person in GetPersonCache().AsCacheQueryable()
+                from role in GetRoleCache().AsCacheQueryable()
+                where person.Key == role.Key.Foo
+                select new {Person = person.Value.Name, Role = role.Value.Name};
+
+            var res = filtered.ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        /// <summary>
+        /// Tests the join of a table to itself.
+        /// </summary>
+        [Test]
+        public void TestSelfJoin()
+        {
+            // Different queryables
+            var p1 = GetPersonCache().AsCacheQueryable();
+            var p2 = GetPersonCache().AsCacheQueryable();
+
+            var qry = p1.Join(p2, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+            Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
+
+            // Same queryables
+            var qry2 = p1.Join(p1, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+            Assert.AreEqual(PersonCount, qry2.ToArray().Distinct().Count());
+        }
+
+        /// <summary>
+        /// Tests the join of a table to itself with inline queryable.
+        /// </summary>
+        [Test]
+        public void TestSelfJoinInline()
+        {
+            var qry = GetPersonCache().AsCacheQueryable().Join(GetPersonCache().AsCacheQueryable(), 
+                x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+
+            Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
         }
 
         /// <summary>
@@ -710,18 +771,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var persons = GetPersonCache().AsCacheQueryable();
 
             // Invalid dateTime
-            var now = DateTime.Now;
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            Assert.Throws<InvalidOperationException>(() => roles.Where(x => x.Value.Date > now).ToArray());
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
+            Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.", 
+                ex.Message);
 
             // Test retrieval
             var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date);
-            var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), StartDateTime.AddYears(2)};
+            var expDates = GetRoleCache().Select(x => x.Value.Date).OrderBy(x => x).ToArray();
             Assert.AreEqual(expDates, dates.ToArray());
 
             // Filtering
             Assert.AreEqual(1, persons.Count(x => x.Value.Birthday == StartDateTime));
             Assert.AreEqual(PersonCount, persons.Count(x => x.Value.Birthday >= StartDateTime));
+            Assert.Greater(persons.Count(x => x.Value.Birthday > DateTime.UtcNow), 1);
 
             // Joins
             var join = 
@@ -729,10 +793,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 join person in persons on role.Value.Date equals person.Value.Birthday
                 select person;
 
-            Assert.AreEqual(RoleCount, join.Count());
+            Assert.AreEqual(2, join.Count());
 
             // Functions
-            Assert.AreEqual("01 01 2000 00:00:00", dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
+            var strings = dates.Select(x => x.ToString("dd MM YYYY HH:mm:ss")).ToArray();
+            Assert.AreEqual(new[] {"17 05 2000 15:04:05", "29 12 2000 23:04:05", "17 05 2001 15:04:05"}, strings);
+
+            // Properties
+            Assert.AreEqual(new[] {2000, 2000, 2001}, dates.Select(x => x.Year).ToArray());
+            Assert.AreEqual(new[] {5, 12, 5}, dates.Select(x => x.Month).ToArray());
+            Assert.AreEqual(new[] {17, 29, 17}, dates.Select(x => x.Day).ToArray());
+            Assert.AreEqual(expDates.Select(x => x.DayOfYear).ToArray(), dates.Select(x => x.DayOfYear).ToArray());
+            Assert.AreEqual(expDates.Select(x => x.DayOfWeek).ToArray(), dates.Select(x => x.DayOfWeek).ToArray());
+            Assert.AreEqual(new[] {15, 23, 15}, dates.Select(x => x.Hour).ToArray());
+            Assert.AreEqual(new[] { 4, 4, 4 }, dates.Select(x => x.Minute).ToArray());
+            Assert.AreEqual(new[] { 5, 5, 5 }, dates.Select(x => x.Second).ToArray());
         }
 
         /// <summary>
@@ -1132,7 +1207,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(true).Where(x => x.Key > 10);
+            var query = (ICacheQueryable) cache.AsCacheQueryable(new QueryOptions
+            {
+                Local = true,
+                PageSize = 999,
+                EnforceJoinOrder = true
+            }).Where(x => x.Key > 10);
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -1142,6 +1222,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
             Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
+            Assert.AreEqual(999, fq.PageSize);
+            Assert.IsFalse(fq.EnableDistributedJoins);
+            Assert.IsTrue(fq.EnforceJoinOrder);
+
+            var str = query.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?), Arguments=[10], " +
+                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -1152,6 +1240,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fq.Sql);
             Assert.IsFalse(fq.Local);
+            Assert.AreEqual(SqlFieldsQuery.DfltPageSize, fq.PageSize);
+            Assert.IsFalse(fq.EnableDistributedJoins);
+            Assert.IsFalse(fq.EnforceJoinOrder);
+
+            str = fieldsQuery.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0.Name from \"\".Person as _T0, Arguments=[], Local=False, PageSize=1024, " +
+                            "EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+            
+            // Check distributed joins flag propagation
+            var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
+                .Where(x => x.Key > 10 && x.Value.Age > 20 && x.Value.Name.Contains("x"));
+
+            query = (ICacheQueryable) distrQuery;
+
+            Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
+
+            str = distrQuery.ToString();
+            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
+                            "_T0._key, _T0._val from \"\".Person as _T0 where (((_T0._key > ?) and (_T0.age1 > ?)) " +
+                            "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
         }
 
         /// <summary>
@@ -1180,6 +1290,45 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var nonQueryableCache = Ignition.GetIgnite().GetOrCreateCache<Role, Person>("nonQueryable");
 
             Assert.Throws<CacheException>(() => nonQueryableCache.AsCacheQueryable());
+        }
+
+        /// <summary>
+        /// Tests the distributed joins.
+        /// </summary>
+        [Test]
+        public void TestDistributedJoins()
+        {
+            var ignite = Ignition.GetIgnite();
+
+            // Create and populate partitioned caches
+            var personCache = ignite.CreateCache<int, Person>(new CacheConfiguration("partitioned_persons",
+                new QueryEntity(typeof(int), typeof(Person))));
+
+            personCache.PutAll(GetSecondPersonCache().ToDictionary(x => x.Key, x => x.Value));
+
+            var roleCache = ignite.CreateCache<int, Role>(new CacheConfiguration("partitioned_roles",
+                    new QueryEntity(typeof(int), typeof(Role))));
+
+            roleCache.PutAll(GetRoleCache().ToDictionary(x => x.Key.Foo, x => x.Value));
+
+            // Test non-distributed join: returns partial results
+            var persons = personCache.AsCacheQueryable();
+            var roles = roleCache.AsCacheQueryable();
+
+            var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+                .ToArray();
+
+            Assert.Greater(res.Length, 0);
+            Assert.Less(res.Length, RoleCount);
+
+            // Test distributed join: returns complete results
+            persons = personCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+            roles = roleCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
+
+            res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+                .ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
         }
 
         /// <summary>

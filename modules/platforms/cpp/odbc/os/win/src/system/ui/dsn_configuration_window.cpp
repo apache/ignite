@@ -30,7 +30,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(200),
+                    height(270),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
@@ -40,6 +40,10 @@ namespace ignite
                     cacheEdit(),
                     pageSizeLabel(),
                     pageSizeEdit(),
+                    distributedJoinsCheckBox(),
+                    enforceJoinOrderCheckBox(),
+                    protocolVersionLabel(),
+                    protocolVersionComboBox(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -123,6 +127,42 @@ namespace ignite
                     pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX, 
                         rowSize, val, ID_PAGE_SIZE_EDIT, ES_NUMBER);
 
+                    rowPos += interval + rowSize;
+
+                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize,
+                        "Protocol version:", ID_PROTOCOL_VERSION_LABEL);
+                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize,
+                        "Protocol version", ID_PROTOCOL_VERSION_COMBO_BOX);
+
+                    int id = 0;
+
+                    const ProtocolVersion::StringToVersionMap& versionMap = ProtocolVersion::GetMap();
+
+                    ProtocolVersion::StringToVersionMap::const_iterator it;
+                    for (it = versionMap.begin(); it != versionMap.end(); ++it)
+                    {
+                        protocolVersionComboBox->AddString(it->first);
+
+                        if (it->second == config.GetProtocolVersion())
+                            protocolVersionComboBox->SetSelection(id);
+
+                        ++id;
+                    }
+
+                    rowPos += interval + rowSize;
+
+                    distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Distributed Joins", ID_DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
+
+                    enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Enforce Join Order", ID_ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+
+                    if (!config.GetProtocolVersion().IsDistributedJoinsSupported())
+                    {
+                        distributedJoinsCheckBox->SetEnabled(false);
+                        enforceJoinOrderCheckBox->SetEnabled(false);
+                    }
+
                     rowPos += interval * 2 + rowSize;
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
@@ -164,10 +204,49 @@ namespace ignite
                                     break;
                                 }
 
+                                case ID_PROTOCOL_VERSION_COMBO_BOX:
+                                {
+                                    if (HIWORD(wParam) == CBN_SELCHANGE)
+                                    {
+                                        std::string text;
+
+                                        protocolVersionComboBox->GetText(text);
+
+                                        ProtocolVersion version = ProtocolVersion::FromString(text);
+
+                                        if (!version.IsUnknown() && !version.IsDistributedJoinsSupported())
+                                        {
+                                            distributedJoinsCheckBox->SetEnabled(false);
+                                            enforceJoinOrderCheckBox->SetEnabled(false);
+                                        }
+                                        else
+                                        {
+                                            distributedJoinsCheckBox->SetEnabled(true);
+                                            enforceJoinOrderCheckBox->SetEnabled(true);
+                                        }
+                                    }
+
+                                    break;
+                                }
+
                                 case IDCANCEL:
                                 case ID_CANCEL_BUTTON:
                                 {
                                     PostMessage(GetHandle(), WM_CLOSE, 0, 0);
+
+                                    break;
+                                }
+
+                                case ID_DISTRIBUTED_JOINS_CHECK_BOX:
+                                {
+                                    distributedJoinsCheckBox->SetChecked(!distributedJoinsCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ID_ENFORCE_JOIN_ORDER_CHECK_BOX:
+                                {
+                                    enforceJoinOrderCheckBox->SetChecked(!enforceJoinOrderCheckBox->IsChecked());
 
                                     break;
                                 }
@@ -199,10 +278,15 @@ namespace ignite
                     std::string address;
                     std::string cache;
                     std::string pageSizeStr;
+                    std::string version;
+
+                    bool distributedJoins;
+                    bool enforceJoinOrder;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
                     cacheEdit->GetText(cache);
+                    protocolVersionComboBox->GetText(version);
                     pageSizeEdit->GetText(pageSizeStr);
 
                     int32_t pageSize = common::LexicalCast<int32_t>(pageSizeStr);
@@ -213,11 +297,17 @@ namespace ignite
                     common::StripSurroundingWhitespaces(address);
                     common::StripSurroundingWhitespaces(dsn);
 
+                    distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
+
                     LOG_MSG("Retriving arguments:\n");
-                    LOG_MSG("DSN:        %s\n", dsn.c_str());
-                    LOG_MSG("Address:    %s\n", address.c_str());
-                    LOG_MSG("Cache:      %s\n", cache.c_str());
-                    LOG_MSG("Page size:  %d\n", pageSize);
+                    LOG_MSG("DSN:                %s\n", dsn.c_str());
+                    LOG_MSG("Address:            %s\n", address.c_str());
+                    LOG_MSG("Cache:              %s\n", cache.c_str());
+                    LOG_MSG("Page size:          %d\n", pageSize);
+                    LOG_MSG("Protocol version:   %s\n", version.c_str());
+                    LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
+                    LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -226,6 +316,9 @@ namespace ignite
                     cfg.SetAddress(address);
                     cfg.SetCache(cache);
                     cfg.SetPageSize(pageSize);
+                    cfg.SetProtocolVersion(version);
+                    cfg.SetDistributedJoins(distributedJoins);
+                    cfg.SetEnforceJoinOrder(enforceJoinOrder);
                 }
             }
         }
