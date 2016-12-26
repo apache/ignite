@@ -329,6 +329,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     protected final GridCacheVersion addAtomicFuture(AffinityTopologyVersion topVer) {
         GridCacheVersion futVer = cctx.versions().next(topVer);
 
+        synchronized (mux) {
+            assert this.futVer == null : this;
+            assert this.topVer == AffinityTopologyVersion.ZERO : this;
+
+            this.topVer = topVer;
+            this.futVer = futVer;
+        }
+
         if (storeFuture()) {
             if (!cctx.mvcc().addAtomicFuture(futVer, this)) {
                 assert isDone() : this;

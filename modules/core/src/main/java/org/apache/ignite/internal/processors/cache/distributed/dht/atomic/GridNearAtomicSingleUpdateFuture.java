@@ -470,12 +470,10 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
 
             synchronized (mux) {
-                assert this.futVer == null : this;
-                assert this.topVer == AffinityTopologyVersion.ZERO : this;
+                assert this.futVer == futVer || this.error() != null;
+                assert this.topVer == topVer;
 
-                this.topVer = topVer;
                 this.updVer = updVer;
-                this.futVer = futVer;
 
                 resCnt = 0;
 
