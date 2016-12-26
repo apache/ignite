@@ -79,7 +79,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
-    private void checkConnection(String name1, String name2) throws Exception {
+    private void checkConnection(final String name1, final String name2) throws Exception {
         startGrid(name1);
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
