@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,6 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -129,7 +132,15 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         stopGrid(1);
 
+        if (!getMarshCtxFileStoreExecutorSrvc((GridKernalContext) U.field(cl1, "ctx"))
+                .awaitTermination(5000, TimeUnit.MILLISECONDS))
+            fail("Failed to wait for executor service used by MarshallerContext to shutdown");
+
         assertEquals(clsName, new String(Files.readAllBytes(Paths.get(TMP_DIR, "marshaller", Integer.toString(hash) + ".classname0"))));
+    }
+
+    private ExecutorService getMarshCtxFileStoreExecutorSrvc(GridKernalContext ctx) {
+        return U.field(U.field(ctx, "marshCtx"), "execSrvc");
     }
 
 
