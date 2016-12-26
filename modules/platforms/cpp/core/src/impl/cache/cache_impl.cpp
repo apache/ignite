@@ -325,11 +325,11 @@ namespace ignite
                 return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
             }
 
+            struct DummyQry { void Write(BinaryRawWriter&) const { }} dummy;
+
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 IgniteError& err)
             {
-                struct { void Write(BinaryRawWriter&) const { }} dummy;
-
                 return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
             }
         }

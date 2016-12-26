@@ -82,7 +82,7 @@ namespace ignite
                      * @param lsnr Event listener. Invoked on the node where
                      *     continuous query execution has been started.
                      */
-                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V>> lsnr) :
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr) :
                         impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr))
                     {
                         // No-op.
@@ -95,7 +95,7 @@ namespace ignite
                      *     continuous query execution has been started.
                      * @param loc Whether query should be executed locally.
                      */
-                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V>> lsnr, bool loc) :
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr, bool loc) :
                         impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, loc))
                     {
                         // No-op.
@@ -202,7 +202,7 @@ namespace ignite
                      *     node where continuous query execution has been
                      *     started.
                      */
-                    void SetListener(Reference<event::CacheEntryEventListener<K, V>> lsnr)
+                    void SetListener(Reference<event::CacheEntryEventListener<K, V> > lsnr)
                     {
                         impl.Get()->SetListener(lsnr);
                     }
@@ -229,7 +229,7 @@ namespace ignite
 
                 private:
                     /** Implementation. */
-                    common::concurrent::SharedPointer<impl::cache::query::continuous::ContinuousQueryImpl<K, V>> impl;
+                    common::concurrent::SharedPointer<impl::cache::query::continuous::ContinuousQueryImpl<K, V> > impl;
                 };
             }
         }
