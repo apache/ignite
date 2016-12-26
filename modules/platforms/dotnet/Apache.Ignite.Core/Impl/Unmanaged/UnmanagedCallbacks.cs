@@ -232,6 +232,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
             AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
+            AddHandler(UnmanagedCallbackOp.StartPlugins, StartPlugins);
         }
 
         /// <summary>
@@ -1124,6 +1125,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
             }
+        }
+
+        private long StartPlugins(long val)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

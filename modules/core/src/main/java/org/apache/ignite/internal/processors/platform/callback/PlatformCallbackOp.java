@@ -203,4 +203,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int ComputeJobExecuteLocal = 61;
+
+    /** */
+    public static final int StartPlugins = 62;
 }

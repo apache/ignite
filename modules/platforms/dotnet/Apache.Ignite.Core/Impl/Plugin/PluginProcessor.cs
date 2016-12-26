@@ -70,6 +70,15 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /// <summary>
+        /// Starts all plugins.
+        /// </summary>
+        public void Start()
+        {
+            foreach (var provider in _pluginProviders.Values)
+                provider.Start(this);
+        }
+
+        /// <summary>
         /// Called when Ignite has started.
         /// </summary>
         /// <param name="ignite">The ignite.</param>
@@ -115,8 +124,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private Dictionary<string, IPluginProviderProxy> LoadPlugins(ICollection<IPluginConfiguration> pluginConfigurations, 
-            ILogger log)
+        private static Dictionary<string, IPluginProviderProxy> LoadPlugins(
+            ICollection<IPluginConfiguration> pluginConfigurations, ILogger log)
         {
             var res = new Dictionary<string, IPluginProviderProxy>();
 
@@ -131,8 +140,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
                     ValidateProvider(provider, res);
 
                     LogProviderInfo(log, provider);
-
-                    provider.Start(this);
 
                     res[provider.Name] = provider;
                 }

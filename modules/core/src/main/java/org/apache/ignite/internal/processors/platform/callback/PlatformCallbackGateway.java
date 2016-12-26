@@ -1117,6 +1117,14 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Starts platform plugins.
+     */
+    public void startPlugins() {
+        // Busy lock not needed.
+        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.StartPlugins, 0);
+    }
+
+    /**
      * Redirects the console output to platform.
      *
      * @param str String to write.
