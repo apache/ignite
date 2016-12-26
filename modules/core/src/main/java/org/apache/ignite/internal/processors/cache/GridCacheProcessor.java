@@ -781,7 +781,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ctx.config().setCacheConfiguration(newCacheCfg);
                 }
 
-                activeOnStart = ctx.state().active();
+                activeOnStart = currentStatus;
             }
 
             if (activeOnStart)
@@ -848,6 +848,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
+
+        //todo
+     /*   if (!ctx.state().active())
+            return;*/
 
         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
