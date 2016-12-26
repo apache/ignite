@@ -358,7 +358,7 @@
                                             <fileset dir="${basedir}/modules/yardstick/src"/>
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
+                                        <copy file="${basedir}/modules/yardstick/pom.xml"
                                               tofile="${basedir}/target/release-package/benchmarks/pom.xml"/>
 
                                         <copy file="${basedir}/modules/yardstick/README-standalone.txt"
