@@ -292,7 +292,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
         IgniteCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().jcache(
-            igfs.configuration().getDataCacheName());
+            igfs.configuration().getDataCacheConfiguration().getName());
 
         for (int i = 0; i < 10; i++) {
             if (dataCache.containsKey(key))
