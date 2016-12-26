@@ -420,14 +420,12 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
-        public override int ComputeHashCode(int offset, int count)
+        public override T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg)
         {
-            var hash = 1;
-
-            for (var i = offset; i < offset + count; i++)
-                hash = 31 * hash + _data[i];
-
-            return hash;
+            fixed (byte* data0 = _data)
+            {
+                return proc.Invoke(data0, arg);
+            }
         }
 
         /** <inheritdoc /> */

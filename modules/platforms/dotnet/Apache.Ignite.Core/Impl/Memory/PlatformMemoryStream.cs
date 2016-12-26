@@ -734,15 +734,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <summary>
         /// Returns a hash code for the specified byte range.
         /// </summary>
-        public int ComputeHashCode(int offset, int count)
+        public T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg)
         {
-            var hash = 1;
-            var ptr = _data + offset;
-
-            for (var i = 0; i < count; i++)
-                hash = 31 * hash + *(ptr + i);
-
-            return hash;
+            return proc.Invoke(_data, arg);
         }
 
         /// <summary>

@@ -26,7 +26,8 @@ namespace Apache.Ignite.Core.Binary
     /// <summary>
     /// Compares binary object equality using underlying byte array.
     /// </summary>
-    public class BinaryArrayEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer
+    public class BinaryArrayEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer,
+        IBinaryStreamProcessor<KeyValuePair<int,int>, int>
     {
         /// <summary>
         /// Determines whether the specified objects are equal.
@@ -61,7 +62,21 @@ namespace Apache.Ignite.Core.Binary
             Debug.Assert(startPos >= 0);
             Debug.Assert(length >= 0);
 
-            return stream.ComputeHashCode(startPos, length);
+            var arg = new KeyValuePair<int, int>(startPos, length);
+
+            return stream.Apply(this, arg);
+        }
+
+        /** <inheritdoc /> */
+        unsafe int IBinaryStreamProcessor<KeyValuePair<int, int>, int>.Invoke(byte* data, KeyValuePair<int, int> arg)
+        {
+            var hash = 1;
+            var ptr = data + arg.Key;
+
+            for (var i = 0; i < arg.Value; i++)
+                hash = 31 * hash + *(ptr + i);
+
+            return hash;
         }
     }
 }

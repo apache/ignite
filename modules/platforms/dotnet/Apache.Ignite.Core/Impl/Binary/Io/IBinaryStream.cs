@@ -320,13 +320,28 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         int Seek(int offset, SeekOrigin origin);
 
         /// <summary>
-        /// Computes a hash code for the specified byte range.
+        /// Applies specified processor to the raw stream data.
         /// </summary>
-        int ComputeHashCode(int offset, int count);
+        T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg);
 
         /// <summary>
         /// Flushes the data to underlying storage.
         /// </summary>
         void Flush();
+    }
+
+    /// <summary>
+    /// Binary stream processor.
+    /// </summary>
+    [CLSCompliant(false)]
+    public unsafe interface IBinaryStreamProcessor<in TArg, out T>
+    {
+        /// <summary>
+        /// Invokes the processor.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        T Invoke(byte* data, TArg arg);
     }
 }
