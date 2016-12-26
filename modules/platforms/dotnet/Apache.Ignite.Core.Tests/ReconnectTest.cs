@@ -72,11 +72,14 @@ namespace Apache.Ignite.Core.Tests
 
             // Start the server and wait for reconnect.
             Ignition.Start(serverCfg);
+
+            // Wait a bit for notifications.
+            Thread.Sleep(100);
+
+            // Check reconnect task.
             Assert.IsTrue(ex.ClientReconnectTask.Result);
 
             // Check the event args.
-            Thread.Sleep(100);  // Wait for event handler
-
             Assert.IsNotNull(eventArgs);
             Assert.IsTrue(eventArgs.HasClusterRestarted);
 
