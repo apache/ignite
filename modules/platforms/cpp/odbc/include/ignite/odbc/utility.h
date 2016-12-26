@@ -29,11 +29,11 @@
 #include <algorithm>
 
 #include <ignite/common/utils.h>
+#include <ignite/common/decimal.h>
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
 
-#include "ignite/odbc/decimal.h"
 
 #ifdef ODBC_DEBUG
 
@@ -43,7 +43,7 @@ void logInit(const char*);
 #   define LOG_MSG(fmt, ...)                                        \
     do {                                                            \
         logInit(ODBC_LOG_PATH);                                     \
-        fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__);   \
+        fprintf(log_file, "%s: " fmt, __FUNCTION__, ##__VA_ARGS__);   \
         fflush(log_file);                                           \
     } while (false)
 
@@ -56,7 +56,7 @@ namespace ignite
     namespace utility
     {
         /** Using common version of the util. */
-        using ignite::common::IntoLower;
+        using common::IntoLower;
 
         /**
          * Skip leading spaces.
@@ -137,18 +137,25 @@ namespace ignite
         size_t CopyStringToBuffer(const std::string& str, char* buf, size_t buflen);
 
         /**
+         * Read array from reader.
+         * @param reader Reader.
+         * @param res Resulting vector.
+         */
+        void ReadByteArray(impl::binary::BinaryReaderImpl& reader, std::vector<int8_t>& res);
+
+        /**
          * Read string from reader.
          * @param reader Reader.
          * @param str String.
          */
-        void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str);
+        void ReadString(impl::binary::BinaryReaderImpl& reader, std::string& str);
 
         /**
          * Write string using writer.
          * @param writer Writer.
          * @param str String.
          */
-        void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string& str);
+        void WriteString(impl::binary::BinaryWriterImpl& writer, const std::string& str);
 
         /**
          * Read decimal value using reader.
@@ -156,7 +163,7 @@ namespace ignite
          * @param reader Reader.
          * @param decimal Decimal value.
          */
-        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal);
+        void ReadDecimal(impl::binary::BinaryReaderImpl& reader, common::Decimal& decimal);
 
         /**
          * Write decimal value using writer.
@@ -164,7 +171,7 @@ namespace ignite
          * @param writer Writer.
          * @param decimal Decimal value.
          */
-        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const Decimal& decimal);
+        void WriteDecimal(impl::binary::BinaryWriterImpl& writer, const common::Decimal& decimal);
 
         /**
          * Convert SQL string buffer to std::string.

@@ -26,6 +26,12 @@ namespace Apache.Ignite.Core.Impl
     internal static class NativeMethods
     {
         /// <summary>
+        /// ERROR_BAD_EXE_FORMAT constant.
+        /// </summary>
+        // ReSharper disable once InconsistentNaming
+        public const int ERROR_BAD_EXE_FORMAT = 193;
+
+        /// <summary>
         /// Load DLL with WinAPI.
         /// </summary>
         /// <param name="path">Path to dll.</param>

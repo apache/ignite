@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Rules for Apache.Ignite.AspNet" Description="Code analysis rules for Apache.Ignite.AspNet.csproj." ToolsVersion="14.0">
+  <IncludeAll Action="Error" />
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <Rule Id="CA1020" Action="None" />
+    <Rule Id="CA1303" Action="None" />
+    <Rule Id="CA1704" Action="None" />
+    <Rule Id="CA2202" Action="None" />
+    <Rule Id="CA2204" Action="None" />
+    <Rule Id="CA2243" Action="None" />
+  </Rules>
+</RuleSet>

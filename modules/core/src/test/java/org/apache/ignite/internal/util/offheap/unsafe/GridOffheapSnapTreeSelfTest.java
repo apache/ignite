@@ -313,7 +313,7 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
         }
 
         @Override public int hashCode() {
-            return ptr;
+            throw new IllegalStateException();
         }
 
         @Override public String toString() {

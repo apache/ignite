@@ -246,6 +246,15 @@ public class ConfigVariationsTestSuiteBuilder {
     }
 
     /**
+     * All tests will be run for first {@code testedNodeCnt} grids. For {@code grid(0)}, {@code grid(1)}, ... ,
+     * {@code grid(testedNodeCnt - 1)}.
+     * <p>
+     * Usually it needs if you want to execute tests for both client and data nodes (see {@link #withClients()}).
+     * <ul>
+     * <li> If test-class extends {@link IgniteConfigVariationsAbstractTest} then use {@code testedNodesCount(2)}. </li>
+     * <li> if test-class extends {@link IgniteCacheConfigVariationsAbstractTest} then use {@code testedNodesCount(3)}. </li>
+     *</ul>
+     *
      * @param testedNodeCnt Tested node count.
      * @return {@code this} for chaining.
      */

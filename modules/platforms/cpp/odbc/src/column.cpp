@@ -31,24 +31,32 @@ namespace
 
         int8_t hdr = stream.ReadInt8();
 
-        if (hdr != IGNITE_HDR_FULL)
-            return false;
+        switch (hdr)
+        {
+            case IGNITE_TYPE_BINARY:
+            {
+                // Header field + Length field + Object itself + Offset field
+                len = 1 + 4 + stream.ReadInt32() + 4;
 
-        int8_t protoVer = stream.ReadInt8();
+                break;
+            }
+            
+            case IGNITE_TYPE_OBJECT:
+            {
+                int8_t protoVer = stream.ReadInt8();
 
-        if (protoVer != IGNITE_PROTO_VER)
-            return false;
+                if (protoVer != IGNITE_PROTO_VER)
+                    return false;
 
-        // Skipping flags
-        stream.ReadInt16();
+                // Skipping flags, typeId and hash code
+                len = stream.ReadInt32(stream.Position() + 2 + 4 + 4);
 
-        // Skipping typeId
-        stream.ReadInt32();
+                break;
+            }
 
-        // Skipping hash code
-        stream.ReadInt32();
-
-        len = stream.ReadInt32();
+            default:
+                return false;
+        }
 
         return true;
     }
@@ -58,7 +66,7 @@ namespace
      * complex type.
      * @return Column type header.
      */
-    int8_t ReadColumnHeader(ignite::impl::interop::InteropInputStream& stream)
+    int8_t ReadColumnHeader(InteropInputStream& stream)
     {
         using namespace ignite::impl::binary;
 
@@ -130,10 +138,10 @@ namespace ignite
             // No-op.
         }
 
-        Column::Column(ignite::impl::binary::BinaryReaderImpl& reader) :
+        Column::Column(BinaryReaderImpl& reader) :
             type(0), startPos(-1), endPos(-1), offset(0), size(0)
         {
-            ignite::impl::interop::InteropInputStream* stream = reader.GetStream();
+            InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
                 return;
@@ -238,7 +246,8 @@ namespace ignite
                     break;
                 }
 
-                case IGNITE_HDR_FULL:
+                case IGNITE_TYPE_BINARY:
+                case IGNITE_TYPE_OBJECT:
                 {
                     int32_t len;
 
@@ -254,11 +263,11 @@ namespace ignite
 
                 case IGNITE_TYPE_DECIMAL:
                 {
-                    Decimal res;
+                    common::Decimal res;
 
                     utility::ReadDecimal(reader, res);
 
-                    sizeTmp = res.GetLength() + 8;
+                    sizeTmp = res.GetMagnitudeLength() + 8;
 
                     break;
                 }
@@ -284,6 +293,7 @@ namespace ignite
                 default:
                 {
                     // This is a fail case.
+                    assert(false);
                     return;
                 }
             }
@@ -294,12 +304,8 @@ namespace ignite
             size = sizeTmp;
         }
 
-        SqlResult Column::ReadToBuffer(ignite::impl::binary::BinaryReaderImpl& reader,
-            app::ApplicationDataBuffer& dataBuf)
+        SqlResult Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
         {
-            using namespace ignite::impl::binary;
-            using namespace ignite::impl::interop;
-
             if (!IsValid())
                 return SQL_RESULT_ERROR;
 
@@ -310,7 +316,7 @@ namespace ignite
                 return SQL_RESULT_NO_DATA;
             }
 
-            ignite::impl::interop::InteropInputStream* stream = reader.GetStream();
+            InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
                 return SQL_RESULT_ERROR;
@@ -417,7 +423,8 @@ namespace ignite
                     break;
                 }
 
-                case IGNITE_HDR_FULL:
+                case IGNITE_TYPE_BINARY:
+                case IGNITE_TYPE_OBJECT:
                 {
                     int32_t len;
 
@@ -437,7 +444,7 @@ namespace ignite
 
                 case IGNITE_TYPE_DECIMAL:
                 {
-                    Decimal res;
+                    common::Decimal res;
 
                     utility::ReadDecimal(reader, res);
 

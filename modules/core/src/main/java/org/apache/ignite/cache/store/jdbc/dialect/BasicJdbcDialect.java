@@ -149,11 +149,16 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
+    @Override public String escape(String ident) {
+        return '"' + ident + '"';
+    }
+
+    /** {@inheritDoc} */
     @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
         String cols = mkString(keyCols, ",");
 
-        return String.format("SELECT %s FROM (SELECT %s, ROWNUM() AS rn FROM %s ORDER BY %s) WHERE mod(rn, ?) = 0",
-            cols, cols, fullTblName, cols);
+        return String.format("SELECT %1$s FROM (SELECT %1$s, ROW_NUMBER() OVER() AS rn FROM (SELECT %1$s FROM %2$s ORDER BY %1$s) AS tbl) AS tbl WHERE mod(rn, ?) = 0",
+            cols, fullTblName);
     }
 
     /** {@inheritDoc} */
@@ -245,8 +250,7 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         return "";
     }
 
@@ -273,5 +277,10 @@ public class BasicJdbcDialect implements JdbcDialect {
      */
     public void setMaxParameterCount(int maxParamsCnt) {
         this.maxParamsCnt = maxParamsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFetchSize() {
+        return 0;
     }
 }

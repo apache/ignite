@@ -88,15 +88,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryFilterHolder(IBinaryReader reader)
+        public CacheEntryFilterHolder(BinaryReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
+            _pred = reader.ReadObject<object>();
 
-            _pred = reader0.ReadObject<object>();
+            _keepBinary = reader.ReadBoolean();
 
-            _keepBinary = reader0.ReadBoolean();
-
-            _marsh = reader0.Marshaller;
+            _marsh = reader.Marshaller;
 
             _invoker = GetInvoker(_pred);
         }

@@ -94,7 +94,8 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      *
      * @param cnt Array length.
      * @param start Start timestamp.
-     * @return Array of the next execution times in milliseconds.
+     * @return Array of the next execution times in milliseconds or an empty array if there is no next execution time
+     *         scheduled.
      * @throws IgniteException Thrown in case of any errors.
      */
     public long[] nextExecutionTimes(int cnt, long start) throws IgniteException;
@@ -116,7 +117,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
     /**
      * Gets next execution time of scheduled task.
      *
-     * @return Next execution time in milliseconds.
+     * @return Next execution time in milliseconds or {@code 0} if there is no next execution time.
      * @throws IgniteException Thrown in case of any errors.
      */
     public long nextExecutionTime() throws IgniteException;
