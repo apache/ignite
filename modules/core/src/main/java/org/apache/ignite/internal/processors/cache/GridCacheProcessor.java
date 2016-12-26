@@ -645,8 +645,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCache(CacheConfiguration<?, ?> cfg)
-        throws IgniteCheckedException {
+    private void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
         cloneCheckSerializable(cfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
@@ -784,9 +783,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 activeOnStart = currentStatus;
             }
 
-            if (activeOnStart)
-                if (!ctx.clientNode())
-                    sharedCtx.database().lock();
+            if (activeOnStart && !ctx.clientNode() && !ctx.isDaemon())
+                sharedCtx.database().lock();
 
             //must start database before start first cache
             sharedCtx.database().onKernalStart(false);
@@ -832,7 +830,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
         }
-        //todo if in active caches not started on start
         finally {
             cacheStartedLatch.countDown();
         }
@@ -848,10 +845,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
-
-        //todo
-     /*   if (!ctx.state().active())
-            return;*/
 
         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
@@ -1024,19 +1017,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 onKernalStop(entry.getValue(), cancel);
             }
         }
-
-        //todo chek it
-        /*cancelFutures();
-
-        List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
-
-        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
-            it.hasPrevious(); ) {
-            GridCacheSharedManager<?, ?> mgr = it.previous();
-
-            if (mgr != exch)
-                mgr.onKernalStop(cancel);
-        }*/
     }
 
     /** {@inheritDoc} */
@@ -2458,9 +2438,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<?> dynamicStartCaches(
-        Collection<CacheConfiguration> ccfgList,
-        boolean failIfExists,
-        boolean checkThreadTx
+        Collection<CacheConfiguration> ccfgList, boolean failIfExists, boolean checkThreadTx
     ) {
         return dynamicStartCaches(ccfgList, CacheType.USER, failIfExists, checkThreadTx);
     }
@@ -2681,6 +2659,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.startCacheConfiguration(cfg);
 
+        req.template(cfg.getName() != null && cfg.getName().endsWith("*"));
+
         req.nearCacheConfiguration(cfg.getNearConfiguration());
 
         req.deploymentId(IgniteUuid.randomUuid());
@@ -2704,8 +2684,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
-        Collection<DynamicCacheChangeRequest> reqs,
-        boolean failIfExists
+        Collection<DynamicCacheChangeRequest> reqs, boolean failIfExists
     ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
