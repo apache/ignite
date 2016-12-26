@@ -76,6 +76,12 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /** <inheritdoc /> */
+        public void OnIgniteStop(bool cancel)
+        {
+            _pluginProvider.OnIgniteStop(cancel);
+        }
+        
+        /** <inheritdoc /> */
         public object Provider
         {
             get { return _pluginProvider; }

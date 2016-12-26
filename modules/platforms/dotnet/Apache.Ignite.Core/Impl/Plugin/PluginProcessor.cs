@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// Called when Ignite has started.
         /// </summary>
         /// <param name="ignite">The ignite.</param>
-        public void OnStart(IIgnite ignite)
+        public void OnIgniteStart(IIgnite ignite)
         {
             Debug.Assert(ignite != null);
 
@@ -101,6 +101,16 @@ namespace Apache.Ignite.Core.Impl.Plugin
             // Notify plugins.
             foreach (var provider in _pluginProviders.Values)
                 provider.Stop(cancel);
+        }
+
+        /// <summary>
+        /// Called when Ignite has stopped.
+        /// </summary>
+        public void OnIgniteStop(bool cancel)
+        {
+            // Notify plugins.
+            foreach (var provider in _pluginProviders.Values)
+                provider.OnIgniteStop(cancel);
         }
 
         /// <summary>

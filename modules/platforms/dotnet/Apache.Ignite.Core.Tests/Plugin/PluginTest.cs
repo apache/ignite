@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                                           "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
 
             // Provider throws an exception.
-            var ioex = Assert.Throws<IOException>(() => check(new[] {new ExceptionConfig()}));
+            var ioex = Assert.Throws<IgniteException>(() => check(new[] {new ExceptionConfig()}));
             Assert.AreEqual("Failure in plugin provider", ioex.Message);
         }
 

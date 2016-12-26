@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
-            PluginProcessor.OnStart(this);
+            PluginProcessor.OnIgniteStart(this);
 
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
@@ -384,8 +384,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Called after node has stopped.
         /// </summary>
-        internal void AfterNodeStop()
+        internal void AfterNodeStop(bool cancel)
         {
+            PluginProcessor.OnIgniteStop(cancel);
+
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
 
