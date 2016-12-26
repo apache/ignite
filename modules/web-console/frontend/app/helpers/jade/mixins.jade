@@ -183,6 +183,14 @@ mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
         if  block
             block
 
+//- Mixin for text field with autofocus.
+mixin text-enabled-autofocus(lbl, model, name, enabled, required, placeholder, tip)
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(
+        data-ignite-form-field-input-autofocus='true'
+    )
+        if  block
+            block
+
 //- Mixin for text field.
 mixin text(lbl, model, name, required, placeholder, tip)
     +ignite-form-field-text(lbl, model, name, false, required, placeholder, tip)
@@ -221,9 +229,25 @@ mixin dropdown-required-empty(lbl, model, name, enabled, required, placeholder, 
         if  block
             block
 
+//- Mixin for required dropdown field with autofocus.
+mixin dropdown-required-empty-autofocus(lbl, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
+    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, placeholderEmpty, options, tip)(
+        data-ignite-form-field-input-autofocus='true'
+    )
+        if  block
+            block
+
 //- Mixin for required dropdown field.
 mixin dropdown-required(lbl, model, name, enabled, required, placeholder, options, tip)
     +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, '', options, tip)
+        if  block
+            block
+
+//- Mixin for required dropdown field with autofocus.
+mixin dropdown-required-autofocus(lbl, model, name, enabled, required, placeholder, options, tip)
+    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, '', options, tip)(
+        data-ignite-form-field-input-autofocus='true'
+    )
         if  block
             block
 
@@ -324,6 +348,28 @@ mixin table-java-package-field(name, model, items, valid, save, newItem)
                 ignite-on-escape=onEscape
             )
 
+//- Mixin for table java package field.
+mixin table-url-field(name, model, items, valid, save, newItem)
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
+
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    div(ignite-on-focus-out=onBlur)
+        if block
+            block
+
+        .input-tip
+            +ignite-form-field-url-input(name, model, false, 'true', 'Enter URL')(
+                data-ignite-unique=items
+                data-ignite-form-field-input-autofocus='true'
+
+                ignite-on-enter=onEnter
+                ignite-on-escape=onEscape
+            )
 
 //- Mixin for table address field.
 mixin table-address-field(name, model, items, valid, save, newItem, portRange)
@@ -393,17 +439,17 @@ mixin table-save-button(valid, save, newItem)
     )
 
 //- Mixin for table remove button.
-mixin table-remove-conditional-button(items, show, tip)
+mixin table-remove-conditional-button(items, show, tip, row)
     i.tipField.fa.fa-remove(
         ng-hide='!#{show} || field.edit'
         bs-tooltip
         data-title=tip
-        ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
+        ng-click='#{items}.splice(#{items}.indexOf(#{row}), 1)'
     )
 
 //- Mixin for table remove button.
 mixin table-remove-button(items, tip)
-    +table-remove-conditional-button(items, 'true', tip)
+    +table-remove-conditional-button(items, 'true', tip, 'model')
 
 //- Mixin for cache mode.
 mixin cacheMode(lbl, model, name, placeholder)
