@@ -470,7 +470,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
 
             synchronized (mux) {
-                assert this.futVer == futVer || this.error() != null;
+                assert this.futVer == futVer || (this.isDone() && this.error() != null);
                 assert this.topVer == topVer;
 
                 this.updVer = updVer;
