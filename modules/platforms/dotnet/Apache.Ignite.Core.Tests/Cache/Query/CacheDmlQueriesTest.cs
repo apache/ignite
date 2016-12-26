@@ -52,7 +52,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         },
                         new BinaryTypeConfiguration(typeof(Key2))
                         {
-                            // TODO: Include other field types
                             EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
                         }
                     }
@@ -104,9 +103,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test key existence.
             Assert.IsTrue(cache.ContainsKey(1));
             Assert.IsTrue(cache.ContainsKey(3));
-
-            // Test update.
-            // TODO?
         }
 
         /// <summary>
@@ -146,9 +142,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsTrue(cache.ContainsKey(new Key(5, 4)));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
-
-            // Test update.
-            // TODO?
         }
 
         /// <summary>
@@ -235,9 +228,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsTrue(cache.ContainsKey(new Key2(5, 4, "Bar")));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
-
-            // Test update.
-            // TODO?
         }
 
         /// <summary>
