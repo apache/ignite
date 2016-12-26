@@ -23,7 +23,7 @@ import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
 /**
  * Pom file generation entry point.
  */
-class GeneratorPom {
+export default class IgniteMavenGenerator {
     escapeId(s) {
         if (typeof (s) !== 'string')
             return s;
@@ -184,6 +184,9 @@ class GeneratorPom {
         this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', version);
         this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', version);
 
+        if (_.get(cluster, 'deploymentSpi.kind') === 'URI')
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-urideploy', version);
+
         let dep = POM_DEPENDENCIES[cluster.discovery.kind];
 
         if (dep)
@@ -229,5 +232,3 @@ class GeneratorPom {
         return sb;
     }
 }
-
-export default ['GeneratorPom', GeneratorPom];

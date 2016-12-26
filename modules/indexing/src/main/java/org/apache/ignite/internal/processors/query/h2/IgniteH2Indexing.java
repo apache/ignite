@@ -794,50 +794,52 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
-        initLocalQueryContext(conn, enforceJoinOrder, filters);
+        setupConnection(conn, false, enforceJoinOrder);
 
-        Prepared p = null;
+        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+
+        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+
+        if (!p.isQuery()) {
+            SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
+
+            if (params != null)
+                fldsQry.setArgs(params.toArray());
+
+            fldsQry.setEnforceJoinOrder(enforceJoinOrder);
+            fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+
+            return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+        }
+
+        List<GridQueryFieldMetadata> meta;
 
         try {
-            final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+            meta = meta(stmt.getMetaData());
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Cannot prepare query metadata", e);
+        }
 
-            p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+        final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+            .filter(filters).distributedJoins(false);
 
-            if (!p.isQuery()) {
-                GridH2QueryContext.clearThreadLocal();
+        return new GridQueryFieldsResultAdapter(meta, null) {
+            @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
+                assert GridH2QueryContext.get() == null;
 
-                SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
+                GridH2QueryContext.set(ctx);
 
-                if (params != null)
-                    fldsQry.setArgs(params.toArray());
-
-                fldsQry.setEnforceJoinOrder(enforceJoinOrder);
-                fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
-
-                return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
-            }
-
-            List<GridQueryFieldMetadata> meta;
-
-            try {
-                meta = meta(stmt.getMetaData());
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException("Cannot prepare query metadata", e);
-            }
-
-            return new GridQueryFieldsResultAdapter(meta, null) {
-                @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException{
+                try {
                     ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
 
                     return new FieldsIterator(rs);
                 }
-            };
-        }
-        finally {
-            if (p == null || p.isQuery())
-                GridH2QueryContext.clearThreadLocal();
-        }
+                finally {
+                    GridH2QueryContext.clearThreadLocal();
+                }
+            }
+        };
     }
 
     /**
@@ -1054,17 +1056,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param conn Connection.
-     * @param enforceJoinOrder Enforce join order of tables.
-     * @param filter Filter.
-     */
-    private void initLocalQueryContext(Connection conn, boolean enforceJoinOrder, IndexingQueryFilter filter) {
-        setupConnection(conn, false, enforceJoinOrder);
-
-        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
-    }
-
-    /**
      * @param conn Connection to use.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
@@ -1091,7 +1082,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Connection conn = connectionForThread(tbl.schemaName());
 
-        initLocalQueryContext(conn, false, filter);
+        setupConnection(conn, false, false);
+
+        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
 
         try {
             ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, null);

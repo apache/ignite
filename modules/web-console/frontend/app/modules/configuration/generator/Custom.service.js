@@ -16,10 +16,8 @@
  */
 
 // Optional content generation entry point.
-const $generatorOptional = {};
-
-$generatorOptional.optionalContent = function(zip, cluster) { // eslint-disable-line no-unused-vars
-    // No-op.
-};
-
-export default $generatorOptional;
+export default class IgniteCustomGenerator {
+    optionalContent(zip, cluster) { // eslint-disable-line no-unused-vars
+        // No-op.
+    }
+}

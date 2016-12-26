@@ -99,11 +99,6 @@ import domainsValidation from './filters/domainsValidation.filter';
 import duration from './filters/duration.filter';
 import hasPojo from './filters/hasPojo.filter';
 
-// Generators
-import $generatorOptional from './modules/configuration/generator/generator-optional';
-
-window.$generatorOptional = $generatorOptional;
-
 // Controllers
 import admin from 'controllers/admin-controller';
 import caches from 'controllers/caches-controller';
