@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -78,12 +79,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         // ReSharper disable once CollectionNeverQueried.Local
         private readonly List<Delegate> _delegates = new List<Delegate>(5);
 
+        /** Max op code. */
+        private static readonly int MaxOpCode = Enum.GetValues(typeof(UnmanagedCallbackOp)).Cast<int>().Max();
+
         /** Handlers array. */
-        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[MaxOpCode + 1];
 
         /** Handlers array. */
         private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers
-            = new InLongLongLongObjectOutLongHandler[62];
+            = new InLongLongLongObjectOutLongHandler[MaxOpCode + 1];
 
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
