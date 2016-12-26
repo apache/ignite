@@ -98,9 +98,6 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
-        /** Plugin context. */
-        private PluginProcessor _pluginProcessor;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -110,16 +107,14 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        /// <param name="pluginProcessor"></param>
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh, 
-            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs, PluginProcessor pluginProcessor)
+            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
             Debug.Assert(marsh != null);
             Debug.Assert(lifecycleBeans != null);
             Debug.Assert(cbs != null);
-            Debug.Assert(pluginProcessor != null);
 
             _cfg = cfg;
             _name = name;
@@ -127,7 +122,6 @@ namespace Apache.Ignite.Core.Impl
             _marsh = marsh;
             _lifecycleBeans = lifecycleBeans;
             _cbs = cbs;
-            _pluginProcessor = pluginProcessor;
 
             marsh.Ignite = this;
 
@@ -172,7 +166,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
-            _pluginProcessor.OnStart(this);
+            PluginProcessor.OnStart(this);
 
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
@@ -370,7 +364,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
-            _pluginProcessor.Stop(cancel);
+            PluginProcessor.Stop(cancel);
 
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
@@ -714,7 +708,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return _pluginProcessor.GetProvider(name).GetPlugin<T>();
+            return PluginProcessor.GetProvider(name).GetPlugin<T>();
         }
 
         /// <summary>
@@ -836,6 +830,14 @@ namespace Apache.Ignite.Core.Impl
             var handler = ClientReconnected;
             if (handler != null)
                 handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
+        }
+
+        /// <summary>
+        /// Gets the plugin processor.
+        /// </summary>
+        private PluginProcessor PluginProcessor
+        {
+            get { return _cbs.PluginProcessor; }
         }
     }
 }

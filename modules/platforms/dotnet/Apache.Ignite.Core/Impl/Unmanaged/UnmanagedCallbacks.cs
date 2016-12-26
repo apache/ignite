@@ -42,6 +42,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
@@ -105,6 +106,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Log. */
         private readonly ILogger _log;
 
+        /** Plugin processor. */
+        private readonly PluginProcessor _pluginProcessor;
+
         /** Error type: generic. */
         private const int ErrGeneric = 1;
 
@@ -134,10 +138,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Constructor.
         /// </summary>
         /// <param name="log">Logger.</param>
-        public UnmanagedCallbacks(ILogger log)
+        /// <param name="pluginProcessor"></param>
+        public UnmanagedCallbacks(ILogger log, PluginProcessor pluginProcessor)
         {
             Debug.Assert(log != null);
+            Debug.Assert(pluginProcessor != null);
+
             _log = log;
+            _pluginProcessor = pluginProcessor;
 
             var cbs = new UnmanagedCallbackHandlers
             {
@@ -1133,7 +1141,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long StartPlugins(long val)
         {
-            throw new NotImplementedException();
+            _pluginProcessor.Start();
+
+            return 0;
         }
 
         #endregion
@@ -1281,6 +1291,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public ILogger Log
         {
             get { return _log; }
+        }
+
+        /// <summary>
+        /// Gets the plugin processor.
+        /// </summary>
+        public PluginProcessor PluginProcessor
+        {
+            get { return _pluginProcessor; }
         }
 
         /// <summary>

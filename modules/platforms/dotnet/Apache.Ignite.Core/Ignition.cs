@@ -227,7 +227,9 @@ namespace Apache.Ignite.Core
                 // 2. Create context.
                 IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks(log);
+                var pluginProcessor = new PluginProcessor(cfg, log);
+
+                var cbs = new UnmanagedCallbacks(log, pluginProcessor);
 
                 IgniteManager.CreateJvmContext(cfg, cbs, log);
                 log.Debug("JVM started.");
@@ -455,7 +457,7 @@ namespace Apache.Ignite.Core
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
                 _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
-                    _startup.LifecycleBeans, _startup.Callbacks, _startup.PluginProcessor);
+                    _startup.LifecycleBeans, _startup.Callbacks);
             }
             catch (Exception e)
             {
@@ -731,7 +733,6 @@ namespace Apache.Ignite.Core
             {
                 Configuration = cfg;
                 Callbacks = cbs;
-                PluginProcessor = new PluginProcessor(cfg, cbs.Log);
             }
             /// <summary>
             /// Configuration.
@@ -767,11 +768,6 @@ namespace Apache.Ignite.Core
             /// Gets or sets the ignite.
             /// </summary>
             internal Ignite Ignite { get; set; }
-
-            /// <summary>
-            /// Gets or sets the plugin context.
-            /// </summary>
-            internal PluginProcessor PluginProcessor { get; set; }
         }
 
         /// <summary>
