@@ -306,7 +306,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param req Request.
      * @param e Error.
      */
-    protected void onSendError(GridNearAtomicAbstractUpdateRequest req, IgniteCheckedException e) {
+    protected final void onSendError(GridNearAtomicAbstractUpdateRequest req, IgniteCheckedException e) {
         synchronized (mux) {
             GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                 req.nodeId(),
@@ -322,10 +322,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     /**
      * Adds future prevents topology change before operation complete.
      * Should be invoked before topology lock released.
+     *
      * @param topVer Topology version.
-     * @return Future version in case Future added.
+     * @return Future version in case future added.
      */
-    protected GridCacheVersion addAtomicFuture(AffinityTopologyVersion topVer) {
+    protected final GridCacheVersion addAtomicFuture(AffinityTopologyVersion topVer) {
         GridCacheVersion futVer = cctx.versions().next(topVer);
 
         if (storeFuture()) {

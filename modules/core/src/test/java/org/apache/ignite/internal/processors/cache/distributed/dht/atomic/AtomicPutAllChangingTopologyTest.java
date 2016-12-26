@@ -26,11 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +36,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CachePeekMode.BACKUP;
+import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
 public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
@@ -59,14 +61,16 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
     /** */
     private static volatile CountDownLatch FILLED_LATCH;
 
-    /** */
-    private CacheConfiguration<Integer, Integer> cacheCfg() {
+    /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<Integer, Integer> cacheConfig() {
         return new CacheConfiguration<Integer, Integer>()
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(ATOMIC)
+            .setCacheMode(REPLICATED)
             .setAffinity(new FairAffinityFunction(false, 1))
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setRebalanceMode(CacheRebalanceMode.SYNC)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setRebalanceMode(SYNC)
             .setName(CACHE_NAME);
     }
 
@@ -80,7 +84,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testPutAllOnChangingTopology() throws Exception {
         List<IgniteInternalFuture> futs = new LinkedList<>();
@@ -119,7 +123,10 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /**
+     * @return Future.
+     * @throws IgniteCheckedException If failed.
+     */
     private IgniteInternalFuture startSeedNodeAsync() throws IgniteCheckedException {
         return GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Boolean call() throws Exception {
@@ -127,7 +134,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
 
                 log.info("Creating cache.");
 
-                IgniteCache<Integer, Integer> cache = node.getOrCreateCache(cacheCfg());
+                IgniteCache<Integer, Integer> cache = node.getOrCreateCache(cacheConfig());
 
                 log.info("Created cache.");
 
@@ -151,7 +158,11 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
         });
     }
 
-    /** */
+    /**
+     * @param nodeId Node index.
+     * @return Future.
+     * @throws IgniteCheckedException If failed.
+     */
     private IgniteInternalFuture startNodeAsync(final int nodeId) throws IgniteCheckedException {
         return GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Boolean call() throws Exception {
@@ -159,7 +170,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
 
                 log.info("Getting cache.");
 
-                IgniteCache<Integer, Integer> cache = node.getOrCreateCache(cacheCfg());
+                IgniteCache<Integer, Integer> cache = node.getOrCreateCache(cacheConfig());
 
                 log.info("Got cache.");
 
@@ -176,20 +187,26 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
         });
     }
 
-    /** */
+    /**
+     * @param node Node.
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
     private void checkCacheState(Ignite node, IgniteCache<Integer, Integer> cache) throws Exception {
-        int locSize = cache.localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
+        int locSize = cache.localSize(PRIMARY, BACKUP);
         int locSize2 = -1;
 
         if (locSize != CACHE_SIZE) {
             U.sleep(5000);
 
             // Rechecking.
-            locSize2 = cache.localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
+            locSize2 = cache.localSize(PRIMARY, BACKUP);
         }
 
-        assertEquals("Wrong cache size on node " + "[node=" + node.configuration().getGridName() +
-                ", expected= " + CACHE_SIZE + ", actual=" + locSize + ", actual2=" + locSize2 + "]",
+        assertEquals("Wrong cache size on node [node=" + node.configuration().getGridName() +
+            ", expected= " + CACHE_SIZE +
+            ", actual=" + locSize +
+            ", actual2=" + locSize2 + "]",
             locSize, CACHE_SIZE);
     }
 }

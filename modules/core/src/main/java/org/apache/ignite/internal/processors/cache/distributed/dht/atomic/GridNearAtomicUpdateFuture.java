@@ -606,6 +606,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
     /**
      * @param topVer Topology version.
+     * @param futVer Future ID.
      * @param remapKeys Keys to remap.
      */
     void map(AffinityTopologyVersion topVer,
@@ -715,7 +716,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /**
      * @return Future version.
      */
-    GridCacheVersion onFutureDone() {
+    private GridCacheVersion onFutureDone() {
         GridCacheVersion ver0;
 
         GridFutureAdapter<Void> fut0;
