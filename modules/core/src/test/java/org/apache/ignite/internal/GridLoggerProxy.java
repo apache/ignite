@@ -17,15 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lifecycle.LifecycleAware;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.BufferedReader;
 import java.io.Externalizable;
 import java.io.IOException;
@@ -41,6 +32,14 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
 
@@ -63,12 +62,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     public static final String SENSITIVE_KEY_MARKER_PREFIX;
     /** Indicating whether sensitive marker assertions enabled */
     private static final AtomicBoolean ENABLE_SENSITIVE_MARKER_ASSERTIONS = new AtomicBoolean();
-
-    static {
-        String prefix = Long.toString(SENSITIVE_KEY_MARKER);
-        SENSITIVE_KEY_MARKER_PREFIX = prefix.substring(0, prefix.length() - 3);
-    }
-
     /** */
     private static final long serialVersionUID = 0L;
     /** Whether or not to log grid name. */
@@ -97,13 +90,13 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     };
 
     static {
-        EXCLUDE_PATTERNS = readFromResource("_Exclude.txt");
-        INCLUDE_PATTERNS = readFromResource("_Include.txt");
+        String prefix = Long.toString(SENSITIVE_KEY_MARKER);
+        SENSITIVE_KEY_MARKER_PREFIX = prefix.substring(0, prefix.length() - 3);
     }
 
-    /** Set sensitive marker assertions enabled */
-    public static void enableSensitiveMarkerAssertions(boolean enable) {
-        ENABLE_SENSITIVE_MARKER_ASSERTIONS.set(enable);
+    static {
+        EXCLUDE_PATTERNS = readFromResource("_Exclude.txt");
+        INCLUDE_PATTERNS = readFromResource("_Include.txt");
     }
 
     /** */
@@ -118,7 +111,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private Object ctgr;
     /** Whether testing sensitive is enabled for the logger */
     private boolean testSensitive;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -145,6 +137,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             impl.warning("Test sensitive mode is enabled");
     }
 
+    /** Set sensitive marker assertions enabled */
+    public static void enableSensitiveMarkerAssertions(boolean enable) {
+        ENABLE_SENSITIVE_MARKER_ASSERTIONS.set(enable);
+    }
+
     /** Read sensitive patterns from resource */
     private static Pattern[] readFromResource(String suffix) {
         ArrayList<Pattern> lst = new ArrayList<>();
@@ -153,9 +150,20 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         try (InputStream inStr = cls.getResourceAsStream(resPath);
              BufferedReader rdr = new BufferedReader(new InputStreamReader(inStr))) {
             String ln;
+            boolean skipComment = false;
             while ((ln = rdr.readLine()) != null) {
                 ln = ln.trim();
                 if (ln.isEmpty())
+                    continue;
+                if (ln.startsWith("/*")) {
+                    skipComment = true;
+                    continue;
+                }
+                if (ln.endsWith("*/")) {
+                    skipComment = false;
+                    continue;
+                }
+                if (skipComment)
                     continue;
                 lst.add(Pattern.compile(ln));
             }
