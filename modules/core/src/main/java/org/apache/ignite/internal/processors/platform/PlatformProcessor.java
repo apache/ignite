@@ -278,4 +278,9 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Binary processor.
      */
     public PlatformTargetProxy binaryProcessor();
+
+    /**
+     * Starts plugins.
+     */
+    void startPlugins();
 }

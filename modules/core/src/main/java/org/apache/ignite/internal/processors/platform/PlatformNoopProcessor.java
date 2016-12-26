@@ -191,4 +191,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public PlatformTargetProxy binaryProcessor() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void startPlugins() {
+        // No-op.
+    }
 }
