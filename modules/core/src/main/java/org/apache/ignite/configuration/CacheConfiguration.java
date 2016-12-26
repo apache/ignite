@@ -410,6 +410,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
+    /** */
+    private boolean indexSegmentationEnabled;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -462,6 +465,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
+        indexSegmentationEnabled = cc.isIndexSegmentationEnabled();
         isWriteThrough = cc.isWriteThrough();
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
@@ -2101,6 +2105,37 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (!found)
                 this.qryEntities.add(entity);
         }
+
+        return this;
+    }
+
+    /**
+     * Get flag indicating sql index segmentation allowed.
+     * <p>
+     * If @{true} sql index allowed to be segmented, otherwise index will have single segment.
+     * Flag value is @{false} by default. Flag has no affect to Replicated cache as it can't be partitioned.
+     * </p>
+     * Note: Number of parts determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel().
+     *
+     * @return Index segmentation allowed flag
+     */
+    public boolean isIndexSegmentationEnabled() {
+        return indexSegmentationEnabled;
+    }
+
+    /**
+     * Set flag indicating sql index segmentation allowed.
+     * <p>
+     * If @{true} sql index allowed to be segmented, otherwise index will have single segment.
+     * Flag value is @{false} by default. Flag has no affect to Replicated cache as it can't be partitioned.
+     * </p>
+     * Note: Number of parts determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel().
+     *
+     * @param idxSegmentationEnabled Index segmentation allowed flag
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V>  setIndexSegmentationEnabled(boolean idxSegmentationEnabled) {
+        this.indexSegmentationEnabled = idxSegmentationEnabled;
 
         return this;
     }

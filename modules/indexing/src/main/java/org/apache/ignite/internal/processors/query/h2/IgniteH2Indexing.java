@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
@@ -97,6 +99,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2StripedTreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -1303,6 +1306,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     extraCaches = null;
                 }
 
+                //Prohibit usage of segmented tables with non-segmented in same query.
+                checkCacheIndexSegmentation(caches);
+
                 twoStepQry.caches(caches);
                 twoStepQry.extraCaches(extraCaches);
 
@@ -1339,6 +1345,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
+    }
+
+    /**
+     * @throws IllegalStateException if segmented index used with non-segmented index
+     */
+    private void checkCacheIndexSegmentation(List<Integer> caches) {
+        final int parallelismLevel = ctx.config().getSqlQueryParallelismLevel();
+
+        if (parallelismLevel <= 1 || caches.isEmpty())
+            return; //Segmentation is disabled or nothing to check
+
+        GridCacheSharedContext sharedContext = ctx.cache().context();
+
+        GridCacheContext cctx = sharedContext.cacheContext(caches.get(0));
+
+        assert cctx != null;
+
+        final boolean isSegmented = cctx.config().isIndexSegmentationEnabled();
+
+        for (int i = 1; i < caches.size(); i++) {
+            cctx = sharedContext.cacheContext(caches.get(i));
+
+            assert cctx !=null;
+
+            if (cctx.config().isIndexSegmentationEnabled() != isSegmented)
+                throw new IllegalStateException("Using segmented and non-segmented index forbidden.");
+        }
     }
 
     /**
@@ -2491,7 +2524,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 affCol = null;
 
             // Add primary key index.
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true,
+            idxs.add(createTreeIndex("_key_PK", tbl, true,
                 treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
 
             if (type().valueClass() == String.class) {
@@ -2537,7 +2570,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         cols = treeIndexColumns(cols, keyCol, affCol);
 
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
+                        idxs.add(createTreeIndex(name, tbl, false, cols));
                     }
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
@@ -2548,7 +2581,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             // Add explicit affinity key index if nothing alike was found.
             if (affCol != null && !affIdxFound) {
-                idxs.add(new GridH2TreeIndex("AFFINITY_KEY", tbl, false,
+                idxs.add(createTreeIndex("AFFINITY_KEY", tbl, false,
                     treeIndexColumns(new ArrayList<IndexColumn>(2), affCol, keyCol)));
             }
 
@@ -2594,6 +2627,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (Exception e) {
                 throw new IgniteException("Failed to instantiate: " + className, e);
             }
+        }
+
+        /**
+         * @param idxName Index name.
+         * @param tbl Table.
+         * @param pk Primary key flag.
+         * @param columns Index column list.
+         * @return
+         */
+        private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
+            int segments = ctx.config().getSqlQueryParallelismLevel();
+
+            GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
+
+            boolean allowIndexSegmentation = !cctx.isReplicated();// && cctx.config().isIndexSegmentationEnabled();
+
+            if (allowIndexSegmentation && segments > 1)
+                return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, segments);
+            else
+                return new GridH2TreeIndex(idxName, tbl, pk, columns);
         }
     }
 

@@ -215,7 +215,7 @@ public class GridH2Table extends TableBase {
     private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
-        GridH2TreeIndex pk = pk();
+        GridH2AbstractTreeIndex pk = pk();
 
         assert desc != null;
 
@@ -515,8 +515,8 @@ public class GridH2Table extends TableBase {
      *
      * @return Primary key.
      */
-    private GridH2TreeIndex pk() {
-        return (GridH2TreeIndex)idxs.get(1);
+    private GridH2AbstractTreeIndex pk() {
+        return (GridH2AbstractTreeIndex)idxs.get(1);
     }
 
     /**
@@ -539,7 +539,7 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            GridH2TreeIndex pk = pk();
+            GridH2AbstractTreeIndex pk = pk();
 
             if (!del) {
                 GridH2Row old = pk.put(row); // Put to PK.
@@ -845,7 +845,7 @@ public class GridH2Table extends TableBase {
         /**
          * Create list of indexes. First must be primary key, after that all unique indexes and
          * only then non-unique indexes.
-         * All indexes must be subtypes of {@link GridH2TreeIndex}.
+         * All indexes must be subtypes of {@link GridH2AbstractTreeIndex}.
          *
          * @param tbl Table to create indexes for.
          * @return List of indexes.
