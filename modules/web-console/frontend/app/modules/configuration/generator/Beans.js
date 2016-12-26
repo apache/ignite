@@ -17,6 +17,11 @@
 
 import _ from 'lodash';
 
+_.mixin({
+    nonNil: _.negate(_.isNil),
+    nonEmpty: _.negate(_.isEmpty)
+});
+
 export class EmptyBean {
     /**
      * @param {String} clsName

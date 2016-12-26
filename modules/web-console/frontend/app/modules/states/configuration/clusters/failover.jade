@@ -45,7 +45,7 @@ include /app/helpers/jade/mixins.jade
                         .group-content(ng-show='#{failoverSpi} && #{failoverSpi}.length > 0' ng-repeat='model in #{failoverSpi} track by $index')
                             hr(ng-if='$index != 0')
                             .settings-row
-                                +dropdown-required('Failover SPI:', 'model.kind', '"failoverKind" + $index', 'true', 'true', 'Choose Failover SPI', '[\
+                                +dropdown-required-autofocus('Failover SPI:', 'model.kind', '"failoverKind" + $index', 'true', 'true', 'Choose Failover SPI', '[\
                                         {value: "JobStealing", label: "Job stealing"},\
                                         {value: "Never", label: "Never"},\
                                         {value: "Always", label: "Always"},\
@@ -68,6 +68,6 @@ include /app/helpers/jade/mixins.jade
                                     'Maximum number of attempts to execute a failed job on another node')
                             .settings-row(ng-show=failoverCustom)
                                 +java-class('SPI implementation', 'model.Custom.class', '"failoverSpiClass" + $index', 'true', failoverCustom,
-                                    'Custom FailoverSpi implementation class name.')
+                                    'Custom FailoverSpi implementation class name.', failoverCustom)
             .col-sm-6
                 +preview-xml-java(model, 'clusterFailover')
