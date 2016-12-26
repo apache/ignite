@@ -3083,7 +3083,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final CacheMetrics clusterMetrics() {
-        return clusterMetrics(ctx.grid().cluster().forCacheNodes(ctx.name()));
+        return clusterMetrics(ctx.grid().cluster().forDataNodes(ctx.name()));
     }
 
     /** {@inheritDoc} */
@@ -3477,13 +3477,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return ctx.closures().callAsyncNoFailover(BROADCAST,
                 new LoadKeysCallableV2<>(ctx.name(), keys, update, plc, keepBinary),
                 nodes,
-                true);
+                true,
+                0);
         }
         else {
             return ctx.closures().callAsyncNoFailover(BROADCAST,
                 new LoadKeysCallable<>(ctx.name(), keys, update, plc),
                 nodes,
-                true);
+                true,
+                0);
         }
     }
 
