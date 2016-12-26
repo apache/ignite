@@ -873,7 +873,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
                         batchFull = true;
             }
 
-            fut = new DoneFuture<>(new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
+            fut = new DoneFuture<Cursor>((Cursor)new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
 
             res.add(fut);
 
