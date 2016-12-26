@@ -37,6 +37,8 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,6 +55,19 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * but only suspicious will be written into log with "error" level and special prefix SENSITIVE>
      */
     public static final String IGNITE_LOG_TEST_SENSITIVE = "IGNITE_LOG_TEST_SENSITIVE";
+    /** Unique number for key */
+    public static final long SENSITIVE_KEY_MARKER = UUID.randomUUID().getLeastSignificantBits() | (1L << 63) & ~(0xFFL);
+    /** Unique string sequence for value */
+    public static final String SENSITIVE_VAL_MARKER = UUID.randomUUID().toString();
+    /** String prefix of unique number for key */
+    public static final String SENSITIVE_KEY_MARKER_PREFIX;
+    /** Indicating whether sensitive marker assertions enabled */
+    private static final AtomicBoolean ENABLE_SENSITIVE_MARKER_ASSERTIONS = new AtomicBoolean();
+
+    static {
+        String prefix = Long.toString(SENSITIVE_KEY_MARKER);
+        SENSITIVE_KEY_MARKER_PREFIX = prefix.substring(0, prefix.length() - 3);
+    }
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -84,6 +99,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     static {
         EXCLUDE_PATTERNS = readFromResource("_Exclude.txt");
         INCLUDE_PATTERNS = readFromResource("_Include.txt");
+    }
+
+    /** Set sensitive marker assertions enabled */
+    public static void enableSensitiveMarkerAssertions(boolean enable) {
+        ENABLE_SENSITIVE_MARKER_ASSERTIONS.set(enable);
     }
 
     /** */
@@ -147,6 +167,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         return lst.toArray(new Pattern[lst.size()]);
     }
 
+    /** Whether testing sensitive is enabled for the logger */
+    private boolean testSensitiveEnabled() {
+        return testSensitive || ENABLE_SENSITIVE_MARKER_ASSERTIONS.get();
+    }
+
     /** {@inheritDoc} */
     @Override public void start() {
         if (impl instanceof LifecycleAware)
@@ -172,7 +197,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
-        if (testSensitive) {
+        if (testSensitiveEnabled()) {
             testSensitive(msg);
             if (impl.isTraceEnabled())
                 impl.trace(enrich(msg));
@@ -183,7 +208,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
-        if (testSensitive) {
+        if (testSensitiveEnabled()) {
             testSensitive(msg);
             if (impl.isDebugEnabled())
                 impl.debug(enrich(msg));
@@ -194,7 +219,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
-        if (testSensitive) {
+        if (testSensitiveEnabled()) {
             testSensitive(msg);
             if (impl.isInfoEnabled())
                 impl.info(enrich(msg));
@@ -205,50 +230,50 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
 
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
-        if (testSensitive)
+        if (testSensitiveEnabled())
             testSensitive(msg);
         impl.warning(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg, Throwable e) {
-        if (testSensitive)
+        if (testSensitiveEnabled())
             testSensitive(msg, e);
         impl.warning(enrich(msg), e);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg) {
-        if (testSensitive)
+        if (testSensitiveEnabled())
             testSensitive(msg);
         impl.error(enrich(msg));
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, Throwable e) {
-        if (testSensitive)
+        if (testSensitiveEnabled())
             testSensitive(msg, e);
         impl.error(enrich(msg), e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
-        return testSensitive || impl.isTraceEnabled();
+        return testSensitiveEnabled() || impl.isTraceEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return testSensitive || impl.isDebugEnabled();
+        return testSensitiveEnabled() || impl.isDebugEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
-        return testSensitive || impl.isInfoEnabled();
+        return testSensitiveEnabled() || impl.isInfoEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return !testSensitive && impl.isQuiet();
+        return !testSensitiveEnabled() && impl.isQuiet();
     }
 
     /**
@@ -296,6 +321,14 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private String findSensitive(String msg) {
         if (msg == null || msg.isEmpty())
             return null;
+
+        if (ENABLE_SENSITIVE_MARKER_ASSERTIONS.get() &&
+            msg.contains(SENSITIVE_KEY_MARKER_PREFIX) || msg.contains(SENSITIVE_VAL_MARKER)) {
+
+            logSensitive("<MARKER>", msg);
+            msg = msg.replace(SENSITIVE_KEY_MARKER_PREFIX, "<SENSITIVE_KEY_MARKER>").replace(SENSITIVE_VAL_MARKER, "<SENSITIVE_VAL_MARKER>");
+            throw new AssertionError("Found sensitive marker: " + msg);
+        }
         for (Pattern p : EXCLUDE_PATTERNS) {
             Matcher m = p.matcher(msg);
             if (m.find())
