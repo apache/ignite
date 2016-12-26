@@ -24,6 +24,21 @@ namespace Apache.Ignite.Core.Plugin
     /// <para />
     /// Implementations should be linked to corresponding <see cref="IPluginProvider{TConfig}"/>
     /// via <see cref="PluginProviderTypeAttribute"/>.
+    /// <example>
+    /// Example plugin implementation:
+    /// <code>
+    /// [PluginProviderType(typeof(MyPluginProvider))]
+    /// class MyPluginConfig : IPluginConfiguration
+    /// {
+    ///     int CustomProperty { get; set; }
+    /// }
+    /// 
+    /// class MyPluginProvider : IPluginProvider&lt;MyPluginConfig&gt;
+    /// {
+    ///     ...
+    /// }
+    /// </code>
+    /// </example>
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IPluginConfiguration
