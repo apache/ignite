@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
@@ -111,7 +110,6 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         final FileSystem fileSys = fileSystemForUser();
 
         Path hadoopPath = convert(path);
-
 
         try {
             if (!fileSys.exists(hadoopPath))
@@ -282,16 +280,8 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
             FileSystem fs = fileSystemForUser();
 
-            if (create && !fs.exists(hadoopPath)) {
-                try {
-                    return fs.create(hadoopPath, false, bufSize);
-                } catch (IOException e) {
-                    if (fs.exists(hadoopPath))
-                        return fs.append(convert(path), bufSize);
-                    else
-                        throw e;
-                }
-            }
+            if (create && !fs.exists(hadoopPath))
+                return fs.create(hadoopPath, false, bufSize);
             else
                 return fs.append(convert(path), bufSize);
         }

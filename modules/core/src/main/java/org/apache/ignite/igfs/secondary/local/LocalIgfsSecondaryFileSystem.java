@@ -439,7 +439,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         long blockSize = igfs.configuration().getBlockSize();
 
         if (maxLen <= 0)
-            maxLen = igfs.context().data().groupBlockSize();
+            maxLen = igfs.context().data().groupBlockSize(); // TODO: To long max value?
 
         assert maxLen > 0 : "maxLen : " + maxLen;
 
