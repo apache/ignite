@@ -2122,7 +2122,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return fieldValue(obj0);
             }
             else if (obj instanceof BinaryObjectBuilder) {
-                BinaryObjectBuilder obj0 = (BinaryObjectBuilder) obj;
+                BinaryObjectBuilder obj0 = (BinaryObjectBuilder)obj;
+
                 return obj0.getField(name());
             }
             else

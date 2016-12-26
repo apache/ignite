@@ -701,8 +701,7 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, row,
-                    plan);
+                IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -759,8 +758,7 @@ public class DmlStatementsProcessor {
             while (it.hasNext()) {
                 List<?> row = it.next();
 
-                final IgniteBiTuple t = rowToKeyValue(cctx, row,
-                    plan);
+                final IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
@@ -832,7 +830,8 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
-    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, List<?> row, UpdatePlan plan) throws IgniteCheckedException {
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, List<?> row, UpdatePlan plan)
+        throws IgniteCheckedException {
         Object key = plan.keySupplier.apply(row);
         Object val = plan.valSupplier.apply(row);
 
