@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
+import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLocalFileSystemV1;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -37,11 +38,15 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         startGrids(gridCount());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids(true);
     }
 
@@ -69,6 +74,10 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
         cfg.set(HadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP,
             new Path(new Path(uri), "user/" + System.getProperty("user.name")).toString());
+
+        FileSystem fs = FileSystem.get(uri, cfg);
+
+        assertTrue(fs instanceof HadoopLocalFileSystemV1);
 
         final CountDownLatch changeUserPhase = new CountDownLatch(THREAD_COUNT);
         final CountDownLatch changeDirPhase = new CountDownLatch(THREAD_COUNT);

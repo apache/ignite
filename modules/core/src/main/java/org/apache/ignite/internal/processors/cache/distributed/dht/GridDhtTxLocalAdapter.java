@@ -236,10 +236,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         AffinityTopologyVersion topVer);
 
     /**
-     * @param commit Commit flag.
      * @param err Error, if any.
      */
-    protected abstract void sendFinishReply(boolean commit, @Nullable Throwable err);
+    protected abstract void sendFinishReply(@Nullable Throwable err);
 
     /** {@inheritDoc} */
     @Override public boolean needsCompletedVersions() {
@@ -249,7 +248,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @return Versions for all pending locks that were in queue before tx locks were released.
      */
-    public Collection<GridCacheVersion> pendingVersions() {
+    Collection<GridCacheVersion> pendingVersions() {
         return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
     }
 
@@ -726,7 +725,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         /*read*/read,
                         accessTtl,
                         filter == null ? CU.empty0() : filter,
-                        /**computeInvoke*/false);
+                        /*computeInvoke*/false);
 
                     return ret;
                 }

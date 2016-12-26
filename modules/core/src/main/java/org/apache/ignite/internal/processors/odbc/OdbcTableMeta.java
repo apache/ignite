@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
+import java.util.Objects;
+
 /**
  * ODBC table-related metadata.
  */
@@ -50,11 +52,11 @@ public class OdbcTableMeta {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int hash = catalog.hashCode();
+        int hash = Objects.hashCode(catalog);
 
-        hash = 31 * hash + schema.hashCode();
-        hash = 31 * hash + table.hashCode();
-        hash = 31 * hash + tableType.hashCode();
+        hash = 31 * hash + Objects.hashCode(schema);
+        hash = 31 * hash + Objects.hashCode(table);
+        hash = 31 * hash + Objects.hashCode(tableType);
 
         return hash;
     }
@@ -64,8 +66,9 @@ public class OdbcTableMeta {
         if (o instanceof OdbcTableMeta) {
             OdbcTableMeta other = (OdbcTableMeta) o;
 
-            return this == other || catalog.equals(other.catalog) && schema.equals(other.schema) &&
-                table.equals(other.table) && tableType.equals(other.tableType);
+            return this == other ||
+                    Objects.equals(catalog, other.catalog) && Objects.equals(schema, other.schema) &&
+                    Objects.equals(table, other.table) && Objects.equals(tableType, other.tableType);
         }
 
         return false;
