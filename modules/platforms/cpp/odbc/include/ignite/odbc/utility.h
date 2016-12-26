@@ -27,6 +27,7 @@
 
 #include <string>
 #include <algorithm>
+#include <sstream>
 
 #include <ignite/common/utils.h>
 #include <ignite/common/decimal.h>
@@ -38,13 +39,13 @@
 extern FILE* log_file;
 bool logInit();
 
-#   define LOG_MSG(param)                                   \
-    if (logInit())                                          \
-    {                                                       \
-        std::stringstream builder;                          \
-        builder << __FUNCTION__ << ": " << ##param << "\n"; \
-        fprintf(log_file, builder.str().c_str());           \
-        fflush(log_file);                                   \
+#   define LOG_MSG(param)                                 \
+    if (logInit())                                        \
+    {                                                     \
+        std::stringstream builder;                        \
+        builder << __FUNCTION__ << ": " << param << "\n"; \
+        fputs(builder.str().c_str(), log_file);           \
+        fflush(log_file);                                 \
     }
 
 namespace ignite
