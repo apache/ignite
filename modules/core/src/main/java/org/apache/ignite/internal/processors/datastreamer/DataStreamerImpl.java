@@ -1540,7 +1540,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 skipStore,
                                 keepBinary,
                                 rcvr),
-                            false);
+                            plc);
 
                         locFuts.add(callFut);
 
