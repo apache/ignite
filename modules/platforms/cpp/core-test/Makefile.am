@@ -43,15 +43,20 @@ AM_CXXFLAGS = \
 
 ignite_tests_LDADD = \
     @top_srcdir@/core/libignite.la \
-    -lpthread
+    -lpthread \
+    -lboost_thread \
+    -lboost_system \
+    -lboost_chrono
 
 ignite_tests_LDFLAGS = \
     -static-libtool-libs
 
 ignite_tests_SOURCES = \
+    src/reference_test.cpp \
     src/bits_test.cpp \
     src/cache_test.cpp \
     src/cache_query_test.cpp \
+    src/continuous_query_test.cpp \
     src/concurrent_test.cpp \
     src/ignition_test.cpp \
     src/interop_memory_test.cpp \
