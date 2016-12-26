@@ -337,13 +337,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             this.futVer = futVer;
         }
 
-        if (storeFuture()) {
-            if (!cctx.mvcc().addAtomicFuture(futVer, this)) {
-                assert isDone() : this;
-
-                return null;
-            }
-        }
+        if (storeFuture() && !cctx.mvcc().addAtomicFuture(futVer, this))
+            return null;
 
         return futVer;
     }
