@@ -96,7 +96,7 @@ public class GridH2QueryContext {
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         assert type != MAP;
 
-        key = new Key(locNodeId, nodeId, qryId, 0, type);
+        key = new Key(locNodeId, nodeId, qryId, -1, type);
     }
 
     /**

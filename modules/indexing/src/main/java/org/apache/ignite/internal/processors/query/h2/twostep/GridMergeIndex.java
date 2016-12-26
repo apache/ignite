@@ -239,9 +239,10 @@ public abstract class GridMergeIndex extends BaseIndex {
             cnt.state = State.FINISHED;
 
             for (Counter[] cntrs : remainingRows.values()) { // Check all the sources.
-                for(int i = 0; i< cntrs.length; i++)
-                if (cntrs[i].state != State.FINISHED)
-                    return;
+                for(int i = 0; i< cntrs.length; i++) {
+                    if (cntrs[i].state != State.FINISHED)
+                        return;
+                }
             }
 
             if (lastSubmitted.compareAndSet(false, true)) {

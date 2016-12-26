@@ -443,7 +443,7 @@ public class GridMapQueryExecutor {
         final int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
 
         if(req.threads() > 1) {
-            for (int i = 0; i < req.threads(); i++){
+            for (int i = 1; i < req.threads(); i++) {
                 final int segment = i;
 
                 ctx.closure().callLocal(
@@ -467,20 +467,20 @@ public class GridMapQueryExecutor {
                     }
                     , QUERY_POOL);
             }
-        } else {
-            onQueryRequest0(node,
-                req.requestId(),
-                0,
-                req.queries(),
-                req.caches(),
-                req.topologyVersion(),
-                partsMap,
-                parts,
-                req.tables(),
-                req.pageSize(),
-                req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
-                req.timeout());
         }
+
+        onQueryRequest0(node,
+            req.requestId(),
+            0,
+            req.queries(),
+            req.caches(),
+            req.topologyVersion(),
+            partsMap,
+            parts,
+            req.tables(),
+            req.pageSize(),
+            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+            req.timeout());
     }
 
     /**
