@@ -70,14 +70,17 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(ex);
 
+            // Wait a bit for cluster restart detection.
+            Thread.Sleep(1000);
+
             // Start the server and wait for reconnect.
             Ignition.Start(serverCfg);
 
-            // Wait a bit for notifications.
-            Thread.Sleep(100);
-
             // Check reconnect task.
             Assert.IsTrue(ex.ClientReconnectTask.Result);
+            
+            // Wait a bit for notifications.
+            Thread.Sleep(100);
 
             // Check the event args.
             Assert.IsNotNull(eventArgs);
@@ -165,6 +168,17 @@ namespace Apache.Ignite.Core.Tests
             return new IgniteProcess(
                 "-springConfigUrl=" + cfg.SpringConfigUrl, "-J-ea", "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m",
                 "-J-DIGNITE_QUIET=false");
+        }
+
+
+        /// <summary>
+        /// Test set up.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
         }
 
         /// <summary>
