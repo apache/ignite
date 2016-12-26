@@ -57,9 +57,13 @@ namespace Apache.Ignite.Core.Plugin
 
         /// <summary>
         /// Called when Ignite has been started and is fully functional.
-        /// <para />
-        /// Use <see cref="IIgnite.Stopping"/> and <see cref="IIgnite.Stopped"/> to track shutdown process.
         /// </summary>
         void OnIgniteStart();
+
+        /// <summary>
+        /// Callback to notify that Ignite is about to stop.
+        /// </summary>
+        /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
+        void OnIgniteStop(bool cancel);
     }
 }

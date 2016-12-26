@@ -85,6 +85,12 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.NotNull(Context.PluginConfiguration);
         }
 
+        /** <inheritdoc /> */
+        public void OnIgniteStop(bool cancel)
+        {
+            IgniteStopped = cancel;
+        }
+        
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="TestIgnitePluginProvider"/> is started.
         /// </summary>
@@ -94,6 +100,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// Gets or sets a value indicating whether this <see cref="TestIgnitePluginProvider"/> is stopped.
         /// </summary>
         public bool? Stopped { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="TestIgnitePluginProvider"/> is stopped.
+        /// </summary>
+        public bool? IgniteStopped { get; set; }
 
         /// <summary>
         /// Gets the context.

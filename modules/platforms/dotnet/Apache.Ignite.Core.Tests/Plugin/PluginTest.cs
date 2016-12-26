@@ -67,6 +67,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             }
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
+            Assert.AreEqual(true, plugin.Provider.IgniteStopped);
         }
 
         /// <summary>
@@ -121,6 +122,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             public void Start(IPluginContext<EmptyNameConfig> context) { /* No-op. */ }
             public void Stop(bool cancel) { /* No-op. */ }
             public void OnIgniteStart() { /* No-op. */ }
+            public void OnIgniteStop(bool cancel) { /* No-op. */ }
         }
 
         [PluginProviderType(typeof(ExceptionPluginProvider))]
@@ -136,6 +138,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             public T GetPlugin<T>() where T : class { return default(T); }
             public void Stop(bool cancel) { /* No-op. */ }
             public void OnIgniteStart() { /* No-op. */ }
+            public void OnIgniteStop(bool cancel) { /* No-op. */ }
 
             public void Start(IPluginContext<ExceptionConfig> context)
             {
