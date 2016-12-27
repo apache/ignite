@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 //new BinaryFieldEqualityComparer()
             };
 
-            var obj = GetBinaryObject(1, "x");
+            var obj = GetBinaryObject(1, "x", 0);
 
             foreach (var cmp in cmps)
             {
@@ -111,11 +111,12 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var cmp = new BinaryArrayEqualityComparer();
 
-            var obj1 = GetBinaryObject(1, "foo");
-            var obj2 = GetBinaryObject(1, "bar");
-            var obj3 = GetBinaryObject(2, "foo");
-            var obj4 = GetBinaryObject(2, "bar");
-            var obj5 = GetBinaryObject(1, "foo");
+            var obj1 = GetBinaryObject(1, "foo", 11);
+            var obj2 = GetBinaryObject(1, "bar", 11);
+            var obj3 = GetBinaryObject(2, "foo", 11);
+            var obj4 = GetBinaryObject(2, "bar", 11);
+            var obj5 = GetBinaryObject(1, "foo", 11);
+            var obj6 = GetBinaryObject(1, "foo", 12);
 
             // Equals.
             Assert.IsTrue(cmp.Equals(obj1, obj1));
@@ -123,24 +124,29 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsFalse(cmp.Equals(obj1, obj2));
             Assert.IsFalse(cmp.Equals(obj1, obj3));
             Assert.IsFalse(cmp.Equals(obj1, obj4));
+            Assert.IsFalse(cmp.Equals(obj1, obj6));
 
             Assert.IsTrue(cmp.Equals(obj2, obj2));
             Assert.IsFalse(cmp.Equals(obj2, obj5));
             Assert.IsFalse(cmp.Equals(obj2, obj3));
             Assert.IsFalse(cmp.Equals(obj2, obj4));
+            Assert.IsFalse(cmp.Equals(obj2, obj6));
 
             Assert.IsTrue(cmp.Equals(obj3, obj3));
             Assert.IsFalse(cmp.Equals(obj3, obj5));
             Assert.IsFalse(cmp.Equals(obj3, obj4));
+            Assert.IsFalse(cmp.Equals(obj3, obj6));
 
             Assert.IsTrue(cmp.Equals(obj4, obj4));
             Assert.IsFalse(cmp.Equals(obj4, obj5));
+            Assert.IsFalse(cmp.Equals(obj4, obj6));
 
             Assert.IsTrue(cmp.Equals(obj5, obj5));
+            Assert.IsFalse(cmp.Equals(obj5, obj6));
 
             // GetHashCode.
-            Assert.AreEqual(973391235, cmp.GetHashCode(GetBinaryObject(0, null)));
-            Assert.AreEqual(974314756, cmp.GetHashCode(GetBinaryObject(1, null)));
+            Assert.AreEqual(973391235, cmp.GetHashCode(GetBinaryObject(0, null, 0)));
+            Assert.AreEqual(974314756, cmp.GetHashCode(GetBinaryObject(1, null, 0)));
             Assert.AreEqual(-88648479, cmp.GetHashCode(obj1));
             Assert.AreEqual(-88652754, cmp.GetHashCode(obj2));
             Assert.AreEqual(40434240, cmp.GetHashCode(obj3));
@@ -203,7 +209,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Gets the binary object.
         /// </summary>
-        private static IBinaryObject GetBinaryObject(int id, string name)
+        private static IBinaryObject GetBinaryObject(int id, string name, int raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
@@ -216,15 +222,32 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             });
 
-            var bytes = marsh.Marshal(new Foo {Id = id, Name = name});
+            var bytes = marsh.Marshal(new Foo {Id = id, Name = name, Raw = raw});
 
             return marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
         }
 
-        private class Foo
+        private class Foo : IBinarizable
         {
             public int Id { get; set; }
             public string Name { get; set; }
+            public int Raw { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteInt("id", Id);
+                writer.WriteString("name", Name);
+
+                writer.GetRawWriter().WriteInt(Raw);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Id = reader.ReadInt("id");
+                Name = reader.ReadString("name");
+
+                Raw = reader.GetRawReader().ReadInt();
+            }
         }
 
         private class MyComparer : IEqualityComparer<IBinaryObject>
