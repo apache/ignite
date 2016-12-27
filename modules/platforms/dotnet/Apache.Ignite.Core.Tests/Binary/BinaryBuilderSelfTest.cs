@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(Empty)).Build();
 
             Assert.IsNotNull(binObj);
-            Assert.AreEqual(0, binObj.GetHashCode());
+            Assert.AreEqual(GetIdentityResolver() == null ? 0 : 1, binObj.GetHashCode());
 
             IBinaryType meta = binObj.GetBinaryType();
 
@@ -589,7 +589,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             IBinaryObject binObj = _grid.GetBinary().GetBuilder(TypeEmpty).Build();
 
             Assert.IsNotNull(binObj);
-            Assert.AreEqual(0, binObj.GetHashCode());
+            Assert.AreEqual(GetIdentityResolver() == null ? 0 : 1, binObj.GetHashCode());
 
             IBinaryType meta = binObj.GetBinaryType();
 
