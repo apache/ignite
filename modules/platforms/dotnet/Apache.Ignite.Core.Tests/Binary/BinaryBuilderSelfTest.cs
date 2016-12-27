@@ -634,14 +634,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             var obj2 = bin.GetBuilder("myType").SetStringField("str", "foo").SetIntField("int", 1).Build();
 
             Assert.AreEqual(obj1, obj2);
-            Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
 
-            if (GetIdentityResolver() != null)
-                Assert.AreNotEqual(0, obj1.GetHashCode());
-            else
-                Assert.AreEqual(0, obj1.GetHashCode());
+            Assert.AreEqual(0, obj1.GetHashCode());
+            Assert.AreEqual(0, obj2.GetHashCode());
 
-            Assert.IsTrue(Regex.IsMatch(obj1.ToString(), @"myType \[idHash=[0-9]+, str=foo, int=1\]"));
+            Assert.IsTrue(Regex.IsMatch(obj1.ToString(), @"myType \[idHash=0, str=foo, int=1\]"));
         }
 
         /// <summary>
