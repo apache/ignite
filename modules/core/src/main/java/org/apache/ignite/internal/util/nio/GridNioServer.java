@@ -1681,11 +1681,11 @@ public class GridNioServer<T> {
                     throw e;
                 }
                 catch (Exception e) {
-                    if (ses != null) {
-                        U.error(log, "Failed to process selector key (will close): " + ses, e);
+                    if (!closed)
+                        U.error(log, "Failed to process selector key [ses=" + ses + ']', e);
 
+                    if (ses != null)
                         close(ses, new GridNioException(e));
-                    }
                 }
             }
         }
@@ -1737,7 +1737,7 @@ public class GridNioServer<T> {
                 }
                 catch (Exception e) {
                     if (!closed)
-                        U.warn(log, "Failed to process selector key (will close): " + ses, e);
+                        U.error(log, "Failed to process selector key [ses=" + ses + ']', e);
 
                     if (ses != null)
                         close(ses, new GridNioException(e));
