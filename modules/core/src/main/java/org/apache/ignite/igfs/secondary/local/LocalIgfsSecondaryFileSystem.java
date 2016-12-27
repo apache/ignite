@@ -423,11 +423,6 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len) throws IgniteException {
-        return affinity(path, start, len, 0);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
         long maxLen) throws IgniteException {
         File f = fileForPath(path);
@@ -439,7 +434,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         long blockSize = igfs.configuration().getBlockSize();
 
         if (maxLen <= 0)
-            maxLen = igfs.context().data().groupBlockSize(); // TODO: To long max value?
+            maxLen = Long.MAX_VALUE;
 
         assert maxLen > 0 : "maxLen : " + maxLen;
 

@@ -255,12 +255,6 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len)
-            throws IgniteException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
             long maxLen) throws IgniteException {
             return null;

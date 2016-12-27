@@ -245,8 +245,9 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
             Collection<IgfsBlockLocation> blocks0 =
                 igfs.affinity(filePath, start, len, 0);
 
-            blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
+            blocks = igfs.affinity(filePath, start, len, Long.MAX_VALUE);
 
+            assertTrue(blocks0.size() > 1);
             assertEquals(blocks0.size(), blocks.size());
             assertEquals(F.first(blocks).start(), start);
             assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
@@ -254,6 +255,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
             len -= 1024 * 2;
             start += 1024;
+            System.out.println("+++ ");
         }
 
         len = igfs.info(filePath).length();
