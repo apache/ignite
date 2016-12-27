@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 const DFLT_CACHE = {
     cacheMode: {
         clsName: 'org.apache.ignite.cache.CacheMode'
@@ -126,12 +124,8 @@ const DFLT_CACHE = {
     }
 };
 
-export default function() {
-    this.append = (dflts) => {
-        _.merge(DFLT_CACHE, dflts);
-    };
-
-    this.$get = [() => {
-        return DFLT_CACHE;
-    }];
+export default class IgniteCacheDefaults {
+    constructor() {
+        Object.assign(this, DFLT_CACHE);
+    }
 }

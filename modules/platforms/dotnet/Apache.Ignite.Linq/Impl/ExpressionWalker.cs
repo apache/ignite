@@ -99,6 +99,14 @@ namespace Apache.Ignite.Linq.Impl
                     return queryable;
             }
 
+            var callExpr = expression as MethodCallExpression;
+
+            if (callExpr != null)
+            {
+                // This is usually a nested query with a call to AsCacheQueryable().
+                return (ICacheQueryableInternal) Expression.Lambda(callExpr).Compile().DynamicInvoke();
+            }
+
             if (throwWhenNotFound)
                 throw new NotSupportedException("Unexpected query source: " + expression);
 
