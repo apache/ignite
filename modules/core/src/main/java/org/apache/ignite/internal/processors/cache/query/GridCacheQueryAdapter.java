@@ -663,7 +663,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             this.part = part;
 
             nodes = fallbacks(cctx.discovery().topologyVersionEx());
-
+            if (nodes.isEmpty()) throw new ClusterTopologyException("The data in the partition lost.");
             init();
         }
 
