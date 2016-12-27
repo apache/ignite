@@ -628,9 +628,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestEquality()
         {
-            // TODO: Test comparers
-            // TODO: What if resolver is set - do we set hash code for the user automatically?
-
             var bin = _grid.GetBinary();
 
             var obj1 = bin.GetBuilder("myType").SetStringField("str", "foo").SetIntField("int", 1).Build();
