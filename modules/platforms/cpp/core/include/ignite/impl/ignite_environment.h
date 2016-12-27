@@ -101,10 +101,9 @@ namespace ignite
             /**
              * Cache Invoke callback.
              *
-             * @param inMemPtr Input memory pointer.
-             * @param outMemPtr Output memory pointer.
+             * @param mem Input-output memory.
              */
-            void CacheInvokeCallback(long long inMemPtr, long long outMemPtr);
+            void CacheInvokeCallback(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Get name of Ignite instance.

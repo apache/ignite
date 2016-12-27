@@ -40,6 +40,7 @@ namespace ignite
          */
         enum CallbackOp
         {
+            CACHE_INVOKE = 8,
             CONTINUOUS_QUERY_LISTENER_APPLY = 18,
             CONTINUOUS_QUERY_FILTER_RELEASE = 21,
             REALLOC = 36,
@@ -79,6 +80,15 @@ namespace ignite
                 case CONTINUOUS_QUERY_FILTER_RELEASE:
                 {
                     // No-op.
+                    break;
+                }
+
+                case CACHE_INVOKE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->CacheInvokeCallback(mem);
+
                     break;
                 }
 
@@ -295,17 +305,15 @@ namespace ignite
             }
         }
 
-        void IgniteEnvironment::CacheInvokeCallback(long long inMemPtr, long long outMemPtr)
+        void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
         {
             if (!invokeMgr.Get())
                 throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "InvokeManager is not initialized.");
 
-            InteropExternalMemory inMem(reinterpret_cast<int8_t*>(inMemPtr));
-            InteropInputStream inStream(&inMem);
+            InteropInputStream inStream(mem.Get());
             BinaryReaderImpl reader(&inStream);
 
-            InteropExternalMemory outMem(reinterpret_cast<int8_t*>(outMemPtr));
-            InteropOutputStream outStream(&outMem);
+            InteropOutputStream outStream(mem.Get());
             BinaryWriterImpl writer(&outStream, GetTypeManager());
 
             int64_t procId;
