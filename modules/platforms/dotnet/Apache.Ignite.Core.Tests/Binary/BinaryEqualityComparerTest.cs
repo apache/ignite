@@ -144,7 +144,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(cmp.Equals(obj5, obj5));
             Assert.IsFalse(cmp.Equals(obj5, obj6));
 
-            // GetHashCode.
+            // BinaryObject.GetHashCode.
+            Assert.AreEqual(1934949494, obj1.GetHashCode());
+            Assert.AreEqual(-2013102781, obj2.GetHashCode());
+            Assert.AreEqual(1424415317, obj3.GetHashCode());
+            Assert.AreEqual(1771330338, obj4.GetHashCode());
+            Assert.AreEqual(obj1.GetHashCode(), obj5.GetHashCode());
+            Assert.AreEqual(1934979285, cmp.GetHashCode(obj6));
+
+            // Comparer.GetHashCode.
             Assert.AreEqual(2001751043, cmp.GetHashCode(GetBinaryObject(0, null, 0)));
             Assert.AreEqual(194296580, cmp.GetHashCode(GetBinaryObject(1, null, 0)));
             Assert.AreEqual(1934949494, cmp.GetHashCode(obj1));
@@ -153,6 +161,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1771330338, cmp.GetHashCode(obj4));
             Assert.AreEqual(cmp.GetHashCode(obj1), cmp.GetHashCode(obj5));
             Assert.AreEqual(1934979285, cmp.GetHashCode(obj6));
+
+            // GetHashCode consistency.
+            foreach (var obj in new[] {obj1, obj2, obj3, obj4, obj5, obj6})
+                Assert.AreEqual(obj.GetHashCode(), cmp.GetHashCode(obj));
         }
 
         /// <summary>
