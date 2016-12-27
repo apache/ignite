@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
+import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -59,8 +60,10 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -129,6 +132,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /** Logger. */
     private static IgniteLogger log;
+
+    /** Logger. */
+    private static IgniteLogger msgLog;
 
     /** Context. */
     private GridCacheSharedContext<?, ?> cctx;
@@ -201,9 +207,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** */
     private boolean invoke;
 
+    /** Timeout object. */
+    private final PrepareTimeoutObject timeoutObj;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
+     * @param timeout Timeout.
      * @param nearMiniId Near mini future id.
      * @param dhtVerMap DHT versions map.
      * @param last {@code True} if this is last prepare operation for node.
@@ -212,6 +222,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     public GridDhtTxPrepareFuture(
         GridCacheSharedContext cctx,
         final GridDhtTxLocalAdapter tx,
+        long timeout,
         IgniteUuid nearMiniId,
         Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
         boolean last,
@@ -228,8 +239,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         this.nearMiniId = nearMiniId;
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.txPrepareMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
+        }
 
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
@@ -238,6 +251,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         assert dhtMap != null;
         assert nearMap != null;
+
+        timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
     }
 
     /** {@inheritDoc} */
@@ -264,7 +279,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         boolean rmv;
 
-        synchronized (lockKeys) {
+        synchronized (sync) {
             rmv = lockKeys.remove(entry.txKey());
         }
 
@@ -295,7 +310,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (!locksReady)
             return false;
 
-        synchronized (lockKeys) {
+        synchronized (sync) {
             return lockKeys.isEmpty();
         }
     }
@@ -346,7 +361,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
+                CacheObject val;
+                CacheObject oldVal = null;
+
+                boolean readOld = hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM;
+
+                if (readOld) {
                     cached.unswap(retVal);
 
                     boolean readThrough = !txEntry.skipStore() &&
@@ -361,7 +381,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     final boolean keepBinary = txEntry.keepBinary();
 
-                    CacheObject val = cached.innerGet(
+                    val = oldVal = cached.innerGet(
                         null,
                         tx,
                         /*swap*/true,
@@ -456,6 +476,33 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     else
                         ret.success(txEntry.op() != DELETE || cached.hasValue());
                 }
+
+                // Send old value in case if rebalancing is not finished.
+                final boolean sndOldVal = !cacheCtx.isLocal() && !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
+
+                if (sndOldVal) {
+                    if (oldVal == null && !readOld) {
+                        oldVal = cached.innerGet(
+                            null,
+                            tx,
+                            /*swap*/true,
+                            /*readThrough*/false,
+                            /*metrics*/false,
+                            /*event*/false,
+                            /*tmp*/false,
+                            /*subjectId*/tx.subjectId(),
+                            /*transformClo*/null,
+                            /*taskName*/null,
+                            /*expiryPlc*/null,
+                            /*keepBinary*/true);
+                    }
+
+                    if (oldVal != null) {
+                        oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
+
+                        txEntry.oldValue(oldVal, true);
+                    }
+                }
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
@@ -478,13 +525,32 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse res) {
-        if (!isDone()) {
-            MiniFuture mini = miniFuture(res.miniId());
+        if (isDone()) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, response for finished future [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
+            }
 
-            if (mini != null) {
-                assert mini.node().id().equals(nodeId);
+            return;
+        }
 
-                mini.onResult(res);
+        MiniFuture mini = miniFuture(res.miniId());
+
+        if (mini != null) {
+            assert mini.node().id().equals(nodeId);
+
+            mini.onResult(res);
+        }
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
             }
         }
     }
@@ -498,10 +564,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
+            for (int i = 0; i < size; i++) {
+                IgniteInternalFuture<IgniteInternalTx> fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -555,7 +623,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             }
 
             if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                synchronized (lockKeys) {
+                synchronized (sync) {
                     lockKeys.add(txEntry.txKey());
                 }
             }
@@ -564,10 +632,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 try {
                     assert txEntry.explicitVersion() == null || entry.lockedBy(txEntry.explicitVersion());
 
-                    GridCacheMvccCandidate c = entry.readyLock(tx.xidVersion());
+                    CacheLockCandidates owners = entry.readyLock(tx.xidVersion());
 
                     if (log.isDebugEnabled())
-                        log.debug("Current lock owner for entry [owner=" + c + ", entry=" + entry + ']');
+                        log.debug("Current lock owners for entry [owner=" + owners + ", entry=" + entry + ']');
 
                     break; // While.
                 }
@@ -655,7 +723,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                         sendPrepareResponse(res);
                                 }
                                 catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
+                                        ", dhtTxId=" + tx.xidVersion() +
+                                        ", node=" + tx.nearNodeId() +
+                                        ", res=" + res,
+                                        ", tx=" + tx,
+                                        e);
                                 }
                             }
                         };
@@ -693,7 +766,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         sendPrepareResponse(res);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", res=" + res,
+                        ", tx=" + tx,
+                        e);
                 }
             }
 
@@ -707,7 +785,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     sendPrepareResponse(res);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", res=" + res,
+                        ", tx=" + tx,
+                        e);
                 }
                 finally {
                     // Will call super.onDone().
@@ -742,10 +825,26 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (!tx.nearNodeId().equals(cctx.localNodeId())) {
             Throwable err = this.err;
 
-            if (err != null && err instanceof IgniteFutureCancelledException)
+            if (err != null && err instanceof IgniteFutureCancelledException) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT prepare fut, skip send response [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", err=" + err +
+                        ", res=" + res + ']');
+                }
+
                 return;
+            }
 
             cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + tx.nearNodeId() +
+                    ", res=" + res + ']');
+            }
         }
     }
 
@@ -875,6 +974,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
 
+            if (timeoutObj != null)
+                cctx.time().removeTimeoutObject(timeoutObj);
+
             return true;
         }
 
@@ -929,6 +1031,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         }
 
         readyLocks();
+
+        if (timeoutObj != null) {
+            // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
+            cctx.time().addTimeoutObject(timeoutObj);
+        }
 
         mapIfLocked();
     }
@@ -1099,6 +1206,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             if (last) {
                 assert tx.transactionNodes() != null;
 
+                final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
+
                 // Create mini futures.
                 for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
                     assert !dhtMapping.empty();
@@ -1116,6 +1225,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
+                    if (tx.remainingTime() == -1)
+                        return;
+
                     MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
 
                     add(fut); // Append new future.
@@ -1127,6 +1239,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         fut.futureId(),
                         tx.topologyVersion(),
                         tx,
+                        timeout,
                         dhtWrites,
                         nearWrites,
                         txNodes,
@@ -1135,7 +1248,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         tx.onePhaseCommit(),
                         tx.subjectId(),
                         tx.taskNameHash(),
-                        tx.activeCachesDeploymentEnabled());
+                        tx.activeCachesDeploymentEnabled(),
+                        retVal);
 
                     int idx = 0;
 
@@ -1192,18 +1306,42 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     try {
                         cctx.io().send(n, req, tx.ioPolicy());
+
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + n.id() + ']');
+                        }
                     }
                     catch (ClusterTopologyCheckedException e) {
                         fut.onNodeLeft(e);
                     }
                     catch (IgniteCheckedException e) {
-                        if (!cctx.kernalContext().isStopping())
+                        if (!cctx.kernalContext().isStopping()) {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + n.id() + ']');
+                            }
+
                             fut.onResult(e);
+                        }
+                        else {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT prepare fut, failed to send request dht, ignore [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + n.id() +
+                                    ", err=" + e + ']');
+                            }
+                        }
                     }
                 }
 
                 for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
+                        if (tx.remainingTime() == -1)
+                            return;
+
                         MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
                         add(fut); // Append new future.
@@ -1213,6 +1351,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             fut.futureId(),
                             tx.topologyVersion(),
                             tx,
+                            timeout,
                             null,
                             nearMapping.writes(),
                             tx.transactionNodes(),
@@ -1221,7 +1360,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             tx.onePhaseCommit(),
                             tx.subjectId(),
                             tx.taskNameHash(),
-                            tx.activeCachesDeploymentEnabled());
+                            tx.activeCachesDeploymentEnabled(),
+                            retVal);
 
                         for (IgniteTxEntry entry : nearMapping.entries()) {
                             if (CU.writes().apply(entry)) {
@@ -1249,13 +1389,34 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                         try {
                             cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT prepare fut, sent request near [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + nearMapping.node().id() + ']');
+                            }
                         }
                         catch (ClusterTopologyCheckedException e) {
                             fut.onNodeLeft(e);
                         }
                         catch (IgniteCheckedException e) {
-                            if (!cctx.kernalContext().isStopping())
+                            if (!cctx.kernalContext().isStopping()) {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("DHT prepare fut, failed to send request near [txId=" + tx.nearXidVersion() +
+                                        ", dhtTxId=" + tx.xidVersion() +
+                                        ", node=" + nearMapping.node().id() + ']');
+                                }
+
                                 fut.onResult(e);
+                            }
+                            else {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("DHT prepare fut, failed to send request near, ignore [txId=" + tx.nearXidVersion() +
+                                        ", dhtTxId=" + tx.xidVersion() +
+                                        ", node=" + nearMapping.node().id() +
+                                        ", err=" + e + ']');
+                                }
+                            }
                         }
                     }
                 }
@@ -1471,8 +1632,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
          * @param e Node failure.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT prepare fut, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + node().id() + ']');
+            }
 
             if (tx != null)
                 tx.removeMapping(nodeId);
@@ -1613,6 +1777,40 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
+        }
+    }
+
+    /**
+     *
+     */
+    private class PrepareTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        private final long timeout;
+
+        /**
+         * @param timeout Timeout.
+         */
+        PrepareTimeoutObject(long timeout) {
+            super(timeout);
+
+            this.timeout = timeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            synchronized (sync) {
+                clear();
+
+                lockKeys.clear();
+            }
+
+            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
+                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PrepareTimeoutObject.class, this);
         }
     }
 }

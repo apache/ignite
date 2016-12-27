@@ -175,7 +175,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                             assert values.length >= 1;
 
                             res.put(toSimpleObject(keyCls, values[0]),
-                                    values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
+                                values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
                         }
                     }
                 }

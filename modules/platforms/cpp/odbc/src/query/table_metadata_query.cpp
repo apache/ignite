@@ -52,7 +52,7 @@ namespace ignite
             TableMetadataQuery::TableMetadataQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& catalog,const std::string& schema,
                 const std::string& table, const std::string& tableType) :
-                Query(diag),
+                Query(diag, TABLE_METADATA),
                 connection(connection),
                 catalog(catalog),
                 schema(schema),

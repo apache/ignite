@@ -72,7 +72,7 @@ public class VisorIgfs implements Serializable, LessNamingBean {
         return new VisorIgfs(
             igfs.name(),
             igfs.configuration().getDefaultMode(),
-            VisorIgfsMetrics.from(igfs.metrics()),
+            VisorIgfsMetrics.from(igfs),
             igfs.configuration().getSecondaryFileSystem() != null
         );
     }

@@ -19,14 +19,6 @@
 
 #include "ignite/odbc/utility.h"
 
-BOOL INSTAPI ConfigDSN(HWND     hwndParent,
-                       WORD     req,
-                       LPCSTR   driver,
-                       LPCSTR   attributes)
-{
-    return ignite::ConfigDSN(hwndParent, req, driver, attributes);
-}
-
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
                              SQLUSMALLINT   infoType,
                              SQLPOINTER     infoValue,
@@ -226,6 +218,8 @@ SQLRETURN SQL_API SQLNativeSql(SQLHDBC      conn,
         outQueryBuffer, outQueryBufferLen, outQueryLen);
 }
 
+
+#if defined _WIN64 || !defined _WIN32
 SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
                                   SQLUSMALLINT    columnNum,
                                   SQLUSMALLINT    fieldId,
@@ -233,9 +227,18 @@ SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
                                   SQLSMALLINT     bufferLen,
                                   SQLSMALLINT*    strAttrLen,
                                   SQLLEN*         numericAttr)
+#else
+SQLRETURN SQL_API SQLColAttribute(SQLHSTMT       stmt,
+                                  SQLUSMALLINT   columnNum,
+                                  SQLUSMALLINT   fieldId,
+                                  SQLPOINTER     strAttr,
+                                  SQLSMALLINT    bufferLen,
+                                  SQLSMALLINT*   strAttrLen,
+                                  SQLPOINTER     numericAttr)
+#endif
 {
     return ignite::SQLColAttribute(stmt, columnNum, fieldId,
-        strAttr, bufferLen, strAttrLen, numericAttr);
+        strAttr, bufferLen, strAttrLen, (SQLLEN*)numericAttr);
 }
 
 SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
@@ -381,19 +384,54 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
 }
 
 SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
-                                    SQLSMALLINT idType,
+                                    SQLUSMALLINT idType,
                                     SQLCHAR*    catalogName,
                                     SQLSMALLINT catalogNameLen,
                                     SQLCHAR*    schemaName,
                                     SQLSMALLINT schemaNameLen,
                                     SQLCHAR*    tableName,
                                     SQLSMALLINT tableNameLen,
-                                    SQLSMALLINT scope,
-                                    SQLSMALLINT nullable)
+                                    SQLUSMALLINT scope,
+                                    SQLUSMALLINT nullable)
 {
-    return ignite::SQLSpecialColumns(stmt, idType, catalogName,
-        catalogNameLen, schemaName, schemaNameLen, tableName,
-        tableNameLen, scope, nullable);
+    return ignite::SQLSpecialColumns(stmt, idType, catalogName, catalogNameLen, schemaName,
+        schemaNameLen, tableName, tableNameLen, scope, nullable);
+}
+
+SQLRETURN SQL_API SQLParamData(SQLHSTMT stmt, SQLPOINTER* value)
+{
+    return ignite::SQLParamData(stmt, value);
+}
+
+SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
+                             SQLPOINTER   data,
+                             SQLLEN       strLengthOrIndicator)
+{
+    return ignite::SQLPutData(stmt, data, strLengthOrIndicator);
+}
+
+SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
+                                   SQLUSMALLINT paramNum,
+                                   SQLSMALLINT* dataType,
+                                   SQLULEN*     paramSize,
+                                   SQLSMALLINT* decimalDigits,
+                                   SQLSMALLINT* nullable)
+{
+    return ignite::SQLDescribeParam(stmt, paramNum, dataType,
+     paramSize, decimalDigits, nullable);
+}
+
+SQLRETURN SQL_API SQLError(SQLHENV      env,
+                           SQLHDBC      conn,
+                           SQLHSTMT     stmt,
+                           SQLCHAR*     state,
+                           SQLINTEGER*  error,
+                           SQLCHAR*     msgBuf,
+                           SQLSMALLINT  msgBufLen,
+                           SQLSMALLINT* msgResLen)
+{
+    return ignite::SQLError(env, conn, stmt, state,
+        error, msgBuf, msgBufLen, msgResLen);
 }
 
 //
@@ -416,19 +454,6 @@ SQLRETURN SQL_API SQLColAttributes(SQLHSTMT     stmt,
 {
     LOG_MSG("SQLColAttributes called\n");
     return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLError(SQLHENV      env,
-                           SQLHDBC      conn,
-                           SQLHSTMT     stmt,
-                           SQLCHAR*     state,
-                           SQLINTEGER*  error,
-                           SQLCHAR*     msgBuf,
-                           SQLSMALLINT  msgBufLen,
-                           SQLSMALLINT* msgResLen)
-{
-    LOG_MSG("SQLError called\n");
-    return SQL_ERROR;
 }
 
 SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT     stmt,
@@ -461,21 +486,6 @@ SQLRETURN SQL_API SQLGetStmtOption(SQLHSTMT     stmt,
                                    SQLPOINTER   value)
 {
     LOG_MSG("SQLGetStmtOption called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLParamData(SQLHSTMT    stmt,
-                               SQLPOINTER* value)
-{
-    LOG_MSG("SQLParamData called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
-                             SQLPOINTER   data,
-                             SQLLEN       strLengthOrIndicator)
-{
-    LOG_MSG("SQLPutData called\n");
     return SQL_SUCCESS;
 }
 
@@ -659,17 +669,6 @@ SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT      stmt,
                                       SQLSMALLINT   columnNameLen)
 {
     LOG_MSG("SQLColumnPrivileges called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
-                                   SQLUSMALLINT paramNum,
-                                   SQLSMALLINT* dataType,
-                                   SQLULEN*     paramSize,
-                                   SQLSMALLINT* decimalDigits,
-                                   SQLSMALLINT* nullable)
-{
-    LOG_MSG("SQLDescribeParam called\n");
     return SQL_SUCCESS;
 }
 

@@ -327,19 +327,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer);
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx entryExSafe(
-        KeyCacheObject key,
-        AffinityTopologyVersion topVer
-    ) {
-        try {
-            return ctx.affinity().localNode(key, topVer) ? entryEx(key) : null;
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return null;
-        }
-    }
-
     /**
      * @param keys Keys to load.
      * @param readThrough Read through flag.
@@ -1079,6 +1066,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param res Response.
      */
     private void processLockResponse(UUID nodeId, GridNearLockResponse res) {
+        if (txLockMsgLog.isDebugEnabled())
+            txLockMsgLog.debug("Received near lock response [txId=" + res.version() + ", node=" + nodeId + ']');
+
         assert nodeId != null;
         assert res != null;
 
@@ -1087,6 +1077,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (fut != null)
             fut.onResult(nodeId, res);
+        else {
+            if (txLockMsgLog.isDebugEnabled()) {
+                txLockMsgLog.debug("Received near lock response for unknown future [txId=" + res.version() +
+                    ", node=" + nodeId +
+                    ", res=" + res + ']');
+            }
+        }
     }
 
     /** {@inheritDoc} */

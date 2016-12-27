@@ -50,8 +50,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             new Dictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc =
-            new Dictionary<long, IBinaryTypeDescriptor>();
+        private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc =
+            new CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
         private volatile IDictionary<int, BinaryTypeHolder> _metas =
@@ -161,7 +161,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var ignite = Ignite;
 
             if (ignite != null && metas != null && metas.Count > 0)
-                ignite.PutBinaryTypes(metas);
+            {
+                ignite.BinaryProcessor.PutBinaryTypes(metas);
+            }
         }
 
         /// <summary>
@@ -234,7 +236,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(IBinaryStream stream, BinaryMode mode, BinaryObjectBuilder builder)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
+            return new BinaryReader(this, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -247,8 +249,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepBinary)
         {
-            return new BinaryReader(this, _idToDesc, stream,
-                keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return new BinaryReader(this, stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -259,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Reader.</returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, BinaryMode mode = BinaryMode.Deserialize)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, null);
+            return new BinaryReader(this, stream, mode, null);
         }
         
         /// <summary>
@@ -271,7 +272,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (Ignite != null)
             {
-                IBinaryType meta = Ignite.GetBinaryType(typeId);
+                IBinaryType meta = Ignite.BinaryProcessor.GetBinaryType(typeId);
 
                 if (meta != null)
                     return meta;
@@ -291,7 +292,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             GetBinaryTypeHandler(desc);  // ensure that handler exists
 
             if (Ignite != null)
-                Ignite.PutBinaryTypes(new[] {new BinaryType(desc)});
+            {
+                ICollection<BinaryType> metas = new[] {new BinaryType(desc)};
+                Ignite.BinaryProcessor.PutBinaryTypes(metas);
+            }
         }
 
         /// <summary>
@@ -382,17 +386,36 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// 
+        /// Gets descriptor for a type id.
         /// </summary>
-        /// <param name="userType"></param>
-        /// <param name="typeId"></param>
-        /// <returns></returns>
+        /// <param name="userType">User type flag.</param>
+        /// <param name="typeId">Type id.</param>
+        /// <returns>Descriptor.</returns>
         public IBinaryTypeDescriptor GetDescriptor(bool userType, int typeId)
         {
             IBinaryTypeDescriptor desc;
 
-            return _idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc) ? desc :
-                userType ? new BinarySurrogateTypeDescriptor(_cfg, typeId) : null;
+            var typeKey = BinaryUtils.TypeKey(userType, typeId);
+
+            if (_idToDesc.TryGetValue(typeKey, out desc))
+                return desc;
+
+            if (!userType)
+                return null;
+
+            var meta = GetBinaryType(typeId);
+
+            if (meta != BinaryType.Empty)
+            {
+                desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false, 
+                    meta.AffinityKeyFieldName, meta.IsEnum);
+
+                _idToDesc.GetOrAdd(typeKey, _ => desc);
+
+                return desc;
+            }
+
+            return new BinarySurrogateTypeDescriptor(_cfg, typeId);
         }
 
         /// <summary>
@@ -530,7 +553,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (userType)
                 _typeNameToDesc[typeName] = descriptor;
 
-            _idToDesc[typeKey] = descriptor;            
+            _idToDesc.GetOrAdd(typeKey, _ => descriptor);
         }
 
         /// <summary>
@@ -556,25 +579,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void AddSystemTypes()
         {
-            AddSystemType(BinaryUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
-            AddSystemType(BinaryUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
-            AddSystemType(BinaryUtils.TypeIgniteProxy, w => new IgniteProxy());
-            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
-            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
-            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
-            AddSystemType(BinaryUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
-            AddSystemType(BinaryUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
-            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w),
+            AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
+            AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
+            AddSystemType(BinaryUtils.TypeIgniteProxy, r => new IgniteProxy());
+            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
+            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
+            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));
+            AddSystemType(BinaryUtils.TypeComputeFuncJob, r => new ComputeFuncJob(r));
+            AddSystemType(BinaryUtils.TypeComputeActionJob, r => new ComputeActionJob(r));
+            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, r => new ContinuousQueryFilterHolder(r));
+            AddSystemType(BinaryUtils.TypeSerializableHolder, r => new SerializableObjectHolder(r),
                 serializer: new SerializableSerializer());
-            AddSystemType(BinaryUtils.TypeDateTimeHolder, w => new DateTimeHolder(w),
+            AddSystemType(BinaryUtils.TypeDateTimeHolder, r => new DateTimeHolder(r),
                 serializer: new DateTimeSerializer());
-            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
-            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
-            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
-            AddSystemType(0, w => new AffinityKey(w), "affKey");
-            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, r => new CacheEntryProcessorHolder(r));
+            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, r => new CacheEntryFilterHolder(r));
+            AddSystemType(BinaryUtils.TypeMessageListenerHolder, r => new MessageListenerHolder(r));
+            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, r => new StreamReceiverHolder(r));
+            AddSystemType(0, r => new AffinityKey(r), "affKey");
+            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(0, r => new ObjectInfoHolder(r));
         }
     }
 }

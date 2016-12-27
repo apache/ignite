@@ -43,6 +43,18 @@
     <ClCompile Include="..\..\src\transactions_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\bits_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\decimal_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fixed_size_array_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamic_size_array_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cache_invoke_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -50,6 +62,12 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cluster_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\continuous_query_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\reference_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,6 +98,9 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\invalid.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

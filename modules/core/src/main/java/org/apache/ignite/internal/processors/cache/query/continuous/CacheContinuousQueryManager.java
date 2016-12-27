@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -245,7 +245,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean primary,
         boolean preload,
         long updateCntr,
-        @Nullable GridDhtAtomicUpdateFuture fut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         Map<UUID, CacheContinuousQueryListener> lsnrCol = updateListeners(internal, preload);
@@ -290,7 +290,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean primary,
         boolean preload,
         long updateCntr,
-        @Nullable GridDhtAtomicUpdateFuture fut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
@@ -421,7 +421,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         long timeInterval,
         boolean autoUnsubscribe,
         boolean loc,
-        final boolean keepBinary) throws IgniteCheckedException
+        final boolean keepBinary,
+        final boolean includeExpired) throws IgniteCheckedException
     {
         IgniteClosure<Boolean, CacheContinuousQueryHandler> clsr;
 
@@ -438,7 +439,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                             rmtFilterFactory,
                             true,
                             false,
-                            true,
+                            !includeExpired,
                             false,
                             null);
                     else {
@@ -456,7 +457,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                             (CacheEntryEventSerializableFilter)fltr,
                             true,
                             false,
-                            true,
+                            !includeExpired,
                             false);
                     }
 
@@ -473,7 +474,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         rmtFilter,
                         true,
                         false,
-                        true,
+                        !includeExpired,
                         false);
                 }
             };
@@ -642,7 +643,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         hnd.localCache(cctx.isLocal());
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
-            F.nodeForNodeId(cctx.localNodeId()) : F.<ClusterNode>alwaysTrue();
+            F.nodeForNodeId(cctx.localNodeId()) : cctx.config().getNodeFilter();
+
+        assert pred != null : cctx.config();
 
         UUID id = cctx.kernalContext().continuous().startRoutine(
             hnd,
@@ -1201,7 +1204,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /**
      *
      */
-    private static class CacheEntryEventImpl extends CacheQueryEntryEvent {
+    public static class CacheEntryEventImpl extends CacheQueryEntryEvent {
         /** */
         private static final long serialVersionUID = 0L;
 

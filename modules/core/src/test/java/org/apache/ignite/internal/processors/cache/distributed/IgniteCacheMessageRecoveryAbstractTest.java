@@ -58,6 +58,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
 
         commSpi.setSocketWriteTimeout(1000);
         commSpi.setSharedMemoryPort(-1);
+        commSpi.setConnectionsPerNode(connectionsPerNode());
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -73,6 +74,13 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Value for {@link TcpCommunicationSpi#setConnectionsPerNode(int)}.
+     */
+    protected int connectionsPerNode() {
+        return TcpCommunicationSpi.DFLT_CONN_PER_NODE;
     }
 
     /**
@@ -150,7 +158,11 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
             for (int i = 0; i < 30; i++) {
                 Thread.sleep(1000);
 
-                closed |= closeSessions();
+                Ignite node0 = ignite(ThreadLocalRandom.current().nextInt(0, GRID_CNT));
+
+                log.info("Close sessions for: " + ignite.name());
+
+                closed |= closeSessions(node0);
             }
 
             assertTrue(closed);
@@ -163,27 +175,29 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     }
 
     /**
+     * @param ignite Node.
      * @throws Exception If failed.
+     * @return {@code True} if closed at least one session.
      */
-    private boolean closeSessions() throws Exception {
-        Ignite ignite = ignite(ThreadLocalRandom.current().nextInt(0, GRID_CNT));
-
-        log.info("Close sessions for: " + ignite.name());
-
+    static boolean closeSessions(Ignite ignite) throws Exception {
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-        Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
+        Map<UUID, GridCommunicationClient[]> clients = U.field(commSpi, "clients");
 
         boolean closed = false;
 
-        for (GridCommunicationClient client : clients.values()) {
-            GridTcpNioCommunicationClient client0 = (GridTcpNioCommunicationClient)client;
+        for (GridCommunicationClient[] clients0 : clients.values()) {
+            for (GridCommunicationClient client : clients0) {
+                if (client != null) {
+                    GridTcpNioCommunicationClient client0 = (GridTcpNioCommunicationClient)client;
 
-            GridNioSession ses = client0.session();
+                    GridNioSession ses = client0.session();
 
-            ses.close();
+                    ses.close();
 
-            closed = true;
+                    closed = true;
+                }
+            }
         }
 
         return closed;

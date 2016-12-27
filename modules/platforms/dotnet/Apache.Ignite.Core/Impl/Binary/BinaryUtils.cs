@@ -1846,7 +1846,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             err = reader.ReadBoolean()
                 ? reader.ReadObject<object>()
-                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString());
+                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
+                                              reader.ReadString());
 
             return null;
         }
@@ -1945,6 +1946,34 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
                 cfg = null;
+        }
+
+        /// <summary>
+        /// Gets the unsupported type exception.
+        /// </summary>
+        public static BinaryObjectException GetUnsupportedTypeException(Type type, object obj)
+        {
+            return new BinaryObjectException(string.Format(
+                "Unsupported object type [type={0}, object={1}].\nSpecified type " +
+                "can not be serialized by Ignite: it is neither [Serializable], " +
+                "nor registered in IgniteConfiguration.BinaryConfiguration." +
+                "\nSee https://apacheignite-net.readme.io/docs/serialization for more details.", type, obj));
+        }
+
+        /// <summary>
+        /// Reinterprets int bits as a float.
+        /// </summary>
+        public static unsafe float IntToFloatBits(int val)
+        {
+            return *(float*) &val;
+        }
+
+        /// <summary>
+        /// Reinterprets long bits as a double.
+        /// </summary>
+        public static unsafe double LongToDoubleBits(long val)
+        {
+            return *(double*) &val;
         }
 
         /// <summary>

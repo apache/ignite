@@ -27,6 +27,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -71,13 +73,14 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private ContinuousQueryListener lsnr;
 
     /**
+     * @param igniteWorkDir Ignite work directory.
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+    public MarshallerContextImpl(String igniteWorkDir, List<PluginProvider> plugins) throws IgniteCheckedException {
         super(plugins);
 
-        workDir = U.resolveWorkDirectory("marshaller", false);
+        workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
     }
 
     /**
@@ -178,7 +181,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) throws IgniteCheckedException {
+    @Override public String className(int id) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
 
         if (cache0 == null) {
@@ -207,7 +210,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                     assert fileLock != null : fileName;
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                         clsName = reader.readLine();
                     }
                 }
@@ -258,7 +261,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /**
      */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
         /** */
         private final IgniteLogger log;
 
@@ -269,7 +272,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
          * @param log Logger.
          * @param workDir Work directory.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+        public ContinuousQueryListener(IgniteLogger log, File workDir) {
             this.log = log;
             this.workDir = workDir;
         }
@@ -296,7 +299,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                             assert fileLock != null : fileName;
 
-                            try (Writer writer = new OutputStreamWriter(out)) {
+                            try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                                 writer.write(evt.getValue());
 
                                 writer.flush();
@@ -305,6 +308,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         catch (IOException e) {
                             U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
                                 ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        }
+                        catch(OverlappingFileLockException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("File already locked (will ignore): " + file.getAbsolutePath());
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);

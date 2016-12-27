@@ -110,6 +110,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// The value for the entry that is to be stored in the cache
         /// or <c>null</c> if the object can't be loaded
         /// </returns>
+        [ExcludeFromCodeCoverage]
         public virtual object Load(object key)
         {
             return null;
@@ -124,6 +125,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <returns>
         /// A map of key, values to be stored in the cache.
         /// </returns>
+        [ExcludeFromCodeCoverage]
         public virtual IDictionary LoadAll(ICollection keys)
         {
             return null;
@@ -136,6 +138,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// </summary>
         /// <param name="key">Key to write.</param>
         /// <param name="val">Value to write.</param>
+        [ExcludeFromCodeCoverage]
         public virtual void Write(object key, object val)
         {
             // No-op.
@@ -154,6 +157,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="entries">a mutable collection to write. Upon invocation,  it contains the entries
         /// to write for write-through. Upon return the collection must only contain entries
         /// that were not successfully written. (see partial success above).</param>
+        [ExcludeFromCodeCoverage]
         public virtual void WriteAll(IDictionary entries)
         {
             // No-op.
@@ -167,6 +171,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// This method is invoked even if no mapping for the key exists.
         /// </summary>
         /// <param name="key">The key that is used for the delete operation.</param>
+        [ExcludeFromCodeCoverage]
         public virtual void Delete(object key)
         {
             // No-op.
@@ -189,6 +194,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="keys">a mutable collection of keys for entries to delete. Upon invocation,
         /// it contains the keys to delete for write-through. Upon return the collection must only contain
         /// the keys that were not successfully deleted.</param>
+        [ExcludeFromCodeCoverage]
         public virtual void DeleteAll(ICollection keys)
         {
             // No-op.
@@ -199,6 +205,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <c>commit</c> parameter.
         /// </summary>
         /// <param name="commit"><c>True</c> if transaction should commit, <c>false</c> for rollback.</param>
+        [ExcludeFromCodeCoverage]
         public virtual void SessionEnd(bool commit)
         {
             // No-op.

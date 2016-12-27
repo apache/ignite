@@ -298,11 +298,11 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::common::SafeArray<char> arr(len + 1);
+                    ignite::common::FixedSizeArray<char> arr(len + 1);
 
-                    ReadString(arr.target, len + 1);
+                    ReadString(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
 
-                    return std::string(arr.target);
+                    return std::string(arr.GetData());
                 }
                 else
                     return std::string();
@@ -411,7 +411,12 @@ namespace ignite
             template<typename T>
             bool TryReadObject(T& res)
             {
-                return impl->TryReadObject<T>(res);
+                if (impl->SkipIfNull())
+                    return false;
+
+                res = impl->ReadObject<T>();
+
+                return true;
             }
 
         private:

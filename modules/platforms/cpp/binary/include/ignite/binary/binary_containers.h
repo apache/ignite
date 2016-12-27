@@ -342,11 +342,11 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    common::SafeArray<char> arr(len + 1);
+                    ignite::common::FixedSizeArray<char> arr(len + 1);
 
-                    GetNext(arr.target, len + 1);
+                    GetNext(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
 
-                    return std::string(arr.target);
+                    return std::string(arr.GetData());
                 }
                 else
                     return std::string();

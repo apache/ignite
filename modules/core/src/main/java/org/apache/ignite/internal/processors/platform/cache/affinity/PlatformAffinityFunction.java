@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxyImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -38,7 +37,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,10 +48,31 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Object userFunc;
+    private static final byte FLAG_PARTITION = 1;
 
     /** */
+    private static final byte FLAG_REMOVE_NODE = 1 << 1;
+
+    /** */
+    private static final byte FLAG_ASSIGN_PARTITIONS = 1 << 2;
+
+    /** */
+    private Object userFunc;
+
+    /**
+     * Partition count.
+     *
+     * 1) Java calls partitions() method very early (before LifecycleAware.start) during CacheConfiguration validation.
+     * 2) Partition count never changes.
+     * Therefore, we get the value on .NET side once, and pass it along with PlatformAffinity.
+     */
     private int partitions;
+
+    /** */
+    private AffinityFunction baseFunc;
+
+    /** */
+    private byte overrideFlags;
 
     /** */
     private transient Ignite ignite;
@@ -63,6 +82,10 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** */
     private transient long ptr;
+
+    /** */
+    private transient PlatformAffinityFunctionTarget baseTarget;
+
 
     /**
      * Ctor for serialization.
@@ -76,21 +99,47 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      * Ctor.
      *
      * @param func User fun object.
-     * @param partitions Initial number of partitions.
+     * @param partitions Number of partitions.
      */
-    public PlatformAffinityFunction(Object func, int partitions) {
+    public PlatformAffinityFunction(Object func, int partitions, byte overrideFlags, AffinityFunction baseFunc) {
         userFunc = func;
         this.partitions = partitions;
+        this.overrideFlags = overrideFlags;
+        this.baseFunc = baseFunc;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets the user func object.
+     *
+     * @return User func object.
+     */
     public Object getUserFunc() {
         return userFunc;
     }
 
+    /**
+     * Gets the base func.
+     *
+     * @return Base func.
+     */
+    public AffinityFunction getBaseFunc() {
+        return baseFunc;
+    }
+
+    /**
+     * Gets the override flags.
+     *
+     * @return The override flags
+     */
+    public byte getOverrideFlags() {
+        return overrideFlags;
+    }
+
     /** {@inheritDoc} */
     @Override public void reset() {
-        // No-op: userFunc is always in initial state (it is serialized only once on start).
+        // userFunc is always in initial state (it is serialized only once on start).
+        if (baseFunc != null)
+            baseFunc.reset();
     }
 
     /** {@inheritDoc} */
@@ -104,6 +153,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if ((overrideFlags & FLAG_PARTITION) == 0) {
+            assert baseFunc != null;
+
+            return baseFunc.partition(key);
+        }
+
         assert ctx != null;
         assert ptr != 0;
 
@@ -111,73 +166,68 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(ptr);
             writer.writeObject(key);
 
             out.synchronize();
 
-            return ctx.gateway().affinityFunctionPartition(ptr, mem.pointer());
+            return ctx.gateway().affinityFunctionPartition(mem.pointer());
         }
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+        if ((overrideFlags & FLAG_ASSIGN_PARTITIONS) == 0) {
+            assert baseFunc != null;
+
+            return baseFunc.assignPartitions(affCtx);
+        }
+
         assert ctx != null;
         assert ptr != 0;
         assert affCtx != null;
 
-        try (PlatformMemory outMem = ctx.memory().allocate()) {
-            try (PlatformMemory inMem = ctx.memory().allocate()) {
-                PlatformOutputStream out = outMem.output();
-                BinaryRawWriterEx writer = ctx.writer(out);
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = ctx.writer(out);
 
-                // Write previous assignment
-                List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
+            writer.writeLong(ptr);
 
-                if (prevAssignment == null)
-                    writer.writeInt(-1);
-                else {
-                    writer.writeInt(prevAssignment.size());
+            // Write previous assignment
+            PlatformAffinityUtils.writeAffinityFunctionContext(affCtx, writer, ctx);
 
-                    for (List<ClusterNode> part : prevAssignment)
-                        ctx.writeNodes(writer, part);
-                }
+            out.synchronize();
 
-                // Write other props
-                writer.writeInt(affCtx.backups());
-                ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
-                writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
-                writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
-                ctx.writeEvent(writer, affCtx.discoveryEvent());
+            // Call platform
+            // We can not restore original AffinityFunctionContext after the call to platform,
+            // due to DiscoveryEvent (when node leaves, we can't get it by id anymore).
+            // Secondly, AffinityFunctionContext can't be changed by the user.
+            if (baseTarget != null)
+                baseTarget.setCurrentAffinityFunctionContext(affCtx);
 
-                // Call platform
-                out.synchronize();
-                ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
-
-                PlatformInputStream in = inMem.input();
-                BinaryRawReaderEx reader = ctx.reader(in);
-
-                // Read result
-                int partCnt = in.readInt();
-                List<List<ClusterNode>> res = new ArrayList<>(partCnt);
-                IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
-
-                for (int i = 0; i < partCnt; i++) {
-                    int partSize = in.readInt();
-                    List<ClusterNode> part = new ArrayList<>(partSize);
-
-                    for (int j = 0; j < partSize; j++)
-                        part.add(cluster.node(reader.readUuid()));
-
-                    res.add(part);
-                }
-
-                return res;
+            try {
+                ctx.gateway().affinityFunctionAssignPartitions(mem.pointer());
             }
+            finally {
+                if (baseTarget != null)
+                    baseTarget.setCurrentAffinityFunctionContext(null);
+            }
+
+            // Read result
+            return PlatformAffinityUtils.readPartitionAssignment(ctx.reader(mem), ctx);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
+        if ((overrideFlags & FLAG_REMOVE_NODE) == 0) {
+            assert baseFunc != null;
+
+            baseFunc.removeNode(nodeId);
+
+            return;
+        }
+
         assert ctx != null;
         assert ptr != 0;
 
@@ -185,11 +235,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(ptr);
             writer.writeUuid(nodeId);
 
             out.synchronize();
 
-            ctx.gateway().affinityFunctionRemoveNode(ptr, mem.pointer());
+            ctx.gateway().affinityFunctionRemoveNode(mem.pointer());
         }
     }
 
@@ -197,16 +248,24 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(userFunc);
         out.writeInt(partitions);
+        out.writeByte(overrideFlags);
+        out.writeObject(baseFunc);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         userFunc = in.readObject();
         partitions = in.readInt();
+        overrideFlags = in.readByte();
+        baseFunc = (AffinityFunction)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        // userFunc is null when there is nothing overridden
+        if (userFunc == null)
+            return;
+
         assert ignite != null;
         ctx = PlatformUtils.platformContext(ignite);
         assert ctx != null;
@@ -219,12 +278,23 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
             out.synchronize();
 
-            ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
+            baseTarget = baseFunc != null
+                ? new PlatformAffinityFunctionTarget(ctx, baseFunc)
+                : null;
+
+            PlatformTargetProxyImpl baseTargetProxy = baseTarget != null
+                    ? new PlatformTargetProxyImpl(baseTarget, ctx)
+                    : null;
+
+            ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTargetProxy);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
+        if (ptr == 0)
+            return;
+
         assert ctx != null;
 
         ctx.gateway().affinityFunctionDestroy(ptr);
@@ -235,8 +305,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      *
      * @param ignite Ignite.
      */
+    @SuppressWarnings("unused")
     @IgniteInstanceResource
-    private void setIgnite(Ignite ignite) {
+    public void setIgnite(Ignite ignite) throws IgniteCheckedException {
         this.ignite = ignite;
+
+        if (baseFunc != null && ignite != null)
+            ((IgniteEx)ignite).context().resource().injectGeneric(baseFunc);
     }
 }

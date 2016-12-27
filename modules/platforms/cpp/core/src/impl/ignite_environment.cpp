@@ -18,7 +18,9 @@
 #include "ignite/impl/interop/interop_external_memory.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
+#include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/binary/binary.h"
+#include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/impl/module_manager.h"
 #include "ignite/invoke_manager.h"
 
@@ -27,65 +29,108 @@ using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
+using namespace ignite::impl::cache::query::continuous;
 
 namespace ignite 
 {
-    namespace impl 
+    namespace impl
     {
         /**
-         * OnStart callback.
-         *
-         * @param target Target environment.
-         * @param proc Processor instance.
-         * @param memPtr Memory pointer.
+         * Callback codes.
          */
-        void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
+        enum CallbackOp
         {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
-
-            ptr->Get()->OnStartCallback(memPtr, proc);
-        }
+            CONTINUOUS_QUERY_LISTENER_APPLY = 18,
+            CONTINUOUS_QUERY_FILTER_RELEASE = 21,
+            REALLOC = 36,
+            ON_START = 49,
+            ON_STOP = 50 
+        };
 
         /**
-         * OnStop callback.
-         *
+         * InLongOutLong callback.
+         * 
          * @param target Target environment.
+         * @param type Operation type.
+         * @param val Value.
          */
-        void IGNITE_CALL OnStop(void* target)
-        {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
-
-            delete ptr;
-        }
-
-        /**
-         * Memory reallocate callback.
-         *
-         * @param target Target environment.
-         * @param memPtr Memory pointer.
-         * @param cap Required capasity.
-         */
-        void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
+        long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
         {
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
+            switch (type)
+            {
+                case ON_STOP:
+                {
+                    delete env;
 
-            mem.Get()->Reallocate(cap);
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_LISTENER_APPLY:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->OnContinuousQueryListenerApply(mem);
+
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_FILTER_RELEASE:
+                {
+                    // No-op.
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            return 0;
         }
 
         /**
-         * CacheInvoke callback.
-         *
+         * InLongOutLong callback.
+         * 
          * @param target Target environment.
-         * @param inMemPtr Input memory pointer.
-         * @param outMemPtr Output memory pointer.
+         * @param type Operation type.
+         * @param val1 Value1.
+         * @param val2 Value2.
+         * @param val3 Value3.
+         * @param arg Object arg.
          */
-        void IGNITE_CALL CacheInvoke(void* target, long long inMemPtr, long long outMemPtr)
+        long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2, 
+            long long val3, void* arg)
         {
-            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            ptr->Get()->CacheInvokeCallback(inMemPtr, outMemPtr);
+            switch (type)
+            {
+                case ON_START:
+                {
+                    env->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));
+
+                    break;
+                }
+
+                case REALLOC:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
+
+                    mem.Get()->Reallocate(static_cast<int32_t>(val2));
+
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            return 0;
         }
 
         IgniteEnvironment::IgniteEnvironment() :
@@ -95,7 +140,9 @@ namespace ignite
             proc(),
             metaMgr(new BinaryTypeManager()),
             invokeMgr(new InvokeManagerImpl()),
-            moduleMgr(new ModuleManager(ignite::InvokeManager(invokeMgr)))
+            moduleMgr(new ModuleManager(ignite::InvokeManager(invokeMgr))),
+            metaUpdater(0),
+            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP)
         {
             // No-op.
         }
@@ -105,20 +152,17 @@ namespace ignite
             delete moduleMgr;
             delete metaMgr;
             delete name;
+            delete metaUpdater;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
         {
-            JniHandlers hnds = JniHandlers();
+            JniHandlers hnds;
 
             hnds.target = target;
 
-            hnds.onStart = OnStart;
-            hnds.onStop = OnStop;
-
-            hnds.memRealloc = MemoryReallocate;
-
-            hnds.cacheInvoke = CacheInvoke;
+            hnds.inLongOutLong = InLongOutLong;
+            hnds.inLongLongLongObjectOutLong = InLongLongLongObjectOutLong;
 
             hnds.error = 0;
 
@@ -133,6 +177,10 @@ namespace ignite
         void IgniteEnvironment::Initialize()
         {
             latch.CountDown();
+
+            jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
+
+            metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
         }
 
         const char* IgniteEnvironment::InstanceName() const
@@ -189,6 +237,11 @@ namespace ignite
             return metaMgr;
         }
 
+        BinaryTypeUpdater* IgniteEnvironment::GetTypeUpdater()
+        {
+            return metaUpdater;
+        }
+
         void* IgniteEnvironment::Acquire(void *obj)
         {
             return reinterpret_cast<void*>(ctx.Get()->Acquire(reinterpret_cast<jobject>(obj)));
@@ -200,9 +253,14 @@ namespace ignite
                 ctx.Get()->ProcessorReleaseStart(proc.Get());
         }
 
-        void IgniteEnvironment::OnStartCallback(long long memPtr, void* proc)
+        HandleRegistry& IgniteEnvironment::GetHandleRegistry()
         {
-            this->proc = ignite::jni::JavaGlobalRef(*ctx.Get(), (jobject)proc);
+            return registry;
+        }
+
+        void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
+        {
+            this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
 
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
@@ -218,6 +276,23 @@ namespace ignite
             }
             else
                 name = 0;
+        }
+
+        void IgniteEnvironment::OnContinuousQueryListenerApply(SharedPointer<InteropMemory>& mem)
+        {
+            InteropInputStream stream(mem.Get());
+            BinaryReaderImpl reader(&stream);
+
+            int64_t qryHandle = reader.ReadInt64();
+
+            ContinuousQueryImplBase* contQry = reinterpret_cast<ContinuousQueryImplBase*>(registry.Get(qryHandle).Get());
+
+            if (contQry)
+            {
+                BinaryRawReader rawReader(&reader);
+
+                contQry->ReadAndProcessEvents(rawReader);
+            }
         }
 
         void IgniteEnvironment::CacheInvokeCallback(long long inMemPtr, long long outMemPtr)

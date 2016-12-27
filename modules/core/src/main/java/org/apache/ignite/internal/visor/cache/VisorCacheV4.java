@@ -86,7 +86,7 @@ public class VisorCacheV4 extends VisorCacheV2 {
 
     /** {@inheritDoc} */
     @Override public VisorCache history() {
-        return initHistory(new VisorCacheV3());
+        return initHistory(new VisorCacheV4());
     }
 
     /**

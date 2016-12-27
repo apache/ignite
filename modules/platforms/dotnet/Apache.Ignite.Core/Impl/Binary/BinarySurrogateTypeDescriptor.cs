@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Constrcutor.
+        /// Constructor.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="name">Type name.</param>

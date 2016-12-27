@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -31,9 +32,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -267,6 +272,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
+            EnableStatistics = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -275,7 +281,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
-            AffinityFunction = AffinityFunctionBase.Read(reader);
+            AffinityFunction = AffinityFunctionSerializer.Read(reader);
+            ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
         }
 
         /// <summary>
@@ -322,6 +329,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
+            writer.WriteBoolean(EnableStatistics);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -348,7 +356,23 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
-            AffinityFunctionBase.Write(writer, AffinityFunction);
+            AffinityFunctionSerializer.Write(writer, AffinityFunction);
+            ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var entities = QueryEntities;
+            if (entities != null)
+            {
+                foreach (var entity in entities)
+                    entity.Validate(log, string.Format("Validating cache configuration '{0}'", Name ?? ""));
+            }
         }
 
         /// <summary>
@@ -489,6 +513,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Flag indicating whether Ignite should use swap storage by default.
+        /// <para />
+        /// Enabling this requires configured <see cref="IgniteConfiguration.SwapSpaceSpi"/>.
         /// </summary>
         [DefaultValue(DefaultEnableSwap)]
         public bool EnableSwap { get; set; }
@@ -668,9 +694,23 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the affinity function to provide mapping from keys to nodes.
         /// <para />
-        /// Predefined implementations: 
+        /// Predefined implementations:
         /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
         /// </summary>
         public IAffinityFunction AffinityFunction { get; set; }
+
+        /// <summary>
+        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations, 
+        /// unless <see cref="ICache{TK,TV}.WithExpiryPolicy"/> is called.
+        /// <para />
+        /// Default is null, which means no expiration.
+        /// </summary>
+        public IFactory<IExpiryPolicy> ExpiryPolicyFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether statistics gathering is enabled on a cache.
+        /// These statistics can be retrieved via <see cref="ICache{TK,TV}.GetMetrics()"/>.
+        /// </summary>
+        public bool EnableStatistics { get; set; }
     }
 }

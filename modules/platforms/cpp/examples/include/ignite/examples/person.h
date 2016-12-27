@@ -46,7 +46,7 @@ namespace ignite
                 // No-op.
             }
 
-            std::string ToString()
+            std::string ToString() const
             {
                 std::ostringstream oss;
 

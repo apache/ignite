@@ -175,12 +175,69 @@ private:
     Timestamp recordCreated;
 };
 
+/**
+ * Relation class for query tests.
+ */
+class IGNITE_IMPORT_EXPORT QueryRelation
+{
+public:
+    /**
+     * Constructor.
+     */
+    QueryRelation() :
+        personId(),
+        someVal()
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param name Name.
+     * @param age Age.
+     */
+    QueryRelation(int32_t personId, int32_t someVal) :
+        personId(personId),
+        someVal(someVal)
+    {
+        // No-op.
+    }
+
+    /**
+     * Get person ID.
+     * 
+     * @return Person ID.
+     */
+    int32_t GetPersonId() const
+    {
+        return personId;
+    }
+
+    /**
+     * Get hobby ID.
+     * 
+     * @return Some test value.
+     */
+    int32_t GetHobbyId() const
+    {
+        return someVal;
+    }
+
+private:
+    /** Person ID. */
+    int32_t personId;
+
+    /** Some test value. */
+    int32_t someVal;
+};
+
 namespace ignite
 {
     namespace binary
     {
         /**
-         * Binary type definition.
+         * Binary type definition for QueryPerson.
          */
         IGNITE_BINARY_TYPE_START(QueryPerson)
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryPerson)
@@ -207,68 +264,54 @@ namespace ignite
             
                 return QueryPerson(name, age, birthday, recordCreated);
             }
+        IGNITE_BINARY_TYPE_END
 
+        /**
+         * Binary type definition for QueryRelation.
+         */
+        IGNITE_BINARY_TYPE_START(QueryRelation)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryRelation)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryRelation)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryRelation)
+            IGNITE_BINARY_IS_NULL_FALSE(QueryRelation)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryRelation)
+
+            void Write(BinaryWriter& writer, QueryRelation obj)
+            {
+                writer.WriteInt32("personId", obj.GetPersonId());
+                writer.WriteInt32("someVal", obj.GetHobbyId());
+            }
+
+            QueryRelation Read(BinaryReader& reader)
+            {
+                int32_t personId = reader.ReadInt32("personId");
+                int32_t someVal = reader.ReadInt32("someVal");
+
+                return QueryRelation(personId, someVal);
+            }
         IGNITE_BINARY_TYPE_END
     }
 }
 
-/** Node started during the test. */
-Ignite grid = Ignite();
-
-/** Cache accessor. */
-Cache<int, QueryPerson> GetCache()
-{
-    return grid.GetCache<int, QueryPerson>("cache");
-}
 
 /**
- * Test setup fixture.
+ * Count number of records returned by cursor.
+ *
+ * @param cur Cursor.
  */
-struct CacheQueryTestSuiteFixture {
-    /**
-     * Constructor.
-     */
-    CacheQueryTestSuiteFixture()
+template<typename Cursor>
+int CountRecords(Cursor& cur)
+{
+    int number = 0;
+    while (cur.HasNext())
     {
-        IgniteConfiguration cfg;
-        
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 512;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-query.xml");
-
-        IgniteError err;
-
-        Ignite grid0 = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
-
-        grid = grid0;
+        ++number;
+        cur.GetNext();
     }
 
-    /**
-     * Destructor.
-     */
-    ~CacheQueryTestSuiteFixture()
-    {
-        Ignition::Stop(grid.GetName(), true);
-    }
-};
+    return number;
+}
 
 /**
  * Ensure that HasNext() fails.
@@ -315,12 +358,11 @@ void CheckGetNextFail(Cursor& cur)
  *
  * @param cur Cursor.
  */
-template<typename Cursor>
-void CheckGetAllFail(Cursor& cur)
+void CheckGetAllFail(QueryCursor<int, QueryPerson>& cur)
 {
     try 
     {
-        std::vector<CacheEntry<int, QueryPerson>> res;
+        std::vector<CacheEntry<int, QueryPerson> > res;
 
         cur.GetAll(res);
 
@@ -362,10 +404,9 @@ void CheckEmpty(QueryFieldsCursor& cur)
  *
  * @param cur Cursor.
  */
-template<typename Cursor>
-void CheckEmptyGetAll(Cursor& cur)
+void CheckEmptyGetAll(QueryCursor<int, QueryPerson>& cur)
 {
-    std::vector<CacheEntry<int, QueryPerson>> res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
     cur.GetAll(res);
 
@@ -383,8 +424,7 @@ void CheckEmptyGetAll(Cursor& cur)
  * @param name1 Name.
  * @param age1 Age.
  */
-template<typename Cursor>
-void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
+void CheckSingle(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
     BOOST_REQUIRE(cur.HasNext());
 
@@ -405,6 +445,30 @@ void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
 }
 
 /**
+ * Check single result through iteration.
+ *
+ * @param cur Cursor.
+ * @param key Key.
+ * @param name Name.
+ * @param age Age.
+ */
+void CheckSingle(QueryFieldsCursor& cur, int key, const std::string& name, int age)
+{
+    BOOST_REQUIRE(cur.HasNext());
+
+    QueryFieldsRow row = cur.GetNext();
+
+    BOOST_REQUIRE_EQUAL(row.GetNext<int32_t>(), key);
+    BOOST_REQUIRE_EQUAL(row.GetNext<std::string>(), name);
+    BOOST_REQUIRE_EQUAL(row.GetNext<int32_t>(), age);
+
+    BOOST_REQUIRE(!row.HasNext());
+    BOOST_REQUIRE(!cur.HasNext());
+
+    CheckGetNextFail(cur);
+}
+
+/**
  * Check single result through GetAll().
  *
  * @param cur Cursor.
@@ -412,10 +476,9 @@ void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
  * @param name1 Name.
  * @param age1 Age.
  */
-template<typename Cursor>
-void CheckSingleGetAll(Cursor& cur, int key, const std::string& name, int age)
+void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
-    std::vector<CacheEntry<int, QueryPerson>> res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
     cur.GetAll(res);
 
@@ -445,8 +508,7 @@ void CheckSingleGetAll(Cursor& cur, int key, const std::string& name, int age)
  * @param name2 Name 2.
  * @param age2 Age 2.
  */
-template<typename Cursor>
-void CheckMultiple(Cursor& cur, int key1, const std::string& name1, 
+void CheckMultiple(QueryCursor<int, QueryPerson>& cur, int key1, const std::string& name1,
     int age1, int key2, const std::string& name2, int age2)
 {
     for (int i = 0; i < 2; i++)
@@ -490,11 +552,10 @@ void CheckMultiple(Cursor& cur, int key1, const std::string& name1,
  * @param name2 Name 2.
  * @param age2 Age 2.
  */
-template<typename Cursor>
-void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
+void CheckMultipleGetAll(QueryCursor<int, QueryPerson>& cur, int key1, const std::string& name1,
     int age1, int key2, const std::string& name2, int age2)
 {
-    std::vector<CacheEntry<int, QueryPerson>> res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
     cur.GetAll(res);
 
@@ -523,6 +584,141 @@ void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
     }
 }
 
+/**
+ * Test setup fixture.
+ */
+struct CacheQueryTestSuiteFixture
+{
+    Ignite StartNode(const char* name)
+    {
+        IgniteConfiguration cfg;
+
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+
+#ifdef IGNITE_TESTS_32
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
+#else
+        cfg.jvmInitMem = 1024;
+        cfg.jvmMaxMem = 4096;
+#endif
+
+        const char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
+
+        BOOST_CHECK(cfgPath != 0);
+
+        cfg.springCfgPath.assign(cfgPath).append("/cache-query.xml");
+
+        IgniteError err;
+
+        Ignite grid0 = Ignition::Start(cfg, name, &err);
+
+        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+            BOOST_ERROR(err.GetText());
+
+        return grid0;
+    }
+
+    void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)
+    {
+        // Test simple query.
+        Cache<int, QueryPerson> cache = GetPersonCache();
+
+        // Test query with two fields of different type.
+        SqlFieldsQuery qry("select name, age from QueryPerson");
+
+        QueryFieldsCursor cursor = cache.Query(qry);
+        CheckEmpty(cursor);
+
+        const int32_t entryCnt = pageSize * pagesNum + additionalNum; // Number of entries.
+
+        qry.SetPageSize(pageSize);
+
+        for (int i = 0; i < entryCnt; i++)
+        {
+            std::stringstream stream;
+
+            stream << "A" << i;
+
+            cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
+                BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        }
+
+        cursor = cache.Query(qry);
+
+        IgniteError error;
+
+        for (int i = 0; i < entryCnt; i++)
+        {
+            std::stringstream stream;
+
+            stream << "A" << i;
+
+            std::string expected_name = stream.str();
+            int expected_age = i * 10;
+
+            BOOST_REQUIRE(cursor.HasNext(error));
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            QueryFieldsRow row = cursor.GetNext(error);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            BOOST_REQUIRE(row.HasNext(error));
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            std::string name = row.GetNext<std::string>(error);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            BOOST_REQUIRE(name == expected_name);
+
+            int age = row.GetNext<int>(error);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            BOOST_REQUIRE(age == expected_age);
+
+            BOOST_REQUIRE(!row.HasNext());
+        }
+
+        CheckEmpty(cursor);
+    }
+
+    /**
+     * Constructor.
+     */
+    CacheQueryTestSuiteFixture() : 
+        grid(StartNode("Node1"))
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    ~CacheQueryTestSuiteFixture()
+    {
+        Ignition::StopAll(true);
+    }
+
+    /** Person cache accessor. */
+    Cache<int, QueryPerson> GetPersonCache()
+    {
+        return grid.GetCache<int, QueryPerson>("QueryPerson");
+    }
+
+    /** Relation cache accessor. */
+    Cache<int, QueryRelation> GetRelationCache()
+    {
+        return grid.GetCache<int, QueryRelation>("QueryRelation");
+    }
+
+    /** Node started during the test. */
+    Ignite grid;
+};
+
 BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
 
 /**
@@ -530,7 +726,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestSqlQuery)
 {    
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     SqlQuery qry("QueryPerson", "age < 20");
@@ -542,8 +738,11 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
     
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -551,8 +750,23 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    // Test simple distributed joins query.
+    BOOST_CHECK(!qry.IsDistributedJoins());
+    qry.SetDistributedJoins(true);
+    BOOST_CHECK(qry.IsDistributedJoins());
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAll(cursor, 1, "A1", 10);
+
+    qry.SetDistributedJoins(false);
+
     // Test simple local query.
+    BOOST_CHECK(!qry.IsLocal());
     qry.SetLocal(true);
+    BOOST_CHECK(qry.IsLocal());
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -582,11 +796,60 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
 }
 
 /**
+ * Test SQL query distributed joins.
+ */
+BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
+{    
+    Cache<int, QueryPerson> cache1 = GetPersonCache();
+    Cache<int, QueryRelation> cache2 = GetRelationCache();
+
+    // Starting second node.
+    Ignite node2 = StartNode("Node2");
+
+    int entryCnt = 1000;
+
+    // Filling caches
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        cache1.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+
+        cache2.Put(i + 1, QueryRelation(i, i * 10));
+    }
+
+    // Test query with no results.
+    SqlQuery qry("QueryPerson",
+        "from \"QueryPerson\".QueryPerson, \"QueryRelation\".QueryRelation "
+        "where \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal");
+
+    QueryCursor<int, QueryPerson> cursor = cache1.Query(qry);
+
+    // Ensure that data is not collocated, so not full result set is returned.
+    int recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_GT(recordsNum, 0);
+    BOOST_CHECK_LT(recordsNum, entryCnt);
+
+    qry.SetDistributedJoins(true);
+
+    cursor = cache1.Query(qry);
+
+    // Check that full result set is returned.
+    recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_EQUAL(recordsNum, entryCnt);
+}
+
+/**
  * Test text query.
  */
 BOOST_AUTO_TEST_CASE(TestTextQuery)
 {
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     TextQuery qry("QueryPerson", "A1");
@@ -598,8 +861,11 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -632,7 +898,7 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
 BOOST_AUTO_TEST_CASE(TestScanQuery)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     ScanQuery qry;
@@ -644,7 +910,8 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -653,7 +920,8 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
     // Test query returning multiple entries.
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckMultiple(cursor, 1, "A1", 10, 2, "A2", 20);
@@ -668,9 +936,9 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
 BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 {
     // Populate cache with data.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
-    int32_t partCnt = 256;   // Defined in configuration explicitly.   
+    int32_t partCnt = 256;   // Defined in configuration explicitly.
     int32_t entryCnt = 1000; // Should be greater than partCnt.
     
     for (int i = 0; i < entryCnt; i++) 
@@ -679,7 +947,8 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i), BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
     }
 
     // Iterate over all partitions and collect data.
@@ -712,12 +981,125 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 }
 
 /**
+ * Basic test for SQL fields query.
+ */
+BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
+{
+    Cache<int, QueryPerson> cache = GetPersonCache();
+
+    // Test query with no results.
+    SqlFieldsQuery qry("select _key, name, age from QueryPerson where age < 20");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+
+    // Test simple distributed joins query.
+    BOOST_CHECK(!qry.IsDistributedJoins());
+    BOOST_CHECK(!qry.IsEnforceJoinOrder());
+
+    qry.SetDistributedJoins(true);
+
+    BOOST_CHECK(qry.IsDistributedJoins());
+    BOOST_CHECK(!qry.IsEnforceJoinOrder());
+
+    qry.SetEnforceJoinOrder(true);
+
+    BOOST_CHECK(qry.IsDistributedJoins());
+    BOOST_CHECK(qry.IsEnforceJoinOrder());
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+    
+    qry.SetDistributedJoins(false);
+    qry.SetEnforceJoinOrder(false);
+
+    // Test simple local query.
+    BOOST_CHECK(!qry.IsLocal());
+
+    qry.SetLocal(true);
+
+    BOOST_CHECK(qry.IsLocal());
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+
+    // Test query with arguments.
+    qry.SetSql("select _key, name, age from QueryPerson where age < ? AND name = ?");
+    qry.AddArgument<int>(20);
+    qry.AddArgument<std::string>("A1");
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 1, "A1", 10);
+}
+
+/**
+ * Test SQL fields query distributed joins.
+ */
+BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
+{
+    Cache<int, QueryPerson> cache1 = GetPersonCache();
+    Cache<int, QueryRelation> cache2 = GetRelationCache();
+
+    // Starting second node.
+    Ignite node2 = StartNode("Node2");
+
+    int entryCnt = 1000;
+
+    // Filling caches
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        cache1.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+
+        cache2.Put(i + 1, QueryRelation(i, i * 10));
+    }
+
+    // Test query with no results.
+    SqlFieldsQuery qry(
+        "select age, name "
+        "from \"QueryPerson\".QueryPerson "
+        "inner join \"QueryRelation\".QueryRelation "
+        "on \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal");
+
+    QueryFieldsCursor cursor = cache1.Query(qry);
+
+    // Ensure that data is not collocated, so not full result set is returned.
+    int recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_GT(recordsNum, 0);
+    BOOST_CHECK_LT(recordsNum, entryCnt);
+
+    qry.SetDistributedJoins(true);
+
+    cursor = cache1.Query(qry);
+
+    // Check that full result set is returned.
+    recordsNum = CountRecords(cursor);
+
+    BOOST_CHECK_EQUAL(recordsNum, entryCnt);
+}
+
+/**
  * Test fields query with single entry.
  */
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -726,7 +1108,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
     CheckEmpty(cursor);
     
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -762,7 +1145,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -771,7 +1154,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -807,7 +1191,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -816,8 +1200,11 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26), BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
+        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
 
@@ -870,7 +1257,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select name, age from QueryPerson");
@@ -936,7 +1323,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday<'1990-01-01'");
@@ -997,7 +1384,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday>'2070-01-01'");
@@ -1058,7 +1445,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday='2032-01-01'");
@@ -1110,7 +1497,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated<'2016-01-01 01:00:00'");
@@ -1171,7 +1558,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated>'2016-01-01 15:30:00'");
@@ -1234,7 +1621,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated='2016-01-01 09:18:00'");
@@ -1278,6 +1665,39 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
     BOOST_REQUIRE(!row.HasNext());
 
     CheckEmpty(cursor);
+}
+
+/**
+ * Test fields query with several pages.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPagesSeveral)
+{
+    CheckFieldsQueryPages(32, 8, 1);
+}
+
+/**
+ * Test fields query with page size 1.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPageSingle)
+{
+    CheckFieldsQueryPages(1, 100, 0);
+}
+
+/**
+ * Test fields query with page size 0.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPageZero)
+{
+    try
+    {
+        CheckFieldsQueryPages(0, 100, 0);
+
+        BOOST_FAIL("Exception expected.");
+    }
+    catch (IgniteError&)
+    {
+        // Expected.
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

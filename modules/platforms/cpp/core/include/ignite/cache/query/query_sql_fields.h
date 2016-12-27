@@ -48,7 +48,12 @@ namespace ignite
                  * @param sql SQL string.
                  */
                 SqlFieldsQuery(const std::string& sql) :
-                    sql(sql), pageSize(1024), loc(false), args()
+                    sql(sql),
+                    pageSize(1024),
+                    loc(false),
+                    distributedJoins(false),
+                    enforceJoinOrder(false),
+                    args()
                 {
                     // No-op.
                 }
@@ -60,7 +65,12 @@ namespace ignite
                  * @param loc Whether query should be executed locally.
                  */
                 SqlFieldsQuery(const std::string& sql, bool loc) :
-                    sql(sql), pageSize(1024), loc(false), args()
+                    sql(sql),
+                    pageSize(1024),
+                    loc(false),
+                    distributedJoins(false),
+                    enforceJoinOrder(false),
+                    args()
                 {
                     // No-op.
                 }
@@ -71,13 +81,18 @@ namespace ignite
                  * @param other Other instance.
                  */
                 SqlFieldsQuery(const SqlFieldsQuery& other) :
-                    sql(other.sql), pageSize(other.pageSize), loc(other.loc),
+                    sql(other.sql),
+                    pageSize(other.pageSize),
+                    loc(other.loc),
+                    distributedJoins(other.distributedJoins),
+                    enforceJoinOrder(other.enforceJoinOrder),
                     args()
                 {
                     args.reserve(other.args.size());
 
-                    for (std::vector<QueryArgumentBase*>::const_iterator i = other.args.begin(); 
-                        i != other.args.end(); ++i)
+                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+
+                    for (Iter i = other.args.begin(); i != other.args.end(); ++i)
                         args.push_back((*i)->Copy());
                 }
 
@@ -92,10 +107,7 @@ namespace ignite
                     {
                         SqlFieldsQuery tmp(other);
 
-                        std::swap(sql, tmp.sql);
-                        std::swap(pageSize, tmp.pageSize);
-                        std::swap(loc, tmp.loc);
-                        std::swap(args, tmp.args);
+                        Swap(tmp);
                     }
 
                     return *this;
@@ -106,8 +118,28 @@ namespace ignite
                  */
                 ~SqlFieldsQuery()
                 {
-                    for (std::vector<QueryArgumentBase*>::iterator it = args.begin(); it != args.end(); ++it)
+                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+
+                    for (Iter it = args.begin(); it != args.end(); ++it)
                         delete *it;
+                }
+
+                /**
+                 * Efficiently swaps contents with another SqlQuery instance.
+                 *
+                 * @param other Other instance.
+                 */
+                void Swap(SqlFieldsQuery& other)
+                {
+                    if (this != &other)
+                    {
+                        std::swap(sql, other.sql);
+                        std::swap(pageSize, other.pageSize);
+                        std::swap(loc, other.loc);
+                        std::swap(distributedJoins, other.distributedJoins);
+                        std::swap(enforceJoinOrder, other.enforceJoinOrder);
+                        std::swap(args, other.args);
+                    }
                 }
 
                 /**
@@ -171,6 +203,56 @@ namespace ignite
                 }
 
                 /**
+                 * Checks if join order of tables if enforced.
+                 *
+                 * @return Flag value.
+                 */
+                bool IsEnforceJoinOrder() const
+                {
+                    return enforceJoinOrder;
+                }
+
+                /**
+                 * Sets flag to enforce join order of tables in the query.
+                 * If set to true query optimizer will not reorder tables in
+                 * join. By default is false.
+                 *
+                 * It is not recommended to enable this property unless you are
+                 * sure that your indexes and the query itself are correct and
+                 * tuned as much as possible but query optimizer still produces
+                 * wrong join order.
+                 *
+                 * @param enforce Flag value.
+                 */
+                void SetEnforceJoinOrder(bool enforce)
+                {
+                    enforceJoinOrder = enforce;
+                }
+
+                /**
+                 * Check if distributed joins are enabled for this query.
+                 *
+                 * @return True If distributed joind enabled.
+                 */
+                bool IsDistributedJoins() const
+                {
+                    return distributedJoins;
+                }
+
+                /**
+                 * Specify if distributed joins are enabled for this query.
+                 *
+                 * When disabled, join results will only contain colocated data (joins work locally).
+                 * When enabled, joins work as expected, no matter how the data is distributed.
+                 *
+                 * @param enabled Distributed joins enabled.
+                 */
+                void SetDistributedJoins(bool enabled)
+                {
+                    distributedJoins = enabled;
+                }
+
+                /**
                  * Add argument.
                  *
                  * Template argument type should be copy-constructable and
@@ -200,6 +282,9 @@ namespace ignite
 
                     for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
                         (*it)->Write(writer);
+
+                    writer.WriteBool(distributedJoins);
+                    writer.WriteBool(enforceJoinOrder);
                 }
 
             private:
@@ -211,6 +296,12 @@ namespace ignite
 
                 /** Local flag. */
                 bool loc;
+
+                /** Distributed joins flag. */
+                bool distributedJoins;
+
+                /** Enforce join order flag. */
+                bool enforceJoinOrder;
 
                 /** Arguments. */
                 std::vector<QueryArgumentBase*> args;

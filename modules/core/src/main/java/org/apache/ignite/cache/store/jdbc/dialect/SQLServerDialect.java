@@ -29,13 +29,25 @@ public class SQLServerDialect extends BasicJdbcDialect {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
+    @Override public String escape(String ident) {
+        return '[' + ident + ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
+        String cols = mkString(keyCols, ",");
+
+        return String.format("SELECT %1$s FROM (SELECT %1$s, ROW_NUMBER() OVER(ORDER BY %1$s) AS rn FROM %2$s) tbl WHERE rn %% ? = 0 ORDER BY %1$s",
+            cols, fullTblName);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
 
         String colsLst = mkString(cols, ", ");
@@ -44,7 +56,7 @@ public class SQLServerDialect extends BasicJdbcDialect {
             @Override public String apply(String col) {
                 return String.format("t.%s=v.%s", col, col);
             }
-        }, "", ", ", "");
+        }, "", " AND ", "");
 
         String setCols = mkString(uniqCols, new C1<String, String>() {
             @Override public String apply(String col) {
@@ -64,7 +76,7 @@ public class SQLServerDialect extends BasicJdbcDialect {
                 " WHEN MATCHED THEN" +
                 "  UPDATE SET %s" +
                 " WHEN NOT MATCHED THEN" +
-                "  INSERT (%s) VALUES (%s);", fullTblName, repeat("?", cols.size(), "", ",", ""), colsLst,
-            match, setCols, colsLst, valuesCols);
+                "  INSERT (%s) VALUES (%s);", fullTblName, repeat("?", cols.size(), "", ",", ""),
+            colsLst, match, setCols, colsLst, valuesCols);
     }
 }

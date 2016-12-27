@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.igfs;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsMetrics;
 import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -72,15 +73,17 @@ public class VisorIgfsMetrics implements Serializable, LessNamingBean {
     private long bytesWrtTm;
 
     /**
-     * @param m IGFS metrics.
+     * @param igfs Source IGFS.
      * @return Data transfer object for given IGFS metrics.
      */
-    public static VisorIgfsMetrics from(IgfsMetrics m) {
-        assert m != null;
+    public static VisorIgfsMetrics from(IgniteFileSystem igfs) {
+        assert igfs != null;
+
+        IgfsMetrics m = igfs.metrics();
 
         VisorIgfsMetrics metrics = new VisorIgfsMetrics();
 
-        metrics.totalSpaceSz = m.maxSpaceSize();
+        metrics.totalSpaceSz = igfs.configuration().getMaxSpaceSize();
         metrics.usedSpaceSz = m.localSpaceSize();
         metrics.foldersCnt = m.directoriesCount();
         metrics.filesCnt = m.filesCount();

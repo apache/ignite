@@ -25,8 +25,8 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -48,7 +48,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     private static final AffinityTopologyVersion LOC_CACHE_TOP_VER = new AffinityTopologyVersion(1);
 
     /** */
-    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+    private static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
         "yet or cache was already stopped): ";
 
     /** Affinity cached function. */
@@ -187,28 +187,36 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param key Key.
+     * @return Partition.
+     */
+    public int partition(Object key) {
+        return partition(key, true);
+    }
+
+    /**
      * NOTE: Use this method always when you need to calculate partition id for
      * a key provided by user. It's required since we should apply affinity mapper
      * logic in order to find a key that will eventually be passed to affinity function.
      *
      * @param key Key.
+     * @param useKeyPart If {@code true} can use pre-calculated partition stored in KeyCacheObject.
      * @return Partition.
      */
-    public int partition(Object key) {
+    public int partition(Object key, boolean useKeyPart) {
         GridAffinityAssignmentCache aff0 = aff;
-
-        if (key instanceof KeyCacheObject && ((KeyCacheObject)key).partition() != -1)
-            return ((KeyCacheObject)key).partition();
 
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        int p = affFunction.partition(affinityKey(key));
+        if (useKeyPart && (key instanceof KeyCacheObject)) {
+            int part = ((KeyCacheObject)key).partition();
 
-        if (key instanceof KeyCacheObject)
-            ((KeyCacheObject)key).partition(p);
+            if (part != -1)
+                return part;
+        }
 
-        return p;
+        return affFunction.partition(affinityKey(key));
     }
 
     /**
@@ -218,7 +226,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @return Affinity key.
      */
-    private Object affinityKey(Object key) {
+    public Object affinityKey(Object key) {
         if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 
@@ -257,7 +265,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @return Affinity assignment.
      */
-    public GridAffinityAssignment assignment(AffinityTopologyVersion topVer) {
+    public AffinityAssignment assignment(AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
             topVer = LOC_CACHE_TOP_VER;
 
