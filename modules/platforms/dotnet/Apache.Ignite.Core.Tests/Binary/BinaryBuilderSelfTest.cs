@@ -58,33 +58,57 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new BinaryTypeConfiguration(typeof (Empty)),
-                        new BinaryTypeConfiguration(typeof (Primitives)),
-                        new BinaryTypeConfiguration(typeof (PrimitiveArrays)),
-                        new BinaryTypeConfiguration(typeof (StringDateGuidEnum)),
-                        new BinaryTypeConfiguration(typeof (WithRaw)),
-                        new BinaryTypeConfiguration(typeof (MetaOverwrite)),
-                        new BinaryTypeConfiguration(typeof (NestedOuter)),
-                        new BinaryTypeConfiguration(typeof (NestedInner)),
-                        new BinaryTypeConfiguration(typeof (MigrationOuter)),
-                        new BinaryTypeConfiguration(typeof (MigrationInner)),
-                        new BinaryTypeConfiguration(typeof (InversionOuter)),
-                        new BinaryTypeConfiguration(typeof (InversionInner)),
-                        new BinaryTypeConfiguration(typeof (CompositeOuter)),
-                        new BinaryTypeConfiguration(typeof (CompositeInner)),
-                        new BinaryTypeConfiguration(typeof (CompositeArray)),
-                        new BinaryTypeConfiguration(typeof (CompositeContainer)),
-                        new BinaryTypeConfiguration(typeof (ToBinary)),
-                        new BinaryTypeConfiguration(typeof (Remove)),
-                        new BinaryTypeConfiguration(typeof (RemoveInner)),
-                        new BinaryTypeConfiguration(typeof (BuilderInBuilderOuter)),
-                        new BinaryTypeConfiguration(typeof (BuilderInBuilderInner)),
-                        new BinaryTypeConfiguration(typeof (BuilderCollection)),
-                        new BinaryTypeConfiguration(typeof (BuilderCollectionItem)),
-                        new BinaryTypeConfiguration(typeof (DecimalHolder)),
-                        new BinaryTypeConfiguration(TypeEmpty),
-                        new BinaryTypeConfiguration(typeof(TestEnumRegistered)),
+                        new BinaryTypeConfiguration(typeof(Empty)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(Primitives)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(PrimitiveArrays)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(StringDateGuidEnum))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
+                        new BinaryTypeConfiguration(typeof(WithRaw)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(MetaOverwrite)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(NestedOuter)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(NestedInner)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(MigrationOuter)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(MigrationInner)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(InversionOuter)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(InversionInner)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(CompositeOuter)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(CompositeInner)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(CompositeArray)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(CompositeContainer))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
+                        new BinaryTypeConfiguration(typeof(ToBinary)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(Remove)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(RemoveInner)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(BuilderInBuilderOuter))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
+                        new BinaryTypeConfiguration(typeof(BuilderInBuilderInner))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
+                        new BinaryTypeConfiguration(typeof(BuilderCollection))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
+                        new BinaryTypeConfiguration(typeof(BuilderCollectionItem))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
+                        new BinaryTypeConfiguration(typeof(DecimalHolder)) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(TypeEmpty) {EqualityComparer = GetIdentityResolver()},
+                        new BinaryTypeConfiguration(typeof(TestEnumRegistered))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        },
                         new BinaryTypeConfiguration(typeof(NameMapperTestType))
+                        {
+                            EqualityComparer = GetIdentityResolver()
+                        }
                     },
                     DefaultIdMapper = new IdMapper(),
                     DefaultNameMapper = new NameMapper(),
@@ -103,6 +127,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         protected virtual bool GetCompactFooter()
         {
             return true;
+        }
+
+        /// <summary>
+        /// Gets the identity resolver.
+        /// </summary>
+        protected virtual IEqualityComparer<IBinaryObject> GetIdentityResolver()
+        {
+            return null;
         }
 
         /// <summary>
