@@ -30,7 +30,7 @@ public class DiscoveryDataBag {
     /**
      * Facade interface representing {@link DiscoveryDataBag} object with discovery data from joining node.
      */
-    public interface NewNodeDiscoveryData {
+    public interface JoiningNodeDiscoveryData {
         /** */
         UUID joiningNodeId();
 
@@ -58,7 +58,7 @@ public class DiscoveryDataBag {
     /**
      *
      */
-    private final class NewNodeDiscoveryDataImpl implements NewNodeDiscoveryData {
+    private final class JoiningNodeDiscoveryDataImpl implements JoiningNodeDiscoveryData {
         /** */
         private int cmpId;
 
@@ -136,14 +136,14 @@ public class DiscoveryDataBag {
 
     private UUID joiningNodeId;
 
-    private Map<Integer, Serializable> joiningNodeData;
+    private Map<Integer, Serializable> joiningNodeData = new HashMap<>();
 
-    private Map<Integer, Serializable> commonData;
+    private Map<Integer, Serializable> commonData = new HashMap<>();
 
-    private Map<UUID, Map<Integer, Serializable>> nodeSpecificData;
+    private Map<UUID, Map<Integer, Serializable>> nodeSpecificData = new LinkedHashMap<>();
 
     /** */
-    private NewNodeDiscoveryDataImpl newJoinerData;
+    private JoiningNodeDiscoveryDataImpl newJoinerData;
 
     /** */
     private GridDiscoveryDataImpl gridData;
@@ -175,31 +175,22 @@ public class DiscoveryDataBag {
     /**
      * @param cmpId Cmp id.
      */
-    public NewNodeDiscoveryData newJoinerDiscoveryData(int cmpId) {
+    public JoiningNodeDiscoveryData newJoinerDiscoveryData(int cmpId) {
         if (newJoinerData == null)
-            newJoinerData = new NewNodeDiscoveryDataImpl();
+            newJoinerData = new JoiningNodeDiscoveryDataImpl();
         newJoinerData.setComponentId(cmpId);
         return newJoinerData;
     }
 
     public void addJoiningNodeData(Integer cmpId, Serializable data) {
-        if (joiningNodeData == null)
-            joiningNodeData = new HashMap<>();
-
         joiningNodeData.put(cmpId, data);
     }
 
     public void addGridCommonData(Integer cmpId, Serializable data) {
-        if (commonData == null)
-            commonData = new HashMap<>();
-
         commonData.put(cmpId, data);
     }
 
     public void addNodeSpecificData(Integer cmpId, Serializable data) {
-        if (nodeSpecificData == null)
-            nodeSpecificData = new LinkedHashMap<>();
-
         if (!nodeSpecificData.containsKey(DEFAULT_KEY))
             nodeSpecificData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
 
@@ -207,28 +198,19 @@ public class DiscoveryDataBag {
     }
 
     public boolean commonDataCollectedFor(Integer cmpId) {
-        if (commonData != null)
-            return commonData.containsKey(cmpId);
-        else
-            return false;
+        return commonData.containsKey(cmpId);
     }
 
-    public void joiningNodeData(Map<Integer, Serializable> joiningNodeData) {
-        assert this.joiningNodeData == null : this.joiningNodeData;
-
-        this.joiningNodeData = joiningNodeData;
+    public void joiningNodeData(Map<Integer, Serializable> joinNodeData) {
+        joiningNodeData.putAll(joinNodeData);
     }
 
-    public void commonData(Map<Integer, Serializable> commonData) {
-        assert this.commonData == null: this.commonData;
-
-        this.commonData = commonData;
+    public void commonData(Map<Integer, Serializable> cmnData) {
+        commonData.putAll(cmnData);
     }
 
-    public void nodeSpecificData(Map<UUID, Map<Integer, Serializable>> nodeSpecificData) {
-        assert this.nodeSpecificData == null: this.nodeSpecificData;
-
-        this.nodeSpecificData = nodeSpecificData;
+    public void nodeSpecificData(Map<UUID, Map<Integer, Serializable>> nodeSpecData) {
+        nodeSpecificData.putAll(nodeSpecData);
     }
 
     public Map<Integer, Serializable> joiningNodeData() {
@@ -239,10 +221,8 @@ public class DiscoveryDataBag {
         return commonData;
     }
 
-    @Nullable public Map<Integer, Serializable> currentNodeSpecificData() {
-        if (nodeSpecificData != null)
-            return nodeSpecificData.get(DEFAULT_KEY);
-        return null;
+    @Nullable public Map<Integer, Serializable> localNodeSpecificData() {
+        return nodeSpecificData.get(DEFAULT_KEY);
     }
 
 }

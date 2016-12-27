@@ -23,10 +23,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Interface for all main internal Ignite components (managers and processors).
@@ -109,9 +107,9 @@ public interface GridComponent {
      * Method is called on nodes that are already in grid (not on joining node).
      * It receives discovery data from joining node.
      *
-     * @param data {@link NewNodeDiscoveryData} interface to retrieve discovery data of joining node.
+     * @param data {@link JoiningNodeDiscoveryData} interface to retrieve discovery data of joining node.
      */
-    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data);
+    public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data);
 
     /**
      * Prints memory statistics (sizes of internal structures, etc.).

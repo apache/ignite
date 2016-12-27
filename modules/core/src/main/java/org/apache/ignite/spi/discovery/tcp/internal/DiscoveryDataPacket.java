@@ -67,7 +67,7 @@ public class DiscoveryDataPacket implements Serializable {
 
         marshalData(bag.commonData(), commonData, marsh, log);
 
-        Map<Integer, Serializable> currentNodeSpecificData = bag.currentNodeSpecificData();
+        Map<Integer, Serializable> currentNodeSpecificData = bag.localNodeSpecificData();
 
         if (currentNodeSpecificData != null) {
             Map<Integer, byte[]> marshCurrNodeSpecData = U.newHashMap(currentNodeSpecificData.size());

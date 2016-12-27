@@ -104,7 +104,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -671,7 +671,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     //discovery data from newly joined node has to be applied to the current old node
                     for (GridComponent c : ctx.components())
                         if (c.discoveryDataType() != null) {
-                            NewNodeDiscoveryData data = dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
+                            JoiningNodeDiscoveryData data = dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
                         }

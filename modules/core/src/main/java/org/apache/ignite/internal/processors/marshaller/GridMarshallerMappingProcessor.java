@@ -250,7 +250,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
+        if (!dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
             dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
     }
 

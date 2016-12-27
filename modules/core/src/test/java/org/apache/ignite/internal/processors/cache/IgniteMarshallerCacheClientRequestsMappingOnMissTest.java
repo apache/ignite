@@ -37,12 +37,10 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -129,7 +127,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         cl1.cache(null).get(1);
 
         String clsName = Organization.class.getName();
-        int hash = clsName.hashCode();
 
         stopGrid(1);
 
@@ -137,7 +134,11 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
                 .awaitTermination(5000, TimeUnit.MILLISECONDS))
             fail("Failed to wait for executor service used by MarshallerContext to shutdown");
 
-        assertEquals(clsName, new String(Files.readAllBytes(Paths.get(TMP_DIR, "marshaller", Integer.toString(hash) + ".classname0"))));
+        File[] files = Paths.get(TMP_DIR, "marshaller").toFile().listFiles();
+
+        assertNotNull(TMP_DIR + "/marshaller directory should contain at least one file", files);
+        assertEquals(TMP_DIR + "/marshaller directory should contain exactly one file", 1, files.length);
+        assertEquals(clsName, new String(Files.readAllBytes(files[0].toPath())));
     }
 
     private ExecutorService getMarshCtxFileStoreExecutorSrvc(GridKernalContext ctx) {

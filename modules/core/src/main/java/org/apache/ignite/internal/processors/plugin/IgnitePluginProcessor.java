@@ -41,7 +41,7 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PLUGIN;
@@ -193,7 +193,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
             Map<String, Serializable> pluginsData = (Map<String, Serializable>) data.joiningNodeData();
 
