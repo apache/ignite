@@ -158,6 +158,9 @@ public class HadoopDataInStream extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public String readLine() throws IOException {
+        if (buf.remaining() == 0)
+            return null;
+
         SB sb = new SB();
 
         while (buf.remaining() > 0) {
@@ -176,9 +179,9 @@ public class HadoopDataInStream extends InputStream implements DataInput {
                     if (c == '\n')
                         return sb.toString();
                     else
-                        sb.a(c);
+                        buf.moveBackward(1);
 
-                    break;
+                    return sb.toString();
 
                 default:
                     sb.a(c);
