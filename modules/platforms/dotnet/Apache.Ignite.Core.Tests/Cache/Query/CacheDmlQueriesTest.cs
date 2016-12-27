@@ -46,10 +46,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             EqualityComparer = new BinaryArrayEqualityComparer()
                         },
-                        new BinaryTypeConfiguration(typeof(EnumKey))
-                        {
-                            EqualityComparer = new BinaryArrayEqualityComparer()
-                        },
                         new BinaryTypeConfiguration(typeof(Key2))
                         {
                             EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
@@ -142,51 +138,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsTrue(cache.ContainsKey(new Key(5, 4)));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
-        }
-
-        /// <summary>
-        /// Tests binary enum field.
-        /// </summary>
-        [Test]
-        public void TestEnumKeyArrayEquality()
-        {
-            // TODO: Do we even need this test? Binary enums do not have a hash code field written anywhere.
-
-            var cfg = new CacheConfiguration("enum_key_arr", new QueryEntity(typeof(EnumKey), typeof(Foo)));
-            var cache = Ignition.GetIgnite().CreateCache<EnumKey, Foo>(cfg);
-
-            // Test insert.
-            // TODO: How to insert enum with DML?
-            //var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
-            //                                               "values (?, 3, 'John'), (?, 6, 'Mary')",
-            //    EnumKey.B, EnumKey.C)).GetAll();
-
-            //Assert.AreEqual(1, res.Count);
-            //Assert.AreEqual(1, res[0].Count);
-            //Assert.AreEqual(2, res[0][0]);  // 2 affected rows
-            cache[EnumKey.B] = new Foo {Id = 3, Name = "John"};
-            cache[EnumKey.C] = new Foo {Id = 6, Name = "Mary"};
-
-            var foos = cache.OrderBy(x => x.Key).ToArray();
-
-            Assert.AreEqual(2, foos.Length);
-
-            Assert.AreEqual(EnumKey.B, foos[0].Key);
-            Assert.AreEqual(3, foos[0].Value.Id);
-            Assert.AreEqual("John", foos[0].Value.Name);
-
-            Assert.AreEqual(EnumKey.C, foos[1].Key);
-            Assert.AreEqual(6, foos[1].Value.Id);
-            Assert.AreEqual("Mary", foos[1].Value.Name);
-
-            // Existence tests check that hash codes are consistent.
-            Assert.IsTrue(cache.ContainsKey(EnumKey.B));
-            Assert.IsTrue(cache.ContainsKey(foos[0].Key));
-
-            Assert.IsTrue(cache.ContainsKey(EnumKey.C));
-            Assert.IsTrue(cache.ContainsKey(foos[1].Key));
-
-            Assert.IsFalse(cache.ContainsKey(EnumKey.A));
         }
 
         /// <summary>
@@ -334,16 +285,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             [QuerySqlField] public int Id { get; set; }
             [QuerySqlField] public string Name { get; set; }
-        }
-
-        /// <summary>
-        /// Binary enum.
-        /// </summary>
-        private enum EnumKey
-        {
-            A = 15,
-            B = 513,
-            C = 65538
         }
     }
 }
