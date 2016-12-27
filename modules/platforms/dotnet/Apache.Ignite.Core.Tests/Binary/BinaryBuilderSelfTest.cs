@@ -971,7 +971,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckStringDateGuidEnum1(binObj, nDate, nGuid);
 
             // Specific setters.
-            binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
+            var binObj2 = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
                 .SetStringField("fStr", "str")
                 .SetField("fNDate", nDate)
                 .SetTimestampField("fNTimestamp", nDate)
@@ -985,7 +985,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetHashCode(100)
                 .Build();
 
-            CheckStringDateGuidEnum1(binObj, nDate, nGuid);
+            CheckStringDateGuidEnum1(binObj2, nDate, nGuid);
+
+            // Check equality.
+            Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
 
             // Overwrite.
             nDate = DateTime.Now.ToUniversalTime();
@@ -1008,7 +1012,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckStringDateGuidEnum2(binObj, nDate, nGuid);
 
             // Overwrite with specific setters
-            binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
+            binObj2 = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
                 .SetStringField("fStr", "str2")
                 .SetField("fNDate", nDate)
                 .SetTimestampField("fNTimestamp", nDate)
@@ -1022,7 +1026,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetHashCode(200)
                 .Build();
 
-            CheckStringDateGuidEnum2(binObj, nDate, nGuid);
+            CheckStringDateGuidEnum2(binObj2, nDate, nGuid);
+
+            // Check equality.
+            Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
         }
 
         /// <summary>
