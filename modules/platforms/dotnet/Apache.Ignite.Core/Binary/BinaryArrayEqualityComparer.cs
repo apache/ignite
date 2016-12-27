@@ -48,8 +48,11 @@ namespace Apache.Ignite.Core.Binary
             if (ReferenceEquals(x, y))
                 return true;
 
-            // TODO: Should work properly.
-            throw new NotSupportedException(GetType() + "is not intended for direct usage.");
+            var binx = GetBinaryObject(x);
+            var biny = GetBinaryObject(y);
+
+            // TODO
+            return true;
         }
 
         /// <summary>
@@ -64,8 +67,10 @@ namespace Apache.Ignite.Core.Binary
             if (obj == null)
                 return 0;
 
-            // TODO: Should work for nonenum.
-            throw new NotSupportedException(GetType() + "is not intended for direct usage.");
+            var binObj = GetBinaryObject(obj);
+
+            // TODO
+            return 0;
         }
 
         /** <inheritdoc /> */
@@ -91,6 +96,20 @@ namespace Apache.Ignite.Core.Binary
                 hash = 31 * hash + *(ptr + i);
 
             return hash;
+        }
+
+        /// <summary>
+        /// Casts to <see cref="BinaryObject"/> or throws an error.
+        /// </summary>
+        private static BinaryObject GetBinaryObject(IBinaryObject obj)
+        {
+            var binObj = obj as BinaryObject;
+
+            if (binObj != null)
+                return binObj;
+
+            throw new NotSupportedException(string.Format("{0} of type {1} is not supported.",
+                typeof(IBinaryObject), obj.GetType()));
         }
     }
 }

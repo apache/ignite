@@ -167,14 +167,17 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Gets the binary object.
         /// </summary>
-        private IBinaryObject GetBinaryObject()
+        private static IBinaryObject GetBinaryObject()
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new[] {new BinaryTypeConfiguration(typeof(Foo))
+                TypeConfigurations = new[]
                 {
-                    EqualityComparer = new BinaryArrayEqualityComparer()
-                } }
+                    new BinaryTypeConfiguration(typeof(Foo))
+                    {
+                        EqualityComparer = new BinaryArrayEqualityComparer()
+                    }
+                }
             });
 
             var bytes = marsh.Marshal(new Foo {Id = 1, Name = "name"});
