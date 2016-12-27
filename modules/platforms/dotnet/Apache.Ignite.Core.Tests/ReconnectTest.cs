@@ -53,7 +53,12 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var server = Ignition.Start(serverCfg);
+
+            Assert.AreEqual(1, server.GetCluster().GetNodes().Count);
+
             var client = Ignition.Start(clientCfg);
+
+            Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
 
             ClientReconnectEventArgs eventArgs = null;
 
