@@ -24,7 +24,11 @@ import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Provides interface for {@link org.apache.ignite.internal.GridComponent} to collect and exchange discovery data both on
+ * joining node and on cluster nodes.
  *
+ * It only organizes interaction with components and doesn't provide any capabilities of converting collected data
+ * into formats eligible for transmitting over media (like marshalling, compressing and so on).
  */
 public class DiscoveryDataBag {
     /**
@@ -131,15 +135,22 @@ public class DiscoveryDataBag {
         }
     }
 
-    /** */
+    /** Used for collecting node-specific data from component.
+     * As component may not know about nodeId it is running on, when component adds node-specific data,
+     * it is firstly collected under this key and then moved to another map with a correct UUID key.
+     */
     private static final UUID DEFAULT_KEY = null;
 
+    /** */
     private UUID joiningNodeId;
 
+    /** */
     private Map<Integer, Serializable> joiningNodeData = new HashMap<>();
 
+    /** */
     private Map<Integer, Serializable> commonData = new HashMap<>();
 
+    /** */
     private Map<UUID, Map<Integer, Serializable>> nodeSpecificData = new LinkedHashMap<>();
 
     /** */
@@ -182,14 +193,26 @@ public class DiscoveryDataBag {
         return newJoinerData;
     }
 
+    /**
+     * @param cmpId Cmp id.
+     * @param data Data.
+     */
     public void addJoiningNodeData(Integer cmpId, Serializable data) {
         joiningNodeData.put(cmpId, data);
     }
 
+    /**
+     * @param cmpId Cmp id.
+     * @param data Data.
+     */
     public void addGridCommonData(Integer cmpId, Serializable data) {
         commonData.put(cmpId, data);
     }
 
+    /**
+     * @param cmpId Cmp id.
+     * @param data Data.
+     */
     public void addNodeSpecificData(Integer cmpId, Serializable data) {
         if (!nodeSpecificData.containsKey(DEFAULT_KEY))
             nodeSpecificData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
@@ -197,30 +220,51 @@ public class DiscoveryDataBag {
         nodeSpecificData.get(DEFAULT_KEY).put(cmpId, data);
     }
 
+    /**
+     * @param cmpId Cmp id.
+     */
     public boolean commonDataCollectedFor(Integer cmpId) {
         return commonData.containsKey(cmpId);
     }
 
+    /**
+     * @param joinNodeData Join node data.
+     */
     public void joiningNodeData(Map<Integer, Serializable> joinNodeData) {
         joiningNodeData.putAll(joinNodeData);
     }
 
+    /**
+     * @param cmnData Cmn data.
+     */
     public void commonData(Map<Integer, Serializable> cmnData) {
         commonData.putAll(cmnData);
     }
 
+    /**
+     * @param nodeSpecData Node specification data.
+     */
     public void nodeSpecificData(Map<UUID, Map<Integer, Serializable>> nodeSpecData) {
         nodeSpecificData.putAll(nodeSpecData);
     }
 
+    /**
+     *
+     */
     public Map<Integer, Serializable> joiningNodeData() {
         return joiningNodeData;
     }
 
+    /**
+     *
+     */
     public Map<Integer, Serializable> commonData() {
         return commonData;
     }
 
+    /**
+     *
+     */
     @Nullable public Map<Integer, Serializable> localNodeSpecificData() {
         return nodeSpecificData.get(DEFAULT_KEY);
     }

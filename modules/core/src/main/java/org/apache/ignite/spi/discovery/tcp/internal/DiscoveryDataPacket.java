@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -33,7 +34,8 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
 /**
- *
+ * Carries discovery data in marshalled form and allows conveniently convert it to and from {@link DiscoveryDataBag} objects
+ * which are independent from such implementation details like type of used marshaller.
  */
 public class DiscoveryDataPacket implements Serializable {
     /** */
@@ -51,6 +53,9 @@ public class DiscoveryDataPacket implements Serializable {
     /** */
     private Map<UUID, Map<Integer, byte[]>> nodeSpecificData = new LinkedHashMap<>();
 
+    /**
+     * @param joiningNodeId Joining node id.
+     */
     public DiscoveryDataPacket(UUID joiningNodeId) {
         this.joiningNodeId = joiningNodeId;
     }
@@ -62,22 +67,37 @@ public class DiscoveryDataPacket implements Serializable {
         return joiningNodeId;
     }
 
+    /**
+     * @param bag Bag.
+     * @param nodeId Node id.
+     * @param marsh Marsh.
+     * @param log Logger.
+     */
     public void marshalFromDataBag(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, IgniteLogger log) {
         marshalData(bag.joiningNodeData(), joiningNodeData, marsh, log);
 
         marshalData(bag.commonData(), commonData, marsh, log);
 
-        Map<Integer, Serializable> currentNodeSpecificData = bag.localNodeSpecificData();
+        Map<Integer, Serializable> currNodeSpecificData = bag.localNodeSpecificData();
 
-        if (currentNodeSpecificData != null) {
-            Map<Integer, byte[]> marshCurrNodeSpecData = U.newHashMap(currentNodeSpecificData.size());
+        if (currNodeSpecificData != null) {
+            Map<Integer, byte[]> marshCurrNodeSpecData = U.newHashMap(currNodeSpecificData.size());
 
-            marshalData(currentNodeSpecificData, marshCurrNodeSpecData, marsh, log);
+            marshalData(currNodeSpecificData, marshCurrNodeSpecData, marsh, log);
 
-            nodeSpecificData.put(nodeId, marshCurrNodeSpecData);
+            filterDuplicatedData(marshCurrNodeSpecData);
+
+            if (!marshCurrNodeSpecData.isEmpty())
+                nodeSpecificData.put(nodeId, marshCurrNodeSpecData);
         }
     }
 
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     */
     public DiscoveryDataBag unmarshalGridData(Marshaller marsh, ClassLoader clsLdr, boolean clientNode, IgniteLogger log) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
 
@@ -107,6 +127,12 @@ public class DiscoveryDataPacket implements Serializable {
         return dataBag;
     }
 
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     */
     public DiscoveryDataBag unmarshalJoiningNodeData(Marshaller marsh, ClassLoader clsLdr, boolean clientNode, IgniteLogger log) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
 
@@ -119,14 +145,25 @@ public class DiscoveryDataPacket implements Serializable {
         return dataBag;
     }
 
+    /**
+     *
+     */
     public boolean hasJoiningNodeData() {
         return joiningNodeData != null && !joiningNodeData.isEmpty();
     }
 
+    /**
+     * @param nodeId Node id.
+     */
     public boolean hasDataFromNode(UUID nodeId) {
         return nodeSpecificData.containsKey(nodeId);
     }
 
+    /**
+     * @param existingDataPacket Existing data packet.
+     * @param mrgdCmnDataKeys Mrgd cmn data keys.
+     * @param mrgdSpecifDataKeys Mrgd specif data keys.
+     */
     public boolean mergeDataFrom(DiscoveryDataPacket existingDataPacket, Collection<Integer> mrgdCmnDataKeys, Collection<UUID> mrgdSpecifDataKeys) {
         if (commonData.size() != mrgdCmnDataKeys.size()) {
             for (Map.Entry<Integer, byte[]> e : commonData.entrySet()) {
@@ -198,12 +235,12 @@ public class DiscoveryDataPacket implements Serializable {
      * @param log Logger.
      */
     private Map<Integer, Serializable> unmarshalData(Map<Integer, byte[]> src, Marshaller marsh, ClassLoader clsLdr, boolean clientNode, IgniteLogger log) {
-        Map<Integer, Serializable> result = U.newHashMap(src.size());
+        Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
             try {
                 Serializable compData = marsh.unmarshal(binEntry.getValue(), clsLdr);
-                result.put(binEntry.getKey(), compData);
+                res.put(binEntry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
@@ -214,7 +251,7 @@ public class DiscoveryDataPacket implements Serializable {
             }
         }
 
-        return result;
+        return res;
     }
 
     /**
@@ -236,5 +273,26 @@ public class DiscoveryDataPacket implements Serializable {
                 U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
             }
+    }
+
+    /**
+     * TODO https://issues.apache.org/jira/browse/IGNITE-4435
+     */
+    private void filterDuplicatedData(Map<Integer, byte[]> discoData) {
+        for (Map<Integer, byte[]> existingData : nodeSpecificData.values()) {
+            Iterator<Map.Entry<Integer, byte[]>> it = discoData.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<Integer, byte[]> discoDataEntry = it.next();
+
+                byte[] curData = existingData.get(discoDataEntry.getKey());
+
+                if (Arrays.equals(curData, discoDataEntry.getValue()))
+                    it.remove();
+            }
+
+            if (discoData.isEmpty())
+                break;
+        }
     }
 }
