@@ -15,16 +15,29 @@
  * limitations under the License.
  */
 
-// Events groups.
-import GROUPS from 'app/data/event-types.json';
+const enumValueMapper = (val) => _.capitalize(val);
 
-export default ['igniteEventGroups', function() {
-    const groups = GROUPS;
+const DFLT_CLUSTER = {
+    atomics: {
+        cacheMode: {
+            clsName: 'Apache.Ignite.Core.Cache.Configuration.CacheMode',
+            mapper: enumValueMapper
+        }
+    },
+    transactionConfiguration: {
+        defaultTxConcurrency: {
+            clsName: 'Apache.Ignite.Core.Transactions.TransactionConcurrency',
+            mapper: enumValueMapper
+        },
+        defaultTxIsolation: {
+            clsName: 'Apache.Ignite.Core.Transactions.TransactionIsolation',
+            mapper: enumValueMapper
+        }
+    }
+};
 
-    this.push = (data) => groups.push(data);
-
-    this.$get = [() => {
-        return groups;
-    }];
-}];
-
+export default class IgniteClusterPlatformDefaults {
+    constructor() {
+        Object.assign(this, DFLT_CLUSTER);
+    }
+}

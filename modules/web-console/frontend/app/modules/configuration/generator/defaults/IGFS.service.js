@@ -57,12 +57,8 @@ const DFLT_IGFS = {
     }
 };
 
-export default function() {
-    this.append = (dflts) => {
-        _.merge(DFLT_IGFS, dflts);
-    };
-
-    this.$get = [() => {
-        return DFLT_IGFS;
-    }];
+export default class IgniteIGFSDefaults {
+    constructor() {
+        Object.assign(this, DFLT_IGFS);
+    }
 }
