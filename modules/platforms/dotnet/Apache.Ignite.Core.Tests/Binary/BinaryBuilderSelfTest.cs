@@ -664,7 +664,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckPrimitiveFields1(binObj);
 
             // Specific setter methods.
-            binObj = _grid.GetBinary().GetBuilder(typeof(Primitives))
+            var binObj2 = _grid.GetBinary().GetBuilder(typeof(Primitives))
                 .SetByteField("fByte", 1)
                 .SetBooleanField("fBool", true)
                 .SetShortField("fShort", 2)
@@ -677,7 +677,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetHashCode(100)
                 .Build();
 
-            CheckPrimitiveFields1(binObj);
+            CheckPrimitiveFields1(binObj2);
+
+            // Check equality.
+            Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
 
             // Overwrite with generic methods.
             binObj = binObj.ToBuilder()
@@ -690,13 +694,12 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField<float>("fFloat", 11)
                 .SetField<double>("fDouble", 12)
                 .SetField("fDecimal", 13.13m)
-                .SetHashCode(200)
                 .Build();
 
             CheckPrimitiveFields2(binObj);
 
             // Overwrite with specific methods.
-            binObj = binObj.ToBuilder()
+            binObj2 = binObj.ToBuilder()
                 .SetByteField("fByte", 7)
                 .SetBooleanField("fBool", false)
                 .SetShortField("fShort", 8)
@@ -706,10 +709,13 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetFloatField("fFloat", 11)
                 .SetDoubleField("fDouble", 12)
                 .SetDecimalField("fDecimal", 13.13m)
-                .SetHashCode(200)
                 .Build();
 
             CheckPrimitiveFields2(binObj);
+
+            // Check equality.
+            Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
         }
 
         /// <summary>
@@ -763,8 +769,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckPrimitiveFields2(IBinaryObject binObj)
         {
-            Assert.AreEqual(200, binObj.GetHashCode());
-
             Assert.AreEqual(7, binObj.GetField<byte>("fByte"));
             Assert.AreEqual(false, binObj.GetField<bool>("fBool"));
             Assert.AreEqual(8, binObj.GetField<short>("fShort"));
