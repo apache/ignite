@@ -228,6 +228,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsTrue(cache.ContainsKey(new Key2(5, 4, "Bar")));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
+
+            // TODO: Existence tests with builder.
         }
 
         /// <summary>
