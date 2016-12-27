@@ -82,7 +82,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     return NULL;
                 }
@@ -107,7 +107,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     return NULL;
                 }
@@ -132,7 +132,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     return NULL;
                 }

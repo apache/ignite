@@ -551,7 +551,7 @@ namespace ignite
 
             virtual void SetNull()
             {
-                res->clear();
+                res.clear();
             }
 
         private:

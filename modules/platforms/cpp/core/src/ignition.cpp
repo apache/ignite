@@ -229,7 +229,7 @@ namespace ignite
 
                 if (!ctx.Get())
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
                     failed = true;
                 }
@@ -259,7 +259,7 @@ namespace ignite
                     ReleaseChars(name0);
 
                     if (!javaRef) {
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
                         failed = true;
                     }
@@ -327,14 +327,14 @@ namespace ignite
 
             SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
 
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
             if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 // 2. Get environment pointer.
                 long long ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
                 if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
@@ -415,7 +415,7 @@ namespace ignite
 
             SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
 
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
             if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
             {
@@ -425,7 +425,7 @@ namespace ignite
 
                 ReleaseChars(name0);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
                 if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
                     res = res0;
@@ -456,13 +456,13 @@ namespace ignite
 
             SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
 
-            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
 
             if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 ctx.Get()->IgnitionStopAll(cancel, &jniErr);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, *err);
             }
         }
 

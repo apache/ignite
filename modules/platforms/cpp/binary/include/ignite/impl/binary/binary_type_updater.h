@@ -44,7 +44,7 @@ namespace ignite
                  * @param snapshot Snapshot.
                  * @param err Error.
                  */
-                virtual bool Update(Snap* snapshot, IgniteError* err) = 0;
+                virtual bool Update(Snap* snapshot, IgniteError& err) = 0;
             };
         }
     }    

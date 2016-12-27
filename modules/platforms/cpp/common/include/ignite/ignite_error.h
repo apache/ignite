@@ -277,7 +277,7 @@ namespace ignite
          * @param jniMsg Error message.
          * @param err Error. Can not be NULL.
          */
-        static void SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError* err);
+        static void SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError& err);
     private:
         /** Error code. */
         int32_t code;    

@@ -26,6 +26,11 @@ namespace ignite
     {
         namespace cluster
         {
+            enum Command
+            {
+                FOR_SERVERS = 23
+            };
+
             ClusterGroupImpl::ClusterGroupImpl(SP_IgniteEnvironment env, jobject javaRef) :
                 InteropTarget(env, javaRef)
             {
@@ -41,14 +46,10 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                jobject res = GetEnvironment().Context()->ProjectionForServers(GetTarget());
+                jobject res = InOpObject(FOR_SERVERS, err);
 
                 if (jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
-
                     return SP_ClusterGroupImpl();
-                }
 
                 return FromTarget(res);
             }

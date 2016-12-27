@@ -48,7 +48,7 @@ namespace ignite
                 JniContext::Release(javaRef);
             }
 
-            bool BinaryTypeUpdaterImpl::Update(Snap* snap, IgniteError* err)
+            bool BinaryTypeUpdaterImpl::Update(Snap* snap, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 

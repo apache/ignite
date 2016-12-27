@@ -65,7 +65,7 @@ namespace ignite
             if (txJavaRef)
                 res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
             else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             return res;
         }
@@ -81,7 +81,7 @@ namespace ignite
             if (txJavaRef)
                 res = SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
             else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             return res;
         }

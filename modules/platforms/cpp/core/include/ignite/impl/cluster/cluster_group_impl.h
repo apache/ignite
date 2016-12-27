@@ -59,7 +59,6 @@ namespace ignite
                 SP_ClusterGroupImpl ForServers(IgniteError& err);
 
             private:
-
                 /**
                  * Make cluster group implementation using java reference and
                  * internal state of this cluster group.

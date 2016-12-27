@@ -48,7 +48,7 @@ namespace ignite
                  */
                 ~BinaryTypeUpdaterImpl();
 
-                bool Update(Snap* snapshot, IgniteError* err);
+                bool Update(Snap* snapshot, IgniteError& err);
             private:
                 /** Environment. */
                 IgniteEnvironment& env;

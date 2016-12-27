@@ -178,7 +178,7 @@ namespace ignite
 
                     env.Get()->Context()->TargetOutStream(javaRef, OP_GET_ALL, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                     {
@@ -201,7 +201,7 @@ namespace ignite
 
                     env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR, 0, &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         iterCalled = true;
@@ -228,7 +228,7 @@ namespace ignite
                     env.Get()->Context()->TargetOutStream(
                         javaRef, OP_GET_BATCH, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                         return false;
@@ -251,7 +251,7 @@ namespace ignite
 
                     bool res = env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR_HAS_NEXT, 0, &jniErr) == 1;
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         return res;
