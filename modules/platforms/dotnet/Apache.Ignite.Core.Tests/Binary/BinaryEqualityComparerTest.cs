@@ -44,6 +44,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 new BinaryFieldEqualityComparer()
             };
 
+            // TODO: Proper tests with various types, nested objects, etc
+            // TODO: Separate tests per class.
             foreach (var cmp in cmps)
             {
                 Assert.Throws<NotSupportedException>(() => cmp.Equals(null, null));
