@@ -39,8 +39,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var cmps = new IEqualityComparer<IBinaryObject>[]
             {
-                new BinaryArrayEqualityComparer(),
-                new BinaryFieldEqualityComparer()
+                new BinaryArrayEqualityComparer()
+                //new BinaryFieldEqualityComparer()
             };
 
             var obj = GetBinaryObject();
