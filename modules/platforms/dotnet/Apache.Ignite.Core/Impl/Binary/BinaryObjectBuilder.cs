@@ -87,15 +87,21 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryObject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(binary != null);
-            Debug.Assert(obj != null);
             Debug.Assert(desc != null);
 
             _binary = binary;
             _parent = parent ?? this;
-            _obj = obj;
             _desc = desc;
 
-            _hashCode = obj.GetHashCode();
+            if (obj != null)
+            {
+                _obj = obj;
+                _hashCode = obj.GetHashCode();
+            }
+            else
+            {
+                _obj = BinaryFromDescriptor(desc);
+            }
         }
 
         /** <inheritDoc /> */
@@ -745,7 +751,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                                         ? _desc.EqualityComparer.GetHashCode(outStream,
                                             outStartPos + BinaryObjectHeader.Size,
                                             outLen - BinaryObjectHeader.Size,
-                                            outSchema, outSchemaId, ctx.Writer.Marshaller, _desc)
+                                            outSchema, outSchemaId, _binary.Marshaller, _desc)
                                         : 0;
                                 }
                             }
@@ -1042,6 +1048,30 @@ namespace Apache.Ignite.Core.Impl.Binary
             outStream.WriteInt(len);
 
             TransferBytes(inStream, outStream, elemSize * len);
+        }
+
+        /// <summary>
+        /// Create empty binary object from descriptor.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <returns>Empty binary object.</returns>
+        private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
+        {
+            const int len = BinaryObjectHeader.Size;
+
+            var flags = desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None;
+
+            if (_binary.Marshaller.CompactFooter && desc.UserType)
+                flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+            var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len, flags);
+
+            using (var stream = new BinaryHeapStream(len))
+            {
+                BinaryObjectHeader.Write(hdr, stream, 0);
+
+                return new BinaryObject(_binary.Marshaller, stream.InternalArray, 0, hdr);
+            }
         }
 
         /// <summary>
