@@ -352,6 +352,14 @@
                                             <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
                                         </copy>
 
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/ignite-base-load-config.xml"/>
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/ignite-cache-load-config.xml"/>
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/ignite-failover-base-config.xml"/>
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/ignite-failover-localhost-config.xml"/>
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/benchmark-cache-load.properties"/>
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/benchmark-cache-load-win.properties"/>
+                                        <delete file="${basedir}/target/release-package/benchmarks/config/benchmark-failover.properties"/>
+
                                         <mkdir dir="${basedir}/target/release-package/benchmarks/src" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/src/">
