@@ -69,7 +69,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testResolve() throws Exception {
-        assertEquals(DUAL_SYNC, reslvr.resolveMode(new IgfsPath("/")));
+        assertEquals(DUAL_SYNC, reslvr.resolveMode(IgfsPath.ROOT));
         assertEquals(DUAL_SYNC, reslvr.resolveMode(new IgfsPath("/a")));
         assertEquals(DUAL_SYNC, reslvr.resolveMode(new IgfsPath("/a/1")));
 
@@ -161,7 +161,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         assertEquals(set, new HashSet<IgfsPath>() {{
             add(new IgfsPath("/a/b"));
             add(new IgfsPath("/a/b/x"));
-            add(new IgfsPath("/"));
+            add(IgfsPath.ROOT);
         }});
 
         set = new HashSet<>();

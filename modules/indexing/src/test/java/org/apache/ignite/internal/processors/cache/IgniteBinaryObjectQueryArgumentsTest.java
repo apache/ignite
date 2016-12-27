@@ -56,31 +56,31 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     private static final int NODES = 3;
 
     /** */
-    public static final String PRIM_CACHE = "prim-cache";
+    private static final String PRIM_CACHE = "prim-cache";
 
     /** */
-    public static final String STR_CACHE = "str-cache";
+    private static final String STR_CACHE = "str-cache";
 
     /** */
-    public static final String ENUM_CACHE = "enum-cache";
+    private static final String ENUM_CACHE = "enum-cache";
 
     /** */
-    public static final String UUID_CACHE = "uuid-cache";
+    private static final String UUID_CACHE = "uuid-cache";
 
     /** */
-    public static final String DATE_CACHE = "date-cache";
+    private static final String DATE_CACHE = "date-cache";
 
     /** */
-    public static final String TIMESTAMP_CACHE = "timestamp-cache";
+    private static final String TIMESTAMP_CACHE = "timestamp-cache";
 
     /** */
-    public static final String BIG_DECIMAL_CACHE = "decimal-cache";
+    private static final String BIG_DECIMAL_CACHE = "decimal-cache";
 
     /** */
-    public static final String OBJECT_CACHE = "obj-cache";
+    private static final String OBJECT_CACHE = "obj-cache";
 
     /** */
-    public static final String FIELD_CACHE = "field-cache";
+    private static final String FIELD_CACHE = "field-cache";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -110,6 +110,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     }
 
     /**
+     * @param cacheName Cache name.
      * @return Cache config.
      */
     protected CacheConfiguration getCacheConfiguration(final String cacheName) {
@@ -368,7 +369,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testFieldSearch() throws Exception {
         final IgniteCache<Integer, SearchValue> cache = ignite(0).cache(FIELD_CACHE);
@@ -455,7 +456,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         /**
          * @param id Key.
          */
-        public TestKey(int id) {
+        TestKey(int id) {
             this.id = id;
         }
 
@@ -536,7 +537,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
          * @param person Person.
          * @param enumKey Enum.
          */
-        public SearchValue(
+        SearchValue(
             final UUID uuid,
             final String str,
             final BigDecimal decimal,

@@ -43,7 +43,7 @@ import scala.collection.JavaConversions._
  * @tparam V Value type.
  */
 class IgniteRDD[K, V] (
-    val ic: IgniteContext[K, V],
+    val ic: IgniteContext,
     val cacheName: String,
     val cacheCfg: CacheConfiguration[K, V],
     val keepBinary: Boolean
@@ -188,7 +188,7 @@ class IgniteRDD[K, V] (
      * @param rdd RDD instance to save values from.
      * @param f Transformation function.
      */
-    def saveValues[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ V) = {
+    def saveValues[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ V) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -252,7 +252,7 @@ class IgniteRDD[K, V] (
      * @param overwrite Boolean flag indicating whether the call on this method should overwrite existing
      *      values in Ignite cache.
      */
-    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ (K, V), overwrite: Boolean) = {
+    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ (K, V), overwrite: Boolean) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -282,7 +282,7 @@ class IgniteRDD[K, V] (
      * @param rdd RDD instance to save values from.
      * @param f Transformation function.
      */
-    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ (K, V)): Unit = {
+    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext) ⇒ (K, V)): Unit = {
         savePairs(rdd, f, overwrite = false)
     }
 
@@ -301,7 +301,7 @@ class IgniteRDD[K, V] (
      */
     def withKeepBinary[K1, V1](): IgniteRDD[K1, V1] = {
         new IgniteRDD[K1, V1](
-            ic.asInstanceOf[IgniteContext[K1, V1]],
+            ic,
             cacheName,
             cacheCfg.asInstanceOf[CacheConfiguration[K1, V1]],
             true)

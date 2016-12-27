@@ -27,7 +27,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -198,13 +197,15 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /**
-     * @return Keys for which {@link MiniFuture} isn't completed.
+     * @return Keys for which MiniFuture isn't completed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
-        synchronized (futs) {
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+        synchronized (sync) {
+            int size = futuresCountNoLock();
+
+            for (int i = 0; i < size; i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (isMini(fut) && !fut.isDone()) {
                     MiniFuture miniFut = (MiniFuture)fut;
@@ -233,10 +234,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+            for (int i = size - 1; i >= 0; i--) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -599,9 +602,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         GridCacheEntryEx cached0 = entry.cached();
 
         if (cached0.isDht())
-            nodes = cacheCtx.affinity().nodes(cached0.partition(), topVer);
+            nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
         else
-            nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
+            nodes = cacheCtx.isLocal() ?
+                cacheCtx.affinity().nodes(entry.key(), topVer) :
+                cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
 
@@ -685,9 +690,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (keyLockFut != null)
                 keys = new HashSet<>(keyLockFut.lockKeys);
             else {
-                if (futs != null && !futs.isEmpty()) {
-                    for (int i = 0; i < futs.size(); i++) {
-                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+                synchronized (sync) {
+                    int size = futuresCountNoLock();
+
+                    for (int i = 0; i < size; i++) {
+                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                         if (isMini(fut) && !fut.isDone()) {
                             MiniFuture miniFut = (MiniFuture)fut;
@@ -894,7 +901,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                         else
                             remap();
-                    } else {
+                    }
+                    else {
                         parent.onPrepareResponse(m, res);
 
                         // Proceed prepare before finishing mini future.

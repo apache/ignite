@@ -304,8 +304,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             assert !metaDataCache.context().affinityNode();
 
             while (true) {
-                ClusterNode oldestSrvNode =
-                    CU.oldestAliveCacheServerNode(ctx.cache().context(), AffinityTopologyVersion.NONE);
+                ClusterNode oldestSrvNode = ctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldestSrvNode == null)
                     break;
@@ -540,6 +539,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public String affinityField(String keyType) {
+        if (binaryCtx == null)
+            return null;
+
+        return binaryCtx.affinityKeyFieldName(typeId(keyType));
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
         return new BinaryObjectBuilderImpl(binaryCtx, clsName);
     }
@@ -709,10 +716,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (meta != null) {
                 String name = meta.affinityKeyFieldName();
 
-                affKeyFields.putIfAbsent(meta.typeId(), new T1<>(meta.field(name)));
+                if (name != null) {
+                    BinaryField field = meta.field(name);
 
-                if (name != null)
-                    return po.field(name);
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
+
+                    return field.value(po);
+                }
+                else
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
             }
             else if (po instanceof BinaryObjectEx) {
                 int typeId = ((BinaryObjectEx)po).typeId();

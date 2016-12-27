@@ -46,6 +46,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -88,6 +89,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-3663")
     public void testSessionRenewalDuringLogin() throws Exception {
         testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }
@@ -854,7 +856,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         HashLoginService hashLoginService = new HashLoginService();
         hashLoginService.setName("Test Realm");
         createRealm();
-        hashLoginService.setConfig("realm.properties");
+        hashLoginService.setConfig("/tmp/realm.properties");
         ctx.getSecurityHandler().setLoginService(hashLoginService);
 
         srv.setHandler(ctx);
@@ -884,14 +886,14 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     private void stopServerWithLoginService(@Nullable Server srv) throws Exception{
         if (srv != null){
             srv.stop();
-            File realmFile = new File("realm.properties");
+            File realmFile = new File("/tmp/realm.properties");
             realmFile.delete();
         }
     }
 
     /** Creates a realm file to store test user credentials */
     private void createRealm() throws Exception{
-        File realmFile = new File("realm.properties");
+        File realmFile = new File("/tmp/realm.properties");
         FileWriter fileWriter = new FileWriter(realmFile);
         fileWriter.append("admin:admin");
         fileWriter.flush();
@@ -1128,7 +1130,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 try {
                     req.login("admin", "admin");
                 } catch (Exception e) {
-                    X.printerrln("Login failed.");
+                    X.printerrln("Login failed due to exception.", e);
                 }
 
                 HttpSession session = req.getSession();

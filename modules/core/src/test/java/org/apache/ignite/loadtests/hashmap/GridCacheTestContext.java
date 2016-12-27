@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapManager;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
@@ -68,6 +69,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new GridCachePartitionExchangeManager<K, V>(),
                 new CacheAffinitySharedManager<K, V>(),
                 new GridCacheIoManager(),
+                new GridCacheSharedTtlCleanupManager(),
                 new CacheNoopJtaManager(),
                 null
             ),

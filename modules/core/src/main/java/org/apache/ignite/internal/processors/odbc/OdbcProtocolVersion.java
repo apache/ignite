@@ -26,8 +26,14 @@ public enum OdbcProtocolVersion {
     /** First version of the ODBC. Released with Ignite 1.6 */
     VERSION_1_6_0(1),
 
+    /** Second version of the ODBC. Released with Ignite 1.8 */
+    VERSION_1_8_0(makeVersion(1,8,0)),
+
     /** Unknown version. */
     VERSION_UNKNOWN(Long.MIN_VALUE);
+
+    /** Mask to get 2 lowest bytes of the value and cast to long. */
+    private static final long LONG_MASK = 0x000000000000FFFFL;
 
     /** Long value to enum map. */
     private static final Map<Long, OdbcProtocolVersion> versions = new HashMap<>();
@@ -43,6 +49,7 @@ public enum OdbcProtocolVersion {
             versions.put(version.longValue(), version);
 
         since.put(VERSION_1_6_0, "1.6.0");
+        since.put(VERSION_1_8_0, "1.8.0");
     }
 
     /** Long value for version. */
@@ -53,6 +60,18 @@ public enum OdbcProtocolVersion {
      */
     OdbcProtocolVersion(long longVal) {
         this.longVal = longVal;
+    }
+
+    /**
+     * Make long value for the version.
+     *
+     * @param major Major version.
+     * @param minor Minor version.
+     * @param maintenance Maintenance version.
+     * @return Long value for the version.
+     */
+    private static long makeVersion(int major, int minor, int maintenance) {
+        return ((major & LONG_MASK) << 48) | ((minor & LONG_MASK) << 32) | ((maintenance & LONG_MASK) << 16);
     }
 
     /**
@@ -69,7 +88,7 @@ public enum OdbcProtocolVersion {
      * @return Current version.
      */
     public static OdbcProtocolVersion current() {
-        return VERSION_1_6_0;
+        return VERSION_1_8_0;
     }
 
     /**
@@ -92,7 +111,7 @@ public enum OdbcProtocolVersion {
     public boolean isDistributedJoinsSupported() {
         assert !isUnknown();
 
-        return longVal >= VERSION_1_6_0.longVal;
+        return longVal >= VERSION_1_8_0.longVal;
     }
 
     /**

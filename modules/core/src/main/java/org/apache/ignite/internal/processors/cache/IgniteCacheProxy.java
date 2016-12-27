@@ -51,6 +51,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
@@ -63,10 +64,10 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -243,6 +244,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
         GridCacheGateway<K, V> gate = this.gate;
 
@@ -270,6 +272,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetricsMXBean localMxBean() {
         GridCacheGateway<K, V> gate = this.gate;
 
@@ -491,8 +494,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (grp != null)
             qry.projection(grp);
 
-        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(ctx,
-            new IgniteOutClosureX<GridCloseableIterator<R>>() {
+        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
+            ctx.name(), ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
                     final GridCloseableIterator iter0 = qry.executeScanQuery();
 
@@ -520,7 +523,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                         }
                     };
                 }
-            }, false);
+            }, true);
 
         return new QueryCursorImpl<>(iter);
     }
@@ -533,11 +536,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery<Map.Entry<K, V>> qry;
+        final CacheQuery qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        final CacheQueryFuture<Map.Entry<K, V>> fut;
+        final CacheQueryFuture fut;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -547,7 +550,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(ctx,
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute();
@@ -560,9 +563,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, filter.getClass().getSimpleName(),
+                ctx, new IgniteOutClosureX<CacheQueryFuture<Cache.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
@@ -577,21 +580,39 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Map.Entry<K, V> cur;
+            private Cache.Entry<K, V> cur;
 
             @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K, V> e = cur;
+                Cache.Entry<K, V> e = cur;
 
                 cur = null;
 
-                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                return e;
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
-                return cur != null || (cur = fut.next()) != null;
+                if (cur != null)
+                    return true;
+
+                Object next = fut.next();
+
+                // Workaround a bug: if IndexingSpi is configured future represents Iterator<Cache.Entry>
+                // instead of Iterator<Map.Entry> due to IndexingSpi interface.
+                if (next == null)
+                    return false;
+
+                if (next instanceof Cache.Entry)
+                    cur = (Cache.Entry)next;
+                else {
+                    Map.Entry e = (Map.Entry)next;
+
+                    cur = new CacheEntryImpl(e.getKey(), e.getValue());
+                }
+
+                return true;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
@@ -698,6 +719,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtxCall != null && opCtxCall.isKeepBinary());
 
             if (qry instanceof SqlQuery) {
+                if (isReplicatedDataNode() && ((SqlQuery)qry).isDistributedJoins())
+                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
+                        "not on replicated.");
+
                 final SqlQuery p = (SqlQuery)qry;
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
@@ -712,6 +737,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             }
 
             if (qry instanceof SqlFieldsQuery) {
+                if (isReplicatedDataNode() && ((SqlFieldsQuery)qry).isDistributedJoins())
+                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
+                        "not on replicated.");
+
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
@@ -777,11 +806,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 final SqlQuery sqlQry = (SqlQuery) qry;
 
                 convertToBinary(sqlQry.getArgs());
-            } else if (qry instanceof SpiQuery) {
+            }
+            else if (qry instanceof SpiQuery) {
                 final SpiQuery spiQry = (SpiQuery) qry;
 
                 convertToBinary(spiQry.getArgs());
-            } else if (qry instanceof SqlFieldsQuery) {
+            }
+            else if (qry instanceof SqlFieldsQuery) {
                 final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
 
                 convertToBinary(fieldsQry.getArgs());
@@ -798,10 +829,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (args == null)
             return;
 
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] != null && !BinaryUtils.isBinaryType(args[i].getClass()))
-                args[i] = ctx.toCacheObject(args[i]);
-        }
+        for (int i = 0; i < args.length; i++)
+            args[i] = ctx.cacheObjects().binary().toBinary(args[i]);
     }
 
     /**
@@ -854,6 +883,48 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             return delegate.context().queries().metrics();
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetQueryMetrics() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            delegate.context().queries().resetMetrics();
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<? extends QueryDetailMetrics> queryDetailMetrics() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            return delegate.context().queries().detailMetrics();
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetQueryDetailMetrics() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            delegate.context().queries().resetDetailMetrics();
         }
         finally {
             onLeave(gate, prev);
@@ -2255,9 +2326,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> rebalance() {
-        ctx.preloader().forcePreload();
-
-        return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
+        return new IgniteFutureImpl<>(ctx.preloader().forceRebalance());
     }
 
     /**

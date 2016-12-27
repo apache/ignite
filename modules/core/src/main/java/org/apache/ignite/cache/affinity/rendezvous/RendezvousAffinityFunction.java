@@ -17,6 +17,20 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -34,63 +48,42 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.UUID;
-
 /**
- * Affinity function for partitioned cache based on Highest Random Weight algorithm. This function supports the
- * following configuration: <ul> <li> {@code partitions} - Number of partitions to spread across nodes. </li> <li>
- * {@code excludeNeighbors} - If set to {@code true}, will exclude same-host-neighbors from being backups of each other.
- * This flag can be ignored in cases when topology has no enough nodes for assign backups. Note that {@code
- * backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}. </li> <li> {@code backupFilter} -
- * Optional filter for back up nodes. If provided, then only nodes that pass this filter will be selected as backup
- * nodes. If not provided, then primary and backup nodes will be selected out of all nodes available for this cache.
- * </li> </ul> <p> Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()}
- * method.
+ * Affinity function for partitioned cache based on Highest Random Weight algorithm.
+ * This function supports the following configuration:
+ * <ul>
+ * <li>
+ *      {@code partitions} - Number of partitions to spread across nodes.
+ * </li>
+ * <li>
+ *      {@code excludeNeighbors} - If set to {@code true}, will exclude same-host-neighbors
+ *      from being backups of each other. This flag can be ignored in cases when topology has no enough nodes
+ *      for assign backups.
+ *      Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+ * </li>
+ * <li>
+ *      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
+ *      nodes that pass this filter will be selected as backup nodes. If not provided, then
+ *      primary and backup nodes will be selected out of all nodes available for this cache.
+ * </li>
+ * </ul>
+ * <p>
+ * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
 public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
-    /** Default number of partitions. */
-    public static final int DFLT_PARTITION_COUNT = 1024;
-    /** Default number of buckets. */
-    public static final int DFLT_BUCKETS_COUNT = 32;
     /** */
     private static final long serialVersionUID = 0L;
-    /** Comparator of hashed nodes. */
+
+    /** Default number of partitions. */
+    public static final int DFLT_PARTITION_COUNT = 1024;
+
+    /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
-    /** Comparator of hashed bucket indexes. */
-    private static final Comparator<IgniteBiTuple<Long, Integer>> BUCKET_COMPARATOR = new HashBucketComparator();
-    /**
-     * When the version of the oldest node in the topology is greater then compatibilityVersion the
-     * RendezvousAffinityFunction switches to the new implementation of the algorithm.
-     */
-    private final IgniteProductVersion compatibilityVer
-        = new IgniteProductVersion((byte)1, (byte)6, (byte)0, 0L, null);
-    /**
-    * Pre-calculated bucket indexes that are hashed with partition numbers. Used with large nodes number. Nodes array
-    * is split to buckets to improve the performance of assignment calculation.
-    */
-    private transient List<List<Integer>> bucketIdxsByPart;
+
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
         @Override protected MessageDigest initialValue() {
@@ -141,22 +134,26 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other and specified
-     * number of backups. <p> Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code
-     * true}.
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
+     * and specified number of backups.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
      */
     public RendezvousAffinityFunction(boolean exclNeighbors) {
         this(exclNeighbors, DFLT_PARTITION_COUNT);
     }
 
     /**
-     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other, and specified
-     * number of backups and partitions. <p> Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is
-     * set to {@code true}.
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
+     * and specified number of backups and partitions.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
      * @param parts Total number of partitions.
      */
     public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
@@ -164,12 +161,15 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Initializes optional counts for replicas and backups. <p> Note that {@code backupFilter} is ignored if {@code
-     * excludeNeighbors} is set to {@code true}.
+     * Initializes optional counts for replicas and backups.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param parts Total number of partitions.
-     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected from all nodes that
-     * pass this filter. First argument for this filter is primary node, and second argument is node being tested. <p>
+     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
+     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
+     *      argument is node being tested.
+     * <p>
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      */
     public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
@@ -190,7 +190,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
         this.backupFilter = backupFilter;
-        bucketIdxsByPart = calculateBucketIdxs(parts, DFLT_BUCKETS_COUNT);
 
         try {
             MessageDigest.getInstance("MD5");
@@ -201,50 +200,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins
-     * hash.
-     *
-     * @see <a href="https://gist.github.com/badboy/6267743#64-bit-mix-functions">64 bit mix functions</a>
-     */
-    private static long hash(int key0, int key1) {
-        long key = (key0 & 0xFFFFFFFFL)
-            | ((key1 & 0xFFFFFFFFL) << 32);
-        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-        key ^= (key >>> 24);
-        key += (key << 3) + (key << 8); // key * 265
-        key ^= (key >>> 14);
-        key += (key << 2) + (key << 4); // key * 21
-        key ^= (key >>> 28);
-        key += (key << 31);
-        return key;
-    }
-
-    /**
-     * Pre-calculate bucket indexes that are hashed with partition numbers. Used with large nodes number. Nodes array
-     * is split to buckets to improve the performance of assignment calculation.
-     */
-    private static List<List<Integer>> calculateBucketIdxs(int parts, int buckets) {
-        List<List<Integer>> res = new ArrayList<>(parts);
-        for (int part = 0; part < parts; ++part) {
-            List<IgniteBiTuple<Long, Integer>> lst = new ArrayList<>(buckets);
-            for (int i = 0; i < buckets; ++i)
-                lst.add(F.t(hash(i, part), i));
-
-            Collections.sort(lst, BUCKET_COMPARATOR);
-            List<Integer> lstPartClusters = new ArrayList<>(buckets);
-            for (IgniteBiTuple<Long, Integer> t : lst)
-                lstPartClusters.add(t.get2());
-
-            res.add(lstPartClusters);
-        }
-        return res;
-    }
-
-    /**
-     * Gets total number of key partitions. To ensure that all partitions are equally distributed across all nodes,
-     * please make sure that this number is significantly larger than a number of nodes. Also, partition size should be
-     * relatively small. Try to avoid having partitions with more than quarter million keys. <p> Note that for fully
-     * replicated caches this method should always return {@code 1}.
+     * Gets total number of key partitions. To ensure that all partitions are
+     * equally distributed across all nodes, please make sure that this
+     * number is significantly larger than a number of nodes. Also, partition
+     * size should be relatively small. Try to avoid having partitions with more
+     * than quarter million keys.
+     * <p>
+     * Note that for fully replicated caches this method should always
+     * return {@code 1}.
      *
      * @return Total partition count.
      */
@@ -320,7 +283,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
+     * @deprecated Use {@code affinityBackupFilter} instead.
      */
+    @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
     }
@@ -389,48 +354,52 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      * Returns collection of nodes (primary first) for specified partition.
      *
-     * @param part partition number.
-     * @param nodes Current topology.
-     * @param backups Backups count.
-     * @param neighborhoodCache Neighborhood cache.
+     * @param d Message digest.
+     * @param part Partition.
+     * @param nodes Nodes.
+     * @param nodesHash Serialized nodes hashes.
+     * @param backups Number of backups.
+     * @param neighborhoodCache Neighborhood.
+     * @return Assignment.
      */
-    public List<ClusterNode> assignPartition(int part, List<ClusterNode> nodes, int backups,
-        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
-        return assignPartitionMd5Impl(part, nodes, backups, neighborhoodCache);
-    }
-
-    /**
-     * MD5 based implementation. Used to compatibility with nodes when node's version
-     * less then {@link #compatibilityVer}.
-     *
-     * @param part partition number.
-     * @param nodes Current topology.
-     * @param backups Backups count.
-     * @param neighborhoodCache Neighborhood cache.
-     */
-    private List<ClusterNode> assignPartitionMd5Impl(int part, List<ClusterNode> nodes, int backups,
+    public List<ClusterNode> assignPartition(MessageDigest d,
+        int part,
+        List<ClusterNode> nodes,
+        Map<ClusterNode, byte[]> nodesHash,
+        int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
         if (nodes.size() <= 1)
             return nodes;
 
-        List<IgniteBiTuple<Long, ClusterNode>> lst = new ArrayList<>();
+        if (d == null)
+            d = digest.get();
 
-        MessageDigest d = digest.get();
+        List<IgniteBiTuple<Long, ClusterNode>> lst = new ArrayList<>(nodes.size());
 
-        for (ClusterNode node : nodes) {
-            Object nodeHash = resolveNodeHash(node);
+        try {
+            for (int i = 0; i < nodes.size(); i++) {
+                ClusterNode node = nodes.get(i);
 
-            try {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                byte[] nodeHashBytes = nodesHash.get(node);
 
-                byte[] nodeHashBytes = ignite.configuration().getMarshaller().marshal(nodeHash);
+                if (nodeHashBytes == null) {
+                    Object nodeHash = resolveNodeHash(node);
 
-                out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
-                out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
+                    byte[] nodeHashBytes0 = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
+
+                    // Add 4 bytes for partition bytes.
+                    nodeHashBytes = new byte[nodeHashBytes0.length + 4];
+
+                    System.arraycopy(nodeHashBytes0, 0, nodeHashBytes, 4, nodeHashBytes0.length);
+
+                    nodesHash.put(node, nodeHashBytes);
+                }
+
+                U.intToBytes(part, nodeHashBytes, 0);
 
                 d.reset();
 
-                byte[] bytes = d.digest(out.toByteArray());
+                byte[] bytes = d.digest(nodeHashBytes);
 
                 long hash =
                     (bytes[0] & 0xFFL)
@@ -444,9 +413,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
                 lst.add(F.t(hash, node));
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
         Collections.sort(lst, COMPARATOR);
@@ -493,7 +462,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             }
 
             if (!exclNeighborsWarn) {
-                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
                     "because topology has no enough nodes to assign backups.");
 
                 exclNeighborsWarn = true;
@@ -517,147 +486,38 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+
         return U.safeAbs(key.hashCode() % parts);
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-        if (useMd5Impl(affCtx))
-            return assignPartitionsMd5Impl(affCtx);
-        else
-            return assignPartitionsWang(affCtx);
-    }
-
-    /**
-     * MD5 based implementation. Used to compatibility with nodes when node's version
-     * less then {@link #compatibilityVer}.
-     *
-     * @param affCtx Aff context.
-     */
-    public List<List<ClusterNode>> assignPartitionsMd5Impl(AffinityFunctionContext affCtx) {
         List<List<ClusterNode>> assignments = new ArrayList<>(parts);
 
         Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
             GridCacheUtils.neighbors(affCtx.currentTopologySnapshot()) : null;
 
+        MessageDigest d = digest.get();
+
+        List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
+
+        Map<ClusterNode, byte[]> nodesHash = U.newHashMap(nodes.size());
+
         for (int i = 0; i < parts; i++) {
-            List<ClusterNode> partAssignment = assignPartitionMd5Impl(i, affCtx.currentTopologySnapshot(), affCtx.backups(),
+            List<ClusterNode> partAssignment = assignPartition(d,
+                i,
+                nodes,
+                nodesHash,
+                affCtx.backups(),
                 neighborhoodCache);
 
             assignments.add(partAssignment);
         }
 
         return assignments;
-    }
-
-    /**
-     * Wang/Jenkins hash with buckets based implementation. Used when all nodes in
-     * topology newer then {@link #compatibilityVer}.
-     *
-     * @param affCtx Aff context.
-     */
-    private List<List<ClusterNode>> assignPartitionsWang(AffinityFunctionContext affCtx) {
-        List<ClusterNode> topSnapshot = affCtx.currentTopologySnapshot();
-
-        Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
-            GridCacheUtils.neighbors(topSnapshot) : null;
-
-        List<List<ClusterNode>> assignments = new ArrayList<>(parts);
-        for (int i = 0; i < parts; i++) {
-            List<ClusterNode> partAssignment = assignPartitionWangImpl(i, topSnapshot, affCtx.backups(),
-                neighborhoodCache);
-
-            assignments.add(partAssignment);
-        }
-
-        return assignments;
-    }
-
-    /**
-     /**
-     * Wang/Jenkins hash with buckets based implementation. Used when all nodes in
-     * topology newer then {@link #compatibilityVer}.
-     *
-     * @param part Partition.
-     * @param nodes Nodes.
-     * @param backups Backups.
-     * @param neighborhoodCache Neighborhood cache.
-     */
-    private List<ClusterNode> assignPartitionWangImpl(int part, List<ClusterNode> nodes, int backups,
-        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
-        if (nodes.size() <= 1)
-            return nodes;
-
-        Iterable<ClusterNode> sortedNodes;
-        if (nodes.size() < DFLT_BUCKETS_COUNT * 2)
-            sortedNodes = new FullSortContainer(part, nodes);
-        else
-            sortedNodes = new BucketSortContainer(part, nodes);
-
-        Iterator<ClusterNode> it = sortedNodes.iterator();
-
-        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
-
-        List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
-        Collection<ClusterNode> allNeighbors = new HashSet<>();
-
-        ClusterNode primary = it.next();
-
-        res.add(primary);
-        if (exclNeighbors)
-            allNeighbors.addAll(neighborhoodCache.get(primary.id()));
-
-        // Select backups.
-        if (backups > 0) {
-            while (it.hasNext() && res.size() < primaryAndBackups) {
-                ClusterNode node = it.next();
-
-                if (exclNeighbors) {
-                    if (!allNeighbors.contains(node)) {
-                        res.add(node);
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
-                    }
-                }
-                else if (backupFilter == null || backupFilter.apply(primary, node)) {
-                    res.add(node);
-                    if (exclNeighbors)
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
-                }
-            }
-        }
-
-        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
-            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-            it = sortedNodes.iterator();
-            it.next();
-            while (it.hasNext() && res.size() < primaryAndBackups) {
-
-                ClusterNode node = it.next();
-
-                if (!res.contains(node))
-                    res.add(node);
-            }
-
-            if (!exclNeighborsWarn) {
-                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
-                    "because topology has no enough nodes to assign backups.");
-
-                exclNeighborsWarn = true;
-            }
-        }
-
-        assert res.size() <= primaryAndBackups;
-
-        return res;
-    }
-
-    /**
-     * The switch between MD5 (old) and Wang hash with buckets (new) implementations.
-     * If the cluster contains at least one node with version less or equals to #compatibilityVersion
-     * the MD5 implementation is used.
-     */
-    private boolean useMd5Impl(AffinityFunctionContext ctx) {
-        return (ctx.oldestNodeVersion() != null) && (compatibilityVer.compareTo(ctx.oldestNodeVersion()) >= 0);
     }
 
     /** {@inheritDoc} */
@@ -680,7 +540,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
-        bucketIdxsByPart = calculateBucketIdxs(parts, DFLT_BUCKETS_COUNT);
     }
 
     /**
@@ -694,193 +553,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
                 o1.get2().id().compareTo(o2.get2().id());
-        }
-    }
-
-    /**
-     *
-     */
-    private static class HashBucketComparator implements Comparator<IgniteBiTuple<Long, Integer>>, Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public int compare(IgniteBiTuple<Long, Integer> o1, IgniteBiTuple<Long, Integer> o2) {
-            return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
-                o1.get2().compareTo(o2.get2());
-        }
-    }
-
-    /**
-     * Sort all nodes for specified partition based on hash(part, node.hashCode())
-     * Used for small nodes count
-     */
-    private class FullSortContainer implements Iterable<ClusterNode> {
-        /** List of sorted nodes */
-        private final List<IgniteBiTuple<Long, ClusterNode>> lst;
-
-        /**
-         * @param part Partition number.
-         * @param nodes Nodes.
-         */
-        FullSortContainer(int part, List<ClusterNode> nodes) {
-            lst = new ArrayList<>(nodes.size());
-
-            for (ClusterNode node : nodes) {
-                IgniteBiTuple<Long, ClusterNode> t = F.t(hash(part, resolveNodeHash(node).hashCode()), node);
-                int pos = Collections.binarySearch(lst, t, COMPARATOR);
-                lst.add(-1 - pos, t);
-            }
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override public Iterator<ClusterNode> iterator() {
-            return new Itr(lst.iterator());
-        }
-
-        /**
-         * Iterator implementation
-         */
-        private class Itr implements Iterator<ClusterNode> {
-            /** List iterator. */
-            private final Iterator<IgniteBiTuple<Long, ClusterNode>> it;
-
-            /**
-             * @param it Iterator.
-             */
-            Itr(Iterator<IgniteBiTuple<Long, ClusterNode>> it) {
-                this.it = it;
-            }
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override public ClusterNode next() {
-                return it.next().get2();
-            }
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override public void remove() {
-                // No-op
-            }
-        }
-
-    }
-
-    /**
-     * Sort nodes for specified partition based on pre-calculated #bucketIdxsByPartition.
-     * Used for large nodes count
-     */
-    private class BucketSortContainer implements Iterable<ClusterNode> {
-        /** Partition number. */
-        private final int part;
-        /** List of nodes. */
-        private final List<ClusterNode> nodes;
-        /** Bucket indexes for #part. */
-        private final List<Integer> bucketIdxs;
-        /** Sorted buckets. It may be useful for second iteration in case there are not enough backup nodes
-         * with exclude neighbors.
-         */
-        private List<List<IgniteBiTuple<Long, ClusterNode>>> buckets = new ArrayList<>();
-
-        BucketSortContainer(int part, List<ClusterNode> nodes) {
-            this.part = part;
-            this.nodes = nodes;
-            bucketIdxs = bucketIdxsByPart.get(part);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Iterator<ClusterNode> iterator() {
-            return new Itr();
-        }
-
-        /**
-         * Iterator implementation
-         */
-        private class Itr implements Iterator<ClusterNode> {
-            /** Current bucket. */
-            private List<IgniteBiTuple<Long, ClusterNode>> currBucket;
-            /** Current bucket index. */
-            private int currBucketIdx;
-            /** Current node index. */
-            private int currNodeIdx;
-
-            /**
-             * Default constructor.
-             */
-            Itr() {
-                prepareNewBucket();
-            }
-
-            /**
-             * Sort the next bucket of nodes and reset node index
-             */
-            private void prepareNewBucket() {
-                if(buckets.size() <= currBucketIdx) {
-                    int bucketIdx = bucketIdxs.get(currBucketIdx);
-                    int bucketSize = nodes.size() / DFLT_BUCKETS_COUNT +
-                        ((bucketIdx < (nodes.size() % DFLT_BUCKETS_COUNT)) ? 1 : 0);
-
-                    int begin = bucketIdx * (nodes.size() / DFLT_BUCKETS_COUNT) +
-                        ((bucketIdx < (nodes.size() % DFLT_BUCKETS_COUNT)) ? bucketIdx
-                            : nodes.size() % DFLT_BUCKETS_COUNT);
-
-                    int end = begin + bucketSize;
-                    currBucket = new ArrayList<>(bucketSize);
-
-                    for (int i = begin; i < end; ++i) {
-                        ClusterNode node = nodes.get(i);
-                        IgniteBiTuple<Long, ClusterNode> t = F.t(hash(resolveNodeHash(node).hashCode(), part), node);
-                        int pos = Collections.binarySearch(currBucket, t, COMPARATOR);
-                        currBucket.add(-1 - pos, t);
-                    }
-                    buckets.add(currBucket);
-                } else
-                    currBucket = buckets.get(currBucketIdx);
-
-                currNodeIdx = 0;
-            }
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override public boolean hasNext() {
-                return currBucketIdx < bucketIdxs.size() - 1 || currNodeIdx < currBucket.size() - 1;
-            }
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override public ClusterNode next() {
-                ClusterNode node = currBucket.get(currNodeIdx).get2();
-                ++currNodeIdx;
-                if (currNodeIdx == currBucket.size()) {
-                    ++currBucketIdx;
-                    if (currBucketIdx == bucketIdxs.size())
-                        throw new NoSuchElementException();
-
-                    prepareNewBucket();
-                }
-                return node;
-            }
-
-            /**
-             * {@inheritDoc}
-             */
-            @Override public void remove() {
-                // No-op
-            }
         }
     }
 }

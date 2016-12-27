@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs.secondary.local;
 
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Implementation of the IgfsFile interface for the local filesystem.
@@ -41,30 +40,34 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
     /** Modification time. */
     private final long modTime;
 
+    /** Access time. */
+    private final long accessTime;
+
     /** Length. */
     private final long len;
 
     /** Properties. */
-    private final Map<String, String> props;
+    private Map<String, String> props;
 
     /**
      * @param path IGFS path.
      * @param isFile Path is a file.
      * @param isDir Path is a directory.
      * @param blockSize Block size in bytes.
+     * @param accessTime Access time in millis.
      * @param modTime Modification time in millis.
      * @param len File length in bytes.
      * @param props Properties.
      */
     public LocalFileSystemIgfsFile(IgfsPath path, boolean isFile, boolean isDir, int blockSize,
-        long modTime, long len, Map<String, String> props) {
-
+        long accessTime, long modTime, long len, Map<String, String> props) {
         assert !isDir || blockSize == 0 : "blockSize must be 0 for dirs. [blockSize=" + blockSize + ']';
         assert !isDir || len == 0 : "length must be 0 for dirs. [length=" + len + ']';
 
         this.path = path;
-        this.flags = IgfsUtils.flags(isDir, isFile);
+        flags = IgfsUtils.flags(isDir, isFile);
         this.blockSize = blockSize;
+        this.accessTime = accessTime;
         this.modTime = modTime;
         this.len = len;
         this.props = props;
@@ -97,7 +100,7 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
 
     /** {@inheritDoc} */
     @Override public long accessTime() {
-        return 0;
+        return accessTime;
     }
 
     /** {@inheritDoc} */

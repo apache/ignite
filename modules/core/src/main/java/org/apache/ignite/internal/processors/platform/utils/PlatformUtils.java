@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -387,6 +388,34 @@ public class PlatformUtils {
     }
 
     /**
+     * Read linked map.
+     *
+     * @param reader Reader.
+     * @param readClo Reader closure.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> readLinkedMap(BinaryRawReaderEx reader,
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        int cnt = reader.readInt();
+
+        Map<K, V> map = U.newLinkedHashMap(cnt);
+
+        if (readClo == null) {
+            for (int i = 0; i < cnt; i++)
+                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
+        }
+        else {
+            for (int i = 0; i < cnt; i++) {
+                IgniteBiTuple<K, V> entry = readClo.read(reader);
+
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+    /**
      * Read nullable map.
      *
      * @param reader Reader.
@@ -500,6 +529,8 @@ public class PlatformUtils {
 
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(lsnrPtr);
+
             int cntPos = writer.reserveInt();
 
             int cnt = 0;
@@ -514,7 +545,7 @@ public class PlatformUtils {
 
             out.synchronize();
 
-            ctx.gateway().continuousQueryListenerApply(lsnrPtr, mem.pointer());
+            ctx.gateway().continuousQueryListenerApply(mem.pointer());
         }
         catch (Exception e) {
             throw toCacheEntryListenerException(e);
@@ -537,11 +568,13 @@ public class PlatformUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
+            out.writeLong(filterPtr);
+
             writeCacheEntryEvent(ctx.writer(out), evt);
 
             out.synchronize();
 
-            return ctx.gateway().continuousQueryFilterApply(filterPtr, mem.pointer()) == 1;
+            return ctx.gateway().continuousQueryFilterApply(mem.pointer()) == 1;
         }
         catch (Exception e) {
             throw toCacheEntryListenerException(e);
@@ -571,6 +604,31 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+    }
+
+    /**
+     * Writes error.
+     *
+     * @param ex Error.
+     * @param writer Writer.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+        writer.writeObjectDetached(ex.getClass().getName());
+
+        writer.writeObjectDetached(ex.getMessage());
+
+        writer.writeObjectDetached(X.getFullStackTrace(ex));
+
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
+            writer.writeBoolean(true);
+
+            writer.writeObjectDetached(nativeCause.cause());
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
@@ -731,6 +789,7 @@ public class PlatformUtils {
                 writer.writeBoolean(false);
                 writer.writeString(err.getClass().getName());
                 writer.writeString(err.getMessage());
+                writer.writeString(X.getFullStackTrace(err));
             }
             else {
                 writer.writeBoolean(true);
@@ -786,12 +845,16 @@ public class PlatformUtils {
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         try {
+            IgniteConfiguration cfg = new IgniteConfiguration();
+
             BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), cfg, new NullLogger());
 
             BinaryMarshaller marsh = new BinaryMarshaller();
 
-            marsh.setContext(new MarshallerContextImpl(null));
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+
+            marsh.setContext(new MarshallerContextImpl(workDir, null));
 
             ctx.configure(marsh, new IgniteConfiguration());
 
@@ -986,6 +1049,16 @@ public class PlatformUtils {
                 throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
             }
         }
+    }
+
+    /**
+     * Gets the entire nested stack-trace of an throwable.
+     *
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
+     */
+    public static String getFullStackTrace(Throwable throwable) {
+        return X.getFullStackTrace(throwable);
     }
 
     /**

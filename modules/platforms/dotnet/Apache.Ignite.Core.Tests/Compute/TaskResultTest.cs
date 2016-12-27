@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
@@ -156,12 +155,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override ICollection<Type> GetBinaryTypes()
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestBinarizableJob)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
+            return new[]
+            {
+                typeof(BinarizableResult),
+                typeof(TestBinarizableJob),
+                typeof(BinarizableOutFunc),
+                typeof(BinarizableFunc)
+            };
         }
 
         [Test]
@@ -169,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableOutFunc());
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(10, r);
@@ -180,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new SerializableOutFunc());
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(10, r);
@@ -191,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableFunc(), 10);
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(11, r);
@@ -202,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new SerializableFunc(), 10);
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(11, r);
@@ -282,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 _gridName = null;
 
-                Assert.AreEqual(3, subgrid.Count);
+                Assert.AreEqual(2, subgrid.Count);
 
                 bool local = arg.Item1;
                 T res = arg.Item2;

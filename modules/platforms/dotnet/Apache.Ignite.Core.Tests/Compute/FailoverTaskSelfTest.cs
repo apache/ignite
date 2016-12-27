@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
@@ -111,9 +110,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override ICollection<Type> GetBinaryTypes()
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestBinarizableJob)));
+            return new[] {typeof(TestBinarizableJob)};
         }
 
         /// <summary>
@@ -124,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             override public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, Tuple<bool, bool> arg)
             {
-                Assert.AreEqual(3, subgrid.Count);
+                Assert.AreEqual(2, subgrid.Count);
 
                 Tuple<bool, bool> t = arg;
 

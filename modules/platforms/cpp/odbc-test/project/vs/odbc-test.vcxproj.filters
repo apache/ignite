@@ -109,6 +109,12 @@
     <ClCompile Include="..\..\src\sql_outer_join_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql_date_time_functions_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\api_robustness_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -122,6 +128,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\sql_test_suite_fixture.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\complex_type.h">
+      <Filter>Code\CacheTypes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

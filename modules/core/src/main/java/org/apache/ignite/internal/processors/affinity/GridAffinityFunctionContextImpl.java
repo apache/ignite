@@ -90,7 +90,7 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /**
      * Gets the previous assignment.
      *
-     * @return Previous assignment.
+     * @return Previous assignment
      */
     public List<List<ClusterNode>> prevAssignment() {
         return prevAssignment;

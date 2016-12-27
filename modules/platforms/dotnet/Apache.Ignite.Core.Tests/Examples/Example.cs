@@ -35,10 +35,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private Action _runAction;
 
         /** Config url */
-        public string SpringConfigUrl { get; private set; }
-
-        /** Source path */
-        public string SourceFilePath { get; private set; }
+        public string ConfigPath { get; private set; }
 
         /** Dll load flag */
         public bool NeedsTestDll { get; private set; }
@@ -75,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Assert.IsTrue(sourceFiles.Any());
 
-            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).ToArray();
+            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).OrderBy(x => x.Name).ToArray();
 
             Assert.IsTrue(types.Any());
 
@@ -89,8 +86,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 yield return new Example
                 {
-                    SourceFilePath = sourceFile,
-                    SpringConfigUrl = GetSpringConfigUrl(sourceCode),
+                    ConfigPath = GetConfigPath(sourceCode),
                     NeedsTestDll = sourceCode.Contains(examplesDllName),
                     _runAction = GetRunAction(type),
                     Name = type.Name
@@ -109,9 +105,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Gets the spring configuration URL.
         /// </summary>
-        private static string GetSpringConfigUrl(string code)
+        private static string GetConfigPath(string code)
         {
-            var match = Regex.Match(code, "-springConfigUrl=(.*?.xml)");
+            var match = Regex.Match(code, "-configFileName=(.*?.config)");
 
             return match.Success ? match.Groups[1].Value : null;
         }
