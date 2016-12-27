@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private IDictionary<int, BinaryBuilderField> _cache;
 
         /** Hash code. */
-        private int _hashCode;
+        private int? _hashCode;
         
         /** Current context. */
         private Context _ctx;
@@ -508,7 +508,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryHeapStream inStream,
             BinaryHeapStream outStream,
             IBinaryTypeDescriptor desc,
-            int hashCode, 
+            int? hashCode, 
             IDictionary<string, BinaryBuilderField> vals)
         {
             // Set correct builder to writer frame.
@@ -578,7 +578,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
         private void Mutate0(Context ctx, BinaryHeapStream inStream, IBinaryStream outStream,
-            bool changeHash, int hash, IDictionary<int, BinaryBuilderField> vals)
+            bool changeHash, int? hash, IDictionary<int, BinaryBuilderField> vals)
         {
             int inStartPos = inStream.Position;
             int outStartPos = outStream.Position;
@@ -730,8 +730,25 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             var outLen = outStream.Position - outStartPos;
 
-                            // TODO: If changeHash and hash is not set - call identity resolver
-                            var outHash = changeHash ? hash : inHeader.HashCode;
+                            var outHash = inHeader.HashCode;
+
+                            if (changeHash)
+                            {
+                                if (hash != null)
+                                {
+                                    outHash = hash.Value;
+                                }
+                                else
+                                {
+                                    // Get from identity resolver.
+                                    outHash = _desc.EqualityComparer != null
+                                        ? _desc.EqualityComparer.GetHashCode(outStream,
+                                            outStartPos + BinaryObjectHeader.Size,
+                                            outLen - BinaryObjectHeader.Size,
+                                            outSchema, outSchemaId, ctx.Writer.Marshaller, _desc)
+                                        : 0;
+                                }
+                            }
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
                                 outSchemaId, outSchemaOff, flags);
