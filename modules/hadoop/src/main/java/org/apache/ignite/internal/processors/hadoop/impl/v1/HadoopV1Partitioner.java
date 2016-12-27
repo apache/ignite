@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.v1;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.Partitioner;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
+import org.apache.ignite.hadoop.HadoopPartitioner;
 
 /**
  * Hadoop partitioner adapter for v1 API.

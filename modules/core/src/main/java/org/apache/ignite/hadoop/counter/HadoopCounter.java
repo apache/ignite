@@ -15,40 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
-
-import java.util.Iterator;
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.hadoop.counter;
 
 /**
- * Task input.
+ * Hadoop counter.
  */
-public interface HadoopTaskInput extends AutoCloseable {
+public interface HadoopCounter {
     /**
-     * Moves cursor to the next element.
+     * Gets name.
      *
-     * @return {@code false} If input is exceeded.
+     * @return Name of the counter.
      */
-    boolean next();
+    public String name();
 
     /**
-     * Gets current key.
+     * Gets counter group.
      *
-     * @return Key.
+     * @return Counter group's name.
      */
-    Object key();
+    public String group();
 
     /**
-     * Gets values for current key.
+     * Merge the given counter to this counter.
      *
-     * @return Values.
+     * @param cntr Counter to merge into this counter.
      */
-    Iterator<?> values();
-
-    /**
-     * Closes input.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void close() throws IgniteCheckedException;
+    public void merge(HadoopCounter cntr);
 }

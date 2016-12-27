@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.hadoop.HadoopClassLoader;
+import org.apache.ignite.hadoop.HadoopJobId;
+import org.apache.ignite.hadoop.HadoopJobInfo;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedTaskExecutor;

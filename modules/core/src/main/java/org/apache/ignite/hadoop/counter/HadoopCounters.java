@@ -15,40 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop.counter;
 
-import java.io.Externalizable;
+import java.util.Collection;
 
 /**
- * Abstract fragment of an input data source.
+ * Counters store.
  */
-public abstract class HadoopInputSplit implements Externalizable {
-    /** */
-    protected String[] hosts;
+public interface HadoopCounters {
+    /**
+     * Returns counter for the specified group and counter name. Creates new if it does not exist.
+     *
+     * @param grp Counter group name.
+     * @param name Counter name.
+     * @param cls Class for new instance creation if it's needed.
+     * @return The counter that was found or added or {@code null} if create is false.
+     */
+    <T extends HadoopCounter> T counter(String grp, String name, Class<T> cls);
 
     /**
-     * Array of hosts where this input split resides.
+     * Returns all existing counters.
      *
-     * @return Hosts.
+     * @return Collection of counters.
      */
-    public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
-    }
+    Collection<HadoopCounter> all();
 
     /**
-     * This method must be implemented for purpose of internal implementation.
+     * Merges all counters from another store with existing counters.
      *
-     * @param obj Another object.
-     * @return {@code true} If objects are equal.
+     * @param other Counters to merge with.
      */
-    @Override public abstract boolean equals(Object obj);
-
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @return Hash code of the object.
-     */
-    @Override public abstract int hashCode();
+    void merge(HadoopCounters other);
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.hadoop.HadoopClassLoader;
+import org.apache.ignite.hadoop.HadoopHelper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.jetbrains.annotations.Nullable;
 

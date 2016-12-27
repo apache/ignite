@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
 import java.io.InputStream;
 import org.jetbrains.annotations.Nullable;

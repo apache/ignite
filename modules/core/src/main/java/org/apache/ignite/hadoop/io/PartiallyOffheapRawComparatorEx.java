@@ -15,42 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
-
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.hadoop.io;
 
 /**
-* Task type.
-*/
-public enum HadoopTaskType {
-    /** Setup task. */
-    SETUP,
-
-    /** Map task. */
-    MAP,
-
-    /** Reduce task. */
-    REDUCE,
-
-    /** Combine task. */
-    COMBINE,
-
-    /** Commit task. */
-    COMMIT,
-
-    /** Abort task. */
-    ABORT;
-
-    /** Enumerated values. */
-    private static final HadoopTaskType[] VALS = values();
-
+ * Special version of raw comparator allowing direct access to the underlying memory.
+ */
+public interface PartiallyOffheapRawComparatorEx<T> {
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Perform compare.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @param val1 First value.
+     * @param val2Ptr Pointer to the second value data.
+     * @param val2Len Length of the second value data.
+     * @return Result.
      */
-    @Nullable public static HadoopTaskType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    int compare(T val1, long val2Ptr, int val2Len);
 }

@@ -27,7 +27,7 @@ import org.apache.hadoop.mapred.TaskAttemptContext;
 import org.apache.hadoop.mapred.TaskAttemptContextImpl;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;

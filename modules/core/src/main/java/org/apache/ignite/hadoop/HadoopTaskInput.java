@@ -15,38 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Hadoop serialization. Not thread safe object, must be created for each thread or correctly synchronized.
+ * Task input.
  */
-public interface HadoopSerialization extends AutoCloseable {
+public interface HadoopTaskInput extends AutoCloseable {
     /**
-     * Writes the given object to output.
+     * Moves cursor to the next element.
      *
-     * @param out Output.
-     * @param obj Object to serialize.
-     * @throws IgniteCheckedException If failed.
+     * @return {@code false} If input is exceeded.
      */
-    public void write(DataOutput out, Object obj) throws IgniteCheckedException;
+    boolean next();
 
     /**
-     * Reads object from the given input optionally reusing given instance.
+     * Gets current key.
      *
-     * @param in Input.
-     * @param obj Object.
-     * @return New object or reused instance.
-     * @throws IgniteCheckedException If failed.
+     * @return Key.
      */
-    public Object read(DataInput in, @Nullable Object obj) throws IgniteCheckedException;
+    Object key();
 
     /**
-     * Finalise the internal objects.
+     * Gets values for current key.
+     *
+     * @return Values.
+     */
+    Iterator<?> values();
+
+    /**
+     * Closes input.
      *
      * @throws IgniteCheckedException If failed.
      */

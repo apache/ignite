@@ -33,10 +33,10 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskInput;
+import org.apache.ignite.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
 
 /**

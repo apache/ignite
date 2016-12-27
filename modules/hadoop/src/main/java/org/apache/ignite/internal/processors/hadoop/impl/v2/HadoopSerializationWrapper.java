@@ -21,7 +21,7 @@ import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.Serialization;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
+import org.apache.ignite.hadoop.HadoopSerialization;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;

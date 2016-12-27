@@ -23,7 +23,8 @@ import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.FileSystemCounter;
 import org.apache.hadoop.mapreduce.counters.AbstractCounters;
 import org.apache.hadoop.mapreduce.counters.Limits;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
+import org.apache.ignite.hadoop.counter.HadoopCounter;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Counter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -51,7 +52,7 @@ public class HadoopMapReduceCounters extends Counters {
      *
      * @param cntrs Counters to adapt.
      */
-    public HadoopMapReduceCounters(org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters cntrs) {
+    public HadoopMapReduceCounters(HadoopCounters cntrs) {
         for (HadoopCounter cntr : cntrs.all())
             if (cntr instanceof HadoopLongCounter)
                 this.cntrs.put(new T2<>(cntr.group(), cntr.name()), (HadoopLongCounter) cntr);

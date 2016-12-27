@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import org.apache.hadoop.io.Writable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
+import org.apache.ignite.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 

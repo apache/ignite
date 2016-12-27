@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.v1;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
 
 /**

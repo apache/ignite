@@ -23,7 +23,7 @@ import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.hadoop.HadoopClassLoader;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;

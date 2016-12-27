@@ -18,9 +18,9 @@
 package org.apache.ignite.hadoop.fs;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemCounterWriterDelegate;
 

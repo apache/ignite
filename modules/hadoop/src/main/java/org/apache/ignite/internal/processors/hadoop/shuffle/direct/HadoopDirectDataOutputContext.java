@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopSerialization;
+import org.apache.ignite.hadoop.HadoopTaskContext;
 
 /**
  * Hadoop data output context for direct communication.

@@ -15,26 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Map-reduce execution planner.
- */
-public interface HadoopMapReducePlanner {
+* Task type.
+*/
+public enum HadoopTaskType {
+    /** Setup task. */
+    SETUP,
+
+    /** Map task. */
+    MAP,
+
+    /** Reduce task. */
+    REDUCE,
+
+    /** Combine task. */
+    COMBINE,
+
+    /** Commit task. */
+    COMMIT,
+
+    /** Abort task. */
+    ABORT;
+
+    /** Enumerated values. */
+    private static final HadoopTaskType[] VALS = values();
+
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
+     * @param ord Ordinal value.
+     * @return Enumerated value.
      */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    @Nullable public static HadoopTaskType fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

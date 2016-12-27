@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.counter;
+package org.apache.ignite.hadoop;
+
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Hadoop counter.
+ * Map-reduce execution planner.
  */
-public interface HadoopCounter {
+public interface HadoopMapReducePlanner {
     /**
-     * Gets name.
+     * Prepares map-reduce execution plan for the given job and topology.
      *
-     * @return Name of the counter.
+     * @param job Job.
+     * @param top Topology.
+     * @param oldPlan Old plan in case of partial failure.
+     * @return Map reduce plan.
+     * @throws IgniteCheckedException If an error occurs.
      */
-    public String name();
-
-    /**
-     * Gets counter group.
-     *
-     * @return Counter group's name.
-     */
-    public String group();
-
-    /**
-     * Merge the given counter to this counter.
-     *
-     * @param cntr Counter to merge into this counter.
-     */
-    public void merge(HadoopCounter cntr);
+    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
+        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
 }

@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.apache.ignite.hadoop.counter.HadoopCounter;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
+import org.apache.ignite.hadoop.HadoopJobInfo;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
