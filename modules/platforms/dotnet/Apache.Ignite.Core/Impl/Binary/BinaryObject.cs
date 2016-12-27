@@ -282,8 +282,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                         object fieldVal = GetField<object>(field.Value, null);
                         object thatFieldVal = that.GetField<object>(that._fields[field.Key], null);
 
-                        if (!Equals(fieldVal, thatFieldVal))
+                        var arr = fieldVal as Array;
+                        var thatArr = thatFieldVal as Array;
+
+                        if (arr != null && thatArr != null && arr.Length == thatArr.Length)
+                        {
+                            for (var i = 0; i < arr.Length; i++)
+                            {
+                                if (!Equals(arr.GetValue(i), thatArr.GetValue(i)))
+                                    return false;
+                            }
+                        }
+                        else if (!Equals(fieldVal, thatFieldVal))
+                        {
                             return false;
+                        }
                     }
 
                     // 4. Check if objects have the same raw data.
