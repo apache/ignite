@@ -145,13 +145,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsFalse(cmp.Equals(obj5, obj6));
 
             // GetHashCode.
-            Assert.AreEqual(973391235, cmp.GetHashCode(GetBinaryObject(0, null, 0)));
-            Assert.AreEqual(974314756, cmp.GetHashCode(GetBinaryObject(1, null, 0)));
-            Assert.AreEqual(-88648479, cmp.GetHashCode(obj1));
-            Assert.AreEqual(-88652754, cmp.GetHashCode(obj2));
-            Assert.AreEqual(40434240, cmp.GetHashCode(obj3));
-            Assert.AreEqual(40429965, cmp.GetHashCode(obj4));
+            Assert.AreEqual(2001751043, cmp.GetHashCode(GetBinaryObject(0, null, 0)));
+            Assert.AreEqual(194296580, cmp.GetHashCode(GetBinaryObject(1, null, 0)));
+            Assert.AreEqual(1934949494, cmp.GetHashCode(obj1));
+            Assert.AreEqual(-2013102781, cmp.GetHashCode(obj2));
+            Assert.AreEqual(1424415317, cmp.GetHashCode(obj3));
+            Assert.AreEqual(1771330338, cmp.GetHashCode(obj4));
             Assert.AreEqual(cmp.GetHashCode(obj1), cmp.GetHashCode(obj5));
+            Assert.AreEqual(1934979285, cmp.GetHashCode(obj6));
         }
 
         /// <summary>
