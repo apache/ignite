@@ -1006,7 +1006,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetTimestampArrayField("fTimestampArr", new[] { nDate })
                 .SetField("fGuidArr", new[] { nGuid })
                 .SetField("fEnumArr", new[] { TestEnum.Two })
-                .SetHashCode(200)
                 .Build();
 
             CheckStringDateGuidEnum2(binObj, nDate, nGuid);
@@ -1023,7 +1022,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetTimestampArrayField("fTimestampArr", new[] { nDate })
                 .SetGuidArrayField("fGuidArr", new[] { nGuid })
                 .SetEnumArrayField("fEnumArr", new[] { TestEnum.Two })
-                .SetHashCode(200)
                 .Build();
 
             CheckStringDateGuidEnum2(binObj2, nDate, nGuid);
@@ -1126,8 +1124,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckStringDateGuidEnum2(IBinaryObject binObj, DateTime? nDate, Guid? nGuid)
         {
-            Assert.AreEqual(200, binObj.GetHashCode());
-
             Assert.AreEqual("str2", binObj.GetField<string>("fStr"));
             Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNDate"));
             Assert.AreEqual(nDate, binObj.GetField<DateTime?>("fNTimestamp"));
