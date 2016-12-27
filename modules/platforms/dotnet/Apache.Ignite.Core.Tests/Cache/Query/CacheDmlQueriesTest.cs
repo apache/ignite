@@ -133,11 +133,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
             // Existence tests check that hash codes are consistent.
+            var binary = cache.Ignite.GetBinary();
+            var binCache = cache.WithKeepBinary<IBinaryObject, IBinaryObject>();
+
             Assert.IsTrue(cache.ContainsKey(new Key(2, 1)));
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
+            Assert.IsTrue(binCache.ContainsKey(
+                binary.GetBuilder(typeof(Key)).SetField("hi", 1).SetField("lo", 2).Build()));
 
             Assert.IsTrue(cache.ContainsKey(new Key(5, 4)));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
+            Assert.IsTrue(binCache.ContainsKey(
+                binary.GetBuilder(typeof(Key)).SetField("hi", 4).SetField("lo", 5).Build()));
         }
 
         /// <summary>
@@ -179,8 +186,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsTrue(cache.ContainsKey(new Key2(5, 4, "Bar")));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
-
-            // TODO: Existence tests with builder.
         }
 
         /// <summary>
