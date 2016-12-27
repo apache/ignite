@@ -51,8 +51,8 @@ namespace Apache.Ignite.Core.Binary
             var binx = GetBinaryObject(x);
             var biny = GetBinaryObject(y);
 
-            var lenx = GetNonRawDataLength(binx);
-            var leny = GetNonRawDataLength(biny);
+            var lenx = GetDataLength(binx);
+            var leny = GetDataLength(biny);
 
             if (lenx != leny)
                 return false;
@@ -86,14 +86,9 @@ namespace Apache.Ignite.Core.Binary
 
             var binObj = GetBinaryObject(obj);
 
-            var stream = new BinaryHeapStream(binObj.Data);
+            var arg = new KeyValuePair<int, int>(GetDataStart(binObj), GetDataLength(binObj));
 
-            var startPos = GetDataStart(binObj);
-            var len = GetNonRawDataLength(binObj, stream);
-
-            var arg = new KeyValuePair<int, int>(startPos, len);
-
-            return stream.Apply(this, arg);
+            return new BinaryHeapStream(binObj.Data).Apply(this, arg);
         }
 
         /** <inheritdoc /> */
@@ -138,17 +133,9 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Gets the non-raw data length.
         /// </summary>
-        private static int GetNonRawDataLength(BinaryObject binObj, IBinaryStream stream)
+        private static int GetDataLength(BinaryObject binObj)
         {
-            return binObj.Header.GetRawOffset(stream, binObj.Offset) - BinaryObjectHeader.Size;
-        }
-
-        /// <summary>
-        /// Gets the non-raw data length.
-        /// </summary>
-        private static int GetNonRawDataLength(BinaryObject binObj)
-        {
-            return GetNonRawDataLength(binObj, new BinaryHeapStream(binObj.Data));
+            return binObj.Header.FooterStartOffset - BinaryObjectHeader.Size;
         }
 
         /// <summary>
