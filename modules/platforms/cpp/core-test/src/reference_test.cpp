@@ -148,8 +148,10 @@ void TestFunctionConst3(ConstReference<C3> c3, int expected)
 
 BOOST_AUTO_TEST_SUITE(ReferenceTestSuite)
 
+
 BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
 {
+#if !defined(BOOST_NO_CXX11_SMART_PTR)
     bool objAlive = false;
 
     std::shared_ptr<LivenessMarker> shared = std::make_shared<LivenessMarker>(objAlive);
@@ -167,10 +169,12 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
     }
 
     BOOST_CHECK(!objAlive);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(StdSharedPointerTestAfter)
 {
+#if !defined(BOOST_NO_CXX11_SMART_PTR)
     bool objAlive = false;
 
     std::shared_ptr<LivenessMarker> shared = std::make_shared<LivenessMarker>(objAlive);
@@ -188,6 +192,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestAfter)
     shared.reset();
 
     BOOST_CHECK(!objAlive);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(StdAutoPointerTest)
@@ -209,6 +214,7 @@ BOOST_AUTO_TEST_CASE(StdAutoPointerTest)
 
 BOOST_AUTO_TEST_CASE(StdUniquePointerTest)
 {
+#if !defined(BOOST_NO_CXX11_SMART_PTR)
     bool objAlive = false;
 
     std::unique_ptr<LivenessMarker> unique(new LivenessMarker(objAlive));
@@ -222,13 +228,14 @@ BOOST_AUTO_TEST_CASE(StdUniquePointerTest)
     }
 
     BOOST_CHECK(!objAlive);
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(BoostSharedPointerTestBefore)
 {
     bool objAlive = false;
 
-    boost::shared_ptr<LivenessMarker> shared = boost::make_shared<LivenessMarker>(objAlive);
+    boost::shared_ptr<LivenessMarker> shared = boost::make_shared<LivenessMarker>(boost::ref(objAlive));
 
     BOOST_CHECK(objAlive);
 
@@ -249,7 +256,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
 {
     bool objAlive = false;
 
-    boost::shared_ptr<LivenessMarker> shared = boost::make_shared<LivenessMarker>(objAlive);
+    boost::shared_ptr<LivenessMarker> shared = boost::make_shared<LivenessMarker>(boost::ref(objAlive));
 
     BOOST_CHECK(objAlive);
 
@@ -266,8 +273,10 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
     BOOST_CHECK(!objAlive);
 }
 
+
 BOOST_AUTO_TEST_CASE(PassingToFunction)
 {
+#if !defined(BOOST_NO_CXX11_SMART_PTR)
     bool objAlive = false;
 
     std::shared_ptr<LivenessMarker> stdShared = std::make_shared<LivenessMarker>(objAlive);
@@ -281,6 +290,7 @@ BOOST_AUTO_TEST_CASE(PassingToFunction)
     TestFunction(MakeReferenceFromSmartPointer(stdAuto));
 
     TestFunction(MakeReferenceFromSmartPointer(boostShared));
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(CopyTest)
