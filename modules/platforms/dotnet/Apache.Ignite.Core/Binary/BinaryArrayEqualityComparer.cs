@@ -69,8 +69,14 @@ namespace Apache.Ignite.Core.Binary
 
             var binObj = GetBinaryObject(obj);
 
-            // TODO
-            return 0;
+            var stream = new BinaryHeapStream(binObj.Data);
+
+            var startPos = binObj.Offset + BinaryObjectHeader.Size;
+            var len = binObj.Header.GetRawOffset(stream, binObj.Offset) - BinaryObjectHeader.Size;
+
+            var arg = new KeyValuePair<int, int>(startPos, len);
+
+            return stream.Apply(this, arg);
         }
 
         /** <inheritdoc /> */

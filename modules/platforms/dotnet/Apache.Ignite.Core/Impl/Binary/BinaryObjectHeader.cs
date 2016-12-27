@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the raw offset of this object in specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        /// <param name="position">The position.</param>
+        /// <param name="position">The binary object position in the stream.</param>
         /// <returns>Raw offset.</returns>
         public int GetRawOffset(IBinaryStream stream, int position)
         {

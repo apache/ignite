@@ -195,6 +195,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return _offset; }
         }
 
+        /// <summary>
+        /// Gets the header.
+        /// </summary>
+        public BinaryObjectHeader Header
+        {
+            get { return _header; }
+        }
+
         public bool TryGetFieldPosition(string fieldName, out int pos)
         {
             var desc = _marsh.GetDescriptor(true, _header.TypeId);
