@@ -50,4 +50,40 @@ public final class FastUpdateArguments {
             return null;
         }
     };
+
+    /** Simple constant value based operand. */
+    public final static class ValueArgument implements FastUpdateArgument {
+        /** Value to return. */
+        private final Object val;
+
+        /** */
+        public ValueArgument(Object val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+            return val;
+        }
+    }
+
+    /** Simple constant value based operand. */
+    public final static class ParamArgument implements FastUpdateArgument {
+        /** Value to return. */
+        private final int paramIdx;
+
+        /** */
+        public ParamArgument(int paramIdx) {
+            assert paramIdx >= 0;
+
+            this.paramIdx = paramIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+            assert arg.length > paramIdx;
+
+            return arg[paramIdx];
+        }
+    }
 }

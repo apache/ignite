@@ -188,10 +188,8 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
             "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
 
-        // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
-        // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = ?, \"doubleCol\" = CAST('50' as INT)," +
-            " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
+        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = CAST('50' as INT)," +
+            " \"booleanCol\" = 80, \"innerLongCol\" = ?, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
             "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
             "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
             "DATEADD('DAY', 2, \"tsCol\")), \"primitiveIntsCol\" = ?, \"bytesCol\" = ?")

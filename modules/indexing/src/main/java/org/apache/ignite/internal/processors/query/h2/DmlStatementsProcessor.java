@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -240,13 +241,15 @@ public class DmlStatementsProcessor {
             return new UpdateResult(doSingleUpdate(plan, params), X.EMPTY_OBJECT_ARRAY);
         }
 
-        assert !F.isEmpty(plan.selectQry);
+        assert !F.isEmpty(plan.rows) ^ !F.isEmpty(plan.selectQry);
 
-        QueryCursorImpl<List<?>> cur;
+        Iterable<List<?>> cur;
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // subquery and not some dummy stuff like "select 1, 2, 3;"
         if (!loc && !plan.isLocSubqry) {
+            assert !F.isEmpty(plan.selectQry);
+
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, fieldsQry.isCollocated())
                 .setArgs(params)
                 .setDistributedJoins(fieldsQry.isDistributedJoins())
@@ -255,13 +258,13 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
+            cur = indexing.queryTwoStep(cctx, newFieldsQry, cancel);
         }
-        else {
+        else if (F.isEmpty(plan.rows)) {
             final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry, F.asList(params),
                 filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
-            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
@@ -272,7 +275,34 @@ public class DmlStatementsProcessor {
                 }
             }, cancel);
 
-            cur.fieldsMeta(res.metaData());
+            resCur.fieldsMeta(res.metaData());
+
+            cur = resCur;
+        }
+        else {
+            assert plan.rowsNum > 0 && !F.isEmpty(plan.colNames);
+
+            List<List<?>> args = new ArrayList<>(plan.rowsNum);
+
+            GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
+
+            for (List<FastUpdateArgument> argRow : plan.rows) {
+                List<Object> row = new ArrayList<>();
+
+                for (int j = 0; j < plan.colNames.length; j++) {
+                    Object colVal = argRow.get(j).apply(fieldsQry.getArgs());
+
+                    if (j == plan.keyColIdx || j == plan.valColIdx)
+                        colVal = convert(colVal, j == plan.keyColIdx ? desc.type().keyClass() : desc.type().valueClass(),
+                            desc);
+
+                    row.add(colVal);
+                }
+
+                args.add(row);
+            }
+
+            cur = args;
         }
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
@@ -378,7 +408,7 @@ public class DmlStatementsProcessor {
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
-    private UpdateResult doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor, int pageSize)
+    private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         // With DELETE, we have only two columns - key and value.
         long res = 0;
@@ -448,7 +478,7 @@ public class DmlStatementsProcessor {
      *     had been modified concurrently (arguments for a re-run)].
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    private UpdateResult doUpdate(UpdatePlan plan, QueryCursorImpl<List<?>> cursor, int pageSize)
+    private UpdateResult doUpdate(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
@@ -490,7 +520,7 @@ public class DmlStatementsProcessor {
                     continue;
 
                 newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.colNames[i],
-                    plan.tbl.rowDescriptor(), plan.colTypes[i]));
+                    plan.tbl.rowDescriptor()));
             }
 
             newVal = plan.valSupplier.apply(e);
@@ -577,12 +607,11 @@ public class DmlStatementsProcessor {
      * @param val Source value.
      * @param colName Column name to search for property.
      * @param desc Row descriptor.
-     * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
-    private static Object convert(Object val, String colName, GridH2RowDescriptor desc, int type)
+    private static Object convert(Object val, String colName, GridH2RowDescriptor desc)
         throws IgniteCheckedException {
         if (val == null)
             return null;
@@ -593,6 +622,21 @@ public class DmlStatementsProcessor {
 
         Class<?> expCls = prop.type();
 
+        return convert(val, expCls, desc);
+    }
+
+    /**
+     * Convert value to column's expected type by means of H2.
+     *
+     * @param val Source value.
+     * @param expCls Expected property class.
+     * @param desc Row descriptor.
+     * @return Converted object.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
+    private static Object convert(Object val, Class<?> expCls, GridH2RowDescriptor desc)
+        throws IgniteCheckedException {
         Class<?> currCls = val.getClass();
 
         if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
@@ -600,6 +644,8 @@ public class DmlStatementsProcessor {
             // precise Date instance. Let's satisfy it.
             return new Date(((Date) val).getTime());
         }
+
+        int type = DataType.getTypeFromClass(expCls);
 
         // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
         // Still, we only can convert from Object[] to something more precise.
@@ -681,7 +727,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private long doMerge(UpdatePlan plan, QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
+    private long doMerge(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
         GridCacheContext cctx = desc.context();
@@ -726,7 +772,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private long doInsert(UpdatePlan plan, QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
+    private long doInsert(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
 
         GridCacheContext cctx = desc.context();
@@ -849,8 +895,7 @@ public class DmlStatementsProcessor {
             if (i == plan.keyColIdx || i == plan.valColIdx)
                 continue;
 
-            newColVals.put(plan.colNames[i], convert(row.get(i), plan.colNames[i],
-                plan.tbl.rowDescriptor(), plan.colTypes[i]));
+            newColVals.put(plan.colNames[i], convert(row.get(i), plan.colNames[i], plan.tbl.rowDescriptor()));
         }
 
         // We update columns in the order specified by the table for a reason - table's

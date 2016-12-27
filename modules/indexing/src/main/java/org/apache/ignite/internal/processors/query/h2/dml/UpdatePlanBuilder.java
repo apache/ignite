@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -37,10 +37,12 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
@@ -108,6 +110,10 @@ public final class UpdatePlanBuilder {
 
         GridH2RowDescriptor desc;
 
+        List<GridSqlElement[]> elRows = null;
+
+        List<List<FastUpdateArgument>> rows = null;
+
         if (stmt instanceof GridSqlInsert) {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
@@ -117,6 +123,10 @@ public final class UpdatePlanBuilder {
 
             cols = ins.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
+
+            if (sel == null)
+                elRows = ins.rows();
+
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
@@ -138,14 +148,40 @@ public final class UpdatePlanBuilder {
 
             cols = merge.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
+
+            if (sel == null)
+                elRows = merge.rows();
+
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
         else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
+        if (elRows != null) {
+            assert sel == null;
+
+            rows = new ArrayList<>(elRows.size());
+
+            for (GridSqlElement[] elRow : elRows) {
+                List<FastUpdateArgument> row = new ArrayList<>(cols.length);
+
+                for (GridSqlElement e : elRow) {
+                    if (e instanceof GridSqlConst)
+                        row.add(new FastUpdateArguments.ValueArgument(((GridSqlConst) e).value().getObject()));
+                    else if (e instanceof GridSqlParameter)
+                        row.add(new FastUpdateArguments.ParamArgument(((GridSqlParameter) e).index()));
+                    else
+                        throw new IgniteSQLException("Unexpected element type: " + e.getClass().getSimpleName(),
+                            IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+                }
+
+                rows.add(row);
+            }
+        }
+
         // Let's set the flag only for subqueries that have their FROM specified.
-        isTwoStepSubqry = (isTwoStepSubqry && (sel instanceof GridSqlUnion ||
+        isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
             (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
 
         int keyColIdx = -1;
@@ -162,16 +198,12 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.length];
 
-        int[] colTypes = new int[cols.length];
-
         for (int i = 0; i < cols.length; i++) {
             GridSqlColumn col = cols[i];
 
             String colName = col.columnName();
 
             colNames[i] = colName;
-
-            colTypes[i] = col.resultType().type();
 
             if (KEY_FIELD_NAME.equals(colName)) {
                 keyColIdx = i;
@@ -197,11 +229,11 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
         if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, sel.getSQL(), !isTwoStepSubqry, rowsNum);
+            return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx,
+                valColIdx, sel != null ? sel.getSQL() : null, !isTwoStepSubqry, rows, rowsNum);
         else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, sel.getSQL(), !isTwoStepSubqry, rowsNum);
+            return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx,
+                valColIdx, sel != null ? sel.getSQL() : null, !isTwoStepSubqry, rows, rowsNum);
     }
 
     /**
@@ -260,12 +292,8 @@ public final class UpdatePlanBuilder {
 
                 String[] colNames = new String[updatedCols.size()];
 
-                int[] colTypes = new int[updatedCols.size()];
-
                 for (int i = 0; i < updatedCols.size(); i++) {
                     colNames[i] = updatedCols.get(i).columnName();
-
-                    colTypes[i] = updatedCols.get(i).resultType().type();
 
                     if (VAL_FIELD_NAME.equals(colNames[i]))
                         valColIdx = i;
@@ -288,7 +316,7 @@ public final class UpdatePlanBuilder {
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, sel.getSQL());
+                return UpdatePlan.forUpdate(gridTbl, colNames, newValSupplier, valColIdx, sel.getSQL());
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
