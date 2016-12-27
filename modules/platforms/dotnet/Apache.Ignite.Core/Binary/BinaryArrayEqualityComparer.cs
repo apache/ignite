@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Binary
         /// </returns>
         public bool Equals(IBinaryObject x, IBinaryObject y)
         {
+            // TODO: Should work properly.
             throw new NotSupportedException(GetType() + "is not intended for direct usage.");
         }
 
@@ -51,6 +52,7 @@ namespace Apache.Ignite.Core.Binary
         /// </returns>
         public int GetHashCode(IBinaryObject obj)
         {
+            // TODO: Should work for enum and nonenum.
             throw new NotSupportedException(GetType() + "is not intended for direct usage.");
         }
 

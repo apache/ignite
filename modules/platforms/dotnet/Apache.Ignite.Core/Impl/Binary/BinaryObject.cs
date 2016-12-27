@@ -244,6 +244,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_data == that._data && _offset == that._offset)
                     return true;
 
+                if (TypeId != that.TypeId)
+                    return false;
+
+                var desc = _marsh.GetDescriptor(true, TypeId);
+
+                if (desc != null && desc.EqualityComparer != null)
+                    return desc.EqualityComparer.Equals(this, that);
+
                 // 1. Check headers
                 if (_header == that._header)
                 {

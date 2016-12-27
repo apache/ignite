@@ -41,5 +41,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         int GetHashCode(IBinaryStream stream, int startPos, int length, BinaryObjectSchemaHolder schema, int schemaId,
             Marshaller marshaller, IBinaryTypeDescriptor desc);
+
+        /// <summary>
+        /// Returns a value indicating that two binary object are equal.
+        /// </summary>
+        /// <param name="x">First object.</param>
+        /// <param name="y">Second object.</param>
+        /// <returns>True when objects are equal; otherwise false.</returns>
+        bool Equals(IBinaryObject x, IBinaryObject y);
     }
 }
