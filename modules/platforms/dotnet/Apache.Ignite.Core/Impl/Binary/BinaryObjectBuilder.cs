@@ -750,7 +750,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                                     outHash = _desc.EqualityComparer != null
                                         ? _desc.EqualityComparer.GetHashCode(outStream,
                                             outStartPos + BinaryObjectHeader.Size,
-                                            outLen - BinaryObjectHeader.Size,
+                                            schemaPos - outStartPos - BinaryObjectHeader.Size,
                                             outSchema, outSchemaId, _binary.Marshaller, _desc)
                                         : 0;
                                 }

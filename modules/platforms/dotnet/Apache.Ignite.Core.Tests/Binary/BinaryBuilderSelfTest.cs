@@ -1466,7 +1466,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryObjectBuilder builder = _grid.GetBinary().GetBuilder(typeof(MigrationOuter));
 
-            builder.SetHashCode(outer.GetHashCode());
+            if (GetIdentityResolver() == null)
+                builder.SetHashCode(outer.GetHashCode());
 
             builder.SetField<object>("inner1", inner);
             builder.SetField<object>("inner2", inner);
