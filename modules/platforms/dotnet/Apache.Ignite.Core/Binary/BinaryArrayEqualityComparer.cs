@@ -51,7 +51,24 @@ namespace Apache.Ignite.Core.Binary
             var binx = GetBinaryObject(x);
             var biny = GetBinaryObject(y);
 
-            // TODO
+            var lenx = GetNonRawDataLength(binx);
+            var leny = GetNonRawDataLength(biny);
+
+            if (lenx != leny)
+                return false;
+
+            var startx = GetDataStart(binx);
+            var starty = GetDataStart(biny);
+
+            var arrx = binx.Data;
+            var arry = biny.Data;
+
+            for (var i = 0; i < lenx; i++)
+            {
+                if (arrx[i + startx] != arry[i + starty])
+                    return false;
+            }
+
             return true;
         }
 
@@ -71,8 +88,8 @@ namespace Apache.Ignite.Core.Binary
 
             var stream = new BinaryHeapStream(binObj.Data);
 
-            var startPos = binObj.Offset + BinaryObjectHeader.Size;
-            var len = binObj.Header.GetRawOffset(stream, binObj.Offset) - BinaryObjectHeader.Size;
+            var startPos = GetDataStart(binObj);
+            var len = GetNonRawDataLength(binObj, stream);
 
             var arg = new KeyValuePair<int, int>(startPos, len);
 
@@ -116,6 +133,30 @@ namespace Apache.Ignite.Core.Binary
 
             throw new NotSupportedException(string.Format("{0} of type {1} is not supported.",
                 typeof(IBinaryObject), obj.GetType()));
+        }
+
+        /// <summary>
+        /// Gets the non-raw data length.
+        /// </summary>
+        private static int GetNonRawDataLength(BinaryObject binObj, IBinaryStream stream)
+        {
+            return binObj.Header.GetRawOffset(stream, binObj.Offset) - BinaryObjectHeader.Size;
+        }
+
+        /// <summary>
+        /// Gets the non-raw data length.
+        /// </summary>
+        private static int GetNonRawDataLength(BinaryObject binObj)
+        {
+            return GetNonRawDataLength(binObj, new BinaryHeapStream(binObj.Data));
+        }
+
+        /// <summary>
+        /// Gets the data starting position.
+        /// </summary>
+        private static int GetDataStart(BinaryObject binObj)
+        {
+            return binObj.Offset + BinaryObjectHeader.Size;
         }
     }
 }
