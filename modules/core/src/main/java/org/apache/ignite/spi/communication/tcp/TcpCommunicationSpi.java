@@ -2184,7 +2184,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                                 @Override public void onTimeout() {
                                                     clientFuts.remove(nodeId, connFut);
 
-                                                    onDone();
+                                                    onDone(); // TODO IGNITE-4003: is it safe to complete future from timeout thread?
                                                 }
                                             });
                                         }
@@ -2628,6 +2628,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 if (cancelled)
                                     removeTimeoutObject(connTimeoutObj);
                                 else {
+                                    // TODO IGNITE-4003: it seems it is not ok release here, more safe is release from nio thread on close.
                                     recoveryDesc.release();
 
                                     onError(new SocketTimeoutException("Connect timed out (consider increasing " +
