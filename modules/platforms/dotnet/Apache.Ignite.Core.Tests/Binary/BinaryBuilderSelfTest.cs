@@ -815,7 +815,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckPrimitiveArrayFields1(binObj);
 
             // Specific setters.
-            binObj = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
+            var binObj2 = _grid.GetBinary().GetBuilder(typeof(PrimitiveArrays))
                 .SetByteArrayField("fByte", new byte[] {1})
                 .SetBooleanArrayField("fBool", new[] {true})
                 .SetShortArrayField("fShort", new short[] {2})
@@ -827,7 +827,13 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetDecimalArrayField("fDecimal", new decimal?[] {7.7m})
                 .SetHashCode(100)
                 .Build();
-            
+
+            CheckPrimitiveArrayFields1(binObj2);
+
+            // Check equality.
+            Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
+
             // Overwrite with generic setter.
             binObj = _grid.GetBinary().GetBuilder(binObj)
                 .SetField("fByte", new byte[] { 7 })
@@ -839,13 +845,12 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField("fFloat", new float[] { 11 })
                 .SetField("fDouble", new double[] { 12 })
                 .SetField("fDecimal", new decimal?[] { 13.13m })
-                .SetHashCode(200)
                 .Build();
 
             CheckPrimitiveArrayFields2(binObj);
 
             // Overwrite with specific setters.
-            binObj = _grid.GetBinary().GetBuilder(binObj)
+            binObj2 = _grid.GetBinary().GetBuilder(binObj)
                 .SetByteArrayField("fByte", new byte[] { 7 })
                 .SetBooleanArrayField("fBool", new[] { false })
                 .SetShortArrayField("fShort", new short[] { 8 })
@@ -855,10 +860,13 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetFloatArrayField("fFloat", new float[] { 11 })
                 .SetDoubleArrayField("fDouble", new double[] { 12 })
                 .SetDecimalArrayField("fDecimal", new decimal?[] { 13.13m })
-                .SetHashCode(200)
                 .Build();
 
             CheckPrimitiveArrayFields2(binObj);
+            
+            // Check equality.
+            Assert.AreEqual(binObj, binObj2);
+            Assert.AreEqual(binObj.GetHashCode(), binObj2.GetHashCode());
         }
 
         /// <summary>
@@ -912,8 +920,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckPrimitiveArrayFields2(IBinaryObject binObj)
         {
-            Assert.AreEqual(200, binObj.GetHashCode());
-
             Assert.AreEqual(new byte[] { 7 }, binObj.GetField<byte[]>("fByte"));
             Assert.AreEqual(new[] { false }, binObj.GetField<bool[]>("fBool"));
             Assert.AreEqual(new short[] { 8 }, binObj.GetField<short[]>("fShort"));
@@ -948,7 +954,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Guid? nGuid = Guid.NewGuid();
 
             // Generic setters.
-            IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
+            var binObj = _grid.GetBinary().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
                 .SetField("fNDate", nDate)
                 .SetTimestampField("fNTimestamp", nDate)
