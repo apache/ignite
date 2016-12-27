@@ -1677,6 +1677,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             Assert.AreEqual(binEnums[0], binEnums[1]);
+            Assert.AreEqual(binEnums[0].GetHashCode(), binEnums[1].GetHashCode());
         }
 
         /// <summary>
