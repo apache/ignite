@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
@@ -34,19 +34,19 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     private final TcpDiscoveryNode node;
 
     /** Discovery data container. */
-    private final DiscoveryDataContainer dataContainer;
+    private final DiscoveryDataPacket dataPacket;
 
     /**
      * Constructor.
      *
      * @param node New node that wants to join.
-     * @param dataContainer Discovery data.
+     * @param dataPacket Discovery data.
      */
-    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, DiscoveryDataContainer dataContainer) {
+    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, DiscoveryDataPacket dataPacket) {
         super(node.id());
 
         this.node = node;
-        this.dataContainer = dataContainer;
+        this.dataPacket = dataPacket;
     }
 
     /**
@@ -58,8 +58,11 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
         return node;
     }
 
-    public DiscoveryDataContainer gridDiscoveryData() {
-        return dataContainer;
+    /**
+     *
+     */
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
     }
 
     /**

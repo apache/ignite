@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-
 /**
  * Handler for initial data exchange between Ignite nodes. Data exchange
  * is initiated by a new node when it tries to join topology and finishes
@@ -30,14 +28,14 @@ public interface DiscoverySpiDataExchange {
      * on new node that joins topology to transfer its data to existing
      * nodes and on all existing nodes to transfer their data to new node.
      *
-     * @param data {@link DiscoveryDataContainer} object managing discovery data during node joining process.
+     * @param dataBag {@link DiscoveryDataBag} object managing discovery data during node joining process.
      */
-    public DiscoveryDataContainer collect(DiscoveryDataContainer data);
+    public DiscoveryDataBag collect(DiscoveryDataBag dataBag);
 
     /**
      * Notifies discovery manager about data received from remote node.
      *
-     * @param dataContainer Collection of discovery data objects from different components.
+     * @param dataBag Collection of discovery data objects from different components.
      */
-    public void onExchange(DiscoveryDataContainer dataContainer);
+    public void onExchange(DiscoveryDataBag dataBag);
 }

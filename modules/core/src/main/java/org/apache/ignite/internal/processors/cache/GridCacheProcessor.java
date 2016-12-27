@@ -118,9 +118,9 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -1892,8 +1892,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
-        UUID joiningNodeId = dataContainer.getJoiningNodeId();
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), getDiscoveryData(dataBag.joiningNodeId()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addNodeSpecificData(CACHE_PROC.ordinal(), getDiscoveryData(dataBag.joiningNodeId()));
+    }
+
+    /**
+     * @param joiningNodeId Joining node id.
+     */
+    private Serializable getDiscoveryData(UUID joiningNodeId) {
         boolean reconnect = ctx.localNodeId().equals(joiningNodeId) && cachesOnDisconnect != null;
 
         // Collect dynamically started caches to a single object.
@@ -1922,9 +1933,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Reset random batch ID so that serialized batches with the same descriptors will be exactly the same.
         batch.id(null);
 
-        dataContainer.addNodeSpecificData(CACHE_PROC.ordinal(), batch);
+        return batch;
     }
 
+    /**
+     * @param reqs requests.
+     */
     private void collectDataOnGridNode(Collection<DynamicCacheChangeRequest> reqs) {
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
@@ -1946,6 +1960,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     * @param reqs requests.
+     * @param clientNodesMap Client nodes map.
+     * @param nodeId Node id.
+     */
     private void collectDataOnReconnectingNode(Collection<DynamicCacheChangeRequest> reqs, Map<String, Map<UUID, Boolean>> clientNodesMap, UUID nodeId) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             DynamicCacheDescriptor desc = cachesOnDisconnect.get(maskNull(cache.name()));
@@ -1970,6 +1989,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
@@ -1978,6 +1998,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
 
@@ -1991,6 +2012,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
     }
 
+    /**
+     * @param joiningNodeId Joining node id.
+     * @param rmtNodeId Rmt node id.
+     * @param batch Batch.
+     */
     private void applyDiscoveryData(UUID joiningNodeId, UUID rmtNodeId, DynamicCacheChangeBatch batch) {
         if (batch.clientReconnect()) {
             if (ctx.clientDisconnected()) {

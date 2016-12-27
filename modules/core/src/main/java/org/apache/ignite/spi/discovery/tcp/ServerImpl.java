@@ -100,7 +100,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState;
@@ -965,7 +965,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode,
-            spi.collectExchangeData(new DiscoveryDataContainer(getLocalNodeId(), locNode.isClient())));
+            spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId())));
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -1945,7 +1945,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     msg = addFinishMsg;
 
-                    DiscoveryDataContainer discoData = addFinishMsg.clientDiscoData();
+                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
 
                     Set<Integer> mrgdCmnData = new HashSet<>();
                     Set<UUID> mrgdSpecData = new HashSet<>();
@@ -1955,7 +1955,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (TcpDiscoveryAbstractMessage msg0 : msgs) {
 
                         if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                            DiscoveryDataContainer existingDiscoData =
+                            DiscoveryDataPacket existingDiscoData =
                                 ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
 
                             if (existingDiscoData != null)
@@ -3708,8 +3708,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Internal order has been assigned to node: " + node);
 
-                DiscoveryDataContainer data = msg.gridDiscoveryData();
-                data.markGridDiscoveryStarted();
+                DiscoveryDataPacket data = msg.gridDiscoveryData();
 
                 TcpDiscoveryNodeAddedMessage nodeAddedMsg = new TcpDiscoveryNodeAddedMessage(locNodeId,
                     node, data, spi.gridStartTime);
@@ -4063,12 +4062,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    DiscoveryDataContainer dataContainer = msg.gridDiscoveryData();
+                    DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                    if (dataContainer.hasJoiningNodeDiscoveryData())
-                        spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
+                    if (dataPacket.hasJoiningNodeData())
+                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    spi.collectExchangeData(dataContainer);
+                    spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
@@ -4079,7 +4078,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && locNodeId.equals(node.id())) {
-                DiscoveryDataContainer dataContainer;
+                DiscoveryDataPacket dataContainer;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {

@@ -103,6 +103,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -111,8 +113,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -643,28 +643,35 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public DiscoveryDataContainer collect(DiscoveryDataContainer data) {
-                assert data != null;
-                assert data.getJoiningNodeId() != null;
+            @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                assert dataBag != null;
+                assert dataBag.joiningNodeId() != null;
 
-                for (GridComponent comp : ctx.components())
-                    comp.collectDiscoveryData(data);
+                if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
+                    for (GridComponent c : ctx.components())
+                        c.collectJoiningNodeData(dataBag);
+                }
+                else {
+                    for (GridComponent c : ctx.components())
+                        c.collectGridNodeData(dataBag);
+                }
 
-                return data;
+                return dataBag;
             }
 
-            @Override public void onExchange(DiscoveryDataContainer dataContainer) {
-                if (ctx.localNodeId().equals(dataContainer.getJoiningNodeId()))
+            @Override public void onExchange(DiscoveryDataBag dataBag) {
+                if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
                     //NodeAdded msg reached joining node after round-trip over the ring
                     for (GridComponent c : ctx.components()) {
                         if (c.discoveryDataType() != null)
-                            c.onGridDataReceived(dataContainer.gridDiscoveryData(c.discoveryDataType().ordinal()));
+                            c.onGridDataReceived(dataBag.gridDiscoveryData(c.discoveryDataType().ordinal()));
                     }
+                }
                 else {
                     //discovery data from newly joined node has to be applied to the current old node
                     for (GridComponent c : ctx.components())
                         if (c.discoveryDataType() != null) {
-                            NewNodeDiscoveryData data = dataContainer.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
+                            NewNodeDiscoveryData data = dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
                         }

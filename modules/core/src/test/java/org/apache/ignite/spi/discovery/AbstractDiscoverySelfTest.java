@@ -404,11 +404,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                 });
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
-                    @Override public DiscoveryDataContainer collect(DiscoveryDataContainer data) {
-                        return data;
+                    @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                        return dataBag;
                     }
 
-                    @Override public void onExchange(DiscoveryDataContainer dataContainer) {
+                    @Override public void onExchange(DiscoveryDataBag dataBag) {
                         // No-op.
                     }
                 });

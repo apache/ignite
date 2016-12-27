@@ -39,9 +39,9 @@ import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PLUGIN;
@@ -157,11 +157,29 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override  public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (pluginsData != null)
+            dataBag.addJoiningNodeData(PLUGIN.ordinal(), pluginsData);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (pluginsData != null)
+            dataBag.addNodeSpecificData(PLUGIN.ordinal(), pluginsData);
+    }
+
+    /**
+     * @param joiningNodeId Joining node id.
+     */
+    private Serializable getDiscoveryData(UUID joiningNodeId) {
         HashMap<String, Serializable> pluginsData = null;
 
         for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
-            Serializable data = e.getValue().provideDiscoveryData(dataContainer.getJoiningNodeId());
+            Serializable data = e.getValue().provideDiscoveryData(joiningNodeId);
 
             if (data != null) {
                 if (pluginsData == null)
@@ -171,11 +189,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (pluginsData != null) {
-            int cmpId = PLUGIN.ordinal();
-
-            dataContainer.addNodeSpecificData(cmpId, pluginsData);
-        }
+        return pluginsData;
     }
 
     /** {@inheritDoc} */
@@ -203,6 +217,10 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     * @param nodeId Node id.
+     * @param pluginsData Plugins data.
+     */
     private void applyPluginsData(UUID nodeId, Map<String, Serializable> pluginsData) {
         for (Map.Entry<String, Serializable> e : pluginsData.entrySet()) {
             PluginProvider provider = plugins.get(e.getKey());
@@ -256,7 +274,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         /**
          * @return Map extension interface to array of implementation.
          */
-        public Map<Class<?>, Object[]> createExtensionMap() {
+        Map<Class<?>, Object[]> createExtensionMap() {
             Map<Class<?>, Object[]> extensions = new HashMap<>(extensionsCollector.size() * 2, 0.5f);
 
             for (Map.Entry<Class<?>, List<Object>> entry : extensionsCollector.entrySet()) {

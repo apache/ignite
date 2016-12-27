@@ -75,6 +75,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -83,7 +84,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -1665,31 +1666,41 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return msg.error().contains("versions are not compatible");
     }
 
-    protected DiscoveryDataContainer collectExchangeData(DiscoveryDataContainer data) {
+    /**
+     * @param dataPacket Data packet.
+     */
+    DiscoveryDataPacket collectExchangeData(DiscoveryDataPacket dataPacket) {
         if (locNode.isDaemon())
-            return data;
+            return dataPacket;
 
-        exchange.collect(data);
+        //create data bag, pass it to exchange.collect
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(dataPacket.joiningNodeId());
 
-        data.marshalGridData(locNode.id(), marshaller(), log);
+        exchange.collect(dataBag);
 
-        return data;
+        //marshall collected bag into packet, return packet
+
+        dataPacket.marshalFromDataBag(dataBag, locNode.id(), marshaller(), log);
+
+        return dataPacket;
     }
 
     /**
-     * @param dataContainer object holding discovery data collected during discovery process.
+     * @param dataPacket object holding discovery data collected during discovery process.
      * @param clsLdr Class loader.
      */
-    protected void onExchange(DiscoveryDataContainer dataContainer, ClassLoader clsLdr) {
+    protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
         if (locNode.isDaemon())
             return;
 
-        if (dataContainer.getJoiningNodeId().equals(locNode.id()))
-            dataContainer.unmarshalGridData(marshaller(), clsLdr, log);
+        DiscoveryDataBag dataBag;
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.isClient(), log);
         else
-            dataContainer.unmarshalJoiningNodeData(marshaller(), clsLdr, log);
+            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(), clsLdr, locNode.isClient(), log);
 
-        exchange.onExchange(dataContainer);
+
+        exchange.onExchange(dataBag);
     }
 
     /** {@inheritDoc} */

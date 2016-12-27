@@ -21,9 +21,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -84,18 +84,24 @@ public interface GridComponent {
     public void onKernalStop(boolean cancel);
 
     /**
-     * Collects discovery data both on joining node before sending {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage} request and on nodes already in grid on receiving {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage}.
+     * Collects discovery data on joining node before sending {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage} request.
      *
-     * @param dataContainer container object to store discovery data in.
+     * @param dataBag container object to store discovery data in.
      */
-    //TODO it is better to split this method into two: one collects data on joining node, another one in cluster node; this'll allow to abandon managing lifecycle in DiscoveryDataContainer
-    public void collectDiscoveryData(DiscoveryDataContainer dataContainer);
+    public void collectJoiningNodeData(DiscoveryDataBag dataBag);
+
+    /**
+     * Collects discovery data on nodes already in grid on receiving {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage}.
+     *
+     * @param dataBag container object to store discovery data in.
+     */
+    public void collectGridNodeData(DiscoveryDataBag dataBag);
 
     /**
      * Receives discovery data object from remote nodes (called
      * on new node during discovery process).
      *
-     * @param data {@link DiscoveryDataContainer.GridDiscoveryData} interface to retrieve discovery data collected on remote nodes (data common for all nodes in grid and specific for each node).
+     * @param data {@link GridDiscoveryData} interface to retrieve discovery data collected on remote nodes (data common for all nodes in grid and specific for each node).
      */
     public void onGridDataReceived(GridDiscoveryData data);
 
@@ -103,7 +109,7 @@ public interface GridComponent {
      * Method is called on nodes that are already in grid (not on joining node).
      * It receives discovery data from joining node.
      *
-     * @param data {@link DiscoveryDataContainer.NewNodeDiscoveryData} interface to retrieve discovery data of joining node.
+     * @param data {@link NewNodeDiscoveryData} interface to retrieve discovery data of joining node.
      */
     public void onJoiningNodeDataReceived(NewNodeDiscoveryData data);
 
@@ -125,7 +131,7 @@ public interface GridComponent {
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value
-     * if component implements method {@link #collectDiscoveryData(DiscoveryDataContainer)}.
+     * if component implements method {@link #collectDiscoveryData(DiscoveryDataBag)}.
      *
      * @return Unique component type for discovery data exchange.
      */

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -318,14 +319,14 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
      */
     private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void onExchange(DiscoveryDataContainer dataContainer, ClassLoader clsLdr) {
+        @Override protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
             if (locNode.isClient()) {
-                Map<Integer, byte[]> cmnData = U.field(dataContainer, "commonDiscoData");
+                Map<Integer, byte[]> cmnData = U.field(dataPacket, "commonData");
 
                 cmnData.remove(GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC.ordinal());
             }
 
-            super.onExchange(dataContainer, clsLdr);
+            super.onExchange(dataPacket, clsLdr);
         }
     }
 }

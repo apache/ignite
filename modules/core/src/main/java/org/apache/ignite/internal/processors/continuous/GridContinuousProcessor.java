@@ -78,9 +78,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -409,8 +409,25 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
-        UUID joiningNodeId = dataContainer.getJoiningNodeId();
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (data != null)
+            dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(), data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (data != null)
+            dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
+    }
+
+    /**
+     * @param joiningNodeId Joining node id.
+     */
+    private Serializable getDiscoveryData(UUID joiningNodeId) {
         if (log.isDebugEnabled()) {
             log.debug("collectDiscoveryData [node=" + joiningNodeId +
                     ", loc=" + ctx.localNodeId() +
@@ -443,12 +460,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         info.autoUnsubscribe));
             }
 
-            dataContainer.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
+            return data;
         }
+        return null;
     }
 
+    /**
+     * @param clientInfos Client infos.
+     */
     private Map<UUID, Map<UUID, LocalRoutineInfo>> copyClientInfos(Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos) {
-        Map<UUID, Map<UUID, LocalRoutineInfo>> result = U.newHashMap(clientInfos.size());
+        Map<UUID, Map<UUID, LocalRoutineInfo>> res = U.newHashMap(clientInfos.size());
 
         for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> e : clientInfos.entrySet()) {
             Map<UUID, LocalRoutineInfo> cp = U.newHashMap(e.getValue().size());
@@ -456,19 +477,22 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             for (Map.Entry<UUID, LocalRoutineInfo> e0 : e.getValue().entrySet())
                 cp.put(e0.getKey(), e0.getValue());
 
-            result.put(e.getKey(), cp);
+            res.put(e.getKey(), cp);
         }
 
-        return result;
+        return res;
     }
 
+    /**
+     * @param locInfos Locale infos.
+     */
     private Map<UUID, LocalRoutineInfo> copyLocalInfos(Map<UUID, LocalRoutineInfo> locInfos) {
-        Map<UUID, LocalRoutineInfo> result = U.newHashMap(locInfos.size());
+        Map<UUID, LocalRoutineInfo> res = U.newHashMap(locInfos.size());
 
         for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet())
-            result.put(e.getKey(), e.getValue());
+            res.put(e.getKey(), e.getValue());
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -494,6 +518,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     * @param data Data.
+     */
     private void applyDiscoveryData(DiscoveryData data) {
         if (!ctx.isDaemon() && data != null) {
             for (DiscoveryDataItem item : data.items) {

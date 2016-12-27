@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -44,11 +45,11 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
     @GridSpiTestConfig
     public DiscoverySpiDataExchange getDataExchange() {
         return new DiscoverySpiDataExchange() {
-            @Override public DiscoveryDataContainer collect(DiscoveryDataContainer data) {
-                return data;
+            @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                return dataBag;
             }
 
-            @Override public void onExchange(DiscoveryDataContainer dataContainer) {
+            @Override public void onExchange(DiscoveryDataBag dataBag) {
                 // No-op.
             }
         };

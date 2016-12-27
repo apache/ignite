@@ -38,8 +38,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -249,10 +249,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
-        if (!ctx.localNodeId().equals(dataContainer.getJoiningNodeId()))
-            if (!dataContainer.isCommonDataCollectedFor(MARSHALLER_PROC.ordinal()))
-                dataContainer.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
+            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
     }
 
     /** {@inheritDoc} */

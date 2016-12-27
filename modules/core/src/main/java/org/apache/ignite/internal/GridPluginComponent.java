@@ -23,7 +23,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -84,17 +86,22 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onGridDataReceived(DiscoveryDataContainer.GridDiscoveryData data) {
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onJoiningNodeDataReceived(DiscoveryDataContainer.NewNodeDiscoveryData data) {
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         // No-op.
     }
 

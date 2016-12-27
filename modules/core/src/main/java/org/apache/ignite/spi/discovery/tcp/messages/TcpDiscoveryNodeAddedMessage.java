@@ -17,10 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -28,6 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +44,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     private final TcpDiscoveryNode node;
 
     /** */
-    private DiscoveryDataContainer dataContainer;
+    private DiscoveryDataPacket dataPacket;
 
     /** Pending messages from previous node. */
     private Collection<TcpDiscoveryAbstractMessage> msgs;
@@ -76,12 +74,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node ID.
      * @param node Node to add to topology.
-     * @param dataContainer container for collecting discovery data across the cluster.
+     * @param dataPacket container for collecting discovery data across the cluster.
      * @param gridStartTime Start time of the first grid node.
      */
     public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
         TcpDiscoveryNode node,
-        DiscoveryDataContainer dataContainer,
+        DiscoveryDataPacket dataPacket,
         long gridStartTime)
     {
         super(creatorNodeId);
@@ -90,7 +88,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         assert gridStartTime > 0;
 
         this.node = node;
-        this.dataContainer = dataContainer;
+        this.dataPacket = dataPacket;
         this.gridStartTime = gridStartTime;
     }
 
@@ -107,7 +105,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         this.top = msg.top;
         this.clientTop = msg.clientTop;
         this.topHist = msg.topHist;
-        this.dataContainer = msg.dataContainer;
+        this.dataPacket = msg.dataPacket;
         this.gridStartTime = msg.gridStartTime;
     }
 
@@ -216,15 +214,18 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         this.topHist = topHist;
     }
 
-    public DiscoveryDataContainer gridDiscoveryData() {
-        return dataContainer;
+    /**
+     *
+     */
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
     }
 
     /**
      * Clears discovery data to minimize message size.
      */
     public void clearDiscoveryData() {
-        dataContainer = null;
+        dataPacket = null;
     }
 
     /**

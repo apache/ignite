@@ -71,6 +71,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -2103,17 +2104,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                DiscoveryDataContainer dataContainer = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
+                DiscoveryDataPacket dataContainer = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
                 if (dataContainer != null) {
-                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificDiscoData");
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificData");
 
                     checkDiscoData(discoData, msg);
                 }
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                DiscoveryDataContainer dataContainer = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+                DiscoveryDataPacket dataContainer = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
                 if (dataContainer != null) {
-                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificDiscoData");
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificData");
 
                     checkDiscoData(discoData, msg);
                 }

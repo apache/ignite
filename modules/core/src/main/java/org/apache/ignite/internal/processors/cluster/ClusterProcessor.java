@@ -37,8 +37,8 @@ import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
@@ -106,12 +106,24 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+    }
+
+    /**
+     *
+     */
+    private Serializable getDiscoveryData() {
         HashMap<String, Object> map = new HashMap<>();
 
         map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled.get());
 
-        dataContainer.addNodeSpecificData(CLUSTER_PROC.ordinal(), map);
+        return map;
     }
 
     /** {@inheritDoc} */
