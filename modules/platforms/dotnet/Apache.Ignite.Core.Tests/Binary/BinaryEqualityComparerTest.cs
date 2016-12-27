@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 //new BinaryFieldEqualityComparer()
             };
 
-            var obj = GetBinaryObject();
+            var obj = GetBinaryObject(1, "x");
 
             foreach (var cmp in cmps)
             {
@@ -109,7 +109,36 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestArrayComparerPublic()
         {
-            // TODO
+            var cmp = new BinaryArrayEqualityComparer();
+
+            var obj1 = GetBinaryObject(1, "foo");
+            var obj2 = GetBinaryObject(1, "bar");
+            var obj3 = GetBinaryObject(2, "foo");
+            var obj4 = GetBinaryObject(2, "bar");
+            var obj5 = GetBinaryObject(1, "foo");
+
+            // Equals.
+            Assert.IsTrue(cmp.Equals(obj1, obj1));
+            Assert.IsTrue(cmp.Equals(obj1, obj5));
+            Assert.IsFalse(cmp.Equals(obj1, obj2));
+            Assert.IsFalse(cmp.Equals(obj1, obj3));
+            Assert.IsFalse(cmp.Equals(obj1, obj4));
+
+            Assert.IsTrue(cmp.Equals(obj2, obj2));
+            Assert.IsFalse(cmp.Equals(obj2, obj5));
+            Assert.IsFalse(cmp.Equals(obj2, obj3));
+            Assert.IsFalse(cmp.Equals(obj2, obj4));
+
+            Assert.IsTrue(cmp.Equals(obj3, obj3));
+            Assert.IsFalse(cmp.Equals(obj3, obj5));
+            Assert.IsFalse(cmp.Equals(obj3, obj4));
+
+            Assert.IsTrue(cmp.Equals(obj4, obj4));
+            Assert.IsFalse(cmp.Equals(obj4, obj5));
+
+            Assert.IsTrue(cmp.Equals(obj5, obj5));
+
+            // GetHashCode.
         }
 
         /// <summary>
@@ -167,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Gets the binary object.
         /// </summary>
-        private static IBinaryObject GetBinaryObject()
+        private static IBinaryObject GetBinaryObject(int id, string name)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
@@ -180,7 +209,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             });
 
-            var bytes = marsh.Marshal(new Foo {Id = 1, Name = "name"});
+            var bytes = marsh.Marshal(new Foo {Id = id, Name = name});
 
             return marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
         }
