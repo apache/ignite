@@ -20,7 +20,7 @@ import fs from 'fs';
 import webpack from 'webpack';
 import autoprefixer from 'autoprefixer-core';
 import jade from 'jade';
-import progressPlugin from './plugins/progress';
+import ProgressBarPlugin from 'progress-bar-webpack-plugin';
 import eslintFormatter from 'eslint-friendly-formatter';
 
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
@@ -61,7 +61,6 @@ export default () => {
         // Output system.
         output: {
             path: destDir,
-            publicPath: './',
             filename: '[name].js'
         },
 
@@ -77,7 +76,10 @@ export default () => {
                 './'
             ]
         },
-
+        jade: {
+            basedir: rootDir,
+            locals: {}
+        },
         // Modules resolvers.
         /* global require */
         module: {
@@ -108,8 +110,10 @@ export default () => {
                     loader: 'babel-loader',
                     query: {
                         cacheDirectory: true,
-                        plugins: ['transform-runtime',
-                            'add-module-exports'],
+                        plugins: [
+                            'transform-runtime',
+                            'add-module-exports'
+                        ],
                         presets: ['angular']
 
                     }
@@ -123,10 +127,8 @@ export default () => {
                     loader: development ? `style-loader!${stylesLoader}` : ExtractTextPlugin.extract('style-loader', stylesLoader)
                 },
                 {
-                    test: /\.(woff2|woff|ttf|eot|svg)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                    loaders: [
-                        `${assetsLoader}?name=assets/fonts/[name].[ext]`
-                    ]
+                    test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
+                    loaders: [`${assetsLoader}?name=assets/fonts/[name].[ext]`]
                 },
                 {
                     test: /\.(jpe?g|png|gif)$/i,
@@ -183,7 +185,7 @@ export default () => {
                 },
                 favicon
             }),
-            progressPlugin
+            new ProgressBarPlugin()
         ]
     };
 };

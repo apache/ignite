@@ -415,6 +415,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         evtLatch.countDown();
     }
 
+    /**
+     *
+     */
     public ClusterState newClusterState() {
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
@@ -648,16 +651,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
-
         GridClusterStateProcessor stateProc = cctx.kernalContext().state();
 
-        if (exchangeOnChangeGlobalState = stateProc.changeGlobalState(reqs, topologyVersion())){
+        if (exchangeOnChangeGlobalState = stateProc.changeGlobalState(reqs, topologyVersion())) {
             changeGlobalStateException = stateProc.onChangeGlobalState();
 
             if (crd && changeGlobalStateException != null)
                 changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateException);
         }
+
+        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly) {
             boolean clientCacheStarted = false;
@@ -830,7 +833,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     assert node != null;
 
-                    IgniteInternalFuture fut = cctx.database().startLocalSnapshot(backupMsg, node);
+                    IgniteInternalFuture fut = cctx.database().startLocalSnapshotCreation(backupMsg, node);
 
                     if (fut != null)
                         fut.get();
@@ -1390,9 +1393,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
                         changeGlobalStateExceptions.put(node.id(), msg.getException());
-                }
 
-                allReceived = remaining.isEmpty();
+                    allReceived = remaining.isEmpty();
+                }
             }
             else
                 singleMsgs.put(node, msg);
@@ -1598,12 +1601,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
                     cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
 
-                //todo check it
-                /*ClusterState newState = newClusterState();
-
-                if (newState != null && cctx.kernalContext().cache().active() != newState)
-                    cctx.cache().active(newState);*/
-
                 onDone(exchangeId().topologyVersion());
             }
         }
@@ -1748,7 +1745,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cacheCtx != null)
                 cacheCtx.topology().update(exchId, entry.getValue(), cntrMap);
             else {
-                ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, AffinityTopologyVersion.NONE);
+                ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldest != null && oldest.isLocal())
                     cctx.exchange().clientTopology(cacheId, this).update(exchId, entry.getValue(), cntrMap);

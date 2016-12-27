@@ -23,6 +23,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxyImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -76,6 +78,9 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
+            out.writeLong(ptr);
+            out.writeBoolean(keepBinary);
+
             BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
@@ -89,8 +94,10 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
 
             out.synchronize();
 
-            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr, new PlatformCache(ctx, cache, keepBinary),
-                mem.pointer(), keepBinary);
+            PlatformCache cache0 = new PlatformCache(ctx, cache, keepBinary);
+            PlatformTargetProxy cacheProxy = new PlatformTargetProxyImpl(cache0, ctx);
+
+            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr, cacheProxy, mem.pointer(), keepBinary);
         }
     }
 

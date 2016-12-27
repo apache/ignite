@@ -20,9 +20,26 @@ import StringBuilder from './StringBuilder';
 /**
  * Properties generation entry point.
  */
-export default class PropertiesGenerator {
+export default class IgnitePropertiesGenerator {
     _collectProperties(bean) {
         const props = [];
+
+        _.forEach(bean.arguments, (arg) => {
+            switch (arg.clsName) {
+                case 'BEAN':
+                    props.push(...this._collectProperties(arg.value));
+
+                    break;
+                case 'PROPERTY':
+                case 'PROPERTY_CHAR':
+                case 'PROPERTY_INT':
+                    props.push(`${arg.value}=${arg.hint}`);
+
+                    break;
+                default:
+                    // No-op.
+            }
+        });
 
         _.forEach(bean.properties, (prop) => {
             switch (prop.clsName) {
@@ -37,6 +54,7 @@ export default class PropertiesGenerator {
                     break;
                 case 'PROPERTY':
                 case 'PROPERTY_CHAR':
+                case 'PROPERTY_INT':
                     props.push(`${prop.value}=${prop.hint}`);
 
                     break;
@@ -51,6 +69,7 @@ export default class PropertiesGenerator {
 
                     break;
                 default:
+                    // No-op.
             }
         });
 

@@ -28,7 +28,7 @@ namespace ignite
             DataQuery::DataQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& sql,
                 const app::ParameterBindingMap& params) :
-                Query(diag),
+                Query(diag, DATA),
                 connection(connection),
                 sql(sql),
                 params(params)
@@ -146,7 +146,11 @@ namespace ignite
                 SqlResult result = MakeRequestClose();
 
                 if (result == SQL_RESULT_SUCCESS)
+                {
                     cursor.reset();
+
+                    resultMeta.clear();
+                }
 
                 return result;
             }

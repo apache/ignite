@@ -48,8 +48,10 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
     /** Error. */
     private Exception err;
 
+    /** Full snapshot. */
     private boolean fullSnapshot;
 
+    /** Last full snapshot id for cache. */
     private Map<Integer, Long> lastFullSnapshotIdForCache = new HashMap<>();
 
     /**
@@ -131,5 +133,12 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
+    }
+
+    /**
+     * @param full full snapshot.
+     */
+    public void fullSnapshot(boolean full) {
+        fullSnapshot = full;
     }
 }

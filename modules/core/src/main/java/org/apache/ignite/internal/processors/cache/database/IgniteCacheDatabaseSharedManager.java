@@ -75,6 +75,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public void initDataBase() throws IgniteCheckedException{
+
+    }
+
+    /**
      * @return Node-global free list.
      */
     public FreeList globalFreeList() {
@@ -191,7 +198,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Snapshot creation init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalSnapshot(StartFullSnapshotAckDiscoveryMessage snapshotMsg,
+    @Nullable public IgniteInternalFuture startLocalSnapshotCreation(StartFullSnapshotAckDiscoveryMessage snapshotMsg,
         ClusterNode initiator)
         throws IgniteCheckedException {
         return null;

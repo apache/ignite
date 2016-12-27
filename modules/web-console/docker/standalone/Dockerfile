@@ -18,7 +18,7 @@
 FROM ubuntu:14.04
 
 ENV NPM_CONFIG_LOGLEVEL info
-ENV NODE_VERSION 4.4.7
+ENV NODE_VERSION 6.6.0
 
 # Before package list update.
 RUN set -ex  && \
@@ -40,7 +40,7 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927 && \
 
 # Update package list & install.
 RUN apt-get update && \
-    apt-get install -y nginx-light mongodb-org-server curl xz-utils
+    apt-get install -y nginx-light mongodb-org-server curl xz-utils git
 
 # Install Node JS.
 RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz"  && \
@@ -51,7 +51,7 @@ RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-
   rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt
 
 # Install global node packages.
-RUN npm upgrade -g npm && npm install -g pm2
+RUN npm install -g pm2
 
 # Install frontend & backend apps.
 RUN mkdir -p /opt/web-console
@@ -62,7 +62,7 @@ COPY build .
 
 # Install node modules.
 RUN cd /opt/web-console/frontend && npm install --no-optional && npm run build
-RUN cd /opt/web-console/backend && npm install --no-optional
+RUN cd /opt/web-console/backend && npm install --only=production --no-optional
 
 # Returns to base path.
 WORKDIR /opt/web-console
@@ -82,6 +82,6 @@ VOLUME ["/etc/nginx"]
 VOLUME ["/var/lib/mongodb"]
 VOLUME ["/opt/web-console/serve/agent_dists"]
 
-EXPOSE 80 3001
+EXPOSE 80
 
 ENTRYPOINT ["/opt/web-console/entrypoint.sh"]

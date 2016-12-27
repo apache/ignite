@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -126,7 +128,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         super.start(activeOnStart);
 
-        //todo get file lock if active on start true
         globalState = activeOnStart ? ACTIVE : INACTIVE;
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
@@ -313,6 +314,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      *
      */
     public boolean active() {
+        ChangeGlobalStateContext actx = lastCgsCtx;
+
+        if (actx != null && !actx.activate && globalState == TRANSITION)
+            return true;
+
+        if (actx != null && actx.activate && globalState == TRANSITION)
+            return false;
+
         return globalState == ACTIVE;
     }
 
@@ -330,7 +339,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             if (req.globalStateChange()) {
                 ChangeGlobalStateContext cgsCtx = lastCgsCtx;
 
-                assert cgsCtx != null;
+                assert cgsCtx != null : "reqs: " + Arrays.toString(reqs.toArray());
 
                 cgsCtx.topologyVersion(topVer);
 
@@ -370,22 +379,20 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         // revert change if activation request fail
         if (actx.activate) {
             try {
-                if (!ctx.clientNode()) {
-                    sharedCtx.wal().onDeActivate(ctx);
-
-                    sharedCtx.database().onDeActivate(ctx);
-
-                    if (sharedCtx.pageStore() != null)
-                        sharedCtx.pageStore().onDeActivate(ctx);
-
-                    sharedCtx.database().onDeActivate(ctx);
-                }
-
                 cacheProc.onKernalStopCaches(true);
 
                 cacheProc.stopCaches(true);
 
                 sharedCtx.affinity().removeAllCacheInfo();
+
+                if (!ctx.clientNode()) {
+                    sharedCtx.database().onDeActivate(ctx);
+
+                    if (sharedCtx.pageStore() != null)
+                        sharedCtx.pageStore().onDeActivate(ctx);
+
+                    sharedCtx.wal().onDeActivate(ctx);
+                }
             }
             catch (Exception e) {
                 for (Map.Entry<UUID, Exception> entry : exs.entrySet())
@@ -422,16 +429,32 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.info("Start activation process [nodeId=" + this.ctx.localNodeId() + ", client=" + client +
                 ", topVer=" + cgsCtx.topVer + "]");
 
+        Collection<CacheConfiguration> cfgs = new ArrayList<>();
+
+        for (DynamicCacheChangeRequest req : cgsCtx.batch.requests())
+            if (req.startCacheConfiguration() != null)
+                cfgs.add(req.startCacheConfiguration());
+
         try {
             if (!client) {
                 sharedCtx.database().lock();
 
-                sharedCtx.wal().onActivate(ctx);
-
-                sharedCtx.database().onActivate(ctx);
-
                 if (sharedCtx.pageStore() != null)
                     sharedCtx.pageStore().onActivate(ctx);
+
+                sharedCtx.wal().onActivate(ctx);
+
+                sharedCtx.database().initDataBase();
+
+                for (CacheConfiguration cfg : cfgs)
+                    if (CU.isSystemCache(cfg.getName()))
+                        sharedCtx.pageStore().initializeForCache(cfg);
+
+                for (CacheConfiguration cfg : cfgs)
+                    if (!CU.isSystemCache(cfg.getName()))
+                        sharedCtx.pageStore().initializeForCache(cfg);
+
+                sharedCtx.database().onActivate(ctx);
             }
 
             if (log.isInfoEnabled())
@@ -465,15 +488,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             ctx.dataStructures().onDeActivate(ctx);
 
             ctx.service().onDeActivate(ctx);
-
-            if (!client) {
-                sharedCtx.database().onDeActivate(ctx);
-
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onDeActivate(ctx);
-
-                sharedCtx.wal().onDeActivate(ctx);
-            }
 
             if (log.isInfoEnabled())
                 log.info("Success deactivate services, dataStructures, database, pageStore, wal [id=" + ctx.localNodeId() + ", client=" +
@@ -548,9 +562,28 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.info("Success final deactivate [nodeId="
                 + ctx.localNodeId() + ", client=" + client + ", topVer=" + cgsCtx.topVer + "]");
 
-        globalState = INACTIVE;
+        Exception ex = null;
 
-        sendChangeGlobalStateResponse(cgsCtx.requestId, cgsCtx.initiatingNodeId, null);
+        try {
+            if (!client) {
+                sharedCtx.database().onDeActivate(ctx);
+
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().onDeActivate(ctx);
+
+                sharedCtx.wal().onDeActivate(ctx);
+
+                sharedCtx.affinity().removeAllCacheInfo();
+            }
+        }
+        catch (Exception e) {
+            ex = e;
+        }
+        finally {
+            globalState = INACTIVE;
+        }
+
+        sendChangeGlobalStateResponse(cgsCtx.requestId, cgsCtx.initiatingNodeId, ex);
 
         this.lastCgsCtx = null;
     }

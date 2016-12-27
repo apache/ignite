@@ -110,6 +110,9 @@ namespace ignite
 
             typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
             typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
+            
+            typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long long val);
+            typedef long long(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, long long val1, long long val2, long long val3, void* arg);
 
             /**
              * JNI handlers holder.
@@ -117,86 +120,13 @@ namespace ignite
             struct JniHandlers {
                 void* target;
 
-                CacheStoreCreateHandler cacheStoreCreate;
-                CacheStoreInvokeHandler cacheStoreInvoke;
-                CacheStoreDestroyHandler cacheStoreDestroy;
-                CacheStoreSessionCreateHandler cacheStoreSessionCreate;
-
-                CacheEntryFilterCreateHandler cacheEntryFilterCreate;
-                CacheEntryFilterApplyHandler cacheEntryFilterApply;
-                CacheEntryFilterDestroyHandler cacheEntryFilterDestroy;
-
-                CacheInvokeHandler cacheInvoke;
-
-                ComputeTaskMapHandler computeTaskMap;
-                ComputeTaskJobResultHandler computeTaskJobRes;
-                ComputeTaskReduceHandler computeTaskReduce;
-                ComputeTaskCompleteHandler computeTaskComplete;
-                ComputeJobSerializeHandler computeJobSerialize;
-                ComputeJobCreateHandler computeJobCreate;
-                ComputeJobExecuteHandler computeJobExec;
-                ComputeJobCancelHandler computeJobCancel;
-                ComputeJobDestroyHandler computeJobDestroy;
-
-                ContinuousQueryListenerApplyHandler contQryLsnrApply;
-                ContinuousQueryFilterCreateHandler contQryFilterCreate;
-                ContinuousQueryFilterApplyHandler contQryFilterApply;
-                ContinuousQueryFilterReleaseHandler contQryFilterRelease;
-
-                DataStreamerTopologyUpdateHandler dataStreamerTopologyUpdate;
-                DataStreamerStreamReceiverInvokeHandler streamReceiverInvoke;
-
-                FutureByteResultHandler futByteRes;
-                FutureBoolResultHandler futBoolRes;
-                FutureShortResultHandler futShortRes;
-                FutureCharResultHandler futCharRes;
-                FutureIntResultHandler futIntRes;
-                FutureFloatResultHandler futFloatRes;
-                FutureLongResultHandler futLongRes;
-                FutureDoubleResultHandler futDoubleRes;
-                FutureObjectResultHandler futObjRes;
-                FutureNullResultHandler futNullRes;
-                FutureErrorHandler futErr;
-
-                LifecycleEventHandler lifecycleEvt;
-
-                MemoryReallocateHandler memRealloc;
-
-                MessagingFilterCreateHandler messagingFilterCreate;
-                MessagingFilterApplyHandler messagingFilterApply;
-                MessagingFilterDestroyHandler messagingFilterDestroy;
-                
-                EventFilterCreateHandler eventFilterCreate;
-                EventFilterApplyHandler eventFilterApply;
-                EventFilterDestroyHandler eventFilterDestroy;
-
-                ServiceInitHandler serviceInit;
-                ServiceExecuteHandler serviceExecute;
-                ServiceCancelHandler serviceCancel;
-                ServiceInvokeMethodHandler serviceInvokeMethod;
-
-                ClusterNodeFilterApplyHandler clusterNodeFilterApply;
-
-                NodeInfoHandler nodeInfo;
-
-                OnStartHandler onStart;
-                OnStopHandler onStop;
                 ErrorHandler error;
-
-                ExtensionCallbackInLongOutLongHandler extensionCallbackInLongOutLong;
-                ExtensionCallbackInLongLongOutLongHandler extensionCallbackInLongLongOutLong;
-
-                OnClientDisconnectedHandler onClientDisconnected;
-                OnClientReconnectedHandler onClientReconnected;
-
-                AffinityFunctionInitHandler affinityFunctionInit;
-                AffinityFunctionPartitionHandler affinityFunctionPartition;
-                AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
-                AffinityFunctionRemoveNodeHandler affinityFunctionRemoveNode;
-                AffinityFunctionDestroyHandler affinityFunctionDestroy;
 
                 LoggerLogHandler loggerLog;
                 LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
+
+                InLongOutLongHandler inLongOutLong;
+                InLongLongLongObjectOutLongHandler inLongLongLongObjectOutLong;
             };
 
             /**
@@ -285,10 +215,6 @@ namespace ignite
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
-
-                jclass c_PlatformListenable;
-                jmethodID m_PlatformListenable_cancel;
-                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -463,10 +389,7 @@ namespace ignite
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                bool ListenableCancel(jobject obj);
-                bool ListenableIsCancelled(jobject obj);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject Acquire(jobject obj);
 
@@ -567,6 +490,9 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr);
             JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
+
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val);
+            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg);
         }
     }
 }

@@ -940,6 +940,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     @Nullable public Set<Cache.Entry<K, V>> entrySet(int part);
 
     /**
+     * Gets entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Entry set.
+     */
+    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
+
+    /**
      * Starts new transaction with the specified concurrency and isolation.
      *
      * @param concurrency Concurrency.

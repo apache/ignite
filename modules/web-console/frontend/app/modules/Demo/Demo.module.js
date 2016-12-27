@@ -41,11 +41,11 @@ angular
             url: '/demo/reset',
             controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
                 $http.post('/api/v1/demo/reset')
-                    .success(() => $state.go('base.configuration.clusters'))
-                    .error((err) => {
+                    .then(() => $state.go('base.configuration.clusters'))
+                    .catch((res) => {
                         $state.go('base.configuration.clusters');
 
-                        Messages.showError(err);
+                        Messages.showError(res);
                     });
             }],
             metaTags: {}

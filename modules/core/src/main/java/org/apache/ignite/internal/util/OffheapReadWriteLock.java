@@ -515,6 +515,10 @@ public class OffheapReadWriteLock {
         return lockCount(state) == 0;
     }
 
+    /**
+     * @param state State.
+     * @param tag Tag.
+     */
     private boolean checkTag(long state, int tag) {
         // If passed in tag is negative, lock regardless of the state.
         return tag < 0 || tag(state) == tag;

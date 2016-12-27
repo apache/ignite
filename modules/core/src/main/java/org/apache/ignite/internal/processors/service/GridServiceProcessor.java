@@ -153,7 +153,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private final List<ComputeJobContext> pendingJobCtxs = new ArrayList<>(0);
 
     /** Deployment executor service. */
-    private final ExecutorService depExe;
+    private volatile ExecutorService depExe;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -244,7 +244,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
-        if (ctx.isDaemon() || !activeOnStart)
+        if (ctx.isDaemon() || !ctx.state().active())
             return;
 
         cache = ctx.cache().utilityCache();
@@ -368,52 +368,24 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             log.debug("Activate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.gridName(), "srvc-deploy"));
+
         start(true);
 
         onKernalStart(true);
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
-        busyLock.block();
+        cancelFutures(depFuts, new IgniteCheckedException("Failed to deploy service, cluster in active."));
 
-        try {
-            if (ctx.isDaemon())
-                return;
+        cancelFutures(undepFuts, new IgniteCheckedException("Failed to undeploy service, cluster in active."));
 
-            if (!ctx.clientNode())
-                ctx.event().removeLocalEventListener(topLsnr);
-
-            Collection<ServiceContextImpl> ctxs = new ArrayList<>();
-
-            synchronized (locSvcs) {
-                for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
-                    ctxs.addAll(ctxs0);
-            }
-
-            for (ServiceContextImpl ctx : ctxs) {
-                ctx.setCancelled(true);
-
-                Service svc = ctx.service();
-
-                if (svc != null)
-                    svc.cancel(ctx);
-            }
-
-            Exception err = new IgniteCheckedException("Operation has been cancelled (node is in active status).");
-
-            cancelFutures(depFuts, err);
-            cancelFutures(undepFuts, err);
-
-            if (log.isDebugEnabled())
-                log.debug("Deactivate service processor.");
-        }finally {
-            busyLock.unblock();
-        }
+        onKernalStop(true);
     }
 
     /** {@inheritDoc} */
@@ -744,9 +716,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /**
      * @param name Service name.
+     * @param timeout If greater than 0 limits task execution time. Cannot be negative.
      * @return Service topology.
      */
-    public Map<UUID, Integer> serviceTopology(String name) throws IgniteCheckedException {
+    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
         if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
@@ -758,7 +731,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 GridClosureCallMode.BROADCAST,
                 call,
                 Collections.singletonList(node),
-                false
+                false,
+                timeout
             ).get();
         }
         else
@@ -875,12 +849,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @param name Service name.
      * @param svcItf Service class.
      * @param sticky Whether multi-node request should be done.
+     * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
     @SuppressWarnings("unchecked")
-    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
+    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException {
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -898,7 +873,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, svcItf, sticky, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, svcItf, sticky, timeout, ctx).proxy();
     }
 
     /**
@@ -1178,7 +1153,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             // Start service in its own thread.
             final ExecutorService exe = svcCtx.executor();
 
-            exe.submit(new Runnable() {
+            exe.execute(new Runnable() {
                 @Override public void run() {
                     try {
                         svc.execute(svcCtx);
@@ -1318,7 +1293,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             if (!cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
-                    CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
+                    ctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldestSrvNode == null)
                     return new GridEmptyIterator<>();
@@ -1441,7 +1416,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 return;
 
             try {
-                depExe.submit(new BusyRunnable() {
+                depExe.execute(new BusyRunnable() {
                     @Override public void run0() {
                         onSystemCacheUpdated(deps);
                     }
@@ -1634,9 +1609,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 else
                     topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
 
-                depExe.submit(new BusyRunnable() {
+                depExe.execute(new BusyRunnable() {
                     @Override public void run0() {
-                        ClusterNode oldest = CU.oldestAliveCacheServerNode(cache.context().shared(), topVer);
+                        ClusterNode oldest = ctx.discovery().oldestAliveCacheServerNode(topVer);
 
                         if (oldest != null && oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();

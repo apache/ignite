@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = '<i class="tipField fa fa-question-circle"></i>';
+const template = '<i class="tipField icon-help"></i>';
 
 export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
     const link = ($scope, $element, $attrs, [form, field], $transclude) => {

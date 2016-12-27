@@ -80,6 +80,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulFullSnapshotId(buf, 0);
         setLastSuccessfulSnapshotId(buf, 0);
         setNextSnapshotTag(buf, 1);
+        setLastSuccessfulSnapshotTag(buf, 0);
         setLastAllocatedIndex(buf, 0);
         setCandidateAllocatedIndex(buf, 0);
     }
