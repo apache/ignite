@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
