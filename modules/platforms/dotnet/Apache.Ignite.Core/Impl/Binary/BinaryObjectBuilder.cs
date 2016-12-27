@@ -730,6 +730,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             var outLen = outStream.Position - outStartPos;
 
+                            // TODO: If changeHash and hash is not set - call identity resolver
                             var outHash = changeHash ? hash : inHeader.HashCode;
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
