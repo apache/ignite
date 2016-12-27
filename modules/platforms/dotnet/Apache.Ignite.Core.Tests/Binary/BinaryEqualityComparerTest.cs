@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
@@ -32,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryEqualityComparerTest
     {
         /// <summary>
-        /// Public methods should throw unsupported exceptions.
+        /// Tests common public methods logic.
         /// </summary>
         [Test]
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
@@ -44,12 +43,18 @@ namespace Apache.Ignite.Core.Tests.Binary
                 new BinaryFieldEqualityComparer()
             };
 
-            // TODO: Proper tests with various types, nested objects, etc
-            // TODO: Separate tests per class.
+            var obj = GetBinaryObject();
+
             foreach (var cmp in cmps)
             {
-                Assert.Throws<NotSupportedException>(() => cmp.Equals(null, null));
-                Assert.Throws<NotSupportedException>(() => cmp.GetHashCode(null));
+                Assert.IsTrue(cmp.Equals(null, null));
+                Assert.IsTrue(cmp.Equals(obj, obj));
+
+                Assert.IsFalse(cmp.Equals(obj, null));
+                Assert.IsFalse(cmp.Equals(null, obj));
+
+                Assert.AreEqual(0, cmp.GetHashCode(null));
+                Assert.AreNotEqual(0, cmp.GetHashCode(obj));
             }
         }
 
@@ -96,6 +101,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             ms.WriteByte(3);
             Assert.AreEqual((31 + 1) * 31 + 3, cmp.GetHashCode(ms, 0, 2, null, 0, null, null));
+        }
+
+        /// <summary>
+        /// Tests public methods of array comparer.
+        /// </summary>
+        [Test]
+        public void TestArrayComparerPublic()
+        {
+            // TODO
         }
 
         /// <summary>
@@ -148,6 +162,24 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }));
 
             Assert.AreEqual("BinaryFieldEqualityComparer.FieldNames can not be null or empty.", ex.Message);
+        }
+
+        /// <summary>
+        /// Gets the binary object.
+        /// </summary>
+        private IBinaryObject GetBinaryObject()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[] {new BinaryTypeConfiguration(typeof(Foo))
+                {
+                    EqualityComparer = new BinaryArrayEqualityComparer()
+                } }
+            });
+
+            var bytes = marsh.Marshal(new Foo {Id = 1, Name = "name"});
+
+            return marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
         }
 
         private class Foo
