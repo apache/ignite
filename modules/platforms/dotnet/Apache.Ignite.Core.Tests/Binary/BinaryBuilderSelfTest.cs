@@ -1694,6 +1694,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestRemoteBinaryMode()
         {
+            if (GetIdentityResolver() != null)
+                return;  // When identity resolver is set, it is required to have the same config on all nodes.
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 GridName = "grid2",
