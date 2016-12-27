@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class CacheOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractTest {
+public class LocalCacheOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 1;
 
