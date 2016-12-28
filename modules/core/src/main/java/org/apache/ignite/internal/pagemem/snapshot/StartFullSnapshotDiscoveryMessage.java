@@ -33,6 +33,9 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Message. */
+    private final String msg;
+
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -56,12 +59,15 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
 
     /**
      * @param cacheNames Cache names.
+     * @param msg message to log
      */
-    public StartFullSnapshotDiscoveryMessage(long globalSnapshotId, Collection<String> cacheNames, UUID initiatorId, boolean fullSnapshot) {
+    public StartFullSnapshotDiscoveryMessage(long globalSnapshotId, Collection<String> cacheNames, UUID initiatorId,
+        boolean fullSnapshot, String msg) {
         this.globalSnapshotId = globalSnapshotId;
         this.cacheNames = cacheNames;
         this.initiatorId = initiatorId;
         this.fullSnapshot = fullSnapshot;
+        this.msg = msg;
     }
 
     /**
@@ -113,21 +119,31 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
         return cacheNames;
     }
 
+    /**
+     *
+     */
     public boolean fullSnapshot() {
         return fullSnapshot;
     }
 
+    /**
+     * @param cacheId Cache id.
+     */
     public Long lastFullSnapshotId(int cacheId) {
         return lastFullSnapshotIdForCache.get(cacheId);
     }
 
+    /**
+     * @param cacheId Cache id.
+     * @param id Id.
+     */
     public void lastFullSnapshotId(int cacheId, long id) {
         lastFullSnapshotIdForCache.put(cacheId, id);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullSnapshotAckDiscoveryMessage(globalSnapshotId, fullSnapshot, lastFullSnapshotIdForCache, cacheNames, err, initiatorId);
+        return new StartFullSnapshotAckDiscoveryMessage(globalSnapshotId, fullSnapshot, lastFullSnapshotIdForCache, cacheNames, err, initiatorId, msg);
     }
 
     /** {@inheritDoc} */
