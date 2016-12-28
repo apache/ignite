@@ -214,7 +214,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(AffinityTopologyVersion topVer) {
+    private void map(final AffinityTopologyVersion topVer) {
         boolean allowLocalRead = true;
 
         if (cctx.shared().database().persistenceEnabled()) {
@@ -279,6 +279,23 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         }
                     }
                 });
+            }
+        }
+        else if (node.isLocal() && !allowLocalRead) {
+            GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(Collections.singleton(key), topVer);
+
+            if (fut != null & !F.isEmpty(fut.invalidPartitions())) {
+                AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+
+                assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
+                    "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
+                    ", invalidParts=" + fut.invalidPartitions() + ']';
+
+                // Remap recursively.
+                map(updTopVer);
+            }
+            else {
+                map(topVer);
             }
         }
         else {

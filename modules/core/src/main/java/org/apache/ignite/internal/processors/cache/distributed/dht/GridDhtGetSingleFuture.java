@@ -209,7 +209,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 topVer);
 
             if (fut != null) {
-                if (F.isEmpty(fut.invalidPartitions())) {
+                if (!F.isEmpty(fut.invalidPartitions())) {
                     if (retries == null)
                         retries = new HashSet<>();
 
