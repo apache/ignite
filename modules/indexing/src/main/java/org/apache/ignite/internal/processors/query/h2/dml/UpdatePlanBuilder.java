@@ -19,8 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -198,6 +202,8 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.length];
 
+        Map<String, Integer> propIdxs = new HashMap<>(cols.length);
+
         for (int i = 0; i < cols.length; i++) {
             GridSqlColumn col = cols[i];
 
@@ -217,6 +223,8 @@ public final class UpdatePlanBuilder {
 
             GridQueryProperty prop = desc.type().property(colName);
 
+            propIdxs.put(prop.name(), i);
+
             assert prop != null : "Property '" + colName + "' not found.";
 
             if (prop.key())
@@ -225,14 +233,27 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+        LinkedHashMap<Integer, Integer> props = new LinkedHashMap<>(propIdxs.size());
+
+        int i = 0;
+
+        for (String propName : desc.type().fields().keySet()) {
+            Integer idx = propIdxs.get(propName);
+
+            if (idx != null)
+                props.put(i, idx);
+
+            i++;
+        }
+
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx,
+            return UpdatePlan.forMerge(tbl.dataTable(), colNames, props, keySupplier, valSupplier, keyColIdx,
                 valColIdx, sel != null ? sel.getSQL() : null, !isTwoStepSubqry, rows, rowsNum);
         else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx,
+            return UpdatePlan.forInsert(tbl.dataTable(), colNames, props, keySupplier, valSupplier, keyColIdx,
                 valColIdx, sel != null ? sel.getSQL() : null, !isTwoStepSubqry, rows, rowsNum);
     }
 
@@ -292,11 +313,33 @@ public final class UpdatePlanBuilder {
 
                 String[] colNames = new String[updatedCols.size()];
 
-                for (int i = 0; i < updatedCols.size(); i++) {
-                    colNames[i] = updatedCols.get(i).columnName();
+                Map<String, Integer> propIdxs = new HashMap<>(updatedCols.size());
 
-                    if (VAL_FIELD_NAME.equals(colNames[i]))
+                for (int i = 0; i < updatedCols.size(); i++) {
+                    String colName = updatedCols.get(i).columnName();
+
+                    colNames[i] = colName;
+
+                    if (VAL_FIELD_NAME.equals(colName)) {
                         valColIdx = i;
+
+                        continue;
+                    }
+
+                    propIdxs.put(desc.type().property(colName).name(), i);
+                }
+
+                LinkedHashMap<Integer, Integer> props = new LinkedHashMap<>(propIdxs.size());
+
+                int i = 0;
+
+                for (String propName : desc.type().fields().keySet()) {
+                    Integer idx = propIdxs.get(propName);
+
+                    if (idx != null)
+                        props.put(i, idx);
+
+                    i++;
                 }
 
                 boolean hasNewVal = (valColIdx != -1);
@@ -305,18 +348,12 @@ public final class UpdatePlanBuilder {
                 // or if its list of updated columns includes only _val, i.e. is single element.
                 boolean hasProps = !hasNewVal || updatedCols.size() > 1;
 
-                // Index of new _val in results of SELECT
-                if (hasNewVal)
-                    valColIdx += 2;
-
-                int newValColIdx = (hasNewVal ? valColIdx : 1);
-
-                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
-                    false, true);
+                KeyValueSupplier newValSupplier = hasNewVal ? createSupplier(desc.context(), desc.type(), valColIdx,
+                    hasProps, false) : null;
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, newValSupplier, valColIdx, sel.getSQL());
+                return UpdatePlan.forUpdate(gridTbl, colNames, props, newValSupplier, valColIdx, sel.getSQL());
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
@@ -340,7 +377,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
-        final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
+        final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
@@ -386,25 +423,8 @@ public final class UpdatePlanBuilder {
             }
         }
         else {
-            if (colIdx != -1) {
-                if (forUpdate && colIdx == 1) {
-                    // It's the case when the old value has to be taken as the basis for the new one on UPDATE,
-                    // so we have to clone it. And on UPDATE we don't expect any key supplier.
-                    assert !key;
-
-                    return new KeyValueSupplier() {
-                        /** {@inheritDoc} */
-                        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                            byte[] oldPropBytes = cctx.marshaller().marshal(arg.get(1));
-
-                            // colVal is another object now, we can mutate it
-                            return cctx.marshaller().unmarshal(oldPropBytes, U.resolveClassLoader(cctx.gridConfig()));
-                        }
-                    };
-                }
-                else // We either are not updating, or the new value is given explicitly, no cloning needed.
-                    return new PlainValueSupplier(colIdx);
-            }
+            if (colIdx != -1)
+                return new PlainValueSupplier(colIdx);
 
             Constructor<?> ctor;
 

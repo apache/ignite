@@ -45,6 +45,7 @@ import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -60,17 +61,18 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
+import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -292,7 +294,7 @@ public class DmlStatementsProcessor {
                 for (int j = 0; j < plan.colNames.length; j++) {
                     Object colVal = argRow.get(j).apply(fieldsQry.getArgs());
 
-                    if (j == plan.keyColIdx || j == plan.valColIdx)
+                    if (j == plan.keyColIdx || j == plan.valColIdx) // The rest columns will be converted later
                         colVal = convert(colVal, j == plan.keyColIdx ? desc.type().keyClass() : desc.type().valueClass(),
                             desc);
 
@@ -486,15 +488,7 @@ public class DmlStatementsProcessor {
 
         boolean bin = cctx.binaryMarshaller();
 
-        String[] updatedColNames = plan.colNames;
-
-        int valColIdx = plan.valColIdx;
-
-        boolean hasNewVal = (valColIdx != -1);
-
-        // Statement updates distinct properties if it does not have _val in updated columns list
-        // or if its list of updated columns includes only _val, i.e. is single element.
-        boolean hasProps = !hasNewVal || updatedColNames.length > 1;
+        String[] propNames = plan.colNames;
 
         long res = 0;
 
@@ -507,62 +501,28 @@ public class DmlStatementsProcessor {
 
         Iterator<List<?>> it = cursor.iterator();
 
+        ModifierArgs args = new ModifierArgs(desc.type().name(), plan.props, plan.valSupplier);
+
         while (it.hasNext()) {
             List<?> e = it.next();
+
             Object key = e.get(0);
 
-            Object newVal;
-
-            Map<String, Object> newColVals = new HashMap<>();
-
-            for (int i = 0; i < plan.colNames.length; i++) {
-                if (hasNewVal && i == valColIdx - 2)
-                    continue;
-
-                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.colNames[i],
-                    plan.tbl.rowDescriptor()));
-            }
-
-            newVal = plan.valSupplier.apply(e);
-
-            if (newVal == null)
-                throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
-
-            // Skip key and value - that's why we start off with 2nd column
-            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                Column c = plan.tbl.getColumn(i + 2);
-
-                GridQueryProperty prop = desc.type().property(c.getName());
-
-                if (prop.key())
-                    continue; // Don't get values of key's columns - we won't use them anyway
-
-                boolean hasNewColVal = newColVals.containsKey(c.getName());
-
-                if (!hasNewColVal)
-                    continue;
-
-                Object colVal = newColVals.get(c.getName());
-
-                // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
-                desc.setColumnValue(null, newVal, colVal, i);
-            }
-
-            if (bin && hasProps) {
-                assert newVal instanceof BinaryObjectBuilder;
-
-                newVal = ((BinaryObjectBuilder) newVal).build();
-            }
-
             Object srcVal = e.get(1);
+
+            Object[] newColVals = e.subList(2, propNames.length + 2).toArray();
+
+            for (int i = 0; i < propNames.length; i++)
+                if (i != plan.valColIdx)
+                    newColVals[i] = convert(newColVals[i], propNames[i], desc);
 
             if (bin && !(srcVal instanceof BinaryObject))
                 srcVal = cctx.grid().binary().toBinary(srcVal);
 
-            rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
+            rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newColVals)));
 
             if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                PageProcessingResult pageRes = processPage(cctx, rows);
+                PageProcessingResult pageRes = processPage(cctx, rows, args);
 
                 res += pageRes.cnt;
 
@@ -855,8 +815,8 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private static PageProcessingResult processPage(GridCacheContext cctx,
-        Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
-        Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
+        Map<Object, EntryProcessor<Object, Object, Boolean>> rows, Object... args) throws IgniteCheckedException {
+        Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows, args);
 
         if (F.isEmpty(res))
             return new PageProcessingResult(rows.size(), null, null);
@@ -931,6 +891,18 @@ public class DmlStatementsProcessor {
         return new IgniteBiTuple<>(key, val);
     }
 
+    private static Object[] rowToPropValues(List<?> row,  LinkedHashMap<Integer, Integer> props) {
+        Object[] res = new Object[props.size()];
+
+        for (Map.Entry<Integer, Integer> e : props.entrySet()) {
+            assert res[e.getValue()] == null;
+
+            res[e.getValue()] = row.get(e.getKey());
+        }
+
+        return res;
+    }
+
     /**
      * Set hash code to binary object if it does not have one.
      *
@@ -987,10 +959,10 @@ public class DmlStatementsProcessor {
         private final Object val;
 
         /** Action to perform on entry. */
-        private final IgniteInClosure<MutableEntry<Object, Object>> entryModifier;
+        private final EntryModifier entryModifier;
 
         /** */
-        private ModifyingEntryProcessor(Object val, IgniteInClosure<MutableEntry<Object, Object>> entryModifier) {
+        private ModifyingEntryProcessor(Object val, EntryModifier entryModifier) {
             assert val != null;
 
             this.val = val;
@@ -1011,16 +983,60 @@ public class DmlStatementsProcessor {
             if (!F.eq(entryVal, val))
                 return false;
 
-            entryModifier.apply(entry);
+            if (!(entry instanceof CacheInvokeEntry))
+                throw new EntryProcessorException("Unexpected mutable entry type - CacheInvokeEntry expected");
+
+            assert F.isEmpty(arguments) || (arguments[0] != null && arguments[0] instanceof ModifierArgs);
+
+            try {
+                entryModifier.apply((CacheInvokeEntry<Object, Object>) entry, (ModifierArgs) arguments[0]);
+            }
+            catch (Exception e) {
+                throw new EntryProcessorException(e);
+            }
 
             return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
         }
     }
 
+    /**
+     * Arguments for {@link EntryModifier}.
+     */
+    private final static class ModifierArgs {
+        /**
+         * Target type descriptor name.
+         */
+        private final String typeName;
+
+        /**
+         *
+         */
+        private final LinkedHashMap<Integer, Integer> props;
+
+        /**
+         * Value supplier.
+         */
+        private final KeyValueSupplier valSupplier;
+
+        /** */
+        private ModifierArgs(String typeName, LinkedHashMap<Integer, Integer> props, KeyValueSupplier valSupplier) {
+            this.typeName = typeName;
+            this.props = props;
+            this.valSupplier = valSupplier;
+        }
+    }
+
+    /**
+     * In-closure that mutates given entry with respect to given args.
+     */
+    private abstract static class EntryModifier extends CIX2<CacheInvokeEntry<Object, Object>, ModifierArgs> {
+    }
+
     /** */
-    private static IgniteInClosure<MutableEntry<Object, Object>> RMV = new IgniteInClosure<MutableEntry<Object, Object>>() {
+    private static EntryModifier RMV = new EntryModifier() {
         /** {@inheritDoc} */
-        @Override public void apply(MutableEntry<Object, Object> e) {
+        @Override public void applyx(CacheInvokeEntry<Object, Object> e, ModifierArgs args)
+            throws IgniteCheckedException {
             e.remove();
         }
     };
@@ -1028,19 +1044,59 @@ public class DmlStatementsProcessor {
     /**
      *
      */
-    private static final class EntryValueUpdater implements IgniteInClosure<MutableEntry<Object, Object>> {
-        /** Value to set. */
-        private final Object val;
+    private static final class EntryValueUpdater extends EntryModifier {
+        /** Values to set - in order specified by {@link ModifierArgs#props}. */
+        private final Object[] newColVals;
 
-        /** */
-        private EntryValueUpdater(Object val) {
-            assert val != null;
-
-            this.val = val;
+        /**
+         * @param newColVals Column values to set.
+         */
+        private EntryValueUpdater(Object[] newColVals) {
+            this.newColVals = newColVals;
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(MutableEntry<Object, Object> e) {
+        @Override public void applyx(CacheInvokeEntry<Object, Object> e, ModifierArgs args) throws IgniteCheckedException {
+            assert e.exists();
+
+            GridCacheContext cctx = e.entry().context();
+
+            GridQueryTypeDescriptor typeDesc = cctx.grid().context().query().type(cctx.name(), args.typeName);
+
+            // If we're here then value check has passed, so we can take old val as basis.
+            Object val = args.valSupplier != null ? args.valSupplier.apply(F.asList(newColVals)) : e.oldVal();
+
+            if (val == null)
+                throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
+
+            boolean hasProps = (args.valSupplier == null || newColVals.length > 1);
+
+            if (cctx.binaryMarshaller() && hasProps && !(val instanceof BinaryObjectBuilder))
+                val = cctx.grid().binary().builder(cctx.grid().binary().<BinaryObject>toBinary(val));
+
+            int i = 0;
+
+            for (String propName : typeDesc.fields().keySet()) {
+                Integer idx = args.props.get(i++);
+
+                if (idx == null)
+                    continue;
+
+                GridQueryProperty prop = typeDesc.property(propName);
+
+                assert !prop.key();
+
+                Object colVal = newColVals[idx];
+
+                prop.setValue(null, val, colVal);
+            }
+
+            if (cctx.binaryMarshaller() && hasProps) {
+                assert val instanceof BinaryObjectBuilder;
+
+                val = ((BinaryObjectBuilder) val).build();
+            }
+
             e.setValue(val);
         }
     }
