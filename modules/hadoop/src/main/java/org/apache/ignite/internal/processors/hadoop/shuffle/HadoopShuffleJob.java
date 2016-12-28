@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperAwareTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
@@ -79,7 +79,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private static final int DFLT_SHUFFLE_MSG_SIZE = 1024 * 1024;
 
     /** */
-    private final HadoopJob job;
+    private final HadoopJobEx job;
 
     /** */
     private final GridUnsafeMemory mem;
@@ -159,7 +159,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param embedded Whether shuffle is running in embedded mode.
      * @throws IgniteCheckedException If error.
      */
-    public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
+    public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJobEx job, GridUnsafeMemory mem,
         int totalReducerCnt, int[] locReducers, int locMappersCnt, boolean embedded) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.totalReducerCnt = totalReducerCnt;

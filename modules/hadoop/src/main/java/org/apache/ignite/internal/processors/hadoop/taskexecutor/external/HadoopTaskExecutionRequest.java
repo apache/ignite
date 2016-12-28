@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -42,7 +42,7 @@ public class HadoopTaskExecutionRequest implements HadoopMessage {
 
     /** Job info. */
     @GridToStringInclude
-    private HadoopJobInfo jobInfo;
+    private HadoopJobInfoEx jobInfo;
 
     /** Mappers. */
     @GridToStringInclude
@@ -65,14 +65,14 @@ public class HadoopTaskExecutionRequest implements HadoopMessage {
     /**
      * @return Jon info.
      */
-    public HadoopJobInfo jobInfo() {
+    public HadoopJobInfoEx jobInfo() {
         return jobInfo;
     }
 
     /**
      * @param jobInfo Job info.
      */
-    public void jobInfo(HadoopJobInfo jobInfo) {
+    public void jobInfo(HadoopJobInfoEx jobInfo) {
         this.jobInfo = jobInfo;
     }
 
@@ -108,7 +108,7 @@ public class HadoopTaskExecutionRequest implements HadoopMessage {
         jobId = new HadoopJobId();
         jobId.readExternal(in);
 
-        jobInfo = (HadoopJobInfo)in.readObject();
+        jobInfo = (HadoopJobInfoEx)in.readObject();
         tasks = U.readCollection(in);
     }
 }

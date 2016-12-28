@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
@@ -56,7 +56,7 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
      * @param jobInfo Job info.
      * @param mem Memory.
      */
-    protected HadoopMultimapBase(HadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+    protected HadoopMultimapBase(HadoopJobInfoEx jobInfo, GridUnsafeMemory mem) {
         assert jobInfo != null;
         assert mem != null;
 

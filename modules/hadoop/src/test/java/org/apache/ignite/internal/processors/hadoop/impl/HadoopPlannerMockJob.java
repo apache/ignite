@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +34,7 @@ import java.util.UUID;
 /**
  * Mock job for planner tests.
  */
-public class HadoopPlannerMockJob implements HadoopJob {
+public class HadoopPlannerMockJob extends HadoopJobEx {
     /** Input splits. */
     private final Collection<HadoopInputSplit> splits;
 
@@ -53,12 +53,12 @@ public class HadoopPlannerMockJob implements HadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
+    @Override public Collection<HadoopInputSplit> input() {
         return splits;
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopJobInfo info() {
+    @Override public HadoopJobInfoEx info() {
         return new JobInfo(reducers);
     }
 
@@ -118,7 +118,7 @@ public class HadoopPlannerMockJob implements HadoopJob {
     /**
      * Mocked job info.
      */
-    private static class JobInfo implements HadoopJobInfo {
+    private static class JobInfo implements HadoopJobInfoEx {
         /** Reducers. */
         private final int reducers;
 
@@ -158,7 +158,7 @@ public class HadoopPlannerMockJob implements HadoopJob {
         }
 
         /** {@inheritDoc} */
-        @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
+        @Override public HadoopJobEx createJob(Class<? extends HadoopJobEx> jobCls, HadoopJobId jobId, IgniteLogger log,
             @Nullable String[] libNames, HadoopHelper helper) throws IgniteCheckedException {
             throwUnsupported();
 

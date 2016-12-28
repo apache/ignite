@@ -20,15 +20,15 @@ package org.apache.ignite.hadoop.mapreduce;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.hadoop.HadoopJob;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
-import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.hadoop.planner.HadoopAbstractMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,7 +62,7 @@ public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner
 
         Map<UUID, Collection<HadoopInputSplit>> mappers = mappers(top, topIds, job.input());
 
-        int rdcCnt = job.info().reducers();
+        int rdcCnt = job.reducers();
 
         if (rdcCnt < 0)
             throw new IgniteCheckedException("Number of reducers must be non-negative, actual: " + rdcCnt);
@@ -123,6 +123,7 @@ public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner
      * @param nodes Nodes.
      * @param nodeLoads Node load tracker.
      * @return Node ID.
+     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
     private UUID nodeForSplit(HadoopInputSplit split, Collection<UUID> topIds, Map<String, Collection<UUID>> nodes,

@@ -24,9 +24,9 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemCounterWriterDelegate;
@@ -60,10 +60,10 @@ public class HadoopFileSystemCounterWriterDelegateImpl implements HadoopFileSyst
     }
 
     /** {@inheritDoc} */
-    public void write(HadoopJob job, HadoopCounters cntrs) throws IgniteCheckedException {
+    public void write(HadoopJobEx job, HadoopCounters cntrs) throws IgniteCheckedException {
         Configuration hadoopCfg = HadoopUtils.safeCreateConfiguration();
 
-        final HadoopJobInfo jobInfo = job.info();
+        final HadoopJobInfoEx jobInfo = job.info();
 
         final HadoopJobId jobId = job.id();
 

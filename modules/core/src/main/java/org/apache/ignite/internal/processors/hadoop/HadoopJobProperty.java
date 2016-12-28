@@ -142,7 +142,7 @@ public enum HadoopJobProperty {
      * @param dflt Default value.
      * @return Property value.
      */
-    public static String get(HadoopJobInfo jobInfo, HadoopJobProperty pty, @Nullable String dflt) {
+    public static String get(HadoopJobInfoEx jobInfo, HadoopJobProperty pty, @Nullable String dflt) {
         String res = jobInfo.property(pty.propertyName());
 
         return res == null ? dflt : res;
@@ -154,7 +154,7 @@ public enum HadoopJobProperty {
      * @param dflt Default value.
      * @return Property value.
      */
-    public static int get(HadoopJobInfo jobInfo, HadoopJobProperty pty, int dflt) {
+    public static int get(HadoopJobInfoEx jobInfo, HadoopJobProperty pty, int dflt) {
         String res = jobInfo.property(pty.propertyName());
 
         return res == null ? dflt : Integer.parseInt(res);
@@ -166,7 +166,7 @@ public enum HadoopJobProperty {
      * @param dflt Default value.
      * @return Property value.
      */
-    public static boolean get(HadoopJobInfo jobInfo, HadoopJobProperty pty, boolean dflt) {
+    public static boolean get(HadoopJobInfoEx jobInfo, HadoopJobProperty pty, boolean dflt) {
         String res = jobInfo.property(pty.propertyName());
 
         return res == null ? dflt : Boolean.parseBoolean(res);

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.util.GridLongList;
@@ -61,7 +61,7 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
      * @param mem Memory.
      * @param cap Initial capacity.
      */
-    public HadoopConcurrentHashMultimap(HadoopJobInfo jobInfo, GridUnsafeMemory mem, int cap) {
+    public HadoopConcurrentHashMultimap(HadoopJobInfoEx jobInfo, GridUnsafeMemory mem, int cap) {
         super(jobInfo, mem);
 
         assert U.isPow2(cap);

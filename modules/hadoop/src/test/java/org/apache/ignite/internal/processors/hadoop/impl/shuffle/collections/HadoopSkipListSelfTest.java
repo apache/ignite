@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
@@ -102,7 +102,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         int mapSize = 16 << rnd.nextInt(6);
 
-        HadoopJobInfo job = new JobInfo();
+        HadoopJobInfoEx job = new JobInfo();
 
         HadoopTaskContext taskCtx = new TaskContext();
 
@@ -245,7 +245,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            HadoopJobInfo job = new JobInfo();
+            HadoopJobInfoEx job = new JobInfo();
 
             final HadoopTaskContext taskCtx = new TaskContext();
 

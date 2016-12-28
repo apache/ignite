@@ -14,23 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.hadoop;
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import java.util.Collection;
 
 /**
- * Counter writer delegate interface.
+ * Compact job description.
  */
-public interface HadoopFileSystemCounterWriterDelegate {
+public interface HadoopJob extends HadoopJobInfo {
     /**
-     * Writes counters of given job to some statistics storage.
+     * Gets collection of input splits for this job.
      *
-     * @param job The job.
-     * @param cntrs Counters.
-     * @throws IgniteCheckedException If failed.
+     * @return Input splits.
      */
-    public void write(HadoopJobEx job, HadoopCounters cntrs) throws IgniteCheckedException;
+    public Collection<HadoopInputSplit> input();
 }

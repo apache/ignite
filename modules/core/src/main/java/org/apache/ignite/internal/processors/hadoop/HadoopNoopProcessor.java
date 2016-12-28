@@ -51,7 +51,7 @@ public class HadoopNoopProcessor extends HadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo) {
+    @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfoEx jobInfo) {
         return new GridFinishedFuture<>(createException());
     }
 

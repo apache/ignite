@@ -63,7 +63,7 @@ public class HadoopImpl implements Hadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo) {
+    @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfoEx jobInfo) {
         if (busyLock.enterBusy()) {
             try {
                 return proc.submit(jobId, jobInfo);

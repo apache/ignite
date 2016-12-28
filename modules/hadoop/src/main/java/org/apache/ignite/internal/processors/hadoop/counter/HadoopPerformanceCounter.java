@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.UUID;
 
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.util.typedef.F;
@@ -216,7 +216,7 @@ public class HadoopPerformanceCounter extends HadoopCounterAdapter {
      *
      * @param info Job info.
      */
-    public void clientSubmissionEvents(HadoopJobInfo info) {
+    public void clientSubmissionEvents(HadoopJobInfoEx info) {
         assert nodeId != null;
 
         addEventFromProperty("JOB requestId", info, HadoopCommonUtils.REQ_NEW_JOBID_TS_PROPERTY);
@@ -231,7 +231,7 @@ public class HadoopPerformanceCounter extends HadoopCounterAdapter {
      * @param info Job info.
      * @param propName Property name to get timestamp.
      */
-    private void addEventFromProperty(String evt, HadoopJobInfo info, String propName) {
+    private void addEventFromProperty(String evt, HadoopJobInfoEx info, String propName) {
         String val = info.property(propName);
 
         if (!F.isEmpty(val)) {

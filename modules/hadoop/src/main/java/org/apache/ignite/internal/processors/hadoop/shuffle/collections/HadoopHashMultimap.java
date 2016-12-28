@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -39,7 +39,7 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
      * @param mem Memory.
      * @param cap Initial capacity.
      */
-    public HadoopHashMultimap(HadoopJobInfo jobInfo, GridUnsafeMemory mem, int cap) {
+    public HadoopHashMultimap(HadoopJobInfoEx jobInfo, GridUnsafeMemory mem, int cap) {
         super(jobInfo, mem);
 
         assert U.isPow2(cap) : cap;
