@@ -993,10 +993,13 @@ public class DmlStatementsProcessor {
             if (!(entry instanceof CacheInvokeEntry))
                 throw new EntryProcessorException("Unexpected mutable entry type - CacheInvokeEntry expected");
 
-            assert F.isEmpty(arguments) || (arguments[0] != null && arguments[0] instanceof ModifierArgs);
+            boolean hasArgs = !F.isEmpty(arguments);
+
+            assert !hasArgs || (arguments[0] != null && arguments[0] instanceof ModifierArgs);
 
             try {
-                entryModifier.apply((CacheInvokeEntry<Object, Object>) entry, (ModifierArgs) arguments[0]);
+                entryModifier.apply((CacheInvokeEntry<Object, Object>) entry,
+                    hasArgs ? (ModifierArgs) arguments[0] : null);
             }
             catch (Exception e) {
                 throw new EntryProcessorException(e);
