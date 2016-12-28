@@ -215,17 +215,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     @SuppressWarnings("unchecked")
     private void map(final AffinityTopologyVersion topVer) {
-        boolean allowLocalRead = true;
-
-        if (cctx.shared().database().persistenceEnabled()) {
-            GridDhtLocalPartition locPart = cctx.topology().localPartition(key, false);
-
-            GridDhtPartitionState locPartState = locPart != null ? locPart.state() : EVICTED;
-
-            allowLocalRead = (locPartState == OWNING);
-        }
-
-        ClusterNode node = mapKeyToNode(topVer, allowLocalRead);
+        ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
             assert isDone() : this;
@@ -236,7 +226,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         if (isDone())
             return;
 
-        if (node.isLocal() && allowLocalRead) {
+        if (node.isLocal()) {
             Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
 
             final GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cctx.dht().getDhtAsync(node.id(),
@@ -279,23 +269,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         }
                     }
                 });
-            }
-        }
-        else if (node.isLocal() && !allowLocalRead) {
-            GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(Collections.singleton(key), topVer);
-
-            if (fut != null & !F.isEmpty(fut.invalidPartitions())) {
-                AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
-
-                assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
-                    "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                    ", invalidParts=" + fut.invalidPartitions() + ']';
-
-                // Remap recursively.
-                map(updTopVer);
-            }
-            else {
-                map(topVer);
             }
         }
         else {
@@ -364,7 +337,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer, boolean allowLocalRead) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
@@ -375,8 +348,16 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return null;
         }
 
-        boolean fastLocGet = allowLocalRead && (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.allowFastLocalRead(part, affNodes, topVer);
+
+        if (fastLocGet && cctx.shared().database().persistenceEnabled()) {
+            GridDhtLocalPartition locPart = cctx.topology().localPartition(key, false);
+
+            GridDhtPartitionState locPartState = locPart != null ? locPart.state() : EVICTED;
+
+            fastLocGet = (locPartState == OWNING);
+        }
 
         if (fastLocGet && localGet(topVer, part))
             return null;
