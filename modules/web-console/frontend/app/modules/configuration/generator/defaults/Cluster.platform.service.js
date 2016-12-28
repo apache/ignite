@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 const enumValueMapper = (val) => _.capitalize(val);
 
 const DFLT_CLUSTER = {
@@ -38,12 +36,8 @@ const DFLT_CLUSTER = {
     }
 };
 
-export default function() {
-    this.append = (dflts) => {
-        _.merge(DFLT_CLUSTER, dflts);
-    };
-
-    this.$get = ['igniteClusterDefaults', (clusterDefaults) => {
-        return _.merge({}, clusterDefaults, DFLT_CLUSTER);
-    }];
+export default class IgniteClusterPlatformDefaults {
+    constructor() {
+        Object.assign(this, DFLT_CLUSTER);
+    }
 }

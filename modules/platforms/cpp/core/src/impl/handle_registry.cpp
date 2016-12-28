@@ -23,82 +23,66 @@ namespace ignite
 {
     namespace impl
     {
-        HandleRegistryEntry::~HandleRegistryEntry()
-        {
-            // No-op.
-        }
-
         HandleRegistrySegment::HandleRegistrySegment() : 
-            map(new std::map<int64_t, SharedPointer<HandleRegistryEntry>>()), mux(new CriticalSection())
+            map(),
+            mux()
         {
             // No-op.
         }
 
         HandleRegistrySegment::~HandleRegistrySegment()
         {
-            delete map;
-            delete mux;
+            // No-op.
         }
 
-        SharedPointer<HandleRegistryEntry> HandleRegistrySegment::Get(int64_t hnd)
+        SharedPointer<void> HandleRegistrySegment::Get(int64_t hnd)
         {
-            mux->Enter();
+            typedef std::map<int64_t, SharedPointer<void> > Map;
 
-            SharedPointer<HandleRegistryEntry> res = (*map)[hnd];
+            CsLockGuard guard(mux);
 
-            mux->Leave();
+            Map::const_iterator it = map.find(hnd);
+            if (it == map.end())
+                return SharedPointer<void>();
 
-            return res;
+            return it->second;
         }
 
-        void HandleRegistrySegment::Put(int64_t hnd, const SharedPointer<HandleRegistryEntry>& entry)
+        void HandleRegistrySegment::Put(int64_t hnd, const SharedPointer<void>& entry)
         {
-            mux->Enter();
+            CsLockGuard guard(mux);
 
-            (*map)[hnd] = entry;
-
-            mux->Leave();
+            map[hnd] = entry;
         }
 
         void HandleRegistrySegment::Remove(int64_t hnd)
         {
-            mux->Enter();
+            CsLockGuard guard(mux);
 
-            map->erase(hnd);
-
-            mux->Leave();
+            map.erase(hnd);
         }
 
         void HandleRegistrySegment::Clear()
         {
-            mux->Enter();
+            CsLockGuard guard(mux);
 
-            map->erase(map->begin(), map->end());
-
-            mux->Leave();
+            map.clear();
         }
 
-        HandleRegistry::HandleRegistry(int32_t fastCap, int32_t slowSegmentCnt)
+        HandleRegistry::HandleRegistry(int32_t fastCap, int32_t slowSegmentCnt) :
+            fastCap(fastCap),
+            fastCtr(0),
+            fast(new SharedPointer<void>[fastCap]),
+            slowSegmentCnt(slowSegmentCnt),
+            slowCtr(fastCap),
+            slow(new HandleRegistrySegment*[slowSegmentCnt]),
+            closed(0)
         {
-            this->fastCap = fastCap;
+            for (int32_t i = 0; i < fastCap; i++)
+                fast[i] = SharedPointer<void>();
 
-            fastCtr = 0;
-
-            fast = new SharedPointer<HandleRegistryEntry>[fastCap];
-
-            for (int i = 0; i < fastCap; i++)
-                fast[i] = SharedPointer<HandleRegistryEntry>();
-
-            this->slowSegmentCnt = slowSegmentCnt;
-
-            slowCtr = fastCap;
-
-            slow = new HandleRegistrySegment*[slowSegmentCnt];
-
-            for (int i = 0; i < slowSegmentCnt; i++)
+            for (int32_t i = 0; i < slowSegmentCnt; i++)
                 slow[i] = new HandleRegistrySegment();
-
-            closed = 0;
 
             Memory::Fence();
         }
@@ -115,22 +99,22 @@ namespace ignite
             delete[] slow;
         }
 
-        int64_t HandleRegistry::Allocate(const SharedPointer<HandleRegistryEntry>& target)
+        int64_t HandleRegistry::Allocate(const SharedPointer<void>& target)
         {
             return Allocate0(target, false, false);
         }
 
-        int64_t HandleRegistry::AllocateCritical(const SharedPointer<HandleRegistryEntry>& target)
+        int64_t HandleRegistry::AllocateCritical(const SharedPointer<void>& target)
         {
             return Allocate0(target, true, false);
         }
 
-        int64_t HandleRegistry::AllocateSafe(const SharedPointer<HandleRegistryEntry>& target)
+        int64_t HandleRegistry::AllocateSafe(const SharedPointer<void>& target)
         {
             return Allocate0(target, false, true);
         }
 
-        int64_t HandleRegistry::AllocateCriticalSafe(const SharedPointer<HandleRegistryEntry>& target)
+        int64_t HandleRegistry::AllocateCriticalSafe(const SharedPointer<void>& target)
         {
             return Allocate0(target, true, true);
         }
@@ -138,10 +122,10 @@ namespace ignite
         void HandleRegistry::Release(int64_t hnd)
         {
             if (hnd < fastCap)
-                fast[static_cast<int32_t>(hnd)] = SharedPointer<HandleRegistryEntry>();
+                fast[static_cast<int32_t>(hnd)] = SharedPointer<void>();
             else
             {
-                HandleRegistrySegment* segment = *(slow + hnd % slowSegmentCnt);
+                HandleRegistrySegment* segment = slow[hnd % slowSegmentCnt];
 
                 segment->Remove(hnd);
             }
@@ -149,7 +133,7 @@ namespace ignite
             Memory::Fence();
         }
 
-        SharedPointer<HandleRegistryEntry> HandleRegistry::Get(int64_t hnd)
+        SharedPointer<void> HandleRegistry::Get(int64_t hnd)
         {
             Memory::Fence();
 
@@ -157,7 +141,7 @@ namespace ignite
                 return fast[static_cast<int32_t>(hnd)];
             else
             {
-                HandleRegistrySegment* segment = *(slow + hnd % slowSegmentCnt);
+                HandleRegistrySegment* segment = slow[hnd % slowSegmentCnt];
 
                 return segment->Get(hnd);
             }
@@ -168,16 +152,16 @@ namespace ignite
             if (Atomics::CompareAndSet32(&closed, 0, 1))
             {
                 // Cleanup fast-path handles.
-                for (int i = 0; i < fastCap; i++)
-                    fast[i] = SharedPointer<HandleRegistryEntry>();
+                for (int32_t i = 0; i < fastCap; i++)
+                    fast[i] = SharedPointer<void>();
 
                 // Cleanup slow-path handles.
-                for (int i = 0; i < slowSegmentCnt; i++)
-                    (*(slow + i))->Clear();
+                for (int32_t i = 0; i < slowSegmentCnt; i++)
+                    slow[i]->Clear();
             }
         }
 
-        int64_t HandleRegistry::Allocate0(const SharedPointer<HandleRegistryEntry>& target, bool critical, bool safe)
+        int64_t HandleRegistry::Allocate0(const SharedPointer<void>& target, bool critical, bool safe)
         {
             // Check closed state.
             Memory::Fence();
@@ -201,7 +185,7 @@ namespace ignite
 
                         if (safe && closed == 1)
                         {
-                            fast[fastIdx] = SharedPointer<HandleRegistryEntry>();
+                            fast[fastIdx] = SharedPointer<void>();
 
                             return -1;
                         }
@@ -214,7 +198,7 @@ namespace ignite
             // Either allocating on slow-path, or fast-path can no longer accomodate more entries.
             int64_t slowIdx = Atomics::IncrementAndGet64(&slowCtr) - 1;
 
-            HandleRegistrySegment* segment = *(slow + slowIdx % slowSegmentCnt);
+            HandleRegistrySegment* segment = slow[slowIdx % slowSegmentCnt];
 
             segment->Put(slowIdx, target);
 
