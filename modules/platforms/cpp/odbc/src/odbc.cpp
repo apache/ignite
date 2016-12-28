@@ -512,9 +512,10 @@ namespace ignite
         int32_t res = statement->GetColumnNumber();
 
         if (columnNum)
+        {
             *columnNum = static_cast<SQLSMALLINT>(res);
-
-        LOG_MSG("columnNum: %d\n", *columnNum);
+            LOG_MSG("columnNum: %d\n", *columnNum);
+        }
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
