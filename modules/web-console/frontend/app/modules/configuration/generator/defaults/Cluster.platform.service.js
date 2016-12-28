@@ -15,18 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+const enumValueMapper = (val) => _.capitalize(val);
 
-import org.apache.ignite.internal.GridKernalContext;
+const DFLT_CLUSTER = {
+    atomics: {
+        cacheMode: {
+            clsName: 'Apache.Ignite.Core.Cache.Configuration.CacheMode',
+            mapper: enumValueMapper
+        }
+    },
+    transactionConfiguration: {
+        defaultTxConcurrency: {
+            clsName: 'Apache.Ignite.Core.Transactions.TransactionConcurrency',
+            mapper: enumValueMapper
+        },
+        defaultTxIsolation: {
+            clsName: 'Apache.Ignite.Core.Transactions.TransactionIsolation',
+            mapper: enumValueMapper
+        }
+    }
+};
 
-/**
- * Indicates whether particular file system accepts kernal context.
- */
-public interface IgfsKernalContextAware {
-    /**
-     * Set kernal context.
-     *
-     * @param ctx Kernal context.
-     */
-    public void setKernalContext(GridKernalContext ctx);
+export default class IgniteClusterPlatformDefaults {
+    constructor() {
+        Object.assign(this, DFLT_CLUSTER);
+    }
 }

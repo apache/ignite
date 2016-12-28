@@ -15,37 +15,28 @@
  * limitations under the License.
  */
 
-export default class ScanFilter {
-    static $inject = ['$rootScope', '$q', '$modal'];
+package org.apache.ignite.internal.processors.igfs;
 
-    constructor($root, $q, $modal) {
-        this.deferred = null;
-        this.$q = $q;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
-        const scope = $root.$new();
+/**
+ * The base class to block key that is used by the {@link IgfsGroupDataBlocksKeyMapper}
+ */
+public interface IgfsBaseBlockKey {
+    /**
+     * @return Block ID.
+     */
+    public long blockId();
 
-        scope.ui = {};
+    /**
+     * @return Hash based on a file identifier (path, ID, etc).
+     */
+    public int fileHash();
 
-        scope.ok = () => {
-            this.deferred.resolve({filter: scope.ui.filter, caseSensitive: !!scope.ui.caseSensitive});
-
-            this.modal.hide();
-        };
-
-        scope.$hide = () => {
-            this.modal.hide();
-
-            this.deferred.reject();
-        };
-
-        this.modal = $modal({templateUrl: '/scan-filter-input.html', scope, placement: 'center', show: false});
-    }
-
-    open() {
-        this.deferred = this.$q.defer();
-
-        this.modal.$promise.then(this.modal.show);
-
-        return this.deferred.promise;
-    }
+    /**
+     * @return Block affinity key (if any).
+     */
+    @Nullable public IgniteUuid affinityKey();
 }

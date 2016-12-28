@@ -243,7 +243,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
     /** */
-    private static final IgniteProductVersion MULTIPLE_CONN_SINCE_VER = IgniteProductVersion.fromString("1.8.0");
+    private static final IgniteProductVersion MULTIPLE_CONN_SINCE_VER = IgniteProductVersion.fromString("1.8.2");
 
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
@@ -1872,7 +1872,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (msgQueueLimit == 0)
             U.quietAndWarn(log, "Message queue limit is set to 0 which may lead to " +
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
-                "due to message queues growth on sender and reciever sides.");
+                "due to message queues growth on sender and receiver sides.");
 
         registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
 

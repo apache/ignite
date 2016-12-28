@@ -22,6 +22,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "sql_test_suite_fixture.h"
+#include "test_utils.h"
 
 using namespace ignite;
 
@@ -56,5 +57,135 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
         "SELECT i32Field FROM TestType WHERE guidField = {guid '04cc382a-0b82-f520-08d0-07a0620c0004'}", in2.i32Field);
 }
 
+BOOST_AUTO_TEST_CASE(TestByteArraySelect)
+{
+    TestType in;
+    const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
+    in.i8ArrayField.assign(data, data + sizeof(data)/sizeof(data[0]));
+    testCache.Put(1, in);
+
+    TestType out = testCache.Get(1);
+
+    BOOST_REQUIRE(in.i8ArrayField.size() == out.i8ArrayField.size());
+
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(in.i8ArrayField.begin(), in.i8ArrayField.end(), out.i8ArrayField.begin(), out.i8ArrayField.end());
+
+    CheckSingleResult<std::vector<int8_t> >("SELECT i8ArrayField FROM TestType", in.i8ArrayField);
+}
+
+BOOST_AUTO_TEST_CASE(TestByteArrayParam)
+{
+    SQLRETURN ret;
+    
+    TestType in;
+    in.i8Field = 101;
+
+    const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
+    in.i8ArrayField.assign(data, data + sizeof(data) / sizeof(data[0]));
+
+    testCache.Put(1, in);   
+
+    SQLLEN colLen = 0;
+    SQLCHAR colData = 0;
+
+    ret = SQLBindCol(stmt, 1, SQL_C_TINYINT, &colData, sizeof(colData), &colLen);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i8Field FROM TestType WHERE i8ArrayField = ?";
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    std::vector<int8_t> paramData(in.i8ArrayField);
+    SQLLEN paramLen = paramData.size();
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), 0, &paramData[0], paramData.size(), &paramLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_REQUIRE_EQUAL(colData, in.i8Field);
+    BOOST_REQUIRE_EQUAL(colLen, sizeof(colData));
+
+    ret = SQLFetch(stmt);
+    BOOST_REQUIRE(ret == SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
+{
+    SQLRETURN ret;
+
+    const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
+    std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 1;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    
+    SQLLEN paramLen = paramData.size();
+
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), 0, &paramData[0], paramData.size(), &paramLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    TestType out = testCache.Get(key);
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(out.i8ArrayField.begin(), out.i8ArrayField.end(), paramData.begin(), paramData.end());
+}
+
+BOOST_AUTO_TEST_CASE(TestByteParamInsert)
+{
+    SQLRETURN ret;
+
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";;
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 1;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int8_t data = 2;
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TINYINT, SQL_TINYINT, 0, 0, &data, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    TestType out = testCache.Get(key);
+    BOOST_REQUIRE_EQUAL(out.i8Field, data);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

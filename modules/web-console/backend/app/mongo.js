@@ -247,6 +247,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         longQueryWarningTimeout: Number,
         sqlFunctionClasses: [String],
         snapshotableIndex: Boolean,
+        queryDetailMetricsSize: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
@@ -823,7 +824,24 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             Custom: {
                 className: String
             }
-        }]
+        }],
+        deploymentSpi: {
+            kind: {type: String, enum: ['URI', 'Local', 'Custom']},
+            URI: {
+                uriList: [String],
+                temporaryDirectoryPath: String,
+                scanners: [String],
+                listener: String,
+                checkMd5: Boolean,
+                encodeUri: Boolean
+            },
+            Local: {
+                listener: String
+            },
+            Custom: {
+                className: String
+            }
+        }
     });
 
     ClusterSchema.index({name: 1, space: 1}, {unique: true});
@@ -843,13 +861,15 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             result: {type: String, enum: ['none', 'table', 'bar', 'pie', 'line', 'area']},
             pageSize: Number,
             timeLineSpan: String,
+            maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
                 unit: Number
-            }
+            },
+            qryType: String
         }]
     });
 

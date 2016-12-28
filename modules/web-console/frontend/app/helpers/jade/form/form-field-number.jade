@@ -38,7 +38,8 @@ mixin ignite-form-field-number(label, model, name, disabled, required, placehold
     .ignite-form-field
         +ignite-form-field__label(label, name, required)
         .ignite-form-field__control
-            i.tipField.icon-help(bs-tooltip='' data-title=tip)
+            if tip
+                i.tipField.icon-help(bs-tooltip='' data-title=tip)
             
             +form-field-feedback(name, 'required', 'This field could not be empty')
             +form-field-feedback(name, 'min', 'Value is less than allowable minimum: '+ min || 0)
