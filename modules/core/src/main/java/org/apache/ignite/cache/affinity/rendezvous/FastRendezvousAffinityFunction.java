@@ -77,7 +77,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
-public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
+public class FastRendezvousAffinityFunction implements AffinityFunction, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -132,7 +132,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      * Empty constructor with all defaults.
      */
-    public RendezvousAffinityFunction() {
+    public FastRendezvousAffinityFunction() {
         this(false);
     }
 
@@ -145,7 +145,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
      */
-    public RendezvousAffinityFunction(boolean exclNeighbors) {
+    public FastRendezvousAffinityFunction(boolean exclNeighbors) {
         this(exclNeighbors, DFLT_PARTITION_COUNT);
     }
 
@@ -159,7 +159,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *      of each other.
      * @param parts Total number of partitions.
      */
-    public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
+    public FastRendezvousAffinityFunction(boolean exclNeighbors, int parts) {
         this(exclNeighbors, parts, null);
     }
 
@@ -175,7 +175,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * <p>
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      */
-    public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public FastRendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this(false, parts, backupFilter);
     }
 
@@ -186,7 +186,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param parts Partitions count.
      * @param backupFilter Backup filter.
      */
-    private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
+    private FastRendezvousAffinityFunction(boolean exclNeighbors, int parts,
         IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts > 0, "parts > 0");
 
@@ -360,7 +360,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param d Message digest.
      * @param part Partition.
      * @param nodes Nodes.
-     * @param nodesHash Serialized nodes hashes.
      * @param backups Number of backups.
      * @param neighborhoodCache Neighborhood.
      * @return Assignment.
@@ -368,7 +367,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     public List<ClusterNode> assignPartition(MessageDigest d,
         int part,
         List<ClusterNode> nodes,
-        byte[][] nodesHash,
         int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
         if (nodes.size() <= 1)
@@ -383,23 +381,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
 
-            byte[] nodeHashBytes = nodesHash[i];
+            Object nodeHash = resolveNodeHash(node);
 
-            U.intToBytes(part, nodeHashBytes, 0);
-
-            d.reset();
-
-            byte[] bytes = d.digest(nodeHashBytes);
-
-            long hash =
-                (bytes[0] & 0xFFL)
-                    | ((bytes[1] & 0xFFL) << 8)
-                    | ((bytes[2] & 0xFFL) << 16)
-                    | ((bytes[3] & 0xFFL) << 24)
-                    | ((bytes[4] & 0xFFL) << 32)
-                    | ((bytes[5] & 0xFFL) << 40)
-                    | ((bytes[6] & 0xFFL) << 48)
-                    | ((bytes[7] & 0xFFL) << 56);
+            long hash = hash(nodeHash.hashCode(), part);
 
             hashArr[i] = F.t(hash, node);
         }
@@ -466,6 +450,29 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         return res;
     }
 
+    /**
+     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins
+     * hash.
+     *
+     * @param key0 Hash key.
+     * @param key1 Hash key.
+     * @see <a href="https://gist.github.com/badboy/6267743#64-bit-mix-functions">64 bit mix functions</a>
+     * @return Long hash key.
+     */
+    private static long hash(int key0, int key1) {
+        long key = (key0 & 0xFFFFFFFFL)
+            | ((key1 & 0xFFFFFFFFL) << 32);
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key ^= (key >>> 24);
+        key += (key << 3) + (key << 8); // key * 265
+        key ^= (key >>> 14);
+        key += (key << 2) + (key << 4); // key * 21
+        key ^= (key >>> 28);
+        key += (key << 31);
+        return key;
+    }
+
+
     /** {@inheritDoc} */
     @Override public void reset() {
         // No-op.
@@ -496,19 +503,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
 
-        byte[][] nodesHashes;
-        try {
-            nodesHashes = nodesHash(nodes);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
         for (int i = 0; i < parts; i++) {
             List<ClusterNode> partAssignment = assignPartition(d,
                 i,
                 nodes,
-                nodesHashes,
                 affCtx.backups(),
                 neighborhoodCache);
 
@@ -518,30 +516,29 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         return assignments;
     }
 
-    /**
-     * @param nodes Topology
-     * @return Nodes hashes
-     * @throws IgniteCheckedException On error.
-     */
-    private byte[][] nodesHash(List<ClusterNode> nodes) throws IgniteCheckedException {
-        byte[][] nodesHash = new byte[nodes.size()][];
-        for (int i = 0; i < nodes.size(); i++) {
-            ClusterNode node = nodes.get(i);
-
-            Object nodeHash = resolveNodeHash(node);
-
-            byte[] nodeHashBytes0 = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
-
-            // Add 4 bytes for partition bytes.
-            byte [] nodeHashBytes = new byte[nodeHashBytes0.length + 4];
-
-            System.arraycopy(nodeHashBytes0, 0, nodeHashBytes, 4, nodeHashBytes0.length);
-
-            nodesHash[i] = nodeHashBytes;
-        }
-
-        return nodesHash;
-    }
+//    /**
+//     * @param nodes Topology
+//     * @return Nodes hashes
+//     * @throws IgniteCheckedException On error.
+//     */
+//    private byte[][] nodesHash(List<ClusterNode> nodes) throws IgniteCheckedException {
+//        byte[][] nodesHash = new byte[nodes.size()][];
+//        for (int i = 0; i < nodes.size(); i++) {
+//            ClusterNode node = nodes.get(i);
+//
+//
+//            byte[] nodeHashBytes0 = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
+//
+//            // Add 4 bytes for partition bytes.
+//            byte [] nodeHashBytes = new byte[nodeHashBytes0.length + 4];
+//
+//            System.arraycopy(nodeHashBytes0, 0, nodeHashBytes, 4, nodeHashBytes0.length);
+//
+//            nodesHash[i] = nodeHashBytes;
+//        }
+//
+//        return nodesHash;
+//    }
 
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
