@@ -110,7 +110,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final long createTime = U.currentTimeMillis();
 
     /** Eviction history. */
-    private volatile Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
+    private final Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
 
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
@@ -451,17 +451,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (state() != MOVING)
             return false;
 
-        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
+        GridCacheVersion ver0 = evictHist.get(key);
 
-        if (evictHist0 != null) {
-            GridCacheVersion ver0 = evictHist0.get(key);
-
-            // Permit preloading if version in history
-            // is missing or less than passed in.
-            return ver0 == null || ver0.isLess(ver);
-        }
-
-        return false;
+        // Permit preloading if version in history
+        // is missing or less than passed in.
+        return ver0 == null || ver0.isLess(ver);
     }
 
     /**
@@ -532,7 +526,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                 return update;
             }
-        } else
+        }
+        else
             return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
     }
 
@@ -558,7 +553,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     log.debug("Owned partition: " + this);
 
                 // No need to keep history any more.
-                evictHist = null;
+                evictHist.clear();
 
                 return true;
             }
@@ -602,7 +597,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     log.debug("Marked partition as LOST: " + this);
 
                 // No need to keep history any more.
-                evictHist = null;
+                evictHist.clear();
 
                 return true;
             }
@@ -691,7 +686,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearEvicting() {
-       boolean free = false;
+        boolean free = false;
 
         while (true) {
             int cnt = evictGuard.get();
