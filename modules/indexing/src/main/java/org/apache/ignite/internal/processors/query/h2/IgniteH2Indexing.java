@@ -2645,12 +2645,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
             GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
 
-            boolean allowIndexSegmentation = !cctx.isReplicated();// && cctx.config().isIndexSegmentationEnabled();
+            if(queryParallelismLevel > 1 && cctx != null
+                && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled())
+                    return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, queryParallelismLevel);
 
-            if (allowIndexSegmentation && queryParallelismLevel > 1)
-                return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, queryParallelismLevel);
-            else
-                return new GridH2TreeIndex(idxName, tbl, pk, columns);
+            return new GridH2TreeIndex(idxName, tbl, pk, columns);
         }
     }
 
