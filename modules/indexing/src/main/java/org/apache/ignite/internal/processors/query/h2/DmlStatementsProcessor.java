@@ -632,7 +632,14 @@ public class DmlStatementsProcessor {
 
         Value h2Val = desc.wrap(val, objType);
 
-        return h2Val.convertTo(type).getObject();
+        Object res = h2Val.convertTo(type).getObject();
+
+        if (res instanceof Date && res.getClass() != Date.class && expCls == Date.class) {
+            // We can get a Timestamp instead of Date when converting a String to Date without query - let's handle this
+            return new Date(((Date) res).getTime());
+        }
+
+        return res;
     }
 
     /**
