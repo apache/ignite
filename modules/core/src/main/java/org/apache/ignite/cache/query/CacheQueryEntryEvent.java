@@ -45,4 +45,18 @@ public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEvent<K, V> {
      * @return Value of counter for this event.
      */
     public abstract long getPartitionUpdateCounter();
+
+    /**
+     * Cache updates on backup nodes.
+     *
+     * @return Value of remote node type for this event.
+     */
+    public abstract boolean isBackup();
+
+    /**
+     * Cache updates on primary nodes.
+     *
+     * @return Value of remote node type for this event.
+     */
+    public abstract boolean isPrimary();
 }
