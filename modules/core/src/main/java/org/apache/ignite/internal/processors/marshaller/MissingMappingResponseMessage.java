@@ -23,7 +23,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * On receiving a {@link MissingMappingRequestMessage} mapping request server node looks up class name
+ * for requested platformId and typeId in its local marshaller cache and sends back
+ * a {@link MissingMappingResponseMessage} mapping response with resolved class name.
  */
 public class MissingMappingResponseMessage implements Message {
     /** */
@@ -139,11 +141,6 @@ public class MissingMappingResponseMessage implements Message {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MissingMappingResponseMessage.class, this);
-    }
-
     /**
      *
      */
@@ -163,5 +160,10 @@ public class MissingMappingResponseMessage implements Message {
      */
     public String className() {
         return clsName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MissingMappingResponseMessage.class, this);
     }
 }

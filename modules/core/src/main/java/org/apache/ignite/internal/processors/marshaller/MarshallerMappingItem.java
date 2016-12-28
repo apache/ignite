@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  *  Used to exchange mapping information on new mapping added or missing mapping requested flows.
- *  For more information see {@link GridMarshallerMappingProcessor}
+ *  See {@link GridMarshallerMappingProcessor} javadoc for more information.
  */
 public final class MarshallerMappingItem implements Serializable {
     /** */

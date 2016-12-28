@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -465,7 +467,7 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      *
      */
-    static final class CombinedMap implements ConcurrentMap<Integer, MappedName> {
+    static final class CombinedMap extends AbstractMap<Integer, MappedName> implements ConcurrentMap<Integer, MappedName> {
         /** */
         private final ConcurrentMap<Integer, MappedName> userMap;
 
@@ -482,33 +484,38 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         /** {@inheritDoc} */
-        @Override public int size() {
-            return 0;
+        @Override public Set<Entry<Integer, MappedName>> entrySet() {
+            return null;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isEmpty() {
+        @Override public MappedName putIfAbsent(@NotNull Integer key, MappedName val) {
+            return userMap.putIfAbsent(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(@NotNull Object key, Object val) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean containsKey(Object key) {
-            return userMap.containsKey(key) || sysMap.containsKey(key);
+        @Override public boolean replace(@NotNull Integer key, @NotNull MappedName oldVal, @NotNull MappedName newVal) {
+            return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean containsValue(Object val) {
-            return false;
+        @Override public MappedName replace(@NotNull Integer key, @NotNull MappedName val) {
+            return userMap.replace(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public MappedName get(Object key) {
-            MappedName mappedName = userMap.get(key);
+            MappedName res = sysMap.get(key);
 
-            if (mappedName != null)
-                return mappedName;
+            if (res != null)
+                return res;
 
-            return sysMap.get(key);
+            return userMap.get(key);
         }
 
         /** {@inheritDoc} */
@@ -517,53 +524,8 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         /** {@inheritDoc} */
-        @Override public MappedName remove(Object key) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void putAll(Map<? extends Integer, ? extends MappedName> m) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clear() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Set<Integer> keySet() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<MappedName> values() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Set<Entry<Integer, MappedName>> entrySet() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public MappedName putIfAbsent(Integer key, MappedName val) {
-            return userMap.putIfAbsent(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean remove(Object key, Object val) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean replace(Integer key, MappedName oldVal, MappedName newVal) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public MappedName replace(Integer key, MappedName val) {
-            return userMap.replace(key, val);
+        @Override public boolean containsKey(Object key) {
+            return userMap.containsKey(key) || sysMap.containsKey(key);
         }
     }
 }

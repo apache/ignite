@@ -25,7 +25,13 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Node sends this message when it wants to propose new marshaller mapping and to ensure that there are no conflicts
+ * with this mapping on other nodes in cluster.
  *
+ * After sending this message to the cluster sending node gets blocked until mapping is either accepted or rejected.
+ *
+ * When it completes a pass around the cluster ring with no conflicts observed,
+ * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
 class MappingProposedMessage implements DiscoveryCustomMessage {
     /**

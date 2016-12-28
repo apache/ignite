@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.LinkedList;
@@ -135,6 +136,7 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
      */
     void onNodeLeft(UUID leftNodeId) {
         boolean reqAgain = false;
+
         synchronized (this) {
             if (pendingNode != null && pendingNode.id().equals(leftNodeId)) {
                 aliveSrvNodes.remove(pendingNode);

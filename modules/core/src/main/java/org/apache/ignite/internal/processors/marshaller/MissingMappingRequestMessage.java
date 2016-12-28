@@ -23,7 +23,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
+ * Client node receives discovery messages in asynchronous mode
+ * so it is possible that all server nodes already accepted new mapping but clients are unaware about it.
  *
+ * In this case it is possible for client node to receive a request to perform some operation on such class
+ * client doesn't know about its mapping.
+ * Upon receiving such request client sends an explicit {@link MissingMappingRequestMessage} mapping request
+ * to one of server nodes using CommunicationSPI and waits for {@link MissingMappingResponseMessage} response.
+ *
+ * If server node where mapping request was sent to leaves the cluster for some reason
+ * mapping request gets automatically resent to the next alive server node in topology.
  */
 public class MissingMappingRequestMessage implements Message {
     /** */
@@ -119,16 +128,12 @@ public class MissingMappingRequestMessage implements Message {
         // No-op.
     }
 
-    /**
-     *
-     */
+    /** */
     public byte platformId() {
         return platformId;
     }
 
-    /**
-     *
-     */
+    /** */
     public int typeId() {
         return typeId;
     }

@@ -34,8 +34,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
 /**
- * Carries discovery data in marshalled form and allows conveniently convert it to and from {@link DiscoveryDataBag} objects
- * which are independent from such implementation details like type of used marshaller.
+ * Carries discovery data in marshalled form and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
 public class DiscoveryDataPacket implements Serializable {
     /** */

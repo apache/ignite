@@ -844,6 +844,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
         }
+
         assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
     }
 

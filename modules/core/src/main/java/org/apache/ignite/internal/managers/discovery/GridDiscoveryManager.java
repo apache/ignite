@@ -675,7 +675,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
                         }
-
                 }
             }
         });

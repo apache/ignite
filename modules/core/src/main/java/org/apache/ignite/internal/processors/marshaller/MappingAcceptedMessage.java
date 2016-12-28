@@ -23,7 +23,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Is sent as an acknowledgement for successfully proposed new mapping (see {@link MappingProposedMessage}).
  *
+ * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
 class MappingAcceptedMessage implements DiscoveryCustomMessage {
     /** */
