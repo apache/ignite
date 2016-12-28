@@ -830,7 +830,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
             else {
                 // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
                 if (broadcastSegments == null)
-                    broadcastSegments = broadcastSegments(qctx, cctx); //TODO: replace with list of segments
+                    broadcastSegments = broadcastSegments(qctx, cctx);
 
                 segmentKeys = broadcastSegments;
             }
@@ -873,7 +873,7 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
                         batchFull = true;
             }
 
-            fut = new DoneFuture<>(new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
+            fut = new DoneFuture<Cursor>((Cursor)new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
 
             res.add(fut);
 
