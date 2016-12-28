@@ -359,6 +359,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     };
 
+    /** */
+    private int queryParallelismLevel;
+
     /**
      * @return Kernal context.
      */
@@ -1808,9 +1811,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // This is allowed in some tests.
             nodeId = UUID.randomUUID();
             marshaller = new JdkMarshaller();
+            queryParallelismLevel = 1;
         }
         else {
             this.ctx = ctx;
+
+            queryParallelismLevel = ctx.config().getSqlQueryParallelismLevel();
 
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
@@ -2637,14 +2643,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @return
          */
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
-            int segments = ctx.config().getSqlQueryParallelismLevel();
-
             GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
 
             boolean allowIndexSegmentation = !cctx.isReplicated();// && cctx.config().isIndexSegmentationEnabled();
 
-            if (allowIndexSegmentation && segments > 1)
-                return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, segments);
+            if (allowIndexSegmentation && queryParallelismLevel > 1)
+                return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, queryParallelismLevel);
             else
                 return new GridH2TreeIndex(idxName, tbl, pk, columns);
         }
