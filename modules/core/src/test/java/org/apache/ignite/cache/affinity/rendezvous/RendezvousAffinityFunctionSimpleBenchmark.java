@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Tests for {@link RendezvousAffinityFunction}.
@@ -54,13 +55,16 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     private static final String MAC_PREF = "MAC";
 
     /** Max funcs. */
-    private static final int MAX_FUNCS = 10;
+    private static final int MAX_FUNCS = 2;
 
     /** Ignite. */
     private static Ignite ignite;
 
     /** Max experiments. */
-    private static int MAX_EXPERIMENTS = 30;
+    private static int MAX_EXPERIMENTS = 100;
+
+    /** Max experiments. */
+    private TopologyModificationMode mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -110,18 +114,42 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         if (iter % 2 == 0) {
             // Add new node.
-            GridTestNode node = new GridTestNode(UUID.randomUUID());
-
-            // two neighbours nodes
-            node.setAttribute(IgniteNodeAttributes.ATTR_MACS, MAC_PREF + "_add_" + iter / 4);
-
-            nodes.add(node);
-
-            discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_JOINED, node);
+            discoEvt = addNode(nodes, iter);
         }
+        else
+            discoEvt = removeNode(nodes, nodes.size() - 1);
+
+        return new GridAffinityFunctionContextImpl(nodes,
+            prevAssignment, discoEvt, new AffinityTopologyVersion(nodes.size()), backups);
+    }
+
+    /**
+     * @param nodes Topology.
+     * @param idx Index of node to remove.
+     * @return Discovery event.
+     */
+    @NotNull private DiscoveryEvent removeNode(List<ClusterNode> nodes, int idx) {
+        return new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_LEFT, nodes.remove(idx));
+    }
+
+    /**
+     * Modify the topology by remove the first node / add new node
+     *
+     * @param nodes Topology.
+     * @param prevAssignment Previous afinity.
+     * @param iter Number of iteration.
+     * @param backups Backups count.
+     * @return Affinity context.
+     */
+    GridAffinityFunctionContextImpl nodesModificationRemoveFirst(List<ClusterNode> nodes,
+        List<List<ClusterNode>> prevAssignment, int iter, int backups) {
+        DiscoveryEvent discoEvt;
+
+        if (iter % 2 == 0)
+            discoEvt = addNode(nodes, iter);
         else {
-            // Remove last node.
-            discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_LEFT, nodes.remove(nodes.size() - 1));
+            // Remove first node.
+            discoEvt = removeNode(nodes, 0);
         }
 
         return new GridAffinityFunctionContextImpl(nodes,
@@ -129,34 +157,21 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     }
 
     /**
-     * Modify the topology by remove the first node / add new node
-     *
      * @param nodes Topology.
-     * @param iter Number of iteration.
-     * @param backups Backups count.
-     * @return Affinity context.
+     * @param iter Iteration count.
+     * @return Discovery event.
      */
-    GridAffinityFunctionContextImpl nodesModificationRemoveFirst(List<ClusterNode> nodes, int iter, int backups) {
-        DiscoveryEvent discoEvt;
+    @NotNull private DiscoveryEvent addNode(List<ClusterNode> nodes, int iter) {
+        DiscoveryEvent discoEvt;// Add new node.
+        GridTestNode node = new GridTestNode(UUID.randomUUID());
 
-        if (iter % 2 == 0) {
-            // Add new node.
-            GridTestNode node = new GridTestNode(UUID.randomUUID());
+        // two neighbours nodes
+        node.setAttribute(IgniteNodeAttributes.ATTR_MACS, MAC_PREF + "_add_" + iter / 4);
 
-            // two neighbours nodes
-            node.setAttribute(IgniteNodeAttributes.ATTR_MACS, MAC_PREF + "_add_" + iter / 4);
+        nodes.add(node);
 
-            nodes.add(node);
-
-            discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_JOINED, node);
-        }
-        else {
-            // Remove first node.
-            discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_LEFT, nodes.remove(0));
-        }
-
-        return new GridAffinityFunctionContextImpl(nodes,
-            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups);
+        discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_JOINED, node);
+        return discoEvt;
     }
 
     /**
@@ -170,7 +185,28 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      */
     private IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions(AffinityFunction aff,
         List<ClusterNode> nodes, List<List<ClusterNode>> prevAssignment, int backups, int iter) {
-        GridAffinityFunctionContextImpl ctx = nodesModificationRemoveLast(nodes, prevAssignment, iter, backups);
+
+        GridAffinityFunctionContextImpl ctx = null;
+        switch (mode) {
+            case CHANGE_LAST_NODE:
+                ctx = nodesModificationRemoveLast(nodes, prevAssignment, iter, backups);
+                break;
+            case CHANGE_FIRST_NODE:
+                ctx = nodesModificationRemoveFirst(nodes, prevAssignment, iter, backups);
+                break;
+
+            case ADD:
+                ctx = new GridAffinityFunctionContextImpl(nodes,
+                    prevAssignment, addNode(nodes, iter), new AffinityTopologyVersion(nodes.size()), backups);
+                break;
+
+            case REMOVE_RANDOM:
+                ctx = new GridAffinityFunctionContextImpl(nodes,
+                    prevAssignment, removeNode(nodes, nodes.size() - 1),
+                    new AffinityTopologyVersion(nodes.size()), backups);
+                break;
+
+        }
 
         long start = System.currentTimeMillis();
 
@@ -298,14 +334,15 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @throws IOException On error.
      */
     public void testDistribution() throws IOException {
-        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff = new RendezvousAffinityFunction(true, 256);
 
         GridTestUtils.setFieldValue(aff, "ignite", ignite);
 
-        affinityDistribution(new FairAffinityFunction(true, 256), aff);
 
-        affinityDistribution(new FairAffinityFunction(true, 256),
+        affinityDistribution(aff,
             new FastRendezvousAffinityFunction(true, 1024));
+//        affinityDistribution(new FairAffinityFunction(true, 256),
+//            aff);
     }
 
     /**
@@ -314,30 +351,35 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param aff1 Affinity function to compare.
      */
     private void affinityDistribution(AffinityFunction aff0, AffinityFunction aff1) {
-        int[] nodesCnts = {3, 64, 100, 128, 200, 256, 300, 400, 500, 600};
+        int[] nodesCnts = {5, 64, 100, 128, 200, 256, 300, 400, 500, 600};
 
         for (int nodesCnt : nodesCnts) {
-            List<ClusterNode> nodes_old = createBaseNodes(nodesCnt);
-            List<ClusterNode> nodes_new = createBaseNodes(nodesCnt);
+            List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
+            List<ClusterNode> nodes1 = createBaseNodes(nodesCnt);
 
-            assignPartitions(aff0, nodes_old, null, 2, 0).get2();
-            List<List<ClusterNode>> lst_old = assignPartitions(aff0, nodes_old, null, 2, 1).get2();
+            assignPartitions(aff0, nodes0, null, 2, 0).get2();
+            List<List<ClusterNode>> lst0 = assignPartitions(aff0, nodes0, null, 2, 1).get2();
 
-            assignPartitions(aff1, nodes_new, null, 2, 0).get2();
-            List<List<ClusterNode>> lst_new = assignPartitions(aff1, nodes_new, null, 2, 1).get2();
+            assignPartitions(aff1, nodes1, null, 2, 0).get2();
+            List<List<ClusterNode>> lst1 = assignPartitions(aff1, nodes1, null, 2, 1).get2();
 
-            List<List<Integer>> oldDist = freqDistribution(lst_old, nodes_old);
-            List<List<Integer>> newDist = freqDistribution(lst_new, nodes_new);
+            List<List<Integer>> dist0 = freqDistribution(lst0, nodes0);
+            List<List<Integer>> dist1 = freqDistribution(lst1, nodes1);
 
             info(String.format("Chi^2. Test %d nodes. %s: %f; %s: %f;",
                 nodesCnt,
                 aff0.getClass().getSimpleName(),
-                chiSquare(oldDist, aff0.partitions(), 1.0 / nodesCnt),
+                chiSquare(dist0, aff0.partitions(), 1.0 / nodesCnt),
                 aff1.getClass().getSimpleName(),
-                chiSquare(newDist, aff0.partitions(), 1.0 / nodesCnt)));
+                chiSquare(dist1, aff0.partitions(), 1.0 / nodesCnt)));
 
-//            printDistribution(oldDist, ".old", (double)affOld.partitions() / nodesCnts[nodesCntIdx]);
-//            printDistribution(newDist, ".new", (double)affNew.partitions() / nodesCnts[nodesCntIdx]);
+            try {
+                printDistribution(dist0, "." + aff0.getClass().getSimpleName(), (double)aff0.partitions() / nodesCnt);
+                printDistribution(dist1, "." + aff1.getClass().getSimpleName(), (double)aff1.partitions() / nodesCnt);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -347,15 +389,15 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmark() {
         affinityBenchmark(new Factory<AffinityFunction>() {
             @Override public AffinityFunction create() {
-                AffinityFunction aff = new RendezvousAffinityFunctionOld(true);
+                AffinityFunction aff = new FairAffinityFunction(true, 1024);
 
-                GridTestUtils.setFieldValue(aff, "ignite", ignite);
+//                GridTestUtils.setFieldValue(aff, "ignite", ignite);
 
                 return aff;
             }
         }, new Factory<AffinityFunction>() {
             @Override public AffinityFunction create() {
-                AffinityFunction aff = new FastRendezvousAffinityFunction(true);
+                AffinityFunction aff = new FastRendezvousAffinityFunction(true, 1024);
 
                 GridTestUtils.setFieldValue(aff, "ignite", ignite);
 
@@ -367,7 +409,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
-    public void testAffinityBenchmarFastVsNew() {
+    public void testAffinityBenchmarkFastVsNew() {
+        mode = TopologyModificationMode.ADD;
+
         affinityBenchmark(new Factory<AffinityFunction>() {
             @Override public AffinityFunction create() {
                 AffinityFunction aff = new FairAffinityFunction(true);
@@ -392,7 +436,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param affFactoryNew Factory to create affinity function.
      */
     private void affinityBenchmark(Factory<AffinityFunction> affFactoryOld, Factory<AffinityFunction> affFactoryNew) {
-        int[] nodesCnts = {100, 63, 100, 200, 300, 400, 500, 600};
+        int[] nodesCnts = {10, 2, 100, 200, 300, 400, 500, 600};
 
         List<AffinityFunction> funcListOld = new ArrayList<>();
         List<AffinityFunction> funcListNew = new ArrayList<>();
@@ -423,7 +467,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                     times_old.add(aa.get1());
                 }
             }
-
 
             prevAssignment = null;
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
@@ -521,5 +564,15 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 aff1.getClass().getSimpleName(),
                 (double)diffCntNew / (MAX_EXPERIMENTS - 1)));
         }
+    }
+
+    /**
+     *
+     */
+    private enum TopologyModificationMode {
+        CHANGE_LAST_NODE,
+        CHANGE_FIRST_NODE,
+        ADD,
+        REMOVE_RANDOM
     }
 }
