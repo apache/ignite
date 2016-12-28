@@ -35,6 +35,8 @@ public class GridPerformanceSuggestions {
     /** */
     private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
 
+    private static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
+
     /** */
     private final Collection<String> perfs = !disabled ? new LinkedHashSet<String>() : null;
 
@@ -83,6 +85,9 @@ public class GridPerformanceSuggestions {
 
             perfs.clear();
         }
+        U.quietAndInfo(log, "");
+        U.quietAndInfo(log, "Get more information on performance tuning: " + SUGGESTIONS_LINK);
+        U.quietAndInfo(log, "");
     }
 
     /** {@inheritDoc} */
