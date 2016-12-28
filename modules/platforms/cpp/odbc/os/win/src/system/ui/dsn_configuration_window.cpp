@@ -17,6 +17,8 @@
 
 #include <Windowsx.h>
 
+#include "ignite/odbc/log.h"
+
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
 
 namespace ignite

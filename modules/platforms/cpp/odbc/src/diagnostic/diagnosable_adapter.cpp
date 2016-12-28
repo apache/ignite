@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 

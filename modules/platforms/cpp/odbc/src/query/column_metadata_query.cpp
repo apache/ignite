@@ -20,6 +20,7 @@
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 
 namespace

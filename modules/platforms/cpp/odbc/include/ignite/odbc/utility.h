@@ -35,19 +35,6 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
 
-
-extern FILE* log_file;
-bool logInit();
-
-#   define LOG_MSG(param)                                 \
-    if (logInit())                                        \
-    {                                                     \
-        std::stringstream builder;                        \
-        builder << __FUNCTION__ << ": " << param << "\n"; \
-        fputs(builder.str().c_str(), log_file);           \
-        fflush(log_file);                                 \
-    }
-
 namespace ignite
 {
     namespace utility

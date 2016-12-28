@@ -17,6 +17,8 @@
 
 #include "ignite/odbc.h"
 
+#include "ignite/odbc/log.h"
+
 #include "ignite/odbc/utility.h"
 
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,

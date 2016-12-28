@@ -20,6 +20,7 @@
 #include <cstring>
 #include <algorithm>
 
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 

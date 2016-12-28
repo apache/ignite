@@ -17,6 +17,7 @@
 
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/query/data_query.h"
 
 namespace ignite

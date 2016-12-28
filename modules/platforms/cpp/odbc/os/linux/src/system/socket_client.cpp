@@ -27,6 +27,7 @@
 
 #include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/log.h"
 
 #define SOCKET_ERROR (-1)
 

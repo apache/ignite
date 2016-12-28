@@ -21,6 +21,7 @@
 
 #include <ignite/common/fixed_size_array.h>
 
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
