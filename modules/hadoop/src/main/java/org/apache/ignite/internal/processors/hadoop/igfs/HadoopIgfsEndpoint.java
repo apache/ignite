@@ -24,9 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -108,8 +106,7 @@ public class HadoopIgfsEndpoint {
                 igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
 
                 if (authTokens.length == 2)
-                    LOG.warn("Grid name is not used but it is defined at connection string. " +
-                        "This format is deprecated. [connStr=" + connStr + ']');
+                    LOG.warn("Grid name defined in connection string is deprecated and will be ignored: " + connStr);
                 else if (authTokens.length > 2)
                     throw new IgniteCheckedException("Invalid connection string format: " + connStr);
             }
