@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -2103,17 +2102,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                DiscoveryDataPacket dataContainer = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
-                if (dataContainer != null) {
-                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificData");
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
+                if (dataPacket != null) {
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
 
                     checkDiscoData(discoData, msg);
                 }
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                DiscoveryDataPacket dataContainer = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
-                if (dataContainer != null) {
-                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataContainer, "nodeSpecificData");
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+                if (dataPacket != null) {
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
 
                     checkDiscoData(discoData, msg);
                 }

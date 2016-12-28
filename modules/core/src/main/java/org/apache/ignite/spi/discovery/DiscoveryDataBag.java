@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
@@ -144,6 +145,11 @@ public class DiscoveryDataBag {
     /** */
     private UUID joiningNodeId;
 
+    /**
+     * Component IDs with already initialized common discovery data.
+     */
+    private Set<Integer> cmnDataInitializedCmps;
+
     /** */
     private Map<Integer, Serializable> joiningNodeData = new HashMap<>();
 
@@ -164,6 +170,15 @@ public class DiscoveryDataBag {
      */
     public DiscoveryDataBag(UUID joiningNodeId) {
         this.joiningNodeId = joiningNodeId;
+    }
+
+    /**
+     * @param joiningNodeId Joining node id.
+     * @param cmnDataInitializedCmps Component IDs with already initialized common discovery data.
+     */
+    public DiscoveryDataBag(UUID joiningNodeId, Set<Integer> cmnDataInitializedCmps) {
+        this.joiningNodeId = joiningNodeId;
+        this.cmnDataInitializedCmps = cmnDataInitializedCmps;
     }
 
     /**
@@ -224,7 +239,9 @@ public class DiscoveryDataBag {
      * @param cmpId Cmp id.
      */
     public boolean commonDataCollectedFor(Integer cmpId) {
-        return commonData.containsKey(cmpId);
+        assert cmnDataInitializedCmps != null;
+
+        return cmnDataInitializedCmps.contains(cmpId);
     }
 
     /**

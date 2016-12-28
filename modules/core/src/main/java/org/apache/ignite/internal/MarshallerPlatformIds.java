@@ -18,12 +18,13 @@
 package org.apache.ignite.internal;
 
 /**
- * Constants for {@link org.apache.ignite.marshaller.MarshallerContext}.
+ * Constants for platform IDs to feed into {@link org.apache.ignite.marshaller.MarshallerContext}.
  */
 public final class MarshallerPlatformIds {
-
+    /** */
     public static final byte JAVA_ID = 0;
 
+    /** */
     private MarshallerPlatformIds() {
     }
 }

@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- *
+ * Tests for client requesting missing mappings from server nodes with and without server nodes failures.
  */
 public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCommonAbstractTest {
     /**

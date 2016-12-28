@@ -72,23 +72,30 @@ public class DiscoveryDataPacket implements Serializable {
      * @param marsh Marsh.
      * @param log Logger.
      */
-    public void marshalFromDataBag(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, IgniteLogger log) {
-        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, log);
-
+    public void marshalGridNodeData(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, IgniteLogger log) {
         marshalData(bag.commonData(), commonData, marsh, log);
 
-        Map<Integer, Serializable> currNodeSpecificData = bag.localNodeSpecificData();
+        Map<Integer, Serializable> locNodeSpecificData = bag.localNodeSpecificData();
 
-        if (currNodeSpecificData != null) {
-            Map<Integer, byte[]> marshCurrNodeSpecData = U.newHashMap(currNodeSpecificData.size());
+        if (locNodeSpecificData != null) {
+            Map<Integer, byte[]> marshLocNodeSpecificData = U.newHashMap(locNodeSpecificData.size());
 
-            marshalData(currNodeSpecificData, marshCurrNodeSpecData, marsh, log);
+            marshalData(locNodeSpecificData, marshLocNodeSpecificData, marsh, log);
 
-            filterDuplicatedData(marshCurrNodeSpecData);
+            filterDuplicatedData(marshLocNodeSpecificData);
 
-            if (!marshCurrNodeSpecData.isEmpty())
-                nodeSpecificData.put(nodeId, marshCurrNodeSpecData);
+            if (!marshLocNodeSpecificData.isEmpty())
+                nodeSpecificData.put(nodeId, marshLocNodeSpecificData);
         }
+    }
+
+    /**
+     * @param bag Bag.
+     * @param marsh Marsh.
+     * @param log Logger.
+     */
+    public void marshalJoiningNodeData(DiscoveryDataBag bag, Marshaller marsh, IgniteLogger log) {
+        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, log);
     }
 
     /**
@@ -293,5 +300,13 @@ public class DiscoveryDataPacket implements Serializable {
             if (discoData.isEmpty())
                 break;
         }
+    }
+
+    /**
+     * Returns {@link DiscoveryDataBag} aware of components with already initialized common data
+     * (e.g. on nodes prior in cluster to the one where this method is called).
+     */
+    public DiscoveryDataBag bagForDataCollection() {
+        return new DiscoveryDataBag(joiningNodeId, commonData.keySet());
     }
 }

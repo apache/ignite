@@ -1685,14 +1685,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         if (locNode.isDaemon())
             return dataPacket;
 
+        assert dataPacket != null;
+        assert dataPacket.joiningNodeId() != null;
+
         //create data bag, pass it to exchange.collect
-        DiscoveryDataBag dataBag = new DiscoveryDataBag(dataPacket.joiningNodeId());
+        DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
         exchange.collect(dataBag);
 
         //marshall collected bag into packet, return packet
-
-        dataPacket.marshalFromDataBag(dataBag, locNode.id(), marshaller(), log);
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataPacket.marshalJoiningNodeData(dataBag, marshaller(), log);
+        else
+            dataPacket.marshalGridNodeData(dataBag, locNode.id(), marshaller(), log);
 
         return dataPacket;
     }
@@ -1705,7 +1710,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         if (locNode.isDaemon())
             return;
 
+        assert dataPacket != null;
+        assert dataPacket.joiningNodeId() != null;
+
         DiscoveryDataBag dataBag;
+
         if (dataPacket.joiningNodeId().equals(locNode.id()))
             dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.isClient(), log);
         else
