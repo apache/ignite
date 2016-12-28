@@ -399,6 +399,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
             Assert.AreEqual(startTime3, tx.StartTime);
+
+            // Check defaults.
+            tx = Transactions.TxStart();
+
+            Assert.AreEqual(Transactions.DefaultTransactionConcurrency, tx.Concurrency);
+            Assert.AreEqual(Transactions.DefaultTransactionIsolation, tx.Isolation);
+            Assert.AreEqual(Transactions.DefaultTimeout, tx.Timeout);
+
+            tx.Commit();
         }
 
         /// <summary>
