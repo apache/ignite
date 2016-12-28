@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInput;
@@ -150,8 +151,37 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public String readLine() throws IOException {
-        // TODO: Create ticket!
-        throw new UnsupportedOperationException();
+        if (pos == buf.length)
+            return null;
+
+        SB sb = new SB();
+
+        while (pos < buf.length) {
+            char c = (char)readByte();
+
+            switch (c) {
+                case '\n':
+                    return sb.toString();
+
+                case '\r':
+                    if (pos == buf.length)
+                        return sb.toString();
+
+                    c = (char)readByte();
+
+                    if (c == '\n')
+                        return sb.toString();
+                    else
+                        pos--;
+
+                    return sb.toString();
+
+                default:
+                    sb.a(c);
+            }
+        }
+
+        return sb.toString();
     }
 
     /** {@inheritDoc} */

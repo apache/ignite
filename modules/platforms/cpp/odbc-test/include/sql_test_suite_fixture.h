@@ -192,6 +192,9 @@ namespace ignite
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE

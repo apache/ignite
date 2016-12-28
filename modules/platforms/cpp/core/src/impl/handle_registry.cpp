@@ -37,7 +37,7 @@ namespace ignite
 
         SharedPointer<void> HandleRegistrySegment::Get(int64_t hnd)
         {
-            typedef std::map<int64_t, SharedPointer<void>> Map;
+            typedef std::map<int64_t, SharedPointer<void> > Map;
 
             CsLockGuard guard(mux);
 

@@ -362,7 +362,7 @@ void CheckGetAllFail(QueryCursor<int, QueryPerson>& cur)
 {
     try 
     {
-        std::vector<CacheEntry<int, QueryPerson>> res;
+        std::vector<CacheEntry<int, QueryPerson> > res;
 
         cur.GetAll(res);
 
@@ -406,7 +406,7 @@ void CheckEmpty(QueryFieldsCursor& cur)
  */
 void CheckEmptyGetAll(QueryCursor<int, QueryPerson>& cur)
 {
-    std::vector<CacheEntry<int, QueryPerson>> res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
     cur.GetAll(res);
 
@@ -478,7 +478,7 @@ void CheckSingle(QueryFieldsCursor& cur, int key, const std::string& name, int a
  */
 void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
-    std::vector<CacheEntry<int, QueryPerson>> res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
     cur.GetAll(res);
 
@@ -555,7 +555,7 @@ void CheckMultiple(QueryCursor<int, QueryPerson>& cur, int key1, const std::stri
 void CheckMultipleGetAll(QueryCursor<int, QueryPerson>& cur, int key1, const std::string& name1,
     int age1, int key2, const std::string& name2, int age2)
 {
-    std::vector<CacheEntry<int, QueryPerson>> res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
     cur.GetAll(res);
 
