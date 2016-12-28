@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 
 /**
