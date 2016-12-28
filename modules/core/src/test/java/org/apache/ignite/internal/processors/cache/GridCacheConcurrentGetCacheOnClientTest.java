@@ -32,7 +32,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
-public class GridCacheConcurrentGetCacheOnClient extends GridCommonAbstractTest{
+public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractTest{
     /** Ip finder. */
     private final static TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
