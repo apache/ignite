@@ -247,12 +247,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len)
-        throws IgniteException {
-        return target.affinity(path, start, len);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
         long maxLen) throws IgniteException {
         return target.affinity(path, start, len, maxLen);
