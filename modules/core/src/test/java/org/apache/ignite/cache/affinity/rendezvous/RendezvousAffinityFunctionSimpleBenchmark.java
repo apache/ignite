@@ -57,10 +57,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /** Max funcs. */
     private static final int MAX_FUNCS = 10;
 
-    /** Compatibility version. */
-    private static final IgniteProductVersion compatibilityVersion
-        = new IgniteProductVersion((byte)1, (byte)6, (byte)0, 0L, null);
-
     /** Ignite. */
     private static Ignite ignite;
 
@@ -105,12 +101,10 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      *
      * @param nodes Topology.
      * @param iter Number of iteration.
-     * @param newVer Flag to setup latest version at the context.
      * @param backups Backups count.
      * @return Affinity context.
      */
-    GridAffinityFunctionContextImpl nodesModificationRemoveLast(List<ClusterNode> nodes, int iter, int backups,
-        boolean newVer) {
+    GridAffinityFunctionContextImpl nodesModificationRemoveLast(List<ClusterNode> nodes, int iter, int backups) {
         DiscoveryEvent discoEvt;
 
         if (iter % 2 == 0) {
@@ -130,8 +124,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         return new GridAffinityFunctionContextImpl(nodes,
-            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups,
-            (newVer) ? null : compatibilityVersion);
+            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups);
     }
 
     /**
@@ -164,8 +157,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         return new GridAffinityFunctionContextImpl(nodes,
-            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups,
-            (newVersion) ? null : compatibilityVersion);
+            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups);
     }
 
     /**

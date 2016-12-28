@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,22 +43,17 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** Number of backups to assign. */
     private final int backups;
 
-    /** The version of the oldest node in topology. Used to check nodes compatibility. */
-    private final IgniteProductVersion oldestNodeVersion;
-
-
     /**
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
      */
     public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
-        DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups, IgniteProductVersion oldestNodeVersion) {
+        DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups) {
         this.topSnapshot = topSnapshot;
         this.prevAssignment = prevAssignment;
         this.discoEvt = discoEvt;
         this.topVer = topVer;
         this.backups = backups;
-        this.oldestNodeVersion = oldestNodeVersion;
     }
 
     /** {@inheritDoc} */
@@ -94,10 +88,5 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
      */
     public List<List<ClusterNode>> prevAssignment() {
         return prevAssignment;
-    }
-
-    /** {@inheritDoc} */
-    public IgniteProductVersion oldestNodeVersion() {
-        return oldestNodeVersion;
     }
 }

@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,7 +68,4 @@ public interface AffinityFunctionContext {
      *      not available.
      */
     @Nullable public DiscoveryEvent discoveryEvent();
-
-    /** The version of the oldest node in topology. Used to check nodes compatibility. */
-    IgniteProductVersion oldestNodeVersion();
 }

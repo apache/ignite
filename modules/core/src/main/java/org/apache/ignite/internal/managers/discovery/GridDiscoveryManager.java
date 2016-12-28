@@ -1560,11 +1560,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCache().allNodes().size();
     }
 
-    /** @return The version of the oldest node in the topology. */
-    public IgniteProductVersion oldestNodeVersion() {
-        return discoCache().oldestNodeVersion();
-    }
-
     /**
      * Gets all nodes for given topology version.
      *
@@ -2561,11 +2556,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final ConcurrentSkipListMap<ClusterNode, Boolean> aliveSrvNodesWithCaches;
 
         /**
-         * The version of the oldest node in topology. Used to check nodes compatibility.
-         */
-        private IgniteProductVersion oldestNodeVersion;
-
-        /**
          * @param loc Local node.
          * @param rmts Remote nodes.
          */
@@ -2605,7 +2595,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             List<ClusterNode> srvNodes = new ArrayList<>();
 
-            oldestNodeVersion = new IgniteProductVersion(Byte.MAX_VALUE, Byte.MAX_VALUE, Byte.MAX_VALUE, Long.MAX_VALUE, null);
             for (ClusterNode node : allNodes) {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
                 assert !node.isDaemon();
@@ -2666,10 +2655,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 nodes.add(node);
-
-                if (node.version().compareTo(oldestNodeVersion) < 0) {
-                    oldestNodeVersion = node.version();
-                }
             }
 
             Collections.sort(srvNodes, CU.nodeComparator(true));
@@ -2921,13 +2906,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         @Nullable ClusterNode node(UUID id) {
             return nodeMap.get(id);
-        }
-
-        /**
-         * @return The version of the oldest node in topology. Used to check nodes compatibility.
-         */
-        public IgniteProductVersion oldestNodeVersion() {
-            return oldestNodeVersion;
         }
 
         /** {@inheritDoc} */

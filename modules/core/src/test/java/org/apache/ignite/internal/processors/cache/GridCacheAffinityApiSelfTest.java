@@ -108,7 +108,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
     public void testPrimaryPartitionsOneNode() throws Exception {
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -151,7 +151,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -182,7 +182,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -216,7 +216,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -239,7 +239,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         AffinityFunction aff = affinity();
 
@@ -258,7 +258,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         AffinityFunction aff = affinity();
 
@@ -278,7 +278,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         AffinityFunction aff = affinity();
 
@@ -303,7 +303,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1, null);
+                new AffinityTopologyVersion(1), 1);
 
         AffinityFunction aff = affinity();
 
