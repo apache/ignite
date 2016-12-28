@@ -307,7 +307,7 @@ namespace ignite
 
             void CacheImpl::Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_INVOKE, inOp, outOp, err);
+                OutInOpX(OP_INVOKE, inOp, outOp, err);
             }
 
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError& err)

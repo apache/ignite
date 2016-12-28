@@ -483,9 +483,9 @@ BOOST_AUTO_TEST_CASE(TestExisting)
 
     int res = cache.Invoke<int>(5, ced, 4);
 
-    BOOST_REQUIRE(res == 22);
+    BOOST_CHECK_EQUAL(res, 22);
 
-    BOOST_REQUIRE(cache.Get(5) == 11);
+    BOOST_CHECK_EQUAL(cache.Get(5), 11);
 }
 
 /**

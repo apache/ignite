@@ -172,6 +172,14 @@ namespace ignite
                  * @param outOp Output operation.
                  */
                 void ReadFrom(interop::InteropMemory* mem, OutputOperation& outOp);
+
+                /**
+                 * Read error data from memory.
+                 *
+                 * @param mem Memory.
+                 * @param err Error.
+                 */
+                void ReadError(interop::InteropMemory* mem, IgniteError& err);
             };
         }
     }    

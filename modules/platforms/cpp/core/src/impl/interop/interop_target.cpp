@@ -82,10 +82,22 @@ namespace ignite
             void InteropTarget::ReadFrom(InteropMemory* mem, OutputOperation& outOp)
             {
                 InteropInputStream in(mem);
-
                 BinaryReaderImpl reader(&in);
 
                 outOp.ProcessOutput(reader);
+            }
+
+            void InteropTarget::ReadError(InteropMemory* mem, IgniteError& err)
+            {
+                InteropInputStream in(mem);
+                BinaryReaderImpl reader(&in);
+
+                // Reading and skipping error class name.
+                reader.ReadObject<std::string>();
+
+                std::string msg = reader.ReadObject<std::string>();
+
+                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
             }
 
             bool InteropTarget::OutOp(int32_t opType, InputOperation& inOp, IgniteError& err)
@@ -193,8 +205,10 @@ namespace ignite
                         ReadFrom(outInMem.Get(), outOp);
                     else if (res == ResultNull)
                         outOp.SetNull();
-
-                    //Read and process error if res == ResultError here.
+                    else if (res == ResultError)
+                        ReadError(outInMem.Get(), err);
+                    else
+                        assert(false);
                 }
             }
 
