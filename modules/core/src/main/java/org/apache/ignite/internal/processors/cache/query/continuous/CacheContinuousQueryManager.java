@@ -1235,6 +1235,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isBackup() { return false; }
+
+        /** {@inheritDoc} */
+        @Override public boolean isPrimary() { return false; }
+
+        /** {@inheritDoc} */
         @Override public Object getOldValue() {
             return null;
         }
