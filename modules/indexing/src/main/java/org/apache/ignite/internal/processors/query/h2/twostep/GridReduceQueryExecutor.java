@@ -545,6 +545,8 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
+            final int indexSegments = h2.isSegmentedIndex(cctx) ? sqlQryParallelismLvl : 1;
+
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
@@ -565,12 +567,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes, sqlQryParallelismLvl);
+                idx.setSources(nodes, indexSegments);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * sqlQryParallelismLvl);
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * indexSegments);
 
             runs.put(qryReqId, r);
 
@@ -626,7 +628,7 @@ public class GridReduceQueryExecutor {
                             .tables(distributedJoins ? qry.tables() : null)
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
-                            .threads(sqlQryParallelismLvl)
+                            .threads(indexSegments)
                             .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
                             .timeout(timeoutMillis),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,

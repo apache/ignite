@@ -54,7 +54,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1365,16 +1364,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         assert cctx != null;
 
-        final boolean isSegmented = cctx.config().isIndexSegmentationEnabled();
+        final boolean expected = isSegmentedIndex(cctx);
 
         for (int i = 1; i < caches.size(); i++) {
             cctx = sharedContext.cacheContext(caches.get(i));
 
             assert cctx !=null;
 
-            if (cctx.config().isIndexSegmentationEnabled() != isSegmented)
+            if (isSegmentedIndex(cctx) != expected)
                 throw new IllegalStateException("Using segmented and non-segmented index forbidden.");
         }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @return {@code True} if index is segmented, otherwise {@code False}.
+     */
+    public boolean isSegmentedIndex(GridCacheContext cctx) {
+        return !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled();
     }
 
     /**
