@@ -116,6 +116,10 @@ export class Bean extends EmptyBean {
         return this._property(this.arguments, 'int', model, null, _.nonNil);
     }
 
+    boolConstructorArgument(model) {
+        return this._property(this.arguments, 'boolean', model, null, _.nonNil);
+    }
+
     classConstructorArgument(model) {
         return this._property(this.arguments, 'java.lang.Class', model, null, _.nonEmpty);
     }
