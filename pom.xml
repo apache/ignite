@@ -363,19 +363,19 @@
                                             </fileset>
                                         </delete>
 
-                                        <mkdir dir="${basedir}/target/release-package/benchmarks/src" />
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/src" />
 
-                                        <copy todir="${basedir}/target/release-package/benchmarks/src/">
+                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/src/">
                                             <fileset dir="${basedir}/modules/yardstick/src"/>
                                         </copy>
 
                                         <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
-                                              tofile="${basedir}/target/release-package/benchmarks/pom.xml"/>
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
 
                                         <copy file="${basedir}/modules/yardstick/README-standalone.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt"/>
 
-                                        <replaceregexp file="${basedir}/target/release-package/benchmarks/pom.xml" byline="true">
+                                        <replaceregexp file="${basedir}/target/release-package/benchmarks/sources/pom.xml" byline="true">
                                             <regexp pattern="to_be_replaced_by_ignite_version" />
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
