@@ -14,52 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Helper wrapper containing StringBuilder and additional values. Stored as a thread-local variable.
+ * IncludeSensitiveAtomicTest with ATOMIC mode
+ *
+ * @author Alexandr Kuramshin <ein.nsk.ru@gmail.com>
  */
-class GridToStringThreadLocal {
-    /** */
-    private SB sb = new SB(256);
+public class IncludeSensitiveAtomicTest extends IncludeSensitiveTest {
 
-    /** */
-    private Object[] addNames = new Object[5];
-
-    /** */
-    private Object[] addVals = new Object[5];
-
-    /** */
-    private boolean[] addSens = new boolean[5];
-
-    /**
-     * @return String builder.
-     */
-    SB getStringBuilder() {
-        return sb;
-    }
-
-    /**
-     * @return Additional names.
-     */
-    Object[] getAdditionalNames() {
-        return addNames;
-    }
-
-    /**
-     * @return Additional values.
-     */
-    Object[] getAdditionalValues() {
-        return addVals;
-    }
-
-    /**
-     * @return Additional values.
-     */
-    boolean[] getAdditionalSensitives() {
-        return addSens;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }
