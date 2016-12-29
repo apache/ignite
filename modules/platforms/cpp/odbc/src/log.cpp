@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <cstdlib>
+
 #include "ignite/odbc/log.h"
 
 namespace ignite
