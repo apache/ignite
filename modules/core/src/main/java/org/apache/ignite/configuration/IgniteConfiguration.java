@@ -213,7 +213,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for late affinity assignment flag. */
-    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = false;
 
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;

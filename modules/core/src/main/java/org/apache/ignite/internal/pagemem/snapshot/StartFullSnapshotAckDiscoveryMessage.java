@@ -32,6 +32,9 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Message. */
+    private final String msg;
+
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -47,8 +50,10 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     /** */
     private UUID initiatorNodeId;
 
+    /** Full snapshot. */
     private boolean fullSnapshot;
 
+    /** Last full snapshot id for cache. */
     private Map<Integer, Long> lastFullSnapshotIdForCache;
 
     /**
@@ -59,13 +64,14 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     public StartFullSnapshotAckDiscoveryMessage(long globalSnapshotId, boolean fullSnapshot,
         Map<Integer, Long> lastFullSnapshotIdForCache,
         Collection<String> cacheNames, Exception err,
-        UUID initiatorNodeId) {
+        UUID initiatorNodeId, String msg) {
         this.globalSnapshotId = globalSnapshotId;
         this.fullSnapshot = fullSnapshot;
         this.lastFullSnapshotIdForCache = lastFullSnapshotIdForCache;
         this.err = err;
         this.cacheNames = cacheNames;
         this.initiatorNodeId = initiatorNodeId;
+        this.msg = msg;
     }
 
     /**
@@ -108,10 +114,23 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
         return globalSnapshotId;
     }
 
+    /**
+     *
+     */
     public boolean fullSnapshot() {
         return fullSnapshot;
     }
 
+    /**
+     *
+     */
+    public String message() {
+        return msg;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     */
     @Nullable public Long lastFullSnapshotId(int cacheId) {
         return lastFullSnapshotIdForCache.get(cacheId);
     }

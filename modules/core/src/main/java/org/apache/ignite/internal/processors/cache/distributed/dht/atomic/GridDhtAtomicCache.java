@@ -465,7 +465,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         return near;
     }
 
-    /** {@inheritDoc} */
+    /**
+     *  @param key Key.
+     *  @param deserializeBinary Deserialize binary.
+     *  @param needVer Need version.
+     *  @return Value.
+     *  @throws IgniteCheckedException If failed.
+     */
     @Nullable public V get0(K key, boolean deserializeBinary, boolean needVer) throws IgniteCheckedException {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
