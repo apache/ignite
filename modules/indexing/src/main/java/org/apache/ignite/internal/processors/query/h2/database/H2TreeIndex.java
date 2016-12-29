@@ -79,18 +79,24 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         name = BPlusTree.treeName(name, "H2Tree");
 
-        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
+        if (!cctx.kernalContext().clientNode()) {
+            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        RootPage page = cctx.offheap().rootPageForIndex(name);
+            RootPage page = cctx.offheap().rootPageForIndex(name);
 
-        tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
-            dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
-            tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
-            @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
-                throws IgniteCheckedException {
-                return compareRows(getRow(io, buf, idx), row);
-            }
-        };
+            tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
+                dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
+                tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
+                @Override
+                protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
+                    throws IgniteCheckedException {
+                    return compareRows(getRow(io, buf, idx), row);
+                }
+            };
+        }
+        else
+            // We need indexes on the client node, but index will not contain any data.
+            tree = null;
 
         initDistributedJoinMessaging(tbl);
     }
@@ -194,9 +200,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public void destroy() {
         try {
-            tree.destroy();
+            if (!cctx.kernalContext().clientNode()) {
+                tree.destroy();
 
-            cctx.offheap().dropRootPageForIndex(tree.getName());
+                cctx.offheap().dropRootPageForIndex(tree.getName());
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

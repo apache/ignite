@@ -1525,7 +1525,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
          */
         @SuppressWarnings("unchecked")
         protected boolean accept(GridH2Row row) {
-            if (row.expireTime() <= time)
+            if (row.expireTime() != 0 && row.expireTime() <= time)
                 return false;
 
             if (fltr == null)
