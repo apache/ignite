@@ -23,7 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -55,10 +54,8 @@ public class IgfsPaths implements Externalizable {
      *
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
-     * @throws IgniteCheckedException If failed.
      */
-    public IgfsPaths(IgfsMode dfltMode, @Nullable ArrayList<T2<IgfsPath, IgfsMode>> pathModes)
-        throws IgniteCheckedException {
+    public IgfsPaths(IgfsMode dfltMode, @Nullable ArrayList<T2<IgfsPath, IgfsMode>> pathModes) {
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }

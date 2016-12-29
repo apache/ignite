@@ -299,7 +299,6 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
             final Map<String, String> props = properties(status);
 
-
             return new IgfsFileImpl(new IgfsFile() {
                 @Override public IgfsPath path() {
                     return path;
