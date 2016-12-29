@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -35,7 +36,12 @@ public final class UpdatePlan {
     /** Column names to set or update. */
     public final String[] colNames;
 
-    /** Properties to set or update. */
+    /**
+     * Properties to set or update.<p>
+     * Keys in this map correspond to indices when iterating fields in {@link GridQueryTypeDescriptor}
+     * (which are ordered, and order is important) and values in this map correspond to indices of columns
+     * that contain new values for these properties in {@link #selectQry}.
+     */
     public final LinkedHashMap<Integer, Integer> props;
 
     /** Method to create key for INSERT or MERGE, ignored for UPDATE and DELETE. */
@@ -57,7 +63,7 @@ public final class UpdatePlan {
     /** Subquery flag - {@code true} if {@link #selectQry} is an actual subquery that retrieves data from some cache. */
     public final boolean isLocSubqry;
 
-    /** */
+    /** When INSERT or MERGE is not query based, this iterable represents rows given in initial query. */
     public final Iterable<List<FastUpdateArgument>> rows;
 
     /** Number of rows in rows based MERGE or INSERT. */

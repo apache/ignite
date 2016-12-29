@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -160,7 +159,7 @@ public final class UpdatePlanBuilder {
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
         else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+            IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         if (elRows != null) {
             assert sel == null;
@@ -246,8 +245,11 @@ public final class UpdatePlanBuilder {
             i++;
         }
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, true);
+
+        // Buildable val supplier is either for direct put based MERGE or for single row INSERT
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false,
+            (stmt instanceof GridSqlMerge && valColIdx != -1) || (stmt instanceof GridSqlInsert && rowsNum == 1));
 
         if (stmt instanceof GridSqlMerge)
             return UpdatePlan.forMerge(tbl.dataTable(), colNames, props, keySupplier, valSupplier, keyColIdx,
@@ -344,12 +346,17 @@ public final class UpdatePlanBuilder {
 
                 boolean hasNewVal = (valColIdx != -1);
 
+                // Actual position of new _val in SELECTed row
+                if (hasNewVal)
+                    valColIdx += 2;
+
                 // Statement updates distinct properties if it does not have _val in updated columns list
                 // or if its list of updated columns includes only _val, i.e. is single element.
                 boolean hasProps = !hasNewVal || updatedCols.size() > 1;
 
+                // Don't pass suppliers other than those that simply take given explicit value of _val column.
                 KeyValueSupplier newValSupplier = hasNewVal ? createSupplier(desc.context(), desc.type(), valColIdx,
-                    hasProps, false) : null;
+                    hasProps, false, false) : null;
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
@@ -377,7 +384,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
-        final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
+        final int colIdx, boolean hasProps, final boolean key, final boolean buildable) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
@@ -408,10 +415,12 @@ public final class UpdatePlanBuilder {
 
                         BinaryObject bin = cctx.grid().binary().toBinary(obj);
 
-                        return cctx.grid().binary().builder(bin);
+                        return buildable ? bin.toBuilder() : bin;
                     }
                 };
             }
+            else if (!buildable)
+                return null;
             else {
                 // ...and if we don't, just create a new builder.
                 return new KeyValueSupplier() {
@@ -470,8 +479,6 @@ public final class UpdatePlanBuilder {
             }
         }
     }
-
-
 
     /**
      * @param target Expression to extract the table from.
