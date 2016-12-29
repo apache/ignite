@@ -592,7 +592,7 @@ public class GridMapQueryExecutor {
 
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                        F.asList(qry.parameters()), false,
+                        F.asList(qry.parameters()), true,
                         timeout,
                         qr.cancels[qryIdx]);
 
