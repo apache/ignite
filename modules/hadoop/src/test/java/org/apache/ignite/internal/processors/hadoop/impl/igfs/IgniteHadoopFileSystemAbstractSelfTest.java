@@ -837,9 +837,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        Path tmpDir = new Path(fsHome, "/tmp");
-
         FsPermission perm = new FsPermission((short)123);
+
+        Path tmpDir = new Path(fsHome, "/tmp");
 
         fs.setPermission(tmpDir, perm);
 

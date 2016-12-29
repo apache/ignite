@@ -629,10 +629,7 @@ public final class IgfsImpl implements IgfsEx {
                     default:
                         assert mode == PROXY : "Unknown mode: " + mode;
 
-                        IgfsFile file = secondaryFs.update(path, props);
-
-                        if (file != null)
-                            return new IgfsFileImpl(file, data.groupBlockSize());
+                        return secondaryFs.update(path, props);
                 }
 
                 return null;
