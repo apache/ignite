@@ -42,7 +42,7 @@ public final class MarshallerMappingItem implements Serializable {
      *
      * @param platformId Platform id.
      * @param typeId Type id.
-     * @param clsName Class name.
+     * @param clsName Class name. May be null in case when the item is created to request missing mapping from grid.
      */
     public MarshallerMappingItem(byte platformId, int typeId, @Nullable String clsName) {
         this.platformId = platformId;

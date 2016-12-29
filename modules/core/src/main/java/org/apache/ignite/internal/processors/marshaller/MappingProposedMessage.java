@@ -34,9 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
 class MappingProposedMessage implements DiscoveryCustomMessage {
-    /**
-     *
-     */
+    /** */
     private enum ProposalStatus {
         /** */
         SUCCESSFUL,

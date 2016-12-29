@@ -2151,14 +2151,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
-    private static class Organization {
-    }
+    private static class Organization { }
 
     /**
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
-    private static class Employee {
-    }
+    private static class Employee { }
 
     /**
      *

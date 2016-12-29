@@ -141,6 +141,9 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         assertEquals(clsName, new String(Files.readAllBytes(files[0].toPath())));
     }
 
+    /**
+     * @param ctx Context.
+     */
     private ExecutorService getMarshCtxFileStoreExecutorSrvc(GridKernalContext ctx) {
         return U.field(U.field(ctx, "marshCtx"), "execSrvc");
     }
@@ -166,7 +169,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         Ignite cl1 = startGrid(4);
         cl1.cache(null).get(1);
 
-        assertEquals("Expected requests count is 1, actual is " + mappingReqsCounter.get(), mappingReqsCounter.get(), 1);
+        assertEquals("Expected requests count is 1, actual is " + mappingReqsCounter.get(), 1, mappingReqsCounter.get());
     }
 
     /**
@@ -189,7 +192,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         Ignite cl1 = startGrid(4);
         cl1.cache(null).get(1);
 
-        assertEquals("Expected requests count is 2, actual is " + mappingReqsCounter.get(), mappingReqsCounter.get(), 2);
+        assertEquals("Expected requests count is 2, actual is " + mappingReqsCounter.get(), 2, mappingReqsCounter.get());
     }
 
     /**
@@ -212,7 +215,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         Ignite cl1 = startGrid(4);
         cl1.cache(null).get(1);
 
-        assertEquals("Expected requests count is 3, actual is " + mappingReqsCounter.get(), mappingReqsCounter.get(), 3);
+        assertEquals("Expected requests count is 3, actual is " + mappingReqsCounter.get(), 3, mappingReqsCounter.get());
     }
 
     /**
@@ -240,7 +243,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
             e.printStackTrace();
         }
 
-        assertEquals("Expected requests count is 3, actual is " + mappingReqsCounter.get(), mappingReqsCounter.get(), 3);
+        assertEquals("Expected requests count is 3, actual is " + mappingReqsCounter.get(), 3, mappingReqsCounter.get());
     }
 
     /**
