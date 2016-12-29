@@ -227,6 +227,9 @@ public class GridNioServer<T> {
     /** */
     private final IgniteRunnable balancer;
 
+    /** */
+    private final boolean readWriteSelectorsAssign;
+
     /**
      * @param addr Address.
      * @param port Port.
@@ -250,7 +253,7 @@ public class GridNioServer<T> {
      * @param writerFactory Writer factory.
      * @param skipRecoveryPred Skip recovery predicate.
      * @param msgQueueLsnr Message queue size listener.
-     * @param balancing NIO sessions balancing flag.
+     * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -275,7 +278,7 @@ public class GridNioServer<T> {
         GridNioMessageWriterFactory writerFactory,
         IgnitePredicate<Message> skipRecoveryPred,
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
-        boolean balancing,
+        boolean readWriteSelectorsAssign,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -300,6 +303,7 @@ public class GridNioServer<T> {
         this.sndQueueLimit = sndQueueLimit;
         this.msgQueueLsnr = msgQueueLsnr;
         this.selectorSpins = selectorSpins;
+        this.readWriteSelectorsAssign = readWriteSelectorsAssign;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -359,10 +363,16 @@ public class GridNioServer<T> {
 
         IgniteRunnable balancer0 = null;
 
-        if (balancing && balancePeriod > 0) {
+        if (balancePeriod > 0) {
             boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
 
-            balancer0 = rndBalance ? new RandomBalancer() : new SizeBasedBalancer(balancePeriod);
+            if (rndBalance)
+                balancer0 = new RandomBalancer();
+            else {
+                balancer0 = readWriteSelectorsAssign ?
+                    new ReadWriteSizeBasedBalancer(balancePeriod) :
+                    new SizeBasedBalancer(balancePeriod);
+            }
         }
 
         this.balancer = balancer0;
@@ -823,21 +833,31 @@ public class GridNioServer<T> {
         int balanceIdx;
 
         if (workers > 1) {
-            if (req.accepted()) {
+            if (readWriteSelectorsAssign) {
+                if (req.accepted()) {
+                    balanceIdx = readBalanceIdx;
+
+                    readBalanceIdx += 2;
+
+                    if (readBalanceIdx >= workers)
+                        readBalanceIdx = 0;
+                }
+                else {
+                    balanceIdx = writeBalanceIdx;
+
+                    writeBalanceIdx += 2;
+
+                    if (writeBalanceIdx >= workers)
+                        writeBalanceIdx = 1;
+                }
+            }
+            else {
                 balanceIdx = readBalanceIdx;
 
-                readBalanceIdx += 2;
+                readBalanceIdx++;
 
                 if (readBalanceIdx >= workers)
                     readBalanceIdx = 0;
-            }
-            else {
-                balanceIdx = writeBalanceIdx;
-
-                writeBalanceIdx += 2;
-
-                if (writeBalanceIdx >= workers)
-                    writeBalanceIdx = 1;
             }
         }
         else
@@ -3124,8 +3144,8 @@ public class GridNioServer<T> {
         /** */
         private long selectorSpins;
 
-        /** NIO sessions balancing flag. */
-        private boolean balancing;
+        /** */
+        private boolean readWriteSelectorsAssign;
 
         /**
          * Finishes building the instance.
@@ -3155,7 +3175,7 @@ public class GridNioServer<T> {
                 writerFactory,
                 skipRecoveryPred,
                 msgQueueLsnr,
-                balancing,
+                readWriteSelectorsAssign,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3169,11 +3189,11 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param balancing NIO sessions balancing flag.
+         * @param readWriteSelectorsAssign {@code True} to assign in/out connections even/odd workers.
          * @return This for chaining.
          */
-        public Builder<T> balancing(boolean balancing) {
-            this.balancing = balancing;
+        public Builder<T> readWriteSelectorsAssign(boolean readWriteSelectorsAssign) {
+            this.readWriteSelectorsAssign = readWriteSelectorsAssign;
 
             return this;
         }
@@ -3415,7 +3435,7 @@ public class GridNioServer<T> {
     /**
      *
      */
-    private class SizeBasedBalancer implements IgniteRunnable {
+    private class ReadWriteSizeBasedBalancer implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3428,7 +3448,7 @@ public class GridNioServer<T> {
         /**
          * @param balancePeriod Period.
          */
-        SizeBasedBalancer(long balancePeriod) {
+        ReadWriteSizeBasedBalancer(long balancePeriod) {
             this.balancePeriod = balancePeriod;
         }
 
@@ -3559,6 +3579,100 @@ public class GridNioServer<T> {
     }
 
     /**
+     *
+     */
+    private class SizeBasedBalancer implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private long lastBalance;
+
+        /** */
+        private final long balancePeriod;
+
+        /**
+         * @param balancePeriod Period.
+         */
+        SizeBasedBalancer(long balancePeriod) {
+            this.balancePeriod = balancePeriod;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            long now = U.currentTimeMillis();
+
+            if (lastBalance + balancePeriod < now) {
+                lastBalance = now;
+
+                long maxBytes0 = -1, minBytes0 = -1;
+                int maxBytesIdx = -1, minBytesIdx = -1;
+
+                for (int i = 0; i < clientWorkers.size(); i++) {
+                    GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
+
+                    int sesCnt = worker.workerSessions.size();
+
+                    long bytes0 = worker.bytesRcvd0 + worker.bytesSent0;
+
+                    if ((maxBytes0 == -1 || bytes0 > maxBytes0) && bytes0 > 0 && sesCnt > 1) {
+                        maxBytes0 = bytes0;
+                        maxBytesIdx = i;
+                    }
+
+                    if (minBytes0 == -1 || bytes0 < minBytes0) {
+                        minBytes0 = bytes0;
+                        minBytesIdx = i;
+                    }
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Balancing data [min0=" + minBytes0 + ", minIdx=" + minBytesIdx +
+                        ", max0=" + maxBytes0 + ", maxIdx=" + maxBytesIdx + ']');
+
+                if (maxBytes0 != -1 && minBytes0 != -1) {
+                    GridSelectorNioSessionImpl ses = null;
+
+                    long bytesDiff = maxBytes0 - minBytes0;
+                    long delta = bytesDiff;
+                    double threshold = bytesDiff * 0.9;
+
+                    GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions =
+                        clientWorkers.get(maxBytesIdx).workerSessions;
+
+                    for (GridSelectorNioSessionImpl ses0 : sessions) {
+                        long bytesSent0 = ses0.bytesSent0();
+
+                        if (bytesSent0 < threshold &&
+                            (ses == null || delta > U.safeAbs(bytesSent0 - bytesDiff / 2))) {
+                            ses = ses0;
+                            delta = U.safeAbs(bytesSent0 - bytesDiff / 2);
+                        }
+                    }
+
+                    if (ses != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Will move session to less loaded worker [ses=" + ses +
+                                ", from=" + maxBytesIdx + ", to=" + minBytesIdx + ']');
+
+                        moveSession(ses, maxBytesIdx, minBytesIdx);
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Unable to find session to move.");
+                    }
+                }
+
+                for (int i = 0; i < clientWorkers.size(); i++) {
+                    GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
+
+                    worker.reset0();
+                }
+            }
+        }
+    }
+
+    /**
      * For tests only.
      */
     @SuppressWarnings("unchecked")
@@ -3625,6 +3739,9 @@ public class GridNioServer<T> {
      *
      */
     interface SessionChangeRequest {
+        /**
+         * @return Session.
+         */
         GridNioSession session();
 
         /**
