@@ -104,7 +104,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @param conf Configuration.
      * @param log Current logger.
      * @param user User name.
-     * @throws IOException If failed.
+     * @throws IOException On error.
      */
     public HadoopIgfsWrapper(String authority, String logDir, Configuration conf, Log log, String user)
         throws IOException {
@@ -371,7 +371,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * Get delegate creating it if needed.
      *
      * @return Delegate.
-     * @throws HadoopIgfsCommunicationException If delegate creation is failed.
+     * @throws HadoopIgfsCommunicationException On error.
      */
     private Delegate delegate() throws HadoopIgfsCommunicationException {
         // These fields will contain possible exceptions from shmem and TCP endpoints.

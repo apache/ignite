@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemInjectionSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
@@ -166,6 +167,8 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
         suite.addTestSuite(IgfsAtomicPrimaryOffheapTieredSelfTest.class);
         suite.addTestSuite(IgfsAtomicPrimaryOffheapValuesSelfTest.class);
+
+        suite.addTestSuite(IgfsSecondaryFileSystemInjectionSelfTest.class);
 
         return suite;
     }

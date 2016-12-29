@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -36,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS endpoint abstraction.
  */
 public class HadoopIgfsEndpoint {
+    /** Guard ensuring that warning about grid name is printed only once. */
+    private static final AtomicBoolean LOG_WARN_GUARD = new AtomicBoolean();
+
     /** Logger. */
     private static final Log LOG = LogFactory.getLog(HadoopIgfsEndpoint.class);
 
@@ -107,9 +110,10 @@ public class HadoopIgfsEndpoint {
 
                 igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
 
-                if (authTokens.length == 2)
-                    LOG.warn("Grid name is not used but it is defined at connection string. " +
-                        "This format is deprecated. [connStr=" + connStr + ']');
+                if (authTokens.length == 2) {
+                    if (!LOG_WARN_GUARD.get() && LOG_WARN_GUARD.compareAndSet(false, true))
+                        LOG.warn("Grid name in IGFS connection string is deprecated and will be ignored: " + connStr);
+                }
                 else if (authTokens.length > 2)
                     throw new IgniteCheckedException("Invalid connection string format: " + connStr);
             }

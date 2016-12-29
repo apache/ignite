@@ -109,6 +109,8 @@ public class IgniteNodeRunner {
      *
      * @param cfg Ignite Configuration.
      * @param fileName A name of file where the configuration was stored.
+     * @param resetMarshaller Reset marshaller configuration to default.
+     * @param resetDiscovery Reset discovery configuration to default.
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
@@ -137,7 +139,7 @@ public class IgniteNodeRunner {
      * @param fileName File name.
      * @return Readed configuration.
      * @throws IOException If failed.
-     * @see #storeToFile(IgniteConfiguration)
+     * @see #storeToFile(IgniteConfiguration, boolean)
      * @throws IgniteCheckedException On error.
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)

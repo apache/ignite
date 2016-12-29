@@ -35,7 +35,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_jni_la_LIBADD = \
     -L$(JAVA_HOME)/jre/lib/amd64/server \

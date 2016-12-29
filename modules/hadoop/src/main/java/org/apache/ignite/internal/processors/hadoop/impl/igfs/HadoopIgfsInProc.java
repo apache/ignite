@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -74,7 +73,9 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
      */
     public HadoopIgfsInProc(IgfsEx igfs, Log log, String userName) throws IgniteCheckedException {
         this.user = IgfsUtils.fixUserName(userName);
+
         this.igfs = igfs;
+
         this.log = log;
 
         bufSize = igfs.configuration().getBlockSize() * 2;
