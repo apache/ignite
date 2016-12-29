@@ -140,6 +140,25 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
 
+        affinity: {
+            kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
+            Rendezvous: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Fair: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Custom: {
+                className: String
+            }
+        },
+
+        affinityMapper: String,
+
         nodeFilter: {
             kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
             Exclude: {
