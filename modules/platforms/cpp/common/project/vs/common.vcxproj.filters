@@ -67,6 +67,9 @@
     <ClInclude Include="..\..\os\win\include\ignite\common\dynamic_load_os.h">
       <Filter>Code\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\optional.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\date.cpp">

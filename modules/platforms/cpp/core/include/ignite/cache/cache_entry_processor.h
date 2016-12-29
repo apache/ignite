@@ -30,7 +30,7 @@
 
 namespace ignite
 {
-    class InvokeManager;
+    class IgniteRpc;
 
     namespace cache
     {
@@ -43,7 +43,7 @@ namespace ignite
         template<typename P, typename K, typename V, typename R, typename A>
         class CacheEntryProcessor
         {
-            friend class InvokeManager;
+            friend class IgniteRpc;
 
         public:
             /**

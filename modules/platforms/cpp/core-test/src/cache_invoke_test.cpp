@@ -28,7 +28,7 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
-#include "ignite/invoke_manager.h"
+#include "ignite/ignite_rpc.h"
 #include "ignite/cache/cache_entry_processor.h"
 
 using namespace boost::unit_test;
@@ -406,7 +406,7 @@ namespace ignite
     }
 }
 
-IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::InvokeManager& im)
+IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& im)
 {
     im.RegisterCacheEntryProcessor<CacheEntryModifier>();
     im.RegisterCacheEntryProcessor<Divisor>();

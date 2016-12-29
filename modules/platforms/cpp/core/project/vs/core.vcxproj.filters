@@ -183,10 +183,10 @@
     <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h">
       <Filter>Code\cache</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\invoke_manager_impl.h">
+    <ClInclude Include="..\..\include\ignite\impl\ignite_rpc_impl.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\invoke_manager.h">
+    <ClInclude Include="..\..\include\ignite\ignite_rpc.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

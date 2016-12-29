@@ -26,7 +26,7 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/handle_registry.h"
 #include "ignite/impl/module_manager.h"
-#include "ignite/impl/invoke_manager_impl.h"
+#include "ignite/impl/ignite_rpc_impl.h"
 
 namespace ignite
 {
@@ -176,6 +176,13 @@ namespace ignite
             HandleRegistry& GetHandleRegistry();
 
             /**
+             * Get invoke manager.
+             *
+             * @return IgniteRpc instance.
+             */
+            IgniteRpc GetIgniteRpc();
+
+            /**
              * Acquire ownership for the object.
              *
              * @param obj Java object to acquire.
@@ -195,20 +202,20 @@ namespace ignite
             /** Processor instance. */
             jni::JavaGlobalRef proc;
 
+            /** Handle registry. */
+            HandleRegistry registry;
+
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;
 
             /** Type updater. */
             binary::BinaryTypeUpdater* metaUpdater;
 
-            /** Handle registry. */
-            HandleRegistry registry;
-
-            /** Invoke manager */
-            common::concurrent::SharedPointer<InvokeManagerImpl> invokeMgr;
+            /** Ignite RPC */
+            common::concurrent::SharedPointer<IgniteRpcImpl> rpc;
 
             /** Module manager. */
-            ModuleManager* moduleMgr;
+            common::concurrent::SharedPointer<ModuleManager> moduleMgr;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

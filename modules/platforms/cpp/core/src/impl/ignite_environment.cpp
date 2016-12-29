@@ -22,7 +22,7 @@
 #include "ignite/binary/binary.h"
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/impl/module_manager.h"
-#include "ignite/invoke_manager.h"
+#include "ignite/ignite_rpc.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -148,21 +148,21 @@ namespace ignite
             latch(),
             name(0),
             proc(),
+            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP),
             metaMgr(new BinaryTypeManager()),
-            invokeMgr(new InvokeManagerImpl()),
-            moduleMgr(new ModuleManager(ignite::InvokeManager(invokeMgr))),
             metaUpdater(0),
-            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP)
+            rpc(new IgniteRpcImpl()),
+            moduleMgr(new ModuleManager(ignite::IgniteRpc(rpc)))
         {
             // No-op.
         }
 
         IgniteEnvironment::~IgniteEnvironment()
         {
-            delete moduleMgr;
-            delete metaMgr;
-            delete name;
+            delete[] name;
+
             delete metaUpdater;
+            delete metaMgr;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -268,6 +268,11 @@ namespace ignite
             return registry;
         }
 
+        IgniteRpc IgniteEnvironment::GetIgniteRpc()
+        {
+            return IgniteRpc(rpc);
+        }
+
         void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
         {
             this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
@@ -307,8 +312,8 @@ namespace ignite
 
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
         {
-            if (!invokeMgr.Get())
-                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "InvokeManager is not initialized.");
+            if (!rpc.Get())
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteRpc is not initialized.");
 
             InteropInputStream inStream(mem.Get());
             BinaryReaderImpl reader(&inStream);
@@ -321,18 +326,13 @@ namespace ignite
             if (!reader.TryReadObject<int64_t>(procId))
                 throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
 
-            bool invoked = invokeMgr.Get()->InvokeCacheEntryProcessorById(procId, reader, writer);
+            bool invoked = rpc.Get()->InvokeCacheEntryProcessorById(procId, reader, writer);
 
             if (!invoked)
                 throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
-                    "C++ entry processor is not found on the node (did you compile your program with -rdynamic?).");
+                    "C++ entry processor is not registered on the node (did you compile your program without -rdynamic?).");
 
             outStream.Synchronize();
         }
     }
 }
-
-
-
-
-

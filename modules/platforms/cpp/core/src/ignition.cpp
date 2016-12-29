@@ -212,7 +212,7 @@ namespace ignite
                 // 4. Start JVM if needed.
                 JniErrorInfo jniErr;
 
-                env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment());
+                env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment);
 
                 int optsLen;
                 char** opts = CreateJvmOptions(cfg, homeFound ? &home : NULL, cp, &optsLen);

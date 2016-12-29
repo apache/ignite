@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INVOKE_MANAGER_IMPL
-#define _IGNITE_IMPL_INVOKE_MANAGER_IMPL
+#ifndef _IGNITE_IMPL_IGNITE_RPC_IMPL
+#define _IGNITE_IMPL_IGNITE_RPC_IMPL
 
 #include <map>
 
@@ -32,10 +32,10 @@ namespace ignite
     namespace impl
     {
         /**
-         * Invoke manager implementation.
+         * Ignite RPC implementation.
          * Used to register and invoke cache entry processors.
          */
-        class InvokeManagerImpl
+        class IgniteRpcImpl
         {
             typedef void (EntryProcessor)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
 
@@ -43,7 +43,7 @@ namespace ignite
             /**
              * Default constructor.
              */
-            InvokeManagerImpl() : processors()
+            IgniteRpcImpl() : processors()
             {
                 // No-op.
             }
@@ -93,7 +93,7 @@ namespace ignite
             }
 
         private:
-            IGNITE_NO_COPY_ASSIGNMENT(InvokeManagerImpl);
+            IGNITE_NO_COPY_ASSIGNMENT(IgniteRpcImpl);
 
             /** Registered cache entry processors. */
             std::map<int64_t, EntryProcessor*> processors;
@@ -101,4 +101,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_IMPL_INVOKE_MANAGER_IMPL
+#endif //_IGNITE_IMPL_IGNITE_RPC_IMPL

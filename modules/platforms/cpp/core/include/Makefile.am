@@ -34,6 +34,8 @@ nobase_include_HEADERS = \
     ignite/impl/handle_registry.h \
     ignite/impl/transactions/transaction_impl.h \
     ignite/impl/transactions/transactions_impl.h \
+    ignite/impl/ignite_rpc_impl.h \
+    ignite/impl/module_manager.h \
     ignite/cache/query/query_fields_row.h \
     ignite/cache/query/query_fields_cursor.h \
     ignite/cache/query/query_scan.h \
@@ -47,7 +49,7 @@ nobase_include_HEADERS = \
     ignite/cache/cache_entry.h \
     ignite/cache/cache_peek_mode.h \
     ignite/ignition.h \
-    ignite/invoke_manager_impl.h \
+    ignite/ignite_rpc.h \
     ignite/transactions/transaction.h \
     ignite/transactions/transaction_consts.h \
     ignite/transactions/transactions.h \

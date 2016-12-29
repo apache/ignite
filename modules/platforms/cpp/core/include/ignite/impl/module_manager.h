@@ -22,7 +22,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/dynamic_load_os.h>
-#include "ignite/invoke_manager.h"
+#include "ignite/ignite_rpc.h"
 
 /**
  * @def IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME
@@ -44,17 +44,17 @@ namespace ignite
         class ModuleManager
         {
             typedef common::dynamic::Module Module;
-            typedef void (ModuleInitCallback)(InvokeManager&);
+            typedef void (ModuleInitCallback)(IgniteRpc&);
 
         public:
             /**
              * Constructor.
              *
-             * @param invokeMgr Invoke manager to use.
+             * @param rpc Ignite RPC to use.
              */
-            ModuleManager(ignite::InvokeManager invokeMgr) :
+            ModuleManager(ignite::IgniteRpc rpc) :
                 loadedModules(),
-                invokeMgr(invokeMgr)
+                rpc(rpc)
             {
                 Module current = common::dynamic::GetCurrent();
 
@@ -103,12 +103,12 @@ namespace ignite
             {
                 loadedModules.push_back(module);
 
-                assert(invokeMgr.IsValid());
+                assert(rpc.IsValid());
 
                 ModuleInitCallback* callback = GetModuleInitCallback(module);
 
                 if (callback)
-                    callback(invokeMgr);
+                    callback(rpc);
             }
 
             /**
@@ -126,8 +126,8 @@ namespace ignite
             /** Collection of loaded modules. */
             std::vector<Module> loadedModules;
 
-            /** Invoke manager reference. */
-            InvokeManager invokeMgr;
+            /** Ignite RPC reference. */
+            IgniteRpc rpc;
         };
     }
 }

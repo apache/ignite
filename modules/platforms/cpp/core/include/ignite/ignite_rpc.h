@@ -15,27 +15,27 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_INVOKE_MANAGER
-#define _IGNITE_INVOKE_MANAGER
+#ifndef _IGNITE_IGNITE_RPC
+#define _IGNITE_IGNITE_RPC
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
 
-#include <ignite/impl/invoke_manager_impl.h>
+#include <ignite/impl/ignite_rpc_impl.h>
 
 namespace ignite
 {
     /**
-     * Invoke manager.
+     * %Ignite RPC.
      * Used to register invokable classes.
      */
-    class IGNITE_IMPORT_EXPORT InvokeManager
+    class IGNITE_IMPORT_EXPORT IgniteRpc
     {
     public:
         /**
          * Default constructor.
          */
-        InvokeManager() :
+        IgniteRpc() :
             impl()
         {
             // No-op.
@@ -46,7 +46,7 @@ namespace ignite
          *
          * @param impl Implementation.
          */
-        InvokeManager(common::concurrent::SharedPointer<impl::InvokeManagerImpl> impl) :
+        IgniteRpc(common::concurrent::SharedPointer<impl::IgniteRpcImpl> impl) :
             impl(impl)
         {
             // No-op.
@@ -83,7 +83,7 @@ namespace ignite
         template<typename P>
         void RegisterCacheEntryProcessor(IgniteError& err)
         {
-            impl::InvokeManagerImpl *im = impl.Get();
+            impl::IgniteRpcImpl *im = impl.Get();
 
             if (im)
                 im->RegisterCacheEntryProcessor(P::GetJobId(), &P::CacheEntryProcessor::InternalProcess, err);
@@ -111,8 +111,8 @@ namespace ignite
 
     private:
         /** Registered cache entry processors. */
-        common::concurrent::SharedPointer<impl::InvokeManagerImpl> impl;
+        common::concurrent::SharedPointer<impl::IgniteRpcImpl> impl;
     };
 }
 
-#endif //_IGNITE_INVOKE_MANAGER
+#endif //_IGNITE_IGNITE_RPC
