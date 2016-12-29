@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -39,49 +40,26 @@ public class DataEntry {
     protected CacheObject val;
 
     /** */
+    @GridToStringInclude
     protected GridCacheOperation op;
 
     /** */
     protected GridCacheVersion nearXidVer;
 
     /** */
+    @GridToStringInclude
     protected GridCacheVersion writeVer;
 
     /** */
     protected long expireTime;
 
     /** */
+    @GridToStringInclude
     protected int partId;
 
     /** */
+    @GridToStringInclude
     protected long partCnt;
-
-    /**
-     * @param txEntry Transactional entry.
-     * @param tx Transaction.
-     * @return Built data entry.
-     */
-    public static DataEntry fromTxEntry(IgniteTxEntry txEntry, IgniteInternalTx tx) {
-        DataEntry de = new DataEntry();
-
-        assert txEntry.key().partition() >= 0 : txEntry.key();
-
-        de.cacheId = txEntry.cacheId();
-        de.key = txEntry.key();
-        de.val = txEntry.value();
-        de.op = txEntry.op();
-        de.nearXidVer = tx.nearXidVersion();
-        de.writeVer = tx.writeVersion();
-        de.expireTime = 0;
-        de.partId = txEntry.key().partition();
-        de.partCnt = txEntry.updateCounter();
-
-        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
-        assert de.op() == GridCacheOperation.CREATE || de.op() == GridCacheOperation.UPDATE ||
-            de.op() == GridCacheOperation.DELETE : de.op();
-
-        return de;
-    }
 
     private DataEntry() {
         // No-op, used from factory methods.

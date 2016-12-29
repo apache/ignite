@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Platform processor.
  */
-@SuppressWarnings("UnusedDeclaration")
+@SuppressWarnings({"UnusedDeclaration", "UnnecessaryInterfaceModifier"})
 public interface PlatformProcessor extends GridProcessor {
     /**
      * Gets owning Ignite instance.
@@ -69,7 +68,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Cache.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException;
+    public PlatformTargetProxy cache(@Nullable String name) throws IgniteCheckedException;
 
     /**
      * Create cache.
@@ -78,7 +77,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Cache.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException;
+    public PlatformTargetProxy createCache(@Nullable String name) throws IgniteCheckedException;
 
     /**
      * Get or create cache.
@@ -87,7 +86,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Cache.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
+    public PlatformTargetProxy getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
 
     /**
      * Create cache.
@@ -96,7 +95,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Cache.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException;
+    public PlatformTargetProxy createCacheFromConfig(long memPtr) throws IgniteCheckedException;
 
     /**
      * Get or create cache.
@@ -105,7 +104,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Cache.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException;
+    public PlatformTargetProxy getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException;
 
     /**
      * Destroy dynamically created cache.
@@ -122,7 +121,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Affinity.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException;
+    public PlatformTargetProxy affinity(@Nullable String name) throws IgniteCheckedException;
 
     /**
      * Get data streamer.
@@ -132,14 +131,14 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Data streamer.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException;
+    public PlatformTargetProxy dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Get transactions.
      *
      * @return Transactions.
      */
-    public PlatformTarget transactions();
+    public PlatformTargetProxy transactions();
 
     /**
      * Get projection.
@@ -147,7 +146,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Projection.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget projection() throws IgniteCheckedException;
+    public PlatformTargetProxy projection() throws IgniteCheckedException;
 
     /**
      * Create interop compute.
@@ -155,7 +154,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param grp Cluster group.
      * @return Compute instance.
      */
-    public PlatformTarget compute(PlatformTarget grp);
+    public PlatformTargetProxy compute(PlatformTargetProxy grp);
 
     /**
      * Create interop messaging.
@@ -163,7 +162,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param grp Cluster group.
      * @return Messaging instance.
      */
-    public PlatformTarget message(PlatformTarget grp);
+    public PlatformTargetProxy message(PlatformTargetProxy grp);
 
     /**
      * Create interop events.
@@ -171,7 +170,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param grp Cluster group.
      * @return Events instance.
      */
-    public PlatformTarget events(PlatformTarget grp);
+    public PlatformTargetProxy events(PlatformTargetProxy grp);
 
     /**
      * Create interop services.
@@ -179,14 +178,14 @@ public interface PlatformProcessor extends GridProcessor {
      * @param grp Cluster group.
      * @return Services instance.
      */
-    public PlatformTarget services(PlatformTarget grp);
+    public PlatformTargetProxy services(PlatformTargetProxy grp);
 
     /**
      * Get platform extensions. Override this method to provide any additional targets and operations you need.
      *
      * @return Platform extensions.
      */
-    public PlatformTarget extensions();
+    public PlatformTargetProxy extensions();
 
     /**
      * Register cache store.
@@ -203,9 +202,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param initVal Initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+    public PlatformTargetProxy atomicLong(String name, long initVal, boolean create);
 
     /**
      * Get or create AtomicSequence.
@@ -213,9 +211,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param initVal Initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
+    public PlatformTargetProxy atomicSequence(String name, long initVal, boolean create);
 
     /**
      * Get or create AtomicReference.
@@ -223,9 +220,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException;
+    public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create);
 
     /**
      * Gets the configuration of the current Ignite instance.
@@ -248,7 +244,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Pointer to a stream with near cache config. 0 for default config.
      * @return Cache.
      */
-    public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr);
+    public PlatformTargetProxy createNearCache(@Nullable String cacheName, long memPtr);
 
     /**
      * Gets existing near cache with the given name or creates a new one.
@@ -257,7 +253,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Pointer to a stream with near cache config. 0 for default config.
      * @return Cache.
      */
-    public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr);
+    public PlatformTargetProxy getOrCreateNearCache(@Nullable String cacheName, long memPtr);
 
     /**
      * Gets a value indicating whether Ignite logger has specified level enabled.
@@ -275,4 +271,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @param errorInfo Error info.
      */
     public void loggerLog(int level, String message, String category, String errorInfo);
+
+    /**
+     * Gets the binary processor.
+     *
+     * @return Binary processor.
+     */
+    public PlatformTargetProxy binaryProcessor();
 }

@@ -216,7 +216,7 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
 
         if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
             val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
-                node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
+                node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon, 0L)
 
             evts = Seq(root) ++ evts
         }

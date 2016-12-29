@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -237,6 +238,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
+        if (cctx.allowFastEviction())
+            return map.size() == 0;
+
         return size() == 0 && map.size() == 0;
     }
 
@@ -502,12 +506,34 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @param stateToRestore State to restore.
+     */
+    public void restoreState(GridDhtPartitionState stateToRestore) {
+        state.set(((long)stateToRestore.ordinal())  <<  32);
+    }
+
+    /**
      * @param reservations Current aggregated value.
      * @param toState State to switch to.
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long reservations, GridDhtPartitionState toState) {
-        return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+        if (cctx.shared().database().persistenceEnabled()) {
+            synchronized (this) {
+                boolean update = state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+
+                if (update)
+                    try {
+                        cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(), id, toState, updateCounter()));
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Error while writing to log", e);
+                    }
+
+                return update;
+            }
+        } else
+            return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
     }
 
     /**
@@ -535,6 +561,26 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 evictHist = null;
 
                 return true;
+            }
+        }
+    }
+
+    /**
+     * Forcibly moves partition to a MOVING state.
+     */
+    void moving() {
+        while (true) {
+            long reservations = state.get();
+
+            int ord = (int)(reservations >> 32);
+
+            assert ord == OWNING.ordinal() : "Only OWNed partitions should be moved to MOVING state";
+
+            if (casState(reservations, MOVING)) {
+                if (log.isDebugEnabled())
+                    log.debug("Forcibly moved partition to a MOVING state: " + this);
+
+                break;
             }
         }
     }
@@ -578,7 +624,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         shouldBeRenting = true;
 
         if ((reservations & 0xFFFF) == 0 && casState(reservations, RENTING)) {
-                shouldBeRenting = false;
+            shouldBeRenting = false;
 
             if (log.isDebugEnabled())
                 log.debug("Moved partition to RENTING state: " + this);
@@ -595,6 +641,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
+        assert cctx.kernalContext().state().active();
+
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);
@@ -631,7 +679,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         while (true) {
             int cnt = evictGuard.get();
 
-            if (cnt < 0)
+            if (cnt != 0)
                 return false;
 
             if (evictGuard.compareAndSet(cnt, cnt + 1))
@@ -794,6 +842,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         store.updateCounter(val);
     }
 
+    public void initialUpdateCounter(long val) {
+        store.updateInitialCounter(val);
+    }
+
     /**
      * Clears values for this partition.
      */
@@ -850,48 +902,50 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
         }
 
-        try {
-            GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
+        if (!cctx.allowFastEviction()) {
+            try {
+                GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
 
-            while (it0.hasNext()) {
-                cctx.shared().database().checkpointReadLock();
+                while (it0.hasNext()) {
+                    cctx.shared().database().checkpointReadLock();
 
-                try {
-                    CacheDataRow row = it0.next();
+                    try {
+                        CacheDataRow row = it0.next();
 
-                    GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
+                        GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
 
-                    if (cached.clearInternal(clearVer, extras)) {
-                        if (rec) {
-                            cctx.events().addEvent(cached.partition(),
-                                cached.key(),
-                                cctx.localNodeId(),
-                                (IgniteUuid)null,
-                                null,
-                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                null,
-                                false,
-                                cached.rawGet(),
-                                cached.hasValue(),
-                                null,
-                                null,
-                                null,
-                                false);
+                        if (cached.clearInternal(clearVer, extras)) {
+                            if (rec) {
+                                cctx.events().addEvent(cached.partition(),
+                                    cached.key(),
+                                    cctx.localNodeId(),
+                                    (IgniteUuid)null,
+                                    null,
+                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                    null,
+                                    false,
+                                    cached.rawGet(),
+                                    cached.hasValue(),
+                                    null,
+                                    null,
+                                    null,
+                                    false);
+                            }
                         }
                     }
-                }
-                catch (GridDhtInvalidPartitionException e) {
-                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
+                    catch (GridDhtInvalidPartitionException e) {
+                        assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                    break; // Partition is already concurrently cleared and evicted.
-                }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
+                        break; // Partition is already concurrently cleared and evicted.
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get iterator for evicted partition: " + id, e);
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to get iterator for evicted partition: " + id, e);
+            }
         }
     }
 

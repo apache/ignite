@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.platform.cpp;
 
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -76,6 +78,11 @@ public class PlatformCppConfigurationEx extends PlatformCppConfiguration impleme
 
     /** {@inheritDoc} */
     @Override public PlatformLogger logger() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Collection<PlatformCacheExtension> cacheExtensions() {
         return null;
     }
 

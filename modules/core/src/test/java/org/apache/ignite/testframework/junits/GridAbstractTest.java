@@ -155,6 +155,18 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
+    /** Force failure flag. */
+    private boolean forceFailure;
+
+    /** Force failure message. */
+    private String forceFailureMsg;
+
+    /** Whether test count is known is advance. */
+    private boolean forceTestCnt;
+
+    /** Number of tests. */
+    private int testCnt;
+
     /**
      *
      */
@@ -485,7 +497,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
-        U.resolveWorkDirectory("marshaller", true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
     }
 
     /**
@@ -619,11 +631,19 @@ public abstract class GridAbstractTest extends TestCase {
             else
                 startGrid(i);
 
-        checkTopology(cnt);
+        if (checkTopology())
+            checkTopology(cnt);
 
         assert ignite != null;
 
         return ignite;
+    }
+
+    /**
+     * Check or not topology after grids start
+     */
+    protected boolean checkTopology() {
+        return true;
     }
 
     /**
@@ -820,7 +840,7 @@ public abstract class GridAbstractTest extends TestCase {
                 cfg.setLocalHost("127.0.0.1");
 
                 if (((TcpDiscoverySpi)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
-                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(8000);
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(10000);
             }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
@@ -1761,11 +1781,34 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Force test failure.
+     *
+     * @param msg Message.
+     */
+    public void forceFailure(@Nullable String msg) {
+        forceFailure = true;
+
+        forceFailureMsg = msg;
+    }
+
+    /**
+     * Set test count.
+     */
+    public void forceTestCount(int cnt) {
+        testCnt = cnt;
+
+        forceTestCnt = true;
+    }
+
+    /**
      * @throws Throwable If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     private void runTestInternal() throws Throwable {
-        super.runTest();
+        if (forceFailure)
+            fail("Forced failure: " + forceFailureMsg);
+        else
+            super.runTest();
     }
 
     /**
@@ -2064,11 +2107,19 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                int cnt = 0;
+                GridAbstractTest this0 = GridAbstractTest.this;
 
-                for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                        cnt++;
+                int cnt;
+
+                if (this0.forceTestCnt)
+                    cnt = this0.testCnt;
+                else {
+                    cnt = 0;
+
+                    for (Method m : this0.getClass().getMethods())
+                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                            cnt++;
+                }
 
                 numOfTests = cnt;
             }

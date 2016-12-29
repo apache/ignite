@@ -87,13 +87,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
     /** Mappings if operations is mapped to more than one node. */
     @GridToStringInclude
-    private Map<UUID, GridNearAtomicUpdateRequest> mappings;
+    private Map<UUID, GridNearAtomicFullUpdateRequest> mappings;
 
     /** Keys to remap. */
     private Collection<KeyCacheObject> remapKeys;
 
     /** Not null is operation is mapped to single node. */
-    private GridNearAtomicUpdateRequest singleReq;
+    private GridNearAtomicFullUpdateRequest singleReq;
 
     /**
      * @param cctx Cache context.
@@ -165,7 +165,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     @Override public boolean onNodeLeft(UUID nodeId) {
         GridNearAtomicUpdateResponse res = null;
 
-        GridNearAtomicUpdateRequest req;
+        GridNearAtomicFullUpdateRequest req;
 
         synchronized (mux) {
             if (singleReq != null)
@@ -259,7 +259,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     @Override public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
-        GridNearAtomicUpdateRequest req;
+        GridNearAtomicFullUpdateRequest req;
 
         AffinityTopologyVersion remapTopVer = null;
 
@@ -407,7 +407,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         if (rcvAll && nearEnabled) {
             if (mappings != null) {
-                for (GridNearAtomicUpdateRequest req0 : mappings.values()) {
+                for (GridNearAtomicFullUpdateRequest req0 : mappings.values()) {
                     GridNearAtomicUpdateResponse res0 = req0.response();
 
                     assert res0 != null : req0;
@@ -483,7 +483,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+    private void updateNear(GridNearAtomicFullUpdateRequest req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -553,13 +553,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      *
      * @param mappings Mappings to send.
      */
-    private void doUpdate(Map<UUID, GridNearAtomicUpdateRequest> mappings) {
+    private void doUpdate(Map<UUID, GridNearAtomicFullUpdateRequest> mappings) {
         UUID locNodeId = cctx.localNodeId();
 
-        GridNearAtomicUpdateRequest locUpdate = null;
+        GridNearAtomicFullUpdateRequest locUpdate = null;
 
         // Send messages to remote nodes first, then run local update.
-        for (GridNearAtomicUpdateRequest req : mappings.values()) {
+        for (GridNearAtomicFullUpdateRequest req : mappings.values()) {
             if (locNodeId.equals(req.nodeId())) {
                 assert locUpdate == null : "Cannot have more than one local mapping [locUpdate=" + locUpdate +
                     ", req=" + req + ']';
@@ -591,8 +591,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
-                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                new CI2<GridNearAtomicFullUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicFullUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
                     }
                 });
@@ -622,8 +622,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         Exception err = null;
-        GridNearAtomicUpdateRequest singleReq0 = null;
-        Map<UUID, GridNearAtomicUpdateRequest> mappings0 = null;
+        GridNearAtomicFullUpdateRequest singleReq0 = null;
+        Map<UUID, GridNearAtomicFullUpdateRequest> mappings0 = null;
 
         int size = keys.size();
 
@@ -652,7 +652,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
             }
             else {
-                Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = mapUpdate(topNodes,
+                Map<UUID, GridNearAtomicFullUpdateRequest> pendingMappings = mapUpdate(topNodes,
                     topVer,
                     futVer,
                     updVer,
@@ -664,7 +664,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     if (syncMode == PRIMARY_SYNC) {
                         mappings0 = U.newHashMap(pendingMappings.size());
 
-                        for (GridNearAtomicUpdateRequest req : pendingMappings.values()) {
+                        for (GridNearAtomicFullUpdateRequest req : pendingMappings.values()) {
                             if (req.hasPrimary())
                                 mappings0.put(req.nodeId(), req);
                         }
@@ -757,7 +757,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @throws Exception If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private Map<UUID, GridNearAtomicUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
+    private Map<UUID, GridNearAtomicFullUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
         GridCacheVersion futVer,
         @Nullable GridCacheVersion updVer,
@@ -777,7 +777,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (conflictRmvVals != null)
             conflictRmvValsIt = conflictRmvVals.iterator();
 
-        Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
+        Map<UUID, GridNearAtomicFullUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
 
         // Create mappings first, then send messages.
         for (Object key : keys) {
@@ -849,10 +849,10 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                 UUID nodeId = affNode.id();
 
-                GridNearAtomicUpdateRequest mapped = pendingMappings.get(nodeId);
+                GridNearAtomicFullUpdateRequest mapped = pendingMappings.get(nodeId);
 
                 if (mapped == null) {
-                    mapped = new GridNearAtomicUpdateRequest(
+                    mapped = new GridNearAtomicFullUpdateRequest(
                         cctx.cacheId(),
                         nodeId,
                         futVer,
@@ -894,7 +894,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Request.
      * @throws Exception If failed.
      */
-    private GridNearAtomicUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
+    private GridNearAtomicFullUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
         GridCacheVersion futVer,
         @Nullable GridCacheVersion updVer) throws Exception {
         Object key = F.first(keys);
@@ -955,7 +955,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
                 "left the grid).");
 
-        GridNearAtomicUpdateRequest req = new GridNearAtomicUpdateRequest(
+        GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
             cctx.cacheId(),
             primary.id(),
             futVer,

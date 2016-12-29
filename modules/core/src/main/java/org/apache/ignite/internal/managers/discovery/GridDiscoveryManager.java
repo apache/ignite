@@ -42,8 +42,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -81,7 +80,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -119,9 +118,11 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -170,7 +171,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private static final String PREFIX = "Topology snapshot";
 
     /** Discovery cached history size. */
-    protected static final int DISCOVERY_HISTORY_SIZE = 100;
+    static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
 
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_DAEMON = new P1<ClusterNode>() {
@@ -211,8 +212,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final AtomicBoolean lastSegChkRes = new AtomicBoolean(true);
 
     /** Topology cache history. */
-    private final ConcurrentNavigableMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-        new GridBoundedConcurrentOrderedMap<>(DISCOVERY_HISTORY_SIZE);
+    private final GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
+        new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
 
     /** Topology snapshots history. */
     private volatile Map<Long, Collection<ClusterNode>> topHist = new HashMap<>();
@@ -402,7 +403,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         long totSysMemory = -1;
 
         try {
@@ -521,8 +522,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
-                    boolean incMinorTopVer = ctx.cache().onCustomEvent(customMsg,
-                        new AffinityTopologyVersion(topVer, minorTopVer));
+                    boolean incMinorTopVer = ctx.cache().onCustomEvent(
+                        customMsg, new AffinityTopologyVersion(topVer, minorTopVer)
+                    );
 
                     if (incMinorTopVer) {
                         minorTopVer++;
@@ -615,7 +617,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     registeredCaches.clear();
 
-                    discoCacheHist.clear();
+                    for (AffinityTopologyVersion histVer : discoCacheHist.keySet()) {
+                        Object rmvd = discoCacheHist.remove(histVer);
+
+                        assert rmvd != null : histVer;
+                    }
 
                     topHist.clear();
 
@@ -1016,7 +1022,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 break;
 
             if (ctx.config().isWaitForSegmentOnStart()) {
-                LT.warn(log, null, "Failed to check network segment (retrying every 2000 ms).");
+                LT.warn(log, "Failed to check network segment (retrying every 2000 ms).");
 
                 // Wait and check again.
                 U.sleep(2000);
@@ -1236,9 +1242,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * Prints the latest topology info into log taking into account logging/verbosity settings.
+     *
+     * @param topVer Topology version.
      */
-    public void ackTopology() {
-        ackTopology(topSnap.get().topVer.topologyVersion(), false);
+    public void ackTopology(long topVer) {
+        ackTopology(topVer, false);
     }
 
     /**
@@ -1250,7 +1258,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private void ackTopology(long topVer, boolean throttle) {
         assert !isLocDaemon;
 
-        DiscoCache discoCache = discoCache();
+        DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
+
+        if (discoCache == null) {
+            String msg = "Failed to resolve nodes topology [topVer=" + topVer +
+                ", hist=" + discoCacheHist.keySet() + ']';
+
+            if (log.isQuiet())
+                U.quiet(false, msg);
+
+            if (log.isDebugEnabled())
+                log.debug(msg);
+            else if (log.isInfoEnabled())
+                log.info(msg);
+
+            return;
+        }
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
@@ -1274,7 +1297,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double heap = U.heapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
+            U.quiet(false, topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1318,19 +1341,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
+            log.info(topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
     }
 
     /**
+     * @param topVer Topology version.
      * @param srvNodesNum Server nodes number.
      * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @return Topology snapshot message.
      */
-    private String topologySnapshotMessage(int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
+    private String topologySnapshotMessage(long topVer, int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
-            (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
+            (discoOrdered ? "ver=" + topVer + ", " : "") +
             "servers=" + srvNodesNum +
             ", clients=" + clientNodesNum +
             ", CPUs=" + totalCpus +
@@ -1543,7 +1567,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @return Discovery collection cache.
      */
-    public DiscoCache discoCache() {
+    private DiscoCache discoCache() {
         Snapshot cur = topSnap.get();
 
         assert cur != null;
@@ -1568,15 +1592,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return All non-daemon nodes in topology. */
     public Collection<ClusterNode> allNodes() {
         return discoCache().allNodes();
-    }
-
-    /**
-     * Gets topology grouped by node versions.
-     *
-     * @return Version to collection of nodes map.
-     */
-    public NavigableMap<IgniteProductVersion, Collection<ClusterNode>> topologyVersionMap() {
-        return discoCache().versionsMap();
     }
 
     /** @return Full topology size. */
@@ -1647,17 +1662,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Gets cache remote nodes for cache with given name.
      *
-     * @param cacheName Cache name.
-     * @param topVer Topology version.
-     * @return Collection of cache nodes.
-     */
-    public Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(cacheName, topVer).remoteCacheNodes(cacheName, topVer.topologyVersion());
-    }
-
-    /**
-     * Gets cache remote nodes for cache with given name.
-     *
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
@@ -1672,7 +1676,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> aliveCacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
+    Collection<ClusterNode> aliveCacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
         return resolveDiscoCache(cacheName, topVer).aliveCacheNodes(cacheName, topVer.topologyVersion());
     }
 
@@ -1683,38 +1687,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> aliveRemoteCacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
+    Collection<ClusterNode> aliveRemoteCacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
         return resolveDiscoCache(cacheName, topVer).aliveRemoteCacheNodes(cacheName, topVer.topologyVersion());
     }
 
     /**
-     * Gets alive remote server nodes with at least one cache configured.
-     *
      * @param topVer Topology version (maximum allowed node order).
-     * @return Collection of alive cache nodes.
+     * @return Oldest alive server nodes with at least one cache configured.
      */
-    public Collection<ClusterNode> aliveRemoteServerNodesWithCaches(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(null, topVer).aliveRemoteServerNodesWithCaches(topVer.topologyVersion());
-    }
+    @Nullable public ClusterNode oldestAliveCacheServerNode(AffinityTopologyVersion topVer) {
+        DiscoCache cache = resolveDiscoCache(null, topVer);
 
-    /**
-     * Gets alive server nodes with at least one cache configured.
-     *
-     * @param topVer Topology version (maximum allowed node order).
-     * @return Collection of alive cache nodes.
-     */
-    public Collection<ClusterNode> aliveServerNodesWithCaches(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(null, topVer).aliveServerNodesWithCaches(topVer.topologyVersion());
-    }
+        Map.Entry<ClusterNode, Boolean> e = cache.aliveSrvNodesWithCaches.firstEntry();
 
-    /**
-     * Gets alive nodes with at least one cache configured.
-     *
-     * @param topVer Topology version (maximum allowed node order).
-     * @return Collection of alive cache nodes.
-     */
-    public Collection<ClusterNode> aliveNodesWithCaches(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(null, topVer).aliveNodesWithCaches(topVer.topologyVersion());
+        return e != null ? e.getKey() : null;
     }
 
     /**
@@ -1817,16 +1803,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         DiscoCache cache = AffinityTopologyVersion.NONE.equals(topVer) || topVer.equals(snap.topVer) ?
             snap.discoCache : discoCacheHist.get(topVer);
-
-        if (cache == null) {
-            // Find the eldest acceptable discovery cache.
-            Map.Entry<AffinityTopologyVersion, DiscoCache> eldest = discoCacheHist.firstEntry();
-
-            if (eldest != null) {
-                if (topVer.compareTo(eldest.getKey()) < 0)
-                    cache = eldest.getValue();
-            }
-        }
 
         if (cache == null) {
             throw new IgniteException("Failed to resolve nodes topology [cacheName=" + cacheName +
@@ -2632,19 +2608,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final ConcurrentMap<String, Collection<ClusterNode>> aliveRmtCacheNodes;
 
         /**
-         * Cached alive remote nodes with caches.
-         */
-        private final Collection<ClusterNode> aliveNodesWithCaches;
-
-        /**
          * Cached alive server remote nodes with caches.
          */
-        private final Collection<ClusterNode> aliveSrvNodesWithCaches;
-
-        /**
-         * Cached alive remote server nodes with caches.
-         */
-        private final Collection<ClusterNode> aliveRmtSrvNodesWithCaches;
+        private final ConcurrentSkipListMap<ClusterNode, Boolean> aliveSrvNodesWithCaches;
 
         /**
          * @param loc Local node.
@@ -2677,9 +2643,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             aliveCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
             aliveRmtCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
-            aliveNodesWithCaches = new ConcurrentSkipListSet<>();
-            aliveSrvNodesWithCaches = new ConcurrentSkipListSet<>();
-            aliveRmtSrvNodesWithCaches = new ConcurrentSkipListSet<>();
+            aliveSrvNodesWithCaches = new ConcurrentSkipListMap<>(GridNodeOrderComparator.INSTANCE);
             nodesByVer = new TreeMap<>();
 
             long maxOrder0 = 0;
@@ -2733,18 +2697,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                if (hasCaches) {
-                    if (alive(node.id())) {
-                        aliveNodesWithCaches.add(node);
-
-                        if (!CU.clientNode(node)) {
-                            aliveSrvNodesWithCaches.add(node);
-
-                            if (!loc.id().equals(node.id()))
-                                aliveRmtSrvNodesWithCaches.add(node);
-                        }
-                    }
-                }
+                if (hasCaches && alive(node.id()) && !CU.clientNode(node))
+                    aliveSrvNodesWithCaches.put(node, Boolean.TRUE);
 
                 IgniteProductVersion nodeVer = U.productVersion(node);
 
@@ -2873,17 +2827,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /**
-         * Gets all remote nodes that have cache with given name.
-         *
-         * @param cacheName Cache name.
-         * @param topVer Topology version.
-         * @return Collection of nodes.
-         */
-        Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, final long topVer) {
-            return filter(topVer, rmtCacheNodes.get(cacheName));
-        }
-
-        /**
          * Gets all remote nodes that have at least one cache configured.
          *
          * @param topVer Topology version.
@@ -2928,36 +2871,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /**
-         * Gets all alive remote server nodes with at least one cache configured.
-         *
-         * @param topVer Topology version.
-         * @return Collection of nodes.
-         */
-        Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final long topVer) {
-            return filter(topVer, aliveRmtSrvNodesWithCaches);
-        }
-
-        /**
-         * Gets all alive server nodes with at least one cache configured.
-         *
-         * @param topVer Topology version.
-         * @return Collection of nodes.
-         */
-        Collection<ClusterNode> aliveServerNodesWithCaches(final long topVer) {
-            return filter(topVer, aliveSrvNodesWithCaches);
-        }
-
-        /**
-         * Gets all alive remote nodes with at least one cache configured.
-         *
-         * @param topVer Topology version.
-         * @return Collection of nodes.
-         */
-        Collection<ClusterNode> aliveNodesWithCaches(final long topVer) {
-            return filter(topVer, aliveNodesWithCaches);
-        }
-
-        /**
          * Checks if cache with given name has at least one node with near cache enabled.
          *
          * @param cacheName Cache name.
@@ -2980,9 +2893,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             filterNodeMap(aliveRmtCacheNodes, leftNode);
 
-            aliveNodesWithCaches.remove(leftNode);
             aliveSrvNodesWithCaches.remove(leftNode);
-            aliveRmtSrvNodesWithCaches.remove(leftNode);
         }
 
         /**

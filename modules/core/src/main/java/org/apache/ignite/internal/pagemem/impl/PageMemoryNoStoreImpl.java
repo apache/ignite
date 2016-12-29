@@ -174,6 +174,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         segBits = Integer.SIZE - Integer.numberOfLeadingZeros(segments.length - 1);
+
+        // Reserve at least one bit for segment.
+        if (segBits == 0)
+            segBits = 1;
+
         idxBits = PageIdUtils.PAGE_IDX_SIZE - segBits;
 
         segMask = ~(-1 << segBits);
@@ -588,7 +593,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             pageIdx &= idxMask;
 
-            long offset = pageIdx * sysPageSize;
+            long offset = ((long)pageIdx) * sysPageSize;
 
             return pagesBase + offset;
         }

@@ -124,7 +124,7 @@ public abstract class WALRecord {
         PAGES_LIST_REMOVE_PAGE,
 
         /** */
-        META_PAGE_UPDATE_ROOTS,
+        META_PAGE_INIT,
 
         /** */
         PARTITION_META_PAGE_UPDATE_COUNTERS,
@@ -135,20 +135,26 @@ public abstract class WALRecord {
         /** */
         TRACKING_PAGE_DELTA,
 
-        /** Meta page update last successful backup id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_BACKUP_ID,
+        /** Meta page update last successful snapshot id. */
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID,
 
-        /** Meta page update last successful full backup id. */
-        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_BACKUP_ID,
+        /** Meta page update last successful full snapshot id. */
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID,
 
-        /** Meta page update next backup id. */
-        META_PAGE_UPDATE_NEXT_BACKUP_ID,
+        /** Meta page update next snapshot id. */
+        META_PAGE_UPDATE_NEXT_SNAPSHOT_ID,
 
         /** Meta page update last allocated index. */
         META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,
 
-        /** Meta page update candidate allocated index. */
-        META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX
+        /** Partition meta update state. */
+        PART_META_UPDATE_STATE,
+
+        /** Page list meta reset count record. */
+        PAGE_LIST_META_RESET_COUNT_RECORD,
+
+        /** Switch segment record. */
+        SWITCH_SEGMENT_RECORD
         ;
 
         /** */

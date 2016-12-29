@@ -31,6 +31,9 @@ public class PagePartitionMetaIO extends PageMetaIO {
     private static final int GLOBAL_RMV_ID_OFF = UPDATE_CNTR_OFF + 8;
 
     /** */
+    private static final int PARTITION_STATE_OFF = GLOBAL_RMV_ID_OFF + 8;
+
+    /** */
     public static final IOVersions<PagePartitionMetaIO> VERSIONS = new IOVersions<>(
         new PagePartitionMetaIO(1)
     );
@@ -42,6 +45,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setSize(buf, 0);
         setUpdateCounter(buf, 0);
         setGlobalRemoveId(buf, 0);
+        setPartitionState(buf, (byte)-1);
     }
 
     /**
@@ -97,5 +101,20 @@ public class PagePartitionMetaIO extends PageMetaIO {
      */
     public void setGlobalRemoveId(ByteBuffer buf, long rmvId) {
         buf.putLong(GLOBAL_RMV_ID_OFF, rmvId);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public byte getPartitionState(ByteBuffer buf) {
+        return buf.get(PARTITION_STATE_OFF);
+    }
+
+    /**
+     * @param buf
+     * @param state
+     */
+    public void setPartitionState(ByteBuffer buf, byte state) {
+        buf.put(PARTITION_STATE_OFF, state);
     }
 }

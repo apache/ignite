@@ -459,8 +459,7 @@ namespace ignite
                     int32_t realLen = stream->ReadInt32();
 
                     if (res && len >= realLen) {
-                        for (int i = 0; i < realLen; i++)
-                            *(res + i) = static_cast<char>(stream->ReadInt8());
+                        stream->ReadInt8Array(reinterpret_cast<int8_t*>(res), realLen);
 
                         if (len > realLen)
                             *(res + realLen) = 0; // Set NULL terminator if possible.
@@ -662,6 +661,23 @@ namespace ignite
             bool BinaryReaderImpl::HasNextElement(int32_t id) const
             {
                 return elemId == id && elemRead < elemCnt;
+            }
+
+            bool BinaryReaderImpl::SkipIfNull()
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
+
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr != IGNITE_HDR_NULL)
+                    return false;
+
+                positionGuard.Release();
+
+                return true;
             }
 
             void BinaryReaderImpl::SetRawMode()

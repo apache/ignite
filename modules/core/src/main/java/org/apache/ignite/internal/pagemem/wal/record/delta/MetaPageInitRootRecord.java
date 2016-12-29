@@ -34,6 +34,8 @@ public class MetaPageInitRootRecord extends PageDeltaRecord {
     public MetaPageInitRootRecord(int cacheId, long pageId, long rootId) {
         super(cacheId, pageId);
 
+        assert pageId != rootId;
+
         this.rootId = rootId;
     }
 

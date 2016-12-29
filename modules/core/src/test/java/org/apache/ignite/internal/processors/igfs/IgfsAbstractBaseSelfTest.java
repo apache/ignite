@@ -64,8 +64,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Test fo regular igfs operations.
@@ -205,12 +206,10 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param memoryMode Memory mode.
      */
     protected IgfsAbstractBaseSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
-        assert mode != null && mode != PROXY;
-
         this.mode = mode;
         this.memoryMode = memoryMode;
 
-        dual = mode != PRIMARY;
+        dual = (mode == DUAL_SYNC || mode == DUAL_ASYNC);
     }
 
     /**
@@ -218,6 +217,13 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      */
     protected boolean relaxedConsistency() {
         return false;
+    }
+
+    /**
+     * @return FragmentizerEnabled IGFS config flag.
+     */
+    protected boolean fragmentizerEnabled() {
+        return true;
     }
 
     /**
@@ -343,7 +349,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         clear(igfs, igfsSecondary);
 
-        assert igfs.listFiles(new IgfsPath("/")).isEmpty();
+        assert igfs.listFiles(IgfsPath.ROOT).isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -379,6 +385,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
+        igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
 
         igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
@@ -714,7 +721,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         throws Exception {
         checkNotExist(igfs, paths);
 
-        if (dual)
+        if (mode != PRIMARY)
             checkNotExist(igfsSecondary, paths);
     }
 
@@ -864,6 +871,25 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create map with properties.
      *
+     * @param grpName Group name.
+     * @param perm Permission.
+     * @return Map with properties.
+     */
+    protected Map<String, String> properties(@Nullable String grpName, @Nullable String perm) {
+        Map<String, String> props = new HashMap<>();
+
+        if (grpName != null)
+            props.put(IgfsUtils.PROP_GROUP_NAME, grpName);
+
+        if (perm != null)
+            props.put(IgfsUtils.PROP_PERMISSION, perm);
+
+        return props;
+    }
+
+    /**
+     * Create map with properties.
+     *
      * @param username User name.
      * @param grpName Group name.
      * @param perm Permission.
@@ -905,7 +931,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     protected void clear(IgniteFileSystem igfs, IgfsSecondaryFileSystemTestAdapter igfsSecondary) throws Exception {
         clear(igfs);
 
-        if (dual)
+        if (mode != PRIMARY)
             clear(igfsSecondary);
     }
 

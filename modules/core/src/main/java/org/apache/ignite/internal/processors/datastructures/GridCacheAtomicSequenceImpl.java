@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache sequence implementation.
  */
-public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, Externalizable {
+public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -251,8 +253,15 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         while (true) {
             if (updateGuard.compareAndSet(false, true)) {
                 try {
-                    // This call must be outside lock.
-                    return CU.outTx(updateCall, ctx);
+                    try {
+                        return updateCall.call();
+                    }
+                    catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
                 }
                 finally {
                     lock.lock();
@@ -546,6 +555,17 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                 }
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.seqView = kctx.cache().atomicsCache();
+        this.ctx = seqView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 
     /** {@inheritDoc} */
