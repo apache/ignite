@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.Externalizable;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,12 +41,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Provides auto-generation framework for {@code toString()} output.
@@ -87,7 +90,8 @@ public class GridToStringBuilder {
     public static final int MAX_COL_SIZE = 100;
 
     /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
-    public static final boolean INCLUDE_SENSITIVE = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, false);
+    public static final boolean INCLUDE_SENSITIVE =
+        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
 
     /** */
     private static ThreadLocal<Queue<GridToStringThreadLocal>> threadCache = new ThreadLocal<Queue<GridToStringThreadLocal>>() {
