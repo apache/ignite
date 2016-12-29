@@ -783,7 +783,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setIndexSegmentationEnabled(true);
         CacheConfiguration ccfg2 = cacheConfig("org", false,
-            Integer.class, Organization.class);
+            Integer.class, Organization.class).setIndexSegmentationEnabled(true);
 
         final IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
         final IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
