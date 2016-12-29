@@ -125,6 +125,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreSame(grid3, Ignition.GetIgnite(null));
             Assert.AreSame(grid3, Ignition.TryGetIgnite(null));
+            Assert.AreSame(grid3, Ignition.TryGetIgnite());
 
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite("invalid_name"));
             Assert.IsNull(Ignition.TryGetIgnite("invalid_name"));
@@ -365,7 +366,7 @@ namespace Apache.Ignite.Core.Tests
             });
 
             // Wait for remote node to join
-            Assert.IsTrue(grid.WaitTopology(2, 30000));
+            Assert.IsTrue(grid.WaitTopology(2));
 
             // Wait some more for initialization
             Thread.Sleep(1000);

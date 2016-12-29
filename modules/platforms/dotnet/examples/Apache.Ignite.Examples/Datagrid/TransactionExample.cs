@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.ExamplesDll.Binary;
-using Apache.Ignite.Core.Transactions;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Transactions;
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example demonstrates how to use transactions on Apache cache.
     /// <para />
@@ -34,10 +34,10 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    class TransactionExample
+    public class TransactionExample
     {
         /// <summary>Cache name.</summary>
         private const string CacheName = "dotnet_cache_tx";
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Transaction example started.");

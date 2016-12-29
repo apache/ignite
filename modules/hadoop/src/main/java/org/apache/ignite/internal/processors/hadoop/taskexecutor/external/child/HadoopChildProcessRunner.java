@@ -21,8 +21,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -44,7 +47,6 @@ import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.Hadoop
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopTaskFinishedMessage;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopExternalCommunication;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopMessageListener;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -126,6 +128,7 @@ public class HadoopChildProcessRunner {
      *
      * @param req Initialization request.
      */
+    @SuppressWarnings("unchecked")
     private void prepareProcess(HadoopPrepareForJobRequest req) {
         if (initGuard.compareAndSet(false, true)) {
             try {
@@ -134,12 +137,21 @@ public class HadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null);
+                Class jobCls;
+
+                try {
+                    jobCls = Class.forName(HadoopCommonUtils.JOB_CLS_NAME);
+                }
+                catch (ClassNotFoundException e) {
+                    throw new IgniteException("Failed to load job class: " + HadoopCommonUtils.JOB_CLS_NAME, e);
+                }
+
+                job = req.jobInfo().createJob(jobCls, req.jobId(), log, null, new HadoopHelperImpl());
 
                 job.initialize(true, nodeDesc.processId());
 
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
-                    req.totalReducerCount(), req.localReducers());
+                    req.totalReducerCount(), req.localReducers(), 0, false);
 
                 initializeExecutors(req);
 
@@ -247,9 +259,9 @@ public class HadoopChildProcessRunner {
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
                         shuffleJob.startSending("external",
-                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopShuffleMessage>() {
-                                @Override public void applyx(HadoopProcessDescriptor dest,
-                                    HadoopShuffleMessage msg) throws IgniteCheckedException {
+                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopMessage>() {
+                                @Override public void applyx(HadoopProcessDescriptor dest, HadoopMessage msg)
+                                    throws IgniteCheckedException {
                                     comm.sendMessage(dest, msg);
                                 }
                             });
@@ -420,9 +432,7 @@ public class HadoopChildProcessRunner {
                         try {
                             HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
 
-                            shuffleJob.onShuffleMessage(m);
-
-                            comm.sendMessage(desc, new HadoopShuffleAck(m.id(), m.jobId()));
+                            shuffleJob.onShuffleMessage(desc, m);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process hadoop shuffle message [desc=" + desc + ", msg=" + msg + ']', e);

@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Serializer.
         /// </summary>
-        IBinarySerializer Serializer { get; }
+        IBinarySerializerInternal Serializer { get; }
 
         /// <summary>
         /// Affinity key field name.

@@ -56,6 +56,7 @@ namespace ignite
         void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str)
         {
             int32_t strLen = reader.ReadString(0, 0);
+
             if (strLen > 0)
             {
                 str.resize(strLen);
@@ -66,9 +67,12 @@ namespace ignite
             {
                 str.clear();
 
-                char dummy;
+                if (strLen == 0)
+                {
+                    char dummy;
 
-                reader.ReadString(&dummy, sizeof(dummy));
+                    reader.ReadString(&dummy, sizeof(dummy));
+                }
             }
         }
 
@@ -131,10 +135,39 @@ namespace ignite
 
             if (sqlStrLen == SQL_NTS)
                 res.assign(sqlStrC);
-            else
+            else if (sqlStrLen > 0)
                 res.assign(sqlStrC, sqlStrLen);
 
             return res;
+        }
+
+        void ReadByteArray(impl::binary::BinaryReaderImpl& reader, std::vector<int8_t>& res)
+        {
+            int32_t len = reader.ReadInt8Array(0, 0);
+
+            if (len > 0)
+            {
+                res.resize(len);
+
+                reader.ReadInt8Array(&res[0], static_cast<int32_t>(res.size()));
+            }
+            else
+                res.clear();
+        }
+
+        std::string HexDump(const char* data, size_t count)
+        {
+            std::stringstream  dump;
+            size_t cnt = 0;
+            for(const char* p = data, *e = data + count; p != e; ++p)
+            {
+                if (cnt++ % 16 == 0)
+                {
+                    dump << std::endl;
+                }
+                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
+            }
+            return dump.str();
         }
     }
 }

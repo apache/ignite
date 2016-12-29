@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Grid future implementation.
@@ -40,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
         /** */
-        private volatile IUnmanagedTarget _unmanagedTarget;
+        private volatile Listenable _listenable;
 
         /// <summary>
         /// Constructor.
@@ -62,7 +61,10 @@ namespace Apache.Ignite.Core.Impl.Common
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                if (ex.InnerException != null)
+                    throw ex.InnerException;
+
+                throw;
             }
         }
 
@@ -81,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cancellationToken">The cancellation token.</param>
         public Task<T> GetTask(CancellationToken cancellationToken)
         {
-            Debug.Assert(_unmanagedTarget != null);
+            Debug.Assert(_listenable != null);
 
             // OnTokenCancel will fire even if cancellationToken is already cancelled.
             cancellationToken.Register(OnTokenCancel);
@@ -166,33 +168,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Sets unmanaged future target for cancellation.
         /// </summary>
-        internal void SetTarget(IUnmanagedTarget target)
+        internal void SetTarget(Listenable target)
         {
             Debug.Assert(target != null);
 
-            _unmanagedTarget = target;
-        }
-
-        /// <summary>
-        /// Cancels this instance.
-        /// </summary>
-        internal bool Cancel()
-        {
-            if (_unmanagedTarget == null)
-                return false;
-
-            return UnmanagedUtils.ListenableCancel(_unmanagedTarget);
-        }
-
-        /// <summary>
-        /// Determines whether this instance is cancelled.
-        /// </summary>
-        internal bool IsCancelled()
-        {
-            if (_unmanagedTarget == null)
-                return false;
-
-            return UnmanagedUtils.ListenableIsCancelled(_unmanagedTarget);
+            _listenable = target;
         }
 
         /// <summary>
@@ -200,7 +180,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private void OnTokenCancel()
         {
-            Cancel();
+            if (_listenable != null)
+                _listenable.Cancel();
         }
     }
 }

@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -72,13 +73,14 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private ContinuousQueryListener lsnr;
 
     /**
+     * @param igniteWorkDir Ignite work directory.
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+    public MarshallerContextImpl(String igniteWorkDir, List<PluginProvider> plugins) throws IgniteCheckedException {
         super(plugins);
 
-        workDir = U.resolveWorkDirectory("marshaller", false);
+        workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
     }
 
     /**
@@ -179,7 +181,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) throws IgniteCheckedException {
+    @Override public String className(int id) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
 
         if (cache0 == null) {
@@ -208,7 +210,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                     assert fileLock != null : fileName;
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                         clsName = reader.readLine();
                     }
                 }
@@ -297,7 +299,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                             assert fileLock != null : fileName;
 
-                            try (Writer writer = new OutputStreamWriter(out)) {
+                            try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                                 writer.write(evt.getValue());
 
                                 writer.flush();

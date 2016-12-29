@@ -65,7 +65,7 @@ namespace ignite
                 /**
                  * Get current type manager version.
                  *
-                 * @param Version.
+                 * @return Version.
                  */
                 int32_t GetVersion();
 
@@ -80,7 +80,7 @@ namespace ignite
                 /**
                  * Process pending updates.
                  *
-                 * @param updated Updater.
+                 * @param updater Updater.
                  * @param err Error.
                  * @return In case of success.
                  */
@@ -88,19 +88,19 @@ namespace ignite
 
             private:
                 /** Current snapshots. */
-                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap>> snapshots;
-                
+                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap> > snapshots;
+
                 /** Pending snapshots. */
-                std::vector<SPSnap>* pending;                                          
+                std::vector<SPSnap>* pending;
 
                 /** Critical section. */
                 ignite::common::concurrent::CriticalSection* cs;
 
                 /** Version of pending changes. */
-                int32_t pendingVer;                                                    
-                
+                int32_t pendingVer;
+
                 /** Latest version. */
-                int32_t ver;          
+                int32_t ver;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeManager);
 

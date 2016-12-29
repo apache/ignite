@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -39,6 +40,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
@@ -234,6 +236,25 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    public void testSemaphoreClosing() throws Exception {
+        IgniteConfiguration cfg;
+        GridStringLogger stringLogger;
+
+        stringLogger = new GridStringLogger();
+
+        cfg = optimize(getConfiguration("npeGrid"));
+        cfg.setGridLogger(stringLogger);
+
+        try (Ignite ignite = startGrid(cfg.getGridName(), cfg)) {
+            ignite.semaphore("semaphore", 1, true, true);
+        }
+
+        assertFalse(stringLogger.toString().contains(NullPointerException.class.getName()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void checkSemaphoreSerialization() throws Exception {
         final IgniteSemaphore sem = grid(0).semaphore("semaphore", -gridCount() + 1, true, true);
 
@@ -276,8 +297,8 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     }
 
     /**
-     * This method only checks if parameter of new semaphore is initialized properly.
-     * For tests considering failure recovery see @GridCachePartitionedNodeFailureSelfTest.
+     * This method only checks if parameter of new semaphore is initialized properly. For tests considering failure
+     * recovery see
      *
      * @throws Exception Exception.
      */

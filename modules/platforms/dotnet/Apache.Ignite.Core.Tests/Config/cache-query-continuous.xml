@@ -27,6 +27,7 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
+        <property name="lateAffinityAssignment" value="false"/>
 
         <property name="cacheConfiguration">
             <list>

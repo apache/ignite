@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
@@ -39,14 +41,11 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test to check for system pool starvation due to {@link IgfsBlocksMessage}.
@@ -125,8 +124,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
             @Override public Void call() throws Exception {
                 GridCacheAdapter dataCache = dataCache(attacker);
 
-                try (IgniteInternalTx tx =
-                         dataCache.txStartEx(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                try (IgniteInternalTx tx = dataCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     dataCache.put(DATA_KEY, 0);
 
                     txStartLatch.countDown();
@@ -185,6 +183,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * Create IGFS file asynchronously.
      *
      * @param path Path.
+     * @param writeStartLatch Write start latch.
      * @return Future.
      */
     private IgniteInternalFuture<Void> createFileAsync(final IgfsPath path, final CountDownLatch writeStartLatch) {
@@ -265,6 +264,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
+        cfg.setStripedPoolSize(0);
         cfg.setSystemThreadPoolSize(2);
         cfg.setRebalanceThreadPoolSize(1);
         cfg.setPublicThreadPoolSize(1);

@@ -74,7 +74,8 @@ public class GridSqlSelect extends GridSqlQuery {
             buff.append(expression.getSQL());
         }
 
-        buff.append("\nFROM ").append(from.getSQL());
+        if (from != null)
+            buff.append("\nFROM ").append(from.getSQL());
 
         if (where != null)
             buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
@@ -131,13 +132,12 @@ public class GridSqlSelect extends GridSqlQuery {
 
     /**
      * @param buff Statement builder.
-     * @param expression Alias expression.
+     * @param exp Alias expression.
      */
-    private static void addAlias(StatementBuilder buff, GridSqlElement expression) {
-        if (expression instanceof GridSqlAlias)
-            expression = expression.child();
+    private static void addAlias(StatementBuilder buff, GridSqlElement exp) {
+        exp = GridSqlAlias.unwrap(exp);
 
-        buff.append(StringUtils.unEnclose(expression.getSQL()));
+        buff.append(StringUtils.unEnclose(exp.getSQL()));
     }
 
     /**

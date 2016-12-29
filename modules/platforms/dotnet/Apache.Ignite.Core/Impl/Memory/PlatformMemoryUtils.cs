@@ -88,16 +88,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Sets capacity for the given memory chunk.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <param name="cap">CalculateCapacity.</param>
-        public static void SetCapacity(long memPtr, int cap) 
-        {
-            *((int*)(memPtr + MemHdrOffCap)) = cap;
-        }
-
-        /// <summary>
         /// Gets length for the given memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
@@ -138,16 +128,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Check whether this memory chunk is external.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <returns><c>True</c> if owned by Java.</returns>
-        public static bool IsExternal(long memPtr) 
-        {
-            return IsExternal(GetFlags(memPtr));
-        }
-
-        /// <summary>
         /// Check whether flags denote that this memory chunk is external.
         /// </summary>
         /// <param name="flags">Flags.</param>
@@ -155,16 +135,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         public static bool IsExternal(int flags) 
         {
             return (flags & FlagExt) != FlagExt;
-        }
-
-        /// <summary>
-        /// Check whether this memory chunk is pooled.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <returns><c>True</c> if pooled.</returns>
-        public static bool IsPooled(long memPtr) 
-        {
-            return IsPooled(GetFlags(memPtr));
         }
 
         /// <summary>

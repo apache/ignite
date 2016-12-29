@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -44,6 +46,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import javax.cache.processor.EntryProcessorException;
 
 /**
  * Tests command handler directly.
@@ -69,6 +73,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(CacheMode.LOCAL);
 
+        cacheCfg.setAtomicityMode(atomicityMode());
+
         // Grid config.
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -82,6 +88,14 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg); // Add 'null' cache configuration.
 
         return cfg;
+    }
+
+    /**
+     *
+     * @return CacheAtomicityMode for the cache.
+     */
+    protected CacheAtomicityMode atomicityMode(){
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**
@@ -149,6 +163,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             info("Got expected exception: " + e);
 
+            e.printStackTrace();
+
             assertTrue(e.getMessage().startsWith("Incompatible types"));
         }
     }
@@ -163,7 +179,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @return Resulting value in cache.
      * @throws IgniteCheckedException In case of any grid exception.
      */
-    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
+    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException, EntryProcessorException {
         GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
@@ -184,7 +200,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
             jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
-            assertTrue("Expects succeed.", (Boolean)hnd.handleAsync(req).get().getResponse());
+            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
         }
         finally {
             res = (T)jcache().getAndRemove(key);

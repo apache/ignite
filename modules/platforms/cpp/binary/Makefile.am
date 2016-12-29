@@ -26,11 +26,13 @@ AM_CPPFLAGS = \
     -I$(srcdir)/include \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_binary_la_LIBADD = \
     @top_srcdir@/common/libignite-common.la

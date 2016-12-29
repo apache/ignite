@@ -532,7 +532,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testMkdirsParentRoot() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(DIR, props);
 
@@ -733,7 +736,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if(!propertiesSupported())
             return;
 
-        if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
+        if (mode != PRIMARY && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
             // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
             // an arbitrary named property is just ignored:
             checkRootPropertyUpdate("foo", "moo", null);
@@ -860,13 +863,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only access time.
-            igfs.setTimes(path, info.accessTime() + 1, -1);
+            igfs.setTimes(path, info.accessTime() + 1000, -1);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 1, newInfo.accessTime());
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
             assertEquals(info.modificationTime(), newInfo.modificationTime());
 
             if (dual) {
@@ -877,14 +880,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only modification time.
-            igfs.setTimes(path, -1, info.modificationTime() + 1);
+            igfs.setTimes(path, -1, info.modificationTime() + 1000);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 1, newInfo.accessTime());
-            assertEquals(info.modificationTime() + 1, newInfo.modificationTime());
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 1000, newInfo.modificationTime());
 
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
@@ -894,14 +897,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change both.
-            igfs.setTimes(path, info.accessTime() + 2, info.modificationTime() + 2);
+            igfs.setTimes(path, info.accessTime() + 2000, info.modificationTime() + 2000);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 2, newInfo.accessTime());
-            assertEquals(info.modificationTime() + 2, newInfo.modificationTime());
+            assertEquals(info.accessTime() + 2000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 2000, newInfo.modificationTime());
 
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
@@ -1310,77 +1313,76 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateConsistencyMultithreaded() throws Exception {
-        // TODO: Enable
-//        final AtomicBoolean stop = new AtomicBoolean();
-//
-//        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
-//        final AtomicReference<Exception> err = new AtomicReference<>();
-//
-//        igfs.create(FILE, false).close();
-//
-//        int threadCnt = 50;
-//
-//        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-//            @SuppressWarnings("ThrowFromFinallyBlock")
-//            @Override public void run() {
-//                while (!stop.get() && err.get() == null) {
-//                    IgfsOutputStream os = null;
-//
-//                    try {
-//                        os = igfs.create(FILE, true);
-//
-//                        os.write(chunk);
-//
-//                        os.close();
-//
-//                        createCtr.incrementAndGet();
-//                    }
-//                    catch (IgniteException e) {
-//                        // No-op.
-//                    }
-//                    catch (IOException e) {
-//                        err.compareAndSet(null, e);
-//
-//                        Throwable[] chain = X.getThrowables(e);
-//
-//                        Throwable cause = chain[chain.length - 1];
-//
-//                        System.out.println("Failed due to IOException exception. Cause:");
-//                        cause.printStackTrace(System.out);
-//                    }
-//                    finally {
-//                        if (os != null)
-//                            try {
-//                                os.close();
-//                            }
-//                            catch (IOException ioe) {
-//                                throw new IgniteException(ioe);
-//                            }
-//                    }
-//                }
-//            }
-//        }, threadCnt);
-//
-//        long startTime = U.currentTimeMillis();
-//
-//        while (err.get() == null
-//                && createCtr.get() < 500
-//                && U.currentTimeMillis() - startTime < 60 * 1000)
-//            U.sleep(100);
-//
-//        stop.set(true);
-//
-//        fut.get();
-//
-//        awaitFileClose(igfs.asSecondary(), FILE);
-//
-//        if (err.get() != null) {
-//            X.println("Test failed: rethrowing first error: " + err.get());
-//
-//            throw err.get();
-//        }
-//
-//        checkFileContent(igfs, FILE, chunk);
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
+        final AtomicReference<Exception> err = new AtomicReference<>();
+
+        igfs.create(FILE, false).close();
+
+        int threadCnt = 50;
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @SuppressWarnings("ThrowFromFinallyBlock")
+            @Override public void run() {
+                while (!stop.get() && err.get() == null) {
+                    IgfsOutputStream os = null;
+
+                    try {
+                        os = igfs.create(FILE, true);
+
+                        os.write(chunk);
+
+                        os.close();
+
+                        createCtr.incrementAndGet();
+                    }
+                    catch (IgniteException e) {
+                        // No-op.
+                    }
+                    catch (IOException e) {
+                        err.compareAndSet(null, e);
+
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        System.out.println("Failed due to IOException exception. Cause:");
+                        cause.printStackTrace(System.out);
+                    }
+                    finally {
+                        if (os != null)
+                            try {
+                                os.close();
+                            }
+                            catch (IOException ioe) {
+                                throw new IgniteException(ioe);
+                            }
+                    }
+                }
+            }
+        }, threadCnt);
+
+        long startTime = U.currentTimeMillis();
+
+        while (err.get() == null
+                && createCtr.get() < 500
+                && U.currentTimeMillis() - startTime < 60 * 1000)
+            U.sleep(100);
+
+        stop.set(true);
+
+        fut.get();
+
+        awaitFileClose(igfs.asSecondary(), FILE);
+
+        if (err.get() != null) {
+            X.println("Test failed: rethrowing first error: " + err.get());
+
+            throw err.get();
+        }
+
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**

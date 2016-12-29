@@ -17,7 +17,14 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.util.ArrayList;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.FileTime;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -26,15 +33,22 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsDataManager;
+import org.apache.ignite.internal.processors.igfs.IgfsImpl;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemBlockKey;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
-import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemUtils;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.FileSystemResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -45,6 +59,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -53,11 +68,18 @@ import java.util.Map;
  * Secondary file system which delegates to local file system.
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
-    /** Default buffer size. */
-    private static final int DFLT_BUF_SIZE = 8 * 1024;
-
     /** Path that will be added to each passed path. */
     private String workDir;
+
+    /** Logger. */
+    @SuppressWarnings("unused")
+    @LoggerResource
+    private IgniteLogger log;
+
+    /** IGFS instance. */
+    @SuppressWarnings("unused")
+    @FileSystemResource
+    private IgfsImpl igfs;
 
     /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
@@ -80,7 +102,14 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        throw new UnsupportedOperationException("Update operation is not yet supported.");
+        File f = fileForPath(path);
+
+        if (!f.exists())
+            return null;
+
+        updatePropertiesIfNeeded(path, props);
+
+        return info(path);
     }
 
     /** {@inheritDoc} */
@@ -161,6 +190,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
         mkdirs(path);
+
+        updatePropertiesIfNeeded(path, props);
     }
 
     /**
@@ -247,7 +278,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         try {
             FileInputStream in = new FileInputStream(fileForPath(path));
 
-            return new LocalIgfsSecondaryFileSystemPositionedReadable(in, bufSize);
+            return new LocalFileSystemPositionedReadable(in, bufSize);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to open file for read: " + path);
@@ -256,13 +287,29 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, boolean overwrite) {
-        return create0(path, overwrite, DFLT_BUF_SIZE);
+        return create0(path, overwrite);
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        return create0(path, overwrite, bufSize);
+        OutputStream os = create0(path, overwrite);
+
+        try {
+            updatePropertiesIfNeeded(path, props);
+
+            return os;
+        }
+        catch (Exception err) {
+            try {
+                os.close();
+            }
+            catch (IOException closeErr) {
+                err.addSuppressed(closeErr);
+            }
+
+            throw err;
+        }
     }
 
     /** {@inheritDoc} */
@@ -273,11 +320,30 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
             boolean exists = file.exists();
 
-            if (exists)
-                return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+            if (exists) {
+                OutputStream os = new FileOutputStream(file, true);
+
+                try {
+                    updatePropertiesIfNeeded(path, props);
+
+                    return os;
+                }
+                catch (Exception err) {
+                    try {
+                        os.close();
+
+                        throw err;
+                    }
+                    catch (IOException closeErr) {
+                        err.addSuppressed(closeErr);
+
+                        throw err;
+                    }
+                }
+            }
             else {
                 if (create)
-                    return create0(path, false, bufSize);
+                    return create(path, bufSize, false, 0, 0, props);
                 else
                     throw new IgfsPathNotFoundException("Failed to append to file because it doesn't exist: " + path);
             }
@@ -289,17 +355,25 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public IgfsFile info(final IgfsPath path) {
-        File f = fileForPath(path);
+        File file = fileForPath(path);
 
-        if (!f.exists())
+        if (!file.exists())
             return null;
 
-        boolean isDir = f.isDirectory();
+        boolean isDir = file.isDirectory();
 
-        if (isDir)
-            return new LocalFileSystemIgfsFile(path, false, true, 0, f.lastModified(), 0, null);
-        else
-            return new LocalFileSystemIgfsFile(path, f.isFile(), false, 0, f.lastModified(), f.length(), null);
+        PosixFileAttributes attrs = LocalFileSystemUtils.posixAttributes(file);
+
+        Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
+
+        if (isDir) {
+            return new LocalFileSystemIgfsFile(path, false, true, 0,
+                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), 0, props);
+        }
+        else {
+            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0,
+                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), file.length(), props);
+        }
     }
 
     /** {@inheritDoc} */
@@ -319,6 +393,25 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+        Path p = fileForPath(path).toPath();
+
+        if (!Files.exists(p))
+            throw new IgfsPathNotFoundException("Failed to set times (path not found): " + path);
+
+        try {
+            Files.getFileAttributeView(p, BasicFileAttributeView.class)
+                .setTimes(
+                    (modificationTime >= 0) ? FileTime.from(modificationTime, TimeUnit.MILLISECONDS) : null,
+                    (accessTime >= 0) ? FileTime.from(accessTime, TimeUnit.MILLISECONDS) : null,
+                    null);
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to set times for path: " + path, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         if (workDir != null)
             workDir = new File(workDir).getAbsolutePath();
@@ -327,6 +420,78 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen) throws IgniteException {
+        File f = fileForPath(path);
+
+        if (!f.exists())
+            throw new IgfsPathNotFoundException("File not found: " + path);
+
+        // Create fake block & fake affinity for blocks
+        long blockSize = igfs.configuration().getBlockSize();
+
+        if (maxLen <= 0)
+            maxLen = Long.MAX_VALUE;
+
+        assert maxLen > 0 : "maxLen : " + maxLen;
+
+        long end = start + len;
+
+        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
+
+        IgfsDataManager data = igfs.context().data();
+
+        Collection<ClusterNode> lastNodes = null;
+
+        long lastBlockIdx = -1;
+
+        IgfsBlockLocationImpl lastBlock = null;
+
+        for (long offset = start; offset < end; ) {
+            long blockIdx = offset / blockSize;
+
+            // Each step is min of maxLen and end of block.
+            long lenStep = Math.min(
+                maxLen - (lastBlock != null ? lastBlock.length() : 0),
+                (blockIdx + 1) * blockSize - offset);
+
+            lenStep = Math.min(lenStep, end - offset);
+
+            // Create fake affinity key to map blocks of secondary filesystem to nodes.
+            LocalFileSystemBlockKey affKey = new LocalFileSystemBlockKey(path, blockIdx);
+
+            if (blockIdx != lastBlockIdx) {
+                Collection<ClusterNode> nodes = data.affinityNodes(affKey);
+
+                if (!nodes.equals(lastNodes) && lastNodes != null && lastBlock != null) {
+                    blocks.add(lastBlock);
+
+                    lastBlock = null;
+                }
+
+                lastNodes = nodes;
+
+                lastBlockIdx = blockIdx;
+            }
+
+            if(lastBlock == null)
+                lastBlock = new IgfsBlockLocationImpl(offset, lenStep, lastNodes);
+            else
+                lastBlock.increaseLength(lenStep);
+
+            if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
+                blocks.add(lastBlock);
+
+                lastBlock = null;
+            }
+
+            offset += lenStep;
+       }
+
+        return blocks;
     }
 
     /**
@@ -389,11 +554,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * Internal create routine.
      *
      * @param path Path.
-     * @param overwrite Overwirte flag.
-     * @param bufSize Buffer size.
+     * @param overwrite Overwrite flag.
      * @return Output stream.
      */
-    private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+    private OutputStream create0(IgfsPath path, boolean overwrite) {
         File file = fileForPath(path);
 
         boolean exists = file.exists();
@@ -411,10 +575,29 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
 
         try {
-            return new BufferedOutputStream(new FileOutputStream(file), bufSize);
+            return new FileOutputStream(file);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
         }
+    }
+
+    /**
+     * Update path properties if needed.
+     *
+     * @param path IGFS path
+     * @param props Properties map.
+     */
+    private void updatePropertiesIfNeeded(IgfsPath path, Map<String, String> props) {
+        if (props == null || props.isEmpty())
+            return;
+
+        File file = fileForPath(path);
+
+        if (!file.exists())
+            throw new IgfsPathNotFoundException("Failed to update properties for path: " + path);
+
+        LocalFileSystemUtils.updateProperties(file, props.get(IgfsUtils.PROP_GROUP_NAME),
+            props.get(IgfsUtils.PROP_PERMISSION));
     }
 }

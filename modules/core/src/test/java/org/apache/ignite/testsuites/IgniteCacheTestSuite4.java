@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticReadC
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticRepeatableReadSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticSerializableSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
+import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalRestartSelfTest;
@@ -107,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPreloadSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearOnlyTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearReadCommittedTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
@@ -326,8 +328,11 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCachePrimarySyncTest.class);
         suite.addTestSuite(IgniteTxCachePrimarySyncTest.class);
         suite.addTestSuite(IgniteTxCacheWriteSynchronizationModesMultithreadedTest.class);
+        suite.addTestSuite(CachePutIfAbsentTest.class);
 
         suite.addTestSuite(MarshallerCacheJobRunNodeRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheNearOnlyTxTest.class);
 
         return suite;
     }

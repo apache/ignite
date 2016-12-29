@@ -17,6 +17,21 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -80,22 +95,6 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.io.OutputStream;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_READ;
@@ -151,9 +150,6 @@ public final class IgfsImpl implements IgfsEx {
     /** Writers map. */
     private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
 
-    /** Local metrics holder. */
-    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
-
     /** Client log directory. */
     private volatile String logDir;
 
@@ -182,8 +178,14 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
+        if (secondaryFs != null) {
+            igfsCtx.kernalContext().resource().injectGeneric(secondaryFs);
+
+            igfsCtx.kernalContext().resource().injectFileSystem(secondaryFs, this);
+        }
+
         if (secondaryFs instanceof LifecycleAware)
-            ((LifecycleAware) secondaryFs).start();
+            ((LifecycleAware)secondaryFs).start();
 
         /* Default IGFS mode. */
         IgfsMode dfltMode;
@@ -321,7 +323,7 @@ public final class IgfsImpl implements IgfsEx {
                 // Submit it to the thread pool immediately.
                 assert dualPool != null;
 
-                dualPool.submit(batch);
+                dualPool.execute(batch);
 
                 // Spin in case another batch is currently running.
                 while (true) {
@@ -630,7 +632,7 @@ public final class IgfsImpl implements IgfsEx {
                         IgfsFile file = secondaryFs.update(path, props);
 
                         if (file != null)
-                            return new IgfsFileImpl(secondaryFs.update(path, props), data.groupBlockSize());
+                            return new IgfsFileImpl(file, data.groupBlockSize());
                 }
 
                 return null;
@@ -756,13 +758,11 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Make directories: " + path);
 
-                final Map<String, String> props0 = props == null ? DFLT_DIR_META : new HashMap<>(props);
-
                 IgfsMode mode = resolveMode(path);
 
                 switch (mode) {
                     case PRIMARY:
-                        meta.mkdirs(path, props0);
+                        meta.mkdirs(path, props == null ? DFLT_DIR_META : new HashMap<>(props));
 
                         break;
 
@@ -770,12 +770,12 @@ public final class IgfsImpl implements IgfsEx {
                     case DUAL_SYNC:
                         await(path);
 
-                        meta.mkdirsDual(secondaryFs, path, props0);
+                        meta.mkdirsDual(secondaryFs, path, props);
 
                         break;
 
                     case PROXY:
-                        secondaryFs.mkdirs(path, props0);
+                        secondaryFs.mkdirs(path, props);
 
                         break;
                 }
@@ -1226,19 +1226,11 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY) {
-                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
-                        ((IgfsSecondaryFileSystemV2)secondaryFs).setTimes(path, accessTime, modificationTime);
-                    else
-                        throw new UnsupportedOperationException("setTimes is not supported in PROXY mode for " +
-                            "this secondary file system,");
-                }
+                if (mode == PROXY)
+                    secondaryFs.setTimes(path, accessTime, modificationTime);
                 else {
-                    boolean useSecondary =
-                        IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
-
                     meta.updateTimes(path, accessTime, modificationTime,
-                        useSecondary ? (IgfsSecondaryFileSystemV2) secondaryFs : null);
+                        IgfsUtils.isDualMode(mode) ? secondaryFs : null);
                 }
 
                 return null;
@@ -1267,6 +1259,9 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
                 IgfsMode mode = resolveMode(path);
+
+                if (mode == PROXY)
+                    return secondaryFs.affinity(path, start, len, maxLen);
 
                 // Check memory first.
                 IgfsEntryInfo info = meta.infoForPath(path);
@@ -1304,7 +1299,7 @@ public final class IgfsImpl implements IgfsEx {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
                     }
                     catch (IgniteException e) {
-                        LT.warn(log, e, "Failed to get secondary file system consumed space size.");
+                        LT.error(log, e, "Failed to get secondary file system consumed space size.");
 
                         secondarySpaceSize = -1;
                     }

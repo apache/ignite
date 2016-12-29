@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Text;
     using System.IO;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Classpath resolver.
@@ -37,11 +38,13 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="cfg">The configuration.</param>
         /// <param name="forceTestClasspath">Append test directories even if
-        ///     <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
+        /// <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
+        /// <param name="log">The log.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
-        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false)
+        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false, 
+            ILogger log = null)
         {
             var cpStr = new StringBuilder();
 
@@ -53,10 +56,13 @@ namespace Apache.Ignite.Core.Impl.Common
                     cpStr.Append(';');
             }
 
-            var ggHome = IgniteHome.Resolve(cfg);
+            var ggHome = IgniteHome.Resolve(cfg, log);
 
             if (!string.IsNullOrWhiteSpace(ggHome))
                 AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);
+
+            if (log != null)
+                log.Debug("Classpath resolved to: " + cpStr);
 
             return ClasspathPrefix + cpStr;
         }

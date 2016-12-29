@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -54,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -144,6 +146,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** IO policy. */
     private byte plc;
+
+    /** Transient TX state. */
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Required by {@link Externalizable}.
@@ -239,12 +245,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Commit version.
      */
-    public GridCacheVersion writeVersion() { return writeVer; }
+    public GridCacheVersion writeVersion() {
+        return writeVer;
+    }
 
     /**
      * @return Invalidate flag.
      */
-    public boolean isInvalidate() { return invalidate; }
+    public boolean isInvalidate() {
+        return invalidate;
+    }
 
     /**
      * @return Transaction timeout.
@@ -309,6 +319,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return onePhaseCommit;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
+        return txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
+        this.txState = txState;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -334,7 +354,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         // Marshal txNodes only if there is a node in topology with an older version.
         if (ctx.exchange().minimumNodeVersion(topologyVersion()).compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0) {
             if (txNodes != null && txNodesBytes == null)
-                txNodesBytes = ctx.marshaller().marshal(txNodes);
+                txNodesBytes = U.marshal(ctx, txNodes);
         }
         else {
             if (txNodesMsg == null)
@@ -374,7 +394,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             txNodes = F.viewReadOnly(txNodesMsg, MSG_TO_COL);
 
         if (txNodesBytes != null && txNodes == null)
-            txNodes = ctx.marshaller().unmarshal(txNodesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            txNodes = U.unmarshal(ctx, txNodesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
