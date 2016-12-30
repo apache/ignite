@@ -64,7 +64,8 @@ public class IgfsSecondaryFileSystemCreateContext {
      * @param simpleCreate Simple create flag.
      * @param props Properties.
      * @param replication Replication.
-     * @param blockSize Block size.
+     * @param blockSize Group block size, that is, IGFS-configured block size multiplied by the group size. It
+     *    represents the block size on the underlying secondary file system.
      * @param bufSize Buffer size.
      */
     public IgfsSecondaryFileSystemCreateContext(IgfsSecondaryFileSystem fs, IgfsPath path, boolean overwrite,
