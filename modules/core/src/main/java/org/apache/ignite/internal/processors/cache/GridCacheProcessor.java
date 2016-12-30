@@ -679,8 +679,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean template = cfg.getName() != null && cfg.getName().endsWith("*");
 
-        DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
-            ctx, cfg, cacheType, template, IgniteUuid.randomUuid());
+        DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
+            cfg,
+            cacheType,
+            template,
+            IgniteUuid.randomUuid());
 
         desc.locallyConfigured(true);
         desc.staticallyConfigured(true);
@@ -712,8 +715,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cfg.getName() == null) { // Use cache configuration with null name as template.
-            DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(
-                ctx, cfg, cacheType, true, IgniteUuid.randomUuid());
+            DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
+                cfg,
+                cacheType,
+                true,
+                IgniteUuid.randomUuid());
 
             desc0.locallyConfigured(true);
             desc0.staticallyConfigured(true);
@@ -749,11 +755,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             checkConsistency();
 
-            boolean currentStatus = ctx.state().active();
+            boolean currStatus = ctx.state().active();
 
-            //if we start as inactive node, and join to active cluster, we must registrate all caches which
-            //was receive on join
-            if (!ctx.isDaemon() && currentStatus && !activeOnStart) {
+            // If we start as inactive node, and join to active cluster, we must register all caches
+            // which were received on join.
+            if (!ctx.isDaemon() && currStatus && !activeOnStart) {
                 List<CacheConfiguration> tmpCacheCfg = new ArrayList<>();
 
                 for (CacheConfiguration conf : ctx.config().getCacheConfiguration()) {
@@ -780,13 +786,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ctx.config().setCacheConfiguration(newCacheCfg);
                 }
 
-                activeOnStart = currentStatus;
+                activeOnStart = currStatus;
             }
 
             if (activeOnStart && !ctx.clientNode() && !ctx.isDaemon())
                 sharedCtx.database().lock();
 
-            //must start database before start first cache
+            // Must start database before start first cache.
             sharedCtx.database().onKernalStart(false);
 
             // Start dynamic caches received from collect discovery data.
@@ -1409,7 +1415,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         storeMgr.initialize(cfgStore, sesHolders);
 
-        boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
+        boolean affNode = cfg.getCacheMode() == LOCAL || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,

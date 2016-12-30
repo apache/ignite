@@ -112,6 +112,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         indexingEnabled = GridQueryProcessor.isEnabled(cctx.config());
 
         if (cctx.affinityNode()) {
+            if (cctx.kernalContext().clientNode()) {
+                assert cctx.isLocal() : cctx.name();
+
+                cctx.shared().database().init();
+            }
+
             cctx.shared().database().checkpointReadLock();
 
             try {
