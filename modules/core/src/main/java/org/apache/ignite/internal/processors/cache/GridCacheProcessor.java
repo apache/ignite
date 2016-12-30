@@ -2939,10 +2939,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 req.clientStartOnly(true);
                         }
                     }
+
+                    if (needExchange) {
+                        if (newTopVer == null) {
+                            newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
+                                topVer.minorTopologyVersion() + 1);
+                        }
+
+                        desc.clientCacheStartVersion(newTopVer);
+                    }
                 }
 
-                if (!needExchange && desc != null)
-                    req.cacheFutureTopologyVersion(desc.startTopologyVersion());
+                if (!needExchange && desc != null) {
+                    if (desc.clientCacheStartVersion() != null)
+                        req.cacheFutureTopologyVersion(desc.clientCacheStartVersion());
+                    else
+                        req.cacheFutureTopologyVersion(desc.startTopologyVersion());
+                }
             }
             else if (req.globalStateChange() || req.resetLostPartitions())
                 needExchange = true;
