@@ -1491,18 +1491,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
-    private static class CounterWithNodes {
-        private final long cnt;
-
-        private final Set<UUID> nodes = new HashSet<>();
-
-        private CounterWithNodes(long cnt, UUID firstNode) {
-            this.cnt = cnt;
-
-            nodes.add(firstNode);
-        }
-    }
-
     /**
      * Detect lost partitions.
      */
@@ -2047,5 +2035,31 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             "remaining", remaining,
             "srvNodes", srvNodes,
             "super", super.toString());
+    }
+
+    /**
+     *
+     */
+    private static class CounterWithNodes {
+        /** */
+        private final long cnt;
+
+        /** */
+        private final Set<UUID> nodes = new HashSet<>();
+
+        /**
+         * @param cnt Count.
+         * @param firstNode Node ID.
+         */
+        private CounterWithNodes(long cnt, UUID firstNode) {
+            this.cnt = cnt;
+
+            nodes.add(firstNode);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CounterWithNodes.class, this);
+        }
     }
 }
