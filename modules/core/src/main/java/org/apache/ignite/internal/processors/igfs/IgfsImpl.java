@@ -1626,7 +1626,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFile status = secondaryFs.info(path);
 
                 if (status != null)
-                    return new IgfsFileImpl(status, cfg.getBlockSize());
+                    return new IgfsFileImpl(status, status.blockSize());
                 else
                     return null;
         }
