@@ -31,6 +31,7 @@
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc.h"
 
+
 namespace ignite
 {
     SQLRETURN SQLGetInfo(SQLHDBC        conn,
@@ -71,6 +72,23 @@ namespace ignite
                 return SQLAllocStmt(parent, result);
 
             case SQL_HANDLE_DESC:
+            {
+                using odbc::Connection;
+                Connection *connection = reinterpret_cast<Connection*>(parent);
+
+                if (!connection)
+                    return SQL_INVALID_HANDLE;
+
+                if (result)
+                    *result = 0;
+
+                connection->GetDiagnosticRecords().Reset();
+                connection->AddStatusRecord(odbc::SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED,
+                                            "The HandleType argument was SQL_HANDLE_DESC, and "
+                                            "the driver does not support allocating a descriptor handle");
+
+                return SQL_ERROR;
+            }
             default:
                 break;
         }
@@ -199,39 +217,15 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        switch (option)
+        if (option == SQL_DROP)
         {
-            case SQL_DROP:
-            {
-                delete statement;
-
-                break;
-            }
-
-            case SQL_CLOSE:
-            {
-                return SQLCloseCursor(stmt);
-            }
-
-            case SQL_UNBIND:
-            {
-                statement->UnbindAllColumns();
-
-                break;
-            }
-
-            case SQL_RESET_PARAMS:
-            {
-                statement->UnbindAllParameters();
-
-                break;
-            }
-
-            default:
-                return SQL_ERROR;
+            delete statement;
+            return SQL_SUCCESS;
         }
 
-        return SQL_SUCCESS;
+        statement->FreeResources(option);
+
+        return statement->GetDiagnosticRecords().GetReturnCode();
     }
 
     SQLRETURN SQLCloseCursor(SQLHSTMT stmt)
@@ -419,29 +413,14 @@ namespace ignite
         using odbc::Statement;
         using odbc::app::ApplicationDataBuffer;
 
-        LOG_MSG("SQLBindCol called: index=%d, type=%d\n", colNum, targetType);
+        LOG_MSG("SQLBindCol called: index=%d, type=%d targetValue=%p bufferLength=%d\n", colNum, targetType, targetValue, bufferLength);
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        IgniteSqlType driverType = ToDriverType(targetType);
-
-        if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
-            return SQL_ERROR;
-
-        if (bufferLength < 0)
-            return SQL_ERROR;
-
-        if (targetValue || strLengthOrIndicator)
-        {
-            ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
-
-            statement->BindColumn(colNum, dataBuffer);
-        }
-        else
-            statement->UnbindColumn(colNum);
+        statement->BindColumn(colNum, targetType, targetValue, bufferLength, strLengthOrIndicator);
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -464,13 +443,19 @@ namespace ignite
 
     SQLRETURN SQLFetchScroll(SQLHSTMT stmt, SQLSMALLINT orientation, SQLLEN offset)
     {
+        using odbc::Statement;
+
         LOG_MSG("SQLFetchScroll called\n");
         LOG_MSG("Orientation: %d, Offset: %d\n", orientation, offset);
 
-        if (orientation != SQL_FETCH_NEXT)
-            return SQL_ERROR;
+        Statement *statement = reinterpret_cast<Statement*>(stmt);
 
-        return SQLFetch(stmt);
+        if (!statement)
+            return SQL_INVALID_HANDLE;
+
+        statement->FetchScroll(orientation, offset);
+
+        return statement->GetDiagnosticRecords().GetReturnCode();
     }
 
     SQLRETURN SQLExtendedFetch(SQLHSTMT         stmt,
@@ -617,12 +602,7 @@ namespace ignite
                                SQLLEN       bufferLen,
                                SQLLEN*      resLen)
     {
-        using namespace odbc::type_traits;
-
         using odbc::Statement;
-        using odbc::app::ApplicationDataBuffer;
-        using odbc::app::Parameter;
-        using odbc::type_traits::IsSqlTypeSupported;
 
         LOG_MSG("SQLBindParameter called: %d, %d, %d\n", paramIdx, bufferType, paramSqlType);
 
@@ -631,27 +611,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        if (ioType != SQL_PARAM_INPUT)
-            return SQL_ERROR;
-
-        if (!IsSqlTypeSupported(paramSqlType))
-            return SQL_ERROR;
-
-        IgniteSqlType driverType = ToDriverType(bufferType);
-
-        if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
-            return SQL_ERROR;
-
-        if (buffer)
-        {
-            ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
-
-            Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
-
-            statement->BindParameter(paramIdx, param);
-        }
-        else
-            statement->UnbindParameter(paramIdx);
+        statement->BindParameter(paramIdx, ioType, bufferType, paramSqlType, columnSize, decDigits, buffer, bufferLen, resLen);
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -717,13 +677,13 @@ namespace ignite
     }
 
     SQLRETURN SQLDescribeCol(SQLHSTMT       stmt,
-                             SQLUSMALLINT   columnNum, 
+                             SQLUSMALLINT   columnNum,
                              SQLCHAR*       columnNameBuf,
                              SQLSMALLINT    columnNameBufLen,
                              SQLSMALLINT*   columnNameLen,
-                             SQLSMALLINT*   dataType, 
+                             SQLSMALLINT*   dataType,
                              SQLULEN*       columnSize,
-                             SQLSMALLINT*   decimalDigits, 
+                             SQLSMALLINT*   decimalDigits,
                              SQLSMALLINT*   nullable)
     {
         using odbc::Statement;

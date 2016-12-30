@@ -64,17 +64,35 @@ namespace
     /** SQL state HY001 constant. */
     const std::string STATE_HY001 = "HY001";
 
+    /** SQL state HY003 constant. */
+    const std::string STATE_HY003 = "HY003";
+
     /** SQL state HY009 constant. */
     const std::string STATE_HY009 = "HY009";
 
     /** SQL state HY010 constant. */
     const std::string STATE_HY010 = "HY010";
 
+    /** SQL state HY092 constant. */
+    const std::string STATE_HY092 = "HY092";
+
+    /** SQL state HY105 constant. */
+    const std::string STATE_HY105 = "HY105";
+
+    /** SQL state HY106 constant. */
+    const std::string STATE_HY106 = "HY106";
+
     /** SQL state HYC00 constant. */
     const std::string STATE_HYC00 = "HYC00";
 
     /** SQL state HYT01 constant. */
     const std::string STATE_HYT01 = "HYT01";
+
+    /** SQL state HY090 constant. */
+    const std::string STATE_HY090 = "HY090";
+
+    /** SQL state IM001 constant. */
+    const std::string STATE_IM001 = "IM001";
 }
 
 namespace ignite
@@ -148,6 +166,9 @@ namespace ignite
                     odbcSubclasses.insert("42S12");
                     odbcSubclasses.insert("42S21");
                     odbcSubclasses.insert("42S22");
+                    odbcSubclasses.insert("HY003");
+                    odbcSubclasses.insert("HY090");
+                    odbcSubclasses.insert("HY092");
                     odbcSubclasses.insert("HY095");
                     odbcSubclasses.insert("HY097");
                     odbcSubclasses.insert("HY098");
@@ -155,6 +176,7 @@ namespace ignite
                     odbcSubclasses.insert("HY100");
                     odbcSubclasses.insert("HY101");
                     odbcSubclasses.insert("HY105");
+                    odbcSubclasses.insert("HY106");
                     odbcSubclasses.insert("HY107");
                     odbcSubclasses.insert("HY109");
                     odbcSubclasses.insert("HY110");
@@ -234,17 +256,35 @@ namespace ignite
                     case SQL_STATE_HY001_MEMORY_ALLOCATION:
                         return STATE_HY001;
 
+                    case SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE:
+                        return STATE_HY003;
+
                     case SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER:
                         return STATE_HY009;
 
                     case SQL_STATE_HY010_SEQUENCE_ERROR:
                         return STATE_HY010;
 
+                    case SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH:
+                        return STATE_HY090;
+
+                    case SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE:
+                        return STATE_HY092;
+
+                    case SQL_STATE_HY105_INVALID_PARAMETER_TYPE:
+                        return STATE_HY105;
+
+                    case SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE:
+                        return STATE_HY106;
+
                     case SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
                         return STATE_HYC00;
 
                     case SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT:
                         return STATE_HYT01;
+
+                    case SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED:
+                        return STATE_IM001;
 
                     default:
                         break;
