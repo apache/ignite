@@ -79,13 +79,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private boolean indexingEnabled;
 
     /** */
-    protected CacheDataStore locCacheDataStore;
+    // TODO GG-11208 need restore size after restart.
+    private CacheDataStore locCacheDataStore;
 
     /** */
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
-    protected final CacheDataStore removedStore = new CacheDataStoreImpl(-1, null, null, null);
+    protected final CacheDataStore rmvdStore = new CacheDataStoreImpl(-1, null, null, null);
 
     /** */
     protected PendingEntriesTree pendingEntries;
@@ -194,6 +195,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             return part.dataStore();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long entriesCount() {
+        if (cctx.isLocal())
+            return locCacheDataStore.size();
+
+        long size = 0;
+
+        for (CacheDataStore store : partDataStores.values())
+            size += store.size();
+
+        return size;
     }
 
     /**
