@@ -166,7 +166,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean ignoreClsNotFound;
 
     /** */
-    private transient boolean asyncCallback;
+    private transient boolean asyncCb;
 
     /** */
     private transient UUID nodeId;
@@ -308,12 +308,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (locLsnr instanceof JCacheQueryLocalListener) {
                 ctx.resource().injectGeneric(((JCacheQueryLocalListener)locLsnr).impl);
 
-                asyncCallback = ((JCacheQueryLocalListener)locLsnr).async();
+                asyncCb = ((JCacheQueryLocalListener)locLsnr).async();
             }
             else {
                 ctx.resource().injectGeneric(locLsnr);
 
-                asyncCallback = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
+                asyncCb = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
             }
         }
 
@@ -324,14 +324,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (((JCacheQueryRemoteFilter)filter).impl != null)
                     ctx.resource().injectGeneric(((JCacheQueryRemoteFilter)filter).impl);
 
-                if (!asyncCallback)
-                    asyncCallback = ((JCacheQueryRemoteFilter)filter).async();
+                if (!asyncCb)
+                    asyncCb = ((JCacheQueryRemoteFilter)filter).async();
             }
             else {
                 ctx.resource().injectGeneric(filter);
 
-                if (!asyncCallback)
-                    asyncCallback = U.hasAnnotation(filter, IgniteAsyncCallback.class);
+                if (!asyncCb)
+                    asyncCb = U.hasAnnotation(filter, IgniteAsyncCallback.class);
             }
         }
 
@@ -396,7 +396,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
                 assert !skipPrimaryCheck || (cctx.isReplicated() && ctx.localNodeId().equals(nodeId));
 
-                if (asyncCallback) {
+                if (asyncCb) {
                     ContinuousQueryAsyncClosure clsr = new ContinuousQueryAsyncClosure(
                         primary,
                         evt,
@@ -599,7 +599,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (objs.isEmpty())
             return;
 
-        if (asyncCallback) {
+        if (asyncCb) {
             final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
 
             IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
@@ -876,7 +876,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     partCntrs = initUpdCntrs.get(partId);
             }
 
-            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntrs.get2());
+            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntrs != null ? partCntrs.get2() : null);
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
 
