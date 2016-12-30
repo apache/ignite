@@ -63,6 +63,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         commSpi.setSharedMemoryPort(-1);
         commSpi.setConnectionsPerNode(connectionsPerNode());
+        commSpi.setUsePairedConnections(usePairedConnections());
 
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
@@ -72,6 +73,13 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /**
+     * @return Value for {@link TcpCommunicationSpi#setUsePairedConnections(boolean)}.
+     */
+    protected boolean usePairedConnections() {
+        return false;
     }
 
     /**
@@ -97,7 +105,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         try {
             selectors = 4;
 
-            final int SRVS = 4;
+            final int SRVS = 6;
 
             startGridsMultiThreaded(SRVS);
 
@@ -105,7 +113,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             final Ignite client = startGrid(SRVS);
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < SRVS; i++) {
                 ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
 
                 client.compute(client.cluster().forNode(node)).call(new DummyCallable(null));
@@ -151,7 +159,10 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                             }
                         }
 
-                        return srv.readerMoveCount() > readMoveCnt && srv.writerMoveCount() > writeMoveCnt;
+                        if (usePairedConnections())
+                            return srv.readerMoveCount() > readMoveCnt && srv.writerMoveCount() > writeMoveCnt;
+                        else
+                            return srv.readerMoveCount() > readMoveCnt || srv.writerMoveCount() > writeMoveCnt;
                     }
                 }, 30_000);
 
@@ -165,8 +176,12 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                     ", rc2=" + readMoveCnt2 +
                     ", wc2=" + writeMoveCnt2 + ']');
 
-                assertTrue(readMoveCnt2 > readMoveCnt1);
-                assertTrue(writeMoveCnt2 > writeMoveCnt1);
+                if (usePairedConnections()) {
+                    assertTrue(readMoveCnt2 > readMoveCnt1);
+                    assertTrue(writeMoveCnt2 > writeMoveCnt1);
+                }
+                else
+                    assertTrue(readMoveCnt2 > readMoveCnt1 || writeMoveCnt2 > writeMoveCnt1);
 
                 readMoveCnt1 = readMoveCnt2;
                 writeMoveCnt1 = writeMoveCnt2;
