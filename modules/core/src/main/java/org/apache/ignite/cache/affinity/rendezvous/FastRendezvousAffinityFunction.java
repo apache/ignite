@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -120,10 +117,6 @@ public class FastRendezvousAffinityFunction implements AffinityFunction, Externa
 
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
-
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private Ignite ignite;
 
     /** Logger instance. */
     @LoggerResource

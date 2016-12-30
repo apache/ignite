@@ -54,14 +54,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /** MAC prefix. */
     private static final String MAC_PREF = "MAC";
 
-    /** Max funcs. */
-    private static final int MAX_FUNCS = 2;
-
     /** Ignite. */
     private static Ignite ignite;
 
     /** Max experiments. */
-    private static int MAX_EXPERIMENTS = 100;
+    private static int MAX_EXPERIMENTS = 256;
 
     /** Max experiments. */
     private TopologyModificationMode mode = TopologyModificationMode.CHANGE_LAST_NODE;
@@ -249,10 +246,17 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     }
 
     /**
+     * The table with count of partitions on node:
+     *
+     * column 0 - primary partitions counts
+     * column 1 - backup#0 partitions counts
+     * etc
+     *
+     * Rows correspond to the nodes.
      *
      * @param lst Affinity result.
      * @param nodes Topology.
-     * @return Frequency distribution of nodes by partition.
+     * @return Frequency distribution: counts of partitions on node.
      */
     private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, List<ClusterNode> nodes) {
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
@@ -387,111 +391,76 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      *
      */
     public void testAffinityBenchmark() {
-        affinityBenchmark(new Factory<AffinityFunction>() {
-            @Override public AffinityFunction create() {
-                AffinityFunction aff = new FairAffinityFunction(true, 1024);
+        mode = TopologyModificationMode.ADD;
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
 
-//                GridTestUtils.setFieldValue(aff, "ignite", ignite);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-                return aff;
-            }
-        }, new Factory<AffinityFunction>() {
-            @Override public AffinityFunction create() {
-                AffinityFunction aff = new FastRendezvousAffinityFunction(true, 1024);
-
-                GridTestUtils.setFieldValue(aff, "ignite", ignite);
-
-                return aff;
-            }
-        });
+        affinityBenchmark(aff0, new FairAffinityFunction(true, 1024));
     }
 
     /**
      *
      */
-    public void testAffinityBenchmarkFastVsNew() {
-        mode = TopologyModificationMode.ADD;
+    public void testAffinityBenchmark0() {
 
-        affinityBenchmark(new Factory<AffinityFunction>() {
-            @Override public AffinityFunction create() {
-                AffinityFunction aff = new FairAffinityFunction(true);
+        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
-//                GridTestUtils.setFieldValue(aff, "ignite", ignite);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-                return aff;
-            }
-        }, new Factory<AffinityFunction>() {
-            @Override public AffinityFunction create() {
-                AffinityFunction aff = new FastRendezvousAffinityFunction(true, 256);
-
-                GridTestUtils.setFieldValue(aff, "ignite", ignite);
-
-                return aff;
-            }
-        });
+        affinityBenchmark(aff0, new FastRendezvousAffinityFunction(true, 1024));
     }
 
     /**
-     * @param affFactoryOld Factory to create affinity function.
-     * @param affFactoryNew Factory to create affinity function.
+     * @param aff0 Affinity function. to compare.
+     * @param aff1 Affinity function. to compare.
      */
-    private void affinityBenchmark(Factory<AffinityFunction> affFactoryOld, Factory<AffinityFunction> affFactoryNew) {
-        int[] nodesCnts = {10, 2, 100, 200, 300, 400, 500, 600};
-
-        List<AffinityFunction> funcListOld = new ArrayList<>();
-        List<AffinityFunction> funcListNew = new ArrayList<>();
-
-        for (int i = 0; i < MAX_FUNCS; ++i) {
-            funcListOld.add(affFactoryOld.create());
-            funcListNew.add(affFactoryNew.create());
-        }
+    private void affinityBenchmark(AffinityFunction aff0, AffinityFunction aff1) {
+        int[] nodesCnts = {100, 0, 100, 200, 300, 400, 500, 600};
 
         final int backups = 2;
 
         for (int nodesCnt : nodesCnts) {
-            List<ClusterNode> nodes_old = createBaseNodes(nodesCnt);
-            List<ClusterNode> nodes_new = createBaseNodes(nodesCnt);
+            List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
+            List<ClusterNode> nodes1 = createBaseNodes(nodesCnt);
 
-            List<Long> times_old = new ArrayList<>(MAX_EXPERIMENTS);
-            List<Long> times_new = new ArrayList<>(MAX_EXPERIMENTS);
+            List<Long> times0 = new ArrayList<>(MAX_EXPERIMENTS);
+            List<Long> times1 = new ArrayList<>(MAX_EXPERIMENTS);
 
             List<List<ClusterNode>> prevAssignment = null;
 
+            prevAssignment = assignPartitions(aff0, nodes0, null, backups, 0).get2();
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
-                for (AffinityFunction aff : funcListOld) {
-                    IgniteBiTuple<Long, List<List<ClusterNode>>> aa
-                        = assignPartitions(aff, nodes_old, prevAssignment, backups, i);
+                IgniteBiTuple<Long, List<List<ClusterNode>>> aa
+                    = assignPartitions(aff0, nodes0, prevAssignment, backups, i);
 
-                    prevAssignment = aa.get2();
+                prevAssignment = aa.get2();
 
-                    times_old.add(aa.get1());
-                }
+                times0.add(aa.get1());
             }
 
-            prevAssignment = null;
+           prevAssignment = assignPartitions(aff1, nodes1, null, backups, 0).get2();
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
-                for (AffinityFunction aff : funcListNew) {
-                    IgniteBiTuple<Long, List<List<ClusterNode>>> aa
-                        = assignPartitions(aff, nodes_new, prevAssignment, backups, i);
+                IgniteBiTuple<Long, List<List<ClusterNode>>> aa
+                    = assignPartitions(aff1, nodes1, prevAssignment, backups, i);
 
-                    prevAssignment = aa.get2();
+                prevAssignment = aa.get2();
 
-                    times_new.add(aa.get1());
-                }
+                times1.add(aa.get1());
             }
 
-            double avr_old = average(times_old);
-            double var_old = variance(times_old, avr_old);
+            double avr0 = average(times0);
+            double var0 = variance(times0, avr0);
 
-            double avr_new = average(times_new);
-            double var_new = variance(times_new, avr_new);
+            double avr1 = average(times1);
+            double var1 = variance(times1, avr1);
 
             info(String.format("Test %d nodes. %s: %.1f ms +/- %.3f ms; %s: %.1f ms +/- %.3f ms;",
                 nodesCnt,
-                affFactoryOld.create().getClass().getSimpleName(),
-                avr_old, var_old,
-                affFactoryNew.create().getClass().getSimpleName(),
-                avr_new, var_new));
+                aff0.getClass().getSimpleName(),
+                avr0, var0,
+                aff1.getClass().getSimpleName(),
+                avr1, var1));
         }
     }
 
@@ -540,19 +509,20 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
             List<List<ClusterNode>> affPrev = null;
 
-            int diffCntOld = 0;
+            int diffCnt0 = 0;
 
+            affPrev = assignPartitions(aff0, nodes_old, affPrev, backups, 0).get2();
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
                 List<List<ClusterNode>> affCur = assignPartitions(aff0, nodes_old, affPrev, backups, i).get2();
-                diffCntOld += countPartitionsToMigrate(affPrev, affCur);
+                diffCnt0 += countPartitionsToMigrate(affPrev, affCur);
                 affPrev = affCur;
             }
 
-            affPrev = null;
-            int diffCntNew = 0;
+            affPrev = assignPartitions(aff1, nodes_new, affPrev, backups, 0).get2();
+            int diffCnt1 = 0;
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
                 List<List<ClusterNode>> affCur = assignPartitions(aff1, nodes_new, affPrev, backups, i).get2();
-                diffCntNew += countPartitionsToMigrate(affPrev, affCur);
+                diffCnt1 += countPartitionsToMigrate(affPrev, affCur);
                 affPrev = affCur;
             }
 
@@ -560,9 +530,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             info(String.format("Test %d nodes. Golden: %.1f; %s: %.1f; %s: %.1f;",
                 nodesCnt, goldenChangeAffinity,
                 aff0.getClass().getSimpleName(),
-                (double)diffCntOld / (MAX_EXPERIMENTS - 1),
+                (double)diffCnt0 / (MAX_EXPERIMENTS - 1),
                 aff1.getClass().getSimpleName(),
-                (double)diffCntNew / (MAX_EXPERIMENTS - 1)));
+                (double)diffCnt1 / (MAX_EXPERIMENTS - 1)));
         }
     }
 
@@ -570,9 +540,16 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      *
      */
     private enum TopologyModificationMode {
+        /** Change the last node. */
         CHANGE_LAST_NODE,
+
+        /** Change the first node. */
         CHANGE_FIRST_NODE,
+
+        /** Add. */
         ADD,
+
+        /** Remove random. */
         REMOVE_RANDOM
     }
 }
