@@ -632,10 +632,13 @@ public final class IgfsImpl implements IgfsEx {
                     default:
                         assert mode == PROXY : "Unknown mode: " + mode;
 
-                        IgfsFile file = secondaryFs.update(path, props);
+                        secondaryFs.update(path, props);
+
+                        IgfsFile file = secondaryFs.info(path);
 
                         if (file != null)
-                            return new IgfsFileImpl(secondaryFs.update(path, props), cfg.getBlockSize());
+                            // In PROXY mode we must use underlying block size value:
+                            return new IgfsFileImpl(file, file.blockSize());
                 }
 
                 return null;
@@ -860,8 +863,15 @@ public final class IgfsImpl implements IgfsEx {
                     try {
                         Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
+                        int blockSize;
+
                         for (IgfsFile child : children) {
-                            IgfsFileImpl impl = new IgfsFileImpl(child, cfg.getBlockSize()/*, data.groupBlockSize()*/);
+                            if (mode == PROXY)
+                                blockSize = child.blockSize();
+                            else
+                                blockSize = cfg.getBlockSize();
+
+                            IgfsFileImpl impl = new IgfsFileImpl(child, blockSize);
 
                             files.add(impl);
                         }
@@ -1000,6 +1010,7 @@ public final class IgfsImpl implements IgfsEx {
 
                         long len = info.length();
 
+                        // Use underlying Fs block size, or use config value if there is no block size:
                         int blockSize = info.blockSize() > 0 ? info.blockSize() : cfg.getBlockSize();
 
                         long blockCnt = len / blockSize;

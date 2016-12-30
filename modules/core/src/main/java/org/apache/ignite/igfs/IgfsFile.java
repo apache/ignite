@@ -60,7 +60,9 @@ public interface IgfsFile {
     public long length();
 
     /**
-     * Gets file's data block size.
+     * Gets file's data block size. For file having underlying file system this
+     * method returns the block size of underlying file system, or zero if
+     * the underlying file system does not have block size notion.
      *
      * @return File's data block size or {@code zero} for directories.
      */

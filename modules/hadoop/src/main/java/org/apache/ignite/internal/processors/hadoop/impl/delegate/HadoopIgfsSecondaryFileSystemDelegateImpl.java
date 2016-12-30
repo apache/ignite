@@ -115,8 +115,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
             throw handleSecondaryFsError(e, "Failed to update file properties [path=" + path + "]");
         }
 
-        //Result is not used in case of secondary FS.
-        return null;
+        return info(path);
     }
 
     /** {@inheritDoc} */
