@@ -50,12 +50,12 @@ namespace ignite
             // No-op.
         }
 
-        void Statement::BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, int64_t bufferLength, int64_t* strLengthOrIndicator)
+        void Statement::BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
             IGNITE_ODBC_API_CALL(InternalBindColumn(columnIdx, targetType, targetValue, bufferLength, strLengthOrIndicator));
         }
 
-        SqlResult Statement::InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, int64_t bufferLength, int64_t* strLengthOrIndicator)
+        SqlResult Statement::InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
             using namespace odbc::type_traits;
             IgniteSqlType driverType = ToDriverType(targetType);
@@ -140,13 +140,13 @@ namespace ignite
         }
 
         void Statement::BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
-                                      uint64_t columnSize, int16_t decDigits, void* buffer, int64_t bufferLen, int64_t* resLen)
+                                      SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
             IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, ioType, bufferType, paramSqlType, columnSize, decDigits, buffer, bufferLen, resLen));
         }
 
         SqlResult Statement::InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
-                                                   uint64_t columnSize, int16_t decDigits, void* buffer, int64_t bufferLen, int64_t* resLen)
+                                                   SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
             using namespace odbc::type_traits;
             using odbc::Statement;

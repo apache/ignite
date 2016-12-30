@@ -65,7 +65,7 @@ namespace ignite
              * @param bufferLength Length of target buffer.
              * @param strLengthOrIndicator Pointer to the length/indicator buffer.
              */
-            void BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, int64_t bufferLength, int64_t* strLengthOrIndicator);
+            void BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
 
             /**
              * Set column binding offset pointer.
@@ -102,7 +102,7 @@ namespace ignite
              * @param resLen A pointer to a buffer for the parameter's length.
              */
             void BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
-                               uint64_t columnSize, int16_t decDigits, void* buffer, int64_t bufferLen, int64_t* resLen);
+                               SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
              * Set statement attribute.
@@ -393,7 +393,7 @@ namespace ignite
              * @param strLengthOrIndicator Pointer to the length/indicator buffer.
              * @return Operation result.
              */
-            SqlResult InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, int64_t bufferLength, int64_t* strLengthOrIndicator);
+            SqlResult InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
 
             /**
              * Bind parameter.
@@ -430,7 +430,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
-                                            uint64_t columnSize, int16_t decDigits, void* buffer, int64_t bufferLen, int64_t* resLen);
+                                            SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
              * Set statement attribute.
