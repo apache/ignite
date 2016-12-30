@@ -686,7 +686,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             coctx = cacheObjectContext(space);
 
-            ctx.indexing().store(space, key.value(coctx, false), val.value(coctx, false), expirationTime);
+            Object key0 = unwrap(key, coctx);
+
+            Object val0 = unwrap(val, coctx);
+
+            ctx.indexing().store(space, key0, val0, expirationTime);
         }
 
         if (idx == null)
@@ -1043,7 +1047,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(space);
 
-            ctx.indexing().remove(space, key.value(coctx, false));
+            Object key0 = unwrap(key, coctx);
+
+            ctx.indexing().remove(space, key0);
         }
 
         if (idx == null)
@@ -1186,11 +1192,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            ctx.indexing().onSwap(
-                spaceName,
-                key.value(
-                    coctx,
-                    false));
+            Object key0 = unwrap(key, coctx);
+
+            ctx.indexing().onSwap(spaceName, key0);
         }
 
         if (idx == null)
@@ -1210,6 +1214,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Unwrap non-binary CacheObject.
+     */
+    private Object unwrap(CacheObject obj, CacheObjectContext coctx) {
+        return ctx.cacheObjects().isBinaryObject(obj) ? obj : obj.value(coctx, false);
+    }
+
+    /**
      * Will be called when entry for key will be unswapped.
      *
      * @param spaceName Space name.
@@ -1225,7 +1236,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            ctx.indexing().onUnswap(spaceName, key.value(coctx, false), val.value(coctx, false));
+            Object key0 = unwrap(key, coctx);
+
+            Object val0 = unwrap(val, coctx);
+
+            ctx.indexing().onUnswap(spaceName, key0, val0);
         }
 
         if (idx == null)
