@@ -17,15 +17,58 @@
 package org.apache.ignite.hadoop;
 
 import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Compact job description.
  */
-public interface HadoopJob extends HadoopJobInfo {
+public interface HadoopJob {
     /**
      * Gets collection of input splits for this job.
      *
      * @return Input splits.
      */
     public Collection<HadoopInputSplit> input();
+
+    /**
+     * Gets optional configuration property for the job.
+     *
+     * @param name Property name.
+     * @return Value or {@code null} if none.
+     */
+    @Nullable String property(String name);
+
+    /**
+     * Checks whether job has combiner.
+     *
+     * @return {@code true} If job has combiner.
+     */
+    boolean hasCombiner();
+
+    /**
+     * Checks whether job has reducer.
+     * Actual number of reducers will be in {@link HadoopMapReducePlan#reducers()}.
+     *
+     * @return Number of reducer.
+     */
+    boolean hasReducer();
+
+    /**
+     * @return Number of reducers configured for job.
+     */
+    int reducers();
+
+    /**
+     * Gets job name.
+     *
+     * @return Job name.
+     */
+    String jobName();
+
+    /**
+     * Gets user name.
+     *
+     * @return User name.
+     */
+    String user();
 }

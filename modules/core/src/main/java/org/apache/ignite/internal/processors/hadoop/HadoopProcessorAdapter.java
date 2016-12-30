@@ -57,7 +57,7 @@ public abstract class HadoopProcessorAdapter extends GridProcessorAdapter {
      * @param jobInfo Job info to submit.
      * @return Execution future.
      */
-    public abstract IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfoEx jobInfo);
+    public abstract IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo);
 
     /**
      * Gets Hadoop job execution status.

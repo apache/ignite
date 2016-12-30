@@ -48,7 +48,7 @@ public interface Hadoop {
      * @param jobInfo Job info to submit.
      * @return Execution future.
      */
-    public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfoEx jobInfo);
+    public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo);
 
     /**
      * Gets Hadoop job execution status.

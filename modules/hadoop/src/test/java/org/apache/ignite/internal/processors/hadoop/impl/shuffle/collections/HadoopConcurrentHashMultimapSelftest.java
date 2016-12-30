@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
@@ -63,7 +63,7 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
 
         int mapSize = 16 << rnd.nextInt(3);
 
-        HadoopJobInfoEx job = new JobInfo();
+        HadoopJobInfo job = new JobInfo();
 
         HadoopTaskContext taskCtx = new TaskContext();
 
@@ -193,7 +193,7 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
         Random rnd = new GridRandom();
 
         for (int i = 0; i < 20; i++) {
-            HadoopJobInfoEx job = new JobInfo();
+            HadoopJobInfo job = new JobInfo();
 
             final HadoopTaskContext taskCtx = new TaskContext();
 

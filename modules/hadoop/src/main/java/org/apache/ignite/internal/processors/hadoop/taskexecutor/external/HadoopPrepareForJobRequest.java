@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,7 +41,7 @@ public class HadoopPrepareForJobRequest implements HadoopMessage {
 
     /** Job info. */
     @GridToStringInclude
-    private HadoopJobInfoEx jobInfo;
+    private HadoopJobInfo jobInfo;
 
     /** Total amount of reducers in the job. */
     @GridToStringInclude
@@ -64,7 +64,7 @@ public class HadoopPrepareForJobRequest implements HadoopMessage {
      * @param totalReducersCnt Number of reducers in the job.
      * @param locReducers Reducers to be executed on current node.
      */
-    public HadoopPrepareForJobRequest(HadoopJobId jobId, HadoopJobInfoEx jobInfo, int totalReducersCnt,
+    public HadoopPrepareForJobRequest(HadoopJobId jobId, HadoopJobInfo jobInfo, int totalReducersCnt,
         int[] locReducers) {
         assert jobId != null;
 
@@ -77,7 +77,7 @@ public class HadoopPrepareForJobRequest implements HadoopMessage {
     /**
      * @return Job info.
      */
-    public HadoopJobInfoEx jobInfo() {
+    public HadoopJobInfo jobInfo() {
         return jobInfo;
     }
 
@@ -117,7 +117,7 @@ public class HadoopPrepareForJobRequest implements HadoopMessage {
         jobId = new HadoopJobId();
         jobId.readExternal(in);
 
-        jobInfo = (HadoopJobInfoEx)in.readObject();
+        jobInfo = (HadoopJobInfo)in.readObject();
         totalReducersCnt = in.readInt();
 
         locReducers = U.readIntArray(in);

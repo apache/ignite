@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.jetbrains.annotations.Nullable;
@@ -58,7 +58,7 @@ public class HadoopPlannerMockJob extends HadoopJobEx {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopJobInfoEx info() {
+    @Override public HadoopJobInfo info() {
         return new JobInfo(reducers);
     }
 
@@ -118,7 +118,7 @@ public class HadoopPlannerMockJob extends HadoopJobEx {
     /**
      * Mocked job info.
      */
-    private static class JobInfo implements HadoopJobInfoEx {
+    private static class JobInfo implements HadoopJobInfo {
         /** Reducers. */
         private final int reducers;
 

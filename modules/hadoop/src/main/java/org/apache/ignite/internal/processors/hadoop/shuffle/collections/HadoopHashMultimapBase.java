@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -34,7 +34,7 @@ public abstract class HadoopHashMultimapBase extends HadoopMultimapBase {
      * @param jobInfo Job info.
      * @param mem Memory.
      */
-    protected HadoopHashMultimapBase(HadoopJobInfoEx jobInfo, GridUnsafeMemory mem) {
+    protected HadoopHashMultimapBase(HadoopJobInfo jobInfo, GridUnsafeMemory mem) {
         super(jobInfo, mem);
     }
 

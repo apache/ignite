@@ -27,7 +27,7 @@ import org.apache.hadoop.mapreduce.lib.map.WrappedMapper;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 
@@ -70,7 +70,7 @@ public class HadoopV2MapTask extends HadoopV2Task {
 
             hadoopContext().reader(reader);
 
-            HadoopJobInfoEx jobInfo = taskCtx.job().info();
+            HadoopJobInfo jobInfo = taskCtx.job().info();
 
             outputFormat = jobInfo.hasCombiner() || jobInfo.hasReducer() ? null : prepareWriter(jobCtx);
 

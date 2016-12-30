@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.hadoop.HadoopMapReducePlan;
@@ -298,7 +298,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job completion future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<HadoopJobId> submit(HadoopJobId jobId, HadoopJobInfoEx info) {
+    public IgniteInternalFuture<HadoopJobId> submit(HadoopJobId jobId, HadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to execute map-reduce job " +
                 "(grid is stopping): " + info));
@@ -363,7 +363,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param plan Plan.
      */
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private void logPlan(HadoopJobInfoEx info, HadoopMapReducePlan plan) {
+    private void logPlan(HadoopJobInfo info, HadoopMapReducePlan plan) {
         if (log.isDebugEnabled()) {
             Map<UUID, IgniteBiTuple<Collection<HadoopInputSplit>, int[]>> map = new HashMap<>();
 
@@ -422,7 +422,7 @@ public class HadoopJobTracker extends HadoopComponent {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static HadoopJobStatus status(HadoopJobMetadata meta) {
-        HadoopJobInfoEx jobInfo = meta.jobInfo();
+        HadoopJobInfo jobInfo = meta.jobInfo();
 
         return new HadoopJobStatus(
             meta.jobId(),
@@ -1097,7 +1097,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public HadoopJobEx job(HadoopJobId jobId, @Nullable HadoopJobInfoEx jobInfo) throws IgniteCheckedException {
+    @Nullable public HadoopJobEx job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
         GridFutureAdapter<HadoopJobEx> fut = jobs.get(jobId);
 
         if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<HadoopJobEx>())) != null)

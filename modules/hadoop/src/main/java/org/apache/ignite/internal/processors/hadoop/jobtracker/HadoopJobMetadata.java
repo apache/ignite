@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
@@ -50,7 +50,7 @@ public class HadoopJobMetadata implements Externalizable {
     private HadoopJobId jobId;
 
     /** Job info. */
-    private HadoopJobInfoEx jobInfo;
+    private HadoopJobInfo jobInfo;
 
     /** Node submitted job. */
     private UUID submitNodeId;
@@ -95,7 +95,7 @@ public class HadoopJobMetadata implements Externalizable {
      * @param jobId Job ID.
      * @param jobInfo Job info.
      */
-    public HadoopJobMetadata(UUID submitNodeId, HadoopJobId jobId, HadoopJobInfoEx jobInfo) {
+    public HadoopJobMetadata(UUID submitNodeId, HadoopJobId jobId, HadoopJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.submitNodeId = submitNodeId;
@@ -222,7 +222,7 @@ public class HadoopJobMetadata implements Externalizable {
     /**
      * @return Job info.
      */
-    public HadoopJobInfoEx jobInfo() {
+    public HadoopJobInfo jobInfo() {
         return jobInfo;
     }
 
@@ -296,7 +296,7 @@ public class HadoopJobMetadata implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         submitNodeId = U.readUuid(in);
         jobId = (HadoopJobId)in.readObject();
-        jobInfo = (HadoopJobInfoEx)in.readObject();
+        jobInfo = (HadoopJobInfo)in.readObject();
         mrPlan = (HadoopMapReducePlan)in.readObject();
         pendingSplits = (Map<HadoopInputSplit,Integer>)in.readObject();
         pendingReducers = (Collection<Integer>)in.readObject();

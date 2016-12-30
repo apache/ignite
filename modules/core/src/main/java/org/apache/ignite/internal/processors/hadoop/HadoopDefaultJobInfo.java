@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Hadoop job info based on default Hadoop configuration.
  */
-public class HadoopDefaultJobInfo implements HadoopJobInfoEx, Externalizable {
+public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     /** */
     private static final long serialVersionUID = 5489900236464999951L;
 

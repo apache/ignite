@@ -40,7 +40,7 @@ public abstract class HadoopJobEx implements HadoopJob {
      *
      * @return Job information.
      */
-    abstract public HadoopJobInfoEx info();
+    abstract public HadoopJobInfo info();
 
     /**
      * Gets collection of input splits for this job.

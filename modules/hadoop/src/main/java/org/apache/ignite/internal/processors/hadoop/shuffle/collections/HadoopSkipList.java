@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -56,7 +56,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
      * @param jobInfo Job info.
      * @param mem Memory.
      */
-    public HadoopSkipList(HadoopJobInfoEx jobInfo, GridUnsafeMemory mem) {
+    public HadoopSkipList(HadoopJobInfo jobInfo, GridUnsafeMemory mem) {
         super(jobInfo, mem);
 
         heads = mem.allocate(HEADS_SIZE, true);

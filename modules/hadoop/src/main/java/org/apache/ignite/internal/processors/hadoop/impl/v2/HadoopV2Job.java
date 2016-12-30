@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -100,7 +100,7 @@ public class HadoopV2Job extends HadoopJobEx {
     private final HadoopJobId jobId;
 
     /** Job info. */
-    protected final HadoopJobInfoEx jobInfo;
+    protected final HadoopJobInfo jobInfo;
 
     /** Native library names. */
     private final String[] libNames;
@@ -179,7 +179,7 @@ public class HadoopV2Job extends HadoopJobEx {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopJobInfoEx info() {
+    @Override public HadoopJobInfo info() {
         return jobInfo;
     }
 

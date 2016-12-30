@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfoEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -129,7 +129,7 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
     /**
      * Test job info.
      */
-    protected static class JobInfo implements HadoopJobInfoEx {
+    protected static class JobInfo implements HadoopJobInfo {
         /** {@inheritDoc} */
         @Nullable @Override public String property(String name) {
             return null;
