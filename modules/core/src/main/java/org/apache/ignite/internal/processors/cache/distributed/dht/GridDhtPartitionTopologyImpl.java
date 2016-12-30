@@ -507,7 +507,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         synchronized (cctx.shared().exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
-                throw new IgniteCheckedException("Thread is interrupted: " + Thread.currentThread());
+                throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
 
             try {
                 U.writeLock(lock);
