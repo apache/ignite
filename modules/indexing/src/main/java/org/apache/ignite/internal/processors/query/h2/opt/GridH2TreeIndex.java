@@ -503,20 +503,27 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * Adapter from {@link NavigableMap} to {@link IgniteTree}.
      */
     private final class IgniteNavigableMapTree implements IgniteTree<GridSearchRowPointer, GridH2Row> {
-        private NavigableMap<GridSearchRowPointer, GridH2Row> tree;
+        /** Tree. */
+        private final NavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
+        /**
+         * @param tree Tree.
+         */
         public IgniteNavigableMapTree(NavigableMap<GridSearchRowPointer, GridH2Row> tree) {
             this.tree = tree;
         }
 
+        /** {@inheritDoc} */
         @Override public GridH2Row put(GridH2Row value) throws IgniteCheckedException {
             return tree.put(value, value);
         }
 
+        /** {@inheritDoc} */
         @Override public GridH2Row findOne(GridSearchRowPointer key) throws IgniteCheckedException {
             return tree.get(key);
         }
 
+        /** {@inheritDoc} */
         @Override public GridCursor<GridH2Row> find(GridSearchRowPointer lower, GridSearchRowPointer upper)
             throws IgniteCheckedException {
             if (lower == null || upper == null)
@@ -528,14 +535,17 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             return new GridCursorIteratorWrapper<GridH2Row>(subMap.values().iterator());
         }
 
+        /** {@inheritDoc} */
         @Override public GridH2Row remove(GridSearchRowPointer key) throws IgniteCheckedException {
             return tree.remove(key);
         }
 
+        /** {@inheritDoc} */
         @Override public long size() throws IgniteCheckedException {
             return tree.size();
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteNavigableMapTree clone() {
             AbstractMap copy;
 

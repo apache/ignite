@@ -219,11 +219,14 @@ public class H2TreeIndex extends GridH2IndexBase {
         return tree;
     }
 
+    /** {@inheritDoc} */
     protected IgniteTree<SearchRow, GridH2Row> treeForRead() {
         return tree;
     }
 
-    protected GridCursor<GridH2Row> doFind0(IgniteTree t,
+    /** {@inheritDoc} */
+    protected GridCursor<GridH2Row> doFind0(
+        IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,

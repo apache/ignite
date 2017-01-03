@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -487,6 +486,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                         maxRows -= range.rows().size();
                 }
 
+                assert !ranges.isEmpty();
+
                 if (src.hasMoreRows()) {
                     // Save source for future fetches.
                     if (msg.bounds() != null)
@@ -496,8 +497,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     // Drop saved source.
                     qctx.putSource(node.id(), msg.batchLookupId(), null);
                 }
-
-                assert !ranges.isEmpty();
 
                 res.ranges(ranges);
                 res.status(STATUS_OK);
@@ -1359,13 +1358,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
         int curRangeId = -1;
 
         /** */
-        GridCursor<GridH2Row> curRange = EMPTY_CURSOR;
-
-        /** */
         final IgniteTree tree;
 
         /** */
         final IndexingQueryFilter filter;
+
+        /** Iterator. */
+        Iterator<GridH2Row> iter = emptyIterator();
 
         /**
          * @param bounds Bounds.
@@ -1386,7 +1385,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @return {@code true} If there are more rows in this source.
          */
         public boolean hasMoreRows() throws IgniteCheckedException {
-            return boundsIter.hasNext() || curRange.next();
+            return boundsIter.hasNext() || iter.hasNext();
         }
 
         /**
@@ -1396,60 +1395,56 @@ public abstract class GridH2IndexBase extends BaseIndex {
         public GridH2RowRange next(int maxRows) {
             assert maxRows > 0 : maxRows;
 
-            try {
-                for (;;) {
-                    if (curRange.next()) {
-                        // Here we are getting last rows from previously partially fetched range.
-                        List<GridH2RowMessage> rows = new ArrayList<>();
+            for (; ; ) {
+                if (iter.hasNext()) {
+                    // Here we are getting last rows from previously partially fetched range.
+                    List<GridH2RowMessage> rows = new ArrayList<>();
 
-                        GridH2RowRange nextRange = new GridH2RowRange();
+                    GridH2RowRange nextRange = new GridH2RowRange();
 
-                        nextRange.rangeId(curRangeId);
-                        nextRange.rows(rows);
+                    nextRange.rangeId(curRangeId);
+                    nextRange.rows(rows);
 
-                        do {
-                            rows.add(toRowMessage(curRange.get()));
-                        }
-                        while (rows.size() < maxRows && curRange.next());
-
-                        if (curRange.next())
-                            nextRange.setPartial();
-                        else
-                            curRange = EMPTY_CURSOR;
-
-                        return nextRange;
+                    do {
+                        rows.add(toRowMessage(iter.next()));
                     }
+                    while (rows.size() < maxRows && iter.hasNext());
 
-                    curRange = EMPTY_CURSOR;
+                    if (iter.hasNext())
+                        nextRange.setPartial();
+                    else
+                        iter = emptyIterator();
 
-                    if (!boundsIter.hasNext()) {
-                        boundsIter = emptyIterator();
-
-                        return null;
-                    }
-
-                    GridH2RowRangeBounds bounds = boundsIter.next();
-
-                    curRangeId = bounds.rangeId();
-
-                    SearchRow first = toSearchRow(bounds.first());
-                    SearchRow last = toSearchRow(bounds.last());
-
-                    IgniteTree t = tree != null ? tree : treeForRead();
-
-                    curRange = doFind0(t, first, true, last, filter);
-
-                    if (!curRange.next()) {
-                        // We have to return empty range here.
-                        GridH2RowRange emptyRange = new GridH2RowRange();
-
-                        emptyRange.rangeId(curRangeId);
-
-                        return emptyRange;
-                    }
+                    return nextRange;
                 }
-            } catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
+
+                iter = emptyIterator();
+
+                if (!boundsIter.hasNext()) {
+                    boundsIter = emptyIterator();
+
+                    return null;
+                }
+
+                GridH2RowRangeBounds bounds = boundsIter.next();
+
+                curRangeId = bounds.rangeId();
+
+                SearchRow first = toSearchRow(bounds.first());
+                SearchRow last = toSearchRow(bounds.last());
+
+                IgniteTree t = tree != null ? tree : treeForRead();
+
+                iter = new CursorIteratorWrapper(doFind0(t, first, true, last, filter));
+
+                if (!iter.hasNext()) {
+                    // We have to return empty range here.
+                    GridH2RowRange emptyRange = new GridH2RowRange();
+
+                    emptyRange.rangeId(curRangeId);
+
+                    return emptyRange;
+                }
             }
         }
     }
@@ -1469,7 +1464,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    protected GridCursor<GridH2Row> doFind0(IgniteTree t,
+    protected GridCursor<GridH2Row> doFind0(
+        IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
@@ -1492,6 +1488,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** Is value required for filtering predicate? */
         private final boolean isValRequired;
 
+        /** */
         private GridH2Row next;
 
         /**
@@ -1540,6 +1537,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             return fltr.apply(key, val);
         }
 
+        /** {@inheritDoc} */
         @Override public boolean next() throws IgniteCheckedException {
             next = null;
 
@@ -1555,11 +1553,86 @@ public abstract class GridH2IndexBase extends BaseIndex {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public GridH2Row get() throws IgniteCheckedException {
             if (next == null)
                 throw new NoSuchElementException();
 
             return next;
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
+        /** */
+        private final GridCursor<GridH2Row> cursor;
+
+        /** First next. */
+        private GridH2Row firstNext;
+
+        /** Second next. */
+        private GridH2Row secondNext;
+
+        /**
+         * @param cursor Cursor.
+         */
+        private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+            this.cursor = cursor;
+
+            fetch();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return firstNext != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row next() {
+            try {
+                if (firstNext != null) {
+                    GridH2Row res = firstNext;
+
+                    firstNext = secondNext;
+
+                    if (cursor.next())
+                        secondNext = cursor.get();
+                    else
+                        secondNext = null;
+                    return res;
+                }
+                else
+                    return null;
+            }
+            catch (Exception e) {
+                return null;
+            }
+        }
+
+        /**
+         *
+         */
+        private void fetch() {
+            try {
+                if (firstNext == null && secondNext == null) {
+                    if (cursor.next()) {
+                        firstNext = cursor.get();
+
+                        if (cursor.next())
+                            secondNext = cursor.get();
+                    }
+                }
+            }
+            catch (IgniteCheckedException ignored) {
+
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException("operation is not supported");
         }
     }
 
