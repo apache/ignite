@@ -25,6 +25,8 @@ import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.hadoop.counter.HadoopCounter;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;

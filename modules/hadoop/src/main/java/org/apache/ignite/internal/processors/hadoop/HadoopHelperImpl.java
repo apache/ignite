@@ -18,6 +18,8 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.hadoop.HadoopClassLoader;
+import org.apache.ignite.hadoop.HadoopHelper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;

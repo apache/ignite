@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
+import org.apache.ignite.hadoop.counter.HadoopCounter;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
+import org.apache.ignite.hadoop.io.PartiallyOffheapRawComparatorEx;
 
 /**
  * Task context.

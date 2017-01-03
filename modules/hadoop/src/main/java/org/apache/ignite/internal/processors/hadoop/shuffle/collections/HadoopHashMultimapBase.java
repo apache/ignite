@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.hadoop.HadoopJobInfo;
+import org.apache.ignite.hadoop.HadoopSerialization;
+import org.apache.ignite.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**

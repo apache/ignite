@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.counter.HadoopCounters;
 
 /**
  * Counter writer delegate interface.

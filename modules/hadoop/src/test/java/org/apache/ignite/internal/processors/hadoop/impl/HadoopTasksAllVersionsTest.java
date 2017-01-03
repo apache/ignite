@@ -28,9 +28,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 
 /**

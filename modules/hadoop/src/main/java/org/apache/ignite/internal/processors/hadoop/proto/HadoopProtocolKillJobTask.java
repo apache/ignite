@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.hadoop.HadoopJobId;
 
 /**
  * Kill job task.

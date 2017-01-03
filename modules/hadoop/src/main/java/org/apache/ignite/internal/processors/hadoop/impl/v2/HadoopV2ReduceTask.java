@@ -24,7 +24,7 @@ import org.apache.hadoop.mapreduce.lib.reduce.WrappedReducer;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
 
 /**
  * Hadoop reduce task implementation for v2 API.

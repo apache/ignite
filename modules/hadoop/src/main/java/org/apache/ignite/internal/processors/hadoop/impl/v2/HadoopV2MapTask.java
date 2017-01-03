@@ -27,9 +27,9 @@ import org.apache.hadoop.mapreduce.lib.map.WrappedMapper;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
 
 /**
  * Hadoop map task implementation for v2 API.

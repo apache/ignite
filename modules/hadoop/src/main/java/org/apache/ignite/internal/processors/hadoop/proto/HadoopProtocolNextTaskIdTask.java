@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.proto;
 
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.hadoop.HadoopJobId;
 
 /**
  * Task to get the next job ID.

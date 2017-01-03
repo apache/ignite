@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
-
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+package org.apache.ignite.hadoop.counter;
 
 /**
- * Extended version of secondary file system with missing methods.
- *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
+ * Hadoop counter.
  */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
+public interface HadoopCounter {
     /**
-     * Set times for the given path.
+     * Gets name.
      *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
+     * @return Name of the counter.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    public String name();
+
+    /**
+     * Gets counter group.
+     *
+     * @return Counter group's name.
+     */
+    public String group();
+
+    /**
+     * Merge the given counter to this counter.
+     *
+     * @param cntr Counter to merge into this counter.
+     */
+    public void merge(HadoopCounter cntr);
 }

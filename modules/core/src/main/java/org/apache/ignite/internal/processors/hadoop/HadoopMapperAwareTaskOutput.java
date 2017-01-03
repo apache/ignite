@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.HadoopTaskOutput;
 
 /**
  * Special output type with callback invoked when mapper finished writing data.

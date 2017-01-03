@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopJobInfo;
+import org.apache.ignite.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;

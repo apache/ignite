@@ -22,7 +22,6 @@ import com.google.common.primitives.UnsignedBytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
-import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**

@@ -21,7 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
 import org.apache.ignite.internal.util.typedef.internal.S;

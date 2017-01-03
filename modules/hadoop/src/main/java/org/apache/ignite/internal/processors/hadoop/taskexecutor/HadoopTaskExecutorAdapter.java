@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopJobId;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
 
 /**
@@ -43,8 +43,8 @@ public abstract class HadoopTaskExecutorAdapter extends HadoopComponent {
      * for this job ID.
      * <p>
      * It is guaranteed that this method will not be called concurrently with
-     * {@link #run(org.apache.ignite.internal.processors.hadoop.HadoopJob, Collection)} method. No more job submissions will be performed via
-     * {@link #run(org.apache.ignite.internal.processors.hadoop.HadoopJob, Collection)} method for given job ID after this method is called.
+     * {@link #run(HadoopJob, Collection)} method. No more job submissions will be performed via
+     * {@link #run(HadoopJob, Collection)} method for given job ID after this method is called.
      *
      * @param jobId Job ID to cancel.
      */

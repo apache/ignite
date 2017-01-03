@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import java.io.Externalizable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
 
 /**
  * Hadoop task.

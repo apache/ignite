@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;

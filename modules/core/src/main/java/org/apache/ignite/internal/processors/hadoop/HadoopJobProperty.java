@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.hadoop.HadoopJobInfo;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -22,11 +22,11 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
 
 /**

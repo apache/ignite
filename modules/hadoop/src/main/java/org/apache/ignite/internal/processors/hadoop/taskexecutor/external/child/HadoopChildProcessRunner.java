@@ -26,11 +26,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskInfo;
+import org.apache.ignite.hadoop.HadoopTaskInput;
+import org.apache.ignite.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleJob;
@@ -54,8 +54,8 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
-import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE;
+import static org.apache.ignite.hadoop.HadoopTaskType.MAP;
+import static org.apache.ignite.hadoop.HadoopTaskType.REDUCE;
 
 /**
  * Hadoop process base.

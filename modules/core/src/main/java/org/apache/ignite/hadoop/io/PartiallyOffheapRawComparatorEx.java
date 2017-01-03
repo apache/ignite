@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
-
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.hadoop.io;
 
 /**
- * Task output.
+ * Special version of raw comparator allowing direct access to the underlying memory.
  */
-public interface HadoopTaskOutput extends AutoCloseable {
+public interface PartiallyOffheapRawComparatorEx<T> {
     /**
-     * Writes key and value to the output.
+     * Perform compare.
      *
-     * @param key Key.
-     * @param val Value.
+     * @param val1 First value.
+     * @param val2Ptr Pointer to the second value data.
+     * @param val2Len Length of the second value data.
+     * @return Result.
      */
-    public void write(Object key, Object val) throws IgniteCheckedException;
-
-    /**
-     * Closes output.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void close() throws IgniteCheckedException;
+    int compare(T val1, long val2Ptr, int val2Len);
 }

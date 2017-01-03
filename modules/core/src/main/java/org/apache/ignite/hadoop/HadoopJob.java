@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
 import java.util.Collection;
 import java.util.UUID;

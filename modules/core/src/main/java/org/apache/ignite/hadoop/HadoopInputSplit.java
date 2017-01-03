@@ -15,40 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
-import java.util.Iterator;
-import org.apache.ignite.IgniteCheckedException;
+import java.io.Externalizable;
 
 /**
- * Task input.
+ * Abstract fragment of an input data source.
  */
-public interface HadoopTaskInput extends AutoCloseable {
-    /**
-     * Moves cursor to the next element.
-     *
-     * @return {@code false} If input is exceeded.
-     */
-    boolean next();
+public abstract class HadoopInputSplit implements Externalizable {
+    /** */
+    protected String[] hosts;
 
     /**
-     * Gets current key.
+     * Array of hosts where this input split resides.
      *
-     * @return Key.
+     * @return Hosts.
      */
-    Object key();
+    public String[] hosts() {
+        assert hosts != null;
+
+        return hosts;
+    }
 
     /**
-     * Gets values for current key.
+     * This method must be implemented for purpose of internal implementation.
      *
-     * @return Values.
+     * @param obj Another object.
+     * @return {@code true} If objects are equal.
      */
-    Iterator<?> values();
+    @Override public abstract boolean equals(Object obj);
 
     /**
-     * Closes input.
+     * This method must be implemented for purpose of internal implementation.
      *
-     * @throws IgniteCheckedException If failed.
+     * @return Hash code of the object.
      */
-    @Override public void close() throws IgniteCheckedException;
+    @Override public abstract int hashCode();
 }

@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
 import java.io.DataInput;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
+import org.apache.ignite.hadoop.HadoopTaskContext;
+import org.apache.ignite.hadoop.HadoopTaskInput;
+import org.apache.ignite.hadoop.HadoopTaskOutput;
 import org.jetbrains.annotations.Nullable;
 
 /**

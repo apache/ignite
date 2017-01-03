@@ -15,30 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.counter;
+package org.apache.ignite.hadoop;
 
 /**
- * Hadoop counter.
+ * Partitioner.
  */
-public interface HadoopCounter {
+public interface HadoopPartitioner {
     /**
-     * Gets name.
+     * Gets partition which is actually a reducer index for the given key and value pair.
      *
-     * @return Name of the counter.
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
      */
-    public String name();
-
-    /**
-     * Gets counter group.
-     *
-     * @return Counter group's name.
-     */
-    public String group();
-
-    /**
-     * Merge the given counter to this counter.
-     *
-     * @param cntr Counter to merge into this counter.
-     */
-    public void merge(HadoopCounter cntr);
+    public int partition(Object key, Object val, int parts);
 }

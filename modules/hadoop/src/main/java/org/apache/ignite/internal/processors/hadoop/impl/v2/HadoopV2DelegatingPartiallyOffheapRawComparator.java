@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import org.apache.ignite.hadoop.io.PartiallyRawComparator;
 import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
-import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
+import org.apache.ignite.hadoop.io.PartiallyOffheapRawComparatorEx;
 
 /**
  * Delegating partial raw comparator.
