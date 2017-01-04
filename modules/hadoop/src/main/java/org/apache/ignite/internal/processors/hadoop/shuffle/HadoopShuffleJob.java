@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_GZIP;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
@@ -77,6 +78,9 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
 public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private static final int DFLT_SHUFFLE_MSG_SIZE = 1024 * 1024;
+
+    /** */
+    private static final boolean DFLT_SHUFFLE_MSG_GZIP = false;
 
     /** */
     private final HadoopJob job;
@@ -129,6 +133,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** Message size. */
     private final int msgSize;
+
+    /** Whether to GZIP shuffle messages. */
+    private final boolean msgGzip;
 
     /** Whether to strip mappers for remote execution. */
     private final boolean stripeMappers;
@@ -190,6 +197,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         stripeMappers = stripeMappers0;
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
+        msgGzip = get(job.info(), SHUFFLE_MSG_GZIP, DFLT_SHUFFLE_MSG_GZIP);
 
         locReducersCtx = new AtomicReferenceArray<>(totalReducerCnt);
 
