@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+
+import java.io.IOException;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Hadoop data output context for direct communication.
@@ -27,6 +31,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 public class HadoopDirectDataOutputContext {
     /** Flush size. */
     private final int flushSize;
+
+    /** Whether to perform GZIP. */
+    private final boolean gzip;
 
     /** Key serialization. */
     private final HadoopSerialization keySer;
@@ -44,12 +51,14 @@ public class HadoopDirectDataOutputContext {
      * Constructor.
      *
      * @param flushSize Flush size.
+     * @param gzip Whether to perform GZIP.
      * @param taskCtx Task context.
      * @throws IgniteCheckedException If failed.
      */
-    public HadoopDirectDataOutputContext(int flushSize, HadoopTaskContext taskCtx)
+    public HadoopDirectDataOutputContext(int flushSize, boolean gzip, HadoopTaskContext taskCtx)
         throws IgniteCheckedException {
         this.flushSize = flushSize;
+        this.gzip = gzip;
 
         keySer = taskCtx.keySerialization();
         valSer = taskCtx.valueSerialization();
@@ -85,7 +94,23 @@ public class HadoopDirectDataOutputContext {
      * @return State.
      */
     public HadoopDirectDataOutputState state() {
-        return new HadoopDirectDataOutputState(out.buffer(), out.position());
+        if (gzip) {
+            try {
+                HadoopDirectDataOutput gzipOut = new HadoopDirectDataOutput(out.position());
+
+                // TODO: Buf size to config.
+                try (GZIPOutputStream gzip = new GZIPOutputStream(gzipOut, 8192)) {
+                    gzip.write(out.buffer(), 0, out.position());
+                }
+
+                return new HadoopDirectDataOutputState(gzipOut.buffer(), gzipOut.position(), out.position());
+            }
+            catch (IOException e) {
+                throw new IgniteException("Failed to compress.", e);
+            }
+        }
+        else
+            return new HadoopDirectDataOutputState(out.buffer(), out.position(), out.position());
     }
 
     /**

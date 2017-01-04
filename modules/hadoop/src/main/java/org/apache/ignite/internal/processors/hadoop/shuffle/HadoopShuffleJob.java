@@ -620,7 +620,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             rmtDirectCtx.reset();
 
         HadoopDirectShuffleMessage msg = new HadoopDirectShuffleMessage(job.id(), rmtRdcIdx, cnt,
-            state.buffer(), state.bufferLength());
+            state.buffer(), state.bufferLength(), state.dataLength());
 
         T nodeId = reduceAddrs[rmtRdcIdx];
 
@@ -991,7 +991,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     HadoopDirectDataOutputContext rmtDirectCtx = rmtDirectCtxs[idx];
 
                     if (rmtDirectCtx == null) {
-                        rmtDirectCtx = new HadoopDirectDataOutputContext(msgSize, taskCtx);
+                        rmtDirectCtx = new HadoopDirectDataOutputContext(msgSize, msgGzip, taskCtx);
 
                         rmtDirectCtxs[idx] = rmtDirectCtx;
                     }
