@@ -56,6 +56,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -63,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
@@ -368,22 +371,26 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException Exception.
      */
     public void onDirectShuffleMessage(T src, HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
-        assert msg.buffer() != null;
+        byte[] buf = extractBuffer(msg);
 
-        HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
+        assert buf != null;
+
+        int rdc = msg.reducer();
+
+        HadoopTaskContext taskCtx = locReducersCtx.get(rdc).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
-        perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
+        perfCntr.onShuffleMessage(rdc, U.currentTimeMillis());
 
-        HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
+        HadoopMultimap map = getOrCreateMap(locMaps, rdc);
 
         HadoopSerialization keySer = taskCtx.keySerialization();
         HadoopSerialization valSer = taskCtx.valueSerialization();
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
-            HadoopDirectDataInput in = new HadoopDirectDataInput(msg.buffer());
+            HadoopDirectDataInput in = new HadoopDirectDataInput(buf);
 
             Object key = null;
             Object val = null;
@@ -398,6 +405,31 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (localShuffleState(src).onShuffleMessage())
             sendFinishResponse(src, msg.jobId());
+    }
+
+    /**
+     * Extract buffer from direct shuffle message.
+     *
+     * @param msg Message.
+     * @return Buffer.
+     */
+    private byte[] extractBuffer(HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
+        if (msgGzip) {
+            byte[] res = new byte[msg.dataLength()];
+
+            try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(msg.buffer()), res.length)) {
+                int len = in.read(res, 0, res.length);
+
+                assert len == res.length;
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to uncompress direct shuffle message.", e);
+            }
+
+            return res;
+        }
+        else
+            return msg.buffer();
     }
 
     /**
