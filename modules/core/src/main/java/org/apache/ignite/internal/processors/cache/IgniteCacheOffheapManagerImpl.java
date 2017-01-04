@@ -211,10 +211,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public long entriesCount(boolean primary, boolean backup,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    @Override public long entriesCount(
+        boolean primary,
+        boolean backup,
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         if (cctx.isLocal())
-            return 0; // TODO: GG-11208.
+            return entriesCount(0);
         else {
             ClusterNode locNode = cctx.localNode();
 
@@ -241,8 +244,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public long entriesCount(int part) {
-        if (cctx.isLocal())
-            return 0; // TODO: GG-11208.
+        if (cctx.isLocal()){
+            assert part == 0;
+
+            return locCacheDataStore.size();
+        }
         else {
             GridDhtLocalPartition locPart = cctx.topology().localPartition(part, AffinityTopologyVersion.NONE, false);
 

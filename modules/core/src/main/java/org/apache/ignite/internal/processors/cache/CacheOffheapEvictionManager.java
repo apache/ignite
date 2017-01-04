@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * part of GG-1140.
  *
  */
-public class CacheOfheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
+public class CacheOffheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
     /** {@inheritDoc} */
     @Override public void touch(IgniteTxEntry txEntry, boolean loc) {
         touch(txEntry.cached(), null);
