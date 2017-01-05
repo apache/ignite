@@ -56,6 +56,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -63,10 +65,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_GZIP;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
@@ -77,6 +81,9 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
 public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private static final int DFLT_SHUFFLE_MSG_SIZE = 1024 * 1024;
+
+    /** */
+    private static final boolean DFLT_SHUFFLE_MSG_GZIP = false;
 
     /** */
     private final HadoopJob job;
@@ -129,6 +136,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** Message size. */
     private final int msgSize;
+
+    /** Whether to GZIP shuffle messages. */
+    private final boolean msgGzip;
 
     /** Whether to strip mappers for remote execution. */
     private final boolean stripeMappers;
@@ -190,6 +200,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         stripeMappers = stripeMappers0;
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
+        msgGzip = get(job.info(), SHUFFLE_MSG_GZIP, DFLT_SHUFFLE_MSG_GZIP);
 
         locReducersCtx = new AtomicReferenceArray<>(totalReducerCnt);
 
@@ -360,22 +371,26 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException Exception.
      */
     public void onDirectShuffleMessage(T src, HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
-        assert msg.buffer() != null;
+        byte[] buf = extractBuffer(msg);
 
-        HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
+        assert buf != null;
+
+        int rdc = msg.reducer();
+
+        HadoopTaskContext taskCtx = locReducersCtx.get(rdc).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
-        perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
+        perfCntr.onShuffleMessage(rdc, U.currentTimeMillis());
 
-        HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
+        HadoopMultimap map = getOrCreateMap(locMaps, rdc);
 
         HadoopSerialization keySer = taskCtx.keySerialization();
         HadoopSerialization valSer = taskCtx.valueSerialization();
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
-            HadoopDirectDataInput in = new HadoopDirectDataInput(msg.buffer());
+            HadoopDirectDataInput in = new HadoopDirectDataInput(buf);
 
             Object key = null;
             Object val = null;
@@ -390,6 +405,31 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (localShuffleState(src).onShuffleMessage())
             sendFinishResponse(src, msg.jobId());
+    }
+
+    /**
+     * Extract buffer from direct shuffle message.
+     *
+     * @param msg Message.
+     * @return Buffer.
+     */
+    private byte[] extractBuffer(HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
+        if (msgGzip) {
+            byte[] res = new byte[msg.dataLength()];
+
+            try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(msg.buffer()), res.length)) {
+                int len = in.read(res, 0, res.length);
+
+                assert len == res.length;
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to uncompress direct shuffle message.", e);
+            }
+
+            return res;
+        }
+        else
+            return msg.buffer();
     }
 
     /**
@@ -595,7 +635,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param rmtDirectCtx Remote direct context.
      * @param reset Whether to perform reset.
      */
-    private void sendShuffleMessage(int rmtMapIdx, @Nullable HadoopDirectDataOutputContext rmtDirectCtx, boolean reset) {
+    private void sendShuffleMessage(int rmtMapIdx, @Nullable HadoopDirectDataOutputContext rmtDirectCtx,
+        boolean reset) {
         if (rmtDirectCtx == null)
             return;
 
@@ -612,7 +653,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             rmtDirectCtx.reset();
 
         HadoopDirectShuffleMessage msg = new HadoopDirectShuffleMessage(job.id(), rmtRdcIdx, cnt,
-            state.buffer(), state.bufferLength());
+            state.buffer(), state.bufferLength(), state.dataLength());
 
         T nodeId = reduceAddrs[rmtRdcIdx];
 
@@ -983,7 +1024,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     HadoopDirectDataOutputContext rmtDirectCtx = rmtDirectCtxs[idx];
 
                     if (rmtDirectCtx == null) {
-                        rmtDirectCtx = new HadoopDirectDataOutputContext(msgSize, taskCtx);
+                        rmtDirectCtx = new HadoopDirectDataOutputContext(msgSize, msgGzip, taskCtx);
 
                         rmtDirectCtxs[idx] = rmtDirectCtx;
                     }
