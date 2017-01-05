@@ -29,6 +29,12 @@ import java.util.zip.GZIPOutputStream;
  * Hadoop data output context for direct communication.
  */
 public class HadoopDirectDataOutputContext {
+    /** Initial allocation size for GZIP output. We start with very low value, but then it will grow if needed. */
+    private static final int GZIP_OUT_MIN_ALLOC_SIZE = 1024;
+
+    /** GZIP buffer size. We should remove it when we implement efficient direct GZIP output. */
+    private static final int GZIP_BUFFER_SIZE = 8096;
+
     /** Flush size. */
     private final int flushSize;
 
@@ -43,6 +49,9 @@ public class HadoopDirectDataOutputContext {
 
     /** Data output. */
     private HadoopDirectDataOutput out;
+
+    /** Data output for GZIP. */
+    private HadoopDirectDataOutput gzipOut;
 
     /** Number of keys written. */
     private int cnt;
@@ -64,6 +73,9 @@ public class HadoopDirectDataOutputContext {
         valSer = taskCtx.valueSerialization();
 
         out = new HadoopDirectDataOutput(flushSize);
+
+        if (gzip)
+            gzipOut = new HadoopDirectDataOutput(Math.max(flushSize / 8, GZIP_OUT_MIN_ALLOC_SIZE));
     }
 
     /**
@@ -96,10 +108,7 @@ public class HadoopDirectDataOutputContext {
     public HadoopDirectDataOutputState state() {
         if (gzip) {
             try {
-                HadoopDirectDataOutput gzipOut = new HadoopDirectDataOutput(out.position());
-
-                // TODO: Buf size to config.
-                try (GZIPOutputStream gzip = new GZIPOutputStream(gzipOut, 8192)) {
+                try (GZIPOutputStream gzip = new GZIPOutputStream(gzipOut, GZIP_BUFFER_SIZE)) {
                     gzip.write(out.buffer(), 0, out.position());
                 }
 
@@ -117,9 +126,15 @@ public class HadoopDirectDataOutputContext {
      * Reset buffer.
      */
     public void reset() {
-        int allocSize = Math.max(flushSize, out.position());
+        if (gzip) {
+            // In GZIP mode we do not expose normal output to the outside. Hence, no need for reallocation, just reset.
+            out.reset();
 
-        out = new HadoopDirectDataOutput(flushSize, allocSize);
+            gzipOut = new HadoopDirectDataOutput(gzipOut.bufferLength());
+        }
+        else
+            out = new HadoopDirectDataOutput(flushSize, out.bufferLength());
+
         cnt = 0;
     }
 }
