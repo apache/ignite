@@ -314,7 +314,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Loading value from store for key: " + storeKey);
+                log.debug(S.toString("Loading value from store for key",
+                    "key", storeKey, true));
 
             sessionInit0(tx);
 
@@ -564,8 +565,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
             val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
-            if (log.isDebugEnabled())
-                log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
+            if (log.isDebugEnabled()) {
+                log.debug(S.toString("Storing value in cache store",
+                    "key", key, true,
+                    "val", val, true));
+            }
 
             sessionInit0(tx);
 
@@ -589,8 +593,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 sessionEnd0(tx, threwEx);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Stored value in cache store [key=" + key + ", val=" + val + ']');
+            if (log.isDebugEnabled()) {
+                log.debug(S.toString("Stored value in cache store",
+                    "key", key, true,
+                    "val", val, true));
+            }
 
             return true;
         }
@@ -667,7 +674,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Removing value from cache store [key=" + key + ']');
+                log.debug(S.toString("Removing value from cache store", "key", key, true));
 
             sessionInit0(tx);
 
@@ -692,7 +699,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Removed value from cache store [key=" + key + ']');
+                log.debug(S.toString("Removed value from cache store", "key", key, true));
 
             return true;
         }
@@ -715,7 +722,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Removing values from cache store [keys=" + keys0 + ']');
+                log.debug(S.toString("Removing values from cache store",
+                    "keys", keys0, true));
 
             sessionInit0(tx);
 
@@ -743,7 +751,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Removed values from cache store [keys=" + keys0 + ']');
+                log.debug(S.toString("Removed values from cache store",
+                    "keys", keys0, true));
 
             return true;
         }
@@ -1267,6 +1276,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         public String toString() {
+            if (!S.INCLUDE_SENSITIVE)
+                return "[size=" + size() + "]";
+
             Iterator<Cache.Entry<?, ?>> it = iterator();
 
             if (!it.hasNext())
