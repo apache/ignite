@@ -15,38 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache
-{
-    public class CacheLocalTest : CacheAbstractTransactionalTest
-    {
-        protected override int CachePartitions()
-        {
-            return 1;
-        }
+package org.apache.ignite.internal.managers.communication;
 
-        protected override int GridCount()
-        {
-            return 1;
-        }
-
-        protected override string CacheName()
-        {
-            return "local";
-        }
-
-        protected override bool NearEnabled()
-        {
-            return false;
-        }
-
-        protected override bool LocalCache()
-        {
-            return true;
-        }
-
-        protected override int Backups()
-        {
-            return 0;
-        }
+/**
+ *
+ */
+public class IgniteCommunicationBalancePairedConnectionsTest extends IgniteCommunicationBalanceTest {
+    /** {@inheritDoc} */
+    @Override protected boolean usePairedConnections() {
+        return true;
     }
 }
