@@ -50,6 +50,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private boolean distributedJoins;
 
+    /** Partitions for query */
+    private PartitionSet partSet;
+
     /**
      * Constructs query for the given type name and SQL query.
      *
@@ -148,6 +151,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     *
      * @param timeout Timeout value. Zero value disables timeout.
      * @param timeUnit Time granularity.
      * @return {@code this} For chaining.
@@ -198,6 +202,27 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * Gets partitions set for query.
+     */
+    public PartitionSet getPartitionSet() {
+        return partSet;
+    }
+
+    /**
+     * Sets the partitions set for query.
+     * Only nodes which are holding data for any partition from the set will execute the query.
+     * This is ignored for replicated caches.
+     *
+     * @param partSet Partition set.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery setPartitionSet(PartitionSet partSet) {
+        this.partSet = partSet;
+
+        return this;
     }
 
     /** {@inheritDoc} */

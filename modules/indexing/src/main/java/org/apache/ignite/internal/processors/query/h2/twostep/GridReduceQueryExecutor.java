@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.PartitionSet;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -202,8 +202,9 @@ public class GridReduceQueryExecutor {
         });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+            @Override
+            public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent) evt).eventNode().id();
 
                 for (QueryRun r : runs.values()) {
                     for (GridMergeIndex idx : r.idxs) {
@@ -397,16 +398,53 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param topVer Topology version.
+     * @param cctx Cache context.
+     * @param partSet Partition set.
+     */
+    private Set<ClusterNode> dataNodes(AffinityTopologyVersion topVer,
+                                       final GridCacheContext<?, ?> cctx,
+                                       PartitionSet partSet) {
+        Set<ClusterNode> nodes;
+
+        if (!cctx.isReplicated()) {
+            if (partSet == null)
+                partSet = new PartitionSet(0, cctx.affinity().partitions());
+
+            nodes = new HashSet<>(partSet.size());
+
+            // TODO FIXME caching might be useful for specific partition set.
+            List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
+
+            PartitionSet.Iterator iter = partSet.iterator();
+
+            while(iter.hasNext()) {
+                int partId = iter.next();
+
+                List<ClusterNode> partNodes = assignment.get(partId);
+
+                if (partNodes.size() > 0)
+                    nodes.add(partNodes.get(0));
+            }
+        }
+        else
+            nodes = new HashSet<>(cctx.affinity().assignment(topVer).primaryPartitionNodes());
+
+        return nodes;
+    }
+
+    /**
+     * @param topVer Topology version.
      * @param cctx Cache context for main space.
      * @param extraSpaces Extra spaces.
+     * @param partSet Explicit partitions set.
      * @return Data nodes or {@code null} if repartitioning started and we need to retry.
      */
     private Collection<ClusterNode> stableDataNodes(
-        AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx,
-        List<Integer> extraSpaces
-    ) {
-        Set<ClusterNode> nodes = new HashSet<>(cctx.affinity().assignment(topVer).primaryPartitionNodes());
+            AffinityTopologyVersion topVer,
+            final GridCacheContext<?, ?> cctx,
+            List<Integer> extraSpaces,
+            PartitionSet partSet) {
+        Set<ClusterNode> nodes = dataNodes(topVer, cctx, partSet);
 
         if (F.isEmpty(nodes))
             throw new CacheException("Failed to find data nodes for cache: " + cctx.name());
@@ -424,7 +462,7 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Queries running on replicated cache should not contain JOINs " +
                         "with partitioned tables [rCache=" + cctx.name() + ", pCache=" + extraSpace + "]");
 
-                Collection<ClusterNode> extraNodes = extraCctx.affinity().assignment(topVer).primaryPartitionNodes();
+                Collection<ClusterNode> extraNodes = dataNodes(topVer, extraCctx, partSet);
 
                 if (F.isEmpty(extraNodes))
                     throw new CacheException("Failed to find data nodes for cache: " + extraSpace);
@@ -473,7 +511,7 @@ public class GridReduceQueryExecutor {
      * @param cancel Query cancel.
      * @return Rows iterator.
      */
-    public Iterator<List<?>> query(
+    public java.util.Iterator query(
         GridCacheContext<?, ?> cctx,
         GridCacheTwoStepQuery qry,
         boolean keepPortable,
@@ -512,13 +550,13 @@ public class GridReduceQueryExecutor {
                 if (cctx.isReplicated())
                     nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
                 else {
-                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
+                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces, qry.partitionSet());
 
                     nodes = partsMap == null ? null : partsMap.keySet();
                 }
             }
             else
-                nodes = stableDataNodes(topVer, cctx, extraSpaces);
+                nodes = stableDataNodes(topVer, cctx, extraSpaces, qry.partitionSet());
 
             if (nodes == null)
                 continue; // Retry.
@@ -655,7 +693,7 @@ public class GridReduceQueryExecutor {
                 else // Send failed.
                     retry = true;
 
-                Iterator<List<?>> resIter = null;
+                java.util.Iterator resIter = null;
 
                 if (!retry) {
                     if (skipMergeTbl) {
@@ -967,14 +1005,20 @@ public class GridReduceQueryExecutor {
      *
      * @param cctx Cache context for main space.
      * @param extraSpaces Extra spaces.
+     * @param partSet Explicit partitions.
      * @return Partition mapping or {@code null} if we can't calculate it due to repartitioning and we need to retry.
      */
     @SuppressWarnings("unchecked")
-    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(final GridCacheContext<?,?> cctx,
-        List<Integer> extraSpaces) {
+    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(final GridCacheContext<?, ?> cctx,
+                                                                    List<Integer> extraSpaces, PartitionSet partSet) {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
-        final int partsCnt = cctx.affinity().partitions();
+        if (partSet == null)
+            partSet = new PartitionSet(0, cctx.affinity().partitions());
+
+        int allPartsCnt = cctx.affinity().partitions();
+
+        final int partsCnt = partSet.size();
 
         if (extraSpaces != null) { // Check correct number of partitions for partitioned caches.
             for (int i = 0; i < extraSpaces.size(); i++) {
@@ -985,16 +1029,22 @@ public class GridReduceQueryExecutor {
 
                 int parts = extraCctx.affinity().partitions();
 
-                if (parts != partsCnt)
+                if (parts != allPartsCnt)
                     throw new CacheException("Number of partitions must be the same for correct collocation [cache1=" +
-                        cctx.name() + ", parts1=" + partsCnt + ", cache2=" + extraCctx.name() + ", parts2=" + parts + "]");
+                        cctx.name() + ", parts1=" + allPartsCnt + ", cache2=" + extraCctx.name() + ", parts2=" + parts + "]");
             }
         }
 
         Set<ClusterNode>[] partLocs = new Set[partsCnt];
 
         // Fill partition locations for main cache.
-        for (int p = 0, parts =  cctx.affinity().partitions(); p < parts; p++) {
+        PartitionSet.Iterator iter = partSet.iterator();
+
+        int c = 0;
+
+        while(iter.hasNext()) {
+            int p = iter.next();
+
             List<ClusterNode> owners = cctx.topology().owners(p);
 
             if (F.isEmpty(owners)) {
@@ -1004,7 +1054,7 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
             }
 
-            partLocs[p] = new HashSet<>(owners);
+            partLocs[c++] = new HashSet<>(owners);
         }
 
         if (extraSpaces != null) {
@@ -1016,7 +1066,13 @@ public class GridReduceQueryExecutor {
                 if (extraCctx.isReplicated() || extraCctx.isLocal())
                     continue;
 
-                for (int p = 0, parts =  extraCctx.affinity().partitions(); p < parts; p++) {
+                iter = partSet.iterator();
+
+                c = 0;
+
+                while(iter.hasNext()) {
+                    int p = iter.next();
+
                     List<ClusterNode> owners = extraCctx.topology().owners(p);
 
                     if (F.isEmpty(owners)) {
@@ -1026,14 +1082,16 @@ public class GridReduceQueryExecutor {
                         throw new CacheException("Failed to find data nodes [cache=" + extraCctx.name() + ", part=" + p + "]");
                     }
 
-                    if (partLocs[p] == null)
-                        partLocs[p] = new HashSet<>(owners);
+                    if (partLocs[c] == null)
+                        partLocs[c] = new HashSet<>(owners);
                     else {
-                        partLocs[p].retainAll(owners); // Intersection of owners.
+                        partLocs[c].retainAll(owners); // Intersection of owners.
 
-                        if (partLocs[p].isEmpty())
+                        if (partLocs[c].isEmpty())
                             return null; // Intersection is empty -> retry.
                     }
+
+                    c++;
                 }
             }
 
@@ -1106,7 +1164,7 @@ public class GridReduceQueryExecutor {
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
+    private java.util.Iterator explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 

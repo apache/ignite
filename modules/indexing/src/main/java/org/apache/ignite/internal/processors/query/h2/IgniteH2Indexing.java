@@ -1140,6 +1140,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
         fqry.setDistributedJoins(qry.isDistributedJoins());
+        fqry.setPartitionSet(qry.getPartitionSet());
 
         if(qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
@@ -1305,6 +1306,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 twoStepQry.caches(caches);
                 twoStepQry.extraCaches(extraCaches);
+                twoStepQry.partitionSet(qry.getPartitionSet());
 
                 meta = meta(stmt.getMetaData());
             }

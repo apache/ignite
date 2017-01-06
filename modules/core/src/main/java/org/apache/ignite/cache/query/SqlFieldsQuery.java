@@ -67,6 +67,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean distributedJoins;
 
+    /** Partitions for query */
+    private PartitionSet partSet;
+
     /**
      * Constructs SQL fields query.
      *
@@ -218,6 +221,27 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * Gets partitions set for query.
+     */
+    public PartitionSet getPartitionSet() {
+        return partSet;
+    }
+
+    /**
+     * Sets the partitions set for query.
+     * Only nodes which are holding data for any partition from the set will execute the query.
+     * This is ignored for replicated caches.
+     *
+     * @param partSet Partition set.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setPartitionSet(PartitionSet partSet) {
+        this.partSet = partSet;
+
+        return this;
     }
 
     /** {@inheritDoc} */
