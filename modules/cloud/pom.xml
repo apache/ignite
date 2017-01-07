@@ -34,6 +34,8 @@
 
     <properties>
         <jcloud.version>2.0.0</jcloud.version>
+        <jcloud.compute.version>1.9.3</jcloud.compute.version>
+        <jcloud.docker.version>1.9.3</jcloud.docker.version>
     </properties>
 
     <dependencies>
@@ -52,13 +54,13 @@
         <dependency>
             <groupId>org.apache.jclouds.labs</groupId>
             <artifactId>google-compute-engine</artifactId>
-            <version>1.9.3</version>
+            <version>${jcloud.compute.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.jclouds.labs</groupId>
             <artifactId>docker</artifactId>
-            <version>1.9.3</version>
+            <version>${jcloud.docker.version}</version>
         </dependency>
 
         <dependency>
