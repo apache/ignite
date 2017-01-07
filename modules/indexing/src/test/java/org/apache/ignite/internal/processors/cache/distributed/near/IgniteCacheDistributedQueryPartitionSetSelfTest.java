@@ -18,28 +18,29 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.PartitionSet;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
+import org.apache.ignite.util.AttributeNodeFilter;
 
 import javax.cache.Cache;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-import java.util.concurrent.locks.LockSupport;
+import java.util.*;
 
 /**
  * Tests distributed queries over partition set.
@@ -47,8 +48,8 @@ import java.util.concurrent.locks.LockSupport;
  * The test assigns partition ranges to specific grid nodes using special affinity implementation.
  */
 public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonAbstractTest {
-    /** Segment attribute name. */
-    private static final String SEGMENT_ATTR_NAME = "seg";
+    /** Region node attribute name. */
+    private static final String REGION_ATTR_NAME = "reg";
 
     /** Grids count. */
     private static final int GRIDS_COUNT = 10;
@@ -56,46 +57,45 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Clients per region distribution. */
-    private static final int[] CLIENTS_PER_REGION = new int[] {1_000, 2_000, 3_000, 4_000, 240};
+    /** Partitions per region distribution. */
+    private static final int[] PARTS_PER_REGION = new int[] {100, 200, 300, 400, 24};
 
     /** Clients per partition. */
     private static final int CLIENTS_PER_PARTITION = 10;
 
-    /** Total clients */
+    /** Total clients. */
     private static final int TOTAL_CLIENTS;
+
+    /** Affinity function to use on partitioned caches. */
+    private static final AffinityFunction AFFINITY = new RegionAwareAffinityFunction();
 
     /** Partitions count. */
     public static final int PARTS_COUNT;
 
-    static {
-        int total = 0;
-        int parts = 0;
-        for (int regCnt : CLIENTS_PER_REGION) {
-            total += regCnt;
+    /** Regions to partitions mapping. */
+    public static final NavigableMap<Integer, List<Integer>> REGION_TO_PART_MAP = new TreeMap<>();
 
-            parts += regCnt / CLIENTS_PER_PARTITION;
+    static {
+        int total = 0, parts = 0, p = 0, regionId = 1;
+
+        for (int regCnt : PARTS_PER_REGION) {
+            total += regCnt * CLIENTS_PER_PARTITION;
+
+            parts += regCnt;
+
+            REGION_TO_PART_MAP.put(regionId++, Arrays.asList(p, regCnt));
+
+            p += regCnt;
         }
 
-        TOTAL_CLIENTS = total - CLIENTS_PER_REGION[CLIENTS_PER_REGION.length-1]; // Last region is empty.
+        // Last region was left empty.
+        TOTAL_CLIENTS = total - PARTS_PER_REGION[PARTS_PER_REGION.length-1] * CLIENTS_PER_PARTITION;
+
         PARTS_COUNT = parts;
     }
 
     /** Deposits per client. */
     public static final int DEPOSITS_PER_CLIENT = 10;
-
-    /** Regions to partitions mapping. */
-    public static final NavigableMap<Object, List<Integer>> REGION_TO_PART_MAP = new TreeMap<Object, List<Integer>>() {{
-        int p = 0, regId = 1;
-
-        for (int r : CLIENTS_PER_REGION) {
-            int cnt = r / CLIENTS_PER_PARTITION;
-
-            put(regId++, Arrays.asList(p, cnt));
-
-            p += cnt;
-        }
-    }};
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -108,6 +108,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         clientCfg.setName("cl");
         clientCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         clientCfg.setBackups(0);
+        clientCfg.setAffinity(AFFINITY);
         clientCfg.setIndexedTypes(ClientKey.class, Client.class);
 
         /** Deposits cache */
@@ -115,9 +116,10 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         depoCfg.setName("de");
         depoCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         depoCfg.setBackups(0);
+        clientCfg.setAffinity(AFFINITY);
         depoCfg.setIndexedTypes(DepositKey.class, Deposit.class);
 
-        /** Regions cache */
+        /** Regions cache. Uses default affinity. */
         CacheConfiguration<Integer, String> regionCfg = new CacheConfiguration<>();
         regionCfg.setName("re");
         regionCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -131,7 +133,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         else {
             Integer reg = regionForGrid(gridName);
 
-            cfg.setUserAttributes(F.asMap(SEGMENT_ATTR_NAME, reg));
+            cfg.setUserAttributes(F.asMap(REGION_ATTR_NAME, reg));
 
             log().info("Assigned region " + reg + " to grid " + gridName);
 
@@ -141,23 +143,124 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         return cfg;
     }
 
+    /** */
+    private static final class RegionAwareAffinityFunction implements AffinityFunction {
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            return PARTS_COUNT;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            Integer regionId;
+
+            if (key instanceof RegionKey)
+                regionId = ((RegionKey)key).regionId;
+            else if (key instanceof BinaryObject) {
+                BinaryObject bo = (BinaryObject) key;
+
+                regionId = bo.field("regionId");
+            }
+            else
+                throw new IgniteException("Unsupported key for region aware affinity");
+
+            List<Integer> range = REGION_TO_PART_MAP.get(regionId);
+
+            Integer cnt = range.get(1);
+
+            return U.safeAbs(key.hashCode() % cnt) + range.get(0); // Assign partition in region's range.
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
+
+            List<List<ClusterNode>> assignment = new ArrayList<>(PARTS_COUNT);
+
+            for (int p = 0; p < PARTS_COUNT; p++) {
+                // Get region for partition.
+                int regionId = regionForPart(p);
+
+                // Filter all nodes for region.
+                AttributeNodeFilter f = new AttributeNodeFilter(REGION_ATTR_NAME, regionId);
+
+                List<ClusterNode> regionNodes = new ArrayList<>();
+
+                for (ClusterNode node : nodes)
+                    if (f.apply(node))
+                        regionNodes.add(node);
+
+                final int cp = p;
+
+                Collections.sort(regionNodes, new Comparator<ClusterNode>() {
+                    @Override public int compare(ClusterNode o1, ClusterNode o2) {
+                        return Long.compare(hash(cp, o1), hash(cp, o2));
+                    }
+                });
+
+                // Assignment for partition will be empty in case of last region.
+                assignment.add(regionNodes.size() == 0 ? regionNodes : Collections.singletonList(regionNodes.get(0)));
+            }
+
+            return assignment;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNode(UUID nodeId) {
+            // No-op.
+        }
+
+        /**
+         * @param part Partition.
+         */
+        protected int regionForPart(int part) {
+            for (Map.Entry<Integer, List<Integer>> entry : REGION_TO_PART_MAP.entrySet()) {
+                List<Integer> range = entry.getValue();
+
+                if (range.get(0) <= part && part < range.get(0) + range.get(1))
+                    return entry.getKey();
+            }
+
+            throw new IgniteException("Failed to find zone for partition");
+        }
+
+        /**
+         * @param part Partition.
+         * @param obj Object.
+         */
+        private long hash(int part, Object obj) {
+            long x = ((long) part << 32) | obj.hashCode();
+            x ^= x >>> 12;
+            x ^= x << 25;
+            x ^= x >>> 27;
+            return x * 2685821657736338717L;
+        }
+    }
+
     /**
+     * Assigns region to grid.
+     *
      * @param gridName Grid name.
      */
     private Integer regionForGrid(String gridName) {
         char c = gridName.charAt(gridName.length() - 1);
         switch (c) {
             case '0':
-                return 0;
+                return 1;
             case '1':
             case '2':
-                return 1;
+                return 2;
             case '3':
             case '4':
             case '5':
-                return 2;
-            default:
                 return 3;
+            default:
+                return 4;
         }
     }
 
@@ -178,10 +281,10 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         int depositId = 1;
         int regId = 1;
         int p = 1; // Percents counter. Log message will be printed 10 times.
-        for (int cnt : CLIENTS_PER_REGION) {
-            // Do not put clients into last region because it will not get any grid nodes assigned.
-            if (regId < CLIENTS_PER_REGION.length) {
-                for (int i = 0; i < cnt; i++) {
+        for (int cnt : PARTS_PER_REGION) {
+            // Last region was left empty intentionally.
+            if (regId < PARTS_PER_REGION.length) {
+                for (int i = 0; i < cnt * CLIENTS_PER_PARTITION; i++) {
                     ClientKey ck = new ClientKey();
                     ck.clientId = clientId;
                     ck.regionId = regId;
@@ -239,19 +342,43 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
 //        assertEquals("Deposits count", TOTAL_CLIENTS * DEPOSITS_PER_CLIENT, de.size());
 //
         IgniteCache<Object, Object> re = grid(0).cache("re");
-//        assertEquals("Regions count", CLIENTS_PER_REGION.length, re.size());
+//        assertEquals("Regions count", PARTS_PER_REGION.length, re.size());
 
-        int regId = 2;
+        for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
+            log().info("Running test queries for region " + regionId);
 
-        SqlQuery<ClientKey, Client> qry1 = new SqlQuery<>(Client.class, "regionId=?");
-        qry1.setArgs(regId);
+            SqlQuery<ClientKey, Client> qry1 = new SqlQuery<>(Client.class, "regionId=?");
+            qry1.setArgs(regionId);
 
-        List<Cache.Entry<ClientKey, Client>> clients1 = cl.query(qry1).getAll();
+            List<Cache.Entry<ClientKey, Client>> clients1 = cl.query(qry1).getAll();
 
-        assertEquals("Region count", CLIENTS_PER_REGION[regId - 1], clients1.size());
+            int expRegionCnt = regionId == 5 ? 0 : PARTS_PER_REGION[regionId - 1] * CLIENTS_PER_PARTITION;
 
-        for (Cache.Entry<ClientKey, Client> entry : clients1) {
-            List<Integer> range = REGION_TO_PART_MAP.get(regId);
+            assertEquals("Region " + regionId + " count", expRegionCnt, clients1.size());
+
+            validateClients(regionId, clients1);
+
+            // Repeat the same query with partition set condition.
+            List<Integer> range = REGION_TO_PART_MAP.get(regionId);
+
+            SqlQuery<ClientKey, Client> qry2 = new SqlQuery<>(Client.class, "1=1");
+            qry2.setPartitionSet(new PartitionSet(range.get(0), range.get(1)));
+
+            List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
+
+            assertEquals("Region " + regionId + " count with partition set", expRegionCnt, clients2.size());
+
+            validateClients(regionId, clients2);
+        }
+    }
+
+    /**
+     * @param regionId Region id.
+     * @param clients Clients.
+     */
+    private void validateClients(int regionId, List<Cache.Entry<ClientKey, Client>> clients) {
+        for (Cache.Entry<ClientKey, Client> entry : clients) {
+            List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
             int start = range.get(0) * CLIENTS_PER_PARTITION;
             int end = start + range.get(1) * CLIENTS_PER_PARTITION;
@@ -260,16 +387,6 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
 
             assertTrue("Client id in range", start < clientId && start <= end);
         }
-
-        // Limit partitions.
-        List<Integer> range = REGION_TO_PART_MAP.get(regId);
-
-        SqlQuery<ClientKey, Client> qry2 = new SqlQuery<>(Client.class, "1=1");
-        qry2.setPartitionSet(new PartitionSet(range.get(0), range.get(1)));
-
-        List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
-
-        assertEquals("Region count", CLIENTS_PER_REGION[regId - 1], clients2.size());
     }
 
     /** */

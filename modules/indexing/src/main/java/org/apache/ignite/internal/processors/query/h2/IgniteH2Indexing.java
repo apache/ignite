@@ -58,10 +58,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -1101,15 +1098,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param keepCacheObj Flag to keep cache object.
      * @param enforceJoinOrder Enforce join order of tables.
+     * @param partSet Partition set.
      * @return Iterable result.
      */
-    private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
-        final boolean keepCacheObj, final boolean enforceJoinOrder,
-        final int timeoutMillis,
-        final GridQueryCancel cancel) {
+    private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?, ?> cctx, final GridCacheTwoStepQuery qry,
+                                              final boolean keepCacheObj, final boolean enforceJoinOrder,
+                                              final int timeoutMillis,
+                                              final GridQueryCancel cancel, final PartitionSet partSet) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel);
+                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, partSet);
             }
         };
     }
@@ -1306,7 +1304,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 twoStepQry.caches(caches);
                 twoStepQry.extraCaches(extraCaches);
-                twoStepQry.partitionSet(qry.getPartitionSet());
 
                 meta = meta(stmt.getMetaData());
             }
@@ -1331,7 +1328,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel), cancel);
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, qry.getPartitionSet()), cancel);
 
         cursor.fieldsMeta(meta);
 

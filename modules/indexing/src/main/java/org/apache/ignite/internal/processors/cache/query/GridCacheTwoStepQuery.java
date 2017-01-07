@@ -68,9 +68,6 @@ public class GridCacheTwoStepQuery {
     /** */
     private List<Integer> extraCaches;
 
-    /** */
-    private PartitionSet partSet;
-
     /**
      * @param schemas Schema names in query.
      * @param tbls    Tables in query.
@@ -215,20 +212,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Partition set.
-     */
-    public PartitionSet partitionSet() {
-        return partSet;
-    }
-
-    /**
-     * @param partSet Partition set.
-     */
-    public void partitionSet(PartitionSet partSet) {
-        this.partSet = partSet;
-    }
-
-    /**
      * @return Schemas.
      */
     public Set<String> schemas() {
@@ -251,7 +234,6 @@ public class GridCacheTwoStepQuery {
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
-        cp.partSet = partSet;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

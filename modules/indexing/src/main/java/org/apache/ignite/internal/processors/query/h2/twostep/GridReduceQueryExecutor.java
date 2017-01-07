@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -446,8 +447,8 @@ public class GridReduceQueryExecutor {
             PartitionSet partSet) {
         Set<ClusterNode> nodes = dataNodes(topVer, cctx, partSet);
 
-        if (F.isEmpty(nodes))
-            throw new CacheException("Failed to find data nodes for cache: " + cctx.name());
+        if (F.isEmpty(nodes)) // Topology have no nodes containing data for query.
+            return Collections.emptySet();
 
         if (!F.isEmpty(extraSpaces)) {
             for (int i = 0; i < extraSpaces.size(); i++) {
@@ -509,16 +510,17 @@ public class GridReduceQueryExecutor {
      * @param enforceJoinOrder Enforce join order of tables.
      * @param timeoutMillis Timeout in milliseconds.
      * @param cancel Query cancel.
+     * @param partSet Partition set.
      * @return Rows iterator.
      */
     public java.util.Iterator query(
-        GridCacheContext<?, ?> cctx,
-        GridCacheTwoStepQuery qry,
-        boolean keepPortable,
-        boolean enforceJoinOrder,
-        int timeoutMillis,
-        GridQueryCancel cancel
-    ) {
+            GridCacheContext<?, ?> cctx,
+            GridCacheTwoStepQuery qry,
+            boolean keepPortable,
+            boolean enforceJoinOrder,
+            int timeoutMillis,
+            GridQueryCancel cancel,
+            PartitionSet partSet) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -550,16 +552,19 @@ public class GridReduceQueryExecutor {
                 if (cctx.isReplicated())
                     nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
                 else {
-                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces, qry.partitionSet());
+                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces, partSet);
 
                     nodes = partsMap == null ? null : partsMap.keySet();
                 }
             }
             else
-                nodes = stableDataNodes(topVer, cctx, extraSpaces, qry.partitionSet());
+                nodes = stableDataNodes(topVer, cctx, extraSpaces, partSet);
 
             if (nodes == null)
                 continue; // Retry.
+
+            if (nodes.size() == 0) // No data nodes are found for query.
+                return new GridEmptyIterator();
 
             assert !nodes.isEmpty();
 
