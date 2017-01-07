@@ -1509,6 +1509,8 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 assertNotNull(qryEntryEvt);
 
                 assertEquals(cntr, qryEntryEvt.getPartitionUpdateCounter());
+                assertEquals(false, qryEntryEvt.isBackup());
+                assertEquals(true, qryEntryEvt.isPrimary());
             }
         }
     }
