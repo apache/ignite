@@ -17,27 +17,24 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
-import com.amazonaws.auth.BasicAWSCredentials;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
- * TcpDiscoveryS3IpFinder test.
+ * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
  */
-public class TcpDiscoveryS3IpFinderSelfTest
+abstract class TcpDiscoveryS3IpFinderAbstractCredTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
     /**
      * Constructor.
      *
      * @throws Exception If any error occurs.
      */
-    public TcpDiscoveryS3IpFinderSelfTest() throws Exception {
-        // No-op.
+    protected TcpDiscoveryS3IpFinderAbstractCredTest() throws Exception {
     }
 
     /** {@inheritDoc} */
@@ -48,8 +45,7 @@ public class TcpDiscoveryS3IpFinderSelfTest
 
         assert finder.isShared() : "Ip finder should be shared by default.";
 
-        finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey()));
+        setAwsCredentials(finder);
 
         // Bucket name should be unique for the host to parallel test run on one bucket.
         finder.setBucketName("ip-finder-unit-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
@@ -76,4 +72,10 @@ public class TcpDiscoveryS3IpFinderSelfTest
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }
+
+    /**
+     * Set AWS credentials into the provided {@code finder}.
+     * @param finder finder credentials to set into
+     */
+    protected abstract void setAwsCredentials(TcpDiscoveryS3IpFinder finder);
 }
