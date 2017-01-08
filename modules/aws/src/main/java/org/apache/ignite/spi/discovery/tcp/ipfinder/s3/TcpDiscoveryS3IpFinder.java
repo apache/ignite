@@ -312,7 +312,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets AWS credentials provider. Either use {@link #setAwsCredentials(AWSCredentialsProvider)} or this one.
+     * Sets AWS credentials. Either use {@link #setAwsCredentials(AWSCredentialsProvider)} or this one.
      * <p>
      * For details refer to Amazon S3 API reference.
      *
