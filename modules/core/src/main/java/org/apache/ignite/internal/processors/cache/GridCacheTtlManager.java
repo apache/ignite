@@ -153,6 +153,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         try {
             if (pendingEntries != null) {
+                //todo may be not only for near? may be for local too.
                 GridNearCacheAdapter nearCache = cctx.near();
 
                 GridCacheVersion obsoleteVer = null;
