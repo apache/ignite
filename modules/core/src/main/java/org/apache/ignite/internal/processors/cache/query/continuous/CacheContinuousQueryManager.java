@@ -1209,11 +1209,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Object key;
 
         /** */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Object val;
 
         /**
