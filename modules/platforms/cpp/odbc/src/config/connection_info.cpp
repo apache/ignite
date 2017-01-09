@@ -95,6 +95,31 @@ namespace ignite
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES1);
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES2);
+                    DBG_STR_CASE(SQL_CONVERT_BIGINT);
+                    DBG_STR_CASE(SQL_CONVERT_BINARY);
+                    DBG_STR_CASE(SQL_CONVERT_BIT);
+                    DBG_STR_CASE(SQL_CONVERT_CHAR);
+                    DBG_STR_CASE(SQL_CONVERT_DATE);
+                    DBG_STR_CASE(SQL_CONVERT_DECIMAL);
+                    DBG_STR_CASE(SQL_CONVERT_DOUBLE);
+                    DBG_STR_CASE(SQL_CONVERT_FLOAT);
+                    DBG_STR_CASE(SQL_CONVERT_INTEGER);
+                    DBG_STR_CASE(SQL_CONVERT_LONGVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_NUMERIC);
+                    DBG_STR_CASE(SQL_CONVERT_REAL);
+                    DBG_STR_CASE(SQL_CONVERT_SMALLINT);
+                    DBG_STR_CASE(SQL_CONVERT_TIME);
+                    DBG_STR_CASE(SQL_CONVERT_TIMESTAMP);
+                    DBG_STR_CASE(SQL_CONVERT_TINYINT);
+                    DBG_STR_CASE(SQL_CONVERT_VARBINARY);
+                    DBG_STR_CASE(SQL_CONVERT_VARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_LONGVARBINARY);
+                    DBG_STR_CASE(SQL_CONVERT_WCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_INTERVAL_DAY_TIME);
+                    DBG_STR_CASE(SQL_CONVERT_INTERVAL_YEAR_MONTH);
+                    DBG_STR_CASE(SQL_CONVERT_WLONGVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_WVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_GUID);
                 default: 
                     break;
                 }
@@ -299,7 +324,7 @@ namespace ignite
 #ifdef SQL_CONVERT_FUNCTIONS
                 // Bitmask enumerating the scalar conversion functions supported
                 // by the driver and associated data source.
-                intParams[SQL_CONVERT_FUNCTIONS] = 0;
+                intParams[SQL_CONVERT_FUNCTIONS] = SQL_FN_CVT_CONVERT | SQL_FN_CVT_CAST;
 #endif // SQL_CONVERT_FUNCTIONS
 
 #ifdef SQL_OJ_CAPABILITIES
