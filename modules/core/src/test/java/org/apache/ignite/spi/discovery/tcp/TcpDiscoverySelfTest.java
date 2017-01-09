@@ -1980,25 +1980,29 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * Test verifies Ignite nodes don't exchange system types on discovery phase but only user types.
      */
     public void testSystemMarshallerTypesFilteredOut() throws Exception {
-        nodeSpi.set(new TestTcpDiscoveryMarshallerDataSpi());
+        try {
+            nodeSpi.set(new TestTcpDiscoveryMarshallerDataSpi());
 
-        Ignite srv1 = startGrid(0);
+            Ignite srv1 = startGrid(0);
 
-        IgniteCache<Object, Object> organizations = srv1.createCache("organizations");
+            IgniteCache<Object, Object> organizations = srv1.createCache("organizations");
 
-        organizations.put(1, new Organization());
+            organizations.put(1, new Organization());
 
-        startGrid(1);
+            startGrid(1);
 
-        assertEquals("Expected items in marshaller discovery data: 1, actual: " + TestTcpDiscoveryMarshallerDataSpi.marshalledItems, 1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+            assertEquals("Expected items in marshaller discovery data: 1, actual: " + TestTcpDiscoveryMarshallerDataSpi.marshalledItems, 1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
 
-        IgniteCache<Object, Object> employees = srv1.createCache("employees");
+            IgniteCache<Object, Object> employees = srv1.createCache("employees");
 
-        employees.put(1, new Employee());
+            employees.put(1, new Employee());
 
-        startGrid(2);
+            startGrid(2);
 
-        assertEquals("Expected items in marshaller discovery data: 2, actual: " + TestTcpDiscoveryMarshallerDataSpi.marshalledItems, 2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+            assertEquals("Expected items in marshaller discovery data: 2, actual: " + TestTcpDiscoveryMarshallerDataSpi.marshalledItems, 2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+        } finally {
+            stopAllGrids();
+        }
     }
 
     /**

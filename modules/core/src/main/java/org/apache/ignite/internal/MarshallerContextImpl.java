@@ -289,6 +289,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         MappedName newName = new MappedName(item.className(), false);
         MappedName oldName;
+
         if ((oldName = cache.putIfAbsent(item.typeId(), newName)) == null)
             return null;
         else
@@ -430,10 +431,16 @@ public class MarshallerContextImpl implements MarshallerContext {
         return map;
     }
 
-    private static void putAtIndex(ConcurrentMap<Integer, MappedName> map, List<ConcurrentMap<Integer, MappedName>> allCaches, byte targetIdx, int size) {
-        int lastIndex = size - 1;
+    /**
+     * @param map Map.
+     * @param allCaches All caches.
+     * @param targetIdx Target index.
+     * @param size Size.
+     */
+    private static void putAtIndex(ConcurrentMap<Integer, MappedName> map, Collection<ConcurrentMap<Integer, MappedName>> allCaches, byte targetIdx, int size) {
+        int lastIdx = size - 1;
 
-        int nullElemsToAdd = targetIdx - lastIndex - 1;
+        int nullElemsToAdd = targetIdx - lastIdx - 1;
 
         for (int i = 0; i < nullElemsToAdd; i++)
             allCaches.add(null);
