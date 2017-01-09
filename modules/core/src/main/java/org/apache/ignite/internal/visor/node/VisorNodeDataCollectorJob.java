@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -228,15 +229,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
                 FileSystemConfiguration igfsCfg = igfs.configuration();
 
-                String metaCacheName = igfsCfg.getMetaCacheConfiguration() != null ?
-                    igfsCfg.getMetaCacheConfiguration().getName() :
-                    igfsCfg.getMetaCacheName();
-
-                String dataCacheName = igfsCfg.getDataCacheConfiguration() != null ?
-                    igfsCfg.getDataCacheConfiguration().getName() :
-                    igfsCfg.getDataCacheName();
-
-                if (proxyCache(dataCacheName) || proxyCache(metaCacheName))
+                if (proxyCache(IgfsUtils.getDataCacheName(igfsCfg)) || proxyCache(IgfsUtils.getMetaCacheName(igfsCfg)))
                     continue;
 
                 try {

@@ -72,21 +72,6 @@
                     <!-- IGFS name you will use to access IGFS through Hadoop API. -->
                     <property name="name" value="igfs"/>
 
-                    <!-- IGFS internal meta cache configuration. -->
-                    <property name="metaCacheConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                            <property name="cacheMode" value="REPLICATED"/>
-                            <property name="atomicityMode" value="TRANSACTIONAL"/>
-                        </bean>
-                    </property>
-
-                    <!-- IGFS internal data cache configuration. -->
-                    <property name="dataCacheConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                            <property name="atomicityMode" value="TRANSACTIONAL"/>
-                        </bean>
-                    </property>
-
                     <!-- Configure TCP endpoint for communication with the file system instance. -->
                     <property name="ipcEndpointConfiguration">
                         <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">

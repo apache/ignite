@@ -184,9 +184,7 @@ public class IgfsDataManager extends IgfsManager {
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
             "igfs-" + igfsName + "-delete-worker", log);
 
-        dataCacheName = igfsCtx.configuration().getDataCacheConfiguration() != null ?
-            igfsCtx.configuration().getDataCacheConfiguration().getName() :
-            igfsCtx.configuration().getDataCacheName();
+        dataCacheName = IgfsUtils.getDataCacheName(igfsCtx.configuration());
     }
 
     /** {@inheritDoc} */

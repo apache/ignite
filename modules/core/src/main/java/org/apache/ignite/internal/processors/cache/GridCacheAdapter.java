@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -338,11 +339,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                String dataCacheName = igfsCfg.getDataCacheConfiguration() != null ?
-                    igfsCfg.getDataCacheConfiguration().getName() :
-                    igfsCfg.getDataCacheName();
-
-                if (F.eq(ctx.name(), dataCacheName)) {
+                if (F.eq(ctx.name(), IgfsUtils.getDataCacheName(igfsCfg))) {
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
                         igfsDataCacheSize = new LongAdder8();

@@ -1247,14 +1247,6 @@ public class GridCacheUtils {
 //    }
 
     /**
-     * @param cacheName Cache name.
-     * @return {@code True} in this is IGFS data or meta cache.
-     */
-    public static boolean matchIgfsCacheName(@Nullable String cacheName) {
-        return IgfsUtils.matchIgfsCacheName(cacheName);
-    }
-
-    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
@@ -1744,5 +1736,19 @@ public class GridCacheUtils {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
             : cfg.getTransactionConfiguration();
+    }
+
+    /**
+     * @param cfg Ignite config.
+     * @param cacheName Cache name.
+     * @return Configuration.
+     */
+    public static CacheConfiguration config(IgniteConfiguration cfg, String cacheName) {
+        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+            if (F.eq(cacheName, ccfg.getName()))
+                return ccfg;
+        }
+
+        return null;
     }
 }

@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -2107,7 +2108,7 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.matchIgfsCacheName(ccfg.getName()))
+                    if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot match the template \""
                             + IgfsUtils.IGFS_CACHE_PREFIX + "<igfs_name>(" + IgfsUtils.DATA_CACHE_SUFFIX + "|"
                             + IgfsUtils.META_CACHE_SUFFIX
@@ -2123,7 +2124,7 @@ public class IgnitionEx {
 
             IgfsUtils.prepareCacheConfigurations(cfg);
 
-            IgfsUtils.validateLocalIgfsConfigurations(cfg);
+            IgfsProcessor.validateLocalIgfsConfigurations(cfg);
         }
 
         /**

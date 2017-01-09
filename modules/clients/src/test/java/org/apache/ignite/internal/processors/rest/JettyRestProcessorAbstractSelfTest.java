@@ -2274,30 +2274,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cacheIgfs_data = new CacheConfiguration();
-
-        cacheIgfs_data.setCacheMode(CacheMode.PARTITIONED);
-        cacheIgfs_data.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        cacheIgfs_data.setBackups(0);
-
-        cacheIgfs_data.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-        cacheIgfs_data.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(512));
-
-        CacheConfiguration cacheIgfs_meta = new CacheConfiguration();
-
-        cacheIgfs_meta.setCacheMode(CacheMode.REPLICATED);
-        cacheIgfs_meta.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        cacheIgfs_meta.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-        cfg.setCacheConfiguration(cfg.getCacheConfiguration()[0]);
-
         FileSystemConfiguration igfs = new FileSystemConfiguration();
 
         igfs.setName("igfs");
-        igfs.setDataCacheConfiguration(cacheIgfs_data);
-        igfs.setMetaCacheConfiguration(cacheIgfs_meta);
 
         igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
 
