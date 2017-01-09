@@ -656,7 +656,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // When Ignite tx is started manually, it won't be enlisted in TransactionScope.
             using (var tx = transactions.TxStart())            
             {
-                using (var ts = new TransactionScope())
+                using (new TransactionScope())
                 {
                     cache[1] = 2;
                 }  // Revert transaction scope.
