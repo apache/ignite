@@ -148,6 +148,8 @@ namespace ignite
 
                 if (odbcSubclasses.empty())
                 {
+                    // This is a fixed list taken from ODBC doc.
+                    // Please do not add/remove values here.
                     odbcSubclasses.insert("01S00");
                     odbcSubclasses.insert("01S01");
                     odbcSubclasses.insert("01S02");
@@ -166,9 +168,6 @@ namespace ignite
                     odbcSubclasses.insert("42S12");
                     odbcSubclasses.insert("42S21");
                     odbcSubclasses.insert("42S22");
-                    odbcSubclasses.insert("HY003");
-                    odbcSubclasses.insert("HY090");
-                    odbcSubclasses.insert("HY092");
                     odbcSubclasses.insert("HY095");
                     odbcSubclasses.insert("HY097");
                     odbcSubclasses.insert("HY098");
@@ -176,7 +175,6 @@ namespace ignite
                     odbcSubclasses.insert("HY100");
                     odbcSubclasses.insert("HY101");
                     odbcSubclasses.insert("HY105");
-                    odbcSubclasses.insert("HY106");
                     odbcSubclasses.insert("HY107");
                     odbcSubclasses.insert("HY109");
                     odbcSubclasses.insert("HY110");
