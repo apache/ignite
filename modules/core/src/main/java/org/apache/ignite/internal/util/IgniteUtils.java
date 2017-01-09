@@ -301,6 +301,13 @@ public abstract class IgniteUtils {
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
 
+    /**
+     * Maximum String length that can be safely written with DataOutput#writeUTF() method.
+     * Maximum bytes per character is 3, so maximum String length that can fit into
+     * 0xFFFF bytes is 0xFFFF / 3.
+     */
+    static final int MAX_SAFE_WRITEUTF_LENGTH = 0xFFFF / 3;
+
     /** Correct Mbean cache name pattern. */
     private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
@@ -5162,13 +5169,44 @@ public abstract class IgniteUtils {
      * @throws IOException If failed.
      */
     public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
-        if (val != null) {
-            out.writeBoolean(true);
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
 
-            out.writeUTF(val);
+            writeLongStringByParts(out, val);
         }
-        else
-            out.writeBoolean(false);
+    }
+
+    /**
+     * Writes the given string possibly by parts using #writeUTF() method.
+     * Method is complementary to {@link #readLongStringByParts(java.io.DataInput, int fullLen)}.
+     *
+     * @param out The output to write to.
+     * @param val The String to write.
+     * @throws IOException On error.
+     */
+    private static void writeLongStringByParts(DataOutput out, String val) throws IOException {
+        if (val.length() <= MAX_SAFE_WRITEUTF_LENGTH)
+            out.writeUTF(val); // Optimized write in 1 chunk.
+        else {
+            int begin = 0;
+            int end = MAX_SAFE_WRITEUTF_LENGTH;
+
+            String part;
+
+            while (true) {
+                part = val.substring(begin, end);
+
+                out.writeUTF(part); // Write the part
+
+                if (end == val.length())
+                    break;
+
+                begin = end;
+                end = (end + MAX_SAFE_WRITEUTF_LENGTH > val.length()) ? val.length() : end + MAX_SAFE_WRITEUTF_LENGTH;
+            }
+        }
     }
 
     /**
@@ -5179,7 +5217,36 @@ public abstract class IgniteUtils {
      * @throws IOException If failed.
      */
     public static String readUTFStringNullable(DataInput in) throws IOException {
-        return in.readBoolean() ? in.readUTF() : null;
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+
+        return readLongStringByParts(in, len);
+    }
+
+    /**
+     * Reads String from the input, possibly by parts, using DataInput#readUTF() method.
+     * Method is complementary to {@link #writeLongStringByParts(java.io.DataOutput, java.lang.String)}.
+     *
+     * @param in The input.
+     * @param fullLen Expected full String length.
+     * @return The resultant String.
+     * @throws IOException On error.
+     */
+    private static String readLongStringByParts(DataInput in, int fullLen) throws IOException {
+        if (fullLen <= MAX_SAFE_WRITEUTF_LENGTH)
+            return in.readUTF();
+
+        StringBuilder sb = new StringBuilder(fullLen);
+
+        do {
+            sb.append(in.readUTF());
+        } while (sb.length() < fullLen);
+
+        assert sb.length() == fullLen;
+
+        return sb.toString();
     }
 
     /**
