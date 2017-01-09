@@ -914,6 +914,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 if (log.isDebugEnabled())
                     log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
 
+                rent.onDone(e);
+
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -968,6 +970,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             catch (NodeStoppingException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to get iterator for evicted partition: " + id);
+
+                rent.onDone(e);
 
                 throw e;
             }
