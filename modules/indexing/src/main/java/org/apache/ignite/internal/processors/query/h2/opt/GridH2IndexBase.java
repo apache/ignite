@@ -1576,6 +1576,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param cursor Cursor.
          */
         private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+            assert cursor != null;
+
             this.cursor = cursor;
 
             try {
