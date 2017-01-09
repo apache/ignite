@@ -541,7 +541,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             for (Map.Entry<Integer, Long> e : updCntrs.entrySet()) {
                 if (aff.mapPartitionToPrimaryAndBackups(e.getKey()).contains(grid(i).localNode()))
-                    assertEquals(e.getValue(), act.get(e.getKey()));
+                    assertEquals(e.getValue(), act.get(e.getKey()).get2());
             }
         }
 

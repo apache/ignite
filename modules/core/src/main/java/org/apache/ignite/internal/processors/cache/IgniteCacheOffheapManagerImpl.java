@@ -818,7 +818,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         protected final AtomicLong storageSize = new AtomicLong();
 
         /** Initialized update counter. */
-        protected long initCntr;
+        protected Long initCntr = 0L;
 
         /**
          * @param name Name.
@@ -1009,7 +1009,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public long initialUpdateCounter() {
+        @Override public Long initialUpdateCounter() {
             return initCntr;
         }
 

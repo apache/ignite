@@ -847,7 +847,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @return Initial update counter.
      */
-    public long initialUpdateCounter() {
+    public Long initialUpdateCounter() {
         return store.initialUpdateCounter();
     }
 
@@ -864,6 +864,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /**
      * Clears values for this partition.
+     *
+     * @throws NodeStoppingException If node stopping.
      */
     public void clearAll() throws NodeStoppingException {
         GridCacheVersion clearVer = cctx.versions().next();
