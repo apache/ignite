@@ -81,6 +81,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +179,7 @@
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
     <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
