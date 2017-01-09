@@ -1569,64 +1569,45 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         private final GridCursor<GridH2Row> cursor;
 
-        /** First next. */
-        private GridH2Row firstNext;
-
-        /** Second next. */
-        private GridH2Row secondNext;
+        /** Next element. */
+        private GridH2Row next;
 
         /**
          * @param cursor Cursor.
          */
         private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+            assert cursor != null;
+
             this.cursor = cursor;
 
-            fetch();
+            try {
+                if (cursor.next())
+                    next = cursor.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return firstNext != null;
+            return next != null;
         }
 
         /** {@inheritDoc} */
         @Override public GridH2Row next() {
             try {
-                if (firstNext != null) {
-                    GridH2Row res = firstNext;
+                GridH2Row res = next;
 
-                    firstNext = secondNext;
-
-                    if (cursor.next())
-                        secondNext = cursor.get();
-                    else
-                        secondNext = null;
-                    return res;
-                }
+                if (cursor.next())
+                    next = cursor.get();
                 else
-                    return null;
-            }
-            catch (Exception e) {
-                return null;
-            }
-        }
+                    next = null;
 
-        /**
-         *
-         */
-        private void fetch() {
-            try {
-                if (firstNext == null && secondNext == null) {
-                    if (cursor.next()) {
-                        firstNext = cursor.get();
-
-                        if (cursor.next())
-                            secondNext = cursor.get();
-                    }
-                }
+                return res;
             }
-            catch (IgniteCheckedException ignored) {
-
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
 
