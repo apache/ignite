@@ -203,7 +203,7 @@ namespace ignite
             if (sent != len + sizeof(OdbcProtocolHeader))
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message");
 
-            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump((char*)msg.GetData(), msg.GetSize()));
+            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
         }
 
         size_t Connection::SendAll(const int8_t* data, size_t len)

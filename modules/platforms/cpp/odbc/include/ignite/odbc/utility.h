@@ -172,7 +172,7 @@ namespace ignite
          * @param count data length
          * @return standard string containing the formated hex dump
          */
-        std::string HexDump(const char* data, size_t count);
+        std::string HexDump(const void* data, size_t count);
     }
 }
 
