@@ -1284,7 +1284,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param cfg Configuration to check for possible performance issues.
      */
     private void suggestOptimizations(IgniteConfiguration cfg) {
-        GridPerformanceSuggestions perf = ctx.performance();
+        ConfigurationSuggestions perf = ctx.performance();
 
         if (ctx.collision().enabled())
             perf.add("Disable collision resolution (remove 'collisionSpi' from configuration)");

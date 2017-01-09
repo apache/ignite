@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
@@ -33,7 +32,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGES
 /**
  * Grid performance suggestions.
  */
-public class GridPerformanceSuggestions {
+public class ConfigurationSuggestions {
     /** */
     private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
 
@@ -100,6 +99,6 @@ public class GridPerformanceSuggestions {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPerformanceSuggestions.class, this);
+        return S.toString(ConfigurationSuggestions.class, this);
     }
 }

@@ -469,7 +469,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * @return Performance suggestions object.
      */
-    public GridPerformanceSuggestions performance();
+    public ConfigurationSuggestions performance();
 
     /**
      * Gets user version for given class loader by checking

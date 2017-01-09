@@ -63,7 +63,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridPerformanceSuggestions;
+import org.apache.ignite.internal.ConfigurationSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -320,7 +320,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param hasStore {@code True} if store is configured.
      */
     private void suggestOptimizations(CacheConfiguration cfg, boolean hasStore) {
-        GridPerformanceSuggestions perf = ctx.performance();
+        ConfigurationSuggestions perf = ctx.performance();
 
         String msg = "Disable eviction policy (remove from configuration)";
 

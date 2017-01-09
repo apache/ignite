@@ -357,7 +357,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private GridClockSource clockSrc = new GridJvmClockSource();
 
     /** Performance suggestions. */
-    private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
+    private final ConfigurationSuggestions perf = new ConfigurationSuggestions();
 
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
@@ -861,7 +861,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridPerformanceSuggestions performance() {
+    @Override public ConfigurationSuggestions performance() {
         return perf;
     }
 
