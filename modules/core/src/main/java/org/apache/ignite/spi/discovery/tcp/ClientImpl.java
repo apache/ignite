@@ -48,6 +48,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -98,6 +99,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -163,6 +165,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** */
     protected MessageWorker msgWorker;
+
+    /** Node received force fail message. */
+    private boolean forceFailed = false;
 
     /** */
     @GridToStringExclude
@@ -447,6 +452,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 node.internalOrder());
 
             msg.warning(warning);
+
+            msg.force(true);
 
             msgWorker.addMessage(msg);
         }
@@ -1386,6 +1393,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                         else
                             leaveLatch.countDown();
                     }
+                    else if (msg instanceof TcpDiscoveryNodeFailedMessage &&
+                            ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(locNode.id())) {
+                        forceFailed = true;
+
+                        TcpDiscoveryNodeFailedMessage msg0 = (TcpDiscoveryNodeFailedMessage) msg;
+
+                        log.warning("Client node will be kicked out from topology due to an error in communication " +
+                                "SPI [rmtNode=" + ((TcpDiscoveryNodeFailedMessage)msg).creatorNodeId() +
+                                ", warn=" + msg0.warning() + ']');
+                    }
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
                             currSock = null;
@@ -1407,15 +1424,21 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                 assert reconnector == null;
 
-                                final Reconnector reconnector = new Reconnector(join);
-                                this.reconnector = reconnector;
-                                reconnector.start();
+                                if (forceFailed)
+                                    queue.addFirst(SPI_RECONNECT_FAILED);
+                                else {
+                                    final Reconnector reconnector = new Reconnector(join);
+                                    this.reconnector = reconnector;
+                                    reconnector.start();
+                                }
                             }
                         }
                     }
                     else if (msg == SPI_RECONNECT_FAILED) {
-                        reconnector.cancel();
-                        reconnector.join();
+                        if (!forceFailed) {
+                            reconnector.cancel();
+                            reconnector.join();
+                        }
 
                         reconnector = null;
 
@@ -1464,6 +1487,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                             }
 
                             locNode.onClientDisconnected(newId);
+
+                            if (forceFailed) {
+                                long delay = IgniteSystemProperties.getLong(
+                                        IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, 10000
+                                );
+
+                                Thread.sleep(delay);
+
+                                forceFailed = false;
+                            }
 
                             tryJoin();
                         }

@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2549,6 +2550,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     "(make sure that destination node is alive and " +
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
+
+            if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
+                X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
+                    IgniteSpiOperationTimeoutException.class)) {
+                LT.warn(log, "Failed to establish connection to remote node. Node will be kicked out from topology " +
+                    "[node=" + node + ", errs=" + errs + ']');
+
+                getSpiContext().failNode(node.id(), "Failed to establish connection to node: " + node);
+            }
 
             throw errs;
         }
