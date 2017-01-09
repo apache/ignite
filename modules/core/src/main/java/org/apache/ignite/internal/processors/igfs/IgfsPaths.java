@@ -67,13 +67,6 @@ public class IgfsPaths implements Externalizable {
         return dfltMode;
     }
 
-    /**
-     * @return Path modes.
-     */
-    @Nullable public ArrayList<T2<IgfsPath, IgfsMode>> pathModes() {
-        return pathModes;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum(out, dfltMode);

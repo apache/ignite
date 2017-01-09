@@ -42,11 +42,9 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Progressable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
@@ -55,8 +53,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutputSt
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsStreamDelegate;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsWrapper;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
-import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
-import org.apache.ignite.internal.processors.igfs.IgfsPaths;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -141,9 +137,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
     /** The user name this file system was created on behalf of. */
     private String user;
 
-    /** IGFS mode resolver. */
-    private IgfsModeResolver modeRslvr;
-
     /** Whether custom sequential reads before prefetch value is provided. */
     private boolean seqReadsBeforePrefetchOverride;
 
@@ -187,6 +180,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     /**
      * Gets non-null user name as per the Hadoop file system viewpoint.
      * @return the user name, never null.
+     * @throws IOException On error.
      */
     public static String getFsHadoopUser() throws IOException {
         UserGroupInformation currUgi = UserGroupInformation.getCurrentUser();
@@ -264,8 +258,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             igfsGrpBlockSize = handshake.blockSize();
 
-            IgfsPaths paths = handshake.secondaryPaths();
-
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
 
@@ -280,13 +272,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
             }
             else
                 clientLog = IgfsLogger.disabledLogger();
-
-            try {
-                modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
-            }
-            catch (IgniteCheckedException ice) {
-                throw new IOException(ice);
-            }
 
             // set working directory to the home directory of the current Fs user:
             setWorkingDirectory(null);
@@ -415,7 +400,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = mode(path);
 
             HadoopIgfsStreamDelegate stream = seqReadsBeforePrefetchOverride ?
                 rmtClient.open(path, seqReadsBeforePrefetch) : rmtClient.open(path);
@@ -425,7 +409,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             if (clientLog.isLogEnabled()) {
                 logId = IgfsLogger.nextId();
 
-                clientLog.logOpen(logId, path, mode, bufSize, stream.length());
+                clientLog.logOpen(logId, path, bufSize, stream.length());
             }
 
             if (LOG.isDebugEnabled())
@@ -457,7 +441,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in create [thread=" + Thread.currentThread().getName() + "path=" +
@@ -478,7 +461,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             if (clientLog.isLogEnabled()) {
                 logId = IgfsLogger.nextId();
 
-                clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
+                clientLog.logCreate(logId, path, overwrite, bufSize, replication, blockSize);
             }
 
             if (LOG.isDebugEnabled())
@@ -516,7 +499,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in append [thread=" + Thread.currentThread().getName() +
@@ -531,7 +513,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             if (clientLog.isLogEnabled()) {
                 logId = IgfsLogger.nextId();
 
-                clientLog.logAppend(logId, path, mode, bufSize);
+                clientLog.logAppend(logId, path, bufSize);
             }
 
             if (LOG.isDebugEnabled())
@@ -562,17 +544,16 @@ public class IgniteHadoopFileSystem extends FileSystem {
         try {
             IgfsPath srcPath = convert(src);
             IgfsPath dstPath = convert(dst);
-            IgfsMode mode = mode(srcPath);
 
             if (clientLog.isLogEnabled())
-                clientLog.logRename(srcPath, mode, dstPath);
+                clientLog.logRename(srcPath, dstPath);
 
             try {
                 rmtClient.rename(srcPath, dstPath);
             }
             catch (IOException ioe) {
                 // Log the exception before rethrowing since it may be ignored:
-                LOG.warn("Failed to rename [srcPath=" + srcPath + ", dstPath=" + dstPath + ", mode=" + mode + ']',
+                LOG.warn("Failed to rename [srcPath=" + srcPath + ", dstPath=" + dstPath + ']',
                     ioe);
 
                 throw ioe;
@@ -608,13 +589,12 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = mode(path);
 
             // Will throw exception if delete failed.
             boolean res = rmtClient.delete(path, recursive);
 
             if (clientLog.isLogEnabled())
-                clientLog.logDelete(path, mode, recursive);
+                clientLog.logDelete(path, recursive);
 
             return res;
         }
@@ -639,7 +619,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = mode(path);
 
             Collection<IgfsFile> list = rmtClient.listFiles(path);
 
@@ -659,7 +638,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 for (int i = 0; i < arr.length; i++)
                     fileArr[i] = arr[i].getPath().toString();
 
-                clientLog.logListDirectory(path, mode, fileArr);
+                clientLog.logListDirectory(path, fileArr);
             }
 
             return arr;
@@ -678,10 +657,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path newPath) {
-        if (newPath == null) {
-
+        if (newPath == null)
             workingDir = getHomeDirectory();
-        }
         else {
             Path fixedNewPath = fixRelativePart(newPath);
 
@@ -708,12 +685,11 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = mode(path);
 
             boolean mkdirRes = rmtClient.mkdirs(path, permission(perm));
 
             if (clientLog.isLogEnabled())
-                clientLog.logMakeDirectory(path, mode);
+                clientLog.logMakeDirectory(path);
 
             return mkdirRes;
         }
@@ -802,26 +778,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
     @SuppressWarnings("deprecation")
     @Override public long getDefaultBlockSize() {
         return igfsGrpBlockSize;
-    }
-
-    /**
-     * Resolve path mode.
-     *
-     * @param path HDFS path.
-     * @return Path mode.
-     */
-    public IgfsMode mode(Path path) {
-        return mode(convert(path));
-    }
-
-    /**
-     * Resolve path mode.
-     *
-     * @param path IGFS path.
-     * @return Path mode.
-     */
-    public IgfsMode mode(IgfsPath path) {
-        return modeRslvr.resolveMode(path);
     }
 
     /**

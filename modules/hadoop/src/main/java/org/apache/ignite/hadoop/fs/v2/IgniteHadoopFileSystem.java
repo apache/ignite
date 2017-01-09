@@ -50,10 +50,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.Progressable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
@@ -62,8 +60,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutputSt
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsStreamDelegate;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsWrapper;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
-import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
-import org.apache.ignite.internal.processors.igfs.IgfsPaths;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -150,9 +146,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
     /** Default replication factor. */
     private short dfltReplication;
-
-    /** Mode resolver. */
-    private IgfsModeResolver modeRslvr;
 
     /** Whether custom sequential reads before prefetch value is provided. */
     private boolean seqReadsBeforePrefetchOverride;
@@ -285,8 +278,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
             grpBlockSize = handshake.blockSize();
 
-            IgfsPaths paths = handshake.secondaryPaths();
-
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
 
             if (handshake.sampling() != null ? handshake.sampling() : logEnabled) {
@@ -300,13 +291,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             }
             else
                 clientLog = IgfsLogger.disabledLogger();
-
-            try {
-                modeRslvr = new IgfsModeResolver(paths.defaultMode(), paths.pathModes());
-            }
-            catch (IgniteCheckedException ice) {
-                throw new IOException(ice);
-            }
         }
         finally {
             leaveBusy();
@@ -409,7 +393,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = modeRslvr.resolveMode(path);
 
             HadoopIgfsStreamDelegate stream = seqReadsBeforePrefetchOverride ?
                 rmtClient.open(path, seqReadsBeforePrefetch) : rmtClient.open(path);
@@ -419,7 +402,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             if (clientLog.isLogEnabled()) {
                 logId = IgfsLogger.nextId();
 
-                clientLog.logOpen(logId, path, mode, bufSize, stream.length());
+                clientLog.logOpen(logId, path, bufSize, stream.length());
             }
 
             if (LOG.isDebugEnabled())
@@ -464,7 +447,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = modeRslvr.resolveMode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in create [thread=" + Thread.currentThread().getName() + "path=" +
@@ -484,7 +466,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                 if (clientLog.isLogEnabled()) {
                     logId = IgfsLogger.nextId();
 
-                    clientLog.logAppend(logId, path, mode, bufSize);
+                    clientLog.logAppend(logId, path, bufSize);
                 }
 
                 if (LOG.isDebugEnabled())
@@ -497,7 +479,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                 if (clientLog.isLogEnabled()) {
                     logId = IgfsLogger.nextId();
 
-                    clientLog.logCreate(logId, path, mode, overwrite, bufSize, replication, blockSize);
+                    clientLog.logCreate(logId, path, overwrite, bufSize, replication, blockSize);
                 }
 
                 if (LOG.isDebugEnabled())
@@ -545,10 +527,8 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             IgfsPath srcPath = convert(src);
             IgfsPath dstPath = convert(dst);
 
-            IgfsMode srcMode = modeRslvr.resolveMode(srcPath);
-
             if (clientLog.isLogEnabled())
-                clientLog.logRename(srcPath, srcMode, dstPath);
+                clientLog.logRename(srcPath, dstPath);
 
             rmtClient.rename(srcPath, dstPath);
         }
@@ -566,12 +546,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
         try {
             IgfsPath path = convert(f);
 
-            IgfsMode mode = modeRslvr.resolveMode(path);
-
             boolean res = rmtClient.delete(path, recursive);
 
             if (clientLog.isLogEnabled())
-                clientLog.logDelete(path, mode, recursive);
+                clientLog.logDelete(path, recursive);
 
             return res;
         }
@@ -598,7 +576,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = modeRslvr.resolveMode(path);
 
             Collection<IgfsFile> list = rmtClient.listFiles(path);
 
@@ -618,7 +595,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                 for (int i = 0; i < arr.length; i++)
                     fileArr[i] = arr[i].getPath().toString();
 
-                clientLog.logListDirectory(path, mode, fileArr);
+                clientLog.logListDirectory(path, fileArr);
             }
 
             return arr;
@@ -636,12 +613,11 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = modeRslvr.resolveMode(path);
 
             rmtClient.mkdirs(path, permission(perm));
 
             if (clientLog.isLogEnabled())
-                clientLog.logMakeDirectory(path, mode);
+                clientLog.logMakeDirectory(path);
         }
         finally {
             leaveBusy();
@@ -695,16 +671,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
         finally {
             leaveBusy();
         }
-    }
-
-    /**
-     * Resolve path mode.
-     *
-     * @param path HDFS path.
-     * @return Path mode.
-     */
-    public IgfsMode mode(Path path) {
-        return modeRslvr.resolveMode(convert(path));
     }
 
     /**
