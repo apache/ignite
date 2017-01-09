@@ -3560,8 +3560,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         @SuppressWarnings("unchecked")
         private boolean fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx, int cnt)
             throws IgniteCheckedException {
-            assert io.isLeaf();
-            assert cnt != 0: cnt; // We can not see empty pages (empty tree handled in init).
+            assert io.isLeaf() : io;
+            assert cnt != 0 : cnt; // We can not see empty pages (empty tree handled in init).
             assert startIdx >= 0 : startIdx;
             assert cnt >= startIdx;
 
