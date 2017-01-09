@@ -24,7 +24,7 @@ import org.apache.ignite.cache.store.CacheStore;
  *
  */
 public class IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest extends
-    IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest{
+    IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest {
     /** {@inheritDoc} */
     @Override protected Factory<CacheStore> cacheStoreFactory() {
         return new TestStoreFactory();
