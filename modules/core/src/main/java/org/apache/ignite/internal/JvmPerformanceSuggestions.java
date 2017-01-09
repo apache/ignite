@@ -38,41 +38,51 @@ class JvmPerformanceSuggestions {
     private static final String SURVIVOR_RATIO = "-XX:SurvivorRatio=1024";
     private static final String CMS_INITIATING_OCCUPANCY_FRACTION = "-XX:CMSInitiatingOccupancyFraction=60";
 
-    private List<String> args;
-    private List<String> options;
-
-    JvmPerformanceSuggestions() {
-        args = U.jvmArgs();
-        options = new LinkedList<>();
-    }
-
     /**
      * @return list of recommended jvm options
      */
-    @NotNull
-    List<String> getRecommendedOptions() {
-        if (checkServerOption())
+    @NotNull static List<String> getRecommendedOptions() {
+        List<String> options = new LinkedList<>();
+        // option '-server' isn't in input arguments
+        if (!checkServerOption())
             options.add(SERVER);
 
-        checkOptionJvmArgs(USE_TLAB);
-        checkOptionJvmArgs(USE_PAR_NEW_GC);
-        checkOptionJvmArgs(USE_CONC_MARK_SWEEP_GC);
-        checkOptionJvmArgs(USE_CMS_INITIATING_OCCUPANCY_ONLY);
-        checkOptionJvmArgs(DISABLE_EXPLICIT_GC);
-        checkOptionJvmArgs(NEW_SIZE);
-        checkOptionJvmArgs(MAX_NEW_SIZE);
-        checkOptionJvmArgs(MAX_TENURING_THRESHOLD);
-        checkOptionJvmArgs(SURVIVOR_RATIO);
-        checkOptionJvmArgs(CMS_INITIATING_OCCUPANCY_FRACTION);
+        List<String> args = U.jvmArgs();
+
+        if (!args.contains(USE_TLAB))
+            options.add(USE_TLAB);
+
+        if (!args.contains(USE_PAR_NEW_GC))
+            options.add(USE_PAR_NEW_GC);
+
+        if (!args.contains(USE_CONC_MARK_SWEEP_GC))
+            options.add(USE_CONC_MARK_SWEEP_GC);
+
+        if (!args.contains(USE_CMS_INITIATING_OCCUPANCY_ONLY))
+            options.add(USE_CMS_INITIATING_OCCUPANCY_ONLY);
+
+        if (!args.contains(DISABLE_EXPLICIT_GC))
+            options.add(DISABLE_EXPLICIT_GC);
+
+        if (!args.contains(NEW_SIZE))
+            options.add(NEW_SIZE);
+
+        if (!args.contains(MAX_NEW_SIZE))
+            options.add(MAX_NEW_SIZE);
+
+        if (!args.contains(MAX_TENURING_THRESHOLD))
+            options.add(MAX_TENURING_THRESHOLD);
+
+        if (!args.contains(SURVIVOR_RATIO))
+            options.add(SURVIVOR_RATIO);
+
+        if (!args.contains(CMS_INITIATING_OCCUPANCY_FRACTION))
+            options.add(CMS_INITIATING_OCCUPANCY_FRACTION);
+
         return options;
     }
 
-    private void checkOptionJvmArgs(String option) {
-        if (!args.contains(option))
-            options.contains(option);
-    }
-
-    private boolean checkServerOption() {
+    private static boolean checkServerOption() {
         String arch = System.getProperty("sun.arch.data.model");
         // On a 64-bit capable JDK, only the Java Hotspot Server VM is supported so the -server option is implicit.
         if (arch == null || !arch.equals("64")) {

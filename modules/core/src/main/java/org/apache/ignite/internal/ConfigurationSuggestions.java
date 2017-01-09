@@ -86,7 +86,7 @@ public class ConfigurationSuggestions {
 
             perfs.clear();
         }
-        List<String> jvmOptions = new JvmPerformanceSuggestions().getRecommendedOptions();
+        List<String> jvmOptions = JvmPerformanceSuggestions.getRecommendedOptions();
 
         if (!jvmOptions.isEmpty()) {
             U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
