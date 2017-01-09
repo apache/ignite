@@ -20,10 +20,12 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
@@ -85,7 +87,13 @@ public class GridPerformanceSuggestions {
 
             perfs.clear();
         }
-        U.quietAndInfo(log, "");
+        List<String> jvmOptions = new JvmPerformanceSuggestions().getRecommendedOptions();
+
+        if (!jvmOptions.isEmpty()) {
+            U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
+            for (String option : jvmOptions)
+                U.quietAndInfo(log, "    " + option);
+        }
         U.quietAndInfo(log, "Get more information on performance tuning: " + SUGGESTIONS_LINK);
         U.quietAndInfo(log, "");
     }
