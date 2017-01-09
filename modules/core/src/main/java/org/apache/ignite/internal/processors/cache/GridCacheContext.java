@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -1970,6 +1971,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert affinityNode();
 
         GridDhtPartitionTopology top = topology();
+
+        if (shared().database().persistenceEnabled()) {
+            GridDhtLocalPartition locPart = top.localPartition(part, topVer, false);
+
+            return locPart != null && locPart.state() == OWNING;
+        }
 
         return (top.rebalanceFinished(topVer) && (isReplicated() || affNodes.contains(locNode)))
             || (top.partitionState(localNodeId(), part) == OWNING);

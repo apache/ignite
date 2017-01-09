@@ -1899,13 +1899,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     continue;
 
                 T2<Long, Long> cntr0 = res.get(part.id());
-                Long cntr1 = part.initialUpdateCounter();
+                Long cntr1 = part.state() == MOVING ? part.initialUpdateCounter() : part.updateCounter();
+                Long cntr2 = part.updateCounter();
 
-                if (skipZeros && cntr1 == 0L)
+                if (skipZeros && cntr1 == 0L && cntr2 == 0L)
                     continue;
 
-                if (cntr0 == null || cntr1 > cntr0.get1())
-                    res.put(part.id(), new T2<Long, Long>(cntr1, part.updateCounter()));
+                if (cntr0 == null || cntr1 > cntr0.get1() || (cntr1.equals(cntr0.get1()) && cntr2 > cntr0.get2()))
+                    res.put(part.id(), new T2<>(cntr1, cntr2));
             }
 
             return res;

@@ -403,14 +403,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.allowFastLocalRead(part, affNodes, topVer);
 
-        if (fastLocGet && cctx.shared().database().persistenceEnabled()) {
-            GridDhtLocalPartition locPart = cctx.topology().localPartition(key, false);
-
-            GridDhtPartitionState locPartState = locPart != null ? locPart.state() : EVICTED;
-
-            fastLocGet = (locPartState == OWNING);
-        }
-
         if (fastLocGet && localGet(key, part, locVals))
             return false;
 
