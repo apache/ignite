@@ -293,7 +293,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /**
      * Default count of selectors for TCP server equals to
-     * {@code "Math.min(8, Runtime.getRuntime().availableProcessors())"}.
+     * {@code "Math.max(4, Runtime.getRuntime().availableProcessors() / 2)"}.
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
@@ -979,7 +979,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** */
-    private boolean usePairedConnections = true;
+    private boolean usePairedConnections;
 
     /** */
     private int connectionsPerNode = DFLT_CONN_PER_NODE;
@@ -1193,10 +1193,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Set this to {@code false} if each connection of {@link #getConnectionsPerNode()}
      * should be used for outgoing and incoming messages. In this case total number
      * of connections between local and each remote node is {@link #getConnectionsPerNode()}.
-     * In this case load NIO selectors load
-     * balancing of {@link GridNioServer} will be disabled.
      * <p>
-     * Default is {@code true}.
+     * Default is {@code false}.
      *
      * @param usePairedConnections {@code true} to use paired connections and {@code false} otherwise.
      * @see #getConnectionsPerNode()
@@ -2057,16 +2055,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .writerFactory(writerFactory)
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
-                        .balancing(usePairedConnections) // Current balancing logic assumes separate in/out connections.
+                        .readWriteSelectorsAssign(usePairedConnections)
                         .build();
 
                 boundTcpPort = port;
 
                 // Ack Port the TCP server was bound to.
-                if (log.isInfoEnabled())
+                if (log.isInfoEnabled()) {
                     log.info("Successfully bound communication NIO server to TCP port " +
-                        "[port=" + boundTcpPort + ", locHost=" + locHost + ", selectorsCnt=" + selectorsCnt +
-                        ", selectorSpins=" + srvr.selectorSpins() + ']');
+                        "[port=" + boundTcpPort +
+                        ", locHost=" + locHost +
+                        ", selectorsCnt=" + selectorsCnt +
+                        ", selectorSpins=" + srvr.selectorSpins() +
+                        ", pairedConn=" + usePairedConnections + ']');
+                }
 
                 srvr.idleTimeout(idleConnTimeout);
 
