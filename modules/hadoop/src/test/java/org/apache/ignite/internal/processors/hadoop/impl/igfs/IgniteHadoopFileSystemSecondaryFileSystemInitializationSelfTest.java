@@ -82,7 +82,7 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         igfsCfg.setManagementPort(-1);
         igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
-            "igfs://igfs-secondary:igfs-grid-secondary@127.0.0.1:11500/",
+            "igfs://igfs-secondary@127.0.0.1:11500/",
             "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
@@ -124,7 +124,7 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         fsCfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
-        fs = (IgniteHadoopFileSystem)FileSystem.get(new URI("igfs://igfs:igfs-grid@/"), fsCfg);
+        fs = (IgniteHadoopFileSystem)FileSystem.get(new URI("igfs://igfs@/"), fsCfg);
     }
 
     /**

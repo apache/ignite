@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-// Events groups.
-import GROUPS from 'app/data/event-types.json';
+package org.apache.ignite.internal.managers.communication;
 
-export default ['igniteEventGroups', function() {
-    const groups = GROUPS;
-
-    this.push = (data) => groups.push(data);
-
-    this.$get = [() => {
-        return groups;
-    }];
-}];
-
+/**
+ *
+ */
+public class IgniteCommunicationBalancePairedConnectionsTest extends IgniteCommunicationBalanceTest {
+    /** {@inheritDoc} */
+    @Override protected boolean usePairedConnections() {
+        return true;
+    }
+}

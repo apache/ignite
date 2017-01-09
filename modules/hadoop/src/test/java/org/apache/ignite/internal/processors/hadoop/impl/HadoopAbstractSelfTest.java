@@ -95,6 +95,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * Performs additional initialization in the beginning of test class execution.
+     * @throws Exception If failed.
      */
     protected void beforeTestsStarted0() throws Exception {
         // noop
@@ -235,6 +236,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS scheme for test.
      */
     protected String igfsScheme() {
-        return "igfs://:" + getTestGridName(0) + "@/";
+        return "igfs://@/";
     }
 }

@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
-
-import org.apache.ignite.internal.GridKernalContext;
-
-/**
- * Indicates whether particular file system accepts kernal context.
- */
-public interface IgfsKernalContextAware {
-    /**
-     * Set kernal context.
-     *
-     * @param ctx Kernal context.
-     */
-    public void setKernalContext(GridKernalContext ctx);
+// Optional content generation entry point.
+export default class IgniteCustomGenerator {
+    optionalContent(zip, cluster) { // eslint-disable-line no-unused-vars
+        // No-op.
+    }
 }
