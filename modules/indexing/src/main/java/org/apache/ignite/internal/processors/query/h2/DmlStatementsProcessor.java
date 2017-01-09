@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -38,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -58,20 +57,14 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
+import org.apache.ignite.internal.processors.query.h2.dml.*;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
-import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -230,7 +223,7 @@ public class DmlStatementsProcessor {
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(final GridCacheContext cctx, PreparedStatement prepStmt,
         SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel, Object[] failedKeys)
         throws IgniteCheckedException {
@@ -514,7 +507,7 @@ public class DmlStatementsProcessor {
 
         Iterator<List<?>> it = cursor.iterator();
 
-        ModifierArgs args = new ModifierArgs(desc.type().name(), plan.props);
+        DmlEntryProcessorArgs args = new DmlEntryProcessorArgs(desc.type().name(), plan.props);
 
         int valColIdx = plan.valColIdx;
 
@@ -543,7 +536,7 @@ public class DmlStatementsProcessor {
             if (plan.valSupplier != null)
                 newVal = plan.valSupplier.apply(e);
 
-            rows.put(key, new ModifyingEntryProcessor(srcVal, new UpdateModifier(newColVals, newVal)));
+            rows.put(key, new ModifyingEntryProcessor(srcVal, new UpdateProcessor(newColVals, newVal)));
 
             if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
                 PageProcessingResult pageRes = processPage(cctx, rows, args);
@@ -769,7 +762,7 @@ public class DmlStatementsProcessor {
 
         GridCacheContext cctx = desc.context();
 
-        ModifierArgs args = new ModifierArgs(desc.type().name(), plan.props);
+        DmlEntryProcessorArgs args = new DmlEntryProcessorArgs(desc.type().name(), plan.props);
 
         // If we have just one item to process, just do so
         if (plan.rowsNum == 1) {
@@ -826,7 +819,7 @@ public class DmlStatementsProcessor {
                     IgniteQueryErrorCode.DUPLICATE_KEY);
         }
         else {
-            ModifierArgs args = new ModifierArgs(desc.type().name(), plan.props);
+            DmlEntryProcessorArgs args = new DmlEntryProcessorArgs(desc.type().name(), plan.props);
 
             Map<Object, EntryProcessor<Object, Object, Boolean>> rows = plan.isLocSubqry ?
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>(plan.rowsNum) :
@@ -978,7 +971,7 @@ public class DmlStatementsProcessor {
      * @param cctx Cache context.
      * @param row Column values to set.
      * @param plan Update plan.
-     * @return Tuple [key; {@link MergeModifier} for given column values]
+     * @return Tuple [key; {@link MergeProcessor} for given column values]
      * @throws IgniteCheckedException if failed.
      */
     private IgniteBiTuple<Object, EntryProcessor> rowToInsertProc(GridCacheContext cctx, List<?> row,
@@ -1023,24 +1016,8 @@ public class DmlStatementsProcessor {
                 key = updateHashCodeIfNeeded(cctx, (BinaryObject) key);
         }
 
-        return new IgniteBiTuple<>(key, (EntryProcessor) (plan.mode == UpdateMode.MERGE ? new MergeModifier(newColVals, val) :
-            new InsertModifier(newColVals, val)));
-    }
-
-    /**
-     * Optionally wrap an object into {@link BinaryObjectBuilder}.
-     *
-     * @param cctx Cache context.
-     * @param val Value to wrap.
-     * @return {@code val} or {@link BinaryObjectBuilder} wrapping it.
-     */
-    private static Object toBuilderIfNeeded(GridCacheContext cctx, Object val) {
-        if (val == null || !cctx.binaryMarshaller() || GridQueryProcessor.isSqlType(val.getClass()))
-            return val;
-
-        BinaryObject binVal = cctx.grid().binary().toBinary(val);
-
-        return binVal.toBuilder();
+        return new IgniteBiTuple<>(key, (EntryProcessor) (plan.mode == UpdateMode.MERGE ? new MergeProcessor(newColVals, val) :
+            new InsertProcessor(newColVals, val)));
     }
 
     /**
@@ -1050,7 +1027,7 @@ public class DmlStatementsProcessor {
      * @param binObj Binary object.
      * @return Binary object with hash code set.
      */
-    private static BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
+    public static BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
         if (U.isHashCodeEmpty(binObj)) {
             if (WARNED_TYPES.add(binObj.type().typeId()))
                 U.warn(log, "Binary object's type does not have identity resolver explicitly set, therefore " +
@@ -1071,346 +1048,16 @@ public class DmlStatementsProcessor {
             return binObj;
     }
 
-    /**
-     * Entry processor that performs atomic MERGE/UPSERT on an entry.
-     */
-    private static class MergeModifier extends EntryModifier implements EntryProcessor<Object, Object, Boolean> {
-        /** New values for properties as enlisted in initial query (w/o key and its properties, as well as _val). */
-        private final Object[] newColVals;
-
-        /** New _val, if present in initial query. */
-        private final Object newVal;
-
-        /** */
-        private MergeModifier(Object[] newColVals, Object newVal) {
-            // This processor must be used only when no _val is given explicitly,
-            // hence new values must be properties.
-            assert !F.isEmpty(newColVals);
-
-            this.newColVals = newColVals;
-            this.newVal = newVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Boolean process(MutableEntry<Object, Object> e, Object... args) throws EntryProcessorException {
-            if (!(e instanceof CacheInvokeEntry))
-                throw new EntryProcessorException("Unexpected mutable entry type - CacheInvokeEntry expected");
-
-            assert !F.isEmpty(args) && args[0] instanceof ModifierArgs;
-
-            try {
-                applyx((CacheInvokeEntry<Object, Object>) e, (ModifierArgs) args[0]);
-            }
-            catch (IgniteCheckedException ex) {
-                throw new EntryProcessorException(ex);
-            }
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void applyx(CacheInvokeEntry<Object, Object> e, ModifierArgs args) throws IgniteCheckedException {
-            GridCacheContext cctx = e.entry().context();
-
-            GridQueryTypeDescriptor typeDesc = cctx.grid().context().query().type(cctx.name(), args.typeName);
-
-            // This processor must be used only when no _val is given explicitly, and it's impossible
-            // when value is of SQL type.
-            assert !GridQueryProcessor.isSqlType(typeDesc.valueClass());
-
-            Object val = null;
-
-            if (e.exists()) {
-                val = e.getValue();
-
-                if (!cctx.binaryMarshaller()) {
-                    if (!cctx.cache().configuration().isCopyOnRead()) {
-                        byte[] valBytes = cctx.marshaller().marshal(val);
-
-                        // val is another object now, we can mutate it
-                        val = cctx.marshaller().unmarshal(valBytes, U.resolveClassLoader(cctx.gridConfig()));
-                    }
-                }
-                else {
-                    val = cctx.grid().binary().toBinary(val);
-
-                    assert val instanceof BinaryObject;
-
-                    val = ((BinaryObject) val).toBuilder();
-                }
-            }
-            else if (newVal != null)
-                val = toBuilderIfNeeded(cctx, newVal);
-            else if (cctx.binaryMarshaller())
-                val = cctx.grid().binary().builder(typeDesc.valueTypeName());
-
-            if (val == null)
-                throw new IgniteSQLException("Value for MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
-
-            int i = 0;
-
-            for (String propName : typeDesc.fields().keySet()) {
-                Integer idx = args.props.get(i++);
-
-                if (idx == null)
-                    continue;
-
-                GridQueryProperty prop = typeDesc.property(propName);
-
-                if (prop.key())
-                    continue;
-
-                prop.setValue(null, val, newColVals[idx]);
-            }
-
-            if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder) {
-                val = ((BinaryObjectBuilder) val).build();
-
-                val = updateHashCodeIfNeeded(cctx, (BinaryObject) val);
-            }
-
-            e.setValue(val);
-        }
-    }
-
-    /**
-     * Entry processor that performs atomic MERGE/UPSERT on an entry.
-     */
-    private static class InsertModifier extends EntryModifier implements EntryProcessor<Object, Object, Boolean> {
-        /** New values for properties as enlisted in initial query (w/o key and its properties, as well as _val). */
-        private final Object[] newColVals;
-
-        /** New _val, if present in initial query. */
-        private final Object newVal;
-
-        /** */
-        private InsertModifier(Object[] newColVals, Object newVal) {
-            this.newColVals = newColVals;
-            this.newVal = newVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Boolean process(MutableEntry<Object, Object> e, Object... args) throws EntryProcessorException {
-            if (e.exists())
-                return false;
-
-            if (!(e instanceof CacheInvokeEntry))
-                throw new EntryProcessorException("Unexpected mutable entry type - CacheInvokeEntry expected");
-
-            assert !F.isEmpty(args) && args[0] instanceof ModifierArgs;
-
-            try {
-                applyx((CacheInvokeEntry<Object, Object>) e, (ModifierArgs) args[0]);
-            }
-            catch (IgniteCheckedException ex) {
-                throw new EntryProcessorException(ex);
-            }
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void applyx(CacheInvokeEntry<Object, Object> e, ModifierArgs args) throws IgniteCheckedException {
-            GridCacheContext cctx = e.entry().context();
-
-            GridQueryTypeDescriptor typeDesc = cctx.grid().context().query().type(cctx.name(), args.typeName);
-
-            Object val = null;
-
-            if (newVal != null)
-                val = !F.isEmpty(newColVals) ? toBuilderIfNeeded(cctx, newVal) : newVal;
-            else if (cctx.binaryMarshaller()) // For non binary mode, newVal must be supplied.
-                val = cctx.grid().binary().builder(typeDesc.valueTypeName());
-
-            if (val == null)
-                throw new IgniteSQLException("Value for INSERT or MERGE must not be null",
-                    IgniteQueryErrorCode.NULL_VALUE);
-
-            int i = 0;
-
-            if (!F.isEmpty(newColVals))
-                for (String propName : typeDesc.fields().keySet()) {
-                    Integer idx = args.props.get(i++);
-
-                    if (idx == null)
-                        continue;
-
-                    GridQueryProperty prop = typeDesc.property(propName);
-
-                    if (prop.key())
-                        continue;
-
-                    prop.setValue(null, val, newColVals[idx]);
-                }
-
-            if (cctx.binaryMarshaller() && newVal == null) {
-                val = ((BinaryObjectBuilder) val).build();
-
-                val = updateHashCodeIfNeeded(cctx, (BinaryObject) val);
-            }
-
-            e.setValue(val);
-        }
-    }
-
-    /**
-     * Entry processor invoked by UPDATE and DELETE operations.
-     */
-    private final static class ModifyingEntryProcessor implements EntryProcessor<Object, Object, Boolean>, Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Value to expect. */
-        private final Object val;
-
-        /** Action to perform on entry. */
-        private final EntryModifier entryModifier;
-
-        /** */
-        private ModifyingEntryProcessor(Object val, EntryModifier entryModifier) {
-            assert val != null;
-
-            this.val = val;
-            this.entryModifier = entryModifier;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
-            if (!entry.exists())
-                return null; // Someone got ahead of us and removed this entry, let's skip it.
-
-            Object entryVal = entry.getValue();
-
-            if (entryVal == null)
-                return null;
-
-            // Something happened to the cache while we were performing map-reduce.
-            if (!F.eq(entryVal, val))
-                return false;
-
-            if (!(entry instanceof CacheInvokeEntry))
-                throw new EntryProcessorException("Unexpected mutable entry type - CacheInvokeEntry expected");
-
-            boolean hasArgs = !F.isEmpty(arguments);
-
-            assert !hasArgs || (arguments[0] != null && arguments[0] instanceof ModifierArgs);
-
-            try {
-                entryModifier.apply((CacheInvokeEntry<Object, Object>) entry,
-                    hasArgs ? (ModifierArgs) arguments[0] : null);
-            }
-            catch (Exception e) {
-                throw new EntryProcessorException(e);
-            }
-
-            return null; // To leave out only erroneous keys - nulls are skipped on results' processing.
-        }
-    }
-
-    /**
-     * Arguments for {@link EntryModifier}.
-     */
-    private final static class ModifierArgs implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Target type descriptor name.
-         */
-        private final String typeName;
-
-        /**
-         * Same as {@link UpdatePlan#props} - map from property indexes in order defined by type descriptor
-         * to their positions in array of new property values.
-         */
-        private final LinkedHashMap<Integer, Integer> props;
-
-        /** */
-        private ModifierArgs(String typeName, LinkedHashMap<Integer, Integer> props) {
-            this.typeName = typeName;
-            this.props = props;
-        }
-    }
-
-    /**
-     * In-closure that mutates given entry with respect to given args.
-     */
-    private abstract static class EntryModifier extends CIX2<CacheInvokeEntry<Object, Object>, ModifierArgs> {
-    }
-
     /** */
-    private static EntryModifier RMV = new EntryModifier() {
+    private static DmlEntryProcessor RMV = new DmlEntryProcessor() {
         /** {@inheritDoc} */
-        @Override public void applyx(CacheInvokeEntry<Object, Object> e, ModifierArgs args)
+        @Override public void applyx(CacheInvokeEntry<Object, Object> e, DmlEntryProcessorArgs args)
             throws IgniteCheckedException {
             assert e.exists();
 
             e.remove();
         }
     };
-
-    /**
-     *
-     */
-    private static final class UpdateModifier extends EntryModifier {
-        /** Values to set - in order specified by {@link ModifierArgs#props}. */
-        private final Object[] newColVals;
-
-        /** New value, if given in initial query. */
-        private final Object newVal;
-
-        /** */
-        private UpdateModifier(Object[] newColVals, Object newVal) {
-            this.newColVals = newColVals;
-            this.newVal = newVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void applyx(CacheInvokeEntry<Object, Object> e, ModifierArgs args) throws IgniteCheckedException {
-            assert e.exists();
-
-            GridCacheContext cctx = e.entry().context();
-
-            GridQueryTypeDescriptor typeDesc = cctx.grid().context().query().type(cctx.name(), args.typeName);
-
-            // If we're here then value check has passed, so we can take old val as basis.
-            Object val = U.firstNotNull(newVal, e.oldVal());
-
-            boolean hasProps = (newVal == null || newColVals.length > 1);
-
-            val = hasProps ? toBuilderIfNeeded(cctx, val) : val;
-
-            if (val == null)
-                throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
-
-            int i = 0;
-
-            for (String propName : typeDesc.fields().keySet()) {
-                Integer idx = args.props.get(i++);
-
-                if (idx == null)
-                    continue;
-
-                GridQueryProperty prop = typeDesc.property(propName);
-
-                assert !prop.key();
-
-                Object colVal = newColVals[idx];
-
-                prop.setValue(null, val, colVal);
-            }
-
-            if (cctx.binaryMarshaller() && hasProps) {
-                assert val instanceof BinaryObjectBuilder;
-
-                val = ((BinaryObjectBuilder) val).build();
-
-                val = updateHashCodeIfNeeded(cctx, (BinaryObject) val);
-            }
-
-            e.setValue(val);
-        }
-    }
 
     /**
      * Wrap result of DML operation (number of items affected) to Iterable suitable to be wrapped by cursor.
