@@ -79,13 +79,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private boolean indexingEnabled;
 
     /** */
-    protected CacheDataStore locCacheDataStore;
+    // TODO GG-11208 need restore size after restart.
+    private CacheDataStore locCacheDataStore;
 
     /** */
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
-    protected final CacheDataStore removedStore = new CacheDataStoreImpl(-1, null, null, null);
+    protected final CacheDataStore rmvdStore = new CacheDataStoreImpl(-1, null, null, null);
 
     /** */
     protected PendingEntriesTree pendingEntries;
@@ -111,6 +112,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         indexingEnabled = GridQueryProcessor.isEnabled(cctx.config());
 
         if (cctx.affinityNode()) {
+            if (cctx.kernalContext().clientNode()) {
+                assert cctx.isLocal() : cctx.name();
+
+                cctx.shared().database().init();
+            }
+
             cctx.shared().database().checkpointReadLock();
 
             try {
@@ -196,6 +203,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public long entriesCount() {
+        if (cctx.isLocal())
+            return locCacheDataStore.size();
+
+        long size = 0;
+
+        for (CacheDataStore store : partDataStores.values())
+            size += store.size();
+
+        return size;
+    }
+
     /**
      * @param p Partition.
      * @return Partition data.
@@ -211,10 +231,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public long entriesCount(boolean primary, boolean backup,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    @Override public long entriesCount(
+        boolean primary,
+        boolean backup,
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         if (cctx.isLocal())
-            return 0; // TODO: GG-11208.
+            return entriesCount(0);
         else {
             ClusterNode locNode = cctx.localNode();
 
@@ -241,8 +264,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public long entriesCount(int part) {
-        if (cctx.isLocal())
-            return 0; // TODO: GG-11208.
+        if (cctx.isLocal()){
+            assert part == 0;
+
+            return locCacheDataStore.size();
+        }
         else {
             GridDhtLocalPartition locPart = cctx.topology().localPartition(part, AffinityTopologyVersion.NONE, false);
 

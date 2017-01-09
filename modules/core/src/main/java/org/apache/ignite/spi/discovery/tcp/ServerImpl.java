@@ -3685,8 +3685,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                boolean locActiveOnStart = locNode.attribute(ATTR_ACTIVE_ON_START);
-                boolean rmtActiveOnStart = node.attribute(ATTR_ACTIVE_ON_START);
+                boolean locActiveOnStart = booleanAttribute(locNode, ATTR_ACTIVE_ON_START, true);
+                boolean rmtActiveOnStart = booleanAttribute(node, ATTR_ACTIVE_ON_START, true);
 
                 if (locActiveOnStart != rmtActiveOnStart) {
                     String errMsg = "Local node's active on start flag differs from " +
@@ -3798,6 +3798,18 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+        }
+
+        /**
+         * @param node Node.
+         * @param name Attribute name.
+         * @param dflt Default value.
+         * @return Attribute value.
+         */
+        private boolean booleanAttribute(ClusterNode node, String name, boolean dflt) {
+            Boolean attr = node.attribute(name);
+
+            return attr != null ? attr : dflt;
         }
 
         /**

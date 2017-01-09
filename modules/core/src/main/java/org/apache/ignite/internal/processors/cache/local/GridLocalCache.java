@@ -55,9 +55,6 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** */
     private GridCachePreloader preldr;
 
-    /** Storage size. */
-    private final AtomicLong storageSize = new AtomicLong(); // TODO GG-11208 need restore after restart.
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -247,7 +244,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         modes.backup = true;
 
         if (modes.offheap)
-            return storageSize.get();
+            return ctx.offheap().entriesCount();
         else if (modes.heap)
             return size();
         else
@@ -255,7 +252,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
         return localSizeLong(peekModes);
     }
 }

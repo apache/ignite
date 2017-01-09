@@ -431,9 +431,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         Collection<CacheConfiguration> cfgs = new ArrayList<>();
 
-        for (DynamicCacheChangeRequest req : cgsCtx.batch.requests())
+        for (DynamicCacheChangeRequest req : cgsCtx.batch.requests()) {
             if (req.startCacheConfiguration() != null)
                 cfgs.add(req.startCacheConfiguration());
+        }
 
         try {
             if (!client) {
@@ -446,13 +447,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 sharedCtx.database().initDataBase();
 
-                for (CacheConfiguration cfg : cfgs)
+                for (CacheConfiguration cfg : cfgs) {
                     if (CU.isSystemCache(cfg.getName()))
                         sharedCtx.pageStore().initializeForCache(cfg);
+                }
 
-                for (CacheConfiguration cfg : cfgs)
+                for (CacheConfiguration cfg : cfgs) {
                     if (!CU.isSystemCache(cfg.getName()))
                         sharedCtx.pageStore().initializeForCache(cfg);
+                }
 
                 sharedCtx.database().onActivate(ctx);
             }

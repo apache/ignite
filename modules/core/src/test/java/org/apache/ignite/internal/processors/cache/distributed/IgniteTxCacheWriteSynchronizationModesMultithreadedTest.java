@@ -313,7 +313,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
      * @param c Test iteration closure.
      * @throws Exception If failed.
      */
-    public void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
+    private void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
         final long stopTime = System.currentTimeMillis() + 10_000;
 
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {

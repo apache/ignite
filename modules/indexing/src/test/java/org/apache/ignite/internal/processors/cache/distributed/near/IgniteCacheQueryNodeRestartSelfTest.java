@@ -66,7 +66,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90 * 1000;
+        return 3 * 60 * 1000;
     }
 
     /** {@inheritDoc} */
@@ -193,7 +193,6 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         fut1.get();
 
         info("Queries stopped.");
-
 
         info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 
