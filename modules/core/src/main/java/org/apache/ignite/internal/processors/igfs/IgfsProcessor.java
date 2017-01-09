@@ -396,19 +396,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @return Configuration.
-     */
-    private CacheConfiguration config(String cacheName) {
-        for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg.getName()))
-                return ccfg;
-        }
-
-        return null;
-    }
-
-    /**
      * Check IGFS config on remote node.
      *
      * @param rmtNode Remote node.
