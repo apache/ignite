@@ -1741,7 +1741,7 @@ public class GridCacheUtils {
     /**
      * @param cfg Ignite config.
      * @param cacheName Cache name.
-     * @return Configuration.
+     * @return Cache configuration with specified name. Otherwise returns {@code null}.
      */
     public static CacheConfiguration config(IgniteConfiguration cfg, String cacheName) {
         for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
