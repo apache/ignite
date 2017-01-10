@@ -202,10 +202,14 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(CacheEntryProcessorNonSerializableTest.class);
         suite.addTestSuite(CacheEntryProcessorExternalizableFailedTest.class);
         suite.addTestSuite(IgniteCacheEntryProcessorCallTest.class);
-        GridTestUtils.addTestIfNeeded(suite, CacheEntryProcessorCopySelfTest.class, ignoredTests);
         suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
         suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
+
+        // TODO GG-11148: include test when implemented.
+        // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
+        // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
+        //GridTestUtils.addTestIfNeeded(suite, CacheEntryProcessorCopySelfTest.class, ignoredTests);
 
         suite.addTestSuite(IgnitePutAllLargeBatchSelfTest.class);
         suite.addTestSuite(IgnitePutAllUpdateNonPreloadedPartitionSelfTest.class);
