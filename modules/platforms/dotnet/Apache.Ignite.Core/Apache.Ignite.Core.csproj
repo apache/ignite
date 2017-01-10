@@ -543,12 +543,6 @@
   <ItemGroup>
     <Folder Include="Impl\Common\JavaObjects\" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\cpp\jni\project\vs\jni.vcxproj">
-      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
-      <Name>jni</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
     <PreBuildEvent>cd "$(ProjectDir)"
