@@ -122,6 +122,8 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
         suite.addTestSuite(IgniteCacheContinuousQueryNoUnsubscribeTest.class);
 
+        suite.addTest(IgniteDistributedJoinTestSuite.suite());
+
         return suite;
     }
 }

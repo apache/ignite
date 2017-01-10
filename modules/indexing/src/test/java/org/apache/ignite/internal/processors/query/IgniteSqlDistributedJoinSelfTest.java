@@ -80,6 +80,9 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
             .setIndexedTypes(idxTypes);
     }
 
+    /**
+     *
+     */
     public void testNonCollocatedDistributedJoin() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true, String.class, Person.class);
         CacheConfiguration ccfg2 = cacheConfig("org", true, String.class, Organization.class);
@@ -111,6 +114,10 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param c1 Cache1.
+     * @param c2 Cache2.
+     */
     private void populateDataIntoCaches(IgniteCache<String, Person> c1, IgniteCache<String, Organization> c2) {
         int personId = 0;
 

@@ -45,12 +45,6 @@ import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectQueryArgume
 import org.apache.ignite.internal.processors.cache.IgniteBinaryWrappedObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCollocatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDeleteSqlQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinCollocatedAndNotTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinCustomAffinityMapper;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinNoIndexTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinPartitionedAndReplicatedTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinQueryConditionsTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInsertSqlQuerySelfTest;
@@ -82,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheP
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedSnapshotEnabledQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryAbstractDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNoRebalanceSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
@@ -165,17 +158,10 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCachePrimitiveFieldsQuerySelfTest.class);
 
         suite.addTestSuite(IgniteCacheJoinQueryWithAffinityKeyTest.class);
-        suite.addTestSuite(IgniteCacheDistributedJoinCollocatedAndNotTest.class);
-        suite.addTestSuite(IgniteCacheDistributedJoinPartitionedAndReplicatedTest.class);
-        suite.addTestSuite(IgniteCacheDistributedJoinQueryConditionsTest.class);
-        suite.addTestSuite(IgniteCacheDistributedJoinTest.class);
         suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedTest.class);
-        suite.addTestSuite(IgniteCacheDistributedJoinNoIndexTest.class);
         suite.addTestSuite(IgniteCrossCachesJoinsQueryTest.class);
 
         suite.addTestSuite(IgniteCacheMultipleIndexedTypesTest.class);
-
-        suite.addTestSuite(IgniteCacheDistributedJoinCustomAffinityMapper.class);
 
         suite.addTestSuite(IgniteCacheMergeSqlQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheInsertSqlQuerySelfTest.class);
@@ -237,7 +223,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheDistributedQueryCancelSelfTest.class);
         suite.addTestSuite(IgniteCacheLocalQueryCancelOrTimeoutSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class);
 
         // Other.
         suite.addTestSuite(CacheQueryNewClientSelfTest.class);
