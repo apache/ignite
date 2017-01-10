@@ -11,7 +11,7 @@
     <AssemblyName>Apache.Ignite.ExamplesDll</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <NoWarn>CS0649</NoWarn>
+    <NoWarn>649</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
