@@ -57,6 +57,9 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     @GridDirectTransient
     private transient int bufLen;
 
+    /** Data length. */
+    private int dataLen;
+
     /**
      * Default constructor.
      */
@@ -72,8 +75,9 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
      * @param cnt Count.
      * @param buf Buffer.
      * @param bufLen Buffer length.
+     * @param dataLen Data length.
      */
-    public HadoopDirectShuffleMessage(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen) {
+    public HadoopDirectShuffleMessage(HadoopJobId jobId, int reducer, int cnt, byte[] buf, int bufLen, int dataLen) {
         assert jobId != null;
 
         this.jobId = jobId;
@@ -81,6 +85,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         this.cnt = cnt;
         this.buf = buf;
         this.bufLen = bufLen;
+        this.dataLen = dataLen;
     }
 
     /**
@@ -109,6 +114,13 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
      */
     public byte[] buffer() {
         return buf;
+    }
+
+    /**
+     * @return Data length.
+     */
+    public int dataLength() {
+        return dataLen;
     }
 
     /** {@inheritDoc} */
@@ -143,6 +155,12 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
             case 3:
                 if (!writer.writeByteArray("buf", this.buf, 0, bufLen))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeInt("dataLen", dataLen))
                     return false;
 
                 writer.incrementState();
@@ -194,6 +212,14 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
                 reader.incrementState();
 
+            case 4:
+                dataLen = reader.readInt("dataLen");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(HadoopDirectShuffleMessage.class);
@@ -206,7 +232,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -222,6 +248,8 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
         out.writeInt(cnt);
 
         U.writeByteArray(out, buf);
+
+        out.writeInt(dataLen);
     }
 
     /** {@inheritDoc} */
@@ -234,6 +262,8 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
 
         buf = U.readByteArray(in);
         bufLen = buf != null ? buf.length : 0;
+
+        dataLen = in.readInt();
     }
 
     /** {@inheritDoc} */

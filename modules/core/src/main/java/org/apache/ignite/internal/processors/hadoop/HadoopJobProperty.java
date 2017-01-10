@@ -103,6 +103,13 @@ public enum HadoopJobProperty {
     SHUFFLE_MSG_SIZE("ignite.shuffle.message.size"),
 
     /**
+     * Whether shuffle message should be compressed with GZIP.
+     * <p>
+     * Defaults to {@code false}.
+     */
+    SHUFFLE_MSG_GZIP("ignite.shuffle.message.gzip"),
+
+    /**
      * Whether to stripe mapper output for remote reducers.
      * <p>
      * Defaults to {@code false}.

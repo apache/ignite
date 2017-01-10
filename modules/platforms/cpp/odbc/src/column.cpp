@@ -40,7 +40,7 @@ namespace
 
                 break;
             }
-            
+
             case IGNITE_TYPE_OBJECT:
             {
                 int8_t protoVer = stream.ReadInt8();
@@ -88,6 +88,7 @@ namespace
             case IGNITE_TYPE_DOUBLE:
             case IGNITE_TYPE_BOOL:
             case IGNITE_HDR_NULL:
+            case IGNITE_TYPE_ARRAY_BYTE:
             {
                 // No-op.
                 break;
@@ -290,6 +291,17 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    sizeTmp = reader.ReadInt32();
+                    assert(sizeTmp >= 0);
+
+                    startPosTmp = stream->Position();
+                    stream->Position(stream->Position() + sizeTmp);
+
+                    break;
+                }
+
                 default:
                 {
                     // This is a fail case.
@@ -470,6 +482,20 @@ namespace ignite
 
                     dataBuf.PutTimestamp(ts);
 
+                    break;
+                }
+
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    stream->Position(startPos + offset);
+                    int32_t maxRead = std::min(GetUnreadDataLength(), static_cast<int32_t>(dataBuf.GetSize()));
+                    std::vector<int8_t> data(maxRead);
+
+                    stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
+
+                    int32_t written = dataBuf.PutBinaryData(data.data(), data.size());
+
+                    IncreaseOffset(written);
                     break;
                 }
 
