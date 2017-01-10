@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
@@ -40,6 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Hadoop processor.
  */
 public class HadoopProcessor extends HadoopProcessorAdapter {
+    /** Class to probe for Hadoop libraries in Ignite classpath. */
+    private static final String HADOOP_PROBE_CLS = "org.apache.hadoop.conf.Configuration";
+
     /** Job ID counter. */
     private final AtomicInteger idCtr = new AtomicInteger();
 
@@ -164,7 +167,14 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo) {
-        return hctx.jobTracker().submit(jobId, jobInfo);
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
+
+        try {
+            return hctx.jobTracker().submit(jobId, jobInfo);
+        }
+        finally {
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -203,6 +213,26 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             throw new IgniteCheckedException(ioe.getMessage(), ioe);
         }
 
+        // Check if Hadoop is in parent class loader classpath.
+        try {
+            Class cls = Class.forName(HADOOP_PROBE_CLS, false, getClass().getClassLoader());
+
+            try {
+                String path = cls.getProtectionDomain().getCodeSource().getLocation().toString();
+
+                U.warn(log, "Hadoop libraries are found in Ignite classpath, this could lead to class loading " +
+                    "errors (please remove all Hadoop libraries from Ignite classpath) [path=" + path + ']');
+            }
+            catch (Throwable ignore) {
+                U.warn(log, "Hadoop libraries are found in Ignite classpath, this could lead to class loading " +
+                    "errors (please remove all Hadoop libraries from Ignite classpath)");
+            }
+        }
+        catch (Throwable ignore) {
+            // All is fine.
+        }
+
+        // Try assembling Hadoop URLs.
         HadoopClassLoader.hadoopUrls();
     }
 
@@ -213,7 +243,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
      */
     private void initializeDefaults(HadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
-            cfg.setMapReducePlanner(new IgniteHadoopMapReducePlanner());
+            cfg.setMapReducePlanner(new IgniteHadoopWeightedMapReducePlanner());
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMetrics;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
@@ -75,21 +76,22 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) throws IgniteException {
+    @Override public IgfsInputStream open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
+        throws IgniteException {
         throwUnsupported();
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path) throws IgniteException {
+    @Override public IgfsInputStream open(IgfsPath path) throws IgniteException {
         throwUnsupported();
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) throws IgniteException {
+    @Override public IgfsInputStream open(IgfsPath path, int bufSize) throws IgniteException {
         throwUnsupported();
 
         return null;
@@ -109,13 +111,6 @@ public class IgfsMock implements IgfsEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public Boolean globalSampling() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsLocalMetrics localMetrics() {
         throwUnsupported();
 
         return null;

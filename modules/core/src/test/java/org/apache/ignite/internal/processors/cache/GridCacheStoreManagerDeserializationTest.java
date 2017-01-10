@@ -279,6 +279,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         for (int i = 0; i < 1; i++) {
             builder.setField("id", i);
+            builder.hashCode(i);
 
             entity = builder.build();
 

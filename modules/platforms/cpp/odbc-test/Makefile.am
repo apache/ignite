@@ -34,11 +34,13 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/core/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 ignite_odbc_tests_LDADD = \
     @top_srcdir@/core/libignite.la \
@@ -72,6 +74,7 @@ ignite_odbc_tests_SOURCES = \
     src/sql_types_test.cpp \
     src/sql_date_time_functions_test.cpp \
     src/sql_outer_join_test.cpp \
+    src/api_robustness_test.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/app/application_data_buffer.cpp \

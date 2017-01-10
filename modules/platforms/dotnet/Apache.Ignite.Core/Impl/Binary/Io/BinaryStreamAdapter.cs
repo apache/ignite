@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary.IO
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
 
     /// <summary>
@@ -78,12 +79,14 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotSupportedException("Stream is not seekable.");
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override long Position
         {
             get
@@ -97,6 +100,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override long Length
         {
             get 
@@ -106,6 +110,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override void SetLength(long value)
         {
             throw new NotSupportedException("Stream is not seekable.");

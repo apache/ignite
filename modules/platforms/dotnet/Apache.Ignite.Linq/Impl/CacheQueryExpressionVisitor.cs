@@ -263,7 +263,7 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = Aliases.GetTableAlias(ExpressionWalker.GetCacheQueryable(expression));
+            var tableName = Aliases.GetTableAlias(expression);
 
             ResultBuilder.AppendFormat(format, tableName);
 
@@ -276,17 +276,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             // Field hierarchy is flattened (Person.Address.Street is just Street), append as is, do not call Visit.
 
-            // Special case: string.Length
-            if (expression.Member == MethodVisitor.StringLength)
-            {
-                ResultBuilder.Append("length(");
-
-                VisitMember((MemberExpression) expression.Expression);
-
-                ResultBuilder.Append(")");
-
+            // Property call (string.Length, DateTime.Month, etc).
+            if (MethodVisitor.VisitPropertyCall(expression, this))
                 return expression;
-            }
 
             // Special case: grouping
             if (VisitGroupByMember(expression.Expression))
@@ -298,7 +290,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 var fieldName = GetFieldName(expression, queryable);
 
-                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
+                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
                 AppendParameter(RegisterEvaluatedParameter(expression));

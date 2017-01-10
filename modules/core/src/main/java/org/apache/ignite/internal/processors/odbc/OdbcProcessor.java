@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -123,7 +124,11 @@ public class OdbcProcessor extends GridProcessorAdapter {
                 for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
                     try {
                         GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.gridName(), odbcExecSvc, log),
+                            new GridNioAsyncNotifyFilter(ctx.gridName(), odbcExecSvc, log) {
+                                @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
+                                    proceedSessionOpened(ses);
+                                }
+                            },
                             new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
                         };
 
@@ -134,6 +139,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .gridName(ctx.gridName())
+                            .serverName("odbc")
                             .tcpNoDelay(DFLT_TCP_NODELAY)
                             .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())

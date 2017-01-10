@@ -17,12 +17,8 @@
 
 #include <ignite/common/utils.h>
 
-#include "ignite/cache/cache_peek_mode.h"
 #include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/interop/interop.h"
-#include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_type_updater_impl.h"
-#include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -30,9 +26,11 @@ using namespace ignite::java;
 using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
+using namespace ignite::cache::query::continuous;
 using namespace ignite::impl;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::cache::query;
+using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
@@ -93,6 +91,9 @@ namespace ignite
             /** Operation: PutIfAbsent. */
             const int32_t OP_PUT_IF_ABSENT = 28;
 
+            /** Operation: CONTINUOUS query. */
+            const int32_t OP_QRY_CONTINUOUS = 29;
+
             /** Operation: SCAN query. */
             const int32_t OP_QRY_SCAN = 30;
 
@@ -120,6 +121,18 @@ namespace ignite
             /** Operation: Replace(K, V, V). */
             const int32_t OP_REPLACE_3 = 38;
 
+            /** Operation: Clear(). */
+            const int32_t OP_CLEAR_CACHE = 41;
+
+            /** Operation: RemoveAll(). */
+            const int32_t OP_REMOVE_ALL2 = 43;
+
+            /** Operation: Size(peekModes). */
+            const int32_t OP_SIZE = 48;
+
+            /** Operation: SizeLoc(peekModes). */
+            const int32_t OP_SIZE_LOC = 48;
+
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
                 name(name)
@@ -139,11 +152,6 @@ namespace ignite
                 return name;
             }
 
-            bool CacheImpl::IsEmpty(IgniteError* err)
-            {
-                return Size(IGNITE_PEEK_MODE_ALL, err) == 0;
-            }
-
             bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError* err)
             {
                 return OutOp(OP_CONTAINS_KEY, inOp, err);
@@ -156,17 +164,17 @@ namespace ignite
 
             void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError* err)
             {
-                OutInOp(OP_LOCAL_PEEK, inOp, outOp, err);
+                OutInOpX(OP_LOCAL_PEEK, inOp, outOp, err);
             }
 
             void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET, inOp, outOp, err);
+                OutInOpX(OP_GET, inOp, outOp, err);
             }
 
             void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_ALL, inOp, outOp, err);
+                OutInOpX(OP_GET_ALL, inOp, outOp, err);
             }
 
             void CacheImpl::Put(InputOperation& inOp, IgniteError* err)
@@ -181,17 +189,17 @@ namespace ignite
 
             void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_PUT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_REPLACE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REPLACE, inOp, outOp, err);
             }
 
             void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_REMOVE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REMOVE, inOp, outOp, err);
             }
 
             bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError* err)
@@ -201,7 +209,7 @@ namespace ignite
 
             void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                OutInOp(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
             }
 
             bool CacheImpl::Replace(InputOperation& inOp, IgniteError* err)
@@ -223,7 +231,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                GetEnvironment().Context()->CacheClear(GetTarget(), &jniErr);
+                OutOp(OP_CLEAR_CACHE, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
@@ -267,19 +275,16 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                GetEnvironment().Context()->CacheRemoveAll(GetTarget(), &jniErr);
+                OutOp(OP_REMOVE_ALL2, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            int32_t CacheImpl::Size(const int32_t peekModes, IgniteError* err)
+            int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err)
             {
-                return SizeInternal(peekModes, false, err);
-            }
+                int32_t op = local ? OP_SIZE_LOC : OP_SIZE;
 
-            int32_t CacheImpl::LocalSize(const int32_t peekModes, IgniteError* err)
-            {
-                return SizeInternal(peekModes, true, err);
+                return static_cast<int32_t>(OutInOpLong(op, peekModes, err));
             }
 
             QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError* err)
@@ -302,18 +307,31 @@ namespace ignite
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
             }
 
-            int CacheImpl::SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err)
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const SqlQuery& initialQry, IgniteError& err)
             {
-                JniErrorInfo jniErr;
+                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
+            }
 
-                int res = GetEnvironment().Context()->CacheSize(GetTarget(), peekModes, loc, &jniErr);
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const TextQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
+            }
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const ScanQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
+            }
 
-                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                    return res;
-                else
-                    return -1;
+            struct DummyQry { void Write(BinaryRawWriter&) const { }};
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                IgniteError& err)
+            {
+                DummyQry dummy;
+                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
             }
         }
     }

@@ -35,8 +35,9 @@
 
     <properties>
         <ignite.edition>fabric</ignite.edition>
-
-        <!-- Build parameters. -->
+        <hadoop.version>2.4.1</hadoop.version>
+        <spark.version>1.5.2</spark.version>
+        <spring.version>4.1.0.RELEASE</spring.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
@@ -52,7 +53,7 @@
         <aspectj.bundle.version>1.7.2_1</aspectj.bundle.version>
         <aspectj.version>1.7.2</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
-        <aws.sdk.version>1.10.29</aws.sdk.version>
+        <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
         <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.8.3</commons.beanutils.version>
@@ -64,12 +65,12 @@
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
-        <flume.ng.version>1.6.0</flume.ng.version>
+        <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>18.0</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
-        <h2.version>1.3.175</h2.version>
+        <h2.version>1.4.191</h2.version>
         <hadoop.version>2.4.1</hadoop.version>
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
@@ -77,6 +78,7 @@
         <jackson2.version>2.7.5</jackson2.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.version>1.0.0</javax.cache.version>
+        <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
         <jetty.version>9.2.11.v20150529</jetty.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.53_1</jsch.bundle.version>
@@ -84,9 +86,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.bundle.version>0.9.0.0_1</kafka.bundle.version>
-        <kafka.clients.bundle.version>0.9.0.0_1</kafka.clients.bundle.version>
-        <kafka.version>0.9.0.0</kafka.version>
+        <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
         <lucene.version>3.5.0</lucene.version>
@@ -187,6 +187,23 @@
             <email>vozerov at gridgain dot com</email>
         </developer>
     </developers>
+
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>ignore</checksumPolicy>
+            </snapshots>
+            <id>h2database.com</id>
+            <name>Snapshot repository on h2database.com</name>
+            <url>http://h2database.com/m2-repo</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -794,7 +811,7 @@
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
@@ -875,13 +892,15 @@
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
                                         <!--web console-->
-                                        <exclude>**/src/main/js/.babelrc</exclude>
-                                        <exclude>**/src/main/js/.eslintrc</exclude>
-                                        <exclude>**/src/main/js/build/**</exclude>
-                                        <exclude>**/src/main/js/node_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules_temp/**</exclude>
-                                        <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
+                                        <exclude>**/.babelrc</exclude>
+                                        <exclude>**/.eslintrc</exclude>
+                                        <exclude>**/.dockerignore</exclude>
+                                        <exclude>**/backend/config/settings.json.sample</exclude>
+                                        <exclude>**/backend/node_modules/**</exclude>
+                                        <exclude>**/frontend/build/**</exclude>
+                                        <exclude>**/frontend/ignite_modules/**</exclude>
+                                        <exclude>**/frontend/ignite_modules_temp/**</exclude>
+                                        <exclude>**/frontend/node_modules/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

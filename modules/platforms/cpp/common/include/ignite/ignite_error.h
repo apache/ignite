@@ -72,6 +72,11 @@
     throw ignite::IgniteError(code, stream.str().c_str()); \
 }
 
+#ifdef _MSC_VER
+#   pragma warning(push)
+#   pragma warning(disable : 4275)
+#endif //_MSC_VER
+
 namespace ignite
 {
     namespace java
@@ -240,7 +245,7 @@ namespace ignite
         /**
          * Destructor.
          */
-        ~IgniteError();
+        ~IgniteError() IGNITE_NO_THROW;
 
         /**
          * Get error code.
@@ -281,5 +286,9 @@ namespace ignite
         char* msg;       
     };    
 }
+
+#ifdef _MSC_VER
+#   pragma warning(pop)
+#endif //_MSC_VER
 
 #endif //_IGNITE_IGNITE_ERROR

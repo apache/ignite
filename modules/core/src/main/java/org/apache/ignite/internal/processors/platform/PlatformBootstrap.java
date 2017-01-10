@@ -36,4 +36,10 @@ public interface PlatformBootstrap {
      */
     public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
         long envPtr, long dataPtr);
+
+    /**
+     * Init the bootstrap.
+     *
+     */
+    public void init();
 }
