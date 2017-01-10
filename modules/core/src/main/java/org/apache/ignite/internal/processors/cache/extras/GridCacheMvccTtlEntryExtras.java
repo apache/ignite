@@ -42,8 +42,9 @@ public class GridCacheMvccTtlEntryExtras extends GridCacheEntryExtrasAdapter {
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public GridCacheMvccTtlEntryExtras(GridCacheMvcc mvcc, long ttl, long expireTime) {
+    GridCacheMvccTtlEntryExtras(GridCacheMvcc mvcc, long ttl, long expireTime) {
         assert mvcc != null;
+        assert expireTime != CU.EXPIRE_TIME_ETERNAL;
 
         this.mvcc = mvcc;
         this.ttl = ttl;

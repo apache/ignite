@@ -42,10 +42,10 @@ public class GridCacheAttributesObsoleteTtlEntryExtras extends GridCacheEntryExt
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public GridCacheAttributesObsoleteTtlEntryExtras(GridCacheVersion obsoleteVer,
+    GridCacheAttributesObsoleteTtlEntryExtras(GridCacheVersion obsoleteVer,
         long ttl, long expireTime) {
         assert obsoleteVer != null;
-        assert ttl != 0;
+        assert expireTime != CU.EXPIRE_TIME_ETERNAL;
 
         this.obsoleteVer = obsoleteVer;
         this.ttl = ttl;

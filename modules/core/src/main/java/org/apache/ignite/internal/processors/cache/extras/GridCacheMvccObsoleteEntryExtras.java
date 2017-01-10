@@ -38,7 +38,7 @@ public class GridCacheMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapte
      * @param mvcc MVCC.
      * @param obsoleteVer Obsolete version.
      */
-    public GridCacheMvccObsoleteEntryExtras(GridCacheMvcc mvcc, GridCacheVersion obsoleteVer) {
+    GridCacheMvccObsoleteEntryExtras(GridCacheMvcc mvcc, GridCacheVersion obsoleteVer) {
         assert mvcc != null;
         assert obsoleteVer != null;
 
