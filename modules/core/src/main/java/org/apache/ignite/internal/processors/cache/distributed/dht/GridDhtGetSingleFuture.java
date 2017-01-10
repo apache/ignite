@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -306,15 +309,19 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         ClusterNode readerNode = cctx.discovery().node(reader);
 
+        Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures = null;
+
         if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
             while (true) {
                 GridDhtCacheEntry e = cache().entryExx(key, topVer);
+
+                boolean addReader = false;
 
                 try {
                     if (e.obsolete())
                         continue;
 
-                    boolean addReader = (!e.deleted() && addRdr && !skipVals);
+                    addReader = (!e.deleted() && this.addRdr && !skipVals);
 
                     if (addReader)
                         e.unswap(false);
@@ -340,7 +347,27 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         log.debug("Got removed entry when getting a DHT value: " + e);
                 }
                 finally {
-                    cctx.evicts().touch(e, topVer);
+                    boolean rmv = cctx.evicts().touch(e, topVer);
+
+                    // If entry was removed, re-add readers after loading from store if any.
+                    if (rmv && addReader) {
+                        if (closures == null)
+                            closures = new HashMap<>();
+
+                        closures.put(key, new CI1<GridCacheEntryEx>() {
+                            @Override public void apply(final GridCacheEntryEx entry) {
+                                if (entry instanceof GridDhtCacheEntry) {
+                                    try {
+                                        ((GridDhtCacheEntry)entry).addReader(reader, msgId, topVer);
+                                    }
+                                    catch (GridCacheEntryRemovedException ignore) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got removed entry when adding reader to DHT entry: " + e);
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -351,6 +378,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             if (tx == null) {
                 fut = cache().getDhtAllAsync(
                     Collections.singleton(key),
+                    closures,
                     readThrough,
                     subjId,
                     taskName,
@@ -370,6 +398,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
         }
         else {
+            final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> clos = closures;
+
             rdrFut.listen(
                 new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -386,6 +416,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         if (tx == null) {
                             fut0 = cache().getDhtAllAsync(
                                 Collections.singleton(key),
+                                clos,
                                 readThrough,
                                 subjId,
                                 taskName,

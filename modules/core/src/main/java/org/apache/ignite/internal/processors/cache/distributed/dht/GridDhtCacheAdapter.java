@@ -79,6 +79,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
@@ -623,6 +624,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         return getAllAsync(keys,
+            null,
             opCtx == null || !opCtx.skipStore(),
             /*don't check local tx. */false,
             subjId,
@@ -647,6 +649,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> getDhtAllAsync(
         Collection<KeyCacheObject> keys,
+        @Nullable final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures,
         boolean readThrough,
         @Nullable UUID subjId,
         String taskName,
@@ -655,6 +658,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean canRemap
     ) {
         return getAllAsync0(keys,
+            closures,
             readThrough,
             /*don't check local tx. */false,
             subjId,

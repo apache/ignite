@@ -1789,6 +1789,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return getAllAsync(keys,
+            null,
             opCtx == null || !opCtx.skipStore(),
             !skipTx,
             subjId,
@@ -1803,6 +1804,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
+     * @param closures Closure map that will be called on each entry.
      * @param readThrough Read through.
      * @param checkTx Check tx.
      * @param subjId Subj Id.
@@ -1817,6 +1819,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @see GridCacheAdapter#getAllAsync(Collection)
      */
     public final IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
+        @Nullable final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures,
         boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1834,6 +1837,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
+            closures,
             readThrough,
             checkTx,
             subjId,
@@ -1848,6 +1852,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
+     * @param closures Closure map that will be called on each entry.
      * @param readThrough Read-through flag.
      * @param checkTx Check local transaction flag.
      * @param subjId Subject ID.
@@ -1862,6 +1867,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
         @Nullable final Collection<KeyCacheObject> keys,
+        @Nullable final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures,
         final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -2023,6 +2029,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         deserializeBinary,
                                                         false,
                                                         needVer ? set ? verSet : ver : null);
+                                                }
+
+                                                if (closures != null) {
+                                                    final IgniteInClosure clos = closures.get(key);
+
+                                                    if (clos != null)
+                                                        clos.apply(entry);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

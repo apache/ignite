@@ -780,14 +780,20 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     /**
      * @param e Entry for eviction policy notification.
      * @param topVer Topology version.
+     * @return {@code True} if entry was removed.
      */
-    public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+    public boolean touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
         if (e.detached() || e.isInternal())
-            return;
+            return false;
+
+        boolean rmv = false;
 
         try {
-            if (e.markObsoleteIfEmpty(null) || e.obsolete())
+            if (e.markObsoleteIfEmpty(null) || e.obsolete()) {
                 e.context().cache().removeEntry(e);
+
+                rmv = true;
+            }
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
@@ -795,24 +801,24 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (!cctx.isNear() && memoryMode == OFFHEAP_TIERED) {
             try {
-                evict0(cctx.cache(), e, cctx.versions().next(), null, false);
+                rmv |= evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
             }
 
-            return;
+            return rmv;
         }
 
         if (!plcEnabled)
-            return;
+            return rmv;
 
         // Don't track non-primary entries if evicts are synchronized.
         if (!cctx.isNear() && evictSync && !cctx.affinity().primary(cctx.localNode(), e.partition(), topVer))
-            return;
+            return rmv;
 
         if (!busyLock.enterBusy())
-            return;
+            return rmv;
 
         try {
             // Wait for futures to finish.
@@ -827,6 +833,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         finally {
             busyLock.leaveBusy();
         }
+
+        return rmv;
     }
 
     /**

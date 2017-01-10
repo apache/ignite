@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
@@ -29,10 +30,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -50,7 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -340,16 +341,20 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         ClusterNode readerNode = cctx.discovery().node(reader);
 
+        Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures = null;
+
         if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
             for (Map.Entry<KeyCacheObject, Boolean> k : keys.entrySet()) {
                 while (true) {
                     GridDhtCacheEntry e = cache().entryExx(k.getKey(), topVer);
 
+                    boolean addReader = false;
+
                     try {
                         if (e.obsolete())
                             continue;
 
-                        boolean addReader = (!e.deleted() && k.getValue() && !skipVals);
+                        addReader = (!e.deleted() && k.getValue() && !skipVals);
 
                         if (addReader)
                             e.unswap(false);
@@ -380,7 +385,27 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             log.debug("Got removed entry when getting a DHT value: " + e);
                     }
                     finally {
-                        cctx.evicts().touch(e, topVer);
+                        boolean rmv = cctx.evicts().touch(e, topVer);
+
+                        // If entry was removed, re-add readers after loading from store if any.
+                        if (rmv && addReader) {
+                            if (closures == null)
+                                closures = new HashMap<>();
+
+                            closures.put(k.getKey(), new CI1<GridCacheEntryEx>() {
+                                @Override public void apply(final GridCacheEntryEx entry) {
+                                    if (entry instanceof GridDhtCacheEntry) {
+                                        try {
+                                            ((GridDhtCacheEntry)entry).addReader(reader, msgId, topVer);
+                                        }
+                                        catch (GridCacheEntryRemovedException ignore) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Got removed entry when adding reader to DHT entry: " + e);
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -395,6 +420,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (tx == null) {
                 fut = cache().getDhtAllAsync(
                     keys.keySet(),
+                    closures,
                     readThrough,
                     subjId,
                     taskName,
@@ -414,6 +440,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             }
         }
         else {
+            final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> clos = closures;
+
             // If we are here, then there were active transactions for some entries
             // when we were adding the reader. In that case we must wait for those
             // transactions to complete.
@@ -427,6 +455,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (tx == null) {
                             return cache().getDhtAllAsync(
                                 keys.keySet(),
+                                clos,
                                 readThrough,
                                 subjId,
                                 taskName,
