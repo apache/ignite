@@ -415,7 +415,6 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
             log().info("Running test queries for region " + regionId);
 
-            // Repeat the same query with partition set condition.
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, de._KEY, de._VAL, re._KEY, re._VAL from " +
