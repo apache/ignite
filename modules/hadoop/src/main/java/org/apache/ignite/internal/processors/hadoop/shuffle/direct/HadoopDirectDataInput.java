@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
+import java.io.EOFException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
@@ -59,6 +60,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
+        checkRange(len);
+
         System.arraycopy(buf, pos, b, off, len);
 
         pos += len;
@@ -66,9 +69,16 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public int skipBytes(int n) throws IOException {
-        pos += n;
+        if (n < 0)
+            throw new IllegalArgumentException();
 
-        return n;
+        assert pos <= buf.length;
+
+        int toSkip = Math.min(buf.length - pos, n);
+
+        pos += toSkip;
+
+        return toSkip;
     }
 
     /** {@inheritDoc} */
@@ -76,8 +86,23 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
         return readByte() == 1;
     }
 
+    /**
+     * Ensures the position is still within the buffer.
+     *
+     * @throws EOFException if an attempt is made to read beyond the buffer end.
+     */
+    private void checkRange(int bytesToRead) throws EOFException {
+        assert bytesToRead > 0;
+
+        if (pos + bytesToRead - 1 >= buf.length)
+            throw new EOFException("Attempt to read beyond the end of buffer: " + (pos + bytesToRead - 1)
+                + " >= " + buf.length);
+    }
+
     /** {@inheritDoc} */
     @Override public byte readByte() throws IOException {
+        checkRange(1);
+
         byte res = GridUnsafe.getByte(buf, BYTE_ARR_OFF + pos);
 
         pos += 1;
@@ -92,6 +117,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public short readShort() throws IOException {
+        checkRange(2);
+
         short res = GridUnsafe.getShort(buf, BYTE_ARR_OFF + pos);
 
         pos += 2;
@@ -106,6 +133,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public char readChar() throws IOException {
+        checkRange(2);
+
         char res = GridUnsafe.getChar(buf, BYTE_ARR_OFF + pos);
 
         pos += 2;
@@ -115,6 +144,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public int readInt() throws IOException {
+        checkRange(4);
+
         int res = GridUnsafe.getInt(buf, BYTE_ARR_OFF + pos);
 
         pos += 4;
@@ -124,6 +155,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public long readLong() throws IOException {
+        checkRange(8);
+
         long res = GridUnsafe.getLong(buf, BYTE_ARR_OFF + pos);
 
         pos += 8;
@@ -133,6 +166,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public float readFloat() throws IOException {
+        checkRange(8);
+
         float res = GridUnsafe.getFloat(buf, BYTE_ARR_OFF + pos);
 
         pos += 4;
@@ -142,6 +177,8 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public double readDouble() throws IOException {
+        checkRange(8);
+
         double res = GridUnsafe.getDouble(buf, BYTE_ARR_OFF + pos);
 
         pos += 8;
