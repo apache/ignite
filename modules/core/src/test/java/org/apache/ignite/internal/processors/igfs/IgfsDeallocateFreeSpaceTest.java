@@ -26,7 +26,8 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link IgfsAttributes} test case.
+ * Test to reproduce IGNITE-3400: after a writing to a file hits the IGFS size limits
+ * the free space is calculated incorrectly and data blocks leaks.
  */
 public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
     /** Maximum amount of bytes that could be written to particular file. */
