@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.IOException;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
@@ -36,6 +37,9 @@ public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
 
     /** Big file size. */
     private static final int BIG_FILE_SIZE = 9_000_000;
+
+    /** Iterations. */
+    private static final int ITERATIONS = 1000;
 
     /**
      *
@@ -57,34 +61,27 @@ public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testDeallocate() throws Exception {
-        System.out.println("+++ Free space: " + freeSpace());
 
-        byte[] small = new byte[SMALL_FILE_SIZE];
-        createFile(igfs, new IgfsPath("/small"), true, small);
+        for (int i = 0; i < ITERATIONS; ++i) {
+            byte[] small = new byte[SMALL_FILE_SIZE];
+            createFile(igfs, new IgfsPath("/small"), true, small);
 
-        dumpCache("MetaCache" , getMetaCache(igfs));
-        dumpCache("DataCache" , getDataCache(igfs));
+            byte[] big = new byte[BIG_FILE_SIZE];
+            try {
+                createFile(igfs, new IgfsPath("/big1"), true, big);
+            } catch (IOException e) {
+                // swallow.
+            }
 
-        System.out.println("+++ Free space: " + freeSpace());
+            igfs.format();
 
-        byte[] big = new byte[BIG_FILE_SIZE];
-        createFile(igfs, new IgfsPath("/big1"), true, big);
+            if (IGFS_SIZE_LIMIT > freeSpace()) {
+                dumpCache("MetaCache", getMetaCache(igfs));
 
-        System.out.println("+++ big1 len: " + igfs.info(new IgfsPath("/big1")).length());
-        System.out.println("+++ Free space: " + freeSpace());
-        dumpCache("MetaCache" , getMetaCache(igfs));
-        dumpCache("DataCache" , getDataCache(igfs));
+                dumpCache("DataCache", getDataCache(igfs));
 
-        igfs.format();
-
-        log.info("+++ Free space: " + freeSpace());
-
-        if(IGFS_SIZE_LIMIT > freeSpace()) {
-            dumpCache("MetaCache" , getMetaCache(igfs));
-
-            dumpCache("DataCache" , getDataCache(igfs));
-
-            assert false;
+                assert false;
+            }
         }
     }
 

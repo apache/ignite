@@ -441,13 +441,11 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
-
+        igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
         igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
         return igfsCfg;
     }
-
-
 
     /**
      * Prepare cache configuration.
