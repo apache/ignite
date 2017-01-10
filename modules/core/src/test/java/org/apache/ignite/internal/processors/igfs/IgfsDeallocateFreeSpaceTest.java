@@ -94,6 +94,7 @@ public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
      */
     private long freeSpace() {
         IgfsStatus s = igfs.globalSpace();
+
         return s.spaceTotal() - s.spaceUsed();
     }
 }
