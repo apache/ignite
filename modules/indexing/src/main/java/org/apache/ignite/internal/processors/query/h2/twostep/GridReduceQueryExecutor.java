@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -402,18 +404,93 @@ public class GridReduceQueryExecutor {
      * @param cctx Cache context.
      * @param partSet Partition set.
      */
-    private Set<ClusterNode> dataNodes(AffinityTopologyVersion topVer,
-                                       final GridCacheContext<?, ?> cctx,
-                                       PartitionSet partSet) {
+    private boolean needPartFilter(AffinityTopologyVersion topVer,
+        final GridCacheContext<?, ?> cctx,
+        PartitionSet partSet) {
+        if (partSet == null)
+            return false;
+
+        AffinityAssignment assignment = cctx.affinity().assignment(topVer);
+
+        Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
+
+        // Check if nodes hold only partitions from user-defined set.
+        // In what case we can skip partitions locking for query.
+        for (ClusterNode node : nodes) {
+            Set<Integer> primIds = assignment.primaryPartitions(node.id());
+
+            int commonPartsCnt = 0;
+
+            for (Integer partId : primIds) {
+                if (partSet.contains(partId))
+                    commonPartsCnt++;
+            }
+
+            if (commonPartsCnt > 0 && commonPartsCnt != primIds.size())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param cctx Cache context.
+     * @param partSet Partition set.
+     */
+    private Map<ClusterNode, IntArray> stableDataNodesMap(AffinityTopologyVersion topVer,
+        final GridCacheContext<?, ?> cctx,
+        PartitionSet partSet) {
+        if (partSet == null)
+            partSet = new PartitionSet(0, cctx.affinity().partitions());
+
+        Map<ClusterNode, IntArray> mapping = new HashMap<>(partSet.size());
+
+        List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
+
+        PartitionSet.Iterator iter = partSet.iterator();
+
+        while(iter.hasNext()) {
+            int partId = iter.next();
+
+            List<ClusterNode> partNodes = assignment.get(partId);
+
+            if (partNodes.size() > 0) {
+                ClusterNode prim = partNodes.get(0);
+
+                IntArray partIds = mapping.get(prim);
+
+                if (partIds == null) {
+                    partIds = new IntArray();
+
+                    mapping.put(prim, partIds);
+                }
+
+                partIds.add(partId);
+            }
+        }
+
+        return mapping;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param cctx Cache context.
+     * @param partSet Partition set.
+     */
+    private Set<ClusterNode> stableDataNodesSet(AffinityTopologyVersion topVer,
+        final GridCacheContext<?, ?> cctx,
+        PartitionSet partSet) {
         Set<ClusterNode> nodes;
 
+        // Partition set has no meaning for replicated caches.
         if (!cctx.isReplicated()) {
             if (partSet == null)
                 partSet = new PartitionSet(0, cctx.affinity().partitions());
 
             nodes = new HashSet<>(partSet.size());
 
-            // TODO FIXME caching might be useful for specific partition set.
+            // TODO FIXME caching might be useful.
             List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
 
             PartitionSet.Iterator iter = partSet.iterator();
@@ -440,15 +517,31 @@ public class GridReduceQueryExecutor {
      * @param partSet Explicit partitions set.
      * @return Data nodes or {@code null} if repartitioning started and we need to retry.
      */
-    private Collection<ClusterNode> stableDataNodes(
+    private Map<ClusterNode, IntArray> stableDataNodes(
             AffinityTopologyVersion topVer,
             final GridCacheContext<?, ?> cctx,
             List<Integer> extraSpaces,
             PartitionSet partSet) {
-        Set<ClusterNode> nodes = dataNodes(topVer, cctx, partSet);
 
-        if (F.isEmpty(nodes)) // Topology have no nodes containing data for query.
-            return Collections.emptySet();
+        boolean needPartFilter = needPartFilter(topVer, cctx, partSet);
+
+        Set<ClusterNode> nodes;
+        Map<ClusterNode, IntArray> map = new HashMap<>();
+
+        if (needPartFilter) {
+            map = stableDataNodesMap(topVer, cctx, partSet);
+
+            nodes = map.keySet();
+        }
+        else {
+            nodes = stableDataNodesSet(topVer, cctx, partSet);
+
+            for (ClusterNode node : nodes)
+                map.put(node, null);
+        }
+
+        if (F.isEmpty(map)) // Topology has no nodes containing query relevant data.
+            return Collections.emptyMap();
 
         if (!F.isEmpty(extraSpaces)) {
             for (int i = 0; i < extraSpaces.size(); i++) {
@@ -463,19 +556,19 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Queries running on replicated cache should not contain JOINs " +
                         "with partitioned tables [rCache=" + cctx.name() + ", pCache=" + extraSpace + "]");
 
-                Collection<ClusterNode> extraNodes = dataNodes(topVer, extraCctx, partSet);
+                Collection<ClusterNode> extraNodes = stableDataNodesSet(topVer, extraCctx, partSet);
 
                 if (F.isEmpty(extraNodes))
-                    throw new CacheException("Failed to find data nodes for cache: " + extraSpace);
+                    throw new CacheException("Failed to find data map for cache: " + extraSpace);
 
                 if (cctx.isReplicated() && extraCctx.isReplicated()) {
                     nodes.retainAll(extraNodes);
 
-                    if (nodes.isEmpty()) {
+                    if (map.isEmpty()) {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            throw new CacheException("Caches have distinct sets of data map [cache1=" + cctx.name() +
                                 ", cache2=" + extraSpace + "]");
                     }
                 }
@@ -484,15 +577,15 @@ public class GridReduceQueryExecutor {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            throw new CacheException("Caches have distinct sets of data map [cache1=" + cctx.name() +
                                 ", cache2=" + extraSpace + "]");
                 }
                 else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
-                    if (extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes))
+                    if (extraNodes.size() != map.size() || !nodes.containsAll(extraNodes))
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            throw new CacheException("Caches have distinct sets of data map [cache1=" + cctx.name() +
                                 ", cache2=" + extraSpace + "]");
                 }
                 else
@@ -500,7 +593,7 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        return nodes;
+        return map;
     }
 
     /**
@@ -543,7 +636,7 @@ public class GridReduceQueryExecutor {
 
             List<Integer> extraSpaces = qry.extraCaches();
 
-            Collection<ClusterNode> nodes;
+            Collection<ClusterNode> nodes = null;
 
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
@@ -557,14 +650,24 @@ public class GridReduceQueryExecutor {
                     nodes = partsMap == null ? null : partsMap.keySet();
                 }
             }
-            else
-                nodes = stableDataNodes(topVer, cctx, extraSpaces, partSet);
+            else {
+                Map<ClusterNode, IntArray> map = stableDataNodes(topVer, cctx, extraSpaces, partSet);
+
+                if (map != null) {
+                    nodes = map.keySet();
+
+                    Iterator<Map.Entry<ClusterNode, IntArray>> iter = map.entrySet().iterator();
+
+                    if (iter.hasNext() && iter.next().getValue() != null)
+                        partsMap = map;
+                }
+            }
 
             if (nodes == null)
                 continue; // Retry.
 
-            if (nodes.size() == 0) // No data nodes are found for query.
-                return new GridEmptyIterator();
+            if (nodes.size() == 0)
+                return new GridEmptyIterator(); // No data nodes are found for query.
 
             assert !nodes.isEmpty();
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.Externalizable;
@@ -55,13 +57,20 @@ public class PartitionSet implements Externalizable {
      */
     public PartitionSet(int[] partIds) {
         this.partIds = partIds;
+
+        // Make sure partitions are sorted.
+        Arrays.sort(this.partIds);
+
+        // Validate.
+        for (int i = 0; i < partIds.length - 1; i++)
+            A.ensure(partIds[i] != partIds[i+1], "pArtition duplicates are not allowed");
     }
 
     /**
      * @param partIds Partition ids.
      */
     public PartitionSet(Collection<Integer> partIds) {
-        this.partIds = U.toIntArray(partIds);
+        this(U.toIntArray(partIds));
     }
 
     /** */
@@ -71,6 +80,8 @@ public class PartitionSet implements Externalizable {
 
     /**
      * Partition iterator.
+     *
+     *
      */
     public Iterator iterator() {
         if (isRange())
@@ -108,7 +119,26 @@ public class PartitionSet implements Externalizable {
         return isRange() ? partIds[1] : partIds.length;
     }
 
-    /** Iterator over partitions. */
+    /**
+     * Check if set contains a partition.
+     *
+     * @param partId Partition id.
+     */
+    public boolean contains(int partId) {
+        if (isRange()) {
+            int start = partIds[0] & ~RANGE_MASK;
+
+            return start <= partId && partId < start + partIds[1];
+        }
+        else
+            return Arrays.binarySearch(partIds, partId) >= 0;
+    }
+
+    /**
+     * Iterator over partitions.
+     *
+     * Partitions are returned in ascending order.
+     */
     public interface Iterator {
         /**
          * @return {@code true} whether there is another partition.
