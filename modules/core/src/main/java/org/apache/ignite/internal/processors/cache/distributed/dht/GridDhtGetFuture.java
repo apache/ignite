@@ -398,9 +398,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                         try {
                                             ((GridDhtCacheEntry)entry).addReader(reader, msgId, topVer);
                                         }
-                                        catch (GridCacheEntryRemovedException ignore) {
+                                        catch (GridCacheEntryRemovedException e1) {
                                             if (log.isDebugEnabled())
-                                                log.debug("Got removed entry when adding reader to DHT entry: " + e);
+                                                log.debug("Got removed entry when adding reader to DHT entry: " + e1);
                                         }
                                     }
                                 }
