@@ -57,7 +57,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     private static Ignite ignite;
 
     /** Max experiments. */
-    private static int MAX_EXPERIMENTS = 256;
+    private static int MAX_EXPERIMENTS = 200;
 
     /** Max experiments. */
     private TopologyModificationMode mode = TopologyModificationMode.CHANGE_LAST_NODE;
@@ -396,8 +396,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
-    public void testAffinityBenchmark() {
+    public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
+
         AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
 
         GridTestUtils.setFieldValue(aff0, "ignite", ignite);
@@ -408,7 +409,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
-    public void testAffinityBenchmark0() {
+    public void testAffinityBenchmarkChangeLast() {
+        mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
@@ -422,7 +424,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param aff1 Affinity function. to compare.
      */
     private void affinityBenchmark(AffinityFunction aff0, AffinityFunction aff1) {
-        int[] nodesCnts = {100, 0, 100, 200, 300, 400, 500, 600};
+        int[] nodesCnts = {100, 4, 100, 200, 300, 400, 500, 600};
 
         final int backups = 2;
 
