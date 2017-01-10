@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -343,7 +344,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                     for (int i = 1; i < NODES; i++) {
                         IgniteCache<Integer, Integer> cache = ignite(i).cache(null);
 
-                        if (!val.equals(cache.get(key0)))
+                        if (!Objects.equals(val, cache.get(key0)))
                             return false;
                     }
                     return true;

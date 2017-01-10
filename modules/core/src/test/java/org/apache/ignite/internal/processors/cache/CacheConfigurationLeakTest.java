@@ -21,6 +21,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,6 +36,19 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
      */
     public CacheConfigurationLeakTest() {
         super(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
+
+        MemoryConfiguration memCfg = new MemoryConfiguration();
+
+        memCfg.setPageCacheSize(MemoryConfiguration.DFLT_PAGE_CACHE_SIZE * 10);
+
+        cfg.setMemoryConfiguration(memCfg);
+
+        return cfg;
     }
 
     /**

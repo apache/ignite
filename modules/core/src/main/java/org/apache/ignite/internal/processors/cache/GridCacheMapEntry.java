@@ -347,8 +347,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Nullable @Override public GridCacheEntryInfo info() {
         GridCacheEntryInfo info = null;
 
-        long time = U.currentTimeMillis();
-
         synchronized (this) {
             if (!obsolete()) {
                 info = new GridCacheEntryInfo();
@@ -358,7 +356,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long expireTime = expireTimeExtras();
 
-                boolean expired = expireTime != 0 && expireTime <= time;
+                boolean expired = expireTime != 0 && expireTime <= U.currentTimeMillis();
 
                 info.ttl(ttlExtras());
                 info.expireTime(expireTime);
@@ -3125,34 +3123,44 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         if (curVer == null || curVer.equals(ver)) {
             if (val != this.val) {
-                        GridCacheMvcc mvcc = mvccExtras();
+                GridCacheMvcc mvcc = mvccExtras();
 
-                        if (mvcc != null && !mvcc.isEmpty())
-                            return null;
+                if (mvcc != null && !mvcc.isEmpty())
+                    return null;
 
-                        if (newVer == null)
-                            newVer = cctx.versions().next();
+                if (newVer == null)
+                    newVer = cctx.versions().next();
 
-                        long ttl = ttlExtras();
+                long ttl;
+                long expTime;
 
-                        long expTime = CU.toExpireTime(ttl);
+                if (loadExpiryPlc != null) {
+                    IgniteBiTuple<Long, Long> initTtlAndExpireTime = initialTtlAndExpireTime(loadExpiryPlc);
 
-                        // Detach value before index update.
-                        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-                        if (val != null) {
-                            storeValue(val, expTime, newVer);
-
-                            if (deletedUnlocked())
-                                deletedUnlocked(false);
-                        }
-
-                        // Version does not change for load ops.
-                        update(val, expTime, ttl, newVer, true);
-
-                        return newVer;
-                    }
+                    ttl = initTtlAndExpireTime.get1();
+                    expTime = initTtlAndExpireTime.get2();
                 }
+                else {
+                    ttl = ttlExtras();
+                    expTime = expireTimeExtras();
+                }
+
+                // Detach value before index update.
+                val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+
+                if (val != null) {
+                    storeValue(val, expTime, newVer);
+
+                    if (deletedUnlocked())
+                        deletedUnlocked(false);
+                }
+
+                // Version does not change for load ops.
+                update(val, expTime, ttl, newVer, true);
+
+                return newVer;
+            }
+        }
 
         return null;
     }

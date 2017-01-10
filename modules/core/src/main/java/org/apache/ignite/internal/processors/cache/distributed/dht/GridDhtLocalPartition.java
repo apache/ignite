@@ -847,7 +847,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @return Initial update counter.
      */
-    public long initialUpdateCounter() {
+    public Long initialUpdateCounter() {
         return store.initialUpdateCounter();
     }
 
@@ -864,6 +864,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /**
      * Clears values for this partition.
+     *
+     * @throws NodeStoppingException If node stopping.
      */
     public void clearAll() throws NodeStoppingException {
         GridCacheVersion clearVer = cctx.versions().next();
@@ -913,6 +915,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             catch (NodeStoppingException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
+
+                rent.onDone(e);
 
                 throw e;
             }
@@ -968,6 +972,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             catch (NodeStoppingException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to get iterator for evicted partition: " + id);
+
+                rent.onDone(e);
 
                 throw e;
             }

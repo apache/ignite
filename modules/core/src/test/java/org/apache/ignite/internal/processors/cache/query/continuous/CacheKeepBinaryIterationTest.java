@@ -304,6 +304,9 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                     cache0 = cache0.withKeepBinary();
 
                 for (CachePeekMode mode : CachePeekMode.values()) {
+                    if (mode == CachePeekMode.SWAP)
+                        continue;
+
                     int size = 0;
 
                     for (Cache.Entry<Object, Object> e : cache0.localEntries(mode)) {

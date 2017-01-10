@@ -164,7 +164,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                     EntryWrapper e = pendingEntries.firstx();
 
                     if (e == null || e.expireTime > now)
-                        return false; // All expired entries are processed.
+                        break; // All expired entries are processed.
 
                     if (pendingEntries.remove(e)) {
                         if (obsoleteVer == null)
