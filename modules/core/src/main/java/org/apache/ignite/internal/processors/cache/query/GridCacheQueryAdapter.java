@@ -664,7 +664,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             this.part = part;
 
             nodes = fallbacks(cctx.discovery().topologyVersionEx());
-            if (nodes.isEmpty()) throw new ClusterTopologyException("The data in the partition lost.");
+
+            if (nodes.isEmpty()) {
+                throw new ClusterTopologyException(
+                        "Failed to execute the query (all cache affinity nodes left the grid)" +
+                                " [start topology version = " + cctx.versions().last().topologyVersion() +
+                                ", current topology version = " + qryMgr.queryTopologyVersion().topologyVersion() + ']');
+            }
             init();
         }
 
