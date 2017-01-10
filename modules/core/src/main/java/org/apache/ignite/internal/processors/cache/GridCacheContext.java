@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -1951,7 +1950,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache 'get' operation is allowed to get entry locally.
      */
     public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
-        return affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+        boolean result = affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+
+        // When persistence is enabled, only reading from partitions with OWNING state is allowed.
+        assert !result || !ctx.cache().context().database().persistenceEnabled() ||
+            topology().partitionState(localNodeId(), part) == OWNING;
+
+        return result;
     }
 
     /**
@@ -1971,12 +1976,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert affinityNode();
 
         GridDhtPartitionTopology top = topology();
-
-        if (shared().database().persistenceEnabled()) {
-            GridDhtLocalPartition locPart = top.localPartition(part, topVer, false);
-
-            return locPart != null && locPart.state() == OWNING;
-        }
 
         return (top.rebalanceFinished(topVer) && (isReplicated() || affNodes.contains(locNode)))
             || (top.partitionState(localNodeId(), part) == OWNING);

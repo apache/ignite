@@ -432,13 +432,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean allowLocRead = !forcePrimary || cctx.localNode().equals(affNodes.get(0));
 
         // When persistence is enabled, only reading from partitions with OWNING state is allowed.
-        if (allowLocRead && cctx.shared().database().persistenceEnabled()) {
-            GridDhtLocalPartition locPart = cctx.topology().localPartition(part, topVer, false);
-
-            GridDhtPartitionState locPartState = locPart != null ? locPart.state() : GridDhtPartitionState.EVICTED;
-
-            allowLocRead = (locPartState == GridDhtPartitionState.OWNING);
-        }
+        assert !allowLocRead || !cctx.shared().database().persistenceEnabled() ||
+            cctx.topology().partitionState(cctx.localNodeId(), part) == GridDhtPartitionState.OWNING;
 
         while (true) {
             GridNearCacheEntry entry = allowLocRead ? (GridNearCacheEntry)near.peekEx(key) : null;
