@@ -1198,28 +1198,10 @@ public class IgfsMetaManager extends IgfsManager {
         // 3) But B's info contains C as child. It mean's that
         if (!pathIds.allExists()) {
             // Find the last locked index
-            IgfsEntryInfo lastLockedInfo = null;
-            int lastLockedIdx = -1;
+            int lastLockedIdx = pathIds.indexOfLastLocked(lockInfos);
 
-            while (lastLockedIdx < pathIds.lastExistingIndex()) {
-                IgfsEntryInfo nextInfo = lockInfos.get(pathIds.id(lastLockedIdx + 1));
-
-                if (nextInfo != null) {
-                    lastLockedInfo = nextInfo;
-                    lastLockedIdx++;
-                }
-                else
-                    break;
-            }
-
-            assert lastLockedIdx < pathIds.count();
-
-            if (lastLockedInfo != null) {
-                String part = pathIds.part(lastLockedIdx + 1);
-
-                if (lastLockedInfo.listing().containsKey(part))
-                    return true;
-            }
+            if (lastLockedIdx >= 0 && pathIds.isConsistentChild(lockInfos, lastLockedIdx + 1, false))
+               return true;
         }
 
         return false;

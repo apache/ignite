@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -291,35 +292,71 @@ public class IgfsPathIds {
         if (relaxed) {
             // Relaxed mode ensures that the last element is there. If this element is the last in the path, then
             // existence of it's parent and link between them are checked as well.
-            IgfsEntryInfo info = infos.get(ids[lastExistingIdx]);
-
-            if (info == null)
+            if (!isExistingLockedId(infos, lastExistingIdx))
                 return false;
 
-            if (lastExistingIdx == ids.length - 1 && lastExistingIdx > 0) {
-                IgfsEntryInfo parentInfo = infos.get(ids[lastExistingIdx - 1]);
-
-                if (parentInfo == null || !parentInfo.hasChild(parts[lastExistingIdx], ids[lastExistingIdx]))
-                    return false;
-            }
+            if (lastExistingIdx > 0 && allExists() && !isConsistentChild(infos, lastExistingIdx, true))
+                return false;
         }
         else {
             // Strict mode ensures that all participants are in place and are still linked.
             for (int i = 0; i <= lastExistingIdx; i++) {
-                IgfsEntryInfo info = infos.get(ids[i]);
-
-                // Check if required ID is there.
-                if (info == null)
+                if (!isExistingLockedId(infos, i))
                     return false;
 
-                // For non-leaf entry we check if child exists.
-                if (i < lastExistingIdx) {
-                    if (!info.hasChild(parts[i + 1], ids[i + 1]))
-                        return false;
-                }
+                if (i > 0 && !isConsistentChild(infos, i, true))
+                    return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Utility method to verify child consistency: if the component at given index is present
+     * as a child in the listing of it's parent.
+     *
+     * @param infos The locked infos.
+     * @param childIdx The child index.
+     * @return {@code true} if the component at given index is present as a child in it's parent's listing.
+     */
+    public boolean isConsistentChild(Map<IgniteUuid, IgfsEntryInfo> infos, int childIdx, boolean checkChildId) {
+        A.ensure(childIdx > 0, "Index must be positive: " + childIdx); // Child should have a parent.
+
+        IgfsEntryInfo parentInfo = infos.get(ids[childIdx - 1]);
+
+        return parentInfo != null && (checkChildId
+            ? parentInfo.hasChild(parts[childIdx], ids[childIdx]) : parentInfo.hasChild(parts[childIdx]));
+    }
+
+    /**
+     *
+     * @param infos
+     * @param idx
+     * @return
+     */
+    private boolean isExistingLockedId(Map<IgniteUuid, IgfsEntryInfo> infos, int idx) {
+        return idx <= lastExistingIdx && infos.get(ids[idx]) != null;
+    }
+
+    /**
+     * Gets the last locked index in order down from the root.
+     *
+     * @param lockedInfos The map of locked infos.
+     * @return The index of the last locked info, or -1 if no info locked.
+     */
+    public int indexOfLastLocked(Map<IgniteUuid, IgfsEntryInfo> lockedInfos) {
+        int lastLockedIdx = -1;
+
+        while (lastLockedIdx < lastExistingIndex()) {
+            if (lockedInfos.get(id(lastLockedIdx + 1)) == null)
+                break;
+
+            lastLockedIdx++;
+        }
+
+        assert lastLockedIdx < count();
+
+        return lastLockedIdx;
     }
 }
