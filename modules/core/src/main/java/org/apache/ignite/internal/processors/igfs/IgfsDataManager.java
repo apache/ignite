@@ -1231,6 +1231,15 @@ public class IgfsDataManager extends IgfsManager {
             IgfsFileAffinityRange affinityRange,
             @Nullable IgfsFileWorkerBatch batch
         ) throws IgniteCheckedException {
+            if (dataCachePrj.igfsDataSpaceUsed() + srcLen >= dataCachePrj.igfsDataSpaceMax()) {
+                IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
+                    "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
+                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
+
+                throw new IgniteCheckedException("Failed to write data (not enough space on node): " +
+                    igfsCtx.kernalContext().localNodeId(), e);
+            }
+
             IgniteUuid id = fileInfo.id();
             int blockSize = fileInfo.blockSize();
 

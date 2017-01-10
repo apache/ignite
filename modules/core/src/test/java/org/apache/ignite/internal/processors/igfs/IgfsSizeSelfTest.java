@@ -437,8 +437,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                     U.closeQuiet(osErr);
                 }
             }
-        }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
-            igfsMaxData + ", allowed=" + igfsMaxData + ']');
+        }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded)");
     }
 
     /**
