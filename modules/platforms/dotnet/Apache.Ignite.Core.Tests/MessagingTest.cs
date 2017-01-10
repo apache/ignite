@@ -56,6 +56,8 @@ namespace Apache.Ignite.Core.Tests
             _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
             _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
             _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+
+            Assert.AreEqual(3, _grid1.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
@@ -556,7 +558,9 @@ namespace Apache.Ignite.Core.Tests
             Func<IEnumerable<string>, IEnumerable<string>> resultFunc, int expectedRepeat)
         {
             // check if expected message count has been received; Wait returns false if there were none.
-            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout));
+            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout),
+                string.Format("expectedMessages: {0}, expectedRepeat: {1}, remaining: {2}",
+                    expectedMessages, expectedRepeat, ReceivedEvent.CurrentCount));
 
             expectedMessages = expectedMessages.SelectMany(x => Enumerable.Repeat(x, expectedRepeat));
 
