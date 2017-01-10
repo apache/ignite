@@ -4300,6 +4300,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (obsoleteVersionExtras() != null)
                         return true;
 
+                    // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                    if (cctx.deferredDelete() && deletedUnlocked())
+                        return false;
+
                     CacheObject prev = saveOldValueUnlocked(false);
 
                     if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
@@ -4357,6 +4361,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!v.equals(ver))
                             // Version has changed since entry passed the filter. Do it again.
                             continue;
+
+                        // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                        if (cctx.deferredDelete() && deletedUnlocked())
+                            return false;
 
                         CacheObject prevVal = saveValueForIndexUnlocked();
 
