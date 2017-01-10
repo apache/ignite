@@ -183,7 +183,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         // Memory leak tests.
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
-        suite.addTestSuite(GridCacheReloadSelfTest.class);
+        // TODO GG-11140.
+        // suite.addTestSuite(GridCacheReloadSelfTest.class);
 
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
 
