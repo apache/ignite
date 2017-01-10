@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
@@ -203,6 +202,13 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                     new AffinityTopologyVersion(nodes.size()), backups);
                 break;
 
+            case NONE:
+                ctx = new GridAffinityFunctionContextImpl(nodes,
+                    prevAssignment,
+                    new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_JOINED, nodes.get(nodes.size() - 1)),
+                    new AffinityTopologyVersion(nodes.size()), backups);
+                break;
+
         }
 
         long start = System.currentTimeMillis();
@@ -300,7 +306,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param goldenFreq Golden frequency (according with uniform distribution).
      * @throws IOException On error.
      */
-    void printDistribution(List<List<Integer>> byNodes, String suffix, double goldenFreq) throws IOException {
+    private void printDistribution(List<List<Integer>> byNodes, String suffix, double goldenFreq) throws IOException {
         int nodes = byNodes.size();
 
         try (PrintStream ps = new PrintStream(Files.newOutputStream(FileSystems.getDefault()
@@ -539,6 +545,43 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    public void testAffinityCompatibility() {
+        mode = TopologyModificationMode.ADD;
+
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
+
+        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024);
+        GridTestUtils.setFieldValue(aff1, "ignite", ignite);
+
+        affinityCompatibility(aff0, aff1);
+    }
+
+    /**
+     * @param aff0 Affinity function to compare.
+     * @param aff1 Affinity function to compare.
+     */
+    private void affinityCompatibility(AffinityFunction aff0, AffinityFunction aff1) {
+        int[] nodesCnts = {64, 100, 200, 300, 400, 500, 600};
+
+        final int backups = 2;
+
+        mode = TopologyModificationMode.NONE;
+
+        for (int nodesCnt : nodesCnts) {
+            List<ClusterNode> nodes = createBaseNodes(nodesCnt);
+
+            List<List<ClusterNode>> assignment0 = assignPartitions(aff0, nodes, null, backups, 0).get2();
+
+            List<List<ClusterNode>> assignment1 = assignPartitions(aff1, nodes, null, backups, 0).get2();
+
+            assertEquals (assignment0, assignment1);
+        }
+    }
+
+    /**
+     *
+     */
     private enum TopologyModificationMode {
         /** Change the last node. */
         CHANGE_LAST_NODE,
@@ -550,6 +593,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         ADD,
 
         /** Remove random. */
-        REMOVE_RANDOM
+        REMOVE_RANDOM,
+
+        /** Do nothing*/
+        NONE
     }
 }

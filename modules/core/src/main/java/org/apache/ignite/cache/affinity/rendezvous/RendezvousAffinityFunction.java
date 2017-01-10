@@ -587,16 +587,16 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         private final IgniteBiTuple<Long, ClusterNode>[] arr;
 
         /** Count of the sorted elements */
-        private int sorted = 0;
+        private int sorted;
 
         /**
          * @param arr Node / partition hash list.
-         * @param needFirstSortedCnt Estimate count of elements to return by iterator.
+         * @param firstSortedCnt Estimate count of elements to return by iterator.
          */
-        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int needFirstSortedCnt) {
+        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int firstSortedCnt) {
             this.arr = arr;
 
-            if (needFirstSortedCnt > (int)Math.log(arr.length)) {
+            if (firstSortedCnt > (int)Math.log(arr.length)) {
                 Arrays.sort(arr, COMPARATOR);
 
                 sorted = arr.length;
@@ -609,7 +609,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         }
 
         /**
-         *
+         * Find
          */
         private class SortIterator implements Iterator<ClusterNode> {
             /** Index of the first unsorted element. */
@@ -640,12 +640,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                 for (int i = cur + 1; i < arr.length; i++) {
                     if (COMPARATOR.compare(arr[i], min) < 0) {
                         minIdx = i;
+
                         min = arr[i];
                     }
                 }
 
                 if (minIdx != cur) {
                     arr[minIdx] = arr[cur];
+
                     arr[cur] = min;
                 }
 
