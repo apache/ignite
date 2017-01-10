@@ -29,7 +29,6 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -4300,6 +4299,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (obsoleteVersionExtras() != null)
                         return true;
 
+                    // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                    if (cctx.deferredDelete() && deletedUnlocked())
+                        return false;
+
                     CacheObject prev = saveOldValueUnlocked(false);
 
                     if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
@@ -4357,6 +4360,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!v.equals(ver))
                             // Version has changed since entry passed the filter. Do it again.
                             continue;
+
+                        // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                        if (cctx.deferredDelete() && deletedUnlocked())
+                            return false;
 
                         CacheObject prevVal = saveValueForIndexUnlocked();
 
