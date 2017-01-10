@@ -347,8 +347,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Nullable @Override public GridCacheEntryInfo info() {
         GridCacheEntryInfo info = null;
 
-        long time = U.currentTimeMillis();
-
         synchronized (this) {
             if (!obsolete()) {
                 info = new GridCacheEntryInfo();
@@ -358,7 +356,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long expireTime = expireTimeExtras();
 
-                boolean expired = expireTime != 0 && expireTime <= time;
+                boolean expired = expireTime != 0 && expireTime <= U.currentTimeMillis();
 
                 info.ttl(ttlExtras());
                 info.expireTime(expireTime);
