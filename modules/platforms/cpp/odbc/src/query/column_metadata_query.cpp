@@ -20,6 +20,7 @@
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 
 namespace
@@ -292,8 +293,7 @@ namespace ignite
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
-                    LOG_MSG("Error: %s\n", rsp.GetError().c_str());
-
+                    LOG_MSG("Error: " << rsp.GetError());
                     diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 
                     return SQL_RESULT_ERROR;
@@ -303,11 +303,10 @@ namespace ignite
 
                 for (size_t i = 0; i < meta.size(); ++i)
                 {
-                    LOG_MSG("[%d] SchemaName:     %s\n", i, meta[i].GetSchemaName().c_str());
-                    LOG_MSG("[%d] TableName:      %s\n", i, meta[i].GetTableName().c_str());
-                    LOG_MSG("[%d] ColumnName:     %s\n", i, meta[i].GetColumnName().c_str());
-                    LOG_MSG("[%d] ColumnType:     %d\n", i, meta[i].GetDataType());
-                    LOG_MSG("\n");
+                    LOG_MSG("\n[" << i << "] SchemaName:     " << meta[i].GetSchemaName()
+                         << "\n[" << i << "] TableName:      " << meta[i].GetTableName()
+                         << "\n[" << i << "] ColumnName:     " << meta[i].GetColumnName()
+                         << "\n[" << i << "] ColumnType:     " << meta[i].GetDataType());
                 }
 
                 return SQL_RESULT_SUCCESS;

@@ -27,6 +27,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/log.h"
 
 namespace ignite
 {
@@ -232,7 +233,7 @@ namespace ignite
                 {
                     SQLULEN val = reinterpret_cast<SQLULEN>(value);
 
-                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: %d\n", val);
+                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: " << val);
 
                     if (val != 1)
                     {
@@ -986,7 +987,7 @@ namespace ignite
             if (paramNum > 0 && static_cast<size_t>(paramNum) <= paramTypes.size())
                 type = paramTypes[paramNum - 1];
 
-            LOG_MSG("Type: %d\n", type);
+            LOG_MSG("Type: " << type);
 
             if (!type)
             {
@@ -1044,7 +1045,7 @@ namespace ignite
 
             if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
             {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                LOG_MSG("Error: " << rsp.GetError());
 
                 AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 
@@ -1054,7 +1055,9 @@ namespace ignite
             paramTypes = rsp.GetTypeIds();
 
             for (size_t i = 0; i < paramTypes.size(); ++i)
-                LOG_MSG("[%zu] Parameter type: %u\n", i, paramTypes[i]);
+            {
+                LOG_MSG("[" << i << "] Parameter type: " << paramTypes[i]);
+            }
 
             return SQL_RESULT_SUCCESS;
         }
