@@ -53,6 +53,7 @@ public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
     @Override protected FileSystemConfiguration getFileSystemConfiguration(String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) {
         FileSystemConfiguration cfg = super.getFileSystemConfiguration(igfsName, mode, secondaryFs, restCfg);
+
         cfg.setMaxSpaceSize(IGFS_SIZE_LIMIT);
 
         return cfg;
@@ -65,9 +66,11 @@ public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
 
         for (int i = 0; i < ITERATIONS; ++i) {
             byte[] small = new byte[SMALL_FILE_SIZE];
+
             createFile(igfs, new IgfsPath("/small"), true, small);
 
             byte[] big = new byte[BIG_FILE_SIZE];
+
             try {
                 createFile(igfs, new IgfsPath("/big1"), true, big);
             } catch (IOException e) {
