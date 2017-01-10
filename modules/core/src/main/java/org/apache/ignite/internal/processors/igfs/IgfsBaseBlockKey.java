@@ -17,16 +17,26 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Indicates whether particular file system accepts kernal context.
+ * The base class to block key that is used by the {@link IgfsGroupDataBlocksKeyMapper}
  */
-public interface IgfsKernalContextAware {
+public interface IgfsBaseBlockKey {
     /**
-     * Set kernal context.
-     *
-     * @param ctx Kernal context.
+     * @return Block ID.
      */
-    public void setKernalContext(GridKernalContext ctx);
+    public long blockId();
+
+    /**
+     * @return Hash based on a file identifier (path, ID, etc).
+     */
+    public int fileHash();
+
+    /**
+     * @return Block affinity key (if any).
+     */
+    @Nullable public IgniteUuid affinityKey();
 }

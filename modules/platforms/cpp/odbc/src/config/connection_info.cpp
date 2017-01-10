@@ -412,7 +412,7 @@ namespace ignite
 
                 StringInfoMap::const_iterator itStr = strParams.find(type);
 
-                if (itStr != strParams.cend()) 
+                if (itStr != strParams.end()) 
                 {
                     unsigned short strlen = static_cast<short>(
                         utility::CopyStringToBuffer(itStr->second, 
@@ -426,7 +426,7 @@ namespace ignite
 
                 UintInfoMap::const_iterator itInt = intParams.find(type);
 
-                if (itInt != intParams.cend())
+                if (itInt != intParams.end())
                 {
                     unsigned int *res = reinterpret_cast<unsigned int*>(buf);
 
@@ -437,7 +437,7 @@ namespace ignite
 
                 UshortInfoMap::const_iterator itShort = shortParams.find(type);
 
-                if (itShort != shortParams.cend())
+                if (itShort != shortParams.end())
                 {
                     unsigned short *res = reinterpret_cast<unsigned short*>(buf);
 
