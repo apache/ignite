@@ -63,7 +63,6 @@ public class IgfsDeallocateFreeSpaceTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testDeallocate() throws Exception {
-
         for (int i = 0; i < ITERATIONS; ++i) {
             byte[] small = new byte[SMALL_FILE_SIZE];
 
