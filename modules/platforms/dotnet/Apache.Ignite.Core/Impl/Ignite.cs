@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh, 
+        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
             IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
