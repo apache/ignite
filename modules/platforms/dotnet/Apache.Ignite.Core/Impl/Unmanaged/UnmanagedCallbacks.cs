@@ -1028,7 +1028,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long OnStop(long cancel)
+        private long OnStop(long unused)
         {
             Marshal.FreeHGlobal(_cbsPtr);
 
@@ -1042,7 +1042,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var ignite = _ignite;
 
             if (ignite != null)
-                ignite.AfterNodeStop(cancel != 0);
+                ignite.AfterNodeStop();
 
             return 0;
         }

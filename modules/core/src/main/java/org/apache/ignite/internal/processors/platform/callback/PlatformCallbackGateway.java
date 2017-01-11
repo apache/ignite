@@ -1024,10 +1024,10 @@ public class PlatformCallbackGateway {
     /**
      * Kernal stop callback.
      */
-    public void onStop(boolean cancel) {
+    public void onStop() {
         block();
 
-        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnStop, cancel ? 1 : 0);
+        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnStop, 0);
     }
 
     /**

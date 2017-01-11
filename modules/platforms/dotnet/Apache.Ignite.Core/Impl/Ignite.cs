@@ -382,7 +382,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Called after node has stopped.
         /// </summary>
-        internal void AfterNodeStop(bool cancel)
+        internal void AfterNodeStop()
         {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
