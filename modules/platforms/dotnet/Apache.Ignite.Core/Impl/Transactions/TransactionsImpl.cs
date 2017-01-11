@@ -158,6 +158,24 @@ namespace Apache.Ignite.Core.Impl.Transactions
             DoOutInOp(OpResetMetrics);
         }
 
+        /** <inheritDoc /> */
+        public TransactionConcurrency DefaultTransactionConcurrency
+        {
+            get { return _dfltConcurrency; }
+        }
+
+        /** <inheritDoc /> */
+        public TransactionIsolation DefaultTransactionIsolation
+        {
+            get { return _dfltIsolation; }
+        }
+
+        /** <inheritDoc /> */
+        public TimeSpan DefaultTimeout
+        {
+            get { return _dfltTimeout; }
+        }
+
         /// <summary>
         /// Commit transaction.
         /// </summary>

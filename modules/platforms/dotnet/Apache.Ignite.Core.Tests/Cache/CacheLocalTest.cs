@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
-    public class CacheLocalTest : CacheAbstractTest
+    public class CacheLocalTest : CacheAbstractTransactionalTest
     {
         protected override int CachePartitions()
         {
@@ -39,10 +39,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             return false;
         }
 
-        protected override bool TxEnabled()
-        {
-            return true;
-        }
         protected override bool LocalCache()
         {
             return true;
