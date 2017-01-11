@@ -27,8 +27,6 @@ namespace ignite
         namespace meta
         {
 
-#ifdef ODBC_DEBUG
-
 #define DBG_STR_CASE(x) case x: return #x
 
             const char* ColumnMeta::AttrIdToString(uint16_t id)
@@ -69,8 +67,6 @@ namespace ignite
             }
 
 #undef DBG_STR_CASE
-
-#endif
 
             void ColumnMeta::Read(ignite::impl::binary::BinaryReaderImpl& reader)
             {
