@@ -36,12 +36,14 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -54,6 +56,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1012,6 +1016,40 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals(1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearExpires() throws Exception {
+        factory =  new FactoryBuilder.SingletonFactory<>(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE));
+
+        startGrids();
+
+        nearCache = true;
+
+        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+
+        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
+
+        Ignite client = startGrid("client", clientCfg);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(cacheConfiguration("testCache"));
+
+        Integer key = 1;
+
+        cache.put(key, 1);
+
+        assertEquals(1, cache.get(key));
+
+        checkTtl(1, TTL_FOR_EXPIRE, true);
+
+        waitExpired(key);
+
+        for(int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek(key,CachePeekMode.PRIMARY,CachePeekMode.BACKUP));
+
+        assertNull(cache.localPeek(key,CachePeekMode.NEAR));
     }
 
     /**
