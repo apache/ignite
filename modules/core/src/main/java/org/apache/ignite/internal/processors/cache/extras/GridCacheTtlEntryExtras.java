@@ -39,7 +39,7 @@ public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
      * @param expireTime Expire time.
      */
     public GridCacheTtlEntryExtras(long ttl, long expireTime) {
-        assert expireTime != 0;
+        assert expireTime != CU.EXPIRE_TIME_ETERNAL;
 
         this.ttl = ttl;
         this.expireTime = expireTime;

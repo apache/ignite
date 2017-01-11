@@ -126,10 +126,11 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
 
-        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
+        // TODO GG-11141.
+//        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
+//        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+//        suite.addTestSuite(GridCacheDeploymentOffHeapValuesSelfTest.class);
         suite.addTestSuite(CacheStartupInDeploymentModesTest.class);
-        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
-        suite.addTestSuite(GridCacheDeploymentOffHeapValuesSelfTest.class);
         suite.addTestSuite(GridCacheConditionalDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheTransactionalEntryProcessorDeploymentSelfTest.class);
@@ -137,7 +138,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
+        // TODO TODO GG-11140.
+        // suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadEventsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadStartStopEventsSelfTest.class);
@@ -182,7 +184,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         // Memory leak tests.
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
-        suite.addTestSuite(GridCacheReloadSelfTest.class);
+        // TODO GG-11140.
+        // suite.addTestSuite(GridCacheReloadSelfTest.class);
 
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
 

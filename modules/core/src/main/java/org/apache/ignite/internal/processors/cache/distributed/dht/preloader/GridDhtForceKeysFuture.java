@@ -170,7 +170,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param evt Discovery event.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onDiscoveryEvent(DiscoveryEvent evt) {
+    void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
         int type = evt.type();
@@ -194,11 +194,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /**
-     * @param nodeId Node left callback.
      * @param res Response.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onResult(UUID nodeId, GridDhtForceKeysResponse res) {
+    public void onResult(GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
@@ -355,8 +354,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         if (locPart == null)
             invalidParts.add(part);
-        // If rebalance is disabled, then local partition is always MOVING.
-        else if (locPart.state() == MOVING) {
+        else if (!cctx.rebalanceEnabled() || locPart.state() == MOVING) {
             Collections.sort(owners, CU.nodeComparator(false));
 
             // Load from youngest owner.
@@ -541,7 +539,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
-                if (locPart != null && locPart.state() == MOVING && locPart.reserve()) {
+                if (locPart != null && (!cctx.rebalanceEnabled() || locPart.state() == MOVING) && locPart.reserve()) {
                     GridCacheEntryEx entry = cctx.dht().entryEx(info.key());
 
                     try {

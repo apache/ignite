@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -144,6 +145,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
+    private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
+
+    /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
     /** */
@@ -156,9 +160,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
-
-    /** */
-    private final Queue<Callable<Boolean>> rebalanceQ = new ConcurrentLinkedDeque8<>();
 
     /** */
     private final Object interruptLock = new Object();
@@ -609,10 +610,35 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return Last completed topology future.
+     * @return Last initialized topology future.
      */
     public GridDhtTopologyFuture lastTopologyFuture() {
         return lastInitializedFut;
+    }
+
+    /**
+     * @return Last finished topology future.
+     */
+    @Nullable public GridDhtTopologyFuture lastFinishedFuture() {
+        return lastFinishedFut.get();
+    }
+
+    /**
+     * @param fut Finished future.
+     */
+    public void lastFinishedFuture(GridDhtTopologyFuture fut) {
+        assert fut != null && fut.isDone() : fut;
+
+        while (true) {
+            GridDhtTopologyFuture cur = lastFinishedFut.get();
+
+            if (cur == null || fut.topologyVersion().compareTo(cur.topologyVersion()) > 0) {
+                if (lastFinishedFut.compareAndSet(cur, fut))
+                    break;
+            }
+            else
+                break;
+        }
     }
 
     /**
@@ -832,48 +858,33 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Message.
      */
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(Collection<ClusterNode> nodes,
-        @Nullable GridDhtPartitionExchangeId exchId,
+        final @Nullable GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
-        boolean compress) {
-        GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
-                lastVer,
-                exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
-
-        if (nodes != null) {
-            for (ClusterNode node : nodes) {
-                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0) {
-                    compress = false;
-
-                    break;
-                }
-                else if (!canUsePartitionMapCompression(node)) {
-                    compress = false;
-
-                    break;
-                }
-            }
-        }
+        final boolean compress) {
+        final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
+            lastVer,
+            exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
 
         m.compress(compress);
 
-        Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
+        final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal()) {
-                boolean ready;
+        cctx.forAllCaches(new IgniteInClosure<GridCacheContext>() {
+            @Override public void apply(GridCacheContext cacheCtx) {
+                if (!cacheCtx.isLocal()) {
+                    boolean ready;
 
-                if (exchId != null) {
-                    AffinityTopologyVersion startTopVer = cacheCtx.startTopologyVersion();
+                    if (exchId != null) {
+                        AffinityTopologyVersion startTopVer = cacheCtx.startTopologyVersion();
 
-                    ready = startTopVer == null || startTopVer.compareTo(exchId.topologyVersion()) <= 0;
-                }
-                else
-                    ready = cacheCtx.started();
+                        ready = startTopVer == null || startTopVer.compareTo(exchId.topologyVersion()) <= 0;
+                    }
+                    else
+                        ready = cacheCtx.started();
 
-                if (ready) {
-                    GridAffinityAssignmentCache affCache = cacheCtx.affinity().affinityCache();
+                    if (ready) {
+                        GridAffinityAssignmentCache affCache = cacheCtx.affinity().affinityCache();
 
-                    if (affCache != null) {
                         GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
                         addFullPartitionsMap(m,
@@ -886,11 +897,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (exchId != null)
                             m.addPartitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
                     }
-                    else
-                        assert cctx.cacheContext(cacheCtx.cacheId()) == null : cacheCtx.name();
                 }
             }
-        }
+        });
 
         // It is important that client topologies be added after contexts.
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
@@ -986,12 +995,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean clientOnlyExchange,
         boolean sndCounters)
     {
-        boolean compress = canUsePartitionMapCompression(targetNode);
-
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
-            compress);
+            true);
 
         Map<Object, T2<Integer,Map<Integer, GridDhtPartitionState>>> dupData = new HashMap<>();
 
@@ -1001,7 +1008,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 addPartitionMap(m,
                     dupData,
-                    compress,
+                    true,
                     cacheCtx.cacheId(),
                     locMap,
                     cacheCtx.affinity().affinityCache().similarAffinityKey());
@@ -1019,7 +1026,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             addPartitionMap(m,
                 dupData,
-                compress,
+                true,
                 top.cacheId(),
                 locMap,
                 top.similarAffinityKey());
@@ -1568,24 +1575,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             Thread.currentThread().interrupt();
 
         return deque.poll(time, MILLISECONDS);
-    }
-
-    /**
-     * @param node Target node.
-     * @return {@code True} if can use compression for partition map messages.
-     */
-    @SuppressWarnings("SimplifiableIfStatement")
-    private boolean canUsePartitionMapCompression(ClusterNode node) {
-        IgniteProductVersion ver = node.version();
-
-        if (ver.compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) >= 0) {
-            if (ver.minor() == 7 && ver.maintenance() < 4)
-                return false;
-
-            return true;
-        }
-
-        return false;
     }
 
     /**

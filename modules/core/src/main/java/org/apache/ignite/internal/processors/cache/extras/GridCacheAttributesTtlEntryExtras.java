@@ -38,8 +38,8 @@ public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapt
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public GridCacheAttributesTtlEntryExtras(long ttl, long expireTime) {
-        assert ttl != 0;
+    GridCacheAttributesTtlEntryExtras(long ttl, long expireTime) {
+        assert expireTime != CU.EXPIRE_TIME_ETERNAL;
 
         this.ttl = ttl;
         this.expireTime = expireTime;

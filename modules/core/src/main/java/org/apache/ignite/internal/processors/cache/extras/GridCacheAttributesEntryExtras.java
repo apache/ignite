@@ -29,8 +29,8 @@ public class GridCacheAttributesEntryExtras extends GridCacheEntryExtrasAdapter 
     /**
      * Constructor.
      */
-    public GridCacheAttributesEntryExtras() {
-
+    GridCacheAttributesEntryExtras() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
