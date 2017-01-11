@@ -399,13 +399,16 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Checks if data nodes hold only partitions from passed partition set.
+     * If yes we can skip partitions filtering for query.
+     *
      * @param topVer Topology version.
      * @param cctx Cache context.
      * @param partSet Partition set.
      */
     private boolean needPartFilter(AffinityTopologyVersion topVer,
         final GridCacheContext<?, ?> cctx,
-        PartitionSet partSet) {
+        @Nullable PartitionSet partSet) {
         if (partSet == null)
             return false;
 
@@ -413,8 +416,6 @@ public class GridReduceQueryExecutor {
 
         Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
 
-        // Check if nodes hold only partitions from user-defined set.
-        // In what case we can skip partitions locking for query.
         for (ClusterNode node : nodes) {
             Set<Integer> primIds = assignment.primaryPartitions(node.id());
 
@@ -536,11 +537,11 @@ public class GridReduceQueryExecutor {
             nodes = stableDataNodesSet(topVer, cctx, partSet);
 
             for (ClusterNode node : nodes)
-                map.put(node, null);
+                map.put(node, null); // null value represents absence of partition filtering.
         }
 
-        if (F.isEmpty(map)) // Topology has no nodes containing query relevant data.
-            return Collections.emptyMap();
+        if (F.isEmpty(map))
+            return Collections.emptyMap(); // Topology has no nodes containing query relevant data.
 
         if (!F.isEmpty(extraSpaces)) {
             for (int i = 0; i < extraSpaces.size(); i++) {
