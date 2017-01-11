@@ -364,8 +364,6 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
-            PluginProcessor.Stop(cancel);
-
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
@@ -386,8 +384,6 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void AfterNodeStop(bool cancel)
         {
-            PluginProcessor.OnIgniteStop(cancel);
-
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
 

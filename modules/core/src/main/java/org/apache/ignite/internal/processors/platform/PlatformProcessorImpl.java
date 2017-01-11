@@ -512,11 +512,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return proxy(new PlatformBinaryProcessor(platformCtx));
     }
 
-    /** {@inheritDoc} */
-    @Override public void startPlugins() {
-        platformCtx.gateway().startPlugins();
-    }
-
     /**
      * Gets the near cache config.
      *
