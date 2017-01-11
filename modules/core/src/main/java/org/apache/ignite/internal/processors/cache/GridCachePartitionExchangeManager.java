@@ -145,6 +145,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
+    private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
+
+    /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
     /** */
@@ -157,9 +160,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
-
-    /** */
-    private final Queue<Callable<Boolean>> rebalanceQ = new ConcurrentLinkedDeque8<>();
 
     /** */
     private final Object interruptLock = new Object();
@@ -610,10 +610,35 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return Last completed topology future.
+     * @return Last initialized topology future.
      */
     public GridDhtTopologyFuture lastTopologyFuture() {
         return lastInitializedFut;
+    }
+
+    /**
+     * @return Last finished topology future.
+     */
+    @Nullable public GridDhtTopologyFuture lastFinishedFuture() {
+        return lastFinishedFut.get();
+    }
+
+    /**
+     * @param fut Finished future.
+     */
+    public void lastFinishedFuture(GridDhtTopologyFuture fut) {
+        assert fut != null && fut.isDone() : fut;
+
+        while (true) {
+            GridDhtTopologyFuture cur = lastFinishedFut.get();
+
+            if (cur == null || fut.topologyVersion().compareTo(cur.topologyVersion()) > 0) {
+                if (lastFinishedFut.compareAndSet(cur, fut))
+                    break;
+            }
+            else
+                break;
+        }
     }
 
     /**
