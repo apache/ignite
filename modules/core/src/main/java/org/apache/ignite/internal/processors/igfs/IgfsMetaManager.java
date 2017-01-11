@@ -1182,32 +1182,6 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Whether operation must be re-tried because we have suspicious links which may broke secondary file system
-     * consistency.
-     *
-     * @param pathIds Path IDs.
-     * @param lockInfos Lock infos.
-     * @return Whether to re-try.
-     */
-    private static boolean isRetryForSecondary(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos) {
-        // We need to ensure that the last locked info is not linked with expected child.
-        // Otherwise there was some concurrent file system update and we have to re-try.
-        // That is, the following situation lead to re-try:
-        // 1) We queried path /A/B/C
-        // 2) Returned IDs are ROOT_ID, A_ID, B_ID, null
-        // 3) But B's info contains C as child. It mean's that
-        if (!pathIds.allExists()) {
-            // Find the last locked index
-            int lastLockedIdx = pathIds.indexOfLastLocked(lockInfos);
-
-            if (lastLockedIdx >= 0 && pathIds.isConsistentChild(lockInfos, lastLockedIdx + 1, false))
-               return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Move path to the trash directory.
      *
      * @param path Path.
@@ -1247,7 +1221,7 @@ public class IgfsMetaManager extends IgfsManager {
                         // Lock participants.
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(allIds);
 
-                        if (secondaryFs != null && isRetryForSecondary(pathIds, lockInfos))
+                        if (secondaryFs != null && pathIds.isRetryForSecondary(lockInfos))
                             continue;
 
                         // Ensure that all participants are still in place.
@@ -2793,7 +2767,7 @@ public class IgfsMetaManager extends IgfsManager {
                     try (IgniteInternalTx tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                        if (secondaryFs != null && isRetryForSecondary(pathIds, lockInfos))
+                        if (secondaryFs != null && pathIds.isRetryForSecondary(lockInfos))
                             continue;
 
                         if (!pathIds.verifyIntegrity(lockInfos, relaxed))
@@ -3010,7 +2984,7 @@ public class IgfsMetaManager extends IgfsManager {
                     try (IgniteInternalTx tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                        if (secondaryCtx != null && isRetryForSecondary(pathIds, lockInfos))
+                        if (secondaryCtx != null && pathIds.isRetryForSecondary(lockInfos))
                             continue;
 
                         if (!pathIds.verifyIntegrity(lockInfos, relaxed))

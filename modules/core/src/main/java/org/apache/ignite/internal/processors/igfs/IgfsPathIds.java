@@ -320,8 +320,8 @@ public class IgfsPathIds {
      * @param childIdx The child index.
      * @return {@code true} if the component at given index is present as a child in it's parent's listing.
      */
-    public boolean isConsistentChild(Map<IgniteUuid, IgfsEntryInfo> infos, int childIdx, boolean checkChildId) {
-        A.ensure(childIdx > 0, "Index must be positive: " + childIdx); // Child should have a parent.
+    private boolean isConsistentChild(Map<IgniteUuid, IgfsEntryInfo> infos, int childIdx, boolean checkChildId) {
+        A.ensure(childIdx > 0, "Index must be positive: " + childIdx); // The child should have a parent.
 
         IgfsEntryInfo parentInfo = infos.get(ids[childIdx - 1]);
 
@@ -330,10 +330,11 @@ public class IgfsPathIds {
     }
 
     /**
+     * Utility method to check if Id at given index represents an existing locked info.
      *
-     * @param infos
-     * @param idx
-     * @return
+     * @param infos The map of locked infos.
+     * @param idx The index to query.
+     * @return {@code true} if Id at given index represents an existing locked info, {@code false} otherwise.
      */
     private boolean isExistingLockedId(Map<IgniteUuid, IgfsEntryInfo> infos, int idx) {
         return idx <= lastExistingIdx && infos.get(ids[idx]) != null;
@@ -341,22 +342,45 @@ public class IgfsPathIds {
 
     /**
      * Gets the last locked index in order down from the root.
+     * The returned Id may be last existing Id.
      *
      * @param lockedInfos The map of locked infos.
      * @return The index of the last locked info, or -1 if no info locked.
      */
-    public int indexOfLastLocked(Map<IgniteUuid, IgfsEntryInfo> lockedInfos) {
+    private int indexOfLastLocked(Map<IgniteUuid, IgfsEntryInfo> lockedInfos) {
         int lastLockedIdx = -1;
 
-        while (lastLockedIdx < lastExistingIndex()) {
-            if (lockedInfos.get(id(lastLockedIdx + 1)) == null)
-                break;
-
+        while (isExistingLockedId(lockedInfos, lastLockedIdx + 1))
             lastLockedIdx++;
-        }
 
         assert lastLockedIdx < count();
 
         return lastLockedIdx;
+    }
+
+    /**
+     * Whether operation must be re-tried because we have suspicious links which may broke secondary file system
+     * consistency.
+     *
+     * @param lockInfos Lock infos.
+     * @return Whether to re-try.
+     */
+    public boolean isRetryForSecondary(Map<IgniteUuid, IgfsEntryInfo> lockInfos) {
+        // We need to ensure that the last locked info is not linked with expected child.
+        // Otherwise there was some concurrent file system update and we have to re-try.
+        // That is, the following situation lead to re-try:
+        // 1) We queried path /A/B/C
+        // 2) Returned IDs are ROOT_ID, A_ID, B_ID, null
+        // 3) But B's info contains C as child.
+        if (!allExists()) {
+            // Find the last locked index
+            int lastLockedIdx = indexOfLastLocked(lockInfos);
+
+            if (lastLockedIdx >= 0
+                    && isConsistentChild(lockInfos, lastLockedIdx + 1, false/*do not check child id*/))
+                return true;
+        }
+
+        return false;
     }
 }
