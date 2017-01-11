@@ -72,6 +72,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void Stop(bool cancel)
         {
             Stopped = cancel;
+
+            EnsureIgniteWorks();
         }
 
         /** <inheritdoc /> */
@@ -83,14 +85,18 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.NotNull(Context.Ignite);
             Assert.NotNull(Context.IgniteConfiguration);
             Assert.NotNull(Context.PluginConfiguration);
+
+            EnsureIgniteWorks();
         }
 
         /** <inheritdoc /> */
         public void OnIgniteStop(bool cancel)
         {
             IgniteStopped = cancel;
+
+            EnsureIgniteWorks();
         }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="TestIgnitePluginProvider"/> is started.
         /// </summary>
@@ -110,5 +116,18 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// Gets the context.
         /// </summary>
         public IPluginContext<TestIgnitePluginConfiguration> Context { get; private set; }
+
+        /// <summary>
+        /// Ensures that Ignite instance is functional.
+        /// </summary>
+        private void EnsureIgniteWorks()
+        {
+            Assert.NotNull(Context);
+            Assert.NotNull(Context.Ignite);
+
+            var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
+
+            Assert.AreEqual(0, cache.GetSize());
+        }
     }
 }
