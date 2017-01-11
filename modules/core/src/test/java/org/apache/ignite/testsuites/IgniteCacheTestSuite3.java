@@ -126,10 +126,11 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
 
-        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
+        // TODO GG-11141.
+//        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
+//        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+//        suite.addTestSuite(GridCacheDeploymentOffHeapValuesSelfTest.class);
         suite.addTestSuite(CacheStartupInDeploymentModesTest.class);
-        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
-        suite.addTestSuite(GridCacheDeploymentOffHeapValuesSelfTest.class);
         suite.addTestSuite(GridCacheConditionalDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheTransactionalEntryProcessorDeploymentSelfTest.class);
