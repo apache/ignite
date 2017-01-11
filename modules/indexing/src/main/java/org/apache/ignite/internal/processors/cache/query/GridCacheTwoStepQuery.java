@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import org.apache.ignite.cache.query.PartitionSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -70,7 +68,7 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param schemas Schema names in query.
-     * @param tbls    Tables in query.
+     * @param tbls Tables in query.
      */
     public GridCacheTwoStepQuery(Set<String> schemas, Set<String> tbls) {
         this.schemas = schemas;
@@ -248,9 +246,7 @@ public class GridCacheTwoStepQuery {
         return tbls;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
     }

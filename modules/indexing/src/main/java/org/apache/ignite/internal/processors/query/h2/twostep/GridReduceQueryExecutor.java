@@ -205,8 +205,7 @@ public class GridReduceQueryExecutor {
         });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override
-            public void onEvent(final Event evt) {
+            @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent) evt).eventNode().id();
 
                 for (QueryRun r : runs.values()) {
@@ -559,7 +558,7 @@ public class GridReduceQueryExecutor {
                 Collection<ClusterNode> extraNodes = stableDataNodesSet(topVer, extraCctx, partSet);
 
                 if (F.isEmpty(extraNodes))
-                    throw new CacheException("Failed to find data map for cache: " + extraSpace);
+                    throw new CacheException("Failed to find data nodes for cache: " + extraSpace);
 
                 if (cctx.isReplicated() && extraCctx.isReplicated()) {
                     nodes.retainAll(extraNodes);
@@ -568,7 +567,7 @@ public class GridReduceQueryExecutor {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches have distinct sets of data map [cache1=" + cctx.name() +
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
                                 ", cache2=" + extraSpace + "]");
                     }
                 }
@@ -577,7 +576,7 @@ public class GridReduceQueryExecutor {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches have distinct sets of data map [cache1=" + cctx.name() +
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
                                 ", cache2=" + extraSpace + "]");
                 }
                 else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
@@ -585,7 +584,7 @@ public class GridReduceQueryExecutor {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches have distinct sets of data map [cache1=" + cctx.name() +
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
                                 ", cache2=" + extraSpace + "]");
                 }
                 else
