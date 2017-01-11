@@ -109,8 +109,13 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        if (nearCache)
-            cfg.setNearConfiguration(new NearCacheConfiguration());
+        if (nearCache) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+            nearCfg.setExpiryPolicyFactory(factory);
+
+            cfg.setNearConfiguration(nearCfg);
+        }
 
         cfg.setExpiryPolicyFactory(factory);
 
@@ -1022,7 +1027,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpires() throws Exception {
-        factory =  new FactoryBuilder.SingletonFactory<>(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE));
+        factory =  new FactoryBuilder.SingletonFactory<>(new TestPolicy(1100L, 0L, 0L));
 
         startGrids();
 
@@ -1034,22 +1039,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Ignite client = startGrid("client", clientCfg);
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(cacheConfiguration("testCache"));
+        IgniteCache<Object, Object> cache = client.getOrCreateNearCache(null, new NearCacheConfiguration<>());
 
         Integer key = 1;
 
         cache.put(key, 1);
 
         assertEquals(1, cache.get(key));
-
-        checkTtl(1, TTL_FOR_EXPIRE, true);
+//        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
 
         waitExpired(key);
 
-        for(int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek(key,CachePeekMode.PRIMARY,CachePeekMode.BACKUP));
-
         assertNull(cache.localPeek(key,CachePeekMode.NEAR));
+
+        for(int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek(key, CachePeekMode.ALL));
+
+        assertEquals(null, cache.get(key));
     }
 
     /**
