@@ -310,6 +310,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Ignition.Start(cfg);
             }
+
+            Assert.AreEqual(GridCount(), GetIgnite(0).GetCluster().GetNodes().Count);
         }
 
         /// <summary>
