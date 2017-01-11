@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCache;
 /**
  *
  */
-public class IgnitePutAllOffHeapTxBenchmark extends IgnitePutAllTxBenchmark {
+public class IgnitePutAllTxOffHeapBenchmark extends IgnitePutAllTxBenchmark {
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("tx-offheap");
