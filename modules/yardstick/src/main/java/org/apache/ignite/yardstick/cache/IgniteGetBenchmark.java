@@ -29,9 +29,6 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Ignite benchmark that performs get operations.
  */
 public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
-    /** */
-    private static final String CACHE_NAME = "atomic";
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -40,11 +37,13 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
                 "must by less then the range (\"-r\", \"--range\").");
 
-        println(cfg, "Loading data...");
+        String cacheName = cache().getName();
+
+        println(cfg, "Loading data for cache: " + cacheName);
 
         long start = System.nanoTime();
 
-        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
             for (int i = 0; i < args.preloadAmount(); i++) {
                 dataLdr.addData(i, new SampleValue(i));
 
@@ -71,6 +70,6 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache(CACHE_NAME);
+        return ignite().cache("atomic");
     }
 }
