@@ -963,83 +963,85 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                // Prepare path IDs.
-                IgfsPathIds srcPathIds = pathIds(srcPath);
-                IgfsPathIds dstPathIds = pathIds(dstPath);
+                while (true) {
+                    // Prepare path IDs.
+                    IgfsPathIds srcPathIds = pathIds(srcPath);
+                    IgfsPathIds dstPathIds = pathIds(dstPath);
 
-                // Source path must exists.
-                if (!srcPathIds.allExists())
-                    throw new IgfsPathNotFoundException("Failed to perform move because source path is not " +
-                        "found: " + srcPath);
+                    // Source path must exists.
+                    if (!srcPathIds.allExists())
+                        throw new IgfsPathNotFoundException("Failed to perform move because source path is not " +
+                            "found: " + srcPath);
 
-                // At this point we need to understand name of resulting entry. It will be either destination leaf
-                // or source leaf depending on existence.
-                String dstName;
+                    // At this point we need to understand name of resulting entry. It will be either destination leaf
+                    // or source leaf depending on existence.
+                    String dstName;
 
-                if (dstPathIds.lastExists())
-                    //  Full destination path exists -> use source name.
-                    dstName = srcPathIds.lastPart();
-                else {
-                    if (dstPathIds.lastParentExists()) {
-                        // Destination path doesn't exists -> use destination name.
-                        dstName = dstPathIds.lastPart();
+                    if (dstPathIds.lastExists())
+                        //  Full destination path exists -> use source name.
+                        dstName = srcPathIds.lastPart();
+                    else {
+                        if (dstPathIds.lastParentExists()) {
+                            // Destination path doesn't exists -> use destination name.
+                            dstName = dstPathIds.lastPart();
 
-                        dstPathIds = dstPathIds.parent();
+                            dstPathIds = dstPathIds.parent();
+                        }
+                        else
+                            // Destination parent is not found either -> exception.
+                            throw new IgfsPathNotFoundException("Failed to perform move because destination path is " +
+                                "not " +
+                                "found: " + dstPath.parent());
                     }
-                    else
-                        // Destination parent is not found either -> exception.
-                        throw new IgfsPathNotFoundException("Failed to perform move because destination path is not " +
-                            "found: " + dstPath.parent());
-                }
 
-                // Lock participating IDs.
-                final Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
+                    // Lock participating IDs.
+                    final Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                srcPathIds.addExistingIds(lockIds, relaxed);
-                dstPathIds.addExistingIds(lockIds, relaxed);
+                    srcPathIds.addExistingIds(lockIds, relaxed);
+                    dstPathIds.addExistingIds(lockIds, relaxed);
 
-                try (IgniteInternalTx tx = startTx()) {
-                    // Obtain the locks.
-                    final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
+                    try (IgniteInternalTx tx = startTx()) {
+                        // Obtain the locks.
+                        final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                    // Verify integrity of source and destination paths.
-                    if (!srcPathIds.verifyIntegrity(lockInfos, relaxed))
-                        throw new IgfsPathNotFoundException("Failed to perform move because source directory " +
-                            "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
+                        // Verify integrity of source and destination paths.
+                        if (!srcPathIds.verifyIntegrity(lockInfos, relaxed) || !dstPathIds.verifyIntegrity(lockInfos,
+                            relaxed))
+                            continue;
 
-                    if (!dstPathIds.verifyIntegrity(lockInfos, relaxed))
-                        throw new IgfsPathNotFoundException("Failed to perform move because destination directory " +
-                            "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
+                        // Addiional check: is destination directory?
+                        IgfsEntryInfo dstParentInfo = lockInfos.get(dstPathIds.lastId());
 
-                    // Addiional check: is destination directory?
-                    IgfsEntryInfo dstParentInfo = lockInfos.get(dstPathIds.lastId());
+                        if (dstParentInfo.isFile())
+                            throw new IgfsPathAlreadyExistsException("Failed to perform move because destination " +
+                                "points " +
+                                "to existing file [src=" + srcPath + ", dst=" + dstPath + ']');
 
-                    if (dstParentInfo.isFile())
-                        throw new IgfsPathAlreadyExistsException("Failed to perform move because destination points " +
-                            "to existing file [src=" + srcPath + ", dst=" + dstPath + ']');
+                        // Additional check: does destination already has child with the same name?
+                        if (dstParentInfo.hasChild(dstName))
+                            throw new IgfsPathAlreadyExistsException("Failed to perform move because destination " +
+                                "already " +
+                                "contains entry with the same name existing file [src=" + srcPath +
+                                ", dst=" + dstPath + ']');
 
-                    // Additional check: does destination already has child with the same name?
-                    if (dstParentInfo.hasChild(dstName))
-                        throw new IgfsPathAlreadyExistsException("Failed to perform move because destination already " +
-                            "contains entry with the same name existing file [src=" + srcPath +
-                            ", dst=" + dstPath + ']');
+                        // Actual move: remove from source parent and add to destination target.
+                        IgfsEntryInfo srcParentInfo = lockInfos.get(srcPathIds.lastParentId());
 
-                    // Actual move: remove from source parent and add to destination target.
-                    IgfsEntryInfo srcParentInfo = lockInfos.get(srcPathIds.lastParentId());
+                        IgfsEntryInfo srcInfo = lockInfos.get(srcPathIds.lastId());
+                        String srcName = srcPathIds.lastPart();
+                        IgfsListingEntry srcEntry = srcParentInfo.listing().get(srcName);
 
-                    IgfsEntryInfo srcInfo = lockInfos.get(srcPathIds.lastId());
-                    String srcName = srcPathIds.lastPart();
-                    IgfsListingEntry srcEntry = srcParentInfo.listing().get(srcName);
+                        transferEntry(srcEntry, srcParentInfo.id(), srcName, dstParentInfo.id(), dstName);
 
-                    transferEntry(srcEntry, srcParentInfo.id(), srcName, dstParentInfo.id(), dstName);
+                        tx.commit();
 
-                    tx.commit();
+                        // Fire events.
+                        IgfsPath newPath = new IgfsPath(dstPathIds.path(), dstName);
 
-                    // Fire events.
-                    IgfsPath newPath = new IgfsPath(dstPathIds.path(), dstName);
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), srcPath, newPath, srcInfo.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED);
 
-                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), srcPath, newPath,
-                        srcInfo.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED);
+                        return;
+                    }
                 }
             }
             finally {
@@ -1268,8 +1270,11 @@ public class IgfsMetaManager extends IgfsManager {
                         if (secondaryFs != null && isRetryForSecondary(pathIds, lockInfos))
                             continue;
 
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
+                            continue;
+
                         // Ensure that all participants are still in place.
-                        if (!pathIds.allExists() || !pathIds.verifyIntegrity(lockInfos, relaxed)) {
+                        if (!pathIds.allExists()) {
                             // For DUAL mode we will try to update the underlying FS still. Note we do that inside TX.
                             if (secondaryFs != null) {
                                 boolean res = secondaryFs.delete(path, recursive);
