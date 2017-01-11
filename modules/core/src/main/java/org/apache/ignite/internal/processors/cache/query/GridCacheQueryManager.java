@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -2897,6 +2896,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private GridIterator<CacheDataRow> it;
 
+        /** Need advance. */
+        private boolean needAdvance;
+
         /**
          * @param it Iterator.
          * @param plc Expiry policy.
@@ -2925,24 +2927,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             this.keepBinary = keepBinary;
             expiryPlc = cctx.cache().expiryPolicy(plc);
 
-            advance();
+            needAdvance = true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean onHasNext() {
+            if (needAdvance) {
+                advance();
+
+                needAdvance = false;
+            }
+
             return next != null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteBiTuple<K, V> onNext() {
+            if (needAdvance)
+                advance();
+            else
+                needAdvance = true;
+
             if (next == null)
                 throw new NoSuchElementException();
 
-            IgniteBiTuple<K, V> next0 = next;
-
-            advance();
-
-            return next0;
+            return next;
         }
 
         /** {@inheritDoc} */
