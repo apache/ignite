@@ -274,20 +274,20 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that keys correctly destributed by nodes after data streamer.
+     * Check that keys correctly distributed by nodes after data streamer.
      *
      * @param g Grid to check.
      */
     private void checkDistribution(Ignite g) {
         ClusterNode n = g.cluster().localNode();
-        IgniteCache c = g.cache(null);
+        IgniteCache<Object, Object> c = g.cache(null);
 
         // Check that data streamer correctly split data by nodes.
         for (int i = 0; i < KEYS_COUNT; i ++) {
             if (g.affinity(null).isPrimary(n, i))
-                assertNotNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                assertNotNull(c.localPeek(i));
             else
-                assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                assertNull(c.localPeek(i));
         }
     }
 

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -100,9 +101,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
         try {
             List<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
-            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
                 cursors.add(store.cursor(lowerObj, upperObj));
-            }
 
             return new H2Cursor(new CompositeGridCursor<>(cursors.iterator()), p);
         }
@@ -122,9 +122,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
                 CacheDataRow found = store.find(row.key);
 
-                if (found != null) {
+                if (found != null)
                     tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);
-                }
             }
 
             return null;
@@ -190,15 +189,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session session, boolean b) {
+    @Override public Cursor findFirstOrLast(Session ses, boolean b) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object doTakeSnapshot() {
-        assert false;
-
-        return this;
+    @Nullable @Override protected IgniteTree doTakeSnapshot() {
+        throw new AssertionError("This method must not be called for PK index");
     }
 
     /**
@@ -284,30 +281,30 @@ public class H2PkHashIndex extends GridH2IndexBase {
      */
     private static class CompositeGridCursor<T> implements GridCursor<T> {
         /** */
-        private final Iterator<GridCursor<? extends T>> iterator;
+        private final Iterator<GridCursor<? extends T>> iter;
 
         /** */
-        private GridCursor<? extends T> current;
+        private GridCursor<? extends T> curr;
 
         /**
          *
          */
-        public CompositeGridCursor(Iterator<GridCursor<? extends T>> iterator) {
-            this.iterator = iterator;
+        public CompositeGridCursor(Iterator<GridCursor<? extends T>> iter) {
+            this.iter = iter;
 
-            if (iterator.hasNext())
-                current = iterator.next();
+            if (iter.hasNext())
+                curr = iter.next();
         }
 
         /** {@inheritDoc} */
         @Override public boolean next() throws IgniteCheckedException {
-            if (current.next())
+            if (curr.next())
                 return true;
 
-            while (iterator.hasNext()) {
-                current = iterator.next();
+            while (iter.hasNext()) {
+                curr = iter.next();
 
-                if (current.next())
+                if (curr.next())
                     return true;
             }
 
@@ -316,7 +313,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         /** {@inheritDoc} */
         @Override public T get() throws IgniteCheckedException {
-            return current.get();
+            return curr.get();
         }
     }
 }

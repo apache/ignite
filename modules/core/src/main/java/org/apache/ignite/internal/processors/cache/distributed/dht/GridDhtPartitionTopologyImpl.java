@@ -70,7 +70,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Partition topology.
  */
-@GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+@GridToStringExclude
+class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -123,7 +124,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
     /** */
-    private volatile boolean treatAllPartitionAsLocal;
+    private volatile boolean treatAllPartAsLoc;
 
     /**
      * @param cctx Context.
@@ -490,7 +491,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         ClusterState newState = exchFut.newClusterState();
 
-        treatAllPartitionAsLocal = (newState != null && newState == ClusterState.ACTIVE)
+        treatAllPartAsLoc = (newState != null && newState == ClusterState.ACTIVE)
             || (cctx.kernalContext().state().active()
             && discoEvt.type() == EventType.EVT_NODE_JOINED
             && discoEvt.eventNode().isLocal()
@@ -504,64 +505,64 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         cctx.shared().database().checkpointReadLock();
 
-        try {
-            U.writeLock(lock);
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            cctx.shared().database().checkpointReadUnlock();
+        synchronized (cctx.shared().exchange().interruptLock()) {
+            if (Thread.currentThread().isInterrupted())
+                throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
 
-            throw e;
-        }
+            try {
+                U.writeLock(lock);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                cctx.shared().database().checkpointReadUnlock();
 
-        try {
-            GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
-
-            if (stopping)
-                return;
-
-            assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
-                topVer + ", exchId=" + exchId + ']';
-
-            if (exchId.isLeft())
-                removeNode(exchId.nodeId());
-
-            ClusterNode oldest = currentCoordinator();
-
-            if (log.isDebugEnabled())
-                log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
-
-            long updateSeq = this.updateSeq.incrementAndGet();
-
-            cntrMap.clear();
-
-            // If this is the oldest node.
-            if (oldest != null && (loc.equals(oldest) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion()))) {
-                if (node2part == null) {
-                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Created brand new full topology map on oldest node [exchId=" +
-                            exchId + ", fullMap=" + fullMapString() + ']');
-                }
-                else if (!node2part.valid()) {
-                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
-                            node2part + ']');
-                }
-                else if (!node2part.nodeId().equals(loc.id())) {
-                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
-                            exchId + ", fullMap=" + fullMapString() + ']');
-                }
+                throw e;
             }
 
-            synchronized (cctx.shared().exchange().interruptLock()) {
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteCheckedException("Thread is interrupted: " + Thread.currentThread());
+            try {
+                GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
+
+                if (stopping)
+                    return;
+
+                assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
+                    topVer + ", exchId=" + exchId + ']';
+
+                if (exchId.isLeft())
+                    removeNode(exchId.nodeId());
+
+                ClusterNode oldest = currentCoordinator();
+
+                if (log.isDebugEnabled())
+                    log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
+
+                long updateSeq = this.updateSeq.incrementAndGet();
+
+                cntrMap.clear();
+
+                // If this is the oldest node.
+                if (oldest != null && (loc.equals(oldest) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion()))) {
+                    if (node2part == null) {
+                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Created brand new full topology map on oldest node [exchId=" +
+                                exchId + ", fullMap=" + fullMapString() + ']');
+                    }
+                    else if (!node2part.valid()) {
+                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
+                                node2part + ']');
+                    }
+                    else if (!node2part.nodeId().equals(loc.id())) {
+                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
+                                exchId + ", fullMap=" + fullMapString() + ']');
+                    }
+                }
 
                 if (affReady)
                     initPartitions0(exchFut, updateSeq);
@@ -570,18 +571,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     createPartitions(aff, updateSeq);
                 }
+
+                consistencyCheck();
+
+                if (log.isDebugEnabled())
+                    log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
+                        fullMapString() + ']');
             }
+            finally {
+                lock.writeLock().unlock();
 
-            consistencyCheck();
-
-            if (log.isDebugEnabled())
-                log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
-                    fullMapString() + ']');
-        }
-        finally {
-            lock.writeLock().unlock();
-
-            cctx.shared().database().checkpointReadUnlock();
+                cctx.shared().database().checkpointReadUnlock();
+            }
         }
 
         // Wait for evictions.
@@ -590,7 +591,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
-        treatAllPartitionAsLocal = false;
+        treatAllPartAsLoc = false;
 
         boolean changed = waitForRent();
 
@@ -767,17 +768,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (loc != null && state == EVICTED) {
                 locParts.set(p, loc = null);
 
-                if (!treatAllPartitionAsLocal && !belongs)
+                if (!treatAllPartAsLoc && !belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
-            else if (loc != null && state == RENTING && cctx.allowFastEviction()) {
+            else if (loc != null && state == RENTING && cctx.allowFastEviction())
                 throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted.");
-            }
 
             if (loc == null) {
-                if (!treatAllPartitionAsLocal && !belongs)
+                if (!treatAllPartAsLoc && !belongs)
                     throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
@@ -989,7 +989,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             List<ClusterNode> nodes = new ArrayList<>(size);
 
             for (UUID id : nodeIds) {
-                if (topVer.topologyVersion() > 0 && !allIds.contains(id))
+                if (topVer.topologyVersion() > 0 && !F.contains(allIds, id))
                     continue;
 
                 if (hasState(p, id, state, states)) {
@@ -1895,18 +1895,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             for (int i = 0; i < locParts.length(); i++) {
                 GridDhtLocalPartition part = locParts.get(i);
 
-                if (part == null)
+                if (part == null || (skipZeros && part.updateCounter() == 0L))
                     continue;
 
                 T2<Long, Long> cntr0 = res.get(part.id());
-                Long cntr1 = part.state() == MOVING ? part.initialUpdateCounter() : part.updateCounter();
-                Long cntr2 = part.updateCounter();
+                Long initCntr = part.state() == MOVING ? part.initialUpdateCounter() : part.updateCounter();
 
-                if (skipZeros && cntr1 == 0L && cntr2 == 0L)
-                    continue;
-
-                if (cntr0 == null || cntr1 > cntr0.get1() || (cntr1.equals(cntr0.get1()) && cntr2 > cntr0.get2()))
-                    res.put(part.id(), new T2<>(cntr1, cntr2));
+                if (cntr0 == null || initCntr >= cntr0.get1())
+                    res.put(part.id(), new T2<>(initCntr, part.updateCounter()));
             }
 
             return res;

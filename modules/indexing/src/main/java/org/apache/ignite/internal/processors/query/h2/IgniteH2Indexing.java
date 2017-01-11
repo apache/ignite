@@ -2652,7 +2652,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             // Add explicit affinity key index if nothing alike was found.
             if (affCol != null && !affIdxFound) {
-                idxs.add(new GridH2TreeIndex("AFFINITY_KEY", tbl, false,
+                idxs.add(createSortedIndex(cacheId, "AFFINITY_KEY", tbl, false,
                     treeIndexColumns(new ArrayList<IndexColumn>(2), affCol, keyCol)));
             }
 
@@ -2679,10 +2679,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 GridCacheContext cctx = scctx.cacheContext(cacheId);
 
-                if (cctx.affinityNode() && cctx.offheapIndex())
-                    return createIndex(cctx, name, tbl, pk, cols);
+                if (log.isInfoEnabled())
+                    log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
 
-                return new GridH2TreeIndex(name, tbl, pk, cols);
+                return new H2TreeIndex(cctx, tbl, name, pk, cols);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2720,40 +2720,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }
-
-        /**
-         * @param name Index name.
-         * @param tbl Table.
-         * @param pk Primary key flag.
-         * @param cols Columns.
-         * @return Index.
-         */
-        private Index createIndex(
-            GridCacheContext cctx,
-            String name,
-            GridH2Table tbl,
-            boolean pk,
-            List<IndexColumn> cols
-        ) throws IgniteCheckedException {
-            if (log.isInfoEnabled())
-                log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
-
-            Index idx = new H2TreeIndex(
-                cctx,
-                tbl,
-                name,
-                pk,
-                cols);
-
-            if (pk) {
-                assert pkTreeIdx == null : pkTreeIdx;
-
-                pkTreeIdx = idx;
-            }
-
-            return idx;
-
         }
 
         /**

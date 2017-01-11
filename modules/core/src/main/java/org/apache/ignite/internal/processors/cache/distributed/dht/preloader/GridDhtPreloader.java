@@ -512,6 +512,19 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                         entry.unswap();
 
+                        GridCacheEntryInfo info = entry.info();
+
+                        if (info == null) {
+                            assert entry.obsolete() : entry;
+
+                            continue;
+                        }
+
+                        if (!info.isNew())
+                            res.addInfo(info);
+
+                        cctx.evicts().touch(entry, msg.topologyVersion());
+
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
@@ -527,20 +540,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         break;
                     }
                 }
-
-                // If entry is null, then local partition may have left
-                // after the message was received. In that case, we are
-                // confident that primary node knows of any changes to the key.
-                if (entry != null) {
-                    GridCacheEntryInfo info = entry.info();
-
-                    if (info != null && !info.isNew())
-                        res.addInfo(info);
-
-                    cctx.evicts().touch(entry, msg.topologyVersion());
-                }
-                else if (log.isDebugEnabled())
-                    log.debug("Key is not present in DHT cache: " + k);
             }
 
             if (log.isDebugEnabled())

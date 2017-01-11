@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -199,8 +200,6 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
                 assertEquals((Integer)100, res);
 
                 checkTtl(key, 500, true);
-
-                assertEquals((Integer)100, res);
             }
 
             U.sleep(600);
@@ -238,10 +237,22 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx e = cache.peekEx(key);
+            GridCacheEntryEx e = null;
 
-            if (e == null && cache.context().isNear())
+            try {
+                e = cache.entryEx(key);
+
+                e.unswap();
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
+                // No-op.
+            }
+
+            if ((e == null || e.rawGet() == null) && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
+
+            if (e == null || e.rawGet() == null)
+                e = null;
 
             if (e == null) {
                 if (primaryOnly)
@@ -251,8 +262,6 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
             }
             else {
                 found = true;
-
-                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);

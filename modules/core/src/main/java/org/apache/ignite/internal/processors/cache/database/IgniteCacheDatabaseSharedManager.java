@@ -53,9 +53,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        if (!cctx.kernalContext().clientNode())
+            init();
+    }
 
-        if (!cctx.kernalContext().clientNode()) {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void init() throws IgniteCheckedException {
+        if (pageMem == null) {
+            MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
+
             if (dbCfg == null)
                 dbCfg = new MemoryConfiguration();
 
@@ -75,10 +83,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     *
+     * @throws IgniteCheckedException If failed.
      */
     public void initDataBase() throws IgniteCheckedException{
-
+        // No-op.
     }
 
     /**

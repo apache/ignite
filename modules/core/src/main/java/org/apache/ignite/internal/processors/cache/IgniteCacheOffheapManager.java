@@ -244,6 +244,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
     /**
      *
+     * @return Number of entries.
+     */
+    public long entriesCount();
+
+    /**
+     *
      */
     interface CacheDataStore {
         /**
@@ -285,7 +291,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         /**
          * @return Initial update counter.
          */
-        public long initialUpdateCounter();
+        public Long initialUpdateCounter();
 
         /**
          * @param key Key.

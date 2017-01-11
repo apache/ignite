@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.*;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -928,7 +928,7 @@ public class GridH2Table extends TableBase {
         /**
          * Create list of indexes. First must be primary key, after that all unique indexes and
          * only then non-unique indexes.
-         * All indexes must be subtypes of {@link GridH2TreeIndex}.
+         * All indexes must be subtypes of {@link H2TreeIndex}.
          *
          * @param tbl Table to create indexes for.
          * @return List of indexes.

@@ -1174,9 +1174,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.exchange().onExchangeDone(this, err);
 
-        if (!F.isEmpty(reqs) && err == null)
+        if (!F.isEmpty(reqs) && err == null) {
             for (DynamicCacheChangeRequest req : reqs)
                 cctx.cache().completeStartFuture(req);
+        }
 
         if (exchangeOnChangeGlobalState && err == null)
             cctx.kernalContext().state().onExchangeDone();
@@ -1221,10 +1222,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
-        PartitionLossPolicy partLossPolicy = cctx.config().getPartitionLossPolicy();
+        PartitionLossPolicy partLossPlc = cctx.config().getPartitionLossPolicy();
 
         if (cctx.needsRecovery() && !recovery) {
-            if (!read && (partLossPolicy == READ_ONLY_SAFE || partLossPolicy == READ_ONLY_ALL))
+            if (!read && (partLossPlc == READ_ONLY_SAFE || partLossPlc == READ_ONLY_ALL))
                 return new IgniteCheckedException("Failed to write to cache (cache is moved to a read-only state): " +
                     cctx.name());
         }
@@ -1246,7 +1247,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 int p = cctx.affinity().partition(key);
 
                 CacheInvalidStateException ex = validatePartitionOperation(cctx.name(), read, key, p,
-                    validation.lostParts, partLossPolicy);
+                    validation.lostParts, partLossPlc);
 
                 if (ex != null)
                     return ex;
@@ -1257,7 +1258,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     int p = cctx.affinity().partition(k);
 
                     CacheInvalidStateException ex = validatePartitionOperation(cctx.name(), read, k, p,
-                        validation.lostParts, partLossPolicy);
+                        validation.lostParts, partLossPlc);
 
                     if (ex != null)
                         return ex;
@@ -1488,18 +1489,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 continue;
 
             top.setOwners(p, e.getValue().nodes, entryLeft == 0);
-        }
-    }
-
-    private static class CounterWithNodes {
-        private final long cnt;
-
-        private final Set<UUID> nodes = new HashSet<>();
-
-        private CounterWithNodes(long cnt, UUID firstNode) {
-            this.cnt = cnt;
-
-            nodes.add(firstNode);
         }
     }
 
@@ -1873,6 +1862,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (isDone() || !enterBusy())
             return;
 
+        cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
+
         try {
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
@@ -2047,5 +2038,31 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             "remaining", remaining,
             "srvNodes", srvNodes,
             "super", super.toString());
+    }
+
+    /**
+     *
+     */
+    private static class CounterWithNodes {
+        /** */
+        private final long cnt;
+
+        /** */
+        private final Set<UUID> nodes = new HashSet<>();
+
+        /**
+         * @param cnt Count.
+         * @param firstNode Node ID.
+         */
+        private CounterWithNodes(long cnt, UUID firstNode) {
+            this.cnt = cnt;
+
+            nodes.add(firstNode);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CounterWithNodes.class, this);
+        }
     }
 }
