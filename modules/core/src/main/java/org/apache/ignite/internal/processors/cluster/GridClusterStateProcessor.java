@@ -449,12 +449,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (CU.isSystemCache(cfg.getName()))
-                        sharedCtx.pageStore().initializeForCache(cfg);
+                        if (sharedCtx.pageStore() != null)
+                            sharedCtx.pageStore().initializeForCache(cfg);
                 }
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (!CU.isSystemCache(cfg.getName()))
-                        sharedCtx.pageStore().initializeForCache(cfg);
+                        if (sharedCtx.pageStore() != null)
+                            sharedCtx.pageStore().initializeForCache(cfg);
                 }
 
                 sharedCtx.database().onActivate(ctx);
