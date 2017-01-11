@@ -355,8 +355,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
-        AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create, boolean touch) {
+        AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        boolean create,
+        boolean touch) {
         return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
     }
 
@@ -702,7 +705,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearEvicting() {
-       boolean free = false;
+       boolean free;
 
         while (true) {
             int cnt = evictGuard.get();
