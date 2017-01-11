@@ -28,9 +28,12 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 
 /**
- * Defines partitions set to restrict query results.
+ * Defines partitions for query execution.
  */
 public class PartitionSet implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Range mask. */
     private static final int RANGE_MASK = 1 << 31;
 
