@@ -1117,11 +1117,39 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * Starts platform plugins.
+     * Starts plugin processor.
      */
-    public void startPlugins() {
+    public void pluginProcessorStart() {
         // Busy lock not needed.
-        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.StartPlugins, 0);
+        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorStart, 0);
+    }
+
+    /**
+     * Stops plugin processor.
+     */
+    public void pluginProcessorStop(boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorStop, cancel ? 1 : 0);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies plugin processor about Ignite stop.
+     */
+    public void pluginProcessorIgniteStop(boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorIgniteStop, cancel ? 1 : 0);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**
