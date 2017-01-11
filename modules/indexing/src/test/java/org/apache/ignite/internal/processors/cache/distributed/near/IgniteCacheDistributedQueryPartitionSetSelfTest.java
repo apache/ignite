@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -38,10 +49,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
-
-import javax.cache.Cache;
-import java.io.Serializable;
-import java.util.*;
 import org.jsr166.ThreadLocalRandom8;
 
 /**
@@ -91,7 +98,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
         }
 
         // Last region was left empty intentionally.
-        TOTAL_CLIENTS = total - PARTS_PER_REGION[PARTS_PER_REGION.length-1] * CLIENTS_PER_PARTITION;
+        TOTAL_CLIENTS = total - PARTS_PER_REGION[PARTS_PER_REGION.length - 1] * CLIENTS_PER_PARTITION;
 
         PARTS_COUNT = parts;
     }
@@ -164,7 +171,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
             if (key instanceof RegionKey)
                 regionId = ((RegionKey)key).regionId;
             else if (key instanceof BinaryObject) {
-                BinaryObject bo = (BinaryObject) key;
+                BinaryObject bo = (BinaryObject)key;
 
                 regionId = bo.field("regionId");
             }
@@ -236,7 +243,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
          * @param obj Object.
          */
         private long hash(int part, Object obj) {
-            long x = ((long) part << 32) | obj.hashCode();
+            long x = ((long)part << 32) | obj.hashCode();
             x ^= x >>> 12;
             x ^= x << 25;
             x ^= x >>> 27;
@@ -305,7 +312,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
                         grid(0).cache("de").put(dk, depo);
                     }
 
-                    if (clientId / (float) TOTAL_CLIENTS >= p / 10f) {
+                    if (clientId / (float)TOTAL_CLIENTS >= p / 10f) {
                         log().info("Loaded " + clientId + " of " + TOTAL_CLIENTS);
 
                         p++;
@@ -466,10 +473,12 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
-            ClientKey clientKey = (ClientKey) o;
+            ClientKey clientKey = (ClientKey)o;
 
             return clientId == clientKey.clientId;
 
@@ -506,10 +515,12 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
-            DepositKey that = (DepositKey) o;
+            DepositKey that = (DepositKey)o;
 
             return depositId == that.depositId;
 

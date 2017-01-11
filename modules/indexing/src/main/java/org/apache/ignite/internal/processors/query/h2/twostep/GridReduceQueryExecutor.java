@@ -801,7 +801,7 @@ public class GridReduceQueryExecutor {
                 else // Send failed.
                     retry = true;
 
-                java.util.Iterator resIter = null;
+                Iterator resIter = null;
 
                 if (!retry) {
                     if (skipMergeTbl) {
@@ -1272,7 +1272,7 @@ public class GridReduceQueryExecutor {
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private java.util.Iterator explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
+    private Iterator explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
