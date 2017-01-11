@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -224,7 +225,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
 
-        assertTrue("Unexpected toString: " + str, str.startsWith(typeName) && str.contains("obj=" + typeName + " ["));
+        assertTrue("Unexpected toString: " + str,
+            S.INCLUDE_SENSITIVE ?
+            str.startsWith(typeName) && str.contains("obj=" + typeName + " [") :
+            str.startsWith("BinaryObject") && str.contains("idHash=") && str.contains("hash=")
+        );
 
         TestReferenceObject obj1_r = po.deserialize();
 

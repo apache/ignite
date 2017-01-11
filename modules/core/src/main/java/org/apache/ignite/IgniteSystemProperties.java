@@ -133,6 +133,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
+     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     */
+    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
+
+    /**
      * If this property is set to {@code true} (default) and Ignite is launched
      * in verbose mode (see {@link #IGNITE_QUIET}) and no console appenders can be found
      * in configuration, then default console appender will be added.

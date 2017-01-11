@@ -1487,7 +1487,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         private ClusterNode node;
 
         /** Keys. */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Collection<KeyCacheObject> keys;
 
         /** */
