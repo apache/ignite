@@ -276,8 +276,10 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select = "select o.name n1, p.name n2 from Person2 p, Organization o where p.orgId = o._key and o._key=1" +
-                " union select o.name n1, p.name n2 from Person2 p, Organization o where p.orgId = o._key and o._key=2";
+            String select = "select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
+                            " where p.orgId = o._key and o._key=1" +
+                            " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
+                            " where p.orgId = o._key and o._key=2";
 
             String plan = (String)c1.query(new SqlFieldsQuery("explain " + select)
                 .setDistributedJoins(true).setEnforceJoinOrder(true))
