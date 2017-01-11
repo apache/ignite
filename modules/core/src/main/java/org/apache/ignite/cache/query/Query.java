@@ -41,6 +41,9 @@ public abstract class Query<R> implements Serializable {
     /** Local flag. */
     private boolean loc;
 
+    /** Partitions for query */
+    private PartitionSet partSet;
+
     /**
      * Empty constructor.
      */
@@ -89,6 +92,27 @@ public abstract class Query<R> implements Serializable {
      */
     public Query<R> setLocal(boolean loc) {
         this.loc = loc;
+
+        return this;
+    }
+
+    /**
+     * Gets partitions set for query.
+     */
+    public PartitionSet getPartitionSet() {
+        return partSet;
+    }
+
+    /**
+     * Sets the partitions set for query.
+     * Only nodes which are holding data for any partition from the set will execute the query.
+     * This is ignored for replicated caches.
+     *
+     * @param partSet Partition set.
+     * @return {@code this} for chaining.
+     */
+    public Query<R> setPartitionSet(PartitionSet partSet) {
+        this.partSet = partSet;
 
         return this;
     }
