@@ -376,8 +376,7 @@ public class IgfsPathIds {
             // Find the last locked index
             int lastLockedIdx = indexOfLastLocked(lockInfos);
 
-            if (lastLockedIdx >= 0
-                    && isConsistentChild(lockInfos, lastLockedIdx + 1, false/*do not check child id*/))
+            if (lastLockedIdx >= 0 && isConsistentChild(lockInfos, lastLockedIdx + 1, false/*do not check child id*/))
                 return true;
         }
 
