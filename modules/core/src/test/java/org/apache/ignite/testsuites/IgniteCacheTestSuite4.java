@@ -295,6 +295,9 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
         suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
 
+        suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
+        suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
+
         return suite;
     }
 }
