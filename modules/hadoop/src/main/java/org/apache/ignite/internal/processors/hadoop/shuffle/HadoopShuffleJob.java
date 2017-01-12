@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -190,7 +191,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
 
             if (!embedded) {
-                log.info("Striped mapper output is disabled becuase it cannot be used in external mode [jobId=" +
+                log.info("Striped mapper output is disabled because it cannot be used in external mode [jobId=" +
                     job.id() + ']');
 
                 stripeMappers0 = false;
@@ -230,6 +231,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         msgs = new HadoopShuffleMessage[rmtMapsSize];
 
         throttle = get(job.info(), SHUFFLE_JOB_THROTTLE, 0);
+
+        log.info("+++ HadoopShuffleJob.<init>(" + S.toString(HadoopShuffleJob.class, this) + ")");
     }
 
     /**
@@ -237,6 +240,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @return {@code True} if addresses were initialized by this call.
      */
     public boolean initializeReduceAddresses(T[] reduceAddrs) {
+        log.info("+++ HadoopShuffleJob.initializeReduceAddresses(" +
+            S.toString(null, "reduceAddrs", reduceAddrs)+ ")");
+
         if (this.reduceAddrs == null) {
             this.reduceAddrs = reduceAddrs;
 
@@ -263,6 +269,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert io != null;
 
         this.io = io;
+
+        log.info("+++ HadoopShuffleJob.startSending(" +
+            S.toString(null, "gridName", gridName, "io", io)+ ")");
 
         if (!stripeMappers) {
             if (!flushed) {
@@ -321,6 +330,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
+        log.info("+++ HadoopShuffleJob.onShuffleMessage(" +
+            S.toString(null, "src", src, "msg", msg) + ")");
+
         HadoopTaskContext taskCtx = locReducersCtx.get(msg.reducer()).get();
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
@@ -371,6 +383,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException Exception.
      */
     public void onDirectShuffleMessage(T src, HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
+        log.info("+++ HadoopShuffleJob.onDirectShuffleMessage(" +
+            S.toString(null, "src", src, "msg", msg) + ")");
+
         byte[] buf = extractBuffer(msg);
 
         assert buf != null;
@@ -437,6 +452,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("ConstantConditions")
     public void onShuffleAck(HadoopShuffleAck ack) {
+        log.info("+++ HadoopShuffleJob.onShuffleAck(" +
+            S.toString(null, "ack", ack) + ")");
+
         IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup = sentMsgs.get(ack.id());
 
         if (tup != null)
@@ -452,6 +470,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param msg Shuffle finish message.
      */
     public void onShuffleFinishRequest(T src, HadoopShuffleFinishRequest msg) {
+        log.info("+++ HadoopShuffleJob.onShuffleFinishRequest(" +
+            S.toString(null, "src", src, "msg", msg) + ")");
+
         if (log.isDebugEnabled())
             log.debug("Received shuffle finish request [jobId=" + job.id() + ", src=" + src + ", req=" + msg + ']');
 
@@ -467,6 +488,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param src Source.
      */
     public void onShuffleFinishResponse(T src) {
+        log.info("+++ HadoopShuffleJob.onShuffleFinishResponse(" +
+            S.toString(null, "src", src) + ")");
         if (log.isDebugEnabled())
             log.debug("Received shuffle finish response [jobId=" + job.id() + ", src=" + src + ']');
 
@@ -481,6 +504,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     private void sendFinishResponse(T dest, HadoopJobId jobId) {
+        log.info("+++ HadoopShuffleJob.sendFinishResponse(" +
+            S.toString(null, "dest", dest, "jobId", jobId) + ")");
+
         if (log.isDebugEnabled())
             log.debug("Sent shuffle finish response [jobId=" + jobId + ", dest=" + dest + ']');
 
@@ -600,6 +626,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
+        log.info("+++ HadoopShuffleJob.collectUpdatesAndSend()");
         for (int i = 0; i < rmtMaps.length(); i++)
             collectUpdatesAndSend(i, flush);
     }
@@ -637,6 +664,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     private void sendShuffleMessage(int rmtMapIdx, @Nullable HadoopDirectDataOutputContext rmtDirectCtx,
         boolean reset) {
+        log.info("+++ HadoopShuffleJob.sendShuffleMessage(" +
+            S.toString(null, "rmtMapIdx", rmtMapIdx, "rmtDirectCtx", rmtDirectCtx) + ")");
+
         if (rmtDirectCtx == null)
             return;
 
@@ -671,6 +701,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     private void visit(HadoopMultimap map, final int rmtMapIdx, final int rmtRdcIdx) throws IgniteCheckedException {
+        log.info("+++ HadoopShuffleJob.visit(" +
+            S.toString(null, "map", map) + ", rmtMapIdx = " + rmtMapIdx + ". rmtRdcIdx = " + rmtRdcIdx + ")");
+
         map.visit(false, new HadoopMultimap.Visitor() {
             /** */
             private long keyPtr;
