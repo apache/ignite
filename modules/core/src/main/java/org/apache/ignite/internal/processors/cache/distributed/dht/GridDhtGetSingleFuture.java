@@ -319,6 +319,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                     if (addReader) {
                         e.unswap(false);
 
+                        // Entry will be removed on touch() if no data in cache,
+                        // but they could be loaded from store,
+                        // we have to add reader again later.
                         readerArgsMap = Collections.singletonMap(key, new ReaderArguments(reader, msgId, topVer));
                     }
 

@@ -355,6 +355,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             if (readerArgsMap == null)
                                 readerArgsMap = new HashMap<>();
 
+                            // Entry will be removed on touch() if no data in cache,
+                            // but they could be loaded from store,
+                            // we have to add reader again later.
                             readerArgsMap.put(k.getKey(), new ReaderArguments(reader, msgId, topVer));
                         }
 
