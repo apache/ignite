@@ -1,4 +1,4 @@
-/*
+ /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -211,18 +211,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private boolean enabled;
 
     /** */
+    private boolean isDefaultIndexerEnabled;
+
+
+    /** */
     private AffinityTopologyVersion qryTopVer;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration ccfg = cctx.config();
 
-        if(GridQueryProcessor.isEnabled(ccfg))
-            qryProc = cctx.kernalContext().query();
+        isDefaultIndexerEnabled = GridQueryProcessor.isEnabled(ccfg);
+
+        qryProc = cctx.kernalContext().query();
 
         space = cctx.name();
 
-        enabled = qryProc != null || cctx.kernalContext().indexing().enabled();
+        enabled = isDefaultIndexerEnabled || cctx.kernalContext().indexing().enabled();
 
         maxIterCnt = ccfg.getMaxQueryIteratorsCount();
 
@@ -326,9 +331,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     public IgniteInternalFuture<?> rebuildIndexes(String typeName) {
-        if(qryProc == null)
-            return new GridFinishedFuture<Void>();
-
         if (!enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
@@ -393,7 +395,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().onSwap(space, key0);
             }
 
-            if(qryProc !=null)
+            if(isDefaultIndexerEnabled)
                 qryProc.onSwap(space, key);
         }
         finally {
@@ -426,7 +428,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().onUnswap(space, key0, val0);
             }
 
-            if(qryProc != null)
+            if(isDefaultIndexerEnabled)
                 qryProc.onUnswap(space, key, val);
         }
         finally {
@@ -474,7 +476,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().store(space, key0, val0, expirationTime);
             }
 
-            if(qryProc != null)
+            if(isDefaultIndexerEnabled)
                 qryProc.store(space, key, val, CU.versionToBytes(ver), expirationTime);
         }
         finally {
@@ -506,7 +508,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().remove(space, key0);
             }
 
-            if(qryProc !=null)
+            if(isDefaultIndexerEnabled)
                 qryProc.remove(space, key, val);
         }
         finally {
@@ -672,8 +674,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     throw new IllegalStateException("Should never be called.");
 
                 case SCAN:
-                    assert qryProc != null;
-
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
