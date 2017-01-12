@@ -1027,7 +1027,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpiresWithCacheStore() throws Exception {
-        factory =  new FactoryBuilder.SingletonFactory<>(new TestPolicy(1100L, 0L, 0L));
+        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
 
         nearCache = true;
 
@@ -1039,28 +1039,21 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Ignite client = startGrid("client", clientCfg);
 
-        CacheConfiguration ccfg = cacheConfiguration("testCache").setCacheStoreFactory(
-            new FactoryBuilder.SingletonFactory<>(new GridCacheTestStore())
-        );
-
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            ccfg);
+        IgniteCache<Object, Object> cache = client.cache(null);
 
         Integer key = 1;
 
         cache.put(key, 1);
 
         assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
-        assertEquals(1, cache.get(key));
 
-        waitExpired(key);
+//        waitExpired(key);
+        Thread.sleep(1500);
 
         assertNull(cache.localPeek(key,CachePeekMode.NEAR));
 
         for(int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek(key, CachePeekMode.ALL));
-
-        assertEquals(null, cache.get(key));
+            assertNull(jcache(i).localPeek(key, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
     }
 
     /**
