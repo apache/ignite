@@ -65,7 +65,7 @@ namespace ignite
                     int32_t footerBegin, int32_t footerEnd, BinaryOffsetType schemaType);
 
                 /**
-                 * Constructor used to construct light-weight reader allowing only raw operations 
+                 * Constructor used to construct light-weight reader allowing only raw operations
                  * and read of primitives.
                  *
                  * @param stream Interop stream.
@@ -104,7 +104,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -123,7 +123,7 @@ namespace ignite
                  * Read bool array. Maps to "boolean[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -144,7 +144,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -163,7 +163,7 @@ namespace ignite
                  * Read array of 16-byte signed integers. Maps to "short[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -184,7 +184,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -203,7 +203,7 @@ namespace ignite
                  * Read array of 16-byte unsigned integers. Maps to "char[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -224,7 +224,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -243,7 +243,7 @@ namespace ignite
                  * Read array of 32-byte signed integers. Maps to "int[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -264,7 +264,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -283,7 +283,7 @@ namespace ignite
                  * Read array of 64-byte signed integers. Maps to "long[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -304,7 +304,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -323,7 +323,7 @@ namespace ignite
                  * Read float array. Maps to "float[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -344,7 +344,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -358,12 +358,12 @@ namespace ignite
                  * @return Result.
                  */
                 double ReadDouble();
-                
+
                 /**
                  * Read double array. Maps to "double[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -384,7 +384,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -403,7 +403,7 @@ namespace ignite
                  * Read array of Guids. Maps to "UUID[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -424,7 +424,7 @@ namespace ignite
                  *
                  * @param fieldName Field name.
                  * @param res Array to store data to.
-                 * @param len Expected length of array.                 
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -443,7 +443,7 @@ namespace ignite
                  * Read array of Dates. Maps to "Date[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.             
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -483,7 +483,7 @@ namespace ignite
                  * Read array of Timestamps. Maps to "Timestamp[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.             
+                 * @param len Expected length of array.
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -527,7 +527,7 @@ namespace ignite
                 /**
                  * Read string.
                  *
-                 * @param fieldName Field name.                 
+                 * @param fieldName Field name.
                  * @param res Array to store data to (should be able to acocmodate null-terminator).
                  * @param len Expected length of string.
                  * @return Actual amount of elements read. If "len" argument is less than actual
@@ -536,7 +536,7 @@ namespace ignite
                  *     -1 will be returned in case array in stream was null.
                  */
                 int32_t ReadString(const char* fieldName, char* res, const int32_t len);
-                
+
                 /**
                  * Start string array read.
                  *
@@ -795,7 +795,7 @@ namespace ignite
                 {
                     CheckRawMode(false);
 
-                    int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName); 
+                    int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
 
                     int32_t fieldPos = FindField(fieldId);
 
@@ -832,7 +832,7 @@ namespace ignite
 
                         case IGNITE_HDR_HND:
                         {
-                            IGNITE_ERROR_1(ignite::IgniteError::IGNITE_ERR_BINARY, 
+                            IGNITE_ERROR_1(ignite::IgniteError::IGNITE_ERR_BINARY,
                                            "Circular references are not supported.");
                         }
 
@@ -856,7 +856,7 @@ namespace ignite
                             int8_t protoVer = stream->ReadInt8();
 
                             if (protoVer != IGNITE_PROTO_VER) {
-                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY, 
+                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY,
                                                "Unsupported binary protocol version: ", protoVer);
                             }
 
@@ -864,7 +864,7 @@ namespace ignite
 
                             if (flags & IGNITE_BINARY_FLAG_COMPACT_FOOTER) {
                                 IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY,
-                                    "Unsupported binary protocol flag: IGNITE_BINARY_FLAG_COMPACT_FOOTER: ", 
+                                    "Unsupported binary protocol flag: IGNITE_BINARY_FLAG_COMPACT_FOOTER: ",
                                     IGNITE_BINARY_FLAG_COMPACT_FOOTER);
                             }
 
@@ -928,7 +928,7 @@ namespace ignite
 
                         default:
                         {
-                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY, 
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY,
                                            "Unexpected header during deserialization: ", static_cast<int>(hdr));
                         }
                     }
@@ -1001,7 +1001,7 @@ namespace ignite
                 BinaryOffsetType schemaType;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryReaderImpl)
-                    
+
                 /**
                  * Internal routine to read Guid array.
                  *
@@ -1010,7 +1010,7 @@ namespace ignite
                  * @param len Length.
                  */
                 static void ReadGuidArrayInternal(
-                    interop::InteropInputStream* stream, 
+                    interop::InteropInputStream* stream,
                     Guid* res,
                     const int32_t len
                 );
@@ -1023,7 +1023,7 @@ namespace ignite
                  * @param len Length.
                  */
                 static void ReadDateArrayInternal(
-                    interop::InteropInputStream* stream, 
+                    interop::InteropInputStream* stream,
                     Date* res,
                     const int32_t len
                 );
@@ -1036,14 +1036,14 @@ namespace ignite
                  * @param len Length.
                  */
                 static void ReadTimestampArrayInternal(
-                    interop::InteropInputStream* stream, 
+                    interop::InteropInputStream* stream,
                     Timestamp* res,
                     const int32_t len
                 );
 
                 /**
                  * Read single value in raw mode.
-                 * 
+                 *
                  * @param stream Stream.
                  * @param func Function to be invoked on stream.
                  * @return Result.
@@ -1072,9 +1072,9 @@ namespace ignite
                  */
                 template<typename T>
                 T Read(
-                    const char* fieldName, 
-                    T(*func) (interop::InteropInputStream*), 
-                    const int8_t expHdr, 
+                    const char* fieldName,
+                    T(*func) (interop::InteropInputStream*),
+                    const int8_t expHdr,
                     T dflt
                 )
                 {
@@ -1091,7 +1091,7 @@ namespace ignite
                         stream->Position(fieldPos);
 
                         int8_t typeId = stream->ReadInt8();
-                        
+
                         if (typeId == IGNITE_HDR_NULL)
                             return dflt;
 
@@ -1099,7 +1099,7 @@ namespace ignite
                         {
                             int32_t pos = stream->Position();
 
-                            IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid type ID", 
+                            IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid type ID",
                                 "position", pos, "expected", static_cast<int>(expHdr), "actual", static_cast<int>(typeId))
                         }
 
@@ -1111,7 +1111,7 @@ namespace ignite
                  * Read array in raw mode.
                  *
                  * @param res Resulting array.
-                 * @param len Length.                 
+                 * @param len Length.
                  * @param func Function to be invoked on stream.
                  * @param expHdr Expected header.
                  * @return Length.
@@ -1146,7 +1146,7 @@ namespace ignite
                 int32_t ReadArray(
                     const char* fieldName,
                     T* res,
-                    const int32_t len,                    
+                    const int32_t len,
                     void(*func)(interop::InteropInputStream*, T* const, const int32_t),
                     const int8_t expHdr
                 )
@@ -1154,7 +1154,7 @@ namespace ignite
                     {
                         CheckRawMode(false);
                         CheckSingleMode(true);
-                        
+
                         int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
                         int32_t fieldPos = FindField(fieldId);
 
@@ -1173,7 +1173,7 @@ namespace ignite
                  * Internal read array routine.
                  *
                  * @param res Resulting array.
-                 * @param len Length.                 
+                 * @param len Length.
                  * @param stream Stream.
                  * @param func Function to be invoked on stream.
                  * @param expHdr Expected header.
@@ -1219,7 +1219,7 @@ namespace ignite
                 template<typename T>
                 static T ReadNullable(
                     interop::InteropInputStream* stream,
-                    T(*func)(interop::InteropInputStream*), 
+                    T(*func)(interop::InteropInputStream*),
                     const int8_t expHdr
                 )
                 {
@@ -1248,7 +1248,7 @@ namespace ignite
 
                 /**
                  * Check raw mode.
-                 * 
+                 *
                  * @param expected Expected raw mode of the reader.
                  */
                 void CheckRawMode(bool expected) const;
