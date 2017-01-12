@@ -398,7 +398,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    private CacheConfiguration<String, String> cacheConfiguration() {
+    protected CacheConfiguration<String, String> cacheConfiguration() {
         CacheConfiguration<String, String> cfg = new CacheConfiguration<>(CACHE_NAME);
 
         cfg.setCacheStoreFactory(new StoreFactory());

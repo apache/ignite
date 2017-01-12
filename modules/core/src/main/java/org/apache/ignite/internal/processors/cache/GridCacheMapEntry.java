@@ -3602,6 +3602,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return null;
     }
 
+    /**
+     * @param readerArgs Reader arguments
+     * @throws GridCacheEntryRemovedException If entry was removed. (Won't happen if lock acquired).
+     */
     private void addReaderIfNeed(@Nullable ReaderArguments readerArgs) throws GridCacheEntryRemovedException {
         if (readerArgs != null) {
             if (this instanceof GridDhtCacheEntry && !deleted()) {

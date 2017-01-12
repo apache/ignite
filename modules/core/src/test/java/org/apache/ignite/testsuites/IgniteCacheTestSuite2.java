@@ -116,6 +116,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridPartitio
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheStoreUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.OffheapGridNearCacheStoreUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
@@ -271,6 +272,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(OffheapCacheOnClientsTest.class));
 
         suite.addTest(new TestSuite(GridNearCacheStoreUpdateTest.class));
+        suite.addTest(new TestSuite(OffheapGridNearCacheStoreUpdateTest.class));
 
         return suite;
     }
