@@ -36,11 +36,13 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import javax.servlet.http.Part;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -127,6 +129,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         if (disableEagerTtl)
             cfg.setEagerTtl(false);
 
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         return cfg;
     }
 
@@ -1027,6 +1030,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpiresWithCacheStore() throws Exception {
+        if(cacheMode() != PARTITIONED)
+            return;
+
         factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
 
         nearCache = true;
@@ -1043,12 +1049,12 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Integer key = 1;
 
-        cache.put(key, 1);
+        jcache(0).put(key, 1);
 
+        assertEquals(1, cache.get(key));
         assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
 
-//        waitExpired(key);
-        Thread.sleep(1500);
+        waitExpired(key);
 
         assertNull(cache.localPeek(key,CachePeekMode.NEAR));
 
