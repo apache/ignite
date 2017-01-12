@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
+    <Compile Include="Cache\CacheProcessorTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
     <Compile Include="Cache\CacheAffinityTest.cs" />
@@ -164,6 +165,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config\cache-binarizables.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\cache-processor.xml">
+      <SubType>Designer</SubType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\cache-query-continuous.xml">
