@@ -1682,4 +1682,38 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assertEquals(timesFile0, timesFile1);
         assertEquals(timesFile20, timesFile21);
     }
+
+    /**
+     * Test setTimes method when path is partially missing.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetTimesMissingPartially() throws Exception {
+        create(igfs, paths(DIR), null);
+
+        createFile(igfsSecondary, FILE, chunk);
+
+        igfs.setTimes(FILE, Long.MAX_VALUE - 1, Long.MAX_VALUE);
+
+        IgfsFile info = igfs.info(FILE);
+
+        assert info != null;
+
+        assertEquals(Long.MAX_VALUE - 1, info.accessTime());
+        assertEquals(Long.MAX_VALUE, info.modificationTime());
+
+        T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
+
+        assertEquals(info.accessTime(), (long)secondaryTimes.get1());
+        assertEquals(info.modificationTime(), (long)secondaryTimes.get2());
+
+        try {
+            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+
+            fail("Exception is not thrown for missing file.");
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+    }
 }

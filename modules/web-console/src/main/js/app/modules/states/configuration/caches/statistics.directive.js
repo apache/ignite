@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './statistics.jade!';
+import templateUrl from './statistics.jade';
 
 export default ['igniteConfigurationCachesStatistics', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

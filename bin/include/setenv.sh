@@ -72,9 +72,28 @@ if [ "${USER_LIBS}" != "" ]; then
 fi
 
 if [ "${HADOOP_EDITION}" == "1" ]; then
-    . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
+    # Resolve constants.
+    HADOOP_DEFAULTS="/etc/default/hadoop"
 
-    if [ "${IGNITE_HADOOP_CLASSPATH}" != "" ]; then
-        IGNITE_LIBS=${IGNITE_LIBS}${SEP}$IGNITE_HADOOP_CLASSPATH
+    #
+    # Resolve the rest of Hadoop environment variables.
+    #
+    if [[ -z "${HADOOP_COMMON_HOME}" || -z "${HADOOP_HDFS_HOME}" || -z "${HADOOP_MAPRED_HOME}" ]]; then
+        if [ -f "$HADOOP_DEFAULTS" ]; then
+            source "$HADOOP_DEFAULTS"
+        fi
     fi
+
+    IGNITE_HADOOP_CLASSPATH=$( "$JAVA" -cp "${IGNITE_HOME}"/libs/ignite-hadoop/'*' \
+        org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain ":" )
+
+    statusCode=${?}
+
+    if [ "${statusCode}" -ne 0 ]; then
+       exit ${statusCode}
+    fi
+
+    unset statusCode
+
+    IGNITE_LIBS=${IGNITE_LIBS}${SEP}${IGNITE_HADOOP_CLASSPATH}
 fi

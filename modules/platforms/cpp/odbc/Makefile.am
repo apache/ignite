@@ -54,7 +54,6 @@ libignite_odbc_la_SOURCES = \
     src/config/connection_info.cpp \
     src/connection.cpp \
     src/cursor.cpp \
-    src/decimal.cpp \
     src/diagnostic/diagnosable_adapter.cpp \
     src/diagnostic/diagnostic_record.cpp \
     src/diagnostic/diagnostic_record_storage.cpp \

@@ -77,7 +77,7 @@ namespace ignite
             writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
         }
 
-        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal)
+        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, common::Decimal& decimal)
         {
             int8_t hdr = reader.ReadInt8();
 
@@ -93,20 +93,31 @@ namespace ignite
 
             impl::binary::BinaryUtils::ReadInt8Array(reader.GetStream(), mag.data(), static_cast<int32_t>(mag.size()));
 
-            Decimal res(scale, mag.data(), static_cast<int32_t>(mag.size()));
+            int32_t sign = (scale & 0x80000000) ? -1 : 1;
+            scale = scale & 0x7FFFFFFF;
 
-            swap(decimal, res);
+            common::Decimal res(mag.data(), static_cast<int32_t>(mag.size()), scale, sign);
+
+            decimal.Swap(res);
         }
 
-        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const Decimal& decimal)
+        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const common::Decimal& decimal)
         {
             writer.WriteInt8(ignite::impl::binary::IGNITE_TYPE_DECIMAL);
 
-            writer.WriteInt32(decimal.GetScale() | (decimal.IsNegative() ? 0x80000000 : 0));
+            const common::BigInteger &unscaled = decimal.GetUnscaledValue();
 
-            writer.WriteInt32(decimal.GetLength());
+            int32_t signFlag = unscaled.GetSign() == -1 ? 0x80000000 : 0;
 
-            impl::binary::BinaryUtils::WriteInt8Array(writer.GetStream(), decimal.GetMagnitude(), decimal.GetLength());
+            writer.WriteInt32(decimal.GetScale() | signFlag);
+
+            common::FixedSizeArray<int8_t> magnitude;
+
+            unscaled.MagnitudeToBytes(magnitude);
+
+            writer.WriteInt32(magnitude.GetSize());
+
+            impl::binary::BinaryUtils::WriteInt8Array(writer.GetStream(), magnitude.GetData(), magnitude.GetSize());
         }
 
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen)

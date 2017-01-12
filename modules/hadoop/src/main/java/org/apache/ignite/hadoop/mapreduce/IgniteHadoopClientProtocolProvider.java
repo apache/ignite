@@ -117,6 +117,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                     cliCfg.setProtocol(TCP);
                     cliCfg.setServers(Collections.singletonList(addr));
                     cliCfg.setMarshaller(new GridClientJdkMarshaller());
+                    cliCfg.setMaxConnectionIdleTime(24 * 60 * 60 * 1000L); // 1 day.
                     cliCfg.setDaemon(true);
 
                     try {

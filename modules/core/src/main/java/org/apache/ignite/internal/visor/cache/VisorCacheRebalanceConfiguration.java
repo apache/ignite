@@ -20,12 +20,13 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for cache rebalance configuration properties.
  */
-public class VisorCacheRebalanceConfiguration implements Serializable {
+public class VisorCacheRebalanceConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

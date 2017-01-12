@@ -98,6 +98,17 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject copy(int part) {
+        if (this.part == part)
+            return this;
+
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
+        cp.part = part;
+
+        return cp;
+    }
+
+    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }
@@ -257,10 +268,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        if (ctx == null)
-            throw new BinaryObjectException("BinaryContext is not set for the object.");
+        return BinaryUtils.typeProxy(ctx, this);
+    }
 
-        return ctx.metadata(typeId());
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
     }
 
     /** {@inheritDoc} */
@@ -617,5 +630,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        if (arr == null || ctx == null)
+            return "BinaryObjectImpl [arr= " + (arr != null) + ", ctx=" + (ctx != null) + ", start=" + start + "]";
+
+        return super.toString();
     }
 }

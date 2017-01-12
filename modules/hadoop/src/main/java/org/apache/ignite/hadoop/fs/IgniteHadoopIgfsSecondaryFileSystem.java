@@ -36,13 +36,13 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -66,7 +66,7 @@ import java.util.concurrent.Callable;
  * <p>
  * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
  */
-public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
+public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware,
     HadoopPayloadAware {
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName;
@@ -512,6 +512,18 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to get used space size of file system.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+        try {
+            // We don't use FileSystem#getUsed() since it counts only the files
+            // in the filesystem root, not all the files recursively.
+            fileSystemForUser().setTimes(convert(path), modificationTime, accessTime);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed set times for path: " + path);
         }
     }
 

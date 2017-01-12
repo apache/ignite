@@ -21,27 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import junit.framework.TestCase;
-import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
-import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -62,7 +41,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import junit.framework.TestCase;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
@@ -74,10 +75,12 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
-
         cacheCfg.setCacheMode(REPLICATED);
 
-        cfg.setCacheConfiguration(cacheCfg);
+        CacheConfiguration cacheCfg2 = new CacheConfiguration("partitioned");
+        cacheCfg2.setCacheMode(PARTITIONED);
+
+        cfg.setCacheConfiguration(cacheCfg, cacheCfg2);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
@@ -1359,6 +1362,33 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSameBinaryKey() throws Exception {
+        IgniteCache<BinaryObject, BinaryObject> replicatedCache =
+            jcache(0).withKeepBinary();
+
+        IgniteCache<BinaryObject, BinaryObject> partitionedCache =
+            jcache(0, "partitioned").withKeepBinary();
+
+        BinaryObjectBuilder keyBuilder = ignite(0).binary().builder("keyType")
+            .setField("F1", "V1").hashCode("V1".hashCode());
+
+        BinaryObjectBuilder valBuilder = ignite(0).binary().builder("valueType")
+            .setField("F2", "V2")
+            .setField("F3", "V3");
+
+        BinaryObject key = keyBuilder.build();
+        BinaryObject val = valBuilder.build();
+
+        replicatedCache.put(key, val);
+        partitionedCache.put(key, val);
+
+        assertNotNull(replicatedCache.get(key));
+        assertNotNull(partitionedCache.get(key));
+    }
+
+    /**
      * @param obj Object.
      * @return Object in binary format.
      */
@@ -1463,7 +1493,5 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSetHint"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMapHint"));
-
     }
-
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
@@ -389,7 +390,21 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
+        HadoopConfiguration hadoopCfg = createHadoopConfiguration();
+
+        if (hadoopCfg != null)
+            cfg.setHadoopConfiguration(hadoopCfg);
+
         return G.start(cfg);
+    }
+
+    /**
+     * Creates custom Hadoop configuration.
+     *
+     * @return The Hadoop configuration.
+     */
+    protected HadoopConfiguration createHadoopConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

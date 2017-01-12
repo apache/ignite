@@ -353,30 +353,31 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 UUID id = ses.meta(NODE_ID_META);
 
                 if (id != null) {
-                    GridCommunicationClient rmv = clients.get(id);
+                    if (!stopping) {
+                        boolean reconnect = false;
 
-                    if (rmv instanceof GridTcpNioCommunicationClient &&
-                        ((GridTcpNioCommunicationClient)rmv).session() == ses &&
-                        clients.remove(id, rmv)) {
-                        rmv.forceClose();
+                        GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
-                        if (!stopping) {
-                            GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
+                        if (recoveryData != null) {
+                            if (recoveryData.nodeAlive(getSpiContext().node(id))) {
+                                if (!recoveryData.messagesFutures().isEmpty()) {
+                                    reconnect = true;
 
-                            if (recoveryData != null) {
-                                if (recoveryData.nodeAlive(getSpiContext().node(id))) {
-                                    if (!recoveryData.messagesFutures().isEmpty()) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Session was closed but there are unacknowledged messages, " +
-                                                "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
-
-                                        commWorker.addReconnectRequest(recoveryData);
-                                    }
+                                    if (log.isDebugEnabled())
+                                        log.debug("Session was closed but there are unacknowledged messages, " +
+                                            "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
                                 }
-                                else
-                                    recoveryData.onNodeLeft();
                             }
+                            else
+                                recoveryData.onNodeLeft();
                         }
+
+                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(id,
+                            ses,
+                            recoveryData,
+                            reconnect);
+
+                        commWorker.addProcessDisconnectRequest(disconnectData);
                     }
 
                     CommunicationListener<Message> lsnr0 = lsnr;
@@ -1393,6 +1394,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     .append(", msgsSent=").append(desc.sent())
                     .append(", msgsAckedByRmt=").append(desc.acked())
                     .append(", msgsRcvd=").append(desc.received())
+                    .append(", lastAcked=").append(desc.lastAcknowledged())
+                    .append(", reserveCnt=").append(desc.reserveCount())
                     .append(", descIdHash=").append(System.identityHashCode(desc))
                     .append(']').append(U.nl());
             }
@@ -3040,14 +3043,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             endpoint.close();
         }
 
-        /** @{@inheritDoc} */
+        /** {@inheritDoc} */
         @Override protected void cleanup() {
             super.cleanup();
 
             endpoint.close();
         }
 
-        /** @{@inheritDoc} */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ShmemWorker.class, this);
         }
@@ -3058,7 +3061,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class CommunicationWorker extends IgniteSpiThread {
         /** */
-        private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
+        private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
         /**
          * @param gridName Grid name.
@@ -3073,10 +3076,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 log.debug("Tcp communication worker has been started.");
 
             while (!isInterrupted()) {
-                GridNioRecoveryDescriptor recoveryDesc = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+                DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
-                if (recoveryDesc != null)
-                    processRecovery(recoveryDesc);
+                if (disconnectData != null)
+                    processDisconnect(disconnectData);
                 else
                     processIdle();
             }
@@ -3181,56 +3184,62 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /**
-         * @param recoveryDesc Recovery descriptor.
+         * @param sesInfo Disconnected session information.
          */
-        private void processRecovery(GridNioRecoveryDescriptor recoveryDesc) {
-            ClusterNode node = recoveryDesc.node();
+        private void processDisconnect(DisconnectedSessionInfo sesInfo) {
+            GridCommunicationClient client = clients.get(sesInfo.nodeId);
 
-            try {
-                if (clients.containsKey(node.id()) ||
-                    !recoveryDesc.nodeAlive(getSpiContext().node(node.id())) ||
-                    !getSpiContext().pingNode(node.id()))
+            if (client instanceof GridTcpNioCommunicationClient &&
+                ((GridTcpNioCommunicationClient) client).session() == sesInfo.ses)
+                    clients.remove(sesInfo.nodeId, client);
+
+            if (sesInfo.reconnect) {
+                GridNioRecoveryDescriptor recoveryDesc = sesInfo.recoveryDesc;
+
+                ClusterNode node = recoveryDesc.node();
+
+                if (!recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
                     return;
-            }
-            catch (IgniteClientDisconnectedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to ping node, client disconnected.");
 
-                return;
-            }
-
-            try {
-                if (log.isDebugEnabled())
-                    log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
-
-                GridCommunicationClient client = reserveClient(node);
-
-                client.release();
-            }
-            catch (IgniteCheckedException | IgniteException e) {
-                if (recoveryDesc.nodeAlive(getSpiContext().node(node.id()))) {
+                try {
                     if (log.isDebugEnabled())
-                        log.debug("Recovery reconnect failed, will retry " +
-                            "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+                        log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
 
-                    addReconnectRequest(recoveryDesc);
+                    client = reserveClient(node);
+
+                    client.release();
                 }
-                else {
-                    if (log.isDebugEnabled())
-                        log.debug("Recovery reconnect failed, " +
-                            "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+                catch (IgniteCheckedException | IgniteException e) {
+                    try {
+                        if (recoveryDesc.nodeAlive(getSpiContext().node(node.id())) && getSpiContext().pingNode(node.id())) {
+                            if (log.isDebugEnabled())
+                                log.debug("Recovery reconnect failed, will retry " +
+                                    "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
 
-                    onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
-                        e);
+                            addProcessDisconnectRequest(sesInfo);
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Recovery reconnect failed, " +
+                                    "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+
+                            onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
+                                e);
+                        }
+                    }
+                    catch (IgniteClientDisconnectedException e0) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to ping node, client disconnected.");
+                    }
                 }
             }
         }
 
         /**
-         * @param recoverySnd Recovery send data.
+         * @param sesInfo Disconnected session information.
          */
-        void addReconnectRequest(GridNioRecoveryDescriptor recoverySnd) {
-            boolean add = q.add(recoverySnd);
+        void addProcessDisconnectRequest(DisconnectedSessionInfo sesInfo) {
+            boolean add = q.add(sesInfo);
 
             assert add;
         }
@@ -3739,6 +3748,44 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             err = new IgniteException("Failed to connect, node stopped.");
 
             lock.readUnlock();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class DisconnectedSessionInfo {
+        /** */
+        private final UUID nodeId;
+
+        /** */
+        private final GridNioSession ses;
+
+        /** */
+        private final GridNioRecoveryDescriptor recoveryDesc;
+
+        /** */
+        private final boolean reconnect;
+
+        /**
+         * @param nodeId Node ID.
+         * @param ses Session.
+         * @param recoveryDesc Recovery descriptor.
+         * @param reconnect Reconnect flag.
+         */
+        public DisconnectedSessionInfo(UUID nodeId,
+            GridNioSession ses,
+            @Nullable GridNioRecoveryDescriptor recoveryDesc,
+            boolean reconnect) {
+            this.nodeId = nodeId;
+            this.ses = ses;
+            this.recoveryDesc = recoveryDesc;
+            this.reconnect = reconnect;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DisconnectedSessionInfo.class, this);
         }
     }
 }

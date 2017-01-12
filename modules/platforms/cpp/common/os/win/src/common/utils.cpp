@@ -64,27 +64,6 @@ namespace ignite
             return localtime_s(&out, &in) == 0;
         }
 
-        int LeadingZeroesForOctet(int8_t octet) {
-            if (octet == 0)
-                return 8;
-
-            int zeroes = 1;
-
-            if (octet >> 4 == 0) {
-                zeroes += 4;
-                octet <<= 4;
-            }
-
-            if (octet >> 6 == 0) {
-                zeroes += 2;
-                octet <<= 2;
-            }
-
-            zeroes -= octet >> 7;
-
-            return zeroes;
-        }
-
         char* CopyChars(const char* val)
         {
             if (val) {

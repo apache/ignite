@@ -31,6 +31,7 @@ import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Universal adapter wrapping {@link org.apache.hadoop.fs.FileSystem} instance.
@@ -108,6 +109,13 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
             return get().append(p);
         else
             return get().create(p, true/*overwrite*/);
+    }
+
+    /** {@inheritDoc} */
+    @Override public T2<Long, Long> times(String path) throws IOException {
+        FileStatus status = get().getFileStatus(new Path(path));
+
+        return new T2<>(status.getAccessTime(), status.getModificationTime());
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,7 @@
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
 
-div
+.panel-details-noborder
     .details-row
         p
             +hard-link('https://docs.docker.com/reference/builder', 'Docker')
@@ -28,4 +28,4 @@ div
             | . For more information about using Ignite with Docker please read&nbsp;
             +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
             |.
-    div(ng-if='ctrl.data' ignite-ace='{onLoad: onLoad, mode: "dockerfile"}' ng-model='ctrl.data')
+    .details-row(ng-if='ctrl.data' ignite-ace='{onLoad: onLoad, mode: "dockerfile"}' ng-model='ctrl.data')

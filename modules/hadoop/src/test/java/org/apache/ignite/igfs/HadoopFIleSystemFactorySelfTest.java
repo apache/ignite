@@ -198,7 +198,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         fs.setFileSystemFactory(factory);
 
         // Start.
-        return start("primary", 10500, IgfsMode.PRIMARY, fs);
+        return start("primary", 10500, IgfsMode.DUAL_ASYNC, fs);
     }
 
     /**
@@ -226,6 +226,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setDefaultMode(dfltMode);
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
         igfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setInitializeDefaultPathModes(true);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 

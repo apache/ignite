@@ -24,10 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
  * IGFS context holding all required components for IGFS instance.
@@ -178,16 +175,7 @@ public class IgfsContext {
      * @return {@code True} if node has IGFS with this name, {@code false} otherwise.
      */
     public boolean igfsNode(ClusterNode node) {
-        assert node != null;
-
-        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
-
-        if (igfs != null)
-            for (IgfsAttributes attrs : igfs)
-                if (F.eq(cfg.getName(), attrs.igfsName()))
-                    return true;
-
-        return false;
+        return IgfsUtils.isIgfsNode(node, cfg.getName());
     }
 
     /**

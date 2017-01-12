@@ -67,7 +67,7 @@ public class HadoopTasksV2Test extends HadoopTasksAllVersionsTest {
 
         HadoopJobId jobId = new HadoopJobId(uuid, 0);
 
-        return jobInfo.createJob(HadoopV2Job.class, jobId, log);
+        return jobInfo.createJob(HadoopV2Job.class, jobId, log, null);
     }
 
     /** {@inheritDoc} */

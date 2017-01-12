@@ -256,6 +256,16 @@ public class IgfsPathIds {
     }
 
     /**
+     * Get ID at the give index.
+     *
+     * @param idx Index.
+     * @return ID.
+     */
+    public IgniteUuid id(int idx) {
+        return idx <= lastExistingIdx ? ids[idx] : surrogateId(idx);
+    }
+
+    /**
      * Get surrogate ID at the given index.
      *
      * @param idx Index.

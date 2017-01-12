@@ -118,36 +118,6 @@ namespace ignite
         IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
 
         /**
-         * Get number of leading zeroes in octet.
-         *
-         * @param octet Octet.
-         * @return Number of leading zero-bits.
-         */
-        IGNITE_IMPORT_EXPORT int LeadingZeroesForOctet(int8_t octet);
-
-        /**
-         * Get number of significant bits in octet.
-         *
-         * @param octet Octet.
-         * @return Number of significant bits.
-         */
-        inline int BitLengthForOctet(int8_t octet)
-        {
-            return 8 - LeadingZeroesForOctet(octet);
-        }
-
-        /**
-         * Check if the number is power of two.
-         *
-         * @param num Integer number.
-         * @return True if the number is power of two.
-         */
-        inline bool PowerOfTwo(int num)
-        {
-            return (num & (num - 1)) == 0;
-        }
-
-        /**
          * Copy characters.
          *
          * @param val Value.
@@ -180,32 +150,35 @@ namespace ignite
         IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
 
         /**
-         * Safe array which automatically reclaims occupied memory when out of scope.
+         * Casts value of one type to another type, using stringstream.
+         *
+         * @param val Input value.
+         * @param res Resulted value.
          */
-        template<typename T>
-        struct IGNITE_IMPORT_EXPORT SafeArray
+        template<typename T1, typename T2>
+        void LexicalCast(const T2& val, T1& res)
         {
-            /** Target array. */
-            T* target;
+            std::stringstream converter;
 
-            /**
-             * Constructor.
-             */
-            SafeArray(int cap)
-            {
-                target = new T[cap];
-            }
+            converter << val;
+            converter >> res;
+        }
 
-            /**
-             * Destructor.
-             */
-            ~SafeArray()
-            {
-                delete[] target;
-            }
+        /**
+         * Casts value of one type to another type, using stringstream.
+         *
+         * @param val Input value.
+         * @return Resulted value.
+         */
+        template<typename T1, typename T2>
+        T1 LexicalCast(const T2& val)
+        {
+            T1 res;
 
-            IGNITE_NO_COPY_ASSIGNMENT(SafeArray);
-        };
+            LexicalCast<T1, T2>(val, res);
+
+            return res;
+        }
     }
 }
 

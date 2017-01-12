@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -377,6 +378,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo || forceAddDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txPrepareMessageLogger();
     }
 
     /** {@inheritDoc} */

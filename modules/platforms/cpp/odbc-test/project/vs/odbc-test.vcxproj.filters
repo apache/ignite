@@ -58,9 +58,6 @@
     <ClCompile Include="..\..\..\odbc\src\cursor.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc\src\decimal.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp">
       <Filter>Externals</Filter>
     </ClCompile>

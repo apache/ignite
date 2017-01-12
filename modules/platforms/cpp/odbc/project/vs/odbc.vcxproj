@@ -162,7 +162,6 @@
     <ClCompile Include="..\..\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\cursor.cpp" />
-    <ClCompile Include="..\..\src\decimal.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record_storage.cpp" />
@@ -197,7 +196,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\decimal.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable_adapter.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h" />

@@ -3,25 +3,32 @@ Ignite Web Console Instructions
 
 How to deploy locally:
 
-1. Install locally MongoDB (version >=3.x) follow instructions from site http://docs.mongodb.org/manual/installation
+1. Install locally MongoDB (version >=3.x) follow instructions from site http://docs.mongodb.org/manual/installation.
 2. Install locally NodeJS (version >=4.x) using installer from site https://nodejs.org for your OS.
 3. Change directory '$IGNITE_HOME/modules/web-console/src/main/js'.
-4. Run "npm install" in terminal for download all dependencies.
-5. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
-6. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
+4. Update npm to 3.x:
+  Linux:
+       npm install -g npm
+  Windows:
+       npm install -g npm-windows-upgrade
+       npm-windows-upgrade
+       See: https://github.com/felixrieseberg/npm-windows-upgrade
+  Check npm version: "npm --version".
+5. Run "npm install --no-optional" in terminal for download dependencies.
+6. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
+7. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
 
-Steps 1 - 6 should be executed once.
+Steps 1 - 7 should be executed once.
 
 How to run console in development mode:
 
 1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.0/bin
   and start MongoDB by executing "mongod".
 
-2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'
-  and start application by executing "npm start" (for first time) or "node serve" to start backend.
+2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'.
+   If needed run "npm install --no-optional" (if dependencies changed) and run "node serve" to start backend.
 
 3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'
-  and start virtual server and local changes watcher by executing "gulp watch --debug"
-  or "gulp connect" to start web server only.
+  and start webpack in development mode "npm run dev" .
 
-4. In browser open: http://localhost:8090
+4. In browser open: http://localhost:9000

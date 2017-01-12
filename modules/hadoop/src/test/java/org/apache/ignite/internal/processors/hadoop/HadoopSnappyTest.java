@@ -49,7 +49,7 @@ public class HadoopSnappyTest extends GridCommonAbstractTest {
 
         // Run the same in several more class loaders simulating jobs and tasks:
         for (int i = 0; i < 2; i++) {
-            ClassLoader hadoopClsLdr = new HadoopClassLoader(null, "cl-" + i);
+            ClassLoader hadoopClsLdr = new HadoopClassLoader(null, "cl-" + i, null);
 
             Class<?> cls = (Class)Class.forName(HadoopSnappyTest.class.getName(), true, hadoopClsLdr);
 

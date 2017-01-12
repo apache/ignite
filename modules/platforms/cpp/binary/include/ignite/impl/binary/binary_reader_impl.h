@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <ignite/common/common.h>
+#include <ignite/common/fixed_size_array.h>
 
 #include "ignite/impl/interop/interop_input_stream.h"
 #include "ignite/impl/binary/binary_common.h"
@@ -1397,22 +1398,25 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    ignite::common::SafeArray<char> arr(realLen + 1);
+                    std::string res;
 
-                    for (int i = 0; i < realLen; i++)
-                        *(arr.target + i) = static_cast<char>(stream->ReadInt8());
+                    if (realLen > 0)
+                    {
+                        res.resize(realLen, 0);
 
-                    *(arr.target + realLen) = 0;
+                        stream->ReadInt8Array(reinterpret_cast<int8_t*>(&res[0]), realLen);
+                    }
 
-                    return std::string(arr.target);
+                    return res;
                 }
-
                 else if (typeId == IGNITE_HDR_NULL)
                     return std::string();
-                else {
+                else
+                {
                     int32_t pos = stream->Position() - 1;
 
-                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_STRING, "actual", (int)typeId)
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos,
+                        "expected", static_cast<int>(IGNITE_TYPE_STRING), "actual", static_cast<int>(typeId))
                 }
             }
         }

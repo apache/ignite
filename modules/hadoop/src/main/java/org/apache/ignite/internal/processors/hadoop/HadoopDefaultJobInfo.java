@@ -82,15 +82,15 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
-            HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
+    @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
+        @Nullable String[] libNames) throws IgniteCheckedException {
         assert jobCls != null;
 
         try {
             Constructor<? extends HadoopJob> constructor = jobCls.getConstructor(HadoopJobId.class,
-                HadoopDefaultJobInfo.class, IgniteLogger.class);
+                HadoopDefaultJobInfo.class, IgniteLogger.class, String[].class);
 
-            return constructor.newInstance(jobId, this, log);
+            return constructor.newInstance(jobId, this, log, libNames);
         }
         // NB: java.lang.NoClassDefFoundError may be thrown from Class#getConstructor() call.
         catch (Throwable t) {

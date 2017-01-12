@@ -19,8 +19,7 @@ import gulp from 'gulp';
 import inject from 'gulp-inject';
 import clean from 'gulp-rimraf';
 import sequence from 'gulp-sequence';
-
-import { appModulePaths, igniteModulesTemp } from '../paths';
+import {appModulePaths, igniteModulesTemp} from '../paths';
 
 gulp.task('ignite:modules', (cb) => sequence('ignite:modules:copy', 'ignite:modules:inject', cb));
 
@@ -37,7 +36,7 @@ gulp.task('ignite:modules:inject', () =>
             transform: (filePath) => {
                 const igniteModuleName = filePath.replace(/.*ignite_modules_temp\/([^\/]+).*/mgi, '$1');
 
-                // return file contents as string
+                // Return file contents as string.
                 return `import './${igniteModuleName}/main';`;
             }
         }))
@@ -47,10 +46,10 @@ gulp.task('ignite:modules:inject', () =>
             transform: (filePath, file, i) => {
                 const igniteModuleName = filePath.replace(/.*ignite_modules_temp\/([^\/]+).*/mgi, '$1');
 
-                // return file contents as string
+                // Return file contents as string.
                 return (i ? ',' : '') + `'ignite-console.${igniteModuleName}'`;
             }
         }))
-        .pipe(clean({ force: true }))
+        .pipe(clean({force: true}))
         .pipe(gulp.dest(igniteModulesTemp))
 );

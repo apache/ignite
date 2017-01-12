@@ -103,9 +103,6 @@
     <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
       <Filter>Code\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\decimal.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\type_info_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -214,9 +211,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
       <Filter>Code\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\decimal.h">
-      <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h">
       <Filter>Code\query</Filter>

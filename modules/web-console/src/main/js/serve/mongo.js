@@ -540,7 +540,63 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
             trustStoreType: String,
             trustManagers: [String]
         },
-        rebalanceThreadPoolSize: Number
+        rebalanceThreadPoolSize: Number,
+        attributes: [{name: String, value: String}],
+        collision: {
+            kind: {type: String, enum: ['Noop', 'PriorityQueue', 'FifoQueue', 'JobStealing', 'Custom']},
+            PriorityQueue: {
+                parallelJobsNumber: Number,
+                waitingJobsNumber: Number,
+                priorityAttributeKey: String,
+                jobPriorityAttributeKey: String,
+                defaultPriority: Number,
+                starvationIncrement: Number,
+                starvationPreventionEnabled: Boolean
+            },
+            FifoQueue: {
+                parallelJobsNumber: Number,
+                waitingJobsNumber: Number
+            },
+            JobStealing: {
+                activeJobsThreshold: Number,
+                waitJobsThreshold: Number,
+                messageExpireTime: Number,
+                maximumStealingAttempts: Number,
+                stealingEnabled: Boolean,
+                stealingAttributes: [{name: String, value: String}],
+                externalCollisionListener: String
+            },
+            Custom: {
+                class: String
+            }
+        },
+        failoverSpi: [{
+            kind: {type: String, enum: ['JobStealing', 'Never', 'Always', 'Custom']},
+            JobStealing: {
+                maximumFailoverAttempts: Number
+            },
+            Always: {
+                maximumFailoverAttempts: Number
+            },
+            Custom: {
+                class: String
+            }
+        }],
+        logger: {
+            kind: {type: 'String', enum: ['Log4j2', 'Null', 'Java', 'JCL', 'SLF4J', 'Log4j', 'Custom']},
+            Log4j2: {
+                level: {type: String, enum: ['OFF', 'FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE', 'ALL']},
+                path: String
+            },
+            Log4j: {
+                mode: {type: String, enum: ['Default', 'Path']},
+                level: {type: String, enum: ['OFF', 'FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE', 'ALL']},
+                path: String
+            },
+            Custom: {
+                class: String
+            }
+        }
     });
 
     // Install deep populate plugin.

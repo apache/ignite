@@ -116,6 +116,11 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
 
     /**
+     * Node which started routine leave topology.
+     */
+    public void onNodeLeft();
+
+    /**
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */

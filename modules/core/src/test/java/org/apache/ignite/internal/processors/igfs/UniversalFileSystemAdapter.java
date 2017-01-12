@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.internal.util.typedef.T2;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -87,6 +89,15 @@ public interface UniversalFileSystemAdapter {
      * @throws IOException On failure.
      */
     OutputStream openOutputStream(String path, boolean append) throws IOException;
+
+    /**
+     * Get times for path.
+     *
+     * @param path Path.
+     * @return Times for path.
+     * @throws IOException If failed.
+     */
+    T2<Long, Long> times(String path) throws IOException;
 
     /**
      * Gets an entity of the given type (class) associated with this universal adapter.

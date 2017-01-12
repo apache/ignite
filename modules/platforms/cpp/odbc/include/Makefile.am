@@ -51,7 +51,6 @@ noinst_HEADERS = \
     ignite/odbc/cursor.h \
     ignite/odbc/common_types.h \
     ignite/odbc/result_page.h \
-    ignite/odbc/decimal.h \
     ignite/odbc/type_traits.h
 
 uninstall-hook:

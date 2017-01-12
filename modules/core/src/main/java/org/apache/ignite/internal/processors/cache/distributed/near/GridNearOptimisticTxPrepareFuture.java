@@ -162,6 +162,22 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 mini.onResult(nodeId, res);
             }
+            else {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near optimistic prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near optimistic prepare fut, response for finished future [txId=" + tx.nearXidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
+            }
         }
     }
 
@@ -483,6 +499,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             else {
                 try {
                     cctx.io().send(n, req, tx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +
+                            ", node=" + n.id() + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException e) {
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
@@ -490,6 +511,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     fut.onNodeLeft(e, false);
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near optimistic prepare fut, failed to sent request [txId=" + tx.nearXidVersion() +
+                            ", node=" + n.id() +
+                            ", err=" + e + ']');
+                    }
+
                     fut.onResult(e);
                 }
             }
@@ -696,8 +723,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         /**
          * @param e Node failure.
+         * @param discoThread {@code True} if executed from discovery thread.
          */
         void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + parent.tx.nearXidVersion() +
+                    ", node=" + m.node().id() + ']');
+            }
+
             if (isDone())
                 return;
 

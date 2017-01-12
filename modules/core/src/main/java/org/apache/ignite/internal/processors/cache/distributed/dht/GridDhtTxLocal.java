@@ -672,23 +672,38 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
             try {
                 cctx.io().send(nearNodeId, res, ioPolicy());
+
+                if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                    cctx.txFinishMessageLogger().debug("Sent near finish response [txId=" + nearXidVersion() +
+                        ", dhtTxId=" + xidVersion() +
+                        ", node=" + nearNodeId + ']');
+                }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Node left before sending finish response (transaction was committed) [node=" +
-                        nearNodeId + ", res=" + res + ']');
+                if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                    cctx.txFinishMessageLogger().debug("Failed to send near finish response, node left [txId=" + nearXidVersion() +
+                        ", dhtTxId=" + xidVersion() +
+                        ", node=" + nearNodeId() + ']');
+                }
             }
             catch (Throwable ex) {
                 U.error(log, "Failed to send finish response to node (transaction was " +
-                    (commit ? "committed" : "rolledback") + ") [node=" + nearNodeId + ", res=" + res + ']', ex);
+                    (commit ? "committed" : "rolledback") + ") [txId=" + nearXidVersion() +
+                    ", dhtTxId=" + xidVersion() +
+                    ", node=" + nearNodeId +
+                    ", res=" + res + ']', ex);
 
                 if (ex instanceof Error)
                     throw (Error)ex;
             }
         }
         else {
-            if (log.isDebugEnabled())
-                log.debug("Will not send finish reply because sender node has not sent finish request yet: " + this);
+            if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                cctx.txFinishMessageLogger().debug("Will not send finish reply because sender node has not sent finish " +
+                    "request yet [txId=" + nearXidVersion() +
+                    ", dhtTxId=" + xidVersion() +
+                    ", node=" + nearNodeId() + ']');
+            }
         }
     }
 

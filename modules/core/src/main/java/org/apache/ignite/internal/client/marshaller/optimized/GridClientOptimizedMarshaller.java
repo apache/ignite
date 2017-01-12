@@ -38,7 +38,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public static final byte ID = 1;
 
     /** Optimized marshaller. */
-    private final OptimizedMarshaller opMarsh;
+    protected final OptimizedMarshaller opMarsh;
 
     /**
      * Default constructor.

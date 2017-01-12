@@ -638,7 +638,6 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        //TODO: reset diagnostic here.
         return statement->DataAvailable() ? SQL_SUCCESS : SQL_NO_DATA;
     }
 
@@ -887,7 +886,6 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        //TODO: move this logic into Statement.
         switch (attr)
         {
             case SQL_ATTR_APP_ROW_DESC:
@@ -974,7 +972,6 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        //TODO: move this logic into Statement.
         switch (attr)
         {
             case SQL_ATTR_ROW_ARRAY_SIZE:

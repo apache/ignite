@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -31,10 +28,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
+import org.apache.ignite.internal.util.ClassCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,7 +60,7 @@ import org.objectweb.asm.commons.RemappingClassAdapter;
  * Also supports class parsing for finding dependencies which contain transitive dependencies
  * unavailable for parent.
  */
-public class HadoopClassLoader extends URLClassLoader {
+public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     /**
      * We are very parallel capable.
      */
@@ -88,9 +89,15 @@ public class HadoopClassLoader extends URLClassLoader {
     /** */
     private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
 
+    /** Class cache. */
+    private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
+
     /** Diagnostic name of this class loader. */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
+
+    /** Native library names. */
+    private final String[] libNames;
 
     /**
      * Gets name for Job class loader. The name is specific for local node id.
@@ -115,14 +122,19 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
+     * Constructor.
+     *
      * @param urls Urls.
+     * @param name Classloader name.
+     * @param libNames Optional additional native library names to be linked from parent classloader.
      */
-    public HadoopClassLoader(URL[] urls, String name) {
+    public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
+        this.libNames = libNames;
 
         initializeNativeLibraries();
     }
@@ -152,9 +164,21 @@ public class HadoopClassLoader extends URLClassLoader {
                 Vector vector = U.field(ldr, "nativeLibraries");
 
                 for (Object lib : vector) {
-                    String libName = U.field(lib, "name");
+                    String name = U.field(lib, "name");
 
-                    if (libName.contains(LIBHADOOP)) {
+                    boolean add = name.contains(LIBHADOOP);
+
+                    if (!add && libNames != null) {
+                        for (String libName : libNames) {
+                            if (libName != null && name.contains(libName)) {
+                                add = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (add) {
                         curVector.add(lib);
 
                         return;
@@ -280,6 +304,20 @@ public class HadoopClassLoader extends URLClassLoader {
 
             return defineClass(name, bytes, 0, bytes.length);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> getFromCache(String clsName) throws ClassNotFoundException {
+        Class<?> cls = cacheMap.get(clsName);
+
+        if (cls == null) {
+            Class old = cacheMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, this));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
     }
 
     /**
@@ -419,40 +457,6 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * @param name Variable name.
-     * @param dflt Default.
-     * @return Value.
-     */
-    private static String getEnv(String name, String dflt) {
-        String res = System.getProperty(name);
-
-        if (F.isEmpty(res))
-            res = System.getenv(name);
-
-        return F.isEmpty(res) ? dflt : res;
-    }
-
-    /**
-     * @param res Result.
-     * @param dir Directory.
-     * @param startsWith Starts with prefix.
-     * @throws MalformedURLException If failed.
-     */
-    private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws Exception {
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return startsWith == null || name.startsWith(startsWith);
-            }
-        });
-
-        if (files == null)
-            throw new IOException("Path is not a directory: " + dir);
-
-        for (File file : files)
-            res.add(file.toURI().toURL());
-    }
-
-    /**
      * @param urls URLs.
      * @return URLs.
      */
@@ -478,13 +482,6 @@ public class HadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * @return HADOOP_HOME Variable.
-     */
-    @Nullable public static String hadoopHome() {
-        return getEnv("HADOOP_PREFIX", getEnv("HADOOP_HOME", null));
-    }
-
-    /**
      * @return Collection of jar URLs.
      * @throws IgniteCheckedException If failed.
      */
@@ -500,34 +497,11 @@ public class HadoopClassLoader extends URLClassLoader {
             if (hadoopUrls != null)
                 return hadoopUrls;
 
-            hadoopUrls = new ArrayList<>();
-
-            String hadoopPrefix = hadoopHome();
-
-            if (F.isEmpty(hadoopPrefix))
-                throw new IgniteCheckedException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
-                    "HADOOP_HOME environment variables must be set.");
-
-            String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
-            String hdfsHome = getEnv("HADOOP_HDFS_HOME", hadoopPrefix + "/share/hadoop/hdfs");
-            String mapredHome = getEnv("HADOOP_MAPRED_HOME", hadoopPrefix + "/share/hadoop/mapreduce");
-
             try {
-                addUrls(hadoopUrls, new File(commonHome + "/lib"), null);
-                addUrls(hadoopUrls, new File(hdfsHome + "/lib"), null);
-                addUrls(hadoopUrls, new File(mapredHome + "/lib"), null);
-
-                addUrls(hadoopUrls, new File(hdfsHome), "hadoop-hdfs-");
-
-                addUrls(hadoopUrls, new File(commonHome), "hadoop-common-");
-                addUrls(hadoopUrls, new File(commonHome), "hadoop-auth-");
-                addUrls(hadoopUrls, new File(commonHome + "/lib"), "hadoop-auth-");
-
-                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-common");
-                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-core");
+                hadoopUrls = HadoopClasspathUtils.classpathUrls();
             }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to resolve Hadoop JAR locations: " + e.getMessage(), e);
             }
 
             hadoopJars = hadoopUrls;
