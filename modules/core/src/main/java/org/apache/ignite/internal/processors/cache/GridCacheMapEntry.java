@@ -774,10 +774,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             taskName,
             expirePlc,
             false,
-            keepBinary);
+            keepBinary,
+            null);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public T2<CacheObject, GridCacheVersion> innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
@@ -789,7 +791,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary)
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (T2<CacheObject, GridCacheVersion>)innerGet0(ver,
             tx,
@@ -803,7 +806,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             taskName,
             expiryPlc,
             true,
-            keepBinary);
+            keepBinary,
+            readerArgs);
     }
 
     /** {@inheritDoc} */
@@ -821,7 +825,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean retVer,
-        boolean keepBinary
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !(retVer && readThrough);
 
@@ -928,6 +933,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Cache version for optimistic check.
             startVer = ver;
+
+            addReaderIfNeed(readerArgs);
         }
 
         if (ret != null) {
@@ -3551,7 +3558,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer)
+        GridCacheVersion newVer,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
 
         checkObsolete();
@@ -3585,11 +3593,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // Version does not change for load ops.
                 update(val, expTime, ttl, newVer, true);
 
+                addReaderIfNeed(readerArgs);
+
                 return newVer;
             }
         }
 
         return null;
+    }
+
+    private void addReaderIfNeed(@Nullable ReaderArguments readerArgs) throws GridCacheEntryRemovedException {
+        if (readerArgs != null) {
+            if (this instanceof GridDhtCacheEntry && !deleted()) {
+                ((GridDhtCacheEntry)this).addReader(readerArgs.reader(),
+                    readerArgs.messageId(), readerArgs.topologyVersion());
+            }
+        }
     }
 
     /**

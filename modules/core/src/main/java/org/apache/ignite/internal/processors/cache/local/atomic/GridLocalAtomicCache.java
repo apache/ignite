@@ -526,7 +526,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 expiry,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                null);
 
                             if (res != null) {
                                 v = res.get1();

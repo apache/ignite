@@ -437,7 +437,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             null,
                             resolveTaskName(),
                             expiryPlc,
-                            txEntry == null ? keepBinary : txEntry.keepBinary());
+                            txEntry == null ? keepBinary : txEntry.keepBinary(),
+                            null);
 
                         if (res == null) {
                             if (misses == null)
@@ -476,7 +477,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null);
+                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null, null);
 
                                     boolean set = setVer != null;
 
@@ -1231,7 +1232,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     transformClo,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary());
+                                    txEntry.keepBinary(),
+                                    null);
 
                                 if (res != null) {
                                     val = res.get1();
@@ -1315,7 +1317,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
-                                        !deserializeBinary) : null;
+                                        !deserializeBinary,
+                                        null) : null;
 
                                 if (res != null) {
                                     val = res.get1();
@@ -1665,7 +1668,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             transformClo,
                                             resolveTaskName(),
                                             null,
-                                            txEntry.keepBinary());
+                                            txEntry.keepBinary(),
+                                            null);
 
                                         if (res != null) {
                                             val = res.get1();
@@ -2389,7 +2393,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         entryProcessor,
                                         resolveTaskName(),
                                         null,
-                                        keepBinary) : null;
+                                        keepBinary,
+                                        null) : null;
 
                                 if (res != null) {
                                     old = res.get1();

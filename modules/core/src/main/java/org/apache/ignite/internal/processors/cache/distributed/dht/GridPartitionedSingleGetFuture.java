@@ -384,7 +384,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                             null,
                             taskName,
                             expiryPlc,
-                            true);
+                            true,
+                            null);
 
                         if (res != null) {
                             v = res.get1();

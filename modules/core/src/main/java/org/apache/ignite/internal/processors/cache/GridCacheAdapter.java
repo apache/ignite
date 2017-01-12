@@ -1804,7 +1804,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
-     * @param closures Closure map that will be called on each entry.
+     * @param readerArgMap TODO
      * @param readThrough Read through.
      * @param checkTx Check tx.
      * @param subjId Subj Id.
@@ -1819,7 +1819,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @see GridCacheAdapter#getAllAsync(Collection)
      */
     public final IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
-        @Nullable final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures,
+        @Nullable final Map<KeyCacheObject, ReaderArguments> readerArgMap,
         boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1837,7 +1837,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
-            closures,
+            readerArgMap,
             readThrough,
             checkTx,
             subjId,
@@ -1852,7 +1852,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
-     * @param closures Closure map that will be called on each entry.
+     * @param readerArgMap TODO
      * @param readThrough Read-through flag.
      * @param checkTx Check local transaction flag.
      * @param subjId Subject ID.
@@ -1867,7 +1867,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
         @Nullable final Collection<KeyCacheObject> keys,
-        @Nullable final Map<KeyCacheObject, IgniteInClosure<GridCacheEntryEx>> closures,
+        @Nullable final Map<KeyCacheObject, ReaderArguments> readerArgMap,
         final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1915,6 +1915,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 Map<KeyCacheObject, GridCacheVersion> misses = null;
 
                 for (KeyCacheObject key : keys) {
+                    ReaderArguments readerArgs = readerArgMap == null ? null : readerArgMap.get(key);
+
                     while (true) {
                         GridCacheEntryEx entry = needEntry ? entryEx(key) : peekEx(key);
 
@@ -1937,7 +1939,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 null,
                                 taskName,
                                 expiry,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                readerArgs);
 
                             if (res == null) {
                                 if (storeEnabled) {
@@ -2004,11 +2007,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                         CacheObject cacheVal = ctx.toCacheObject(val);
 
+                                        ReaderArguments readerArgs = readerArgMap == null ? null : readerArgMap.get(key);
+
                                         while (true) {
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null);
+                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null, readerArgs);
 
                                                 boolean set = verSet != null;
 
@@ -2029,13 +2034,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         deserializeBinary,
                                                         false,
                                                         needVer ? set ? verSet : ver : null);
-                                                }
-
-                                                if (closures != null) {
-                                                    final IgniteInClosure clos = closures.get(key);
-
-                                                    if (clos != null)
-                                                        clos.apply(entry);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

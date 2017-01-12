@@ -20,7 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -34,6 +38,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -81,7 +87,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     public void testAtomicUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
 
-        checkNear(null, null);
+        checkNear(null, null, false);
     }
 
     /**
@@ -90,7 +96,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     public void testTransactionAtomicUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
 
-        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, false);
     }
 
     /**
@@ -100,7 +106,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
 
-        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, false);
     }
 
     /**
@@ -110,7 +116,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
 
-        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED, false);
     }
 
     /**
@@ -120,7 +126,55 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
 
-        checkNear(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
+        checkNear(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, false);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testAsyncAtomicUpdateNear() throws Exception {
+        cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
+
+        checkNear(null, null, true);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testAsyncTransactionAtomicUpdateNear() throws Exception {
+        cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
+
+        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, true);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testAsyncPessimisticRepeatableReadUpdateNear() throws Exception {
+        cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
+            new NearCacheConfiguration<String, String>());
+
+        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, true);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testAsyncPessimisticReadCommittedUpdateNear() throws Exception {
+        cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
+            new NearCacheConfiguration<String, String>());
+
+        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED, true);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testAsyncOptimisticSerializableUpdateNear() throws Exception {
+        cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
+            new NearCacheConfiguration<String, String>());
+
+        checkNear(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, true);
     }
 
     /**
@@ -128,9 +182,11 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      * @param txIsolation Transaction isolation.
      * @throws Exception If fail.
      */
-    private void checkNear(TransactionConcurrency txConc, TransactionIsolation txIsolation) throws Exception {
-        checkNearSingle(txConc, txIsolation);
-        checkNearBatch(txConc, txIsolation);
+    private void checkNear(TransactionConcurrency txConc, TransactionIsolation txIsolation, boolean async) throws Exception {
+        checkNearSingle(txConc, txIsolation, async);
+        checkNearSingleConcurrent(txConc, txIsolation, async);
+        checkNearBatch(txConc, txIsolation, async);
+        checkNearBatchConcurrent(txConc, txIsolation, async);
     }
 
     /**
@@ -138,24 +194,27 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      * @param txIsolation Transaction isolation.
      * @throws Exception If fail.
      */
-    private void checkNearSingle(TransactionConcurrency txConc, TransactionIsolation txIsolation) throws Exception {
+    private void checkNearSingle(TransactionConcurrency txConc, TransactionIsolation txIsolation, final boolean async) throws Exception {
         final String key = "key";
 
         boolean tx = txConc != null && txIsolation != null;
+
+        final IgniteCache<String, String> clientCache = async ? this.cache.withAsync() : this.cache;
+        final IgniteCache<String, String> srvCache = async ? srv.<String, String>cache(CACHE_NAME).withAsync()
+            : srv.<String, String>cache(CACHE_NAME);
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Read from store.
-                    assertEquals(key, cache.get(key));
+                    assertEquals(key, getValue(clientCache, key, async));
 
                     return null;
                 }
             });
         }
         else
-            assertEquals(key, cache.get(key));
-
+            assertEquals(key, getValue(clientCache, key, async));
 
         final String updatedVal = "key_updated";
 
@@ -163,27 +222,26 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             doInTransaction(srv, txConc, txIsolation, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Update value.
-                    srv.cache(CACHE_NAME).put(key, updatedVal);
+                    putValue(srvCache, key, updatedVal, async);
 
                     return null;
                 }
             });
         }
         else
-            srv.cache(CACHE_NAME).put(key, updatedVal);
+            putValue(srvCache, key, updatedVal, async);
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    assertEquals(updatedVal, cache.get(key));
+                    assertEquals(updatedVal, getValue(clientCache, key, async));
 
                     return null;
                 }
             });
         }
         else
-            assertEquals(updatedVal, cache.get(key));
-
+            assertEquals(updatedVal, getValue(clientCache, key, async));
     }
 
     /**
@@ -191,7 +249,113 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      * @param txIsolation Transaction isolation.
      * @throws Exception If fail.
      */
-    private void checkNearBatch(TransactionConcurrency txConc, TransactionIsolation txIsolation) throws Exception {
+    private void checkNearSingleConcurrent(final TransactionConcurrency txConc, final TransactionIsolation txIsolation,
+        final boolean async) throws Exception {
+        for (int i = 0; i < 10; i++) {
+            final String key = String.valueOf(new Random().nextInt());
+
+            boolean tx = txConc != null && txIsolation != null;
+
+            final IgniteCache<String, String> clientCache = async ? this.cache.withAsync() : this.cache;
+            final IgniteCache<String, String> srvCache = async ? srv.<String, String>cache(CACHE_NAME).withAsync()
+                : srv.<String, String>cache(CACHE_NAME);
+
+            final CountDownLatch storeLatch = new CountDownLatch(1);
+
+            final AtomicReference<String> val = new AtomicReference<>();
+
+            final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    storeLatch.await();
+
+                    val.set(getValue(clientCache, key, async));
+
+                    System.out.println("== get store");
+
+                    return null;
+                }
+            });
+
+
+            IgniteInternalFuture<Object> fut2 = null;
+
+            if (!tx) {
+                // Doesn't work on transactional cache.
+                fut2 = GridTestUtils.runAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        storeLatch.await();
+
+                        removeValue(async, key, srvCache);
+
+                        return null;
+                    }
+                });
+            }
+
+            final IgniteInternalFuture<Object> fut3 = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    storeLatch.await();
+
+                    putValue(srvCache, key, "other", async);
+
+                    return null;
+                }
+            });
+
+            storeLatch.countDown();
+
+            fut1.get();
+
+            if (!tx)
+                fut2.get();
+
+            fut3.get();
+
+            final String srvVal = getValue(srvCache, key, async);
+            final String clientVal = getValue(clientCache, key, async);
+
+            assertEquals(srvVal, clientVal);
+        }
+    }
+
+    private static void removeValue(final boolean async, final String key, final IgniteCache<String, String> cache) {
+        cache.remove(key);
+
+        if (async)
+            cache.future().get();
+    }
+
+    private void putValue(final IgniteCache<String, String> cache, final String key, final String val,
+        final boolean async) {
+        cache.put(key, val);
+
+        if (async)
+            cache.future().get();
+    }
+
+    private static String getValue(final IgniteCache<String, String> cache, final String key, final boolean async) {
+        String res = cache.get(key);
+
+        if (async)
+            res = cache.<String>future().get();
+        return res;
+    }
+
+    private static Map<String, String> getValues(final IgniteCache<String, String> cache, final Set<String> keys, final boolean async) {
+        Map<String, String> res = cache.getAll(keys);
+
+        if (async)
+            res = cache.<Map<String, String>>future().get();
+
+        return res;
+    }
+
+    /**
+     * @param txConc Transaction concurrency.
+     * @param txIsolation Transaction isolation.
+     * @throws Exception If fail.
+     */
+    private void checkNearBatch(TransactionConcurrency txConc, TransactionIsolation txIsolation, final boolean async) throws Exception {
         final Map<String, String> data1 = new HashMap<>();
         final Map<String, String> data2 = new HashMap<>();
 
@@ -200,46 +364,141 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             data2.put(String.valueOf(i), "other");
         }
 
+        final IgniteCache<String, String> clientCache = async ? this.cache.withAsync() : this.cache;
+        final IgniteCache<String, String> srvCache = async ? srv.<String, String>cache(CACHE_NAME).withAsync()
+            : srv.<String, String>cache(CACHE_NAME);
+
         boolean tx = txConc != null && txIsolation != null;
 
         // Read from store.
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    assertEquals(data1, cache.getAll(data1.keySet()));
+                    assertEquals(data1, getValues(clientCache, data1.keySet(), async));
 
                     return null;
                 }
             });
         }
         else
-            assertEquals(data1, cache.getAll(data1.keySet()));
+            assertEquals(data1, getValues(clientCache, data1.keySet(), async));
 
         // Update value.
         if (tx) {
             doInTransaction(srv, txConc, txIsolation, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    srv.cache(CACHE_NAME).putAll(data2);
+                    putValues(srvCache, data2, async);
 
                     return null;
                 }
             });
         }
         else
-            srv.cache(CACHE_NAME).putAll(data2);
+            putValues(srvCache, data2, async);
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    assertEquals(data2, cache.getAll(data2.keySet()));
+                    assertEquals(data2, getValues(clientCache, data2.keySet(), async));
 
                     return null;
                 }
             });
         }
         else
-            assertEquals(data2, cache.getAll(data2.keySet()));
+            assertEquals(data2, getValues(clientCache, data2.keySet(), async));
+    }
 
+    /**
+     * @param txConc Transaction concurrency.
+     * @param txIsolation Transaction isolation.
+     * @throws Exception If fail.
+     */
+    private void checkNearBatchConcurrent(TransactionConcurrency txConc, TransactionIsolation txIsolation,
+        final boolean async) throws Exception {
+        final Map<String, String> data1 = new HashMap<>();
+        final Map<String, String> data2 = new HashMap<>();
+
+        for (int j = 0; j < 10; j++) {
+            data1.clear();
+            data2.clear();
+
+            for (int i = j * 10; i < j * 10 + 10; i++) {
+                data1.put(String.valueOf(i), String.valueOf(i));
+                data2.put(String.valueOf(i), "other");
+            }
+
+            final IgniteCache<String, String> clientCache = async ? this.cache.withAsync() : this.cache;
+            final IgniteCache<String, String> srvCache = async ? srv.<String, String>cache(CACHE_NAME).withAsync()
+                : srv.<String, String>cache(CACHE_NAME);
+
+            boolean tx = txConc != null && txIsolation != null;
+
+            CountDownLatch latch = new CountDownLatch(1);
+
+            final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
+
+                    getValues(clientCache, data1.keySet(), async);
+
+                    return null;
+                }
+            });
+
+            IgniteInternalFuture<Object> fut2 =  GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
+
+                    putValues(srvCache, data2, async);
+
+                    return null;
+                }
+            });
+
+            IgniteInternalFuture<Object> fut3 = null;
+
+            if (!tx) {
+                // Doesn't work on transactional cache.
+                fut3 = GridTestUtils.runAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        latch.await();
+
+                        removeValues(srvCache, data1.keySet(), async);
+
+                        return null;
+                    }
+                });
+            }
+
+            latch.countDown();
+
+            if (!tx)
+                fut3.get();
+
+            fut1.get();
+            fut2.get();
+
+            final Map<String, String> srvVals = getValues(srvCache, data1.keySet(), async);
+            final Map<String, String> clientVals = getValues(clientCache, data1.keySet(), async);
+
+            assertEquals(srvVals, clientVals);
+        }
+    }
+
+    private static void putValues(final IgniteCache<String, String> cache, final Map<String, String> data,
+        final boolean async) {
+        cache.putAll(data);
+
+        if (async)
+            cache.future().get();
+    }
+
+    private static void removeValues(IgniteCache<String, String> cache, Set<String> keys, boolean async) {
+        cache.removeAll(keys);
+
+        if (async)
+            cache.future().get();
     }
 
     /**
