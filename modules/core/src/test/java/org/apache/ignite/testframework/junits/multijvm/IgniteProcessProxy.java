@@ -130,9 +130,13 @@ public class IgniteProcessProxy implements IgniteEx {
             filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
 
         for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+            //System.out.println("### [" + arg + "]");
+
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms")
+                  || arg.startsWith("-XX")
+                  // TODO: looks like classpath args never go there:
+                  //arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                  || (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
                 filteredJvmArgs.add(arg);
         }
 
