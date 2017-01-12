@@ -259,7 +259,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        enabled = GridQueryProcessor.isEnabled(ccfg);
+        enabled = GridQueryProcessor.isEnabled(ccfg) || cctx.kernalContext().indexing().enabled();
 
         qryTopVer = cctx.startTopologyVersion();
 
