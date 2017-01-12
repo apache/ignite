@@ -1026,6 +1026,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         CacheConfiguration ccfg = cacheConfiguration("testCache");
 
+        ccfg.setCacheStoreFactory(FactoryBuilder.factoryOf(GridCacheTestStore.class));
 //        ccfg.setExpiryPolicyFactory( CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
