@@ -2143,7 +2143,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (obj instanceof BinaryObjectBuilder) {
                 BinaryObjectBuilder obj0 = (BinaryObjectBuilder)obj;
 
-                return obj0.getField(name());
+                return obj0.getField(propName);
             }
             else
                 throw new IgniteCheckedException("Unexpected type of binary object to get field value from [obj=" + obj
@@ -2179,7 +2179,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!(obj instanceof BinaryObjectBuilder))
                 throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-            setValue0((BinaryObjectBuilder) obj, name(), propVal, type());
+            setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
 
             if (needsBuild) {
                 obj = ((BinaryObjectBuilder) obj).build();
@@ -2187,7 +2187,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 assert parent != null;
 
                 // And now let's set this newly constructed object to parent
-                setValue0((BinaryObjectBuilder) srcObj, parent.name(), obj, obj.getClass());
+                setValue0((BinaryObjectBuilder) srcObj, parent.propName, obj, obj.getClass());
             }
         }
 
