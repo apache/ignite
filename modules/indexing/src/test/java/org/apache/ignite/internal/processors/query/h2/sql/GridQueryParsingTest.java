@@ -383,10 +383,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("update Person p set name='Peter', old = length('zzz') limit 20");
         checkQuery("update Person p set name=DEFAULT, old = null limit ?");
         checkQuery("update Person p set name=? where old >= ? and old < ? limit ?");
-        checkQuery("update Person p set name=(select a.Street from Address a where a.id=p.addrId), old = (select 42)" +
+        checkQuery("update Person p set name=(select a.Street from \"addr\".Address a where a.id=p.addrId), old = (select 42)" +
             " where old = sqrt(?)");
         checkQuery("update Person p set (name, old) = (select 'Peter', 42)");
-        checkQuery("update Person p set (name, old) = (select street, id from Address where id > 5 and id <= ?)");
+        checkQuery("update Person p set (name, old) = (select street, id from \"addr\".Address where id > 5 and id <= ?)");
     }
 
     /**
