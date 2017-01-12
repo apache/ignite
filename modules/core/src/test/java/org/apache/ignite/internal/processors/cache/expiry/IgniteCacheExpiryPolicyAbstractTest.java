@@ -36,24 +36,30 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1002,6 +1008,42 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 62_000L, true);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearExpiresWithCacheStore() throws Exception {
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
+
+        nearCache = true;
+
+        startGridsMultiThreaded(gridCount());
+
+        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+
+        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
+
+        Ignite client = startGrid("client", clientCfg);
+
+        CacheConfiguration ccfg = cacheConfiguration("testCache");
+
+//        ccfg.setExpiryPolicyFactory( CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
+
+        Integer key = 1;
+
+        cache.put(key, 1);
+
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
+        assertEquals(1, cache.get(key));
+
+        waitExpired(key);
+
+        for(int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
+
+        assertEquals(null, cache.get(key));
+    }
     /**
      * @return Test keys.
      * @throws Exception If failed.
