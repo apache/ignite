@@ -50,6 +50,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -57,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1026,7 +1026,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void testNearExpires() throws Exception {
+    public void testNearExpiresWithCacheStore() throws Exception {
         factory =  new FactoryBuilder.SingletonFactory<>(new TestPolicy(1100L, 0L, 0L));
 
         startGrids();
@@ -1039,14 +1039,21 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Ignite client = startGrid("client", clientCfg);
 
-        IgniteCache<Object, Object> cache = client.getOrCreateNearCache(null, new NearCacheConfiguration<>());
+        CacheConfiguration ccfg = cacheConfiguration("testCache").setCacheStoreFactory(
+            new FactoryBuilder.SingletonFactory<>(new GridCacheTestStore())
+        );
+
+        ccfg.setStoreKeepBinary(true);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(
+            ccfg);
 
         Integer key = 1;
 
         cache.put(key, 1);
 
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
         assertEquals(1, cache.get(key));
-//        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
 
         waitExpired(key);
 
