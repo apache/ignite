@@ -1050,17 +1050,17 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Integer key = 1;
 
-        jcache(0).put(key, 1); // Put on server node
+        //Put on server node
+        jcache(0).put(key, 1);
 
-        assertEquals(1, cache.get(key)); // Make entry cached in NearCache
+        //Make entry cached in client NearCache
+        assertEquals(1, cache.get(key));
 
         assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
 
         waitExpired(key);
 
-        for(int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek(key, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
-
+        //Check client NearCache.
         assertNull(cache.localPeek(key,CachePeekMode.NEAR));
     }
 
