@@ -56,9 +56,7 @@ namespace ignite
                 loadedModules(),
                 rpc(rpc)
             {
-                Module current = common::dynamic::GetCurrent();
-
-                RegisterModule(current);
+                // No-op.
             }
 
             /**
@@ -91,9 +89,6 @@ namespace ignite
                 RegisterModule(module);
             }
 
-        private:
-            IGNITE_NO_COPY_ASSIGNMENT(ModuleManager);
-
             /**
              * Register module in ModuleManager.
              *
@@ -110,6 +105,9 @@ namespace ignite
                 if (callback)
                     callback(rpc);
             }
+
+        private:
+            IGNITE_NO_COPY_ASSIGNMENT(ModuleManager);
 
             /**
              * Get callback that inits Ignite module.

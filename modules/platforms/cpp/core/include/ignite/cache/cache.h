@@ -1484,7 +1484,7 @@ namespace ignite
 
                 // We need to store job here because In3Operation class stores
                 // references.
-                int64_t jobId = P::GetJobId();
+                int64_t jobId = GetRpcId<P>();
 
                 impl::In3Operation<int64_t, K, ProcessorHolder> inOp(jobId, key, procHolder);
                 impl::Out1Operation<R> outOp;

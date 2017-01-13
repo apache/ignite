@@ -109,16 +109,6 @@ public:
         return num;
     }
 
-    /**
-     * Get Job Id.
-     *
-     * @return Job id.
-     */
-    static int64_t GetJobId()
-    {
-        return 100500;
-    }
-
 private:
     /** Number to substract. */
     int num;
@@ -228,16 +218,6 @@ public:
     double GetScale() const
     {
         return scale;
-    }
-
-    /**
-     * Get Job Id.
-     *
-     * @return Job id.
-     */
-    static int64_t GetJobId()
-    {
-        return 42;
     }
 
 private:
@@ -361,16 +341,6 @@ public:
         return toRemove;
     }
 
-    /**
-     * Get Job Id.
-     *
-     * @return Job id.
-     */
-    static int64_t GetJobId()
-    {
-        return 1337;
-    }
-
 private:
     /** Char to remove. */
     char toRemove;
@@ -406,11 +376,36 @@ namespace ignite
     }
 }
 
-IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& im)
+/*
+ * Specializing RPC IDs for the classes. It's needed for all the remotely
+ * callable classes.
+ */
+namespace ignite
 {
-    im.RegisterCacheEntryProcessor<CacheEntryModifier>();
-    im.RegisterCacheEntryProcessor<Divisor>();
-    im.RegisterCacheEntryProcessor<CharRemover>();
+    template<>
+    int64_t GetRpcId<CacheEntryModifier>()
+    {
+        return 100500;
+    }
+
+    template<>
+    int64_t GetRpcId<Divisor>()
+    {
+        return 42;
+    }
+
+    template<>
+    int64_t GetRpcId<CharRemover>()
+    {
+        return 1337;
+    }
+}
+
+IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
+{
+    igniteRpc.RegisterCacheEntryProcessor<CacheEntryModifier>();
+    igniteRpc.RegisterCacheEntryProcessor<Divisor>();
+    igniteRpc.RegisterCacheEntryProcessor<CharRemover>();
 }
 
 /**

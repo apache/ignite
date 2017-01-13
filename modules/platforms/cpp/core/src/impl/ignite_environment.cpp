@@ -189,8 +189,10 @@ namespace ignite
             latch.CountDown();
 
             jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
-
             metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
+
+            common::dynamic::Module currentModule = common::dynamic::GetCurrent();
+            moduleMgr.Get()->RegisterModule(currentModule);
         }
 
         const char* IgniteEnvironment::InstanceName() const
@@ -326,7 +328,7 @@ namespace ignite
             if (!reader.TryReadObject<int64_t>(procId))
                 throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
 
-            bool invoked = rpc.Get()->InvokeCacheEntryProcessorById(procId, reader, writer);
+            bool invoked = rpc.Get()->InvokeCallbackById(procId, reader, writer);
 
             if (!invoked)
                 throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,

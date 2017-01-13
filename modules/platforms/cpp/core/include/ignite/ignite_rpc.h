@@ -25,9 +25,12 @@
 
 namespace ignite
 {
+    template<typename T>
+    int64_t GetRpcId();
+
     /**
      * %Ignite RPC.
-     * Used to register invokable classes.
+     * Used to register callable classes.
      */
     class IGNITE_IMPORT_EXPORT IgniteRpc
     {
@@ -86,7 +89,7 @@ namespace ignite
             impl::IgniteRpcImpl *im = impl.Get();
 
             if (im)
-                im->RegisterCacheEntryProcessor(P::GetJobId(), &P::CacheEntryProcessor::InternalProcess, err);
+                im->RegisterCallback(GetRpcId<P>(), &P::CacheEntryProcessor::InternalProcess, err);
             else
             {
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,

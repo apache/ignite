@@ -21,11 +21,9 @@
 #include <map>
 
 #include <ignite/common/common.h>
-#include <ignite/cache/cache_entry_processor.h>
 
 #include <ignite/impl/binary/binary_reader_impl.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
-#include <ignite/impl/cache/cache_entry_processor_holder.h>
 
 namespace ignite
 {
@@ -33,38 +31,38 @@ namespace ignite
     {
         /**
          * Ignite RPC implementation.
-         * Used to register and invoke cache entry processors.
+         *
+         * Used to register and invoke callbacks.
          */
         class IgniteRpcImpl
         {
-            typedef void (EntryProcessor)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
+            typedef void (Callback)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
 
         public:
             /**
              * Default constructor.
              */
-            IgniteRpcImpl() : processors()
+            IgniteRpcImpl() : callbacks()
             {
                 // No-op.
             }
 
             /**
-             * Invoke cache entry processor using provided ID.
+             * Invoke callback using provided ID.
              *
-             * Deserializes entry and processor itself, invokes processor and
+             * Deserializes data and callback itself, invokes callback and
              * serializes processing result using providede reader and writer.
              *
              * @param id Processor ID.
              * @param reader Reader.
              * @param writer Writer.
-             * @return True if processor is registered and false otherwise.
+             * @return True if callback is registered and false otherwise.
              */
-            bool InvokeCacheEntryProcessorById(int64_t id, binary::BinaryReaderImpl& reader,
-                binary::BinaryWriterImpl& writer)
+            bool InvokeCallbackById(int64_t id, binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer)
             {
-                std::map<int64_t, EntryProcessor*>::iterator it = processors.find(id);
+                std::map<int64_t, Callback*>::iterator it = callbacks.find(id);
 
-                if (it != processors.end())
+                if (it != callbacks.end())
                 {
                     it->second(reader, writer);
 
@@ -81,22 +79,29 @@ namespace ignite
              *     the given ID.
              *
              * @param id Identifier for processor to be associated with.
-             * @param proc Processor.
+             * @param proc Callback.
              */
-            void RegisterCacheEntryProcessor(int64_t id, EntryProcessor* proc, IgniteError& err)
+            void RegisterCallback(int64_t id, Callback* proc, IgniteError& err)
             {
-                if (processors.find(id) != processors.end())
-                    err = IgniteError(IgniteError::IGNITE_ERR_ENTRY_PROCESSOR,
-                        "Entry processor with the specified id is already registred.");
+                if (callbacks.find(id) != callbacks.end())
+                {
+                    std::stringstream builder;
 
-                processors[id] = proc;
+                    builder << "Trying to register multiple PRC callbacks with the same ID. [id=" << id << ']';
+
+                    err = IgniteError(IgniteError::IGNITE_ERR_ENTRY_PROCESSOR, builder.str().c_str());
+
+                    return;
+                }
+
+                callbacks[id] = proc;
             }
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(IgniteRpcImpl);
 
-            /** Registered cache entry processors. */
-            std::map<int64_t, EntryProcessor*> processors;
+            /** Registered callbacks. */
+            std::map<int64_t, Callback*> callbacks;
         };
     }
 }

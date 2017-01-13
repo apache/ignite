@@ -234,6 +234,7 @@ namespace ignite
                 static std::string name;
                 static common::concurrent::CriticalSection initLock;
 
+                // Name has been constructed already. Return it.
                 if (!name.empty())
                     return name;
 
@@ -242,15 +243,16 @@ namespace ignite
                 if (!name.empty())
                     return name;
 
+                // Constructing name here.
                 BinaryType<P> p;
 
                 std::string procName = p.GetTypeName();
 
-                // -1 is for unnessecary null byte at the end.
+                // -1 is for unnessecary null byte at the end of the C-string.
                 name.reserve(sizeof("CacheEntryProcessorHolder<>") - 1 + procName.size());
 
-                // Processor name is enough for identification as it is forbidden to
-                // register the same processor type several times.
+                // Processor name is enough for identification as it is
+                // forbidden to register the same processor type several times.
                 name.append("CacheEntryProcessorHolder<").append(procName).push_back('>');
 
                 return name;
