@@ -49,5 +49,10 @@ namespace ignite
 
         return transactions::Transactions(txImpl);
     }
+
+    IgniteRpc Ignite::GetRpc()
+    {
+        return impl.Get()->GetRpc();
+    }
 }
 

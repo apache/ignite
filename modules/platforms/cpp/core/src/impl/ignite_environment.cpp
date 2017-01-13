@@ -270,7 +270,7 @@ namespace ignite
             return registry;
         }
 
-        IgniteRpc IgniteEnvironment::GetIgniteRpc()
+        IgniteRpc IgniteEnvironment::GetRpc()
         {
             return IgniteRpc(rpc);
         }

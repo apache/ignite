@@ -54,6 +54,11 @@ namespace ignite
             return env.Get()->Context();
         }
 
+        IgniteRpc IgniteImpl::GetRpc()
+        {
+            return env.Get()->GetRpc();
+        }
+
         IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
         {
             SP_TransactionsImpl res;

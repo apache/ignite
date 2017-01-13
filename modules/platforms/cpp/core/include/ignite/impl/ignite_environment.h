@@ -180,7 +180,7 @@ namespace ignite
              *
              * @return IgniteRpc instance.
              */
-            IgniteRpc GetIgniteRpc();
+            IgniteRpc GetRpc();
 
             /**
              * Acquire ownership for the object.

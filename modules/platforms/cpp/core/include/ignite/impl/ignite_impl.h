@@ -143,6 +143,13 @@ namespace ignite
             }
 
             /**
+             * Get ignite RPC.
+             *
+             * @return IgniteRpc class instance.
+             */
+            IgniteRpc GetRpc();
+
+            /**
              * Get instance of the implementation from the proxy class.
              * Internal method. Should not be used by user.
              *
