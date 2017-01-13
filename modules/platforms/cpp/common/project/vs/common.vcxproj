@@ -172,7 +172,6 @@
     <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\bits.h" />
-    <ClInclude Include="..\..\include\ignite\common\optional.h" />
     <ClInclude Include="..\..\include\ignite\common\reference_impl.h" />
     <ClInclude Include="..\..\include\ignite\common\utils.h" />
     <ClInclude Include="..\..\include\ignite\date.h" />

@@ -24,16 +24,17 @@ nobase_include_HEADERS = \
     ignite/impl/operations.h \
     ignite/impl/ignite_environment.h \
     ignite/impl/ignite_impl.h \
-    ignite/impl/invoke_manager_impl.h \
     ignite/impl/cache/query/query_fields_row_impl.h \
     ignite/impl/cache/query/query_impl.h \
     ignite/impl/cache/cache_impl.h \
+    ignite/impl/cache/cache_entry_processor_holder.h \
     ignite/impl/cache/query/query_batch.h \
     ignite/impl/interop/interop_target.h \
     ignite/impl/interop/interop_external_memory.h \
     ignite/impl/handle_registry.h \
     ignite/impl/transactions/transaction_impl.h \
     ignite/impl/transactions/transactions_impl.h \
+    ignite/impl/cluster/cluster_group_impl.h \
     ignite/impl/ignite_rpc_impl.h \
     ignite/impl/module_manager.h \
     ignite/cache/query/query_fields_row.h \
@@ -48,6 +49,8 @@ nobase_include_HEADERS = \
     ignite/cache/cache.h \
     ignite/cache/cache_entry.h \
     ignite/cache/cache_peek_mode.h \
+    ignite/cache/cache_entry_processor.h \
+    ignite/cache/mutable_cache_entry.h \
     ignite/ignition.h \
     ignite/ignite_rpc.h \
     ignite/transactions/transaction.h \

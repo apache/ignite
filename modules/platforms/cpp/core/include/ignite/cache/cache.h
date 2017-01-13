@@ -45,39 +45,6 @@
 #include "ignite/impl/module_manager.h"
 #include "ignite/ignite_error.h"
 
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
- * Begin declaration of the cache entry processor list. Should be placed in
- * the global namespace. Only one cache entry processor list per binary is
- * allowed.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN \
-    IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN_IMPL
-
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
- * End declaration of the cache entry processor list. Should be placed in
- * the global namespace. Only one cache entry processor list per binary is
- * allowed.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END \
-    IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END_IMPL
-
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE
- * Declare cache entry processor. Should be placed in the global namespace
- * between #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN and
- * #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END.
- *
- * @param ProcessorType Class to be declared as a processor.
- * @param KeyType Type of the cache key.
- * @param ValueType Type of the cache value.
- * @param ResultType Type of the resulting value.
- * @param ArgumentType Type of the argument.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(ProcessorType, KeyType, ValueType, ResultType, ArgumentType) \
-    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE_IMPL(ProcessorType, KeyType, ValueType, ResultType, ArgumentType)
-
 namespace ignite
 {
     namespace cache
@@ -1385,31 +1352,38 @@ namespace ignite
              *
              * Return value, processor and argument classes should all be
              * default-constructable, copy-constructable and assignable. Also,
-             * BinaryType template should be specialized for every class.
+             * BinaryType template should be specialized for custom every class.
              *
-             * Processor class should be listed as a cache entry processor using
-             * macros #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN,
-             * #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END and
-             * #IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE. See the example below for
-             * details:
+             * Processor class should be registered as a cache entry processor using
+             * IgniteRpc::RegisterCacheEntryProcessor() method. You can declare
+             * #IgniteModuleInit() function to register your cache processors upon
+             * module loading. There should be at most one instance of such function
+             * per module.
+             *
+             * See the example below for details:
              * @code{.cpp}
-             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
-             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor1, KeyType1, ValueType1, ResType1, ArgType1)
-             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor2, KeyType2, ValueType2, ResType2, ArgType2)
-             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor3, KeyType1, ValueType2, ResType1, ArgType3)
-             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
+             * {
+             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     // ...
+             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessorN>();
+             * }
              * @endcode
              *
-             * Additionally, equality operator should be defined for the cache
-             * value type, and for the processor class public methods with the
-             * following signatures should be defined:
+             * Additionally, processor class should be derived from the
+             * ignite::CacheEntryProcessor class, and for the processor class following
+             * template function should be specialized:
              * @code{.cpp}
-             * // Should return unique ID for every class.
-             * static int64_t GetJobId();
-             *
-             * // Main processing method. Takes cache entry and argument and
-             * // returns processing result.
-             * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
+             * namespace ignite
+             * {
+             *     template<>
+             *     int64_t GetRpcId<MyProcessor1>()
+             *     {
+             *         // Returned value should be unique among all registered callables
+             *         return 123;
+             *     }
+             * }
              * @endcode
              *
              * @throw IgniteError on fail.
@@ -1440,31 +1414,38 @@ namespace ignite
              *
              * Return value, processor and argument classes should all be
              * default-constructable, copy-constructable and assignable. Also,
-             * BinaryType template should be specialized for every class.
+             * BinaryType template should be specialized for custom every class.
              *
-             * Processor class should be listed as a cache entry processor using
-             * macros #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN,
-             * #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END and
-             * #IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE. See the example below for
-             * details:
+             * Processor class should be registered as a cache entry processor using
+             * IgniteRpc::RegisterCacheEntryProcessor() method. You can declare
+             * #IgniteModuleInit() function to register your cache processors upon
+             * module loading. There should be at most one instance of such function
+             * per module.
+             *
+             * See the example below for details:
              * @code{.cpp}
-             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
-             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor1, KeyType1, ValueType1, ResType1, ArgType1)
-             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor2, KeyType2, ValueType2, ResType2, ArgType2)
-             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor3, KeyType1, ValueType2, ResType1, ArgType3)
-             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
+             * {
+             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     // ...
+             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessorN>();
+             * }
              * @endcode
              *
-             * Additionally, equality operator should be defined for the cache
-             * value type, and for the processor class public methods with the
-             * following signatures should be defined:
+             * Additionally, processor class should be derived from the
+             * ignite::CacheEntryProcessor class, and for the processor class following
+             * template function should be specialized:
              * @code{.cpp}
-             * // Should return unique ID for every class.
-             * static int64_t GetJobId();
-             *
-             * // Main processing method. Takes cache entry and argument and
-             * // returns processing result.
-             * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
+             * namespace ignite
+             * {
+             *     template<>
+             *     int64_t GetRpcId<MyProcessor1>()
+             *     {
+             *         // Returned value should be unique among all registered callables
+             *         return 123;
+             *     }
+             * }
              * @endcode
              *
              * Sets err param which should be checked for the operation result.
