@@ -227,7 +227,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         space = cctx.name();
 
-        enabled = isDefaultIndexerEnabled || cctx.kernalContext().indexing().enabled();
+        enabled = isDefaultIndexerEnabled || (cctx.kernalContext().indexing().enabled() && !CU.isSystemCache(space));
 
         maxIterCnt = ccfg.getMaxQueryIteratorsCount();
 

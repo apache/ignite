@@ -58,6 +58,10 @@ import org.jetbrains.annotations.Nullable;
  * Indexing Spi query test
  */
 public class IndexingSpiQuerySelfTest extends TestCase {
+    public static final String BINARY_CACHE_NAME = "test-binary-cache";
+
+    public static final String CACHE_NAME = "test-cache";
+
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         Ignition.stopAll(true);
@@ -73,7 +77,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
 
@@ -98,7 +102,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -121,7 +125,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<PersonKey, Person> ccfg = new CacheConfiguration<>("test-binary-cache");
+        CacheConfiguration<PersonKey, Person> ccfg = new CacheConfiguration<>(BINARY_CACHE_NAME);
 
         ccfg.setIndexedTypes(PersonKey.class, Person.class);
 
@@ -155,7 +159,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<PersonKey, Person> ccfg = new CacheConfiguration<>("test-binary-cache");
+        CacheConfiguration<PersonKey, Person> ccfg = new CacheConfiguration<>(BINARY_CACHE_NAME);
 
         ccfg.setIndexedTypes(PersonKey.class, Person.class);
 
@@ -187,7 +191,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
