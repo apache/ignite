@@ -158,6 +158,9 @@ public class GridCacheUtils {
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
     /** */
+    public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
+
+    /** */
     public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
 
     /** */
