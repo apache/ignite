@@ -224,7 +224,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a restart request.
      */
     public boolean restart() {
-        return true;
+        return restart;
     }
 
     /**

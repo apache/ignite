@@ -2081,6 +2081,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cache exception.
      */
     private RuntimeException cacheException(IgniteCheckedException e) {
+        GridFutureAdapter<Void> restartFut = this.restartFut.get();
+
+        if (restartFut != null && !restartFut.isDone() && e.hasCause(CacheStoppedException.class)) {
+            throw new IgniteCacheRestartingException(
+                    new IgniteFutureImpl<>(restartFut), "Cache is restarting: " + ctx.name());
+        }
+
         return CU.convertToCacheException(e);
     }
 
@@ -2162,10 +2169,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Previous projection set on this thread.
      */
     private CacheOperationContext onEnter(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
-        GridFutureAdapter restartFut = this.restartFut.get();
+        GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
-        if (restartFut != null && !restartFut.isDone())
-            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), "Cache is restarting: " + ctx.name());
+        if (restartFut != null && !restartFut.isDone()) {
+            throw new IgniteCacheRestartingException(
+                    new IgniteFutureImpl<>(restartFut), "Cache is restarting: " + ctx.name());
+        }
 
         return lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx);
     }
