@@ -49,6 +49,7 @@
     <Compile Include="Datagrid\EmployeeStorePredicate.cs" />
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStore.cs" />
+    <Compile Include="Datagrid\ScanQueryFilter.cs" />
     <Compile Include="Events\LocalListener.cs" />
     <Compile Include="Messaging\LocalListener.cs" />
     <Compile Include="Messaging\RemoteOrderedListener.cs" />
@@ -57,7 +58,6 @@
     <Compile Include="Binary\Account.cs" />
     <Compile Include="Binary\Address.cs" />
     <Compile Include="Binary\Employee.cs" />
-    <Compile Include="Binary\EmployeeKey.cs" />
     <Compile Include="Binary\Organization.cs" />
     <Compile Include="Binary\OrganizationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.ExamplesDll.Services;
-
 namespace Apache.Ignite.Examples.Services
 {
+    using Apache.Ignite.ExamplesDll.Services;
+
     /// <summary>
     /// Interface for service proxy interaction.
     /// Actual service class (<see cref="MapService{TK,TV}"/>) does not have to implement this interface. 

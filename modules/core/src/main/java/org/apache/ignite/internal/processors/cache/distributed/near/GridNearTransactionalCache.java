@@ -192,7 +192,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
-            /*force primary*/needVer,
+            /*force primary*/needVer || !ctx.config().isReadFromBackup(),
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
@@ -356,7 +356,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 nodeId,
                                 req.threadId(),
                                 req.version(),
-                                req.timeout(),
                                 tx != null,
                                 tx != null && tx.implicitSingle(),
                                 req.owned(entry.key())
@@ -577,9 +576,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     if (!primary.isLocal()) {
                                         assert req != null;
 
-                                        req.addKey(
-                                            entry.key(),
-                                            ctx);
+                                        req.addKey(entry.key(), ctx);
                                     }
                                     else
                                         locKeys.add(cacheKey);
