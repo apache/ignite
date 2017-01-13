@@ -1030,7 +1030,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * Put entry to server node and check how its expires in client NearCache
      * @throws Exception If failed.
      */
-    public void testNearExpiresWithCacheStore() throws Exception {
+    public void testNearExpiresOnClient() throws Exception {
         if(cacheMode() != PARTITIONED)
             return;
 
