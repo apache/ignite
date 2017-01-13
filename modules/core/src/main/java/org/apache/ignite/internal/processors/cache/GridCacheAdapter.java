@@ -2180,7 +2180,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         ctx.evicts().touch(peekEx(key0), topVer);
                 }
 
-                throw e;
+                return new GridFinishedFuture<>(e);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
