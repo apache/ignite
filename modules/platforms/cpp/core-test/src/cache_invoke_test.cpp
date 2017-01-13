@@ -405,7 +405,6 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
 {
     igniteRpc.RegisterCacheEntryProcessor<CacheEntryModifier>();
     igniteRpc.RegisterCacheEntryProcessor<Divisor>();
-    igniteRpc.RegisterCacheEntryProcessor<CharRemover>();
 }
 
 /**
@@ -539,6 +538,10 @@ BOOST_AUTO_TEST_CASE(TestSeveral)
  */
 BOOST_AUTO_TEST_CASE(TestStrings)
 {
+    IgniteRpc rpc = grid.GetRpc();
+
+    rpc.RegisterCacheEntryProcessor<CharRemover>();
+
     Cache<std::string, std::string> cache = grid.GetOrCreateCache<std::string, std::string>("TestCache");
 
     CharRemover cr('.');

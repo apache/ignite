@@ -20,7 +20,7 @@
 using namespace ignite::jni::java;
 using namespace ignite::impl::cluster;
 
-namespace ignite 
+namespace ignite
 {
     namespace impl
     {

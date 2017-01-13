@@ -31,7 +31,7 @@ using namespace ignite::impl::binary;
 using namespace ignite::binary;
 using namespace ignite::impl::cache::query::continuous;
 
-namespace ignite 
+namespace ignite
 {
     namespace impl
     {

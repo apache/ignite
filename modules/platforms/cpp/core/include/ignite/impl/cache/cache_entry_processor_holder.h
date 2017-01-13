@@ -59,7 +59,7 @@ namespace ignite
              * @return Cache entry state.
              */
             template<typename V>
-            MutableCacheEntryState GetMutableCacheEntryState(const V& valueBefore, bool existsBefore, 
+            MutableCacheEntryState GetMutableCacheEntryState(const V& valueBefore, bool existsBefore,
                                                              const V& valueAfter, bool existsAfter)
             {
                 if ((!existsBefore && existsAfter) ||
@@ -85,7 +85,7 @@ namespace ignite
              * // Should return unique ID for every class.
              * static int64_t GetJobId();
              *
-             * // Main processing method. Takes cache entry and argument and 
+             * // Main processing method. Takes cache entry and argument and
              * // returns processing result.
              * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
              * @endcode

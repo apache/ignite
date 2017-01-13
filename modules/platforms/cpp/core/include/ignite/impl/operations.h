@@ -79,7 +79,7 @@ namespace ignite
             }
         private:
             /** Value. */
-            const T val; 
+            const T val;
 
             IGNITE_NO_COPY_ASSIGNMENT(In1Operation)
         };
@@ -109,10 +109,10 @@ namespace ignite
             }
         private:
             /** First value. */
-            const T1& val1; 
+            const T1& val1;
 
             /** Second value. */
-            const T2& val2; 
+            const T2& val2;
 
             IGNITE_NO_COPY_ASSIGNMENT(In2Operation)
         };
@@ -181,7 +181,7 @@ namespace ignite
             }
         private:
             /** Value. */
-            const std::set<T>& val; 
+            const std::set<T>& val;
 
             IGNITE_NO_COPY_ASSIGNMENT(InSetOperation)
         };
@@ -214,7 +214,7 @@ namespace ignite
             }
         private:
             /** Value. */
-            const std::map<K, V>& val; 
+            const std::map<K, V>& val;
 
             IGNITE_NO_COPY_ASSIGNMENT(InMapOperation)
         };
@@ -244,7 +244,7 @@ namespace ignite
             }
         private:
             /** Key. */
-            const T& key;   
+            const T& key;
 
             /** Peek modes. */
             int32_t peekModes; 

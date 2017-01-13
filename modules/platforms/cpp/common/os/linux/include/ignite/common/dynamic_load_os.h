@@ -120,7 +120,7 @@ namespace ignite
 
             /**
              * Returns Module associated with the calling process itself.
-             * 
+             *
              * @return Module for the calling process.
              */
             IGNITE_IMPORT_EXPORT Module GetCurrent();

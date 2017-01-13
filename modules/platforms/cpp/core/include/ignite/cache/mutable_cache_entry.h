@@ -70,7 +70,7 @@ namespace ignite
              */
             MutableCacheEntry(const K& key, const V& val) :
                 key(key),
-                val(val), 
+                val(val),
                 exists(true)
             {
                 // No-op.
@@ -81,9 +81,9 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            MutableCacheEntry(const MutableCacheEntry& other) : 
+            MutableCacheEntry(const MutableCacheEntry& other) :
                 key(other.key),
-                val(other.val), 
+                val(other.val),
                 exists(other.exists)
             {
                 // No-op.
@@ -162,10 +162,10 @@ namespace ignite
 
         private:
             /** Key. */
-            K key; 
+            K key;
 
             /** Value. */
-            V val; 
+            V val;
 
             /** Exists. */
             bool exists;

@@ -716,7 +716,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_INVOKE: {
                     Long procId = reader.readObject();
-                    
+
                     Object key = reader.readObjectDetached();
 
                     CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(procId, reader.readObjectDetached(), 0);

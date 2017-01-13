@@ -23,7 +23,7 @@
 
 #include <ignite/impl/interop/interop_target.h>
 
-namespace ignite 
+namespace ignite
 {
     namespace impl
     {
