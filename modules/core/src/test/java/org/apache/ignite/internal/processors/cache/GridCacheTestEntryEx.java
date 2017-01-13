@@ -429,7 +429,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) {
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;
@@ -667,7 +668,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** @inheritDoc */
     @Override public GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer) {
+        GridCacheVersion newVer,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;
