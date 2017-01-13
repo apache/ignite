@@ -88,7 +88,6 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
-        <module>modules/yardstick</module>
     </modules>
 
     <profiles>

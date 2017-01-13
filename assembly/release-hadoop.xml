@@ -67,13 +67,6 @@
 
     <fileSets>
         <fileSet>
-            <directory>/</directory>
-            <outputDirectory>/</outputDirectory>
-            <excludes>
-                <exclude>benchmarks/**</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
             <directory>libs</directory>
             <outputDirectory>/libs</outputDirectory>
             <excludes>
