@@ -87,8 +87,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                 dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                 tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
-                @Override
-                protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
+                @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
                     throws IgniteCheckedException {
                     return compareRows(getRow(io, buf, idx), row);
                 }

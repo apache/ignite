@@ -64,8 +64,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
 
-//        suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
-//        suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
+        suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
+        suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
         suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
