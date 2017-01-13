@@ -37,6 +37,7 @@
 #include "ignite/impl/binary/binary_utils.h"
 
 #include "test_type.h"
+#include "complex_type.h"
 #include "test_utils.h"
 
 using namespace ignite;
@@ -150,11 +151,17 @@ struct QueriesTestSuiteFixture
     /**
      * Constructor.
      */
-    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
+    QueriesTestSuiteFixture() :
+        cache1(0),
+        cache2(0),
+        env(NULL),
+        dbc(NULL),
+        stmt(NULL)
     {
         grid = StartNode("NodeMain", "queries-test.xml");
 
-        testCache = grid.GetCache<int64_t, TestType>("cache");
+        cache1 = grid.GetCache<int64_t, TestType>("cache");
+        cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
     }
 
     /**
@@ -180,8 +187,8 @@ struct QueriesTestSuiteFixture
         TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
             BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
 
-        testCache.Put(1, in1);
-        testCache.Put(2, in2);
+        cache1.Put(1, in1);
+        cache1.Put(2, in2);
 
         const size_t columnsCnt = 11;
 
@@ -362,8 +369,11 @@ struct QueriesTestSuiteFixture
     /** Node started during the test. */
     Ignite grid;
 
-    /** Test cache instance. */
-    Cache<int64_t, TestType> testCache;
+    /** Frist cache instance. */
+    Cache<int64_t, TestType> cache1;
+
+    /** Second cache instance. */
+    Cache<int64_t, ComplexType> cache2;
 
     /** ODBC Environment. */
     SQLHENV env;
@@ -444,8 +454,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
         BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
-    testCache.Put(1, in1);
-    testCache.Put(2, in2);
+    cache1.Put(1, in1);
+    cache1.Put(2, in2);
 
     const size_t columnsCnt = 11;
 
@@ -541,7 +551,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
         BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    testCache.Put(1, in);
+    cache1.Put(1, in);
 
     const size_t columnsCnt = 11;
 
@@ -607,7 +617,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
         BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    testCache.Put(1, in);
+    cache1.Put(1, in);
 
     const size_t columnsCnt = 11;
 
@@ -649,6 +659,63 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
+BOOST_AUTO_TEST_CASE(TestOneRowObject)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+
+    SQLRETURN ret;
+
+    ComplexType obj;
+
+    obj.i32Field = 123;
+    obj.strField = "Some string";
+
+    obj.objField.f1 = 54321;
+    obj.objField.f2 = "Hello Ignite";
+
+    cache2.Put(1, obj);
+
+    int64_t column1 = 0;
+    int8_t column2[ODBC_BUFFER_SIZE] = { 0 };
+    char column3[ODBC_BUFFER_SIZE] = { 0 };
+
+    SQLLEN column1Len = sizeof(column1);
+    SQLLEN column2Len = sizeof(column2);
+    SQLLEN column3Len = sizeof(column3);
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &column1, column1Len, &column1Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 2, SQL_C_BINARY, &column2, column2Len, &column2Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 3, SQL_C_CHAR, &column3, column3Len, &column3Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i32Field, objField, strField FROM ComplexType";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(column1, obj.i32Field);
+    BOOST_CHECK_EQUAL(column3, obj.strField);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
 BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
@@ -661,8 +728,8 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
         BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
-    testCache.Put(1, in1);
-    testCache.Put(2, in2);
+    cache1.Put(1, in1);
+    cache1.Put(2, in2);
 
     const size_t columnsCnt = 11;
 
@@ -785,9 +852,9 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
     inNull.allNulls = true;
 
-    testCache.Put(1, in);
-    testCache.Put(2, inNull);
-    testCache.Put(3, in);
+    cache1.Put(1, in);
+    cache1.Put(2, inNull);
+    cache1.Put(3, in);
 
     const size_t columnsCnt = 10;
 
@@ -900,7 +967,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
         entry.i32Field = i;
         entry.i64Field = entriesNum - i - 1;
 
-        testCache.Put(i, entry);
+        cache1.Put(i, entry);
     }
 
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
@@ -974,7 +1041,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
         entry.i32Field = i;
         entry.i64Field = entriesNum - i - 1;
 
-        testCache.Put(i, entry);
+        cache1.Put(i, entry);
     }
 
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;PROTOCOL_VERSION=1.6.0");
@@ -1273,6 +1340,82 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     }
 
     BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+}
+
+template<size_t n, size_t k>
+void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
+{
+    std::string catalog(columns[0], columnsLen[0]);
+    std::string schema(columns[1], columnsLen[1]);
+    std::string table(columns[2], columnsLen[2]);
+    std::string tableType(columns[3], columnsLen[3]);
+
+    BOOST_CHECK_EQUAL(catalog, std::string(""));
+    BOOST_CHECK_EQUAL(tableType, std::string("TABLE"));
+    BOOST_CHECK_EQUAL(columnsLen[4], SQL_NULL_DATA);
+
+    if (schema == "\"cache\"")
+    {
+        BOOST_CHECK_EQUAL(table, std::string("TestType"));
+    }
+    else if (schema == "\"cache2\"")
+    {
+        BOOST_CHECK_EQUAL(table, std::string("ComplexType"));
+    }
+    else
+    {
+        BOOST_FAIL("Unknown schema: " + schema);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestTablesMeta)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+
+    SQLRETURN ret;
+
+    enum { COLUMNS_NUM = 5 };
+
+    // Five collumns: TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS
+    char columns[COLUMNS_NUM][ODBC_BUFFER_SIZE];
+    SQLLEN columnsLen[COLUMNS_NUM];
+
+    // Binding columns.
+    for (size_t i = 0; i < COLUMNS_NUM; ++i)
+    {
+        columnsLen[i] = ODBC_BUFFER_SIZE;
+
+        ret = SQLBindCol(stmt, static_cast<SQLSMALLINT>(i + 1), SQL_C_CHAR, columns[i], columnsLen[i], &columnsLen[i]);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    SQLCHAR catalogPattern[] = "";
+    SQLCHAR schemaPattern[] = "";
+    SQLCHAR tablePattern[] = "";
+    SQLCHAR tableTypePattern[] = "";
+
+    ret = SQLTables(stmt, catalogPattern, SQL_NTS, schemaPattern,
+        SQL_NTS, tablePattern, SQL_NTS, tableTypePattern, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckMeta<COLUMNS_NUM, ODBC_BUFFER_SIZE>(columns, columnsLen);
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckMeta<COLUMNS_NUM, ODBC_BUFFER_SIZE>(columns, columnsLen);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

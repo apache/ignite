@@ -21,4 +21,4 @@ include /app/helpers/jade/mixins.jade
 -var required = 'backupItem.discovery.kind === "ZooKeeper" && backupItem.discovery.ZooKeeper.retryPolicy.kind === "Custom"'
 
 .details-row
-    +java-class('Class name:', retry + '.className', '"customClassName"', 'true', required, 'Custom retry policy implementation class name')
+    +java-class('Class name:', retry + '.className', '"customClassName"', 'true', required, 'Custom retry policy implementation class name', required)

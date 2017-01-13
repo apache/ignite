@@ -220,7 +220,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (detailMetricsSz > 0)
             detailMetrics = new ConcurrentHashMap8<>(detailMetricsSz);
-        
+
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
@@ -1539,16 +1539,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (log.isDebugEnabled()) {
                         ClusterNode primaryNode = CU.primaryNode(cctx, key);
 
-                        log.debug("Record [key=" + key +
-                            ", val=" + val +
-                            ", incBackups=" + incBackups +
-                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
-                            ", node=" + U.id8(cctx.localNode().id()) + ']');
+                        log.debug(S.toString("Record",
+                            "key", key, true,
+                            "val", val, true,
+                            "incBackups", incBackups, false,
+                            "priNode", primaryNode != null ? U.id8(primaryNode.id()) : null, false,
+                            "node", U.id8(cctx.localNode().id()), false));
                     }
 
                     if (val == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Unsuitable record value: " + val);
+                            log.debug(S.toString("Unsuitable record value", "val", val, true));
 
                         continue;
                     }
@@ -2237,7 +2238,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty())
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true);
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);

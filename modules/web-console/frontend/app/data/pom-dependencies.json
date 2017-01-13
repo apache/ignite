@@ -10,11 +10,11 @@
     "HadoopIgfsJcl": {"artifactId": "ignite-hadoop"},
     "SLF4J": {"artifactId": "ignite-slf4j"},
 
-    "Generic": {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.1"},
-    "MySQL": {"groupId": "mysql", "artifactId": "mysql-connector-java", "version": "5.1.37"},
-    "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "9.4-1204-jdbc42"},
+    "Generic": {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.2"},
+    "MySQL": {"groupId": "mysql", "artifactId": "mysql-connector-java", "version": "5.1.40"},
+    "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "9.4.1212.jre7"},
     "H2": {"groupId": "com.h2database", "artifactId": "h2", "version": "1.4.191"},
-    "Oracle": {"groupId": "oracle", "artifactId": "jdbc", "version": "11.2", "jar": "ojdbc6.jar"},
-    "DB2": {"groupId": "ibm", "artifactId": "jdbc", "version": "4.19.26", "jar": "db2jcc4.jar"},
-    "SQLServer": {"groupId": "microsoft", "artifactId": "jdbc", "version": "4.1", "jar": "sqljdbc41.jar"}
+    "Oracle": {"groupId": "com.oracle.jdbc", "artifactId": "ojdbc7", "version": "12.1.0.2", "jar": "ojdbc7.jar"},
+    "DB2": {"groupId": "ibm", "artifactId": "jdbc", "version": "4.21.29", "jar": "db2jcc4.jar"},
+    "SQLServer": {"groupId": "microsoft", "artifactId": "jdbc", "version": "4.2", "jar": "sqljdbc41.jar"}
 }

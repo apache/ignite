@@ -491,7 +491,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
                         new BlockSetCallable(cctx.name(), id),
                         nodes,
-                        true).get();
+                        true,
+                        0).get();
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(ClusterTopologyCheckedException.class)) {
@@ -514,7 +515,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
                         new RemoveSetDataCallable(cctx.name(), id, topVer),
                         nodes,
-                        true).get();
+                        true,
+                        0).get();
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(ClusterTopologyCheckedException.class)) {
