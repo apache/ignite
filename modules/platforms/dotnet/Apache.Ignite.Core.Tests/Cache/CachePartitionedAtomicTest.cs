@@ -37,11 +37,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             return false;
         }
 
-        protected override bool TxEnabled()
-        {
-            return false;
-        }
-
         protected override int Backups()
         {
             return 1;

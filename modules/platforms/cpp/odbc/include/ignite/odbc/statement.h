@@ -57,24 +57,15 @@ namespace ignite
             ~Statement();
 
             /**
-             * Bind result column to specified data buffer.
+             * Bind result column to data buffer provided by application
              *
              * @param columnIdx Column index.
-             * @param buffer Buffer to put column data to.
+             * @param targetType Type of target buffer.
+             * @param targetValue Pointer to target buffer.
+             * @param bufferLength Length of target buffer.
+             * @param strLengthOrIndicator Pointer to the length/indicator buffer.
              */
-            void BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer);
-
-            /**
-             * Unbind specified column buffer.
-             *
-             * @param columnIdx Column index.
-             */
-            void UnbindColumn(uint16_t columnIdx);
-
-            /**
-             * Unbind all column buffers.
-             */
-            void UnbindAllColumns();
+            void BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
 
             /**
              * Set column binding offset pointer.
@@ -101,21 +92,17 @@ namespace ignite
              * Bind parameter.
              *
              * @param paramIdx Parameter index.
-             * @param param Parameter.
+             * @param ioType Type of the parameter (input/output).
+             * @param bufferType The data type of the parameter.
+             * @param paramSqlType The SQL data type of the parameter.
+             * @param columnSize  The size of the column or expression of the corresponding parameter marker.
+             * @param decDigits  The decimal digits of the column or expression of the corresponding parameter marker.
+             * @param buffer A pointer to a buffer for the parameter's data.
+             * @param bufferLen Length of the ParameterValuePtr buffer in bytes.
+             * @param resLen A pointer to a buffer for the parameter's length.
              */
-            void BindParameter(uint16_t paramIdx, const app::Parameter& param);
-
-            /**
-             * Unbind specified parameter.
-             *
-             * @param paramIdx Parameter index.
-             */
-            void UnbindParameter(uint16_t paramIdx);
-
-            /**
-             * Unbind all parameters.
-             */
-            void UnbindAllParameters();
+            void BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                               SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
              * Set statement attribute.
@@ -171,7 +158,7 @@ namespace ignite
              * @param query SQL query.
              */
             void PrepareSqlQuery(const std::string& query);
-            
+
             /**
              * Execute SQL query.
              *
@@ -254,9 +241,22 @@ namespace ignite
             void ExecuteGetTypeInfoQuery(int16_t sqlType);
 
             /**
+             * Free resources
+             * @param option indicates what needs to be freed
+             */
+            void FreeResources(int16_t option);
+
+            /**
              * Close statement.
              */
             void Close();
+
+            /**
+             * Fetch query result row with offset
+             * @param orientation Fetch type
+             * @param offset Fetch offset
+             */
+            void FetchScroll(int16_t orientation, int64_t offset);
 
             /**
              * Fetch query result row.
@@ -362,14 +362,75 @@ namespace ignite
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
 
+
+            /**
+             * Bind result column to specified data buffer.
+             *
+             * @param columnIdx Column index.
+             * @param buffer Buffer to put column data to.
+             */
+            void SafeBindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer);
+
+            /**
+             * Unbind specified column buffer.
+             *
+             * @param columnIdx Column index.
+             */
+            void SafeUnbindColumn(uint16_t columnIdx);
+
+            /**
+             * Unbind all column buffers.
+             */
+            void SafeUnbindAllColumns();
+
+            /**
+             * Bind result column to data buffer provided by application
+             *
+             * @param columnIdx Column index.
+             * @param targetType Type of target buffer.
+             * @param targetValue Pointer to target buffer.
+             * @param bufferLength Length of target buffer.
+             * @param strLengthOrIndicator Pointer to the length/indicator buffer.
+             * @return Operation result.
+             */
+            SqlResult InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
+
             /**
              * Bind parameter.
              *
              * @param paramIdx Parameter index.
              * @param param Parameter.
+             */
+            void SafeBindParameter(uint16_t paramIdx, const app::Parameter& param);
+
+            /**
+             * Unbind specified parameter.
+             *
+             * @param paramIdx Parameter index.
+             */
+            void SafeUnbindParameter(uint16_t paramIdx);
+
+            /**
+             * Unbind all parameters.
+             */
+            void SafeUnbindAllParameters();
+
+            /**
+             * Bind parameter.
+             *
+             * @param paramIdx Parameter index.
+             * @param ioType Type of the parameter (input/output).
+             * @param bufferType The data type of the parameter.
+             * @param paramSqlType The SQL data type of the parameter.
+             * @param columnSize  The size of the column or expression of the corresponding parameter marker.
+             * @param decDigits  The decimal digits of the column or expression of the corresponding parameter marker.
+             * @param buffer A pointer to a buffer for the parameter's data.
+             * @param bufferLen Length of the ParameterValuePtr buffer in bytes.
+             * @param resLen A pointer to a buffer for the parameter's length.
              * @return Operation result.
              */
-            SqlResult InternalBindParameter(uint16_t paramIdx, const app::Parameter& param);
+            SqlResult InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                                            SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
              * Set statement attribute.
@@ -403,6 +464,14 @@ namespace ignite
              */
             SqlResult InternalGetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
 
+
+            /**
+             * Free resources
+             * @param option indicates what needs to be freed
+             * @return Operation result.
+             */
+            SqlResult InternalFreeResources(int16_t option);
+
             /**
              * Close statement.
              * Internal call.
@@ -418,7 +487,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalPrepareSqlQuery(const std::string& query);
-            
+
             /**
              * Execute SQL query.
              *
@@ -433,6 +502,14 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalExecuteSqlQuery();
+
+            /**
+             * Fetch query result row with offset
+             * @param orientation Fetch type
+             * @param offset Fetch offset
+             * @return Operation result.
+             */
+            SqlResult InternalFetchScroll(int16_t orientation, int64_t offset);
 
             /**
              * Fetch query result row.
@@ -621,7 +698,7 @@ namespace ignite
 
             /** Offset added to pointers to change binding of parameters. */
             int* paramBindOffset;
-            
+
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 

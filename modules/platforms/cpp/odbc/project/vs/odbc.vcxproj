@@ -188,6 +188,7 @@
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
     <ClCompile Include="..\..\src\utility.cpp" />
+    <ClCompile Include="..\..\src\log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def" />
@@ -230,6 +231,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\log.h" />
     <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h" />
     <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\window.h" />
   </ItemGroup>

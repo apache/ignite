@@ -21,6 +21,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Entity.Core.Common.CommandTrees;
     using System.Data.Entity.Core.Metadata.Edm;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
@@ -166,8 +167,18 @@ namespace Apache.Ignite.EntityFramework.Impl
             public static readonly EntitySetComparer Instance = new EntitySetComparer();
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             public int Compare(EntitySetBase x, EntitySetBase y)
             {
+                if (x == null && y == null)
+                    return 0;
+
+                if (x == null)
+                    return -1;
+
+                if (y == null)
+                    return 1;
+
                 return string.CompareOrdinal(x.Name, y.Name);
             }
         }
