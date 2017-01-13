@@ -343,7 +343,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
             boolean tx = txConc != null && txIsolation != null;
 
-            CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
 
             final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
