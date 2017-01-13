@@ -304,7 +304,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         ClusterNode readerNode = cctx.discovery().node(reader);
 
-        Map<KeyCacheObject, ReaderArguments> readerArgsMap = null;
+        ReaderArguments readerArgs = null;
 
         if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
             while (true) {
@@ -322,12 +322,13 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         // Entry will be removed on touch() if no data in cache,
                         // but they could be loaded from store,
                         // we have to add reader again later.
-                        readerArgsMap = Collections.singletonMap(key, new ReaderArguments(reader, msgId, topVer));
+                        if (readerArgs == null)
+                            readerArgs = new ReaderArguments(reader, msgId, topVer);
                     }
 
                     // Register reader. If there are active transactions for this entry,
                     // then will wait for their completion before proceeding.
-                    // TODO: GG-4003:
+                    // TODO: IGNITE-3498:
                     // TODO: What if any transaction we wait for actually removes this entry?
                     // TODO: In this case seems like we will be stuck with untracked near entry.
                     // TODO: To fix, check that reader is contained in the list of readers once
@@ -356,7 +357,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         if (rdrFut == null || rdrFut.isDone()) {
             fut = cache().getDhtAllAsync(
                 Collections.singleton(key),
-                readerArgsMap,
+                readerArgs,
                 readThrough,
                 subjId,
                 taskName,
@@ -365,7 +366,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 /*can remap*/true);
         }
         else {
-            final Map<KeyCacheObject, ReaderArguments> args = readerArgsMap;
+            final ReaderArguments args = readerArgs;
 
             rdrFut.listen(
                 new IgniteInClosure<IgniteInternalFuture<Boolean>>() {

@@ -336,7 +336,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         ClusterNode readerNode = cctx.discovery().node(reader);
 
-        Map<KeyCacheObject, ReaderArguments> readerArgsMap = null;
+        ReaderArguments readerArgs = null;
 
         if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
             for (Map.Entry<KeyCacheObject, Boolean> k : keys.entrySet()) {
@@ -352,18 +352,16 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (addReader) {
                             e.unswap(false);
 
-                            if (readerArgsMap == null)
-                                readerArgsMap = new HashMap<>();
-
                             // Entry will be removed on touch() if no data in cache,
                             // but they could be loaded from store,
                             // we have to add reader again later.
-                            readerArgsMap.put(k.getKey(), new ReaderArguments(reader, msgId, topVer));
+                            if (readerArgs == null)
+                                readerArgs = new ReaderArguments(reader, msgId, topVer);
                         }
 
                         // Register reader. If there are active transactions for this entry,
                         // then will wait for their completion before proceeding.
-                        // TODO: GG-4003:
+                        // TODO: IGNITE-3498:
                         // TODO: What if any transaction we wait for actually removes this entry?
                         // TODO: In this case seems like we will be stuck with untracked near entry.
                         // TODO: To fix, check that reader is contained in the list of readers once
@@ -401,7 +399,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (txFut == null || txFut.isDone()) {
             fut = cache().getDhtAllAsync(
                 keys.keySet(),
-                readerArgsMap,
+                readerArgs,
                 readThrough,
                 subjId,
                 taskName,
@@ -410,7 +408,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 /*can remap*/true);
         }
         else {
-            final Map<KeyCacheObject, ReaderArguments> args = readerArgsMap;
+            final ReaderArguments args = readerArgs;
 
             // If we are here, then there were active transactions for some entries
             // when we were adding the reader. In that case we must wait for those

@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  * Check that near cache is updated when entry loaded from store.
  */
-public class OffheapGridNearCacheStoreUpdateTest extends GridNearCacheStoreUpdateTest {
+public class GridNearOffheapCacheStoreUpdateTest extends GridNearCacheStoreUpdateTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<String, String> cacheConfiguration() {
         final CacheConfiguration<String, String> ccfg = super.cacheConfiguration();

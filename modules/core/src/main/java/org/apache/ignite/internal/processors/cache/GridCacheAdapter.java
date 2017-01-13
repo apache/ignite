@@ -1804,7 +1804,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
-     * @param readerArgMap Reader will be added if not null.
+     * @param readerArgs Near cache reader will be added if not null.
      * @param readThrough Read through.
      * @param checkTx Check tx.
      * @param subjId Subj Id.
@@ -1819,7 +1819,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @see GridCacheAdapter#getAllAsync(Collection)
      */
     public final IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
-        @Nullable final Map<KeyCacheObject, ReaderArguments> readerArgMap,
+        @Nullable final ReaderArguments readerArgs,
         boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1837,7 +1837,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
-            readerArgMap,
+            readerArgs,
             readThrough,
             checkTx,
             subjId,
@@ -1852,7 +1852,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
-     * @param readerArgMap Reader will be added if not null.
+     * @param readerArgs Near cache reader will be added if not null.
      * @param readThrough Read-through flag.
      * @param checkTx Check local transaction flag.
      * @param subjId Subject ID.
@@ -1867,8 +1867,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
         @Nullable final Collection<KeyCacheObject> keys,
-        // TODO: do not need map here.
-        @Nullable final Map<KeyCacheObject, ReaderArguments> readerArgMap,
+        @Nullable final ReaderArguments readerArgs,
         final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1916,8 +1915,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 Map<KeyCacheObject, GridCacheVersion> misses = null;
 
                 for (KeyCacheObject key : keys) {
-                    ReaderArguments readerArgs = readerArgMap == null ? null : readerArgMap.get(key);
-
                     while (true) {
                         GridCacheEntryEx entry = needEntry ? entryEx(key) : peekEx(key);
 
@@ -2007,8 +2004,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         loaded.add(key);
 
                                         CacheObject cacheVal = ctx.toCacheObject(val);
-
-                                        ReaderArguments readerArgs = readerArgMap == null ? null : readerArgMap.get(key);
 
                                         while (true) {
                                             GridCacheEntryEx entry = entryEx(key);

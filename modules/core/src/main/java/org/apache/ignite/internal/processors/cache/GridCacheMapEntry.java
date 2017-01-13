@@ -934,8 +934,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Cache version for optimistic check.
             startVer = ver;
 
-            if (ret != null)
-                addReaderIfNeed(readerArgs);
+            addReaderIfNeed(readerArgs);
         }
 
         if (ret != null) {

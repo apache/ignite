@@ -223,8 +223,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             IgniteInternalFuture<Object> fut2 = null;
 
             if (!tx) {
-                // TODO: add link to ignite issue.
-                // Doesn't work on transactional cache.
+                // TODO: IGNITE-3498
+                // TODO: Doesn't work on transactional cache.
                 fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         storeLatch.await();
@@ -369,7 +369,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             IgniteInternalFuture<Object> fut3 = null;
 
             if (!tx) {
-                // Doesn't work on transactional cache.
+                // TODO: IGNITE-3498
+                // TODO: Doesn't work on transactional cache.
                 fut3 = GridTestUtils.runAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         latch.await();
