@@ -150,12 +150,16 @@ namespace ignite
                         break;
                     }
 
+                    case SQL_TYPE_TIME:
+                    case SQL_TIME:
+                    case SQL_TYPE_DATE:
                     case SQL_DATE:
                     {
                         writer.WriteDate(buf.GetDate());
                         break;
                     }
 
+                    case SQL_TYPE_TIMESTAMP:
                     case SQL_TIMESTAMP:
                     {
                         writer.WriteTimestamp(buf.GetTimestamp());

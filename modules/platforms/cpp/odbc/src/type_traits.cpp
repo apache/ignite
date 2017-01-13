@@ -204,6 +204,8 @@ namespace ignite
                     case SQL_LONGVARBINARY:
                     case SQL_GUID:
                     case SQL_DECIMAL:
+                    case SQL_TIME:
+                    case SQL_TYPE_TIME:
                     case SQL_TYPE_DATE:
                     case SQL_TYPE_TIMESTAMP:
                         return true;
@@ -213,7 +215,6 @@ namespace ignite
                     case SQL_WLONGVARCHAR:
                     case SQL_REAL:
                     case SQL_NUMERIC:
-                    case SQL_TYPE_TIME:
                     case SQL_INTERVAL_MONTH:
                     case SQL_INTERVAL_YEAR:
                     case SQL_INTERVAL_YEAR_TO_MONTH:
@@ -276,6 +277,9 @@ namespace ignite
                         return IGNITE_TYPE_UUID;
 
                     case SQL_TYPE_DATE:
+                        return IGNITE_TYPE_DATE;
+
+                    case SQL_TYPE_TIME:
                         return IGNITE_TYPE_DATE;
 
                     case SQL_TYPE_TIMESTAMP:
