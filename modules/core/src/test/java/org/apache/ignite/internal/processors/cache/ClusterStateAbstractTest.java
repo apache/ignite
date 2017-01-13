@@ -280,7 +280,8 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingLock() throws Exception {
-        fail("Safe way for deactivate cluster must be implemented.");
+        //TODO GG-11851
+        fail();
 
         startGrids(GRID_CNT);
 
