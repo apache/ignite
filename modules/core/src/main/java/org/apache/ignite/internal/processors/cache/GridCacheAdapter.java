@@ -1867,6 +1867,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
         @Nullable final Collection<KeyCacheObject> keys,
+        // TODO: do not need map here.
         @Nullable final Map<KeyCacheObject, ReaderArguments> readerArgMap,
         final boolean readThrough,
         boolean checkTx,

@@ -223,6 +223,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             IgniteInternalFuture<Object> fut2 = null;
 
             if (!tx) {
+                // TODO: add link to ignite issue.
                 // Doesn't work on transactional cache.
                 fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {

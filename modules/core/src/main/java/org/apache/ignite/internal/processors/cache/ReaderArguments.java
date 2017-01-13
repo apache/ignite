@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
+// TODO: code style.
 public class ReaderArguments {
     private final UUID reader;
     private final long msgId;

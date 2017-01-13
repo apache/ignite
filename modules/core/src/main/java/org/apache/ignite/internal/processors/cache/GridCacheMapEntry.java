@@ -934,7 +934,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Cache version for optimistic check.
             startVer = ver;
 
-            addReaderIfNeed(readerArgs);
+            if (ret != null)
+                addReaderIfNeed(readerArgs);
         }
 
         if (ret != null) {
@@ -1010,6 +1011,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
                         deletedUnlocked(false);
+
+                    assert readerArgs == null;
                 }
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
@@ -3604,13 +3607,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /**
      * @param readerArgs Reader arguments
-     * @throws GridCacheEntryRemovedException If entry was removed. (Won't happen if lock acquired).
      */
-    private void addReaderIfNeed(@Nullable ReaderArguments readerArgs) throws GridCacheEntryRemovedException {
+    private void addReaderIfNeed(@Nullable ReaderArguments readerArgs) {
         if (readerArgs != null) {
-            if (this instanceof GridDhtCacheEntry && !deleted()) {
+            assert this instanceof GridDhtCacheEntry : this;
+            assert Thread.holdsLock(this);
+
+            try {
                 ((GridDhtCacheEntry)this).addReader(readerArgs.reader(),
-                    readerArgs.messageId(), readerArgs.topologyVersion());
+                    readerArgs.messageId(),
+                    readerArgs.topologyVersion());
+            }
+            catch (GridCacheEntryRemovedException e) {
+                assert false : this;
             }
         }
     }
