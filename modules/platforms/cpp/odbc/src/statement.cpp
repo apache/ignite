@@ -27,6 +27,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/log.h"
 
 namespace ignite
 {
@@ -50,26 +51,57 @@ namespace ignite
             // No-op.
         }
 
-        void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
+        void Statement::BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            IGNITE_ODBC_API_CALL(InternalBindColumn(columnIdx, targetType, targetValue, bufferLength, strLengthOrIndicator));
+        }
 
+        SqlResult Statement::InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
+        {
+            using namespace odbc::type_traits;
+            IgniteSqlType driverType = ToDriverType(targetType);
+
+            if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
+            {
+                AddStatusRecord(odbc::SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE, "The argument TargetType was not a valid data type.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (bufferLength < 0)
+            {
+                AddStatusRecord(odbc::SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH,
+                    "The value specified for the argument BufferLength was less than 0.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (targetValue || strLengthOrIndicator)
+            {
+                app::ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
+
+                SafeBindColumn(columnIdx, dataBuffer);
+            }
+            else
+                SafeUnbindColumn(columnIdx);
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        void Statement::SafeBindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
+        {
             columnBindings[columnIdx] = buffer;
 
             columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
         }
 
-        void Statement::UnbindColumn(uint16_t columnIdx)
+        void Statement::SafeUnbindColumn(uint16_t columnIdx)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             columnBindings.erase(columnIdx);
         }
 
-        void Statement::UnbindAllColumns()
+        void Statement::SafeUnbindAllColumns()
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             columnBindings.clear();
         }
 
@@ -108,14 +140,21 @@ namespace ignite
             return SQL_RESULT_SUCCESS;
         }
 
-        void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
+        void Statement::BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                                      SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
-            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, param));
+            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, ioType, bufferType, paramSqlType, columnSize, decDigits, buffer, bufferLen, resLen));
         }
 
-
-        SqlResult Statement::InternalBindParameter(uint16_t paramIdx, const app::Parameter& param)
+        SqlResult Statement::InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                                                   SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
+            using namespace odbc::type_traits;
+            using odbc::Statement;
+            using odbc::app::ApplicationDataBuffer;
+            using odbc::app::Parameter;
+            using odbc::type_traits::IsSqlTypeSupported;
+
             if (paramIdx == 0)
             {
                 AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
@@ -124,24 +163,60 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            paramBindings[paramIdx] = param;
+            if (ioType != SQL_PARAM_INPUT)
+            {
+                AddStatusRecord(SQL_STATE_HY105_INVALID_PARAMETER_TYPE,
+                    "The value specified for the argument InputOutputType was not SQL_PARAM_INPUT.");
 
-            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+                return SQL_RESULT_ERROR;
+            }
+
+            if (!IsSqlTypeSupported(paramSqlType))
+            {
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    "Data type is not supported.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            IgniteSqlType driverType = ToDriverType(bufferType);
+
+            if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
+            {
+                AddStatusRecord(odbc::SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE,
+                    "The argument TargetType was not a valid data type.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (buffer)
+            {
+                ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
+
+                Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
+
+                SafeBindParameter(paramIdx, param);
+            }
+            else
+                SafeUnbindParameter(paramIdx);
 
             return SQL_RESULT_SUCCESS;
         }
 
-        void Statement::UnbindParameter(uint16_t paramIdx)
+        void Statement::SafeBindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            paramBindings[paramIdx] = param;
 
+            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+        }
+
+        void Statement::SafeUnbindParameter(uint16_t paramIdx)
+        {
             paramBindings.erase(paramIdx);
         }
 
-        void Statement::UnbindAllParameters()
+        void Statement::SafeUnbindAllParameters()
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             paramBindings.clear();
         }
 
@@ -158,7 +233,7 @@ namespace ignite
                 {
                     SQLULEN val = reinterpret_cast<SQLULEN>(value);
 
-                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: %d\n", val);
+                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: " << val);
 
                     if (val != 1)
                     {
@@ -536,6 +611,50 @@ namespace ignite
             return currentQuery->Execute();
         }
 
+        void Statement::FreeResources(int16_t option)
+        {
+            IGNITE_ODBC_API_CALL(InternalFreeResources(option));
+        }
+
+        SqlResult Statement::InternalFreeResources(int16_t option)
+        {
+            switch (option)
+            {
+                case SQL_DROP:
+                {
+                    AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Deprecated, call SQLFreeHandle instead");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                case SQL_CLOSE:
+                {
+                    return InternalClose();
+                }
+
+                case SQL_UNBIND:
+                {
+                    SafeUnbindAllColumns();
+
+                    break;
+                }
+
+                case SQL_RESET_PARAMS:
+                {
+                    SafeUnbindAllParameters();
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE, "The value specified for the argument Option was invalid");
+                    return SQL_RESULT_ERROR;
+                }
+            }
+            return SQL_RESULT_SUCCESS;
+        }
+
         void Statement::Close()
         {
             IGNITE_ODBC_API_CALL(InternalClose());
@@ -545,13 +664,31 @@ namespace ignite
         {
             if (!currentQuery.get())
                 return SQL_RESULT_SUCCESS;
-            
+
             SqlResult result = currentQuery->Close();
 
             if (result == SQL_RESULT_SUCCESS)
                 currentQuery.reset();
 
             return result;
+        }
+
+        void Statement::FetchScroll(int16_t orientation, int64_t offset)
+        {
+            IGNITE_ODBC_API_CALL(InternalFetchScroll(orientation, offset));
+        }
+
+        SqlResult Statement::InternalFetchScroll(int16_t orientation, int64_t offset)
+        {
+            UNREFERENCED_PARAMETER(offset);
+
+            if (orientation != SQL_FETCH_NEXT)
+            {
+                AddStatusRecord(SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE, "The value specified for the argument FetchOrientation was not SQL_FETCH_NEXT.");
+                return SQL_RESULT_ERROR;
+            }
+
+            return InternalFetchRow();
         }
 
         void Statement::FetchRow()
@@ -850,7 +987,7 @@ namespace ignite
             if (paramNum > 0 && static_cast<size_t>(paramNum) <= paramTypes.size())
                 type = paramTypes[paramNum - 1];
 
-            LOG_MSG("Type: %d\n", type);
+            LOG_MSG("Type: " << type);
 
             if (!type)
             {
@@ -908,7 +1045,7 @@ namespace ignite
 
             if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
             {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                LOG_MSG("Error: " << rsp.GetError());
 
                 AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 
@@ -918,7 +1055,9 @@ namespace ignite
             paramTypes = rsp.GetTypeIds();
 
             for (size_t i = 0; i < paramTypes.size(); ++i)
-                LOG_MSG("[%zu] Parameter type: %u\n", i, paramTypes[i]);
+            {
+                LOG_MSG("[" << i << "] Parameter type: " << paramTypes[i]);
+            }
 
             return SQL_RESULT_SUCCESS;
         }
