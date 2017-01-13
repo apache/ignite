@@ -974,7 +974,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(key++, p);
         }
 
-        String select = "select count(*) from Organization o, \"pers\".Person2 p where p.orgId = o._key";
+        String select = "select count(*) from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key";
 
         String plan = (String)c2.query(new SqlFieldsQuery("explain " + select)
             .setDistributedJoins(true).setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize))
