@@ -21,7 +21,6 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -108,6 +107,10 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
+
+    /** AWS Credentials. */
+    @GridToStringExclude
+    private AWSCredentials cred;
 
     /** AWS Credentials. */
     @GridToStringExclude
@@ -238,7 +241,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     private void initClient() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true))
             try {
-                if (credProvider == null)
+                if (cred == null && credProvider == null)
                     throw new IgniteSpiException("AWS credentials are not set.");
 
                 if (cfg == null)
@@ -247,7 +250,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                 if (F.isEmpty(bucketName))
                     throw new IgniteSpiException("Bucket name is null or empty (provide bucket name and restart).");
 
-                s3 = cfg != null ? new AmazonS3Client(credProvider, cfg) : new AmazonS3Client(credProvider);
+                s3 = createAmazonS3Client();
 
                 if (!s3.doesBucketExist(bucketName)) {
                     try {
@@ -289,6 +292,12 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
         }
     }
 
+    private AmazonS3Client createAmazonS3Client() {
+        return cfg != null
+            ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
+            : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
+    }
+
     /**
      * Sets bucket name for IP finder.
      *
@@ -320,7 +329,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     @IgniteSpiConfiguration(optional = false)
     public void setAwsCredentials(AWSCredentials cred) {
-        this.credProvider = new AWSStaticCredentialsProvider(cred);
+        this.cred = cred;
     }
 
     /**

@@ -56,20 +56,25 @@ public class IgniteS3TestSuite extends TestSuite {
      * @return Access key.
      */
     public static String getAccessKey() {
-        String key = System.getenv("test.amazon.access.key");
-
-        assert key != null : "Environment variable 'test.amazon.access.key' is not set";
-
-        return key;
+        return getRequiredEnvVar("test.amazon.access.key");
     }
 
     /**
      * @return Access key.
      */
     public static String getSecretKey() {
-        String key = System.getenv("test.amazon.secret.key");
+        return getRequiredEnvVar("test.amazon.secret.key");
+    }
 
-        assert key != null : "Environment variable 'test.amazon.secret.key' is not set";
+    public static String getBucketName(final String defaultBucketName) {
+        final String value = System.getenv("test.s3.bucket.name");
+        return value == null ? defaultBucketName : value;
+    }
+
+    private static String getRequiredEnvVar(String name) {
+        String key = System.getenv(name);
+
+        assert key != null : String.format("Environment variable '%s' is not set", name);
 
         return key;
     }

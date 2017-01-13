@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
+import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
  * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
@@ -48,7 +49,9 @@ abstract class TcpDiscoveryS3IpFinderAbstractCredTest
         setAwsCredentials(finder);
 
         // Bucket name should be unique for the host to parallel test run on one bucket.
-        finder.setBucketName("ip-finder-unit-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
+        String bucketName = IgniteS3TestSuite.getBucketName(
+            "ip-finder-unit-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
+        finder.setBucketName(bucketName);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();

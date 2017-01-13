@@ -39,4 +39,8 @@ public class TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest extends TcpDis
         finder.setAwsCredentials(new AWSStaticCredentialsProvider(
             new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(), IgniteS3TestSuite.getSecretKey())));
     }
+
+    @Override public void testIpFinder() throws Exception {
+        super.testIpFinder();
+    }
 }
