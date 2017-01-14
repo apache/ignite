@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -97,6 +98,9 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
+        /** Plugin context. */
+        private PluginContext _pluginContext;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -106,14 +110,16 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
-            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
+        /// <param name="pluginContext"></param>
+        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh, 
+            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs, PluginContext pluginContext)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
             Debug.Assert(marsh != null);
             Debug.Assert(lifecycleBeans != null);
             Debug.Assert(cbs != null);
+            Debug.Assert(pluginContext != null);
 
             _cfg = cfg;
             _name = name;
@@ -121,6 +127,7 @@ namespace Apache.Ignite.Core.Impl
             _marsh = marsh;
             _lifecycleBeans = lifecycleBeans;
             _cbs = cbs;
+            _pluginContext = pluginContext;
 
             marsh.Ignite = this;
 
@@ -165,6 +172,8 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
+            _pluginContext.OnStart(this);
+
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
         }
@@ -361,6 +370,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
+            _pluginContext.Stop(cancel);
+
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
@@ -697,6 +708,14 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /** <inheritdoc /> */
+        public T GetPlugin<T>(string name) where T : class
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return _pluginContext.GetProvider(name).GetPlugin<T>();
+        }
 
         /// <summary>
         /// Gets or creates near cache.

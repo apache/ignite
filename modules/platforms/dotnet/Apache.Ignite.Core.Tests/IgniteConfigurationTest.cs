@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.SwapSpace.File;
+    using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -181,6 +182,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
                 Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
                 Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
+
+                Assert.IsNotNull(resCfg.PluginConfigurations);
+                Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
             }
         }
 
@@ -513,7 +517,8 @@ namespace Apache.Ignite.Core.Tests
                     WriteBufferSize = 9,
                     BaseDirectory = Path.GetTempPath(),
                     MaximumSparsity = 11.22f
-                }
+                },
+                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
             };
         }
     }
