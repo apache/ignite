@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-// Optional content generation entry point.
-const $generatorOptional = {};
+package org.apache.ignite.internal.managers.communication;
 
-$generatorOptional.optionalContent = function(zip, cluster) { // eslint-disable-line no-unused-vars
-    // No-op.
-};
-
-export default $generatorOptional;
+/**
+ *
+ */
+public class IgniteCommunicationBalancePairedConnectionsTest extends IgniteCommunicationBalanceTest {
+    /** {@inheritDoc} */
+    @Override protected boolean usePairedConnections() {
+        return true;
+    }
+}

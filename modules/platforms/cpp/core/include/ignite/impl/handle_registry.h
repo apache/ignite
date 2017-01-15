@@ -72,7 +72,7 @@ namespace ignite
             void Clear();
         private:
             /** Map with data. */
-            std::map<int64_t, common::concurrent::SharedPointer<void>> map;
+            std::map<int64_t, common::concurrent::SharedPointer<void> > map;
 
             /** Mutex. */
             common::concurrent::CriticalSection mux;
