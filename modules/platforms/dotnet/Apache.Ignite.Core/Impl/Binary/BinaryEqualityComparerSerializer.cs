@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     };
 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("reader", type, "Invalid EqualityComparer type code");
             }
         }
     }

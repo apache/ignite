@@ -69,13 +69,33 @@ namespace Apache.Ignite.Core.Impl.Binary
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is DateTimeHolder && _item.Equals(((DateTimeHolder) obj)._item);
+            return obj is DateTimeHolder && Equals((DateTimeHolder) obj);
         }
 
         /** <inheritDoc /> */
         public override int GetHashCode()
         {
             return _item.GetHashCode();
+        }
+
+        /** <inheritDoc /> */
+        public static bool operator ==(DateTimeHolder left, DateTimeHolder right)
+        {
+            return left.Equals(right);
+        }
+
+        /** <inheritDoc /> */
+        public static bool operator !=(DateTimeHolder left, DateTimeHolder right)
+        {
+            return !left.Equals(right);
+        }
+
+        /// <summary>
+        /// Checks equality.
+        /// </summary>
+        private bool Equals(DateTimeHolder other)
+        {
+            return _item.Equals(other._item);
         }
     }
 }

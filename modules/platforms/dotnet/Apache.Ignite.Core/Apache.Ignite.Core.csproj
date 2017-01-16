@@ -185,6 +185,7 @@
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
+    <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />

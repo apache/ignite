@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Binary
     /// <summary>
     /// Compares binary object equality using underlying byte array.
     /// </summary>
-    public class BinaryArrayEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer,
+    public sealed class BinaryArrayEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer,
         IBinaryStreamProcessor<KeyValuePair<int,int>, int>
     {
         /// <summary>

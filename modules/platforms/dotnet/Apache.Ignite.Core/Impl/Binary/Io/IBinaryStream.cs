@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 namespace Apache.Ignite.Core.Impl.Binary.IO
 {
     using System;
@@ -328,20 +327,5 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// Flushes the data to underlying storage.
         /// </summary>
         void Flush();
-    }
-
-    /// <summary>
-    /// Binary stream processor.
-    /// </summary>
-    [CLSCompliant(false)]
-    public unsafe interface IBinaryStreamProcessor<in TArg, out T>
-    {
-        /// <summary>
-        /// Invokes the processor.
-        /// </summary>
-        /// <param name="data">Data.</param>
-        /// <param name="arg">Argument.</param>
-        /// <returns>Result.</returns>
-        T Invoke(byte* data, TArg arg);
     }
 }
