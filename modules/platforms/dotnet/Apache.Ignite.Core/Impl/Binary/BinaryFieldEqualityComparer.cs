@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Binary
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Uses a set of binary object fields to calculate hash code and check equality.
+    /// Not implemented for now, will be done as part of IGNITE-4397.
     /// </summary>
     internal class BinaryFieldEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer
     {
