@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_TEST_UTILS
-#define _IGNITE_TEST_UTILS
+#ifndef _IGNITE_CORE_TEST_TEST_UTILS
+#define _IGNITE_CORE_TEST_TEST_UTILS
 
 #include "ignite/ignition.h"
 
@@ -60,4 +60,4 @@ namespace ignite_test
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
 }
 
-#endif // _IGNITE_TEST_UTILS
+#endif // _IGNITE_CORE_TEST_TEST_UTILS

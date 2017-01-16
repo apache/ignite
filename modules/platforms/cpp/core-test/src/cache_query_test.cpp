@@ -615,8 +615,8 @@ struct CacheQueryTestSuiteFixture
 
             stream << "A" << i;
 
-            cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
-                BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+            cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1970 + i),
+                BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60)));
         }
 
         cursor = cache.Query(qry);
@@ -709,11 +709,11 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateGmt(1989, 10, 26),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
     
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -786,8 +786,8 @@ BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
 
         stream << "A" << i;
 
-        cache1.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        cache1.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1970 + i),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60)));
 
         cache2.Put(i + 1, QueryRelation(i, i * 10));
     }
@@ -832,11 +832,11 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateGmt(1989, 10, 26),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -881,8 +881,8 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -891,8 +891,8 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
     // Test query returning multiple entries.
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateGmt(1989, 10, 26),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckMultiple(cursor, 1, "A1", 10, 2, "A2", 20);
@@ -918,8 +918,8 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1970 + i),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60)));
     }
 
     // Iterate over all partitions and collect data.
@@ -965,11 +965,11 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateGmt(1989, 10, 26),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -1033,8 +1033,8 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
 
         stream << "A" << i;
 
-        cache1.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        cache1.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1970 + i),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60)));
 
         cache2.Put(i + 1, QueryRelation(i, i * 10));
     }
@@ -1079,8 +1079,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
     CheckEmpty(cursor);
     
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -1125,8 +1125,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -1171,11 +1171,11 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateLocal(1990, 03, 18),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDateGmt(1990, 03, 18),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
 
-    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateLocal(1989, 10, 26),
-        BinaryUtils::MakeTimestampLocal(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDateGmt(1989, 10, 26),
+        BinaryUtils::MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
 
@@ -1244,8 +1244,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1310,8 +1310,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1335,9 +1335,9 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
         Date birthday = row.GetNext<Date>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_CHECK(birthday == BinaryUtils::MakeDateLocal(1980 + resultSetSize, 1, 1));
+        BOOST_CHECK(birthday == BinaryUtils::MakeDateGmt(1980 + resultSetSize, 1, 1));
 
-        BOOST_CHECK(birthday < BinaryUtils::MakeDateLocal(1990, 1, 1));
+        BOOST_CHECK(birthday < BinaryUtils::MakeDateGmt(1990, 1, 1));
 
         BOOST_REQUIRE(!row.HasNext());
 
@@ -1371,8 +1371,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1396,9 +1396,9 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
         Date birthday = row.GetNext<Date>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_CHECK(birthday == BinaryUtils::MakeDateLocal(2071 + resultSetSize, 1, 1));
+        BOOST_CHECK(birthday == BinaryUtils::MakeDateGmt(2071 + resultSetSize, 1, 1));
 
-        BOOST_CHECK(birthday > BinaryUtils::MakeDateLocal(2070, 1, 1));
+        BOOST_CHECK(birthday > BinaryUtils::MakeDateGmt(2070, 1, 1));
 
         BOOST_REQUIRE(!row.HasNext());
 
@@ -1432,8 +1432,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1455,7 +1455,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
     Date birthday = row.GetNext<Date>(error);
     BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-    BOOST_CHECK(birthday == BinaryUtils::MakeDateLocal(2032, 1, 1));
+    BOOST_CHECK(birthday == BinaryUtils::MakeDateGmt(2032, 1, 1));
 
     BOOST_REQUIRE(!row.HasNext());
 
@@ -1484,8 +1484,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1509,9 +1509,9 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
         Timestamp recordCreated = row.GetNext<Timestamp>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestampLocal(2016, 1, 1, 0, resultSetSize % 60, 0));
+        BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestampGmt(2016, 1, 1, 0, resultSetSize % 60, 0));
 
-        BOOST_CHECK(recordCreated < BinaryUtils::MakeTimestampLocal(2016, 1, 1, 1, 0, 0));
+        BOOST_CHECK(recordCreated < BinaryUtils::MakeTimestampGmt(2016, 1, 1, 1, 0, 0));
 
         BOOST_REQUIRE(!row.HasNext());
 
@@ -1545,8 +1545,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1572,9 +1572,9 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 
         int32_t minutes = resultSetSize + 31;
 
-        BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestampLocal(2016, 1, 1, 15 + minutes / 60, minutes % 60, 0));
+        BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestampGmt(2016, 1, 1, 15 + minutes / 60, minutes % 60, 0));
 
-        BOOST_CHECK(recordCreated > BinaryUtils::MakeTimestampLocal(2016, 1, 1, 15, 30, 0));
+        BOOST_CHECK(recordCreated > BinaryUtils::MakeTimestampGmt(2016, 1, 1, 15, 30, 0));
 
         BOOST_REQUIRE(!row.HasNext());
 
@@ -1608,8 +1608,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
 
         stream << "A" << i;
 
-        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateGmt(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampGmt(2016, 1, 1, i / 60, i % 60));
 
         cache.Put(i, val);
     }
@@ -1631,7 +1631,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
     Timestamp recordCreated = row.GetNext<Timestamp>(error);
     BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-    BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestampLocal(2016, 1, 1, 9, 18, 0));
+    BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestampGmt(2016, 1, 1, 9, 18, 0));
 
     BOOST_REQUIRE(!row.HasNext());
 

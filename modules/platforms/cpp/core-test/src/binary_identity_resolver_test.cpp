@@ -45,7 +45,7 @@ using namespace ignite::common;
 using ignite::impl::binary::BinaryUtils;
 
 /**
- * Person class for query tests.
+ * Composite key class.
  */
 struct CompositeKey
 {
@@ -85,13 +85,54 @@ struct CompositeKey
     Guid guid;
 };
 
+/**
+ * Simple composite key class.
+ */
+struct CompositeKeySimple
+{
+    /**
+     * Default constructor.
+     */
+    CompositeKeySimple() :
+        str(),
+        ts(),
+        i64(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param str String part.
+     * @param ts Timestamp part.
+     * @param i64 Integer part.
+     */
+    CompositeKeySimple(const std::string& str, const Timestamp& ts, int64_t i64) :
+        str(str),
+        ts(ts),
+        i64(i64)
+    {
+        // No-op.
+    }
+
+    /** String part. */
+    std::string str;
+
+    /** Timestamp. */
+    Timestamp ts;
+
+    /** Integer 64-bit. */
+    int64_t i64;
+};
+
 
 namespace ignite
 {
     namespace binary
     {
         /**
-         * Binary type definition for QueryPerson.
+         * Binary type definition for CompositeKey.
          */
         template<>
         struct BinaryType<CompositeKey>
@@ -121,6 +162,42 @@ namespace ignite
                 val.str = reader.ReadString("str");
                 val.ts = reader.ReadTimestamp("ts");
                 val.guid = reader.ReadGuid("guid");
+
+                return val;
+            }
+        };
+
+        /**
+         * Binary type definition for CompositeKey.
+         */
+        template<>
+        struct BinaryType<CompositeKeySimple>
+        {
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CompositeKeySimple)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CompositeKeySimple)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(CompositeKeySimple)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKeySimple)
+
+            int32_t GetHashCode(const CompositeKeySimple& obj)
+            {
+                return BinaryArrayIdentityResolver::GetHashCode(obj);
+            }
+
+            void Write(BinaryWriter& writer, const CompositeKeySimple& obj)
+            {
+                writer.WriteString("str", obj.str);
+                writer.WriteTimestamp("ts", obj.ts);
+                writer.WriteInt64("i64", obj.i64);
+            }
+
+            CompositeKeySimple Read(BinaryReader& reader)
+            {
+                CompositeKeySimple val;
+
+                val.str = reader.ReadString("str");
+                val.ts = reader.ReadTimestamp("ts");
+                val.i64 = reader.ReadInt64("i64");
 
                 return val;
             }
@@ -156,10 +233,7 @@ struct BinaryIdentityResolverTestSuiteFixture
 
 BOOST_FIXTURE_TEST_SUITE(BinaryIdentityResolverTestSuite, BinaryIdentityResolverTestSuiteFixture)
 
-/**
- * Test SQL query.
- */
-BOOST_AUTO_TEST_CASE(TestIdentityEquility)
+BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithGuid)
 {
     CompositeKey key("Key String", Timestamp(123851, 562304134), Guid(0x4A950C6206FE4502, 0xAC06145097E56F02));
     int32_t value = 12321;
@@ -171,6 +245,27 @@ BOOST_AUTO_TEST_CASE(TestIdentityEquility)
     qry.AddArgument(key.str);
     qry.AddArgument(key.ts);
     qry.AddArgument(key.guid);
+    qry.AddArgument(value);
+
+    cache.Query(qry);
+
+    int32_t realValue = cache.Get(key);
+
+    BOOST_CHECK_EQUAL(value, realValue);
+}
+
+BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithoutGuid)
+{
+    CompositeKeySimple key("Lorem ipsum", Timestamp(112460, 163002155), 1337);
+    int32_t value = 42;
+
+    Cache<CompositeKeySimple, int32_t> cache = grid.GetOrCreateCache<CompositeKeySimple, int32_t>("cache2");
+
+    SqlFieldsQuery qry("INSERT INTO Integer (str, ts, i64, _val) VALUES (?, ?, ?, ?)");
+
+    qry.AddArgument(key.str);
+    qry.AddArgument(key.ts);
+    qry.AddArgument(key.i64);
     qry.AddArgument(value);
 
     cache.Query(qry);

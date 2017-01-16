@@ -44,6 +44,7 @@ using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -113,39 +114,9 @@ struct QueriesTestSuiteFixture
         SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
 
-    static Ignite StartNode(const char* name, const char* config)
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        BOOST_REQUIRE(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
-
-        IgniteError err;
-
-        return Ignition::Start(cfg, name);
-    }
-
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartNode(name, "queries-test-noodbc.xml");
+        return StartNode("queries-test-noodbc.xml", name);
     }
 
     /**
@@ -158,7 +129,7 @@ struct QueriesTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
-        grid = StartNode("NodeMain", "queries-test.xml");
+        grid = StartNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");

@@ -19,6 +19,8 @@
 
 #include "test_utils.h"
 
+using namespace ignite_test;
+
 namespace ignite
 {
     SqlTestSuiteFixture::SqlTestSuiteFixture():
@@ -27,35 +29,7 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        BOOST_REQUIRE(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
-
-        IgniteError err;
-
-        grid = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_FAIL(err.GetText()) ;
+        grid = StartNode("queries-test.xml");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -84,7 +58,7 @@ namespace ignite
 
         if (!SQL_SUCCEEDED(ret))
         {
-            Ignition::Stop(grid.GetName(), true);
+            Ignition::StopAll(true);
 
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
         }
@@ -107,7 +81,7 @@ namespace ignite
         SQLFreeHandle(SQL_HANDLE_DBC, dbc);
         SQLFreeHandle(SQL_HANDLE_ENV, env);
 
-        ignite::Ignition::Stop(grid.GetName(), true);
+        ignite::Ignition::StopAll(true);
     }
 
     void SqlTestSuiteFixture::CheckSingleResult0(const char* request,
