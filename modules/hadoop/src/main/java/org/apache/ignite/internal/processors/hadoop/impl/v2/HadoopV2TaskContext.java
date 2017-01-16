@@ -42,7 +42,6 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.hadoop.io.PartiallyRawComparator;
 import org.apache.ignite.hadoop.io.TextPartiallyRawComparator;
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopExternalSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
@@ -508,12 +507,6 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         FileSystem fs;
 
         try {
-            // This assertion uses .startsWith() instead of .equals() because task class loaders may
-            // be reused between tasks of the same job.
-            assert ((HadoopClassLoader)getClass().getClassLoader()).name()
-                .startsWith(HadoopClassLoader.nameForTask(taskInfo(), true));
-
-            // We also cache Fs there, all them will be cleared explicitly upon the Job end.
             fs = fileSystemForMrUserWithCaching(jobDir.toUri(), jobConf(), fsMap);
         }
         catch (IOException e) {
