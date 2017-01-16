@@ -15,26 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
+import java.io.Externalizable;
 
 /**
- * Map-reduce execution planner.
+ * Abstract fragment of an input data source.
  */
-public interface HadoopMapReducePlanner {
+public abstract class HadoopInputSplit implements Externalizable {
+    /** */
+    protected String[] hosts;
+
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
+     * Array of hosts where this input split resides.
      *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
+     * @return Hosts.
      */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    public String[] hosts() {
+        assert hosts != null;
+
+        return hosts;
+    }
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @param obj Another object.
+     * @return {@code true} If objects are equal.
+     */
+    @Override public abstract boolean equals(Object obj);
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @return Hash code of the object.
+     */
+    @Override public abstract int hashCode();
 }
