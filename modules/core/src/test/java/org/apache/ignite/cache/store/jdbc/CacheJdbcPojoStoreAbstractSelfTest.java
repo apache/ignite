@@ -30,6 +30,7 @@ import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Person;
+import org.apache.ignite.cache.store.jdbc.model.PersonGender;
 import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -397,6 +398,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         Connection conn = getConnection();
         try {
+            Random rnd = new Random();
+
             PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME FROM PERSON WHERE ID = ?");
 
             stmt.setInt(1, -1);
@@ -409,7 +412,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             Date testDate = Date.valueOf("2001-05-05");
 
-            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999);
+            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999, PersonGender.values()[rnd.nextInt(2)]);
 
             Object key = builtinKeys ? Integer.valueOf(-1) : new PersonKey(-1);
 
@@ -432,7 +435,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             // Test put-update.
             testDate = Date.valueOf("2016-04-04");
 
-            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999));
+            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999, PersonGender.values()[rnd.nextInt(2)]));
 
             rs = stmt.executeQuery();
 
