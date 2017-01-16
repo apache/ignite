@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class PluginTest
     {
+        /** Plugin log. */
+        private static readonly List<string> PluginLog = new List<string>();
+
         /// <summary>
         /// Tests the plugin life cycle.
         /// </summary>
@@ -99,14 +102,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
                                           "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
 
             // Provider throws an exception.
-            Assert.IsFalse(ExceptionPluginProvider.Stopped);
-            Assert.IsFalse(ExceptionPluginProvider.IgniteStopped);
+            PluginLog.Clear();
 
-            var ioex = Assert.Throws<IOException>(() => check(new[] {new ExceptionConfig()}));
+            var ioex = Assert.Throws<IOException>(() => check(new IPluginConfiguration[]
+            {
+                new NormalConfig(), new ExceptionConfig()
+            }));
             Assert.AreEqual("Failure in plugin provider", ioex.Message);
 
-            Assert.IsTrue(ExceptionPluginProvider.Stopped);
-            Assert.IsTrue(ExceptionPluginProvider.IgniteStopped);
+            // Verify that plugins are started and stopped in correct order:
+            Assert.AreEqual(
+                new[]
+                {
+                    "normalPlugin.Start", "errPlugin.Start",
+                    "errPlugin.OnIgniteStop", "normalPlugin.OnIgniteStop",
+                    "errPlugin.Stop", "normalPlugin.Stop"
+                }, PluginLog);
         }
 
         private class NoAttributeConfig : IPluginConfiguration
@@ -139,28 +150,62 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         private class ExceptionPluginProvider : IPluginProvider<ExceptionConfig>
         {
-            public static bool Stopped;
-            public static bool IgniteStopped;
-
             public string Name { get { return "errPlugin"; } }
             public string Copyright { get { return null; } }
             public T GetPlugin<T>() where T : class { return default(T); }
 
             public void Stop(bool cancel)
             {
-                Stopped = true;
-
+                PluginLog.Add(Name + ".Stop");
             }
-            public void OnIgniteStart() { /* No-op. */ }
+
+            public void OnIgniteStart()
+            {
+                PluginLog.Add(Name + ".OnIgniteStart");
+            }
 
             public void OnIgniteStop(bool cancel)
             {
-                IgniteStopped = true;
+                PluginLog.Add(Name + ".OnIgniteStop");
             }
 
             public void Start(IPluginContext<ExceptionConfig> context)
             {
+                PluginLog.Add(Name + ".Start");
                 throw new IOException("Failure in plugin provider");
+            }
+        }
+
+        [PluginProviderType(typeof(NormalPluginProvider))]
+        private class NormalConfig : IPluginConfiguration
+        {
+            // No-op.
+        }
+
+        private class NormalPluginProvider : IPluginProvider<NormalConfig>
+        {
+            public string Name { get { return "normalPlugin"; } }
+            public string Copyright { get { return null; } }
+            public T GetPlugin<T>() where T : class { return default(T); }
+
+            public void Stop(bool cancel)
+            {
+                PluginLog.Add(Name + ".Stop");
+            }
+
+            public void OnIgniteStart()
+            {
+                PluginLog.Add(Name + ".OnIgniteStart");
+            }
+
+            public void OnIgniteStop(bool cancel)
+            {
+                PluginLog.Add(Name + ".OnIgniteStop");
+            }
+
+            public void Start(IPluginContext<NormalConfig> context)
+            {
+                PluginLog.Add(Name + ".Start");
             }
         }
     }
