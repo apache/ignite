@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.suggestions;
 
 import java.util.LinkedList;
 import java.util.List;
