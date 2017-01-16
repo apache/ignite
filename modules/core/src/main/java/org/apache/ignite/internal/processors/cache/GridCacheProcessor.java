@@ -2041,8 +2041,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (desc == null)
                     continue;
-
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cache.name(), null);
+                // requestId must be null because on different node will be different byte [] and we get duplicate discovery data
+                // see TcpDiscoveryNodeAddedMessage#addDiscoveryData 'Arrays.equals(curData, discoDataEntry.getValue())'
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(null, cache.name(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -2068,7 +2069,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
-                    UUID.randomUUID(), desc.cacheConfiguration().getName(), null);
+                    null, desc.cacheConfiguration().getName(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -2083,7 +2084,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
-                    UUID.randomUUID(), desc.cacheConfiguration().getName(), null);
+                    null, desc.cacheConfiguration().getName(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
