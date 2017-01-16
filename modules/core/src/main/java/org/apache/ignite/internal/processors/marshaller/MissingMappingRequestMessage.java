@@ -48,6 +48,7 @@ public class MissingMappingRequestMessage implements Message {
      * Default constructor.
      */
     public MissingMappingRequestMessage() {
+        //No-op.
     }
 
     /**

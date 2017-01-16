@@ -70,7 +70,11 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
      * @param item Item.
      * @param syncMap Sync map.
      */
-    ClientRequestFuture(GridKernalContext ctx, MarshallerMappingItem item, Map<MarshallerMappingItem, ClientRequestFuture> syncMap) {
+    ClientRequestFuture(
+            GridKernalContext ctx,
+            MarshallerMappingItem item,
+            Map<MarshallerMappingItem, ClientRequestFuture> syncMap
+    ) {
         ioMgr = ctx.io();
         discoMgr = ctx.discovery();
         aliveSrvNodes = new LinkedList<>(discoMgr.aliveSrvNodes());
@@ -92,7 +96,13 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
                 ClusterNode srvNode = aliveSrvNodes.poll();
 
                 try {
-                    ioMgr.send(srvNode, GridTopic.TOPIC_MAPPING_MARSH, new MissingMappingRequestMessage(item.platformId(), item.typeId()), GridIoPolicy.SYSTEM_POOL);
+                    ioMgr.send(
+                            srvNode,
+                            GridTopic.TOPIC_MAPPING_MARSH,
+                            new MissingMappingRequestMessage(
+                                    item.platformId(),
+                                    item.typeId()),
+                            GridIoPolicy.SYSTEM_POOL);
 
                     if (discoMgr.node(srvNode.id()) == null)
                         continue;
@@ -102,7 +112,9 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
                     break;
                 }
                 catch (IgniteCheckedException ignored) {
-                    U.warn(log, "Failed to request marshaller mapping from remote node (proceeding with the next one): " + srvNode);
+                    U.warn(log,
+                            "Failed to request marshaller mapping from remote node (proceeding with the next one): "
+                                    + srvNode);
                 }
             }
 
@@ -110,7 +122,12 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
         }
 
         if (noSrvsInCluster)
-            onDone(MappingExchangeResult.createFailureResult(new IgniteCheckedException("All server nodes have left grid, cannot request mapping [platformId: " + item.platformId() + "; typeId: " + item.typeId() + "]")));
+            onDone(MappingExchangeResult.createFailureResult(
+                    new IgniteCheckedException(
+                            "All server nodes have left grid, cannot request mapping [platformId: "
+                                    + item.platformId()
+                                    + "; typeId: "
+                                    + item.typeId() + "]")));
     }
 
     /**
@@ -130,7 +147,8 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
     }
 
     /**
-     * If left node is actually the one latest mapping request was sent to, request is sent again to the next node in topology.
+     * If left node is actually the one latest mapping request was sent to,
+     * request is sent again to the next node in topology.
      *
      * @param leftNodeId Left node id.
      */

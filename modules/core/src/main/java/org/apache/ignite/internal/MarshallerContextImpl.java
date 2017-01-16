@@ -207,7 +207,13 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                 if ((oldClsName = sysTypesMap.put(typeId, new MappedName(clsName, true))) != null) {
                     if (!oldClsName.className().equals(clsName))
-                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", oldClsName=" + oldClsName + ", clsName=" + clsName + ']');
+                        throw new IgniteException(
+                                "Duplicate type ID [id="
+                                        + typeId
+                                        + ", oldClsName="
+                                        + oldClsName
+                                        + ", clsName="
+                                        + clsName + ']');
                 }
 
                 sysTypesSet.add(clsName);
@@ -216,7 +222,11 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+    @Override public boolean registerClassName(
+            byte platformId,
+            int typeId,
+            String clsName
+    ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -268,7 +278,12 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param conflictingClsName Conflicting class name.
      * @param clsName Class name.
      */
-    private IgniteCheckedException duplicateIdException(byte platformId, int typeId, String conflictingClsName, String clsName) {
+    private IgniteCheckedException duplicateIdException(
+            byte platformId,
+            int typeId,
+            String conflictingClsName,
+            String clsName
+    ) {
         return new IgniteCheckedException("Duplicate ID [platformId="
                 + platformId
                 + ", typeId="
@@ -318,7 +333,10 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+    @Override public String getClassName(
+            byte platformId,
+            int typeId
+    ) throws ClassNotFoundException, IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -335,20 +353,32 @@ public class MarshallerContextImpl implements MarshallerContext {
             else
                 if (isClientNode) {
                     mappedName = cache.get(typeId);
+
                     if (mappedName == null) {
-                        GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(new MarshallerMappingItem(platformId, typeId, null), cache);
+                        GridFutureAdapter<MappingExchangeResult> fut = transport.requestMapping(
+                                new MarshallerMappingItem(platformId, typeId, null),
+                                cache);
+
                         clsName = fut.get().className();
                     }
                     else
                         clsName = mappedName.className();
 
                     if (clsName == null)
-                        throw new ClassNotFoundException("Requesting mapping from grid failed for [platformId=" + platformId + ", typeId=" + typeId + "]");
+                        throw new ClassNotFoundException(
+                                "Requesting mapping from grid failed for [platformId="
+                                        + platformId
+                                        + ", typeId="
+                                        + typeId + "]");
 
                     return clsName;
                 }
                 else
-                    throw new ClassNotFoundException("Unknown pair [platformId= " + platformId + ", typeId=" + typeId + "]");
+                    throw new ClassNotFoundException(
+                            "Unknown pair [platformId= "
+                                    + platformId
+                                    + ", typeId="
+                                    + typeId + "]");
         }
 
         return clsName;
@@ -383,7 +413,11 @@ public class MarshallerContextImpl implements MarshallerContext {
         MappedName mappedName = cache.get(typeId);
 
         if (mappedName != null)
-            assert resolvedClsName.equals(mappedName.className()) : "Class name resolved from cluster: " + resolvedClsName + ", class name from local cache: " + mappedName.className();
+            assert resolvedClsName.equals(mappedName.className()) :
+                    "Class name resolved from cluster: "
+                            + resolvedClsName
+                            + ", class name from local cache: "
+                            + mappedName.className();
         else {
             mappedName = new MappedName(resolvedClsName, true);
             cache.putIfAbsent(typeId, mappedName);
@@ -437,7 +471,12 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param targetIdx Target index.
      * @param size Size.
      */
-    private static void putAtIndex(ConcurrentMap<Integer, MappedName> map, Collection<ConcurrentMap<Integer, MappedName>> allCaches, byte targetIdx, int size) {
+    private static void putAtIndex(
+            ConcurrentMap<Integer, MappedName> map,
+            Collection<ConcurrentMap<Integer, MappedName>> allCaches,
+            byte targetIdx,
+            int size
+    ) {
         int lastIdx = size - 1;
 
         int nullElemsToAdd = targetIdx - lastIdx - 1;
@@ -452,7 +491,10 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param ctx Context.
      * @param transport Transport.
      */
-    public void onMarshallerProcessorStarted(GridKernalContext ctx, MarshallerMappingTransport transport) throws IgniteCheckedException {
+    public void onMarshallerProcessorStarted(
+            GridKernalContext ctx,
+            MarshallerMappingTransport transport
+    ) throws IgniteCheckedException {
         assert ctx != null;
 
         IgniteConfiguration cfg = ctx.config();
@@ -474,7 +516,8 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      *
      */
-    static final class CombinedMap extends AbstractMap<Integer, MappedName> implements ConcurrentMap<Integer, MappedName> {
+    static final class CombinedMap extends AbstractMap<Integer, MappedName>
+            implements ConcurrentMap<Integer, MappedName> {
         /** */
         private final ConcurrentMap<Integer, MappedName> userMap;
 

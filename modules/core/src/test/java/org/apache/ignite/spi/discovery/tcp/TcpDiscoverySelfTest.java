@@ -1991,7 +1991,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            assertEquals("Expected items in marshaller discovery data: 1, actual: " + TestTcpDiscoveryMarshallerDataSpi.marshalledItems, 1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+            assertEquals("Expected items in marshaller discovery data: 1, actual: "
+                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                    1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
 
             IgniteCache<Object, Object> employees = srv1.createCache("employees");
 
@@ -1999,7 +2001,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(2);
 
-            assertEquals("Expected items in marshaller discovery data: 2, actual: " + TestTcpDiscoveryMarshallerDataSpi.marshalledItems, 2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+            assertEquals("Expected items in marshaller discovery data: 2, actual: "
+                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                    2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
         } finally {
             stopAllGrids();
         }
@@ -2181,6 +2185,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                 DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
+
                 if (dataPacket != null) {
                     Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
 
@@ -2189,6 +2194,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+
                 if (dataPacket != null) {
                     Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
 

@@ -56,8 +56,10 @@ public class OptimizedMarshallerEnumSelfTest extends TestCase {
 
     private GridKernalContext newContext() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
         cfg.setIgniteHome(igniteHome);
         cfg.setClientMode(false);
+
         return new GridTestKernalContext(rootLog.getLogger(OptimizedMarshallerEnumSelfTest.class), cfg);
     }
 

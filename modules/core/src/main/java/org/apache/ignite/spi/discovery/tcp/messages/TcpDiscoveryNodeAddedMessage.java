@@ -214,7 +214,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     *
+     * @return {@link DiscoveryDataPacket} carried by this message.
      */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;

@@ -34,7 +34,8 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
 /**
- * Carries discovery data in marshalled form and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
+ * Carries discovery data in marshalled form
+ * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
 public class DiscoveryDataPacket implements Serializable {
     /** */
@@ -104,7 +105,12 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clientNode Client node.
      * @param log Logger.
      */
-    public DiscoveryDataBag unmarshalGridData(Marshaller marsh, ClassLoader clsLdr, boolean clientNode, IgniteLogger log) {
+    public DiscoveryDataBag unmarshalGridData(
+            Marshaller marsh,
+            ClassLoader clsLdr,
+            boolean clientNode,
+            IgniteLogger log
+    ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
 
         if (commonData != null && !commonData.isEmpty()) {
@@ -139,11 +145,21 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clientNode Client node.
      * @param log Logger.
      */
-    public DiscoveryDataBag unmarshalJoiningNodeData(Marshaller marsh, ClassLoader clsLdr, boolean clientNode, IgniteLogger log) {
+    public DiscoveryDataBag unmarshalJoiningNodeData(
+            Marshaller marsh,
+            ClassLoader clsLdr,
+            boolean clientNode,
+            IgniteLogger log
+    ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            Map<Integer, Serializable> unmarshJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log);
+            Map<Integer, Serializable> unmarshJoiningNodeData = unmarshalData(
+                    joiningNodeData,
+                    marsh,
+                    clsLdr,
+                    clientNode,
+                    log);
 
             dataBag.joiningNodeData(unmarshJoiningNodeData);
         }
@@ -170,7 +186,11 @@ public class DiscoveryDataPacket implements Serializable {
      * @param mrgdCmnDataKeys Mrgd cmn data keys.
      * @param mrgdSpecifDataKeys Mrgd specif data keys.
      */
-    public boolean mergeDataFrom(DiscoveryDataPacket existingDataPacket, Collection<Integer> mrgdCmnDataKeys, Collection<UUID> mrgdSpecifDataKeys) {
+    public boolean mergeDataFrom(
+            DiscoveryDataPacket existingDataPacket,
+            Collection<Integer> mrgdCmnDataKeys,
+            Collection<UUID> mrgdSpecifDataKeys
+    ) {
         if (commonData.size() != mrgdCmnDataKeys.size()) {
             for (Map.Entry<Integer, byte[]> e : commonData.entrySet()) {
                 if (!mrgdCmnDataKeys.contains(e.getKey())) {
@@ -240,7 +260,13 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clsLdr Class loader.
      * @param log Logger.
      */
-    private Map<Integer, Serializable> unmarshalData(Map<Integer, byte[]> src, Marshaller marsh, ClassLoader clsLdr, boolean clientNode, IgniteLogger log) {
+    private Map<Integer, Serializable> unmarshalData(
+            Map<Integer, byte[]> src,
+            Marshaller marsh,
+            ClassLoader clsLdr,
+            boolean clientNode,
+            IgniteLogger log
+    ) {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
@@ -266,12 +292,18 @@ public class DiscoveryDataPacket implements Serializable {
      * @param marsh Marsh.
      * @param log Logger.
      */
-    private void marshalData(Map<Integer, Serializable> src, Map<Integer, byte[]> target, Marshaller marsh, IgniteLogger log) {
-        //may happen if nothing was collected from components, corresponding map (for common data or for node specific data) left null
+    private void marshalData(
+            Map<Integer, Serializable> src,
+            Map<Integer, byte[]> target,
+            Marshaller marsh,
+            IgniteLogger log
+    ) {
+        //may happen if nothing was collected from components,
+        // corresponding map (for common data or for node specific data) left null
         if (src == null)
             return;
 
-        for (Map.Entry<Integer, Serializable> entry : src.entrySet())
+        for (Map.Entry<Integer, Serializable> entry : src.entrySet()) {
             try {
                 target.put(entry.getKey(), marsh.marshal(entry.getValue()));
             }
@@ -279,6 +311,7 @@ public class DiscoveryDataPacket implements Serializable {
                 U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
             }
+        }
     }
 
     /**

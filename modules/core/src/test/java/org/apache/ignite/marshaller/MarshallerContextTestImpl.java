@@ -86,7 +86,10 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+    @Override public String getClassName(
+            byte platformId,
+            int typeId
+    ) throws ClassNotFoundException, IgniteCheckedException {
         String clsName = map.get(typeId);
         return (clsName == null) ? super.getClassName(platformId, typeId) : clsName;
     }

@@ -24,6 +24,8 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -82,14 +84,16 @@ public interface GridComponent {
     public void onKernalStop(boolean cancel);
 
     /**
-     * Collects discovery data on joining node before sending {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage} request.
+     * Collects discovery data on joining node before sending
+     * {@link TcpDiscoveryJoinRequestMessage} request.
      *
      * @param dataBag container object to store discovery data in.
      */
     public void collectJoiningNodeData(DiscoveryDataBag dataBag);
 
     /**
-     * Collects discovery data on nodes already in grid on receiving {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage}.
+     * Collects discovery data on nodes already in grid on receiving
+     * {@link TcpDiscoveryNodeAddedMessage}.
      *
      * @param dataBag container object to store discovery data in.
      */
@@ -99,7 +103,8 @@ public interface GridComponent {
      * Receives discovery data object from remote nodes (called
      * on new node during discovery process).
      *
-     * @param data {@link GridDiscoveryData} interface to retrieve discovery data collected on remote nodes (data common for all nodes in grid and specific for each node).
+     * @param data {@link GridDiscoveryData} interface to retrieve discovery data collected on remote nodes
+     *                                      (data common for all nodes in grid and specific for each node).
      */
     public void onGridDataReceived(GridDiscoveryData data);
 
@@ -129,7 +134,8 @@ public interface GridComponent {
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value
-     * if component implements any of methods {@link #collectJoiningNodeData(DiscoveryDataBag)} or {@link #collectGridNodeData(DiscoveryDataBag)}.
+     * if component implements any of methods {@link #collectJoiningNodeData(DiscoveryDataBag)}
+     * or {@link #collectGridNodeData(DiscoveryDataBag)}.
      *
      * @return Unique component type for discovery data exchange.
      */

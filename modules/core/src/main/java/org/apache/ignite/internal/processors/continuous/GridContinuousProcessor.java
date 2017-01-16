@@ -505,7 +505,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         if (data.hasJoiningNodeData())
-            applyDiscoveryData((DiscoveryData) data.joiningNodeData());
+            onDiscoDataReceived((DiscoveryData) data.joiningNodeData());
     }
 
     /** {@inheritDoc} */
@@ -514,14 +514,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (nodeSpecData != null) {
             for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                applyDiscoveryData((DiscoveryData) e.getValue());
+                onDiscoDataReceived((DiscoveryData) e.getValue());
         }
     }
 
     /**
-     * @param data Data.
+     * @param data received discovery data.
      */
-    private void applyDiscoveryData(DiscoveryData data) {
+    private void onDiscoDataReceived(DiscoveryData data) {
         if (!ctx.isDaemon() && data != null) {
             for (DiscoveryDataItem item : data.items) {
                 try {

@@ -27,7 +27,8 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides capabilities of sending custom discovery events to propose new mapping or request missing mapping to {@link MarshallerContextImpl}.
+ * Provides capabilities of sending custom discovery events to propose new mapping
+ * or request missing mapping to {@link MarshallerContextImpl}.
  *
  * For more information about particular events see documentation of {@link GridMarshallerMappingProcessor}.
  */
@@ -52,7 +53,11 @@ public final class MarshallerMappingTransport {
      * @param mappingExchSyncMap Mapping exch sync map.
      * @param clientReqSyncMap Client request sync map.
      */
-    MarshallerMappingTransport(GridKernalContext ctx, ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap, ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap) {
+    MarshallerMappingTransport(
+            GridKernalContext ctx,
+            ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchSyncMap,
+            ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap
+    ) {
         this.ctx = ctx;
         discoMgr = ctx.discovery();
         this.mappingExchSyncMap = mappingExchSyncMap;
@@ -65,10 +70,14 @@ public final class MarshallerMappingTransport {
      * @param item Item.
      * @param cache Cache.
      */
-    public GridFutureAdapter<MappingExchangeResult> awaitMappingAcceptance(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) {
+    public GridFutureAdapter<MappingExchangeResult> awaitMappingAcceptance(
+            MarshallerMappingItem item, ConcurrentMap<Integer,
+            MappedName> cache
+    ) {
         GridFutureAdapter<MappingExchangeResult> fut = new MappingExchangeResultFuture(item);
 
         GridFutureAdapter<MappingExchangeResult> oldFut = mappingExchSyncMap.putIfAbsent(item, fut);
+
         if (oldFut != null)
             return oldFut;
 
@@ -122,7 +131,10 @@ public final class MarshallerMappingTransport {
      * @param item Item.
      * @param cache Cache.
      */
-    public GridFutureAdapter<MappingExchangeResult> requestMapping(MarshallerMappingItem item, ConcurrentMap<Integer, MappedName> cache) {
+    public GridFutureAdapter<MappingExchangeResult> requestMapping(
+            MarshallerMappingItem item,
+            ConcurrentMap<Integer, MappedName> cache
+    ) {
         ClientRequestFuture newFut = new ClientRequestFuture(ctx, item, clientReqSyncMap);
 
         ClientRequestFuture oldFut = clientReqSyncMap.putIfAbsent(item, newFut);

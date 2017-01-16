@@ -115,8 +115,9 @@ public class ClusterProcessor extends GridProcessorAdapter {
         dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
     }
 
+
     /**
-     *
+     * @return Discovery data.
      */
     private Serializable getDiscoveryData() {
         HashMap<String, Object> map = new HashMap<>();
@@ -132,14 +133,19 @@ public class ClusterProcessor extends GridProcessorAdapter {
 
         if (nodeSpecData != null) {
             Boolean lstFlag = findLastFlag(nodeSpecData.values());
+
             if (lstFlag != null)
                 notifyEnabled.set(lstFlag);
         }
     }
 
-    /**  */
+
+    /**
+     * @param vals collection to seek through.
+     */
     private Boolean findLastFlag(Collection<Serializable> vals) {
         Boolean flag = null;
+
         for (Serializable ser : vals) {
             if (ser != null) {
                 Map<String, Object> map = (Map<String, Object>) ser;
@@ -148,6 +154,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
                     flag = (Boolean) map.get(ATTR_UPDATE_NOTIFIER_STATUS);
             }
         }
+
         return flag;
     }
 

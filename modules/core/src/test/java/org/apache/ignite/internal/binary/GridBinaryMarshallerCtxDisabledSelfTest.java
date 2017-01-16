@@ -89,17 +89,27 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
      */
     private static class MarshallerContextWithNoStorage implements MarshallerContext {
         /** {@inheritDoc} */
-        @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+        @Override public boolean registerClassName(
+                byte platformId,
+                int typeId,
+                String clsName
+        ) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+        @Override public Class getClass(
+                int typeId,
+                ClassLoader ldr
+        ) throws ClassNotFoundException, IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+        @Override public String getClassName(
+                byte platformId,
+                int typeId
+        ) throws ClassNotFoundException, IgniteCheckedException {
             return null;
         }
 

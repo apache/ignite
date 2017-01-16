@@ -22,10 +22,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.GridComponent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides interface for {@link org.apache.ignite.internal.GridComponent} to collect and exchange discovery data both on
+ * Provides interface for {@link GridComponent} to collect and exchange discovery data both on
  * joining node and on cluster nodes.
  *
  * It only organizes interaction with components and doesn't provide any capabilities of converting collected data
@@ -98,7 +99,8 @@ public class DiscoveryDataBag {
         private int cmpId;
 
         /** */
-        private Map<UUID, Serializable> nodeSpecificData = new LinkedHashMap<>(DiscoveryDataBag.this.nodeSpecificData.size());
+        private Map<UUID, Serializable> nodeSpecificData
+                = new LinkedHashMap<>(DiscoveryDataBag.this.nodeSpecificData.size());
 
         /** {@inheritDoc} */
         @Override public UUID joiningNodeId() {
@@ -109,6 +111,7 @@ public class DiscoveryDataBag {
         @Override @Nullable public Serializable commonData() {
             if (commonData != null)
                 return commonData.get(cmpId);
+
             return null;
         }
 
@@ -118,21 +121,24 @@ public class DiscoveryDataBag {
         }
 
         /**
-         * @param cmpId Cmp id.
+         * @param cmpId component ID.
          */
         private void componentId(int cmpId) {
             this.cmpId = cmpId;
+
             reinitNodeSpecData(cmpId);
         }
 
         /**
-         * @param cmpId Cmp id.
+         * @param cmpId component ID.
          */
         private void reinitNodeSpecData(int cmpId) {
             nodeSpecificData.clear();
-            for (Map.Entry<UUID, Map<Integer, Serializable>> e : DiscoveryDataBag.this.nodeSpecificData.entrySet())
+
+            for (Map.Entry<UUID, Map<Integer, Serializable>> e : DiscoveryDataBag.this.nodeSpecificData.entrySet()) {
                 if (e.getValue() != null && e.getValue().containsKey(cmpId))
                     nodeSpecificData.put(e.getKey(), e.getValue().get(cmpId));
+            }
         }
     }
 
@@ -189,27 +195,31 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param cmpId Cmp id.
+     * @param cmpId component ID.
      */
     public GridDiscoveryData gridDiscoveryData(int cmpId) {
         if (gridData == null)
             gridData = new GridDiscoveryDataImpl();
+
         gridData.componentId(cmpId);
+
         return gridData;
     }
 
     /**
-     * @param cmpId Cmp id.
+     * @param cmpId component ID.
      */
     public JoiningNodeDiscoveryData newJoinerDiscoveryData(int cmpId) {
         if (newJoinerData == null)
             newJoinerData = new JoiningNodeDiscoveryDataImpl();
+
         newJoinerData.setComponentId(cmpId);
+
         return newJoinerData;
     }
 
     /**
-     * @param cmpId Cmp id.
+     * @param cmpId component ID.
      * @param data Data.
      */
     public void addJoiningNodeData(Integer cmpId, Serializable data) {
@@ -217,7 +227,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param cmpId Cmp id.
+     * @param cmpId component ID.
      * @param data Data.
      */
     public void addGridCommonData(Integer cmpId, Serializable data) {
@@ -225,7 +235,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param cmpId Cmp id.
+     * @param cmpId component ID.
      * @param data Data.
      */
     public void addNodeSpecificData(Integer cmpId, Serializable data) {
@@ -236,7 +246,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param cmpId Cmp id.
+     * @param cmpId component ID.
      */
     public boolean commonDataCollectedFor(Integer cmpId) {
         assert cmnDataInitializedCmps != null;
@@ -245,7 +255,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param joinNodeData Join node data.
+     * @param joinNodeData Joining node data.
      */
     public void joiningNodeData(Map<Integer, Serializable> joinNodeData) {
         joiningNodeData.putAll(joinNodeData);
@@ -259,7 +269,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param nodeSpecData Node specification data.
+     * @param nodeSpecData Node specific data.
      */
     public void nodeSpecificData(Map<UUID, Map<Integer, Serializable>> nodeSpecData) {
         nodeSpecificData.putAll(nodeSpecData);

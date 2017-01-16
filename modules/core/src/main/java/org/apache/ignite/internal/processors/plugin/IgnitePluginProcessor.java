@@ -208,12 +208,13 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         if (nodeSpecificData != null) {
             UUID joiningNodeId = data.joiningNodeId();
 
-            for (Serializable v : nodeSpecificData.values())
+            for (Serializable v : nodeSpecificData.values()) {
                 if (v != null) {
                     Map<String, Serializable> pluginsData = (Map<String, Serializable>) v;
 
                     applyPluginsData(joiningNodeId, pluginsData);
                 }
+            }
         }
     }
 

@@ -79,7 +79,8 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
                 Object internelExecutor = clazz.newInstance();
 
-                clazz.getMethod("executeTest", GridTestLog4jLogger.class, GridKernalContext.class).invoke(internelExecutor, log, ctx);
+                clazz.getMethod("executeTest", GridTestLog4jLogger.class, GridKernalContext.class)
+                        .invoke(internelExecutor, log, ctx);
 
                 return null;
             }

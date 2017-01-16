@@ -669,12 +669,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 else {
                     //discovery data from newly joined node has to be applied to the current old node
-                    for (GridComponent c : ctx.components())
+                    for (GridComponent c : ctx.components()) {
                         if (c.discoveryDataType() != null) {
-                            JoiningNodeDiscoveryData data = dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
+                            JoiningNodeDiscoveryData data =
+                                    dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
+
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
                         }
+                    }
                 }
             }
         });

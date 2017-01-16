@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
-class MappingAcceptedMessage implements DiscoveryCustomMessage {
+public class MappingAcceptedMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

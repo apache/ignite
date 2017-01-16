@@ -31,6 +31,7 @@ import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -50,7 +51,8 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_MAPPING_MARSH;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
- * Processor responsible for managing custom {@link org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage} events for exchanging marshalling mappings between nodes in grid.
+ * Processor responsible for managing custom {@link DiscoveryCustomMessage}
+ * events for exchanging marshalling mappings between nodes in grid.
  *
  * In particular it processes two flows:
  * <ul>
@@ -59,8 +61,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  *         In that case a pair of {@link MappingProposedMessage} and {@link MappingAcceptedMessage} events is used.
  *     </li>
  *     <li>
- *         As discovery events are delivered to clients asynchronously, client node may not have some mapping when server nodes in the grid are already allowed to use the mapping.
- *         In that situation client sends a {@link MissingMappingRequestMessage} request and processor handles it as well as {@link MissingMappingResponseMessage} message.
+ *         As discovery events are delivered to clients asynchronously,
+ *         client node may not have some mapping when server nodes in the grid are already allowed to use the mapping.
+ *         In that situation client sends a {@link MissingMappingRequestMessage} request
+ *         and processor handles it as well as {@link MissingMappingResponseMessage} message.
  *     </li>
  * </ul>
  */
@@ -69,7 +73,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     private final MarshallerContextImpl marshallerCtx;
 
     /** */
-    private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchangeSyncMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchangeSyncMap
+            = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap = new ConcurrentHashMap8<>();
@@ -88,7 +93,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         GridDiscoveryManager discoMgr = ctx.discovery();
         GridIoManager ioMgr = ctx.io();
 
-        MarshallerMappingTransport transport = new MarshallerMappingTransport(ctx, mappingExchangeSyncMap, clientReqSyncMap);
+        MarshallerMappingTransport transport = new MarshallerMappingTransport(
+                ctx,
+                mappingExchangeSyncMap,
+                clientReqSyncMap
+        );
         marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
         discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
@@ -139,7 +148,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             String resolvedClsName = marshallerCtx.resolveMissedMapping(platformId, typeId);
 
             try {
-                ioMgr.send(nodeId, TOPIC_MAPPING_MARSH, new MissingMappingResponseMessage(platformId, typeId, resolvedClsName), SYSTEM_POOL);
+                ioMgr.send(
+                        nodeId,
+                        TOPIC_MAPPING_MARSH,
+                        new MissingMappingResponseMessage(platformId, typeId, resolvedClsName),
+                        SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send missing mapping response.", e);
@@ -187,7 +200,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      */
     private final class MarshallerMappingExchangeListener implements CustomEventListener<MappingProposedMessage> {
         /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingProposedMessage msg) {
+        @Override public void onCustomEvent(
+                AffinityTopologyVersion topVer,
+                ClusterNode snd,
+                MappingProposedMessage msg
+        ) {
             if (!ctx.isStopping()) {
                 if (msg.duplicated())
                     return;
@@ -205,12 +222,14 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 }
                 else {
                     UUID origNodeId = msg.origNodeId();
+
                     if (origNodeId.equals(ctx.localNodeId())) {
                         GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.mappingItem());
 
                         assert fut != null: msg;
 
-                        fut.onDone(MappingExchangeResult.createFailureResult(duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));
+                        fut.onDone(MappingExchangeResult.createFailureResult(
+                                duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));
                     }
                 }
             }
@@ -220,7 +239,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
          * @param mappingItem Mapping item.
          * @param conflictingClsName Conflicting class name.
          */
-        private IgniteCheckedException duplicateMappingException(MarshallerMappingItem mappingItem, String conflictingClsName) {
+        private IgniteCheckedException duplicateMappingException(
+                MarshallerMappingItem mappingItem,
+                String conflictingClsName
+        ) {
             return new IgniteCheckedException("Duplicate ID [platformId="
                     + mappingItem.platformId()
                     + ", typeId="
@@ -237,7 +259,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      */
     private final class MappingAcceptedListener implements CustomEventListener<MappingAcceptedMessage> {
         /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MappingAcceptedMessage msg) {
+        @Override public void onCustomEvent(
+                AffinityTopologyVersion topVer,
+                ClusterNode snd,
+                MappingAcceptedMessage msg
+        ) {
             MarshallerMappingItem item = msg.getMappingItem();
             marshallerCtx.onMappingAccepted(item);
 
@@ -261,6 +287,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         if (mappings != null) {
             for (int i = 0; i < mappings.size(); i++) {
                 Map<Integer, MappedName> map;
+
                 if ((map = mappings.get(i)) != null)
                     marshallerCtx.onMappingDataReceived((byte) i, map);
             }

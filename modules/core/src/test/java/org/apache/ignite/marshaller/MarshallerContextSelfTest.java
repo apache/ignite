@@ -102,7 +102,8 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that there is a null value inserted in allCaches list if platform ids passed to marshaller cache were not sequential (like 0, 2).
+     * Tests that there is a null value inserted in allCaches list
+     * if platform ids passed to marshaller cache were not sequential (like 0, 2).
      */
     public void testCacheStructure0() throws Exception {
         MarshallerContextImpl ctx = new MarshallerContextImpl(null);
@@ -134,7 +135,8 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that there are no null values in allCaches list if platform ids passed to marshaller context were sequential.
+     * Tests that there are no null values in allCaches list
+     * if platform ids passed to marshaller context were sequential.
      */
     public void testCacheStructure1() throws Exception {
         MarshallerContextImpl ctx = new MarshallerContextImpl(null);
@@ -155,12 +157,14 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         assertNotNull("Mapping cache is null for platformId: 1", list.get(1));
 
         boolean excObserved = false;
+
         try {
             list.get(2);
         }
         catch (ArrayIndexOutOfBoundsException ignored) {
             excObserved = true;
         }
+
         assertTrue("ArrayIndexOutOfBoundsException had to be thrown", excObserved);
     }
 

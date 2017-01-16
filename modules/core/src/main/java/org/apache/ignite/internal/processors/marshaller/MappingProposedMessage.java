@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * When it completes a pass around the cluster ring with no conflicts observed,
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
-class MappingProposedMessage implements DiscoveryCustomMessage {
+public class MappingProposedMessage implements DiscoveryCustomMessage {
     /** */
     private enum ProposalStatus {
         /** */

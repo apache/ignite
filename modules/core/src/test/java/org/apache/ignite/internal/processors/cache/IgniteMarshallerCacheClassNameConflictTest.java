@@ -48,7 +48,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * (which is actually class name's <b>hashCode</b> ).
  *
  * In that case one of the propose requests should be rejected
- * and {@link org.apache.ignite.internal.processors.marshaller.MappingProposedMessage} is sent with not-null <b>conflictingClsName</b> field.
+ * and {@link org.apache.ignite.internal.processors.marshaller.MappingProposedMessage} is sent
+ * with not-null <b>conflictingClsName</b> field.
  */
 public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstractTest {
     /** */
@@ -119,7 +120,8 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                     e.printStackTrace();
                 }
 
-                //busy spinning after waking up from startLatch.await to reduce probability that one thread starts significantly earlier than the other
+                //busy spinning after waking up from startLatch.await
+                // to reduce probability that one thread starts significantly earlier than the other
                 while (!busySpinFlag) {
                     if (trickCompilerVar.get() < 0)
                         break;
@@ -139,7 +141,8 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                     e.printStackTrace();
                 }
 
-                //busy spinning after waking up from startLatch.await to reduce probability that one thread starts significantly earlier than the other
+                //busy spinning after waking up from startLatch.await
+                // to reduce probability that one thread starts significantly earlier than the other
                 while (!busySpinFlag) {
                     if (trickCompilerVar.get() < 0)
                         break;
@@ -184,7 +187,14 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+            @Override public void onDiscovery(
+                    int type,
+                    long topVer,
+                    ClusterNode node,
+                    Collection<ClusterNode> topSnapshot,
+                    @Nullable Map<Long, Collection<ClusterNode>> topHist,
+                    @Nullable DiscoverySpiCustomMessage spiCustomMsg
+            ) {
                 DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
                         : (DiscoveryCustomMessage) U.field(spiCustomMsg, "delegate");
 

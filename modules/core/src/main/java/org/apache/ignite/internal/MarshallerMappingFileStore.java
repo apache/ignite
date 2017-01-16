@@ -40,7 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * Saves mappings in format <b>{typeId}.classname{platformId}</b>, e.g. 123.classname0.
  *
- * It writes new mapping when it is accepted by all grid members and reads mapping when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
+ * It writes new mapping when it is accepted by all grid members and reads mapping
+ * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
 final class MarshallerMappingFileStore {
     /** */
