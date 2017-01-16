@@ -60,6 +60,8 @@ namespace ignite
              */
             bool InvokeCallbackById(int64_t id, binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer)
             {
+                common::concurrent::CsLockGuard guard(lock);
+
                 std::map<int64_t, Callback*>::iterator it = callbacks.find(id);
 
                 if (it != callbacks.end())
@@ -83,18 +85,18 @@ namespace ignite
              */
             void RegisterCallback(int64_t id, Callback* proc, IgniteError& err)
             {
-                if (callbacks.find(id) != callbacks.end())
+                common::concurrent::CsLockGuard guard(lock);
+
+                bool inserted = callbacks.insert(std::make_pair(id, proc)).second;
+
+                if (!inserted)
                 {
                     std::stringstream builder;
 
                     builder << "Trying to register multiple PRC callbacks with the same ID. [id=" << id << ']';
 
                     err = IgniteError(IgniteError::IGNITE_ERR_ENTRY_PROCESSOR, builder.str().c_str());
-
-                    return;
                 }
-
-                callbacks[id] = proc;
             }
 
         private:
@@ -102,6 +104,9 @@ namespace ignite
 
             /** Registered callbacks. */
             std::map<int64_t, Callback*> callbacks;
+
+            /** Callback lock. */
+            common::concurrent::CriticalSection lock;
         };
     }
 }
