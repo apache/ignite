@@ -113,14 +113,36 @@ namespace ignite
              */
             SQL_STATE_HY001_MEMORY_ALLOCATION,
 
+            /**
+             * The argument TargetType was neither a valid data type
+             * nor SQL_C_DEFAULT
+             */
+            SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE,
+
             /** Invalid use of null pointer. */
             SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER,
 
             /** Function sequence error. */
             SQL_STATE_HY010_SEQUENCE_ERROR,
 
+            /**
+             * Invalid string or buffer length
+             */
+            SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH,
+
+            /**
+             * Option type was out of range.
+             */
+            SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE,
+
             /** Column type out of range. */
             SQL_STATE_HY097_COLUMN_TYPE_OUT_OF_RANGE,
+
+            /** The value specified for the argument InputOutputType was invalid. */
+            SQL_STATE_HY105_INVALID_PARAMETER_TYPE,
+
+            /** The value specified for the argument FetchOrientation was invalid. */
+            SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE,
 
             /**
              * The driver does not support the feature of ODBC behavior that
@@ -132,7 +154,12 @@ namespace ignite
              * The connection timeout period expired before the data source
              * responded to the request.
              */
-            SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT
+            SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT,
+
+            /**
+             * Driver does not support this function.
+             */
+            SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED
         };
 
         /**
