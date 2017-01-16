@@ -141,5 +141,29 @@ namespace Apache.Ignite.Core.Binary
         {
             get { return _compactFooter; }
         }
+
+        /// <summary>
+        /// Merges other config into this.
+        /// </summary>
+        internal void MergeTypes(BinaryConfiguration localConfig)
+        {
+            if (TypeConfigurations == null)
+            {
+                TypeConfigurations = localConfig.TypeConfigurations;
+            }
+            else if (localConfig.TypeConfigurations != null)
+            {
+                // Both configs are present.
+                // Local configuration is more complete and takes preference when it exists for a given type.
+                var localTypeNames = new HashSet<string>(localConfig.TypeConfigurations.Select(x => x.TypeName), 
+                    StringComparer.OrdinalIgnoreCase);
+
+                var configs = new List<BinaryTypeConfiguration>(localConfig.TypeConfigurations);
+
+                configs.AddRange(TypeConfigurations.Where(x=>!localTypeNames.Contains(x.TypeName)));
+
+                TypeConfigurations = configs;
+            }
+        }
     }
 }
