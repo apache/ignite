@@ -495,7 +495,7 @@
                                         <delete>
                                             <fileset dir="${basedir}/target/release-package/benchmarks/libs/">
                                                 <include name="junit-4.11.jar" />
-                                                <include name="ignite-apache-license-gen-1.9.1-QAOO1402.jar" />
+                                                <include name="ignite-apache-license-gen-*.jar" />
                                                 <include name="hamcrest-core-1.3.jar" />
                                                 <include name="tools-1.4.2.jar" />
                                             </fileset>
