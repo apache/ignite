@@ -31,26 +31,23 @@ namespace Apache.Ignite.Core.Impl.Plugin
     internal class PluginProcessor
     {
         /** */
-        private readonly IgniteConfiguration _igniteConfiguration;
-
-        /** */
         private readonly Dictionary<string, IPluginProviderProxy> _pluginProviders;
 
         /** */
-        private volatile IIgnite _ignite;
+        private readonly Ignite _ignite;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginProcessor" /> class.
+        /// Initializes a new instance of the <see cref="PluginProcessor"/> class.
         /// </summary>
-        /// <param name="igniteConfiguration">The ignite configuration.</param>
-        /// <param name="log">The log.</param>
-        public PluginProcessor(IgniteConfiguration igniteConfiguration, ILogger log)
+        /// <param name="ignite">The ignite.</param>
+        public PluginProcessor(Ignite ignite)
         {
-            Debug.Assert(igniteConfiguration != null);
-            Debug.Assert(log != null);
+            Debug.Assert(ignite != null);
 
-            _igniteConfiguration = igniteConfiguration;
-            _pluginProviders = LoadPlugins(igniteConfiguration.PluginConfigurations, log.GetLogger(GetType().Name));
+            _ignite = ignite;
+
+            _pluginProviders = LoadPlugins(ignite.Configuration.PluginConfigurations, 
+                ignite.Logger.GetLogger(GetType().Name));
         }
 
         /// <summary>
@@ -66,29 +63,19 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public IgniteConfiguration IgniteConfiguration
         {
-            get { return _igniteConfiguration; }
-        }
-
-        /// <summary>
-        /// Starts all plugins.
-        /// </summary>
-        public void Start()
-        {
-            foreach (var provider in _pluginProviders.Values)
-                provider.Start(this);
+            get { return _ignite.Configuration; }
         }
 
         /// <summary>
         /// Called when Ignite has started.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
-        public void OnIgniteStart(IIgnite ignite)
+        public void OnIgniteStart()
         {
-            Debug.Assert(ignite != null);
-
-            _ignite = ignite;
-
             // Notify plugins.
+            // TODO: What if we gen an exception? Should we stop everything in reverse order?
+            foreach (var provider in _pluginProviders.Values)
+                provider.Start(this);
+
             foreach (var provider in _pluginProviders.Values)
                 provider.OnIgniteStart();
         }

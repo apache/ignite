@@ -1117,14 +1117,6 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * Starts plugin processor.
-     */
-    public void pluginProcessorStart() {
-        // Busy lock not needed.
-        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorStart, 0);
-    }
-
-    /**
      * Stops plugin processor.
      */
     public void pluginProcessorStop(boolean cancel) {

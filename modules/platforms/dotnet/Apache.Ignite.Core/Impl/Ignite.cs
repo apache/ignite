@@ -98,6 +98,9 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
+        /** Plugin processor. */
+        private readonly PluginProcessor _pluginProcessor;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -143,6 +146,8 @@ namespace Apache.Ignite.Core.Impl
             _clientReconnectTaskCompletionSource.SetResult(false);
 
             SetCompactFooter();
+
+            _pluginProcessor = new PluginProcessor(this);
         }
 
         /// <summary>
@@ -166,7 +171,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
-            PluginProcessor.OnIgniteStart(this);
+            PluginProcessor.OnIgniteStart();
 
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
@@ -833,9 +838,9 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the plugin processor.
         /// </summary>
-        private PluginProcessor PluginProcessor
+        internal PluginProcessor PluginProcessor
         {
-            get { return _cbs.PluginProcessor; }
+            get { return _pluginProcessor; }
         }
     }
 }
