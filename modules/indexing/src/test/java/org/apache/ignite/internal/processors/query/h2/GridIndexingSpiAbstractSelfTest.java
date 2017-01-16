@@ -540,7 +540,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public String tableAlias() {
+        @Override public String tableName() {
             return null;
         }
 

@@ -253,7 +253,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
                     desc.name(simpleValType);
-                    desc.tableAlias(qryEntity.getTableName());
+                    desc.tableName(qryEntity.getTableName());
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -2216,7 +2216,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private String name;
 
         /** */
-        private String tblAlias;
+        private String tblName;
 
         /** Value field names and types with preserved order. */
         @GridToStringInclude
@@ -2286,20 +2286,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * Gets table alias for type.
-         * @return Table alias for type.
+         * Gets table name for type.
+         * @return Table name.
          */
-        public String tableAlias() {
-            return tblAlias;
+        public String tableName() {
+            return tblName;
         }
 
         /**
          * Sets table name for type.
          *
-         * @param tblalias Table alias.
+         * @param tblName Table name.
          */
-        public void tableAlias(String tblalias) {
-            this.tblAlias = tblalias;
+        public void tableName(String tblName) {
+            this.tblName = tblName;
         }
 
         /** {@inheritDoc} */
