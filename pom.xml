@@ -479,7 +479,7 @@
                         </dependencies>
                         <executions>
                             <execution>
-                                <id>release-postprocessing</id>
+                                <id>release-yardstick</id>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
@@ -491,6 +491,15 @@
                                         <copy todir="${basedir}/target/release-package/benchmarks/">
                                             <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
                                         </copy>
+
+                                        <delete>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/libs/">
+                                                <include name="junit-4.11.jar" />
+                                                <include name="ignite-apache-license-gen-1.9.1-QAOO1402.jar" />
+                                                <include name="hamcrest-core-1.3.jar" />
+                                                <include name="tools-1.4.2.jar" />
+                                            </fileset>
+                                        </delete>
 
                                         <delete>
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config/">
@@ -522,7 +531,12 @@
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt"/>
 
                                         <concat destfile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt">
-                                            To build a project use: mvn clean package
+Yardstick Ignite Maven Build Instructions
+=========================================
+
+mvn clean package
+
+Look for compiled binaries in ./target/assemply directory.
                                         </concat>
 
                                         <replaceregexp byline="true">
