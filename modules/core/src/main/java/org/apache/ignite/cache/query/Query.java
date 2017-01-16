@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -42,7 +43,7 @@ public abstract class Query<R> implements Serializable {
     private boolean loc;
 
     /** Partitions for query */
-    private PartitionSet partSet;
+    private int[] parts;
 
     /**
      * Empty constructor.
@@ -97,22 +98,26 @@ public abstract class Query<R> implements Serializable {
     }
 
     /**
-     * Gets partitions set for query.
+     * Gets partitions for query, in ascending order.
      */
-    public PartitionSet getPartitionSet() {
-        return partSet;
+    public int[] getPartitions() {
+        return parts;
     }
 
     /**
-     * Sets the partitions set for query.
+     * Sets partitions for the query.
      * Only nodes which are holding data for any partition from the set will execute the query.
      * This is ignored for replicated caches.
      *
-     * @param partSet Partition set.
+     * @param parts Partitions.
      * @return {@code this} for chaining.
      */
-    public Query<R> setPartitionSet(PartitionSet partSet) {
-        this.partSet = partSet;
+    public Query<R> setPartitions(int[] parts) {
+        this.parts = parts;
+
+        // Ensures partitions are properly sorted.
+        if (this.parts != null)
+            Arrays.sort(this.parts);
 
         return this;
     }

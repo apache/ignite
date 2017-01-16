@@ -361,7 +361,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
             SqlQuery<ClientKey, Client> qry2 = new SqlQuery<>(Client.class, "1=1");
-            qry2.setPartitionSet(new PartitionSet(range.get(0), range.get(1)));
+            qry2.setPartitions(createIntArray(range.get(0), range.get(1)));
 
             List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
 
@@ -369,6 +369,16 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
 
             validateClients(regionId, clients2);
         }
+    }
+
+    /** */
+    private int[] createIntArray(int first, int total) {
+        int[] arr = new int[total];
+
+        for (int i = 0; i < total; i++)
+            arr[i] = first + i;
+
+        return arr;
     }
 
     /** Test query within partitions. */
@@ -403,7 +413,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
 
             SqlQuery<ClientKey, Client> qry = new SqlQuery<>(Client.class, "1=1");
 
-            qry.setPartitionSet(new PartitionSet(new int[] {p1, p2}));
+            qry.setPartitions(new int[] {p1, p2});
 
             List<Cache.Entry<ClientKey, Client>> clients = cl.query(qry).getAll();
 
@@ -426,7 +436,7 @@ public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonA
             SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, de._KEY, de._VAL, re._KEY, re._VAL from " +
                 "\"cl\".Client cl, \"de\".Deposit de, \"re\".Region re where cl.clientId=de.clientId and de.regionId=re._KEY");
 
-            qry.setPartitionSet(new PartitionSet(range.get(0), range.get(1)));
+            qry.setPartitions(createIntArray(range.get(0), range.get(1)));
 
             List<List<?>> rows = cl.query(qry).getAll();
 
