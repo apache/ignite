@@ -17,16 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamField;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Holds set of integers.
@@ -37,121 +31,67 @@ public class GridIntSet implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final ObjectStreamField[] serialPersistentFields = {
-        new ObjectStreamField("vals", int[].class),
-    };
+    private short[] segIds = new short[1];
 
-    /** Range mask. */
-    private static final int RANGE_MASK = 1 << 31;
+    private short[][] segments = new short[1][1];
 
-    /** Partition ids. */
-    private int[] vals;
+    public static final short SEGMENT_SIZE = 1024;
 
-    /**
-     * @param minPart Min partition.
-     * @param cnt Count.
-     */
-    public GridIntSet(int minPart, int cnt) {
-        vals = new int[]{minPart | RANGE_MASK, cnt};
+    public static final int SHORT_BITS = Short.SIZE;
+
+    public static final int MAX_WORDS = SEGMENT_SIZE / SHORT_BITS;
+
+    public static final int SHIFT_BITS = 4;
+
+    public boolean add(int v) {
+        U.debug("Add " + v);
+
+        short base = (short) (v / SEGMENT_SIZE);
+
+        short inc = (short) (v - base * SEGMENT_SIZE);
+
+        return segmentAdd(segmentIndex(base), inc);
     }
 
-    /**
-     * @param vals Partition ids.
-     */
-    public GridIntSet(int[] vals) {
-        this.vals = vals;
+    private boolean segmentAdd(int segId, short bit) {
+        short[] segment = segments[segId];
 
-        // Make sure partitions are sorted.
-        Arrays.sort(this.vals);
+        int wordIdx = bit >>> SHIFT_BITS;
 
-        // Validate.
-        for (int i = 0; i < vals.length - 1; i++)
-            A.ensure(vals[i] != vals[i + 1], "duplicates are not allowed");
-    }
+        // Resize if needed.
+        if (wordIdx >= segment.length) {
+            int newSize = Math.min(MAX_WORDS, Math.max(segment.length * 2, wordIdx + 1));
 
-    /**
-     * @param partIds Partition ids.
-     */
-    public GridIntSet(Collection<Integer> partIds) {
-        this(U.toIntArray(partIds));
-    }
-
-    /** */
-    private boolean isRange() {
-        return (vals[0] & RANGE_MASK) == RANGE_MASK;
-    }
-
-    /**
-     * Partition iterator.
-     *
-     *
-     */
-    public Iterator iterator() {
-        if (isRange())
-            return new Iterator() {
-                int c = 0;
-
-                int start = vals[0] & ~RANGE_MASK;
-
-                @Override public boolean hasNext() {
-                    return c < vals[1];
-                }
-
-                @Override public int next() {
-                    return start + c++;
-                }
-            };
-        else
-            return new Iterator() {
-                int c = 0;
-
-                @Override public boolean hasNext() {
-                    return c < vals.length;
-                }
-
-                @Override public int next() {
-                    return vals[c++];
-                }
-            };
-    }
-
-    /**
-     * Returns a size of partitions set.
-     */
-    public int size() {
-        return isRange() ? vals[1] : vals.length;
-    }
-
-    /**
-     * Check if set contains a partition.
-     *
-     * @param partId Partition id.
-     */
-    public boolean contains(int partId) {
-        if (isRange()) {
-            int start = vals[0] & ~RANGE_MASK;
-
-            return start <= partId && partId < start + vals[1];
+            segment = segments[segId] = Arrays.copyOf(segment, newSize);
         }
-        else
-            return Arrays.binarySearch(vals, partId) >= 0;
+
+        short wordBit = (short) (bit - wordIdx * SHORT_BITS);
+
+        assert 0 <= wordBit && wordBit < SHORT_BITS : "Word bit is within range";
+
+        segment[(wordIdx)] |= (1 << wordBit);
+
+        return false; // TODO
     }
 
-    /**
-     * Iterator over partitions.
-     *
-     * Partitions are returned in ascending order.
-     */
-    public interface Iterator {
-        /**
-         * @return {@code true} whether there is another partition.
-         */
-        boolean hasNext();
+    public boolean contains(int v) {
+        return false;
+    }
 
-        /**
-         * @return Next partition.
-         */
-        int next();
+    private int segmentIndex(int v) {
+        assert segIds.length > 0 && segments.length > 0 : "At least one segment";
+
+        return 0;
+    }
+
+//    private int insertSegment(int idx, short[] seg) {
+//
+//    }
+
+    public void dump() {
+        for (short[] segment : segments) {
+            for (short word : segment)
+                U.debug(Integer.toBinaryString(word & 0xFFFF));
+        }
     }
 }
