@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidat
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -570,7 +571,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             platformProc = (PlatformProcessor)comp;
         else if (comp instanceof PoolProcessor)
             poolProc = (PoolProcessor) comp;
-        else if (!(comp instanceof DiscoveryNodeValidationProcessor))
+        else if (!(comp instanceof DiscoveryNodeValidationProcessor) && !(comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)

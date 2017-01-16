@@ -181,7 +181,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (platformCtx != null) {
             stopped = true;
-            platformCtx.gateway().onStop(cancel);
+            platformCtx.gateway().onStop();
         }
     }
 
@@ -510,11 +510,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy binaryProcessor() {
         return proxy(new PlatformBinaryProcessor(platformCtx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void startPlugins() {
-        platformCtx.gateway().startPlugins();
     }
 
     /**

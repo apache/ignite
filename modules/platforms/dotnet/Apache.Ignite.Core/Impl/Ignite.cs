@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh, 
+        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
             IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
@@ -364,8 +364,6 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
-            PluginProcessor.Stop(cancel);
-
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
@@ -384,10 +382,8 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Called after node has stopped.
         /// </summary>
-        internal void AfterNodeStop(bool cancel)
+        internal void AfterNodeStop()
         {
-            PluginProcessor.OnIgniteStop(cancel);
-
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
 

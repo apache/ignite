@@ -244,7 +244,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
             AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
-            AddHandler(UnmanagedCallbackOp.StartPlugins, StartPlugins);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorStart, PluginProcessorStart);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
         }
 
         /// <summary>
@@ -1026,7 +1028,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long OnStop(long cancel)
+        private long OnStop(long unused)
         {
             Marshal.FreeHGlobal(_cbsPtr);
 
@@ -1040,7 +1042,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var ignite = _ignite;
 
             if (ignite != null)
-                ignite.AfterNodeStop(cancel != 0);
+                ignite.AfterNodeStop();
 
             return 0;
         }
@@ -1139,9 +1141,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long StartPlugins(long val)
+        private long PluginProcessorStart(long val)
         {
             _pluginProcessor.Start();
+
+            return 0;
+        }
+
+        private long PluginProcessorIgniteStop(long val)
+        {
+            _pluginProcessor.OnIgniteStop(val != 0);
+
+            return 0;
+        }
+
+        private long PluginProcessorStop(long val)
+        {
+            _pluginProcessor.Stop(val != 0);
 
             return 0;
         }
