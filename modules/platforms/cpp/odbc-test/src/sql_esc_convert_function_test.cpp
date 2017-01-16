@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionByteArray)
     std::vector<int8_t> val;
     val.assign((const int8_t*)&value, (const int8_t*)&value+sizeof(value));
 
-    CheckSingleResult<std::vector<int8_t>>("SELECT {fn CONVERT(123456, SQL_BINARY(4))}", val);
+    CheckSingleResult<std::vector<int8_t> >("SELECT {fn CONVERT(123456, SQL_BINARY(4))}", val);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionBool)
