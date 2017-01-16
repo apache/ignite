@@ -2008,7 +2008,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
 
-        if (!ctx.cache().context().database().persistenceEnabled()) {
+        if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
             for (Schema schema : schemas.values())
                 schema.onDrop();
         }
