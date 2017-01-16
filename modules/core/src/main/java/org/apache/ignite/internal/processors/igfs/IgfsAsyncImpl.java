@@ -121,11 +121,6 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths paths() {
-        return igfs.paths();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgfsInputStream open(IgfsPath path, int bufSize,
         int seqReadsBeforePrefetch) {
         return igfs.open(path, bufSize, seqReadsBeforePrefetch);

@@ -104,14 +104,6 @@ public class IgfsModeResolver {
     }
 
     /**
-     * @return Copy of properly ordered modes prefixes
-     *  or {@code null} if no modes set.
-     */
-    @Nullable public ArrayList<T2<IgfsPath, IgfsMode>> modesOrdered() {
-        return modes != null ? new ArrayList<>(modes) : null;
-    }
-
-    /**
      * Answers if the given path has an immediate child of PRIMARY mode.
      *
      * @param path The path to query.

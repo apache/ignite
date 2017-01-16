@@ -85,8 +85,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
             @Override public IgfsHandshakeResponse apply() {
                 igfs.clientLogDirectory(logDir);
 
-                return new IgfsHandshakeResponse(igfs.name(), igfs.paths(), igfs.groupBlockSize(),
-                    igfs.globalSampling());
+                return new IgfsHandshakeResponse(igfs.name(), igfs.groupBlockSize(), igfs.globalSampling());
                 }
          });
     }
