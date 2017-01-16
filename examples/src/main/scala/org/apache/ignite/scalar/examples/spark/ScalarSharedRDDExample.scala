@@ -17,52 +17,67 @@
 
 package org.apache.ignite.scalar.examples.spark
 
-import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
 import org.apache.spark.{SparkConf, SparkContext}
-
 
 /**
   * This example demonstrates the simplest code that creates the IgnitedRDD and
   * shares it with multiple spark workers. The goal of this particular
   * example is to provide the simplest code example of this logic.
   * <p/>
-  * Remote nodes should always be started with special configuration file which
-  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
+  * This example will start Ignite in embedded mode and will start an
+  * IgniteContext on each Spark worker node. It can also be also
+  * started in standalone mode which can bet set while instantiating IgniteContext
+  * (set isClient to true, it is currently set to false as last argument to
+  * IgniteContext constructor) and running an Ignite node separately.
   * <p/>
-  * Alternatively you can run `ExampleNodeStartup` in another JVM which will
-  * start node with `examples/config/example-ignite.xml` configuration.
   */
 object ScalarSharedRDDExample extends App {
-
   /** Spark Configuration */
   private val conf = new SparkConf()
     .setAppName("IgniteRDDExample")
     .setMaster("local")
-    .set("spark.executor.instances","2")
+    .set("spark.executor.instances", "2")
 
   /** Spark context */
-  implicit val sparkContext = new SparkContext(conf)
+  val sparkContext = new SparkContext(conf)
 
+  /** Defines spring cache Configuration path */
+  private val CONFIG = "examples/config/example-shared-rdd.xml"
 
-  /** Creates Ignite context with default configuration */
-  val igniteContext = new IgniteContext(sparkContext, () => new IgniteConfiguration(),false)
+  /** Creates Ignite context with above configuration configuration */
+  val igniteContext = new IgniteContext(sparkContext, CONFIG, false)
 
   /** Creates an Ignite RDD of Type (Int,Int) Integer Pair */
-  val sharedRDD: IgniteRDD[Int, Int] = igniteContext.fromCache("partitioned")
+  val sharedRDD: IgniteRDD[Int, Int] = igniteContext.fromCache[Int, Int]("sharedRDD")
 
-  /** Fill IgniteRDD with data */
-  sharedRDD.saveValues(sparkContext.parallelize(1 to 100000, 10))
+  /** Fill IgniteRDD with Int pairs */
+  sharedRDD.savePairs(sparkContext.parallelize(1 to 100000, 10).map(i => (i, i)))
 
   /** Transforming Pairs to contain their Squared value */
   sharedRDD.mapValues(x => (x * x))
 
-  /** Retrieve RDD back from the Cache */
-  val transformedValues = igniteContext.fromCache("partitioned")
+  /** Retrieve sharedRDD back from the Cache */
+  val transformedValues: IgniteRDD[Int, Int] = igniteContext.fromCache("sharedRDD")
 
-  transformedValues.take(5).foreach(println)
+  /** Perform some transformations on IgniteRDD and print */
+  val squareAndRootPair = transformedValues.map { case (x,y) => (x,Math.sqrt(y.toDouble)) }
 
+  /** filters pairs whose square roots are less than 100 and
+    * takes five elements from the transformed IgniteRDD and prints it*/
+  squareAndRootPair.filter( _._2 < 100.0 ).take(5).foreach(println)
+
+  /** Performing SQL query on existing cache and
+    * collect result into a Spark Dataframe
+    * */
+  val df = transformedValues.sql("select _val from Integer where _val < 100 and _val > 9 ")
+
+  /** Show DataFrame results (only 10) */
+  df.show(10)
+
+  /** Close IgniteContext on all workers */
   igniteContext.close(true)
 
+  /**Stop SparkContext */
   sparkContext.stop()
 }
