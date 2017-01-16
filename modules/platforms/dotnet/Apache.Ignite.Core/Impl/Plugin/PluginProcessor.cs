@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
     /// </summary>
     internal class PluginProcessor
     {
-        /** */
+        /** Ordered list of plugin providers. */
         private readonly IList<IPluginProviderProxy> _pluginProviders = new List<IPluginProviderProxy>();
 
-        /** */
+        /** Plugin providers by name. */
         private readonly Dictionary<string, IPluginProviderProxy> _pluginProvidersByName
             = new Dictionary<string, IPluginProviderProxy>();
 
