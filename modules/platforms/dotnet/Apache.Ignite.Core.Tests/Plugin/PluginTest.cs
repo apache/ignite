@@ -99,8 +99,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
                                           "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
 
             // Provider throws an exception.
+            Assert.IsFalse(ExceptionPluginProvider.Stopped);
+            Assert.IsFalse(ExceptionPluginProvider.IgniteStopped);
+
             var ioex = Assert.Throws<IOException>(() => check(new[] {new ExceptionConfig()}));
             Assert.AreEqual("Failure in plugin provider", ioex.Message);
+
+            Assert.IsTrue(ExceptionPluginProvider.Stopped);
+            Assert.IsTrue(ExceptionPluginProvider.IgniteStopped);
         }
 
         private class NoAttributeConfig : IPluginConfiguration
@@ -133,12 +139,24 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         private class ExceptionPluginProvider : IPluginProvider<ExceptionConfig>
         {
+            public static bool Stopped;
+            public static bool IgniteStopped;
+
             public string Name { get { return "errPlugin"; } }
             public string Copyright { get { return null; } }
             public T GetPlugin<T>() where T : class { return default(T); }
-            public void Stop(bool cancel) { /* No-op. */ }
+
+            public void Stop(bool cancel)
+            {
+                Stopped = true;
+
+            }
             public void OnIgniteStart() { /* No-op. */ }
-            public void OnIgniteStop(bool cancel) { /* No-op. */ }
+
+            public void OnIgniteStop(bool cancel)
+            {
+                IgniteStopped = true;
+            }
 
             public void Start(IPluginContext<ExceptionConfig> context)
             {
