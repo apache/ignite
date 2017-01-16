@@ -45,7 +45,7 @@ namespace ignite
                 // No-op.
             }
 
-            ApplicationDataBuffer::ApplicationDataBuffer(type_traits::IgniteSqlType type, 
+            ApplicationDataBuffer::ApplicationDataBuffer(type_traits::IgniteSqlType type,
                 void* buffer, SqlLen buflen, SqlLen* reslen, int** offset) :
                 type(type),
                 buffer(buffer),
@@ -870,6 +870,20 @@ namespace ignite
                         break;
                     }
 
+                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    {
+                        SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
+
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                        break;
+                    }
+
                     case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
@@ -1094,7 +1108,7 @@ namespace ignite
                 return ApplyOffset(reslen);
             }
 
-            void* ApplicationDataBuffer::GetData() 
+            void* ApplicationDataBuffer::GetData()
             {
                 return ApplyOffset(buffer);
             }
@@ -1246,6 +1260,8 @@ namespace ignite
                     {
                         const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
 
+                        tmTime.tm_year = 70;
+                        tmTime.tm_mday = 1;
                         tmTime.tm_hour = buffer->hour;
                         tmTime.tm_min = buffer->minute;
                         tmTime.tm_sec = buffer->second;
@@ -1310,6 +1326,19 @@ namespace ignite
                         tmTime.tm_year = buffer->year - 1900;
                         tmTime.tm_mon = buffer->month - 1;
                         tmTime.tm_mday = buffer->day;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    {
+                        const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
+
+                        tmTime.tm_year = 70;
+                        tmTime.tm_mday = 1;
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
 
                         break;
                     }

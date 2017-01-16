@@ -40,7 +40,7 @@ namespace ignite
                 // No-op.
             }
 
-            Parameter::Parameter(const ApplicationDataBuffer& buffer, int16_t sqlType, 
+            Parameter::Parameter(const ApplicationDataBuffer& buffer, int16_t sqlType,
                 size_t columnSize, int16_t decDigits) :
                 buffer(buffer),
                 sqlType(sqlType),
@@ -150,8 +150,6 @@ namespace ignite
                         break;
                     }
 
-                    case SQL_TYPE_TIME:
-                    case SQL_TIME:
                     case SQL_TYPE_DATE:
                     case SQL_DATE:
                     {

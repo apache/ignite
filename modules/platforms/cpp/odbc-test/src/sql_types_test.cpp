@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(TestTimeSelect)
         "SELECT i32Field FROM TestType WHERE CAST(timestampField AS TIME) = '19:54:01'", in1.i32Field);
 }
 
-BOOST_AUTO_TEST_CASE(TestTimeInsert)
+BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
 {
     SQLRETURN ret;
 
@@ -287,17 +287,17 @@ BOOST_AUTO_TEST_CASE(TestTimeInsert)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    SQL_TIME_STRUCT data;
+    SQL_TIME_STRUCT data = { 0 };
     data.hour = 19;
     data.minute = 54;
     data.second = 1;
 
     using ignite::impl::binary::BinaryUtils;
-    Timestamp expected = BinaryUtils::MakeTimestampGmt(0, 0, 0, data.hour,
+    Timestamp expected = BinaryUtils::MakeTimestampGmt(1970, 1, 1, data.hour,
         data.minute, data.second, 0);
 
     SQLLEN lenInd = sizeof(data);
-    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, sizeof(data), 0, &data, sizeof(data), &lenInd);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIMESTAMP, sizeof(data), 0, &data, sizeof(data), &lenInd);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
