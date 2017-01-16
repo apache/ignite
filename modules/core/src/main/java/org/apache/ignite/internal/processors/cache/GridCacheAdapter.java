@@ -2009,9 +2009,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null, readerArgs);
+                                                T2<GridCacheVersion, CacheObject> verSet = entry.versionedValue(cacheVal, ver, null, readerArgs);
 
-                                                boolean set = verSet != null;
+                                                final GridCacheVersion newVer = verSet.get1();
+
+                                                boolean set = newVer != null;
 
                                                 if (log.isDebugEnabled())
                                                     log.debug("Set value loaded from store into entry [" +
@@ -2021,15 +2023,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         "entry=" + entry + ']');
 
                                                 // Don't put key-value pair into result map if value is null.
-                                                if (val != null) {
+                                                if (verSet.get2() != null) {
                                                     ctx.addResult(map,
                                                         key,
-                                                        cacheVal,
+                                                        verSet.get2(),
                                                         skipVals,
                                                         keepCacheObjects,
                                                         deserializeBinary,
                                                         false,
-                                                        needVer ? set ? verSet : ver : null);
+                                                        needVer ? set ? newVer : ver : null);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

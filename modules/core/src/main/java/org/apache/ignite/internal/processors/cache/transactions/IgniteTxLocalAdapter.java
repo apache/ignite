@@ -477,16 +477,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null, null);
+                                    T2<GridCacheVersion, CacheObject> setVer = entry.versionedValue(cacheVal, ver, null, null);
 
-                                    boolean set = setVer != null;
+                                    final GridCacheVersion newVer = setVer.get1();
+
+                                    boolean set = newVer != null;
 
                                     if (set)
-                                        ver = setVer;
+                                        ver = newVer;
 
                                     if (log.isDebugEnabled())
                                         log.debug("Set value loaded from store into entry [set=" + set +
-                                            ", curVer=" + ver + ", newVer=" + setVer + ", " +
+                                            ", curVer=" + ver + ", newVer=" + newVer + ", " +
                                             "entry=" + entry + ']');
 
                                     break;

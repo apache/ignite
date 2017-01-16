@@ -3558,7 +3558,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
+    @Override public synchronized T2<GridCacheVersion, CacheObject> versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable ReaderArguments readerArgs)
@@ -3566,12 +3566,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         checkObsolete();
 
+        addReaderIfNeed(readerArgs);
+
         if (curVer == null || curVer.equals(ver)) {
             if (val != this.val) {
                 GridCacheMvcc mvcc = mvccExtras();
 
                 if (mvcc != null && !mvcc.isEmpty())
-                    return null;
+                    return new T2<>(null, this.val);
 
                 if (newVer == null)
                     newVer = cctx.versions().next();
@@ -3595,13 +3597,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // Version does not change for load ops.
                 update(val, expTime, ttl, newVer, true);
 
-                addReaderIfNeed(readerArgs);
-
-                return newVer;
+                return new T2<>(newVer, val);
             }
         }
 
-        return null;
+        return new T2<>(null, this.val);
     }
 
     /**
