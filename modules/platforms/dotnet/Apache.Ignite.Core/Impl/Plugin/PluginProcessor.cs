@@ -31,7 +31,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
     internal class PluginProcessor
     {
         /** */
-        private readonly Dictionary<string, IPluginProviderProxy> _pluginProviders;
+        private readonly Dictionary<string, IPluginProviderProxy> _pluginProviders
+            = new Dictionary<string, IPluginProviderProxy>();
 
         /** */
         private readonly Ignite _ignite;
@@ -45,9 +46,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
             Debug.Assert(ignite != null);
 
             _ignite = ignite;
-
-            _pluginProviders = LoadPlugins(ignite.Configuration.PluginConfigurations, 
-                ignite.Logger.GetLogger(GetType().Name));
         }
 
         /// <summary>
@@ -71,11 +69,9 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public void OnIgniteStart()
         {
-            // Notify plugins.
-            // TODO: What if we gen an exception? Should we stop everything in reverse order?
-            foreach (var provider in _pluginProviders.Values)
-                provider.Start(this);
+            LoadPlugins();
 
+            // Notify plugins.
             foreach (var provider in _pluginProviders.Values)
                 provider.OnIgniteStart();
         }
@@ -85,6 +81,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public void Stop(bool cancel)
         {
+            // TODO: Reverse order
             foreach (var provider in _pluginProviders.Values)
                 provider.Stop(cancel);
         }
@@ -94,6 +91,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public void OnIgniteStop(bool cancel)
         {
+            // TODO: Reverse order
             foreach (var provider in _pluginProviders.Values)
                 provider.OnIgniteStop(cancel);
         }
@@ -119,12 +117,13 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Loads the plugins.
         /// </summary>
-        private static Dictionary<string, IPluginProviderProxy> LoadPlugins(
-            ICollection<IPluginConfiguration> pluginConfigurations, ILogger log)
+        private void LoadPlugins()
         {
-            var res = new Dictionary<string, IPluginProviderProxy>();
+            var log = _ignite.Logger.GetLogger(GetType().Name);
 
             log.Info("Configured .NET plugins:");
+
+            var pluginConfigurations = IgniteConfiguration.PluginConfigurations;
 
             if (pluginConfigurations != null && pluginConfigurations.Count > 0)
             {
@@ -132,19 +131,19 @@ namespace Apache.Ignite.Core.Impl.Plugin
                 {
                     var provider = CreateProviderProxy(cfg);
 
-                    ValidateProvider(provider, res);
+                    ValidateProvider(provider, _pluginProviders);
 
                     LogProviderInfo(log, provider);
 
-                    res[provider.Name] = provider;
+                    _pluginProviders[provider.Name] = provider;
+
+                    provider.Start(this);
                 }
             }
             else
             {
                 log.Info("  ^-- None");
             }
-
-            return res;
         }
 
         /// <summary>
