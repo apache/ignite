@@ -508,10 +508,13 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         FileSystem fs;
 
         try {
-            // This assertion uses .startsWith() instead of .equals() because task class loaders may
-            // be reused between tasks of the same job.
-            assert ((HadoopClassLoader)getClass().getClassLoader()).name()
-                .startsWith(HadoopClassLoader.nameForTask(taskInfo(), true));
+            // See property HadoopJobProperty.JOB_SHARED_CLASSLOADER: if it is true, the classloader of the
+            // context is the Job class loader. If it is false, this is a task class loader, but the prefix
+            // should be the same:
+            assert ((HadoopClassLoader)getClass().getClassLoader()).name().equals(HadoopClassLoader
+                .nameForJob(taskInfo().jobId()))
+                || ((HadoopClassLoader)getClass().getClassLoader()).name().startsWith(HadoopClassLoader
+                .nameForTask(taskInfo(), true));
 
             // We also cache Fs there, all them will be cleared explicitly upon the Job end.
             fs = fileSystemForMrUserWithCaching(jobDir.toUri(), jobConf(), fsMap);
