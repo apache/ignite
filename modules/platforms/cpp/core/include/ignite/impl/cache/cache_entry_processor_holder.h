@@ -197,7 +197,7 @@ namespace ignite
          * Binary type specialization for CacheEntryProcessorHolder.
          */
         template<typename P, typename A>
-        struct BinaryType<impl::cache::CacheEntryProcessorHolder<P, A>>
+        struct BinaryType<impl::cache::CacheEntryProcessorHolder<P, A> >
         {
             typedef impl::cache::CacheEntryProcessorHolder<P, A> UnderlyingType;
 

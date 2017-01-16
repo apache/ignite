@@ -116,7 +116,7 @@ namespace ignite
              * @param path Path to the Module to load.
              * @return Module instance.
              */
-            IGNITE_IMPORT_EXPORT Module LoadModule(std::string& path);
+            IGNITE_IMPORT_EXPORT Module LoadModule(const std::string& path);
 
             /**
              * Returns Module associated with the calling process itself.

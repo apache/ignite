@@ -76,7 +76,7 @@ namespace ignite
                 return Module(handle);
             }
 
-            Module LoadModule(std::string& path)
+            Module LoadModule(const std::string& path)
             {
                 return LoadModule(path.c_str());
             }

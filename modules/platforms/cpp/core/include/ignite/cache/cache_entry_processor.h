@@ -43,7 +43,7 @@ namespace ignite
         template<typename P, typename K, typename V, typename R, typename A>
         class CacheEntryProcessor
         {
-            friend class IgniteRpc;
+            friend class ignite::IgniteRpc;
 
         public:
             /**
