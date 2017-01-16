@@ -68,6 +68,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PK_NAME = "__GG_PK_";
 
+    /** Hash. */
+    private static final String HASH = "__GG_HASH";
+
     /** */
     private static final String STR_IDX_NAME = "__GG_IDX_";
 
@@ -103,6 +106,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
                 idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
+                idxs.add(new GridH2TreeIndex(HASH, tbl, true, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
                 idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
 
@@ -599,7 +603,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
             //((GridH2SnapTreeSet)((GridH2Index)idx).tree).print();
 
-            if (rowSet == null)
+            if (rowSet == null || rowSet.isEmpty())
                 rowSet = set;
             else
                 assertEquals(rowSet, set);
@@ -633,6 +637,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         while (cursor.next()) {
             GridH2Row row = cursor.get();
+
+            System.out.println(row);
 
             assertNotNull(row);
 

@@ -615,6 +615,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMisses() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         int keyCnt = keyCount();
@@ -657,12 +659,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMissesOnEmptyCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
         assertEquals("Expected 0 miss", 0, cache.localMetrics().getCacheMisses());
 
-        Integer key =  null;
+        Integer key = null;
 
         for (int i = 0; i < 1000; i++) {
             if (affinity(cache).isPrimary(grid(0).localNode(), i)) {
@@ -709,6 +713,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testManualEvictions() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)

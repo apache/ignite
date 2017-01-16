@@ -499,8 +499,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row put(GridH2Row value) {
-            return tree.put(value, value);
+        @Override public GridH2Row put(GridH2Row val) {
+            return tree.put(val, val);
         }
 
         /** {@inheritDoc} */
@@ -511,13 +511,19 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         /** {@inheritDoc} */
         @Override public GridCursor<GridH2Row> find(GridSearchRowPointer lower, GridSearchRowPointer upper)
             throws IgniteCheckedException {
-            if (lower == null || upper == null)
-                throw new NullPointerException();
 
-            NavigableMap<GridSearchRowPointer, GridH2Row> subMap =
-                tree.subMap(lower, false, upper, false);
+            Collection<GridH2Row> rows;
 
-            return new GridCursorIteratorWrapper<>(subMap.values().iterator());
+            if (lower == null && upper == null)
+                rows = tree.values();
+            else if (lower != null && upper == null)
+                rows = tree.tailMap(lower).values();
+            else if (lower == null)
+                rows = tree.headMap(upper).values();
+            else
+                rows = tree.subMap(lower, true, upper, true).values();
+
+            return new GridCursorIteratorWrapper<>(rows.iterator());
         }
 
         /** {@inheritDoc} */
@@ -532,16 +538,16 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         /** {@inheritDoc} */
         @Override public IgniteNavigableMapTree clone() {
-            AbstractMap copy;
+            IgniteNavigableMapTree cp;
 
             try {
-                copy = (AbstractMap) super.clone();
+                cp = (IgniteNavigableMapTree)super.clone();
             }
             catch (final CloneNotSupportedException e) {
                 throw DbException.convert(e);
             }
 
-            return new IgniteNavigableMapTree((NavigableMap)copy);
+            return new IgniteNavigableMapTree(cp.tree);
         }
     }
 }
