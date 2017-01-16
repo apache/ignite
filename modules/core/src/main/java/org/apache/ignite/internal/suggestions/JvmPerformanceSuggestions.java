@@ -22,21 +22,12 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.suggestions.JvmOptions.*;
+
 /**
  * JVM performance suggestions.
  */
 class JvmPerformanceSuggestions {
-    private static final String SERVER = "-server";
-    private static final String USE_TLAB = "-XX:+UseTLAB";
-    private static final String USE_PAR_NEW_GC = "-XX:+UseParNewGC";
-    private static final String USE_CONC_MARK_SWEEP_GC = "-XX:+UseConcMarkSweepGC";
-    private static final String USE_CMS_INITIATING_OCCUPANCY_ONLY = "-XX:+UseCMSInitiatingOccupancyOnly";
-    private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
-    private static final String NEW_SIZE = "-XX:NewSize=128m";
-    private static final String MAX_NEW_SIZE = "-XX:MaxNewSize=128m";
-    private static final String MAX_TENURING_THRESHOLD = "-XX:MaxTenuringThreshold=0";
-    private static final String SURVIVOR_RATIO = "-XX:SurvivorRatio=1024";
-    private static final String CMS_INITIATING_OCCUPANCY_FRACTION = "-XX:CMSInitiatingOccupancyFraction=60";
 
     /**
      * @return list of recommended jvm options
