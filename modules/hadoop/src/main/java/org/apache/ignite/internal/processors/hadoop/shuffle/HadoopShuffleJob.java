@@ -702,7 +702,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     private void visit(HadoopMultimap map, final int rmtMapIdx, final int rmtRdcIdx) throws IgniteCheckedException {
         log.info("+++ HadoopShuffleJob.visit(" +
-            S.toString(null, "map", map) + ", rmtMapIdx = " + rmtMapIdx + ". rmtRdcIdx = " + rmtRdcIdx + ")");
+            S.toString(null, "map", map) + ", rmtMapIdx = " + rmtMapIdx + ", rmtRdcIdx = " + rmtRdcIdx + ")");
 
         map.visit(false, new HadoopMultimap.Visitor() {
             /** */
@@ -770,6 +770,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param newBufMinSize Min new buffer size.
      */
     private void send(int rmtMapIdx, int rmtRdcIdx, int newBufMinSize) {
+        log.info("+++ HadoopShuffleJob.send(" +
+            "rmtMapIdx = " + rmtMapIdx + ", rmtRdcIdx = " + rmtRdcIdx + ", newBufMinSize "+ newBufMinSize + ")");
         HadoopShuffleMessage msg = msgs[rmtMapIdx];
 
         final long msgId = msg.id();
@@ -853,6 +855,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
+        log.info("+++ HadoopShuffleJob.flush()");
+
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 
