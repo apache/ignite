@@ -89,10 +89,14 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isBackup() { return e.isBackup(); }
+    @Override public boolean isBackup() {
+        return e.isBackup();
+    }
 
     /** {@inheritDoc} */
-    @Override public boolean isPrimary() { return !e.isBackup(); }
+    @Override public boolean isPrimary() {
+        return !e.isBackup();
+    }
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> cls) {
