@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.suggestions;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.suggestions.JvmOptions.*;
+import static org.apache.ignite.internal.suggestions.JvmOptions.DISABLE_EXPLICIT_GC;
+import static org.apache.ignite.internal.suggestions.JvmOptions.MAX_DIRECT_MEMORY_SIZE;
+import static org.apache.ignite.internal.suggestions.JvmOptions.SERVER;
+import static org.apache.ignite.internal.suggestions.JvmOptions.USE_COMPRESSED_OOPS;
+import static org.apache.ignite.internal.suggestions.JvmOptions.USE_TLAB;
+import static org.apache.ignite.internal.suggestions.JvmOptions.XMX;
 
 /**
- * JVM performance suggestions.
+ * Java Virtual Machine performance suggestions.
  */
 class JvmPerformanceSuggestions {
 
@@ -35,51 +42,26 @@ class JvmPerformanceSuggestions {
     @NotNull static List<String> getRecommendedOptions() {
         List<String> options = new LinkedList<>();
         // option '-server' isn't in input arguments
-        if (!checkServerOption())
+        if (!U.jvmName().toLowerCase().contains("server"))
             options.add(SERVER);
 
         List<String> args = U.jvmArgs();
 
+        if (!args.stream().anyMatch(o -> o.startsWith(XMX)))
+            options.add(XMX + "<size>[g|G|m|M|k|K]");
+
+        if (!args.stream().anyMatch(o -> o.startsWith(MAX_DIRECT_MEMORY_SIZE)))
+            options.add(MAX_DIRECT_MEMORY_SIZE + "=size[g|G|m|M|k|K]");
+
         if (!args.contains(USE_TLAB))
             options.add(USE_TLAB);
-
-        if (!args.contains(USE_PAR_NEW_GC))
-            options.add(USE_PAR_NEW_GC);
-
-        if (!args.contains(USE_CONC_MARK_SWEEP_GC))
-            options.add(USE_CONC_MARK_SWEEP_GC);
-
-        if (!args.contains(USE_CMS_INITIATING_OCCUPANCY_ONLY))
-            options.add(USE_CMS_INITIATING_OCCUPANCY_ONLY);
 
         if (!args.contains(DISABLE_EXPLICIT_GC))
             options.add(DISABLE_EXPLICIT_GC);
 
-        if (!args.contains(NEW_SIZE))
-            options.add(NEW_SIZE);
-
-        if (!args.contains(MAX_NEW_SIZE))
-            options.add(MAX_NEW_SIZE);
-
-        if (!args.contains(MAX_TENURING_THRESHOLD))
-            options.add(MAX_TENURING_THRESHOLD);
-
-        if (!args.contains(SURVIVOR_RATIO))
-            options.add(SURVIVOR_RATIO);
-
-        if (!args.contains(CMS_INITIATING_OCCUPANCY_FRACTION))
-            options.add(CMS_INITIATING_OCCUPANCY_FRACTION);
+        if (!args.contains(USE_COMPRESSED_OOPS))
+            options.add(USE_COMPRESSED_OOPS);
 
         return options;
-    }
-
-    private static boolean checkServerOption() {
-        String arch = System.getProperty("sun.arch.data.model");
-        // On a 64-bit capable JDK, only the Java Hotspot Server VM is supported so the -server option is implicit.
-        if (arch == null || !arch.equals("64")) {
-            String vmName = System.getProperty("java.vm.name");
-            return vmName.toLowerCase().contains("server");
-        }
-        return true;
     }
 }

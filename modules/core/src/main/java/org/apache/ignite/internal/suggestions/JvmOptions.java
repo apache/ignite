@@ -18,19 +18,13 @@
 package org.apache.ignite.internal.suggestions;
 
 /**
- * Grid performance suggestions.
+ * Java Virtual Machine options.
  */
-public class JvmOptions {
+class JvmOptions {
     static final String SERVER = "-server";
     static final String USE_TLAB = "-XX:+UseTLAB";
-    static final String USE_PAR_NEW_GC = "-XX:+UseParNewGC";
-    static final String USE_CONC_MARK_SWEEP_GC = "-XX:+UseConcMarkSweepGC";
-    static final String USE_CMS_INITIATING_OCCUPANCY_ONLY = "-XX:+UseCMSInitiatingOccupancyOnly";
     static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
-    static final String NEW_SIZE = "-XX:NewSize=128m";
-    static final String MAX_NEW_SIZE = "-XX:MaxNewSize=128m";
-    static final String MAX_TENURING_THRESHOLD = "-XX:MaxTenuringThreshold=0";
-    static final String SURVIVOR_RATIO = "-XX:SurvivorRatio=1024";
-    static final String CMS_INITIATING_OCCUPANCY_FRACTION = "-XX:CMSInitiatingOccupancyFraction=60";
-
+    static final String USE_COMPRESSED_OOPS = "-XX:+UseCompressedOops";
+    static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
+    static final String XMX = "-Xmx";
 }
