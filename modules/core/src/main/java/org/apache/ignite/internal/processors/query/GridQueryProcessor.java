@@ -2147,7 +2147,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!(obj instanceof BinaryObjectBuilder))
                 throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-            setValue0((BinaryObjectBuilder) obj, name(), propVal, type());
+            setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
         }
 
         /**
