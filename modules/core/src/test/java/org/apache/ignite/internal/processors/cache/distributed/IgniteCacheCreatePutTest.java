@@ -107,7 +107,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         try {
             int iter = 0;
 
-            while (System.currentTimeMillis() < stopTime) {
+            while (System.currentTimeMillis() < stopTime && iter < 5) {
                 log.info("Iteration: " + iter++);
 
                 try {

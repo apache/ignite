@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,14 +56,6 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @throws IgniteCheckedException In case of error.
      */
     public RegisterStatus register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Callback called after listener is registered and acknowledgement is sent.
-     *
-     * @param routineId Routine ID.
-     * @param ctx Kernal context.
-     */
-    public void onListenerRegistered(UUID routineId, GridKernalContext ctx);
 
     /**
      * Unregisters listener.
@@ -163,6 +156,6 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @param cntrs Init state for partition counters.
      * @param topVer Topology version.
      */
-    public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
-        Map<Integer, Long> cntrs);
+    public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
+        Map<Integer, T2<Long, Long>> cntrs);
 }

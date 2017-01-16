@@ -33,8 +33,10 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.pagemem.backup.BackupFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
@@ -63,13 +65,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRe
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
@@ -113,6 +120,12 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
@@ -161,8 +174,69 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -47:
+                msg = new SnapshotProgressMessage();
+
+                break;
+
+
+            case -46:
+                msg = new GridChangeGlobalStateMessageResponse();
+
+                break;
+
+            case -45:
+                msg = new SnapshotFinishedMessage();
+
+                break;
+
+            case -44:
+                msg = new TcpCommunicationSpi.HandshakeMessage2();
+
+                break;
+
+            case -43:
+                msg = new IgniteIoTestMessage();
+
+                break;
+
+            case -42:
+                msg = new HadoopDirectShuffleMessage();
+
+                break;
+
+            case -41:
+                msg = new HadoopShuffleFinishResponse();
+
+                break;
+
+            case -40:
+                msg = new HadoopShuffleFinishRequest();
+
+                break;
+
+            case -39:
+                msg = new HadoopJobId();
+
+                break;
+
+            case -38:
+                msg = new HadoopShuffleAck();
+
+                break;
+
+            case -37:
+                msg = new HadoopShuffleMessage();
+
+                break;
+
+            case -36:
+                msg = new GridDhtAtomicSingleUpdateRequest();
+
+                break;
+
             case -27:
-                msg = new BackupFinishedMessage();
+                msg = new GridDhtTxOnePhaseCommitAckRequest();
 
                 break;
 
@@ -392,7 +466,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 40:
-                msg = new GridNearAtomicUpdateRequest();
+                msg = new GridNearAtomicFullUpdateRequest();
 
                 break;
 
@@ -757,17 +831,21 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 125:
-                msg = new TcpCommunicationSpi.HandshakeMessage2();
+                msg = new GridNearAtomicSingleUpdateRequest();
 
                 break;
 
-            // [-3..119] [124-125] - this
             case 126:
-                msg = new IgniteIoTestMessage();
+                msg = new GridNearAtomicSingleUpdateInvokeRequest();
 
                 break;
 
-            // [-3..119] [124-126] - this
+            case 127:
+                msg = new GridNearAtomicSingleUpdateFilterRequest();
+
+                break;
+
+            // [-3..119] [124..127] [-23..-27] [-36..-47]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:

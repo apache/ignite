@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Linq;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Examples.Compute;
-    using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -36,9 +35,6 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         /** Config url */
         public string ConfigPath { get; private set; }
-
-        /** Source path */
-        public string SourceFilePath { get; private set; }
 
         /** Dll load flag */
         public bool NeedsTestDll { get; private set; }
@@ -75,11 +71,9 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Assert.IsTrue(sourceFiles.Any());
 
-            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).ToArray();
+            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).OrderBy(x => x.Name).ToArray();
 
             Assert.IsTrue(types.Any());
-
-            var examplesDllName = typeof(AverageSalaryJob).Assembly.GetName().Name;
 
             foreach (var type in types)
             {
@@ -89,9 +83,8 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 yield return new Example
                 {
-                    SourceFilePath = sourceFile,
                     ConfigPath = GetConfigPath(sourceCode),
-                    NeedsTestDll = sourceCode.Contains(examplesDllName),
+                    NeedsTestDll = sourceCode.Contains("-assembly="),
                     _runAction = GetRunAction(type),
                     Name = type.Name
                 };

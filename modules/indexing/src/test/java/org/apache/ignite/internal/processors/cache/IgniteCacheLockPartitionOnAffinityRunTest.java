@@ -30,13 +30,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -81,10 +82,16 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             .localPartition(part, AffinityTopologyVersion.NONE, false);
 
         int cnt = 0;
-        for (GridCacheMapEntry e : pOrgs.entries()) {
-            Integer k = (Integer)e.keyValue(false);
-            Organization org = e.val.value(ignite.context().cacheObjects().contextForCache(
-                cacheAdapterOrg.cacheCfg), false);
+
+        GridCursor<? extends CacheDataRow> c = pOrgs.dataStore().cursor();
+
+        CacheObjectContext ctx = cacheAdapterOrg.context().cacheObjectContext();
+
+        while (c.next()) {
+            CacheDataRow e = c.get();
+
+            Integer k = e.key().value(ctx, false);
+            Organization org = e.value().value(ctx, false);
 
             if (org != null && org.getId() == orgId)
                 ++cnt;
@@ -111,10 +118,16 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             .localPartition(part, AffinityTopologyVersion.NONE, false);
 
         int cnt = 0;
-        for (GridCacheMapEntry e : pPers.entries()) {
-            Person.Key k = (Person.Key)e.keyValue(false);
-            Person p = e.val.value(ignite.context().cacheObjects().contextForCache(
-                cacheAdapterPers.cacheCfg), false);
+
+        GridCursor<? extends CacheDataRow> c = pPers.dataStore().cursor();
+
+        CacheObjectContext ctx = cacheAdapterPers.context().cacheObjectContext();
+
+        while (c.next()) {
+            CacheDataRow e = c.get();
+
+            Person.Key k = e.key().value(ctx, false);
+            Person p = e.value().value(ctx, false);
 
             if (p != null && p.getOrgId() == orgId && k.orgId == orgId)
                 ++cnt;
@@ -317,12 +330,15 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 return getPersonsCountMultipleCache(ignite, log, orgId);
             }
         };
-        // Run restart threads: start re-balancing
+
+        // Run restart threads: start re-balancing.
         beginNodesRestart();
 
         IgniteInternalFuture<Long> affFut = null;
+
         try {
             final AtomicInteger threadNum = new AtomicInteger(0);
+
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     if (threadNum.getAndIncrement() % 2 == 0) {

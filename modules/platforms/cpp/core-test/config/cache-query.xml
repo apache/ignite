@@ -69,7 +69,7 @@
                                     </list>
                                 </property>
                             </bean>
-							
+
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                 <property name="valueType" value="QueryRelation"/>
                                 <property name="queryFields">
@@ -82,7 +82,7 @@
                         </list>
                     </property>
                 </bean>
-				
+
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="QueryRelation"/>
                     <property name="cacheMode" value="PARTITIONED"/>

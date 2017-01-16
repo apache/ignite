@@ -210,7 +210,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid("client-1");
 
-        IgniteCache cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -242,7 +242,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid("client-1");
 
-        IgniteCache cache = client.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
 
         cache.loadCache(null);
 
@@ -257,7 +257,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache from server that created on client as LOCAL and see if it only loaded on server
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testLocalLoadServer() throws Exception {
         cacheMode = CacheMode.LOCAL;

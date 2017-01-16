@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -25,6 +26,14 @@ import org.apache.ignite.IgniteCheckedException;
 public class StorageException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * @param msg Error message.
+     * @param cause Error cause.
+     */
+    public StorageException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
 
     /**
      * @param e Cause exception.

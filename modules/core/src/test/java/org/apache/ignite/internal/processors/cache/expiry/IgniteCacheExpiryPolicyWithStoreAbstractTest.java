@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -174,6 +177,42 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testGetReadThrough() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        List<Integer> keys = new ArrayList<>();
+
+        keys.add(primaryKeys(cache, 1, 100_000).get(0));
+        // TODO https://issues.apache.org/jira/browse/IGNITE-3699
+        // TODO: test 'get' inside transactions, 'get' for cache.withAsyncPolicy.
+        //keys.add(backupKeys(cache, 1, 100_000).get(0));
+        //keys.add(nearKeys(cache, 1, 100_000).get(0));
+
+        for (Integer key : keys)
+            storeMap.put(key, 100);
+
+        try {
+            for (Integer key : keys) {
+                Integer res = cache.get(key);
+
+                assertEquals((Integer)100, res);
+
+                checkTtl(key, 500, true);
+            }
+
+            U.sleep(600);
+
+            for (Integer key : keys)
+                checkExpired(key);
+        }
+        finally {
+            cache.removeAll();
+        }
+    }
+
+    /**
      * @param key Key.
      */
     private void checkExpired(Integer key) {
@@ -198,10 +237,22 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx e = cache.peekEx(key);
+            GridCacheEntryEx e = null;
 
-            if (e == null && cache.context().isNear())
+            try {
+                e = cache.entryEx(key);
+
+                e.unswap();
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
+                // No-op.
+            }
+
+            if ((e == null || e.rawGet() == null) && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
+
+            if (e == null || e.rawGet() == null)
+                e = null;
 
             if (e == null) {
                 if (primaryOnly)
@@ -211,8 +262,6 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
             }
             else {
                 found = true;
-
-                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);

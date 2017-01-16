@@ -109,7 +109,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         sched = new Scheduler();
 
         sched.start();

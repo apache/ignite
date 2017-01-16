@@ -45,7 +45,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory("pagemem", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false));
     }
 
     /**
@@ -264,7 +264,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page memory implementation.
      */
     protected PageMemory memory() throws Exception {
-        File memDir = U.resolveWorkDirectory("pagemem", false);
+        File memDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false);
 
         long[] sizes = new long[10];
 
@@ -285,6 +285,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         ByteBuffer bytes = page.getForWrite();
 
         try {
+            PageIO.setPageId(bytes, page.id());
+
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
                 bytes.put(i, (byte)val);
         }
@@ -301,6 +303,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         expVal &= 0xFF;
 
         ByteBuffer bytes = page.getForRead();
+
+        assertNotNull(bytes);
 
         try {
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++) {
@@ -319,6 +323,6 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page.
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
-        return new FullPageId(mem.allocatePage(0, 1, PageIdAllocator.FLAG_DATA), 0);
+        return new FullPageId(mem.allocatePage(-1, 1, PageIdAllocator.FLAG_DATA), -1);
     }
 }

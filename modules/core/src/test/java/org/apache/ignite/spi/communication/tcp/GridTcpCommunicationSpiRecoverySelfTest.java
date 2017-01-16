@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -46,6 +47,7 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
@@ -74,6 +76,9 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
     /** */
     protected static int port = 30_000;
+
+    /** Use ssl. */
+    protected boolean useSsl;
 
     /**
      *
@@ -644,6 +649,13 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /**
+     * @return {@code True}.
+     */
+    protected boolean usePairedConnections() {
+        return true;
+    }
+
+    /**
      * @param idx SPI index.
      * @return SPI instance.
      */
@@ -659,6 +671,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         spi.setSocketSendBuffer(512);
         spi.setSocketReceiveBuffer(512);
         spi.setConnectionsPerNode(1);
+        spi.setUsePairedConnections(usePairedConnections());
 
         return spi;
     }
@@ -691,6 +704,15 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            if (useSsl) {
+                IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
+
+                IgniteConfiguration cfg = ignite.configuration()
+                    .setSslContextFactory(GridTestUtils.sslFactory());
+
+                ignite.setStaticCfg(cfg);
+            }
 
             spi.setListener(new TestListener());
 

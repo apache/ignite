@@ -105,6 +105,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60_000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -316,6 +321,8 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         final CacheConfiguration<Object, Object> ccfg,
         final IgniteBiInClosure<Integer, IgniteCache<Object, Object>> c) throws Exception {
         Ignite ignite = startGrid(NODES);
+
+        awaitPartitionMapExchange();
 
         final TestRecordingCommunicationSpi commSpiClient =
             (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();

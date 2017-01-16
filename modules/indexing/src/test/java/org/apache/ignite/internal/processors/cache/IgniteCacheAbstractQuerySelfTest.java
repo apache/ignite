@@ -172,7 +172,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         if (cacheMode() == CacheMode.PARTITIONED)
             cc.setBackups(gridCount());
 
-        cc.setSnapshotableIndex(snapshotableIndex());
+        //cc.setSnapshotableIndex(snapshotableIndex());
 
         return cc;
     }

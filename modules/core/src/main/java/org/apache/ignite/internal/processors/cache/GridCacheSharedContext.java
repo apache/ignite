@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
@@ -105,6 +108,9 @@ public class GridCacheSharedContext<K, V> {
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
 
+    /** Ttl cleanup manager. */
+    private GridCacheSharedTtlCleanupManager ttlMgr;
+
     /** Cache contexts map. */
     private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -138,6 +144,9 @@ public class GridCacheSharedContext<K, V> {
     /** */
     private final IgniteLogger txRecoveryMsgLog;
 
+    /** Concurrent DHT atomic updates counters. */
+    private AtomicIntegerArray dhtAtomicUpdCnt;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -147,6 +156,7 @@ public class GridCacheSharedContext<K, V> {
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
+     * @param ttlMgr Ttl cleanup manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
      */
@@ -162,12 +172,13 @@ public class GridCacheSharedContext<K, V> {
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
         GridCacheIoManager ioMgr,
+        GridCacheSharedTtlCleanupManager ttlMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -176,6 +187,9 @@ public class GridCacheSharedContext<K, V> {
         ctxMap = new ConcurrentHashMap<>();
 
         locStoreCnt = new AtomicInteger();
+
+        if (dbMgr != null && dbMgr.persistenceEnabled())
+            dhtAtomicUpdCnt = new AtomicIntegerArray(kernalCtx.config().getSystemThreadPoolSize());
 
         msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
         atomicMsgLog = kernalCtx.log(CU.ATOMIC_MSG_LOG_CATEGORY);
@@ -266,7 +280,8 @@ public class GridCacheSharedContext<K, V> {
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
-            ioMgr);
+            ioMgr,
+            ttlMgr);
 
         this.mgrs = mgrs;
 
@@ -290,13 +305,14 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param mgrs Managers list.
      * @param txMgr Transaction manager.
+     * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
-     * @param jtaMgr JTA manager.
+     * @param ttlMgr Ttl cleanup manager.
      */
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
@@ -309,7 +325,8 @@ public class GridCacheSharedContext<K, V> {
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
-        GridCacheIoManager ioMgr) {
+        GridCacheIoManager ioMgr,
+        GridCacheSharedTtlCleanupManager ttlMgr) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -321,6 +338,7 @@ public class GridCacheSharedContext<K, V> {
         this.exchMgr = add(mgrs, exchMgr);
         this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
+        this.ttlMgr = add(mgrs, ttlMgr);
     }
 
     /**
@@ -538,6 +556,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Ttl cleanup manager.
+     * */
+    public GridCacheSharedTtlCleanupManager ttl() {
+        return ttlMgr;
+    }
+
+    /**
      * @return Cache deployment manager.
      */
     public GridCacheDeploymentManager<K, V> deploy() {
@@ -665,6 +690,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
+        f.add(mvcc().finishDataStreamerUpdates());
 
         f.markInitialized();
 
@@ -818,5 +844,32 @@ public class GridCacheSharedContext<K, V> {
      */
     public void txContextReset() {
         mvccMgr.contextReset();
+    }
+
+    /**
+     * @param ver DHT atomic update future version.
+     * @return Amount of active DHT atomic updates.
+     */
+    public int startDhtAtomicUpdate(GridCacheVersion ver) {
+        assert dhtAtomicUpdCnt != null;
+
+        return dhtAtomicUpdCnt.incrementAndGet(dhtAtomicUpdateIndex(ver));
+    }
+
+    /**
+     * @param ver DHT atomic update future version.
+     */
+    public void finishDhtAtomicUpdate(GridCacheVersion ver) {
+        assert dhtAtomicUpdCnt != null;
+
+        dhtAtomicUpdCnt.decrementAndGet(dhtAtomicUpdateIndex(ver));
+    }
+
+    /**
+     * @param ver Version.
+     * @return Index.
+     */
+    private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
+        return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
 }

@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -47,7 +46,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private static final int SAMPLE_CNT = 1;
 
     /** */
-    private static final byte DIRECT_TYPE = (byte)210;
+    private static final byte DIRECT_TYPE = -100;
 
     /** */
     private int bufSize;
@@ -113,8 +112,8 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void doSend() throws Exception {
-        GridIoManager mgr0 = ((IgniteKernal)grid(0)).context().io();
-        GridIoManager mgr1 = ((IgniteKernal)grid(1)).context().io();
+        GridIoManager mgr0 = grid(0).context().io();
+        GridIoManager mgr1 = grid(1).context().io();
 
         String topic = "test-topic";
 

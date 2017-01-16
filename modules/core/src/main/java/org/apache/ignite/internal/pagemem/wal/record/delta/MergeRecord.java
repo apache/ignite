@@ -19,19 +19,21 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Merge on remove.
  */
 public class MergeRecord<L> extends PageDeltaRecord {
     /** */
+    @GridToStringExclude
     private long prntId;
 
     /** */
+    @GridToStringExclude
     private long rightId;
 
     /** */
@@ -55,35 +57,14 @@ public class MergeRecord<L> extends PageDeltaRecord {
         this.rightId = rightId;
         this.prntIdx = prntIdx;
         this.emptyBranch = emptyBranch;
+
+        throw new IgniteException("Merge record should not be used directly (see GG-11640). " +
+            "Clear the database directory and restart the node.");
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer leftBuf) throws IgniteCheckedException {
-        BPlusIO<L> io = PageIO.getBPlusIO(leftBuf);
-
-        try (
-            Page prnt = pageMem.page(cacheId(), prntId);
-            Page right = pageMem.page(cacheId(), rightId)
-        ) {
-            ByteBuffer prntBuf = prnt.getForRead();
-
-            try {
-                BPlusIO<L> prntIo = PageIO.getBPlusIO(prntBuf);
-
-                ByteBuffer rightBuf = right.getForRead();
-
-                try {
-                    if (!io.merge(prntIo, prntBuf, prntIdx, leftBuf, rightBuf, emptyBranch))
-                        throw new DeltaApplicationException("Failed to merge page.");
-                }
-                finally {
-                    right.releaseRead();
-                }
-            }
-            finally {
-                prnt.releaseRead();
-            }
-        }
+    @Override public void applyDelta(ByteBuffer leftBuf) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Merge record should not be logged.");
     }
 
     /** {@inheritDoc} */
@@ -105,5 +86,11 @@ public class MergeRecord<L> extends PageDeltaRecord {
 
     public boolean isEmptyBranch() {
         return emptyBranch;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MergeRecord.class, this, "prntId", U.hexLong(prntId), "rightId", U.hexLong(rightId),
+            "parent", super.toString());
     }
 }

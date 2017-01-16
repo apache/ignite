@@ -22,7 +22,8 @@ import java.util.{Collection => JavaCollection, Collections, UUID}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.util.typedef._
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
@@ -70,7 +71,6 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r} {-system}
  *     cache -clear {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
- *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
  *     cache -stop -c=<cache-name>
  *     cache -reset -c=<cache-name>
  * }}}
@@ -113,8 +113,6 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *          Clears cache.
  *     -scan
  *          Prints list of all entries from cache.
- *     -swap
- *          Swaps backup entries in cache.
  *     -stop
  *          Stop cache with specified name.
  *     -reset
@@ -151,12 +149,6 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         with page of 50 items from all nodes with this cache.
  *     cache -scan -c=cache -id8=12345678
  *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
- *     cache -swap
- *         Swaps entries in interactively selected cache.
- *     cache -swap -c=cache
- *         Swaps entries in cache with name 'cache'.
- *     cache -swap -c=@c0
- *         Swaps entries in cache with name taken from 'c0' memory variable.
  *     cache -stop -c=cache
  *         Stops cache with name 'cache'.
  *     cache -reset -c=cache
@@ -207,15 +199,6 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -scan -c=cache -id8=12345678</ex>
      *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
-     * <br>
-     * <ex>cache -swap</ex>
-     *     Swaps entries in interactively selected cache.
-     * <br>
-     * <ex>cache -swap -c=cache</ex>
-     *     Swaps entries in cache with name 'cache'.
-     * <br>
-     * <ex>cache -swap -c=@c0</ex>
-     *     Swaps entries in cache with name taken from 'c0' memory variable.
      * <br>
      * <ex>cache -stop -c=@c0</ex>
      *     Stop cache with name taken from 'c0' memory variable.
@@ -272,9 +255,9 @@ class VisorCacheCommand {
             // Get cache stats data from all nodes.
             val aggrData = cacheData(node, cacheName, showSystem)
 
-            if (hasArgFlagIn("clear", "swap", "scan", "stop", "reset")) {
+            if (hasArgFlagIn("clear", "scan", "stop", "reset")) {
                 if (cacheName.isEmpty)
-                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop", "reset"), aggrData) match {
+                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "stop", "reset"), aggrData) match {
                         case Some(name) =>
                             argLst = argLst ++ Seq("c" -> name)
 
@@ -287,11 +270,9 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (aggrData.nonEmpty && !aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
+                        if (aggrData.nonEmpty && !aggrData.exists(cache => F.eq(cache.name(), name) && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
-                            else if (hasArgFlag("swap", argLst))
-                                VisorCacheSwapCommand().swap(argLst, node)
                             else if (hasArgFlag("stop", argLst))
                                 VisorCacheStopCommand().stop(argLst, node)
                             else if (hasArgFlag("reset", argLst))
@@ -300,8 +281,6 @@ class VisorCacheCommand {
                         else {
                             if (hasArgFlag("clear", argLst))
                                 warn("Clearing of system cache is not allowed: " + name)
-                            else if (hasArgFlag("swap", argLst))
-                                warn("Backup swapping of system cache is not allowed: " + name)
                             else if (hasArgFlag("stop", argLst))
                                 warn("Stopping of system cache is not allowed: " + name)
                             else if (hasArgFlag("reset", argLst))
@@ -467,7 +446,7 @@ class VisorCacheCommand {
                     println("  Total number of executions: " + ad.execsQuery)
                     println("  Total number of failures:   " + ad.failsQuery)
 
-                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => safeEquals(ccfg.name(), ad.name()))
+                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => F.eq(ccfg.name(), ad.name()))
                         .foreach(ccfg => {
                             nl()
 
@@ -718,9 +697,7 @@ object VisorCacheCommand {
             " ",
             "Clears cache.",
             " ",
-            "Prints list of all entries from cache.",
-            " ",
-            "Swaps backup entries in cache."
+            "Prints list of all entries from cache."
         ),
         spec = Seq(
             "cache",
@@ -728,7 +705,6 @@ object VisorCacheCommand {
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
-            "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -stop -c=<cache-name>",
             "cache -reset -c=<cache-name>"
   ),
@@ -758,9 +734,6 @@ object VisorCacheCommand {
             ),
             "-scan" -> Seq(
                 "Prints list of all entries from cache."
-            ),
-            "-swap" -> Seq(
-                "Swaps backup entries in cache."
             ),
             "-stop" -> Seq(
                 "Stop cache with specified name."
@@ -823,9 +796,6 @@ object VisorCacheCommand {
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
             "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
-            "cache -swap" -> "Swaps entries in interactively selected cache.",
-            "cache -swap -c=cache" -> "Swaps entries in cache with name 'cache'.",
-            "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable.",
             "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable."
         ),

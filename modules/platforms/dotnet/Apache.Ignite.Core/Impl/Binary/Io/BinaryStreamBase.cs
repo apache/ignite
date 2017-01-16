@@ -579,7 +579,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         {
             int val = ReadInt();
 
-            return *(float*)(&val);
+            return BinaryUtils.IntToFloatBits(val);
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         {
             long val = ReadLong();
 
-            return *(double*)(&val);
+            return BinaryUtils.LongToDoubleBits(val);
         }
 
         /// <summary>

@@ -94,7 +94,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cnt.getAndIncrement() == 0) {
+        if (cnt.getAndIncrement() == 0 || (cnt.get() > gridCount() && cnt.get() % gridCount() == 0)) {
             info("Use grid '" + gridName + "' as near-only.");
 
             cfg.setClientMode(true);

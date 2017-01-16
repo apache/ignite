@@ -267,6 +267,43 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether callable throws an exception with specified cause.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.call();
+        }
+        catch (Throwable e) {
+            Throwable t = e;
+
+            while (t != null) {
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                    log.info("Caught expected exception: " + t.getMessage());
+
+                    return t;
+                }
+
+                t = t.getCause();
+            }
+
+            fail("Unexpected exception", e);
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
      * Checks whether callable throws expected exception or its child or not.
      *
      * @param log Logger (optional).
@@ -718,6 +755,72 @@ public final class GridTestUtils {
     }
 
     /**
+     * Create future async result.
+     *
+     * @param thrFactory Thr factory.
+     */
+    private static<T> GridFutureAdapter<T> createFutureAdapter(final GridTestSafeThreadFactory thrFactory){
+       return new GridFutureAdapter<T>() {
+            @Override public boolean cancel() throws IgniteCheckedException {
+                super.cancel();
+
+                thrFactory.interruptAllThreads();
+
+                onCancelled();
+
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    public static IgniteInternalFuture runAsync(final Runnable task) {
+        return runAsync(task,"async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to start new threads (test is being stopped).");
+
+        try {
+            final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
+
+            final GridFutureAdapter fut = createFutureAdapter(thrFactory);
+
+            thrFactory.newThread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        task.run();
+
+                        fut.onDone();
+                    }
+                    catch (Throwable e) {
+                        fut.onDone(e);
+                    }
+                }
+            }).start();
+
+            return fut;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Runs callable task asyncronously.
      *
      * @param task Callable.
@@ -725,7 +828,7 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
-        return runAsync(task, "async-runner");
+        return runAsync(task, "async-callable-runner");
     }
 
     /**
@@ -743,17 +846,7 @@ public final class GridTestUtils {
         try {
             final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
 
-            final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
-                @Override public boolean cancel() throws IgniteCheckedException {
-                    super.cancel();
-
-                    thrFactory.interruptAllThreads();
-
-                    onCancelled();
-
-                    return true;
-                }
-            };
+            final GridFutureAdapter<T> fut = createFutureAdapter(thrFactory);
 
             thrFactory.newThread(new Runnable() {
                 @Override public void run() {
@@ -1027,7 +1120,7 @@ public final class GridTestUtils {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
-                        LT.warn(log, null, "Partition map was not updated yet (will wait) [grid=" + g.name() +
+                        LT.warn(log, "Partition map was not updated yet (will wait) [grid=" + g.name() +
                             ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
 
                         wait = true;

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -357,7 +358,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws IgniteCheckedException {
+    @Override public final void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new IgniteSpiContext() {
@@ -421,6 +422,20 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         catch (IgniteCheckedException e) {
                             throw unwrapException(e);
                         }
+                    }
+
+                    @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+                        A.notNull(topic, "topic");
+                        A.notNull(p, "p");
+
+                        ctx.io().addUserMessageListener(topic, p);
+                    }
+
+                    @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+                        A.notNull(topic, "topic");
+                        A.notNull(topic, "p");
+
+                        ctx.io().removeUserMessageListener(topic, p);
                     }
 
                     @SuppressWarnings("deprecation")

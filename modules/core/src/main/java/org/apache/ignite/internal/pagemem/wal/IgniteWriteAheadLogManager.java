@@ -21,15 +21,21 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
+public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
      * @return {@code true} If we have to always write full pages.
      */
     public boolean isAlwaysWriteFullPages();
+
+    /**
+     * @return {@code true} if WAL will perform fair syncs on fsync call.
+     */
+    public boolean isFullSync();
 
     /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this

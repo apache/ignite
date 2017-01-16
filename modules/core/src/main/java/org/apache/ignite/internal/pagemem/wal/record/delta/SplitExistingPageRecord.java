@@ -19,9 +19,11 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Split existing page.
@@ -31,6 +33,7 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
     private int mid;
 
     /** */
+    @GridToStringExclude
     private long fwdId;
 
     /**
@@ -47,7 +50,7 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         BPlusIO<?> io = PageIO.getBPlusIO(buf);
 
         io.splitExistingPage(buf, mid, fwdId);
@@ -64,5 +67,10 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
 
     public long forwardId() {
         return fwdId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SplitExistingPageRecord.class, this, "fwId", U.hexLong(fwdId), "parent", super.toString());
     }
 }

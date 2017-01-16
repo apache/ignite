@@ -39,10 +39,12 @@ import org.apache.ignite.internal.processors.clock.GridClockSource;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
@@ -62,10 +65,12 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -192,6 +197,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridCacheProcessor cache();
 
     /**
+     * Gets cluster state processor.
+     *
+     * @return Cluster state processor.
+     */
+    public GridClusterStateProcessor state();
+
+    /**
      * Gets task session processor.
      *
      * @return Session processor.
@@ -274,6 +286,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Hadoop processor.
      */
     public HadoopProcessorAdapter hadoop();
+
+    /**
+     * Gets pool processor.
+     *
+     * @return Pool processor.
+     */
+    public PoolProcessor pools();
+
+    /**
+     * Gets Hadoop helper.
+     *
+     * @return Hadoop helper.
+     */
+    public HadoopHelper hadoopHelper();
 
     /**
      * Gets utility cache pool.
@@ -478,6 +504,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getSystemExecutorService();
 
     /**
+     * Executor service that is in charge of processing internal system messages
+     * in stripes (dedicated threads).
+     *
+     * @return Thread pool implementation to be used in grid for internal system messages.
+     */
+    public StripedExecutor getStripedExecutorService();
+
+    /**
      * Executor service that is in charge of processing internal and Visor
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      *
@@ -507,6 +541,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      messages.
      */
     public ExecutorService getRestExecutorService();
+
+    /**
+     * Get affinity executor service.
+     *
+     * @return Affinity executor service.
+     */
+    public ExecutorService getAffinityExecutorService();
+
+    /**
+     * Get indexing executor service.
+     *
+     * @return Indexing executor service.
+     */
+    @Nullable public ExecutorService getIndexingExecutorService();
 
     /**
      * Gets exception registry.

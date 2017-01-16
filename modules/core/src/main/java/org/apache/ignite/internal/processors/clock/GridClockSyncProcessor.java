@@ -86,8 +86,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+        super.start(activeOnStart);
 
         clockSrc = ctx.timeSource();
 
@@ -133,8 +133,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+        super.onKernalStart(activeOnStart);
 
         srv.afterStart();
 
@@ -458,7 +458,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     srv.sendPacket(req, addr, port);
                 }
                 catch (IgniteCheckedException e) {
-                    LT.warn(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
+                    LT.error(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
                         ", addr=" + addr + ", port=" + port + ']');
                 }
             }

@@ -68,6 +68,7 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
+import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -490,7 +491,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
             }
 
-            internal = dep.internalTask(task, taskCls);
+            internal = ses.isInternal();
 
             recordTaskEvent(EVT_TASK_STARTED, "Task started.");
 
@@ -626,7 +627,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 res.setOccupied(true);
 
                 if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
-                    LT.warn(log, null, "Number of jobs in task is too large for task: " + ses.getTaskName() +
+                    LT.warn(log, "Number of jobs in task is too large for task: " + ses.getTaskName() +
                         ". Consider reducing number of jobs or disabling job result cache with " +
                         "@ComputeTaskNoResultCache annotation.");
             }
@@ -805,15 +806,15 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc ? res.getJobResult() : marsh.unmarshal(res.getJobResultBytes(),
+                        Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
                             U.resolveClassLoader(clsLdr, ctx.config()));
 
                         IgniteException ex = loc ? res.getException() :
-                            marsh.<IgniteException>unmarshal(res.getExceptionBytes(),
+                            U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
                                 U.resolveClassLoader(clsLdr, ctx.config()));
 
                         Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                            marsh.<Map<Object, Object>>unmarshal(res.getJobAttributesBytes(),
+                            U.<Map<Object, Object>>unmarshal(marsh, res.getJobAttributesBytes(),
                                 U.resolveClassLoader(clsLdr, ctx.config()));
 
                         jobRes.onResponse(res0, ex, attrs, res.isCancelled());
@@ -1064,6 +1065,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         finishTask(null, e0);
 
                         return null;
+                    }
+                    else if (X.hasCause(e, GridServiceNotFoundException.class) ||
+                        X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                        // Should be throttled, because GridServiceProxy continuously retry getting service.
+                        LT.error(log, e, "Failed to obtain remote job result policy for result from " +
+                            "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
                     }
                     else
                         U.error(log, "Failed to obtain remote job result policy for result from " +
@@ -1347,16 +1354,16 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ses.getTaskName(),
                         ses.getUserVersion(),
                         ses.getTaskClassName(),
-                        loc ? null : marsh.marshal(res.getJob()),
+                        loc ? null : U.marshal(marsh, res.getJob()),
                         loc ? res.getJob() : null,
                         ses.getStartTime(),
                         timeout,
                         ses.getTopology(),
-                        loc ? null : marsh.marshal(ses.getJobSiblings()),
+                        loc ? null : U.marshal(marsh, ses.getJobSiblings()),
                         loc ? ses.getJobSiblings() : null,
-                        loc ? null : marsh.marshal(sesAttrs),
+                        loc ? null : U.marshal(marsh, sesAttrs),
                         loc ? sesAttrs : null,
-                        loc ? null : marsh.marshal(jobAttrs),
+                        loc ? null : U.marshal(marsh, jobAttrs),
                         loc ? jobAttrs : null,
                         ses.getCheckpointSpi(),
                         dep.classLoaderId(),
@@ -1500,7 +1507,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param msg Event message.
      */
     private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode, String msg) {
-        if (ctx.event().isRecordable(evtType)) {
+        if (!internal && ctx.event().isRecordable(evtType)) {
             JobEvent evt = new JobEvent();
 
             evt.message(msg);

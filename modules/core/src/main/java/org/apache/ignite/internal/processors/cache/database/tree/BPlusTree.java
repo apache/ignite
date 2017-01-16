@@ -36,9 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -58,8 +55,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
-import org.apache.ignite.internal.util.GridArrays;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -86,7 +82,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
-public abstract class BPlusTree<L, T extends L> extends DataStructure {
+public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
     /** */
     private static final Object[] EMPTY = {};
 
@@ -301,6 +297,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     private final GetPageHandler<Put> replace = new GetPageHandler<Put>() {
         @Override public Result run0(Page page, ByteBuffer buf, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
+            // Check the triangle invariant.
+            if (io.getForward(buf) != p.fwdId)
+                return RETRY;
+
             assert p.btmLvl == 0 : "split is impossible with replace";
 
             final int cnt = io.getCount(buf);
@@ -731,7 +731,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    @Override public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -760,7 +760,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Found row.
      */
     @SuppressWarnings("unchecked")
-    public final T findOne(L row) throws IgniteCheckedException {
+    @Override public final T findOne(L row) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1252,7 +1252,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public final T remove(L row) throws IgniteCheckedException {
+    @Override public final T remove(L row) throws IgniteCheckedException {
         return doRemove(row, false, null);
     }
 
@@ -1285,7 +1285,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                             // If not found, then the tree grew beyond our call stack -> retry from the actual root.
                             if (res == RETRY || res == NOT_FOUND) {
-                                assert r.checkTailLevel(getRootLevel(r.meta));
+                                int root = getRootLevel(r.meta);
+
+                                boolean checkRes = r.checkTailLevel(root);
+
+                                assert checkRes : "tail=" + r.tail + ", root=" + root + ", res=" + res;
 
                                 checkInterrupted();
 
@@ -1468,7 +1472,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Size.
      * @throws IgniteCheckedException If failed.
      */
-    public final long size() throws IgniteCheckedException {
+    @Override public final long size() throws IgniteCheckedException {
         checkDestroyed();
 
         long pageId;
@@ -1506,11 +1510,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     }
 
     /**
-     * @param row Row.
-     * @return Old row.
-     * @throws IgniteCheckedException If failed.
+     * {@inheritDoc}
      */
-    public final T put(T row) throws IgniteCheckedException {
+    @Override public final T put(T row) throws IgniteCheckedException {
         return put(row, null);
     }
 
@@ -1719,11 +1721,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         // Update forward page.
         io.splitForwardPage(buf, fwdId, fwdBuf, mid, cnt);
 
-        // Here the order of records for pages is important because forward split requires
-        // that existing page is still in initial state.
-        if (needWalDeltaRecord(fwd))
-            wal.log(new SplitForwardPageRecord(cacheId, fwd.id(), fwdId,
-                io.getType(), io.getVersion(), page.id(), mid, cnt));
+        // TODO GG-11640 log a correct forward page record.
+        fwd.fullPageWalRecordPolicy(Boolean.TRUE);
 
         // Update existing page.
         io.splitExistingPage(buf, mid, fwdId);
@@ -1792,7 +1791,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         if (p.needReplaceInner == TRUE) {
                             p.needReplaceInner = FALSE; // Protect from retries.
 
+                            long oldFwdId = p.fwdId;
+                            long oldPageId = p.pageId;
+
+                            // Set old args.
+                            p.fwdId = fwdId;
+                            p.pageId = pageId;
+
                             res = writePage(page, this, replace, p, lvl, RETRY);
+
+                            // Restore args.
+                            p.pageId = oldPageId;
+                            p.fwdId = oldFwdId;
 
                             if (res != FOUND)
                                 return res; // Need to retry.
@@ -1926,6 +1936,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             long rootId;
 
             ByteBuffer buf = readLock(meta); // Meta can't be removed.
+
+            assert buf != null : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
+                U.hexLong(metaPageId) + ']';
 
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
@@ -2931,9 +2944,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             prnt.idx = Short.MIN_VALUE;
             left.idx = Short.MIN_VALUE;
 
-            if (needWalDeltaRecord(left.page))
-                wal.log(new MergeRecord<>(cacheId, left.page.id(), prnt.page.id(), prntIdx,
-                    right.page.id(), emptyBranch));
+            // TODO GG-11640 log a correct merge record.
+            left.page.fullPageWalRecordPolicy(Boolean.TRUE);
 
             // Remove split key from parent. If we are merging empty branch then remove only on the top iteration.
             if (needMergeEmptyBranch != READY)
@@ -3032,9 +3044,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
             inner.io.setRemoveId(inner.buf, rmvId);
 
-            if (needWalDeltaRecord(inner.page))
-                wal.log(new InnerReplaceRecord<>(cacheId, inner.page.id(),
-                    innerIdx, leaf.page.id(), leafIdx, rmvId));
+            // TODO GG-11640 log a correct inner replace record.
+            inner.page.fullPageWalRecordPolicy(Boolean.TRUE);
 
             // Update remove ID for the leaf page.
             leaf.io.setRemoveId(leaf.buf, rmvId);
@@ -3546,8 +3557,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         @SuppressWarnings("unchecked")
         private boolean fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx, int cnt)
             throws IgniteCheckedException {
-            assert io.isLeaf();
-            assert cnt != 0: cnt; // We can not see empty pages (empty tree handled in init).
+            assert io.isLeaf() : io;
+            assert cnt != 0 : cnt; // We can not see empty pages (empty tree handled in init).
             assert startIdx >= 0 : startIdx;
             assert cnt >= startIdx;
 

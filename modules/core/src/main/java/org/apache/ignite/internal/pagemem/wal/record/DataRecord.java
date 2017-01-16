@@ -19,6 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,26 +32,12 @@ import java.util.List;
  */
 public class DataRecord extends WALRecord {
     /** */
+    @GridToStringInclude
     private List<DataEntry> writeEntries;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_RECORD;
-    }
-
-    /**
-     * @param tx Transaction to build WAL record from.
-     * @return WAL data record.
-     */
-    public static DataRecord fromTransaction(IgniteInternalTx tx) {
-        Collection<IgniteTxEntry> writes = tx.writeEntries();
-
-        List<DataEntry> entries = new ArrayList<>(writes.size());
-
-        for (IgniteTxEntry write : writes)
-            entries.add(DataEntry.fromTxEntry(write, tx));
-
-        return new DataRecord(entries);
     }
 
     /**
@@ -78,5 +66,9 @@ public class DataRecord extends WALRecord {
      */
     public List<DataEntry> writeEntries() {
         return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
+    }
+
+    @Override public String toString() {
+        return S.toString(DataRecord.class, this, super.toString());
     }
 }

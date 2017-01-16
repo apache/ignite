@@ -77,6 +77,9 @@ public class DataPageIO extends PageIO {
     /** */
     private static final int FRAGMENTED_FLAG = 0b10000000_00000000;
 
+    /** */
+    public static final int MIN_DATA_PAGE_OVERHEAD = ITEMS_OFF + ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
+
     /**
      * @param ver Page format version.
      */
@@ -397,12 +400,14 @@ public class DataPageIO extends PageIO {
 
         int directCnt = getDirectCount(buf);
 
-        assert directCnt > 0: directCnt;
+        assert directCnt > 0: "itemId=" + itemId + ", directCnt=" + directCnt + ", page=" + printPageLayout(buf);
 
         if (itemId >= directCnt) { // Need to do indirect lookup.
             int indirectCnt = getIndirectCount(buf);
 
-            assert indirectCnt > 0: indirectCnt; // Must have indirect items here.
+            // Must have indirect items here.
+            assert indirectCnt > 0: "itemId=" + itemId + ", directCnt=" + directCnt + ", indirectCnt=" + indirectCnt +
+                ", page=" + printPageLayout(buf);
 
             int indirectItemIdx = findIndirectItemIndex(buf, itemId, directCnt, indirectCnt);
 

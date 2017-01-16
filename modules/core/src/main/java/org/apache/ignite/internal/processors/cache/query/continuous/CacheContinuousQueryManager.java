@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -246,7 +246,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean primary,
         boolean preload,
         long updateCntr,
-        @Nullable GridDhtAtomicUpdateFuture fut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         Map<UUID, CacheContinuousQueryListener> lsnrCol = updateListeners(internal, preload);
@@ -291,7 +291,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean primary,
         boolean preload,
         long updateCntr,
-        @Nullable GridDhtAtomicUpdateFuture fut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {

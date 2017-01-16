@@ -384,17 +384,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     GridCacheEntryEx entry = null;
 
-                    if (memMode == TestMemoryMode.HEAP)
-                        entry = c.peekEx(k);
-                    else {
-                        try {
-                            entry = c.entryEx(k);
+                    try {
+                        entry = c.entryEx(k);
 
-                            entry.unswap();
-                        }
-                        catch (GridDhtInvalidPartitionException e) {
-                            // Skip key.
-                        }
+                        entry.unswap();
+                    }
+                    catch (GridDhtInvalidPartitionException e) {
+                        // Skip key.
                     }
 
                     for (int r = 0; r < 10; r++) {
@@ -478,7 +474,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Object origMsg = msg.message();
 
             return delay &&
-                ((origMsg instanceof GridNearAtomicUpdateRequest) || (origMsg instanceof GridDhtAtomicUpdateRequest));
+                ((origMsg instanceof GridNearAtomicAbstractUpdateRequest) || (origMsg instanceof GridDhtAtomicAbstractUpdateRequest));
         }
     }
 }

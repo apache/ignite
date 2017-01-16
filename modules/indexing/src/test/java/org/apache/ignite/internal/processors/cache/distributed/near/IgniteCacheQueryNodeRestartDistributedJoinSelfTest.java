@@ -17,185 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Serializable;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.X;
+
+import javax.cache.CacheException;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import javax.cache.CacheException;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.GridRandom;
-import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test for distributed queries with node restarts.
  */
-public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final String QRY_0 = "select co._key, count(*) cnt\n" +
-        "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
-        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
-        "group by co._key order by cnt desc, co._key";
-
-    /** */
-    private static final String QRY_0_BROADCAST = "select co._key, count(*) cnt\n" +
-        "from \"co\".Company co, \"pr\".Product pr, \"pu\".Purchase pu, \"pe\".Person pe \n" +
-        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
-        "group by co._key order by cnt desc, co._key";
-
-    /** */
-    private static final String QRY_1 = "select pr._key, co._key\n" +
-        "from \"pr\".Product pr, \"co\".Company co\n" +
-        "where pr.companyId = co._key\n" +
-        "order by co._key, pr._key ";
-
-    /** */
-    private static final String QRY_1_BROADCAST = "select pr._key, co._key\n" +
-        "from \"co\".Company co, \"pr\".Product pr \n" +
-        "where pr.companyId = co._key\n" +
-        "order by co._key, pr._key ";
-
-    /** */
-    private static final int GRID_CNT = 6;
-
-    /** */
-    private static final int PERS_CNT = 600;
-
-    /** */
-    private static final int PURCHASE_CNT = 6000;
-
-    /** */
-    private static final int COMPANY_CNT = 25;
-
-    /** */
-    private static final int PRODUCT_CNT = 100;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
-        int i = 0;
-
-        CacheConfiguration<?, ?>[] ccs = new CacheConfiguration[4];
-
-        for (String name : F.asList("pe", "pu", "co", "pr")) {
-            CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
-
-            cc.setName(name);
-            cc.setCacheMode(PARTITIONED);
-            cc.setBackups(2);
-            cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setAtomicityMode(TRANSACTIONAL);
-            cc.setRebalanceMode(SYNC);
-            cc.setLongQueryWarningTimeout(15_000);
-            cc.setAffinity(new RendezvousAffinityFunction(false, 60));
-
-            switch (name) {
-                case "pe":
-                    cc.setIndexedTypes(
-                        Integer.class, Person.class
-                    );
-
-                    break;
-
-                case "pu":
-                    cc.setIndexedTypes(
-                        Integer.class, Purchase.class
-                    );
-
-                    break;
-
-                case "co":
-                    cc.setIndexedTypes(
-                        Integer.class, Company.class
-                    );
-
-                    break;
-
-                case "pr":
-                    cc.setIndexedTypes(
-                        Integer.class, Product.class
-                    );
-
-                    break;
-            }
-
-            ccs[i++] = cc;
-        }
-
-        c.setCacheConfiguration(ccs);
-
-        return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGridsMultiThreaded(GRID_CNT);
-
-        fillCaches();
-    }
-
-    /**
-     *
-     */
-    private void fillCaches() {
-        IgniteCache<Integer, Company> co = grid(0).cache("co");
-
-        for (int i = 0; i < COMPANY_CNT; i++)
-            co.put(i, new Company(i));
-
-        IgniteCache<Integer, Product> pr = grid(0).cache("pr");
-
-        Random rnd = new GridRandom();
-
-        for (int i = 0; i < PRODUCT_CNT; i++)
-            pr.put(i, new Product(i, rnd.nextInt(COMPANY_CNT)));
-
-        IgniteCache<Integer, Person> pe = grid(0).cache("pe");
-
-        for (int i = 0; i < PERS_CNT; i++)
-            pe.put(i, new Person(i));
-
-        IgniteCache<Integer, Purchase> pu = grid(0).cache("pu");
-
-        for (int i = 0; i < PURCHASE_CNT; i++) {
-            int persId = rnd.nextInt(PERS_CNT);
-            int prodId = rnd.nextInt(PRODUCT_CNT);
-
-            pu.put(i, new Purchase(persId, prodId));
-        }
-    }
+public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /**
      * @throws Exception If failed.
      */
@@ -263,79 +103,86 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
         final AtomicInteger qryCnt = new AtomicInteger();
         final AtomicBoolean qrysDone = new AtomicBoolean();
 
+        final AtomicBoolean fail = new AtomicBoolean();
+
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 GridRandom rnd = new GridRandom();
 
-                while (!qrysDone.get()) {
-                    int g;
+                try {
+                    while (!qrysDone.get()) {
+                        int g;
 
-                    do {
-                        g = rnd.nextInt(locks.length());
-                    }
-                    while (!locks.compareAndSet(g, 0, 1));
+                        do {
+                            g = rnd.nextInt(locks.length());
 
-                    if (rnd.nextBoolean()) {
-                        IgniteCache<?, ?> cache = grid(g).cache("pu");
-
-                        SqlFieldsQuery qry;
-
-                        if (broadcastQry)
-                            qry = new SqlFieldsQuery(QRY_0_BROADCAST).setDistributedJoins(true).setEnforceJoinOrder(true);
-                        else
-                            qry = new SqlFieldsQuery(QRY_0).setDistributedJoins(true);
-
-                        boolean smallPageSize = rnd.nextBoolean();
-
-                        qry.setPageSize(smallPageSize ? 30 : 1000);
-
-                        try {
-                            assertEquals(pRes, cache.query(qry).getAll());
+                            if (fail.get())
+                                return;
                         }
-                        catch (CacheException e) {
-                            assertTrue("On large page size must retry.", smallPageSize);
+                        while (!locks.compareAndSet(g, 0, 1));
 
-                            boolean failedOnRemoteFetch = false;
+                        if (rnd.nextBoolean()) {
+                            IgniteCache<?, ?> cache = grid(g).cache("pu");
 
-                            for (Throwable th = e; th != null; th = th.getCause()) {
-                                if (!(th instanceof CacheException))
-                                    continue;
+                            SqlFieldsQuery qry;
 
-                                if (th.getMessage() != null &&
-                                    th.getMessage().startsWith("Failed to fetch data from node:")) {
-                                    failedOnRemoteFetch = true;
+                            if (broadcastQry)
+                                qry = new SqlFieldsQuery(QRY_0_BROADCAST).setDistributedJoins(true).setEnforceJoinOrder(true);
+                            else
+                                qry = new SqlFieldsQuery(QRY_0).setDistributedJoins(true);
 
-                                    break;
+                            boolean smallPageSize = rnd.nextBoolean();
+
+                            qry.setPageSize(smallPageSize ? 30 : 1000);
+
+                            try {
+                                assertEquals(pRes, cache.query(qry).getAll());
+                            }
+                            catch (CacheException e) {
+                                assertTrue("On large page size must retry.", smallPageSize);
+
+                                boolean failedOnRemoteFetch = false;
+
+                                for (Throwable th = e; th != null; th = th.getCause()) {
+                                    if (!(th instanceof CacheException))
+                                        continue;
+
+                                    if (th.getMessage() != null &&
+                                        th.getMessage().startsWith("Failed to fetch data from node:")) {
+                                        failedOnRemoteFetch = true;
+
+                                        break;
+                                    }
+                                }
+
+                                if (!failedOnRemoteFetch) {
+                                    e.printStackTrace();
+
+                                    fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
                                 }
                             }
-
-                            if (!failedOnRemoteFetch) {
-                                e.printStackTrace();
-
-                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
-                            }
                         }
+                        else {
+                            IgniteCache<?, ?> cache = grid(g).cache("co");
+
+                            assertEquals(rRes, cache.query(qry1).getAll());
+                        }
+
+                        locks.set(g, 0);
+
+                        int c = qryCnt.incrementAndGet();
+
+                        if (c % logFreq == 0)
+                            info("Executed queries: " + c);
                     }
-                    else {
-                        IgniteCache<?, ?> cache = grid(g).cache("co");
+                }catch (Throwable e){
+                    e.printStackTrace();
 
-                        SqlFieldsQuery qry;
+                    error("Got exception: " + e.getMessage());
 
-                        if (broadcastQry)
-                            qry = new SqlFieldsQuery(QRY_1_BROADCAST).setDistributedJoins(true).setEnforceJoinOrder(true);
-                        else
-                            qry = new SqlFieldsQuery(QRY_1).setDistributedJoins(true);
-
-                        assertEquals(rRes, cache.query(qry1).getAll());
-                    }
-
-                    locks.set(g, 0);
-
-                    int c = qryCnt.incrementAndGet();
-
-                    if (c % logFreq == 0)
-                        info("Executed queries: " + c);
+                    fail.set(true);
                 }
+
             }
         }, qryThreadNum, "query-thread");
 
@@ -353,6 +200,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
 
                     do {
                         g = rnd.nextInt(locks.length());
+
+                        if (fail.get())
+                            return null;
                     }
                     while (!locks.compareAndSet(g, 0, -1));
 
@@ -382,7 +232,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
 
         Thread.sleep(duration);
 
-        info("Stopping..");
+        info("Stopping...");
 
         restartsDone.set(true);
         qrysDone.set(true);
@@ -390,87 +240,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
         fut2.get();
         fut1.get();
 
+        if (fail.get())
+            fail("See message above");
+
         info("Stopped.");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
-     *
-     */
-    private static class Person implements Serializable {
-        /** */
-        @QuerySqlField(index = true)
-        int id;
-
-        /**
-         * @param id ID.
-         */
-        Person(int id) {
-            this.id = id;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Purchase implements Serializable {
-        /** */
-        @QuerySqlField(index = true)
-        int personId;
-
-        /** */
-        @QuerySqlField(index = true)
-        int productId;
-
-        /**
-         * @param personId Person ID.
-         * @param productId Product ID.
-         */
-        Purchase(int personId, int productId) {
-            this.personId = personId;
-            this.productId = productId;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Company implements Serializable {
-        /** */
-        @QuerySqlField(index = true)
-        int id;
-
-        /**
-         * @param id ID.
-         */
-        Company(int id) {
-            this.id = id;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Product implements Serializable {
-        /** */
-        @QuerySqlField(index = true)
-        int id;
-
-        /** */
-        @QuerySqlField(index = true)
-        int companyId;
-
-        /**
-         * @param id ID.
-         * @param companyId Company ID.
-         */
-        Product(int id, int companyId) {
-            this.id = id;
-            this.companyId = companyId;
-        }
     }
 }
