@@ -31,7 +31,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
     internal class PluginProcessor
     {
         /** */
-        private readonly Dictionary<string, IPluginProviderProxy> _pluginProviders
+        private readonly IList<IPluginProviderProxy> _pluginProviders = new List<IPluginProviderProxy>();
+
+        /** */
+        private readonly Dictionary<string, IPluginProviderProxy> _pluginProvidersByName
             = new Dictionary<string, IPluginProviderProxy>();
 
         /** */
@@ -72,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
             LoadPlugins();
 
             // Notify plugins.
-            foreach (var provider in _pluginProviders.Values)
+            foreach (var provider in _pluginProviders)
                 provider.OnIgniteStart();
         }
 
@@ -81,8 +84,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public void Stop(bool cancel)
         {
-            // TODO: Reverse order
-            foreach (var provider in _pluginProviders.Values)
+            foreach (var provider in _pluginProviders.Reverse())
                 provider.Stop(cancel);
         }
 
@@ -91,8 +93,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public void OnIgniteStop(bool cancel)
         {
-            // TODO: Reverse order
-            foreach (var provider in _pluginProviders.Values)
+            foreach (var provider in _pluginProviders.Reverse())
                 provider.OnIgniteStop(cancel);
         }
 
@@ -105,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             IPluginProviderProxy provider;
 
-            if (!_pluginProviders.TryGetValue(name, out provider))
+            if (!_pluginProvidersByName.TryGetValue(name, out provider))
                 throw new PluginNotFoundException(
                     string.Format("Ignite plugin with name '{0}' not found. Make sure that containing assembly " +
                                   "is in '{1}' folder or configure IgniteConfiguration.PluginPaths.", 
@@ -131,11 +132,12 @@ namespace Apache.Ignite.Core.Impl.Plugin
                 {
                     var provider = CreateProviderProxy(cfg);
 
-                    ValidateProvider(provider, _pluginProviders);
+                    ValidateProvider(provider, _pluginProvidersByName);
 
                     LogProviderInfo(log, provider);
 
-                    _pluginProviders[provider.Name] = provider;
+                    _pluginProviders.Add(provider);
+                    _pluginProvidersByName[provider.Name] = provider;
 
                     provider.Start(this);
                 }
@@ -162,7 +164,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Validates the provider.
         /// </summary>
-        private static void ValidateProvider(IPluginProviderProxy provider, Dictionary<string, IPluginProviderProxy> res)
+        private static void ValidateProvider(IPluginProviderProxy provider, 
+            Dictionary<string, IPluginProviderProxy> res)
         {
             if (provider == null)
             {
