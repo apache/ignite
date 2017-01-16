@@ -111,7 +111,7 @@ public class GridClientTopology {
                 int portIdx = router.lastIndexOf(":");
 
                 if (portIdx > 0) {
-                    String hostName = router.substring(0, portIdx - 1);
+                    String hostName = router.substring(0, portIdx);
 
                     try {
                         int port = Integer.parseInt(router.substring(portIdx + 1));
