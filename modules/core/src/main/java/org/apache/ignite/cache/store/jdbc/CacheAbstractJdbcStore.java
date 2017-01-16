@@ -62,6 +62,7 @@ import org.apache.ignite.cache.store.jdbc.dialect.OracleDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1394,6 +1395,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                             break;
                     }
+                }
+                else if (field.getJavaFieldType().isEnum()) {
+                    if (JdbcUtils.isNumeric(field.getDatabaseFieldType()))
+                        fieldVal = ((Enum) fieldVal).ordinal();
+                    else fieldVal = fieldVal.toString();
                 }
 
                 stmt.setObject(idx, fieldVal);

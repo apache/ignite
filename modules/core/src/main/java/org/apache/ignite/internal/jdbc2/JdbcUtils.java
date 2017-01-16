@@ -29,10 +29,13 @@ import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.FLOAT;
 import static java.sql.Types.INTEGER;
+import static java.sql.Types.NUMERIC;
 import static java.sql.Types.OTHER;
+import static java.sql.Types.REAL;
 import static java.sql.Types.SMALLINT;
 import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
@@ -140,5 +143,27 @@ public class JdbcUtils {
      */
     static boolean isSqlType(Class<?> cls) {
         return GridQueryProcessor.isSqlType(cls) || cls == URL.class;
+    }
+
+    /**
+     * Check that type is numeric.
+     *
+     * @param colType JDBC type code.
+     * @return 'True' when type is numeric or false otherwise.
+     */
+    public static boolean isNumeric(int colType) {
+        switch (colType) {
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            case BIGINT:
+            case REAL:
+            case FLOAT:
+            case DOUBLE:
+            case NUMERIC:
+            case DECIMAL:
+                return true;
+            default: return false;
+        }
     }
 }
