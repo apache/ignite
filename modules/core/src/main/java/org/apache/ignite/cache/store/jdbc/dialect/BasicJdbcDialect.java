@@ -173,13 +173,15 @@ public class BasicJdbcDialect implements JdbcDialect {
         if (appendLowerBound) {
             sb.a("(");
 
-            for (int cnt = keyCols.size(); cnt > 0; cnt--) {
-                for (int j = 0; j < cnt; j++)
-                    if (j == cnt - 1)
-                        sb.a(cols[j]).a(" > ? ");
+            for (int keyCnt = keyCols.size(); keyCnt > 0; keyCnt--) {
+                for (int idx = 0; idx < keyCnt; idx++) {
+                    if (idx == keyCnt - 1)
+                        sb.a(cols[idx]).a(" > ? ");
                     else
-                        sb.a(cols[j]).a(" = ? AND ");
-                if (cnt != 1)
+                        sb.a(cols[idx]).a(" = ? AND ");
+                }
+
+                if (keyCnt != 1)
                     sb.a("OR ");
             }
 
@@ -196,6 +198,7 @@ public class BasicJdbcDialect implements JdbcDialect {
                 for (int idx = 0, lastIdx = keyCnt - 1; idx < keyCnt; idx++) {
                     sb.a(cols[idx]);
 
+                    // For composite key when not all of the key columns are constrained should use < (strictly less).
                     if (idx == lastIdx)
                         sb.a(keyCnt == keyCols.size() ? " <= ? " : " < ? ");
                     else
