@@ -666,7 +666,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersion versionedValue(CacheObject val,
+    @Override public T2<GridCacheVersion, CacheObject> versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable ReaderArguments readerArgs) {
