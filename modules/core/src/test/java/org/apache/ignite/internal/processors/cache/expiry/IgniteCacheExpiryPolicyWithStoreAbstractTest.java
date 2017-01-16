@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -27,6 +30,7 @@ import javax.cache.integration.CompletionListenerFuture;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
@@ -38,6 +42,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  *
@@ -179,38 +186,90 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testGetReadThrough() throws Exception {
+        getReadThrough(false, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+        getReadThrough(true, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void getReadThrough(boolean withExcPlc,
+        TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
-        List<Integer> keys = new ArrayList<>();
+        if (withExcPlc)
+            cache = cache.withExpiryPolicy(new ExpiryPolicy() {
+                @Override public Duration getExpiryForCreation() {
+                    return new Duration(TimeUnit.MILLISECONDS, 501);
+                }
 
-        keys.add(primaryKeys(cache, 1, 100_000).get(0));
-        // TODO https://issues.apache.org/jira/browse/IGNITE-3699
-        // TODO: test 'get' inside transactions, 'get' for cache.withAsyncPolicy.
-        //keys.add(backupKeys(cache, 1, 100_000).get(0));
-        //keys.add(nearKeys(cache, 1, 100_000).get(0));
+                @Override public Duration getExpiryForAccess() {
+                    return new Duration(TimeUnit.MILLISECONDS, 601);
+                }
+
+                @Override public Duration getExpiryForUpdate() {
+                    return new Duration(TimeUnit.MILLISECONDS, 701);
+                }
+            });
+
+        Integer prim = primaryKeys(cache, 1, 0).get(0);
+        Integer back = backupKeys(cache, 1, 0).get(0);
+        Integer near = nearKeys(cache, 1, 0).get(0);
+
+        Set<Integer> prims = new HashSet<>(primaryKeys(cache, 1_000, prim + 1));
+        Set<Integer> backs = new HashSet<>(backupKeys(cache, 1_000, back + 1));
+        Set<Integer> nears = new HashSet<>(nearKeys(cache, 1_000, near + 1));
+
+        Set<Integer> keys = new HashSet<>();
+
+        keys.add(prim);
+        keys.add(back);
+        keys.add(near);
+
+        keys.addAll(prims);
+        keys.addAll(backs);
+        keys.addAll(nears);
 
         for (Integer key : keys)
-            storeMap.put(key, 100);
+            storeMap.put(key, key);
 
-        try {
-            for (Integer key : keys) {
-                Integer res = cache.get(key);
+        IgniteTransactions transactions = grid(0).transactions();
 
-                assertEquals((Integer)100, res);
+        try (Transaction tx = transactions.txStart(txConcurrency, txIsolation)) {
+            Collection<Integer> singleKeys = new HashSet<>();
 
-                checkTtl(key, 500, true);
+            singleKeys.add(prim);
+            singleKeys.add(back);
+            singleKeys.add(near);
 
-                assertEquals((Integer)100, res);
-            }
+            assertEquals(3, singleKeys.size());
 
-            U.sleep(600);
+            for (Integer key : singleKeys)
+                assertEquals(key, cache.get(key));
 
-            for (Integer key : keys)
-                checkExpired(key);
+
+            Map<Integer, Integer> res = new HashMap<>();
+
+            res.putAll(cache.getAll(prims));
+            res.putAll(cache.getAll(backs));
+            res.putAll(cache.getAll(nears));
+
+            assertEquals(3_000, res.size());
+
+            for (Map.Entry<Integer, Integer> e : res.entrySet())
+                assertEquals(e.getKey(), e.getValue());
+
+            tx.commit();
         }
-        finally {
-            cache.removeAll();
-        }
+
+        for (Integer key : keys)
+            checkTtl(key, withExcPlc ? 501 : 500, true);
+
+        U.sleep(600);
+
+        for (Integer key : keys)
+            checkExpired(key);
     }
 
     /**
