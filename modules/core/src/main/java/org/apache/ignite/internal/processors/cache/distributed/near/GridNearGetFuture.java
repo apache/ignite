@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -437,7 +438,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 // First we peek into near cache.
                 if (isNear) {
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        EntryGetResult res = entry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -451,8 +452,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             !deserializeBinary);
 
                         if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
+                            v = res.value();
+                            ver = res.version();
                         }
                     }
                     else {
@@ -577,7 +578,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     boolean isNew = dhtEntry.isNewLocked() || !dhtEntry.valid(topVer);
 
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
+                        EntryGetResult res = dhtEntry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -591,8 +592,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             !deserializeBinary);
 
                         if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
+                            v = res.value();
+                            ver = res.version();
                         }
                     }
                     else {

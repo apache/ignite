@@ -1860,7 +1860,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @return Future.
      */
-    public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
+    protected final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
         @Nullable final Collection<KeyCacheObject> keys,
         final boolean readThrough,
         boolean checkTx,
@@ -1906,7 +1906,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 final boolean needEntry = storeEnabled || ctx.isSwapOrOffheapEnabled();
 
-                Map<KeyCacheObject, GridCacheVersion> misses = null;
+                Map<KeyCacheObject, EntryGetResult> misses = null;
 
                 for (KeyCacheObject key : keys) {
                     while (true) {
@@ -1920,40 +1920,58 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
 
                         try {
-                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
-                                null,
-                                null,
-                                ctx.isSwapOrOffheapEnabled(),
-                                /*unmarshal*/true,
-                                /*update-metrics*/!skipVals,
-                                /*event*/!skipVals,
-                                subjId,
-                                null,
-                                taskName,
-                                expiry,
-                                !deserializeBinary);
+                            EntryGetResult res;
 
-                            if (res == null) {
-                                if (storeEnabled) {
-                                    GridCacheVersion ver = entry.version();
+                            boolean evt = !skipVals;
+                            boolean updateMetrics = !skipVals;
 
+                            if (storeEnabled) {
+                                res = entry.innerGetAndReserveForLoad(ctx.isSwapOrOffheapEnabled(),
+                                    updateMetrics,
+                                    evt,
+                                    subjId,
+                                    taskName,
+                                    expiry,
+                                    !deserializeBinary);
+
+                                assert res != null;
+
+                                if (res.value() == null) {
                                     if (misses == null)
                                         misses = new HashMap<>();
 
-                                    misses.put(key, ver);
+                                    misses.put(key, res);
+
+                                    res = null;
                                 }
-                                else
-                                    ctx.evicts().touch(entry, topVer);
                             }
                             else {
+                                res = entry.innerGetVersioned(
+                                    null,
+                                    null,
+                                    ctx.isSwapOrOffheapEnabled(),
+                                    /*unmarshal*/true,
+                                    updateMetrics,
+                                    evt,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiry,
+                                    !deserializeBinary);
+
+                                if (res == null)
+                                    ctx.evicts().touch(entry, topVer);
+                            }
+
+                            if (res != null) {
                                 ctx.addResult(map,
                                     key,
-                                    res.get1(),
+                                    res.value(),
                                     skipVals,
                                     keepCacheObjects,
                                     deserializeBinary,
                                     true,
-                                    needVer ? res.get2() : null);
+                                    needVer ? res.version() : null);
 
                                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
                                     ctx.evicts().touch(entry, topVer);
@@ -1973,7 +1991,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
 
                 if (storeEnabled && misses != null) {
-                    final Map<KeyCacheObject, GridCacheVersion> loadKeys = misses;
+                    final Map<KeyCacheObject, EntryGetResult> loadKeys = misses;
 
                     final IgniteTxLocalAdapter tx0 = tx;
 
@@ -1984,15 +2002,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             @Override public Map<K1, V1> call() throws Exception {
                                 ctx.store().loadAll(null/*tx*/, loadKeys.keySet(), new CI2<KeyCacheObject, Object>() {
                                     @Override public void apply(KeyCacheObject key, Object val) {
-                                        GridCacheVersion ver = loadKeys.get(key);
+                                        EntryGetResult res = loadKeys.get(key);
 
-                                        if (ver == null) {
-                                            if (log.isDebugEnabled())
-                                                log.debug("Value from storage was never asked for [key=" + key +
-                                                    ", val=" + val + ']');
-
+                                        if (res == null || val == null)
                                             return;
-                                        }
 
                                         loaded.add(key);
 
@@ -2002,14 +2015,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null);
+                                                GridCacheVersion verSet = entry.versionedValue(cacheVal,
+                                                    res.version(),
+                                                    null);
 
                                                 boolean set = verSet != null;
 
                                                 if (log.isDebugEnabled())
                                                     log.debug("Set value loaded from store into entry [" +
                                                         "set=" + set +
-                                                        ", curVer=" + ver +
+                                                        ", curVer=" + res.version() +
                                                         ", newVer=" + verSet + ", " +
                                                         "entry=" + entry + ']');
 
@@ -2022,7 +2037,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         keepCacheObjects,
                                                         deserializeBinary,
                                                         false,
-                                                        needVer ? set ? verSet : ver : null);
+                                                        needVer ? set ? verSet : res.version() : null);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&
@@ -2045,16 +2060,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 });
 
                                 if (loaded.size() != loadKeys.size()) {
-                                    for (KeyCacheObject key : loadKeys.keySet()) {
-                                        if (loaded.contains(key))
+                                    boolean needTouch =
+                                        tx0 == null || (!tx0.implicit() && tx0.isolation() == READ_COMMITTED);
+
+                                    for (Map.Entry<KeyCacheObject, EntryGetResult> e : loadKeys.entrySet()) {
+                                        if (loaded.contains(e.getKey()))
                                             continue;
 
-                                        if (tx0 == null || (!tx0.implicit() &&
-                                            tx0.isolation() == READ_COMMITTED)) {
-                                            GridCacheEntryEx entry = peekEx(key);
+                                        if (needTouch || e.getValue().reserved()) {
+                                            GridCacheEntryEx entry = peekEx(e.getKey());
 
-                                            if (entry != null)
-                                                ctx.evicts().touch(entry, topVer);
+                                            if (entry != null) {
+                                                if (e.getValue().reserved())
+                                                    entry.clearReserveForLoad(e.getValue().version());
+
+                                                if (needTouch)
+                                                    ctx.evicts().touch(entry, topVer);
+                                            }
                                         }
                                     }
                                 }

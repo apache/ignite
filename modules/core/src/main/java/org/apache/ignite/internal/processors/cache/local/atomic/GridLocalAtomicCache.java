@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -516,7 +517,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         GridCacheVersion ver;
 
                         if (needVer) {
-                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                            EntryGetResult res = entry.innerGetVersioned(
                                 null,
                                 null,
                                 /*swap*/swapOrOffheap,
@@ -530,8 +531,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 !deserializeBinary);
 
                             if (res != null) {
-                                v = res.get1();
-                                ver = res.get2();
+                                v = res.value();
+                                ver = res.version();
 
                                 ctx.addResult(
                                     vals,
