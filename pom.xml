@@ -527,8 +527,8 @@
                                               tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml" overwrite="true">
                                             <filterchain>
                                                 <replaceregex pattern="&lt;/modelVersion&gt;(.+?)&lt;/parent&gt;" replace="&lt;/modelVersion&gt;" flags="gis" byline="false"/>
-                                                <replaceregex pattern="&lt;artifactId&gt;ignite-yardstick" replace="&lt;groupId&gt;org.apache.ignite&lt;/groupId&gt;${line.separator}        &lt;artifactId&gt;ignite-yardstick" flags="gis" byline="false"/>
-                                                <replaceregex pattern="ignite-yardstick&lt;/artifactId&gt;(.+?)&lt;/version&gt;" replace="ignite-yardstick&lt;/artifactId&gt;${line.separator}        &lt;version&gt;${project.version}&lt;/version&gt;" flags="gis" byline="false"/>
+                                                <replaceregex pattern="&lt;artifactId&gt;ignite-yardstick" replace="&lt;groupId&gt;org.apache.ignite&lt;/groupId&gt;${line.separator}    &lt;artifactId&gt;ignite-yardstick" flags="gis" byline="false"/>
+                                                <replaceregex pattern="ignite-yardstick&lt;/artifactId&gt;(.+?)&lt;/version&gt;" replace="ignite-yardstick&lt;/artifactId&gt;${line.separator}    &lt;version&gt;${project.version}&lt;/version&gt;" flags="gis" byline="false"/>
                                             </filterchain>
                                         </copy>
 
