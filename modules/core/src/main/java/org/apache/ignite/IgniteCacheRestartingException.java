@@ -59,5 +59,4 @@ public class IgniteCacheRestartingException extends IgniteException {
     public IgniteFuture<?> restartFuture() {
         return restartFut;
     }
-
 }

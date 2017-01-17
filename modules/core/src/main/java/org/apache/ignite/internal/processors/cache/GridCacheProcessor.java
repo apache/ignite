@@ -439,12 +439,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else if (cc.getRebalanceMode() == SYNC) {
                 if (delay < 0) {
                     U.warn(log, "Ignoring SYNC rebalance mode with manual rebalance start (node will not wait for " +
-                            "rebalancing to be finished): " + U.maskName(cc.getName()),
+                        "rebalancing to be finished): " + U.maskName(cc.getName()),
                         "Node will not wait for rebalance in SYNC mode: " + U.maskName(cc.getName()));
                 }
                 else {
                     U.warn(log, "Using SYNC rebalance mode with rebalance delay (node will wait until rebalancing is " +
-                            "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
+                        "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
                         "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + U.maskName(cc.getName()));
                 }
             }
@@ -565,7 +565,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
                 U.warn(log, "Deployment mode for cache is not CONTINUOUS or SHARED " +
-                        "(it is recommended that you change deployment mode and restart): " + depMode,
+                    "(it is recommended that you change deployment mode and restart): " + depMode,
                     "Deployment mode for cache is not CONTINUOUS or SHARED.");
         }
 
