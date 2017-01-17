@@ -381,73 +381,73 @@ public class OdbcEscapeUtils {
      */
     private static String getIgniteTypeFromOdbcType(String odbcDataType) {
         switch (odbcDataType.toUpperCase()) {
-            case "SQL_BIGINT":
-                return "BIGINT";
+            case OdbcEscapeOdbcTypes.SQL_BIGINT:
+                return OdbcEscapeIgniteTypes.BIGINT;
 
-            case "SQL_BINARY":
-            case "SQL_LONGVARBINARY":
-            case "SQL_VARBINARY":
-                return "BINARY";
+            case OdbcEscapeOdbcTypes.SQL_BINARY:
+            case OdbcEscapeOdbcTypes.SQL_LONGVARBINARY:
+            case OdbcEscapeOdbcTypes.SQL_VARBINARY:
+                return OdbcEscapeIgniteTypes.BINARY;
 
-            case "SQL_BIT":
-                return "BIT";
+            case OdbcEscapeOdbcTypes.SQL_BIT:
+                return OdbcEscapeIgniteTypes.BIT;
 
-            case "SQL_CHAR":
-                return "CHAR";
+            case OdbcEscapeOdbcTypes.SQL_CHAR:
+                return OdbcEscapeIgniteTypes.CHAR;
 
-            case "SQL_DECIMAL":
-            case "SQL_NUMERIC":
-                return "DECIMAL";
+            case OdbcEscapeOdbcTypes.SQL_DECIMAL:
+            case OdbcEscapeOdbcTypes.SQL_NUMERIC:
+                return OdbcEscapeIgniteTypes.DECIMAL;
 
-            case "SQL_LONGVARCHAR":
-            case "SQL_VARCHAR":
-            case "SQL_WCHAR":
-            case "SQL_WLONGVARCHAR":
-            case "SQL_WVARCHAR":
-                return "VARCHAR";
+            case OdbcEscapeOdbcTypes.SQL_LONGVARCHAR:
+            case OdbcEscapeOdbcTypes.SQL_VARCHAR:
+            case OdbcEscapeOdbcTypes.SQL_WCHAR:
+            case OdbcEscapeOdbcTypes.SQL_WLONGVARCHAR:
+            case OdbcEscapeOdbcTypes.SQL_WVARCHAR:
+                return OdbcEscapeIgniteTypes.VARCHAR;
 
-            case "SQL_DOUBLE":
-            case "SQL_FLOAT":
-                return "DOUBLE";
+            case OdbcEscapeOdbcTypes.SQL_DOUBLE:
+            case OdbcEscapeOdbcTypes.SQL_FLOAT:
+                return OdbcEscapeIgniteTypes.DOUBLE;
 
-            case "SQL_REAL":
-                return "REAL";
+            case OdbcEscapeOdbcTypes.SQL_REAL:
+                return OdbcEscapeIgniteTypes.REAL;
 
-            case "SQL_GUID":
-                return "UUID";
+            case OdbcEscapeOdbcTypes.SQL_GUID:
+                return OdbcEscapeIgniteTypes.UUID;
 
-            case "SQL_SMALLINT":
-                return "SMALLINT";
+            case OdbcEscapeOdbcTypes.SQL_SMALLINT:
+                return OdbcEscapeIgniteTypes.SMALLINT;
 
-            case "SQL_INTEGER":
-                return "INTEGER";
+            case OdbcEscapeOdbcTypes.SQL_INTEGER:
+                return OdbcEscapeIgniteTypes.INTEGER;
 
-            case "SQL_DATE":
-                return "DATE";
+            case OdbcEscapeOdbcTypes.SQL_DATE:
+                return OdbcEscapeIgniteTypes.DATE;
 
-            case "SQL_TIME":
-                return "TIME";
+            case OdbcEscapeOdbcTypes.SQL_TIME:
+                return OdbcEscapeIgniteTypes.TIME;
 
-            case "SQL_TIMESTAMP":
-                return "TIMESTAMP";
+            case OdbcEscapeOdbcTypes.SQL_TIMESTAMP:
+                return OdbcEscapeIgniteTypes.TIMESTAMP;
 
-            case "SQL_TINYINT":
-                return "TINYINT";
+            case OdbcEscapeOdbcTypes.SQL_TINYINT:
+                return OdbcEscapeIgniteTypes.TINYINT;
 
             //No support for interval types
-            case "SQL_INTERVAL_SECOND":
-            case "SQL_INTERVAL_MINUTE":
-            case "SQL_INTERVAL_HOUR":
-            case "SQL_INTERVAL_DAY":
-            case "SQL_INTERVAL_MONTH":
-            case "SQL_INTERVAL_YEAR":
-            case "SQL_INTERVAL_YEAR_TO_MONTH":
-            case "SQL_INTERVAL_HOUR_TO_MINUTE":
-            case "SQL_INTERVAL_HOUR_TO_SECOND":
-            case "SQL_INTERVAL_MINUTE_TO_SECOND":
-            case "SQL_INTERVAL_DAY_TO_HOUR":
-            case "SQL_INTERVAL_DAY_TO_MINUTE":
-            case "SQL_INTERVAL_DAY_TO_SECOND":
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_SECOND:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_MINUTE:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_HOUR:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_MONTH:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_YEAR:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_YEAR_TO_MONTH:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_HOUR_TO_MINUTE:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_HOUR_TO_SECOND:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_MINUTE_TO_SECOND:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY_TO_HOUR:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY_TO_MINUTE:
+            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY_TO_SECOND:
                 throw new IgniteException("Unsupported ODBC data type '" + odbcDataType + "'");
 
             default:

@@ -30,22 +30,6 @@ using namespace boost::unit_test;
 
 BOOST_FIXTURE_TEST_SUITE(SqlEscConvertFunctionTestSuite, ignite::SqlTestSuiteFixture)
 
-uint32_t HostToNetwork32(uint32_t value)
-{
-    // The answer is 42
-    static const int num = 42;
-
-    // Check the endianness
-    if (*reinterpret_cast<const char*>(&num) == num)
-    {
-        return ((value & 0xFF)<<24) | (((value >> 8) & 0xFF) <<16) | (((value >> 16) & 0xFF) << 8) | ((value >> 24) & 0xFF);
-    }
-    else
-    {
-        return value;
-    }
-}
-
 int CheckConnectionInfo(HDBC dbc, int infoType)
 {
     SQLUINTEGER mask = 0;
@@ -84,7 +68,7 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionGetInfo)
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt64)
 {
-    CheckSingleResult<int64_t>("SELECT {fn CONVERT(72623859790382856, SQL_BIGINT)}", 0x0102030405060708);
+    CheckSingleResult<int64_t>("SELECT {fn CONVERT(72623859790382856, SQL_BIGINT)}", 72623859790382856);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt32)
