@@ -23,7 +23,6 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -57,7 +56,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 
@@ -98,8 +96,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         return cfg;
     }
-
-
 
     /**
      * @param latch Latch.
@@ -156,8 +152,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
-
         int srvs = serverCount();
 
         if (srvs > 0)
@@ -179,12 +173,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         super.afterTestsStopped();
 
         stopAllGrids();
-
-        Properties props = System.getProperties();
-
-        props.remove(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY);
-
-        System.setProperties(props);
     }
 
     /**

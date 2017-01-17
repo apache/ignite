@@ -4605,7 +4605,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     UUID creatorId = msg.creatorNodeId();
 
-                    assert creatorId != null;
+                    assert creatorId != null : msg;
 
                     synchronized (mux) {
                         contains = failedNodes.containsKey(sndNode) || ring.node(creatorId) == null;
@@ -4636,7 +4636,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (failedNode != null) {
                 assert !failedNode.isLocal() || !msg.verified() : msg;
 
-                if (msg.force() && msg.verified() || !msg.force() && !msg.verified()) {
+                boolean skipUpdateFailedNodes = msg.force() && !msg.verified();
+
+                if (!skipUpdateFailedNodes) {
                     synchronized (mux) {
                         if (!failedNodes.containsKey(failedNode))
                             failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
@@ -4703,7 +4705,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     failedNodesMsgSent.remove(failedNode.id());
 
-                    if (!msg.force()) {
+                    if (!msg.force()) { // ClientMessageWorker will stop after sending force fail message.
                         ClientMessageWorker worker = clientMsgWorkers.remove(failedNode.id());
 
                         if (worker != null)
@@ -6318,9 +6320,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                         spi.failureDetectionTimeout() : spi.getSocketTimeout());
                 }
 
-                if (!(msg instanceof TcpDiscoveryNodeFailedMessage &&
-                    ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(clientNodeId)))
-                    success = true;
+                boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
+                    ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(clientNodeId);
+
+                assert !clientFailed || msg.force() : msg;
+
+                success = !clientFailed;
             }
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())

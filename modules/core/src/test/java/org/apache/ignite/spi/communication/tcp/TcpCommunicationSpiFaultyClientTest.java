@@ -17,11 +17,22 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -38,16 +49,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessag
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
  * Tests that faulty client will be failed if connection can't be established.
@@ -82,8 +84,10 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
-        TestDiscoverySpi discoSpi = new TestDiscoverySpi();
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
+
         discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setClientReconnectDisabled(true);
 
         cfg.setCommunicationSpi(spi);
         cfg.setDiscoverySpi(discoSpi);
@@ -121,6 +125,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
     /**
      * @param srv Server.
+     * @throws Exception If failed.
      */
     private void testFailClient(FakeServer srv) throws Exception {
         IgniteInternalFuture<Long> fut = null;
@@ -131,7 +136,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             clientMode = false;
 
-            final Ignite ignite = startGrids(2);
+            startGrids(2);
 
             clientMode = true;
 
@@ -139,6 +144,17 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             startGrid(3);
 
             U.sleep(1000); // Wait for write timeout and closing idle connections.
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override
+                public boolean apply(Event event) {
+                    latch.countDown();
+
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
 
             block = true;
 
@@ -148,11 +164,10 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                         // No-op.
                     }
                 });
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 // No-op.
             }
-
-            CountDownLatch latch = ((TestDiscoverySpi)ignite.configuration().getDiscoverySpi()).latch;
 
             assertTrue(latch.await(3, TimeUnit.SECONDS));
 
@@ -222,26 +237,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             finally {
                 U.closeQuiet(srv);
             }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TestDiscoverySpi extends TcpDiscoverySpi {
-        /** Latch. */
-        private CountDownLatch latch = new CountDownLatch(1);
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeFailedMessage)
-                latch.countDown();
-
-            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 

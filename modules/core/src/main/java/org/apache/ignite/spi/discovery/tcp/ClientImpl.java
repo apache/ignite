@@ -166,8 +166,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** */
     protected MessageWorker msgWorker;
 
-    /** Node received force fail message. */
-    private boolean forceFailed = false;
+    /** Force fail message for local node. */
+    private TcpDiscoveryNodeFailedMessage forceFailMsg;
 
     /** */
     @GridToStringExclude
@@ -1394,14 +1394,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                             leaveLatch.countDown();
                     }
                     else if (msg instanceof TcpDiscoveryNodeFailedMessage &&
-                            ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(locNode.id())) {
-                        forceFailed = true;
+                        ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(locNode.id())) {
+                        TcpDiscoveryNodeFailedMessage msg0 = (TcpDiscoveryNodeFailedMessage)msg;
 
-                        TcpDiscoveryNodeFailedMessage msg0 = (TcpDiscoveryNodeFailedMessage) msg;
+                        assert msg0.force() : msg0;
 
-                        log.warning("Client node will be kicked out from topology due to an error in communication " +
-                                "SPI [rmtNode=" + ((TcpDiscoveryNodeFailedMessage)msg).creatorNodeId() +
-                                ", warn=" + msg0.warning() + ']');
+                        forceFailMsg = msg0;
                     }
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
@@ -1419,14 +1417,20 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 }
                             }
                             else {
-                                if (log.isDebugEnabled())
-                                    log.debug("Connection closed, will try to restore connection.");
+                                if (forceFailMsg != null) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Connection closed, local node received force fail message, " +
+                                            "will not try to restore connection");
+                                    }
 
-                                assert reconnector == null;
-
-                                if (forceFailed)
                                     queue.addFirst(SPI_RECONNECT_FAILED);
+                                }
                                 else {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Connection closed, will try to restore connection.");
+
+                                    assert reconnector == null;
+
                                     final Reconnector reconnector = new Reconnector(join);
                                     this.reconnector = reconnector;
                                     reconnector.start();
@@ -1435,15 +1439,23 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
                     else if (msg == SPI_RECONNECT_FAILED) {
-                        if (!forceFailed) {
+                        if (reconnector != null) {
                             reconnector.cancel();
                             reconnector.join();
-                        }
 
-                        reconnector = null;
+                            reconnector = null;
+                        }
+                        else
+                            assert forceFailMsg != null;
 
                         if (spi.isClientReconnectDisabled()) {
                             if (state != SEGMENTED && state != STOPPED) {
+                                if (forceFailMsg != null) {
+                                    U.quietAndWarn(log, "Local node was dropped from cluster due to network problems " +
+                                        "[nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
+                                        ", msg=" + forceFailMsg.warning() + ']');
+                                }
+
                                 if (log.isDebugEnabled()) {
                                     log.debug("Failed to restore closed connection, reconnect disabled, " +
                                         "local node segmented [networkTimeout=" + spi.netTimeout + ']');
@@ -1458,7 +1470,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                             if (state == STARTING || state == CONNECTED) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("Failed to restore closed connection, will try to reconnect " +
-                                        "[networkTimeout=" + spi.netTimeout + ", joinTimeout=" + spi.joinTimeout + ']');
+                                        "[networkTimeout=" + spi.netTimeout +
+                                        ", joinTimeout=" + spi.joinTimeout +
+                                        ", failMsg=" + forceFailMsg + ']');
                                 }
 
                                 state = DISCONNECTED;
@@ -1481,22 +1495,41 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             UUID newId = UUID.randomUUID();
 
-                            if (log.isInfoEnabled()) {
+                            if (forceFailMsg != null) {
+                                long delay = IgniteSystemProperties.getLong(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY,
+                                    10_000);
+
+                                if (delay > 0) {
+                                    U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +
+                                        "will try to reconnect with new id after " + delay + "ms (reconnect delay " +
+                                        "can be changed using IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY system " +
+                                        "property) [" +
+                                        "newId=" + newId +
+                                        ", prevId=" + locNode.id() +
+                                        ", locNode=" + locNode +
+                                        ", nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
+                                        ", msg=" + forceFailMsg.warning() + ']');
+
+                                    Thread.sleep(delay);
+                                }
+                                else {
+                                    U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +
+                                        "will try to reconnect with new id [" +
+                                        "newId=" + newId +
+                                        ", prevId=" + locNode.id() +
+                                        ", locNode=" + locNode +
+                                        ", nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
+                                        ", msg=" + forceFailMsg.warning() + ']');
+                                }
+
+                                forceFailMsg = null;
+                            }
+                            else if (log.isInfoEnabled()) {
                                 log.info("Client node disconnected from cluster, will try to reconnect with new id " +
                                     "[newId=" + newId + ", prevId=" + locNode.id() + ", locNode=" + locNode + ']');
                             }
 
                             locNode.onClientDisconnected(newId);
-
-                            if (forceFailed) {
-                                long delay = IgniteSystemProperties.getLong(
-                                        IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, 10000
-                                );
-
-                                Thread.sleep(delay);
-
-                                forceFailed = false;
-                            }
 
                             tryJoin();
                         }

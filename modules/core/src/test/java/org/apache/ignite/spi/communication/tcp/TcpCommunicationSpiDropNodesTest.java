@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,21 +27,23 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
  *
@@ -58,9 +57,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
     /** Block. */
     private static volatile boolean block;
-
-    /** Latch. */
-    private static CountDownLatch latch = new CountDownLatch(1);
 
     /** Predicate. */
     private static IgniteBiPredicate<ClusterNode, ClusterNode> pred;
@@ -77,7 +73,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
-        TestDiscoverySpi discoSpi = new TestDiscoverySpi();
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setCommunicationSpi(spi);
@@ -111,6 +107,17 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         };
 
         startGrids(NODES_CNT);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        grid(0).events().localListen(new IgnitePredicate<Event>() {
+            @Override
+            public boolean apply(Event event) {
+                latch.countDown();
+
+                return true;
+            }
+        }, EVT_NODE_FAILED);
 
         U.sleep(1000); // Wait for write timeout and closing idle connections.
 
@@ -168,7 +175,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTwoNodes() throws Exception {
+    public void testTwoNodesEachOther() throws Exception {
         pred = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode locNode, ClusterNode rmtNode) {
                 return block && (locNode.order() == 2 || locNode.order() == 4) &&
@@ -177,6 +184,17 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         };
 
         startGrids(NODES_CNT);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        grid(0).events().localListen(new IgnitePredicate<Event>() {
+            @Override
+            public boolean apply(Event event) {
+                latch.countDown();
+
+                return true;
+            }
+        }, EVT_NODE_FAILED);
 
         U.sleep(1000); // Wait for write timeout and closing idle connections.
 
@@ -274,7 +292,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      *
      */
@@ -300,23 +317,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
          */
         private String createAttributeName(String name) {
             return getClass().getSimpleName() + '.' + name;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TestDiscoverySpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeFailedMessage)
-                latch.countDown();
-
-            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 }
