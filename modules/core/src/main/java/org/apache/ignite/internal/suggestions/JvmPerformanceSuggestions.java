@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Java Virtual Machine performance suggestions.
@@ -31,7 +32,6 @@ public class JvmPerformanceSuggestions {
     private static final String XMX = "-Xmx";
     private static final String MX = "-mx";
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
-    private static final String USE_COMPRESSED_OOPS = "-XX:+UseCompressedOops";
     private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
     private static final String USE_TLAB = "-XX:+UseTLAB";
     private static final String SERVER = "-server";
@@ -49,9 +49,13 @@ public class JvmPerformanceSuggestions {
      * @param log Log.
      */
     public static synchronized void logSuggestions(IgniteLogger log) {
-        List<String> args = U.jvmArgs();
 
+        if (U.heapSize(1) > 30.5)
+            U.quietAndInfo(log, "Heap size is greater than 30,5G, JVM can not use compressed oops!");
+
+        List<String> args = U.jvmArgs();
         List<String> gcLoggingOptions = getGCLoggingOptions(args);
+
         if (!gcLoggingOptions.isEmpty()) {
             U.quietAndInfo(log, "JVM Garbage Collection logging is configured not completely.");
             U.quietAndInfo(log, "Please add the following parameters to the JVM configuration:");
@@ -103,20 +107,17 @@ public class JvmPerformanceSuggestions {
         if (!U.jvmName().toLowerCase().contains("server"))
             options.add(SERVER);
 
-        if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
+        if (getMaxHeapSizeOption(args) == null)
             options.add(XMX + "<size>[g|G|m|M|k|K]");
 
         if (!anyStartWith(args, MAX_DIRECT_MEMORY_SIZE))
-            options.add(MAX_DIRECT_MEMORY_SIZE + "=size[g|G|m|M|k|K]");
+            options.add(MAX_DIRECT_MEMORY_SIZE + "=<size>[g|G|m|M|k|K]");
 
         if (!args.contains(USE_TLAB))
             options.add(USE_TLAB);
 
         if (!args.contains(DISABLE_EXPLICIT_GC))
             options.add(DISABLE_EXPLICIT_GC);
-
-        if (!args.contains(USE_COMPRESSED_OOPS))
-            options.add(USE_COMPRESSED_OOPS);
 
         return options;
     }
@@ -127,6 +128,15 @@ public class JvmPerformanceSuggestions {
                 return true;
 
         return false;
+    }
+
+    @Nullable
+    private static String getMaxHeapSizeOption(List<String> lines) {
+        for (String line : lines)
+            if (line.startsWith(XMX) || line.startsWith(MX))
+                return line;
+
+        return null;
     }
 
     /** {@inheritDoc} */
