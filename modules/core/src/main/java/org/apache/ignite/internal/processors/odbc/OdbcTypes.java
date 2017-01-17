@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.escape;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
  * Data type names that can occur within ODBC escape sequence
  */
-public class OdbcEscapeOdbcTypes {
+public class OdbcTypes {
     /** Type name for BIGINT */
     static final String SQL_BIGINT = "SQL_BIGINT";
 

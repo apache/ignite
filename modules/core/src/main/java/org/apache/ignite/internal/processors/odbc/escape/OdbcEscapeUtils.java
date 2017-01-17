@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.escape;
 
 import org.apache.ignite.IgniteException;
-
+import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -365,93 +365,11 @@ public class OdbcEscapeUtils {
                                               substring(text, startPos, len));
 
                 return (text.substring(startPos, startPos + matcher.start(1)) +
-                        getIgniteTypeFromOdbcType(matcher.group(1)) +
+                        OdbcUtils.getIgniteTypeFromOdbcType(matcher.group(1)) +
                         text.substring(startPos + matcher.end(1), startPos + len)).trim();
             }
             default:
                 return substring(text, startPos, len).trim();
-        }
-    }
-
-    /**
-     * Lookup Ignite data type corresponding to specific ODCB data type
-     *
-     * @param odbcDataType ODBC data type identifier
-     * @return Ignite data type name
-     */
-    private static String getIgniteTypeFromOdbcType(String odbcDataType) {
-        switch (odbcDataType.toUpperCase()) {
-            case OdbcEscapeOdbcTypes.SQL_BIGINT:
-                return OdbcEscapeIgniteTypes.BIGINT;
-
-            case OdbcEscapeOdbcTypes.SQL_BINARY:
-            case OdbcEscapeOdbcTypes.SQL_LONGVARBINARY:
-            case OdbcEscapeOdbcTypes.SQL_VARBINARY:
-                return OdbcEscapeIgniteTypes.BINARY;
-
-            case OdbcEscapeOdbcTypes.SQL_BIT:
-                return OdbcEscapeIgniteTypes.BIT;
-
-            case OdbcEscapeOdbcTypes.SQL_CHAR:
-                return OdbcEscapeIgniteTypes.CHAR;
-
-            case OdbcEscapeOdbcTypes.SQL_DECIMAL:
-            case OdbcEscapeOdbcTypes.SQL_NUMERIC:
-                return OdbcEscapeIgniteTypes.DECIMAL;
-
-            case OdbcEscapeOdbcTypes.SQL_LONGVARCHAR:
-            case OdbcEscapeOdbcTypes.SQL_VARCHAR:
-            case OdbcEscapeOdbcTypes.SQL_WCHAR:
-            case OdbcEscapeOdbcTypes.SQL_WLONGVARCHAR:
-            case OdbcEscapeOdbcTypes.SQL_WVARCHAR:
-                return OdbcEscapeIgniteTypes.VARCHAR;
-
-            case OdbcEscapeOdbcTypes.SQL_DOUBLE:
-            case OdbcEscapeOdbcTypes.SQL_FLOAT:
-                return OdbcEscapeIgniteTypes.DOUBLE;
-
-            case OdbcEscapeOdbcTypes.SQL_REAL:
-                return OdbcEscapeIgniteTypes.REAL;
-
-            case OdbcEscapeOdbcTypes.SQL_GUID:
-                return OdbcEscapeIgniteTypes.UUID;
-
-            case OdbcEscapeOdbcTypes.SQL_SMALLINT:
-                return OdbcEscapeIgniteTypes.SMALLINT;
-
-            case OdbcEscapeOdbcTypes.SQL_INTEGER:
-                return OdbcEscapeIgniteTypes.INTEGER;
-
-            case OdbcEscapeOdbcTypes.SQL_DATE:
-                return OdbcEscapeIgniteTypes.DATE;
-
-            case OdbcEscapeOdbcTypes.SQL_TIME:
-                return OdbcEscapeIgniteTypes.TIME;
-
-            case OdbcEscapeOdbcTypes.SQL_TIMESTAMP:
-                return OdbcEscapeIgniteTypes.TIMESTAMP;
-
-            case OdbcEscapeOdbcTypes.SQL_TINYINT:
-                return OdbcEscapeIgniteTypes.TINYINT;
-
-            //No support for interval types
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_SECOND:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_MINUTE:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_HOUR:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_MONTH:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_YEAR:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_YEAR_TO_MONTH:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_HOUR_TO_MINUTE:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_HOUR_TO_SECOND:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_MINUTE_TO_SECOND:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY_TO_HOUR:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY_TO_MINUTE:
-            case OdbcEscapeOdbcTypes.SQL_INTERVAL_DAY_TO_SECOND:
-                throw new IgniteException("Unsupported ODBC data type '" + odbcDataType + "'");
-
-            default:
-                throw new IgniteException("Invalid ODBC data type '" + odbcDataType + "'");
         }
     }
 
