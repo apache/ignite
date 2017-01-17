@@ -181,80 +181,80 @@ public class IgniteCacheTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite");
 
-//        suite.addTestSuite(IgniteCacheEntryListenerAtomicTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerAtomicReplicatedTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerAtomicLocalTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerTxTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerTxOffheapTieredTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerTxOffheapValuesTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerTxReplicatedTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerTxLocalTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerEagerTtlDisabledTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerAtomicOffheapTieredTest.class);
-//        suite.addTestSuite(IgniteCacheEntryListenerAtomicOffheapValuesTest.class);
-//
-//        suite.addTestSuite(IgniteClientAffinityAssignmentSelfTest.class);
-//
-//        suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicNearEnabledInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicLocalInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheTxInvokeTest.class);
-//        suite.addTestSuite(CacheEntryProcessorNonSerializableTest.class);
-//        suite.addTestSuite(CacheEntryProcessorExternalizableFailedTest.class);
-//        suite.addTestSuite(IgniteCacheEntryProcessorCallTest.class);
-//        GridTestUtils.addTestIfNeeded(suite, CacheEntryProcessorCopySelfTest.class, ignoredTests);
-//        suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
-//        suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
-//        suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
-//
-//        suite.addTestSuite(IgnitePutAllLargeBatchSelfTest.class);
-//        suite.addTestSuite(IgnitePutAllUpdateNonPreloadedPartitionSelfTest.class);
-//
-//        // User's class loader tests.
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionedExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheReplicatedExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheContinuousExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheIsolatedExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2PDisableExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCachePrivateExecutionContextTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteCacheSharedExecutionContextTest.class, ignoredTests);
-//
-//        // Warmup closure tests.
-//        suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
-//
-//        // Affinity tests.
-//        suite.addTestSuite(FairAffinityFunctionNodesSelfTest.class);
-//        suite.addTestSuite(FairAffinityFunctionSelfTest.class);
-//        suite.addTestSuite(FairAffinityDynamicCacheSelfTest.class);
-//        suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
-//        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
-//        suite.addTestSuite(AffinityClientNodeSelfTest.class);
-//        suite.addTestSuite(LocalAffinityFunctionTest.class);
-//        suite.addTestSuite(AffinityHistoryCleanupTest.class);
-//
-//        // Swap tests.
-//        suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
-//        suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
-//        suite.addTestSuite(GridCacheSwapCleanupTest.class);
-//
-//        // Common tests.
-//        suite.addTestSuite(CacheNamesSelfTest.class);
-//        suite.addTestSuite(CacheNamesWithSpecialCharactersTest.class);
-//        suite.addTestSuite(GridCacheConcurrentMapSelfTest.class);
-//        suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
-//        suite.addTestSuite(CacheAffinityCallSelfTest.class);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityRoutingSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
-//        suite.addTestSuite(GridCacheMvccPartitionedSelfTest.class);
-//        suite.addTestSuite(GridCacheMvccManagerSelfTest.class);
-//        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
-//        suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
-//        suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicReplicatedTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicLocalTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxOffheapTieredTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxOffheapValuesTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxReplicatedTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxLocalTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerEagerTtlDisabledTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicOffheapTieredTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicOffheapValuesTest.class);
+
+        suite.addTestSuite(IgniteClientAffinityAssignmentSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
+        suite.addTestSuite(IgniteCacheTxInvokeTest.class);
+        suite.addTestSuite(CacheEntryProcessorNonSerializableTest.class);
+        suite.addTestSuite(CacheEntryProcessorExternalizableFailedTest.class);
+        suite.addTestSuite(IgniteCacheEntryProcessorCallTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheEntryProcessorCopySelfTest.class, ignoredTests);
+        suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
+        suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
+
+        suite.addTestSuite(IgnitePutAllLargeBatchSelfTest.class);
+        suite.addTestSuite(IgnitePutAllUpdateNonPreloadedPartitionSelfTest.class);
+
+        // User's class loader tests.
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionedExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheReplicatedExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheContinuousExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheIsolatedExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2PDisableExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePrivateExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheSharedExecutionContextTest.class, ignoredTests);
+
+        // Warmup closure tests.
+        suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
+
+        // Affinity tests.
+        suite.addTestSuite(FairAffinityFunctionNodesSelfTest.class);
+        suite.addTestSuite(FairAffinityFunctionSelfTest.class);
+        suite.addTestSuite(FairAffinityDynamicCacheSelfTest.class);
+        suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
+        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
+        suite.addTestSuite(AffinityClientNodeSelfTest.class);
+        suite.addTestSuite(LocalAffinityFunctionTest.class);
+        suite.addTestSuite(AffinityHistoryCleanupTest.class);
+
+        // Swap tests.
+        suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
+        suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
+        suite.addTestSuite(GridCacheSwapCleanupTest.class);
+
+        // Common tests.
+        suite.addTestSuite(CacheNamesSelfTest.class);
+        suite.addTestSuite(CacheNamesWithSpecialCharactersTest.class);
+        suite.addTestSuite(GridCacheConcurrentMapSelfTest.class);
+        suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
+        suite.addTestSuite(CacheAffinityCallSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityRoutingSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
+        suite.addTestSuite(GridCacheMvccPartitionedSelfTest.class);
+        suite.addTestSuite(GridCacheMvccManagerSelfTest.class);
+        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
+        suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
+        suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(JdbcTypesDefaultTransformerTest.class);
@@ -264,85 +264,85 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreMultitreadedSelfTest.class);
-//        suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
-//        suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
-//        suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
-//        GridTestUtils.addTestIfNeeded(suite, DataStreamProcessorSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, DataStreamerUpdateAfterLoadTest.class, ignoredTests);
-//        suite.addTestSuite(DataStreamerMultiThreadedSelfTest.class);
-//        suite.addTestSuite(DataStreamerMultinodeCreateCacheTest.class);
-//        suite.addTestSuite(DataStreamerImplSelfTest.class);
-//        suite.addTestSuite(DataStreamerTimeoutTest.class);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheEntryMemorySizeSelfTest.class, ignoredTests);
-//        suite.addTestSuite(GridCacheClearAllSelfTest.class);
-//        suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
-//        suite.addTestSuite(GridCacheLoadOnlyStoreAdapterSelfTest.class);
-//        suite.addTestSuite(GridCacheGetStoreErrorSelfTest.class);
-//        suite.addTestSuite(StoreResourceInjectionSelfTest.class);
-//        suite.addTestSuite(CacheFutureExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
-//        suite.addTestSuite(IgniteCacheManyAsyncOperationsTest.class);
-//        suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
-//        suite.addTestSuite(GridCacheTtlManagerEvictionSelfTest.class);
-//        suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
-//        suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);
-//        suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
-//        suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
-//        suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
-//        suite.addTestSuite(GridCacheStorePutxSelfTest.class);
-//        suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
-//        suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
-//        suite.addTestSuite(GridCacheOffHeapValuesEvictionSelfTest.class);
-//        suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
-//        suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
-//        suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryPairedConnectionsTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicMessageRecovery10ConnectionsTest.class);
-//        suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class);
-//        suite.addTestSuite(IgniteCacheMessageWriteTimeoutTest.class);
-//        suite.addTestSuite(IgniteCacheMessageRecoveryIdleConnectionTest.class);
-//        suite.addTestSuite(IgniteCacheConnectionRecoveryTest.class);
-//        suite.addTestSuite(IgniteCacheConnectionRecovery10ConnectionsTest.class);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredEvictionAtomicSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredEvictionSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredAtomicSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredSelfTest.class, ignoredTests);
-//        suite.addTestSuite(GridCacheGlobalLoadTest.class);
-//        suite.addTestSuite(GridCachePartitionedLocalStoreSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedLocalStoreSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
-//        suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
-//        suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
-//        suite.addTestSuite(CacheDeferredDeleteSanitySelfTest.class);
-//
-//        suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
-//
-//        // Heuristic exception handling.
-//        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheStopSelfTest.class);
-//
-//        suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
-//
-//        suite.addTestSuite(CachePutEventListenerErrorSelfTest.class);
-//
-//        suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
-//
-//        suite.addTestSuite(CacheTxFastFinishTest.class);
-//
-//        suite.addTestSuite(IgniteVariousConnectionNumberTest.class);
-//        suite.addTestSuite(IgniteCommunicationBalanceTest.class);
-//        suite.addTestSuite(IgniteCommunicationBalancePairedConnectionsTest.class);
-//        suite.addTestSuite(IgniteCommunicationBalanceMultipleConnectionsTest.class);
-//        suite.addTestSuite(IgniteIoTestMessagesTest.class);
+        suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
+        suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
+        suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, DataStreamProcessorSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DataStreamerUpdateAfterLoadTest.class, ignoredTests);
+        suite.addTestSuite(DataStreamerMultiThreadedSelfTest.class);
+        suite.addTestSuite(DataStreamerMultinodeCreateCacheTest.class);
+        suite.addTestSuite(DataStreamerImplSelfTest.class);
+        suite.addTestSuite(DataStreamerTimeoutTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEntryMemorySizeSelfTest.class, ignoredTests);
+        suite.addTestSuite(GridCacheClearAllSelfTest.class);
+        suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
+        suite.addTestSuite(GridCacheLoadOnlyStoreAdapterSelfTest.class);
+        suite.addTestSuite(GridCacheGetStoreErrorSelfTest.class);
+        suite.addTestSuite(StoreResourceInjectionSelfTest.class);
+        suite.addTestSuite(CacheFutureExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
+        suite.addTestSuite(IgniteCacheManyAsyncOperationsTest.class);
+        suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
+        suite.addTestSuite(GridCacheTtlManagerEvictionSelfTest.class);
+        suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
+        suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
+        suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
+        suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
+        suite.addTestSuite(GridCacheStorePutxSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapValuesEvictionSelfTest.class);
+        suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
+        suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
+        suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
+        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryPairedConnectionsTest.class);
+        suite.addTestSuite(IgniteCacheAtomicMessageRecovery10ConnectionsTest.class);
+        suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class);
+        suite.addTestSuite(IgniteCacheMessageWriteTimeoutTest.class);
+        suite.addTestSuite(IgniteCacheMessageRecoveryIdleConnectionTest.class);
+        suite.addTestSuite(IgniteCacheConnectionRecoveryTest.class);
+        suite.addTestSuite(IgniteCacheConnectionRecovery10ConnectionsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredEvictionAtomicSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredEvictionSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredAtomicSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredSelfTest.class, ignoredTests);
+        suite.addTestSuite(GridCacheGlobalLoadTest.class);
+        suite.addTestSuite(GridCachePartitionedLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
+        suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
+        suite.addTestSuite(CacheDeferredDeleteSanitySelfTest.class);
+
+        suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
+
+        // Heuristic exception handling.
+        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheStopSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
+
+        suite.addTestSuite(CachePutEventListenerErrorSelfTest.class);
+
+        suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
+
+        suite.addTestSuite(CacheTxFastFinishTest.class);
+
+        suite.addTestSuite(IgniteVariousConnectionNumberTest.class);
+        suite.addTestSuite(IgniteCommunicationBalanceTest.class);
+        suite.addTestSuite(IgniteCommunicationBalancePairedConnectionsTest.class);
+        suite.addTestSuite(IgniteCommunicationBalanceMultipleConnectionsTest.class);
+        suite.addTestSuite(IgniteIoTestMessagesTest.class);
 
         return suite;
     }

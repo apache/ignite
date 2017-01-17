@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
 
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
-import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
@@ -93,8 +92,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         storeTypes[1].setValueFields(
             new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
-            new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
-            new JdbcTypeField(Types.INTEGER, "GENDER", Gender.class, "gender"));
+            new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"));
 
         storeTypes[2] = new JdbcType();
         storeTypes[2].setDatabaseSchema("PUBLIC");
@@ -110,8 +108,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
             new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
-            new JdbcTypeField(Types.INTEGER, "SALARY", Integer.class, "salary"),
-            new JdbcTypeField(Types.VARCHAR, "GENDER", Gender.class, "gender"));
+            new JdbcTypeField(Types.INTEGER, "SALARY", Integer.class, "salary"));
 
         storeTypes[3] = new JdbcType();
         storeTypes[3].setDatabaseSchema("PUBLIC");
@@ -216,11 +213,11 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             "Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
-            "Person (id integer not null, org_id integer, name varchar(50), gender integer not null, PRIMARY KEY(id))");
+            "Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "Person_Complex (id integer not null, org_id integer not null, city_id integer not null, " +
-            "name varchar(50), salary integer, gender varchar(100), PRIMARY KEY(id, org_id, city_id))");
+            "name varchar(50), salary integer, PRIMARY KEY(id, org_id, city_id))");
 
         conn.commit();
 
@@ -255,13 +252,12 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         conn.commit();
 
-        PreparedStatement prnStmt = conn.prepareStatement("INSERT INTO Person(id, org_id, name, gender) VALUES (?, ?, ?, ?)");
+        PreparedStatement prnStmt = conn.prepareStatement("INSERT INTO Person(id, org_id, name) VALUES (?, ?, ?)");
 
         for (int i = 0; i < PERSON_CNT; i++) {
             prnStmt.setInt(1, i);
             prnStmt.setInt(2, i % 100);
             prnStmt.setString(3, "name" + i);
-            prnStmt.setInt(4, rnd.nextInt(2));
 
             prnStmt.addBatch();
         }
@@ -272,7 +268,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         U.closeQuiet(prnStmt);
 
-        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name, salary, gender) VALUES (?, ?, ?, ?, ?, ?)");
+        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name, salary) VALUES (?, ?, ?, ?, ?)");
 
         for (int i = 0; i < PERSON_CNT; i++) {
             prnComplexStmt.setInt(1, i);
@@ -284,8 +280,6 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                 prnComplexStmt.setInt(5, 1000 + i * 500);
             else // Add person with null salary
                 prnComplexStmt.setNull(5, Types.INTEGER);
-
-            prnComplexStmt.setInt(6, rnd.nextInt(2));
 
             prnComplexStmt.addBatch();
         }
@@ -337,7 +331,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         prnComplexKeys.clear();
 
         store.loadCache(c, OrganizationKey.class.getName(), "SELECT name, city, id FROM ORGANIZATION",
-            PersonKey.class.getName(), "SELECT org_id, id, name, gender FROM Person WHERE id < 1000");
+            PersonKey.class.getName(), "SELECT org_id, id, name FROM Person WHERE id < 1000");
 
         assertEquals(ORGANIZATION_CNT, orgKeys.size());
         assertEquals(1000, prnKeys.size());
@@ -362,11 +356,9 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
      * @throws Exception If failed.
      */
     public void testParallelLoad() throws Exception {
-        Random rnd = new Random();
-
         Connection conn = store.openConnection(false);
 
-        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name, salary, gender) VALUES (?, ?, ?, ?, ?, ?)");
+        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name, salary) VALUES (?, ?, ?, ?, ?)");
 
         for (int i = 0; i < 8; i++) {
 
@@ -376,8 +368,6 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
             prnComplexStmt.setString(4, "name");
             prnComplexStmt.setInt(5, 1000 + i * 500);
-
-            prnComplexStmt.setString(6, Gender.random().toString());
 
             prnComplexStmt.addBatch();
         }
