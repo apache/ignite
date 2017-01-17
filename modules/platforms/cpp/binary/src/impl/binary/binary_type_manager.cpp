@@ -28,7 +28,7 @@ namespace ignite
         namespace binary
         {
             BinaryTypeManager::BinaryTypeManager() : 
-                snapshots(SharedPointer<std::map<int32_t, SPSnap>>(new std::map<int32_t, SPSnap>)),
+                snapshots(SharedPointer<std::map<int32_t, SPSnap> >(new std::map<int32_t, SPSnap>)),
                 pending(new std::vector<SPSnap>()), 
                 cs(new CriticalSection()), 
                 pendingVer(0), ver(0)
@@ -46,7 +46,7 @@ namespace ignite
 
             SharedPointer<BinaryTypeHandler> BinaryTypeManager::GetHandler(int32_t typeId)
             {
-                SharedPointer<std::map<int32_t, SPSnap>> snapshots0 = snapshots;
+                SharedPointer<std::map<int32_t, SPSnap> > snapshots0 = snapshots;
 
                 SPSnap snapshot = (*snapshots0.Get())[typeId];
 
@@ -156,7 +156,7 @@ namespace ignite
                         if (!snapshotFound)
                             (*newSnapshots)[pendingSnap->GetTypeId()] = *it;
 
-                        snapshots = SharedPointer<std::map<int32_t, SPSnap>>(newSnapshots);
+                        snapshots = SharedPointer<std::map<int32_t, SPSnap> >(newSnapshots);
                     }
                     else
                     {

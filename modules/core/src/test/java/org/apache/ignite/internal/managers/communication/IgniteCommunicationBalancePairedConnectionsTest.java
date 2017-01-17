@@ -15,18 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
-
-import org.apache.ignite.internal.GridKernalContext;
+package org.apache.ignite.internal.managers.communication;
 
 /**
- * Indicates whether particular file system accepts kernal context.
+ *
  */
-public interface IgfsKernalContextAware {
-    /**
-     * Set kernal context.
-     *
-     * @param ctx Kernal context.
-     */
-    public void setKernalContext(GridKernalContext ctx);
+public class IgniteCommunicationBalancePairedConnectionsTest extends IgniteCommunicationBalanceTest {
+    /** {@inheritDoc} */
+    @Override protected boolean usePairedConnections() {
+        return true;
+    }
 }
