@@ -91,7 +91,7 @@ public class HadoopCombinerTest extends HadoopAbstractSelfTest {
 
         job.setMapperClass(TestMapper.class);
 
-//        job.setCombinerClass(TestCombiner.class);
+        job.setCombinerClass(TestCombiner.class);
         job.setCombinerKeyGroupingComparatorClass(IntWritable.Comparator.class);
 
         job.setNumReduceTasks(2);
