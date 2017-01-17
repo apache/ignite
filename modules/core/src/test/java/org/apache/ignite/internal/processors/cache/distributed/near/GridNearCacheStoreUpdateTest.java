@@ -201,7 +201,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      */
     private void checkNearSingleConcurrent(final TransactionConcurrency txConc, final TransactionIsolation txIsolation) throws Exception {
         for (int i = 0; i < 10; i++) {
-            final String key = String.valueOf(-(new Random().nextInt(100)));
+            final String key = String.valueOf(-((new Random().nextInt(99) + 1)));
 
             boolean tx = txConc != null && txIsolation != null;
 
