@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Initializes new page by calling {@link PageIO#initNewPage(ByteBuffer, long)}.
+ * Initializes new page by calling {@link PageIO#initNewPage(long, long, int)}.
  */
 public class InitNewPageRecord extends PageDeltaRecord {
     /** */
@@ -54,10 +54,10 @@ public class InitNewPageRecord extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(ioType, ioVer);
 
-        io.initNewPage(buf, newPageId);
+        io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
     }
 
     /** {@inheritDoc} */

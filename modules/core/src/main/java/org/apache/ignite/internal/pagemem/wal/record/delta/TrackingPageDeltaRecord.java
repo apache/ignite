@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
 
 /**
@@ -70,8 +70,12 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        TrackingPageIO.VERSIONS.forPage(buf).markChanged(buf, pageIdToMark, nextSnapshotId, lastSuccessfulSnapshotId, buf.capacity());
+    @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
+        TrackingPageIO.VERSIONS.forPage(pageAddr).markChanged(pageMem.pageBuffer(pageAddr),
+            pageIdToMark,
+            nextSnapshotId,
+            lastSuccessfulSnapshotId,
+            pageMem.pageSize());
     }
 
     /** {@inheritDoc} */

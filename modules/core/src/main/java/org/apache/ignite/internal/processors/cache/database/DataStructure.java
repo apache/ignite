@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
-import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
@@ -131,35 +130,35 @@ public abstract class DataStructure implements PageLockListener {
 
     /**
      * @param page Page.
-     * @return Buffer.
+     * @return Page address.
      */
-    protected final ByteBuffer tryWriteLock(Page page) {
+    protected final long tryWriteLock(Page page) {
         return PageHandler.writeLock(page, this, true);
     }
 
 
     /**
      * @param page Page.
-     * @return Buffer.
+     * @return Page address.
      */
-    protected final ByteBuffer writeLock(Page page) {
+    protected final long writeLock(Page page) {
         return PageHandler.writeLock(page, this, false);
     }
 
     /**
      * @param page Page.
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param dirty Dirty page.
      */
-    protected final void writeUnlock(Page page, ByteBuffer buf, boolean dirty) {
-        PageHandler.writeUnlock(page, buf, this, dirty);
+    protected final void writeUnlock(Page page, long pageAddr, boolean dirty) {
+        PageHandler.writeUnlock(page, pageAddr, this, dirty);
     }
 
     /**
      * @param page Page.
-     * @return Buffer.
+     * @return Page address.
      */
-    protected final ByteBuffer readLock(Page page) {
+    protected final long readLock(Page page) {
         return PageHandler.readLock(page, this);
     }
 
@@ -167,8 +166,15 @@ public abstract class DataStructure implements PageLockListener {
      * @param page Page.
      * @param buf Buffer.
      */
-    protected final void readUnlock(Page page, ByteBuffer buf) {
+    protected final void readUnlock(Page page, long buf) {
         PageHandler.readUnlock(page, buf, this);
+    }
+
+    /**
+     * @return Page size.
+     */
+    protected final int pageSize() {
+        return pageMem.pageSize();
     }
 
     /** {@inheritDoc} */
@@ -177,12 +183,12 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onWriteLock(Page page, ByteBuffer buf) {
+    @Override public void onWriteLock(Page page, long pageAddr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
+    @Override public void onWriteUnlock(Page page, long pageAddr) {
         // No-op.
     }
 
@@ -192,12 +198,12 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadLock(Page page, ByteBuffer buf) {
+    @Override public void onReadLock(Page page, long pageAddr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadUnlock(Page page, ByteBuffer buf) {
+    @Override public void onReadUnlock(Page page, long pageAddr) {
         // No-op.
     }
 }

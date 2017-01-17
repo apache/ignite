@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.util;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.Page;
 
 /**
@@ -31,15 +30,15 @@ public interface PageLockListener {
 
     /**
      * @param page Page.
-     * @param buf Buffer or {@code null} if attempt to lock failed.
+     * @param pageAddr Page address or {@code 0} if attempt to lock failed.
      */
-    public void onWriteLock(Page page, ByteBuffer buf);
+    public void onWriteLock(Page page, long pageAddr);
 
     /**
      * @param page Page.
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    public void onWriteUnlock(Page page, ByteBuffer buf);
+    public void onWriteUnlock(Page page, long pageAddr);
 
     /**
      * @param page Page.
@@ -48,13 +47,13 @@ public interface PageLockListener {
 
     /**
      * @param page Page.
-     * @param buf Buffer or {@code null} if attempt to lock failed.
+     * @param pageAddr Page address or {@code 0} if attempt to lock failed.
      */
-    public void onReadLock(Page page, ByteBuffer buf);
+    public void onReadLock(Page page, long pageAddr);
 
     /**
      * @param page Page.
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    public void onReadUnlock(Page page, ByteBuffer buf);
+    public void onReadUnlock(Page page, long pageAddr);
 }

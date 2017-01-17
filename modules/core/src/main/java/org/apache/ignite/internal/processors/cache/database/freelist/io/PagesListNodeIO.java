@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.copyMemory;
 
 /**
- * TODO optimize: now we have slow {@link #removePage(ByteBuffer, long)}
+ * TODO optimize: now we have slow {@link #removePage(long, long)}
  */
 public class PagesListNodeIO extends PageIO {
     /** */
@@ -52,84 +52,84 @@ public class PagesListNodeIO extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(ByteBuffer buf, long pageId) {
-        super.initNewPage(buf, pageId);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize);
 
-        setEmpty(buf);
+        setEmpty(pageAddr);
 
-        setPreviousId(buf, 0L);
-        setNextId(buf, 0L);
+        setPreviousId(pageAddr, 0L);
+        setNextId(pageAddr, 0L);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    private void setEmpty(ByteBuffer buf) {
-        setCount(buf, 0);
+    private void setEmpty(long pageAddr) {
+        setCount(pageAddr, 0);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @return Next page ID.
      */
-    public long getNextId(ByteBuffer buf) {
-        return buf.getLong(NEXT_PAGE_ID_OFF);
+    public long getNextId(long pageAddr) {
+        return PageUtils.getLong(pageAddr, NEXT_PAGE_ID_OFF);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param nextId Next page ID.
      */
-    public void setNextId(ByteBuffer buf, long nextId) {
-        buf.putLong(NEXT_PAGE_ID_OFF, nextId);
+    public void setNextId(long pageAddr, long nextId) {
+        PageUtils.putLong(pageAddr, NEXT_PAGE_ID_OFF, nextId);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @return Previous page ID.
      */
-    public long getPreviousId(ByteBuffer buf) {
-        return buf.getLong(PREV_PAGE_ID_OFF);
+    public long getPreviousId(long pageAddr) {
+        return PageUtils.getLong(pageAddr, PREV_PAGE_ID_OFF);
     }
 
     /**
-     * @param buf Page buffer.
+     * @param pageAddr Page address.
      * @param prevId Previous  page ID.
      */
-    public void setPreviousId(ByteBuffer buf, long prevId) {
-        buf.putLong(PREV_PAGE_ID_OFF, prevId);
+    public void setPreviousId(long pageAddr, long prevId) {
+        PageUtils.putLong(pageAddr, PREV_PAGE_ID_OFF, prevId);
     }
 
     /**
      * Gets total count of entries in this page. Does not change the buffer state.
      *
-     * @param buf Page buffer to get count from.
+     * @param pageAddr Page address to get count from.
      * @return Total number of entries.
      */
-    public int getCount(ByteBuffer buf) {
-        return buf.getShort(CNT_OFF);
+    public int getCount(long pageAddr) {
+        return PageUtils.getShort(pageAddr, CNT_OFF);
     }
 
     /**
      * Sets total count of entries in this page. Does not change the buffer state.
      *
-     * @param buf Page buffer to write to.
+     * @param pageAddr Page address to write to.
      * @param cnt Count.
      */
-    private void setCount(ByteBuffer buf, int cnt) {
+    private void setCount(long pageAddr, int cnt) {
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
 
-        buf.putShort(CNT_OFF, (short)cnt);
+        PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
     }
 
     /**
      * Gets capacity of this page in items.
      *
-     * @param buf Page buffer to get capacity.
+     * @param pageSize Page size.
      * @return Capacity of this page in items.
      */
-    private int getCapacity(ByteBuffer buf) {
-        return (buf.capacity() - PAGE_IDS_OFF) >>> 3; // /8
+    private int getCapacity(int pageSize) {
+        return (pageSize - PAGE_IDS_OFF) >>> 3; // /8
     }
 
     /**
@@ -141,38 +141,39 @@ public class PagesListNodeIO extends PageIO {
     }
 
     /**
-     * @param buf Page buffer.
+     * @param pageAddr Page address.
      * @param idx Item index.
      * @return Item at the given index.
      */
-    private long getAt(ByteBuffer buf, int idx) {
-        return buf.getLong(offset(idx));
+    private long getAt(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx));
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param idx Item index.
      * @param pageId Item value to write.
      */
-    private void setAt(ByteBuffer buf, int idx, long pageId) {
-        buf.putLong(offset(idx), pageId);
+    private void setAt(long pageAddr, int idx, long pageId) {
+        PageUtils.putLong(pageAddr, offset(idx), pageId);
     }
 
     /**
      * Adds page to the end of pages list.
      *
-     * @param buf Page buffer.
+     * @param pageAddr Page address.
      * @param pageId Page ID.
+     * @param pageSize Page size.
      * @return Total number of items in this page.
      */
-    public int addPage(ByteBuffer buf, long pageId) {
-        int cnt = getCount(buf);
+    public int addPage(long pageAddr, long pageId, int pageSize) {
+        int cnt = getCount(pageAddr);
 
-        if (cnt == getCapacity(buf))
+        if (cnt == getCapacity(pageSize))
             return -1;
 
-        setAt(buf, cnt, pageId);
-        setCount(buf, cnt + 1);
+        setAt(pageAddr, cnt, pageId);
+        setCount(pageAddr, cnt + 1);
 
         return cnt;
     }
@@ -180,38 +181,38 @@ public class PagesListNodeIO extends PageIO {
     /**
      * Removes any page from the pages list.
      *
-     * @param buf Page buffer.
+     * @param pageAddr Page address.
      * @return Removed page ID.
      */
-    public long takeAnyPage(ByteBuffer buf) {
-        int cnt = getCount(buf);
+    public long takeAnyPage(long pageAddr) {
+        int cnt = getCount(pageAddr);
 
         if (cnt == 0)
             return 0L;
 
-        setCount(buf, --cnt);
+        setCount(pageAddr, --cnt);
 
-        return getAt(buf, cnt);
+        return getAt(pageAddr, cnt);
     }
 
     /**
      * Removes the given page ID from the pages list.
      *
-     * @param buf Page buffer.
+     * @param pageAddr Page address.
      * @param dataPageId Page ID to remove.
      * @return {@code true} if page was in the list and was removed, {@code false} otherwise.
      */
-    public boolean removePage(ByteBuffer buf, long dataPageId) {
+    public boolean removePage(long pageAddr, long dataPageId) {
         assert dataPageId != 0;
 
-        int cnt = getCount(buf);
+        int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++) {
-            if (getAt(buf, i) == dataPageId) {
+            if (getAt(pageAddr, i) == dataPageId) {
                 if (i != cnt - 1)
-                    copyMemory(buf, buf, offset(i + 1), offset(i), 8 * (cnt - i - 1));
+                    copyMemory(pageAddr, pageAddr, offset(i + 1), offset(i), 8 * (cnt - i - 1));
 
-                setCount(buf, cnt - 1);
+                setCount(pageAddr, cnt - 1);
 
                 return true;
             }
@@ -221,10 +222,10 @@ public class PagesListNodeIO extends PageIO {
     }
 
     /**
-     * @param buf Page buffer.
-     * @return {@code true} if there are no items in this page.
+     * @param pageAddr Page address.
+     * @return {@code True} if there are no items in this page.
      */
-    public boolean isEmpty(ByteBuffer buf) {
-        return getCount(buf) == 0;
+    public boolean isEmpty(long pageAddr) {
+        return getCount(pageAddr) == 0;
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
@@ -25,6 +26,7 @@ import java.security.PrivilegedExceptionAction;
 
 import org.apache.ignite.IgniteSystemProperties;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -1601,5 +1603,15 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * @param buf Direct buffer.
+     * @return Buffer memory address.
+     */
+    public static long bufferAddress(ByteBuffer buf) {
+        assert buf instanceof DirectBuffer : buf;
+
+        return ((DirectBuffer)buf).address();
     }
 }

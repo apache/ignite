@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -76,9 +75,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, ByteBuffer buf, int idx)
+    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx)
         throws IgniteCheckedException {
-        return (GridH2Row)io.getLookupRow(this, buf, idx);
+        return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
     }
 }
 
