@@ -789,7 +789,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (EntryGetResult)innerGet0(
             /*ver*/null,
             /*tx*/null,
@@ -804,11 +805,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             expiryPlc,
             true,
             keepBinary,
-            /*reserve*/true);
+            /*reserve*/true,
+            readerArgs);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public EntryGetResult innerGetVersioned(
+    @Override public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
@@ -965,7 +967,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Cache version for optimistic check.
             startVer = ver;
 
-            ddReaderIfNeed(readerArgs);
+            addReaderIfNeed(readerArgs);
 
             if (ret != null) {
                 assert tmp || !(ret instanceof BinaryObjectOffheapImpl);

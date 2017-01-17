@@ -1964,7 +1964,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     null,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    readerArgs);
 
                                 if (res == null)
                                     ctx.evicts().touch(entry, topVer);
@@ -2022,7 +2023,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                T2<CacheObject, GridCacheVersion> verSet = entry.versionedValue(cacheVal, ver, null, readerArgs);
+                                                T2<CacheObject, GridCacheVersion> verSet = entry.versionedValue(
+                                                    cacheVal, res.version(), null, readerArgs);
 
                                                 if (log.isDebugEnabled())
                                                     log.debug("Set value loaded from store into entry [" +

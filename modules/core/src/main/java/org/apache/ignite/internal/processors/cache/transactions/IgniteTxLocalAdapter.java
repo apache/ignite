@@ -441,11 +441,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry == null ? keepBinary : txEntry.keepBinary(),
                             null);
 
-                        if (res.get1() == null) {
+                        if (res.value() == null) {
                             if (misses == null)
                                 misses = new LinkedHashMap<>();
 
-                            misses.put(key, res.get2());
+                            misses.put(key, res.version());
                         }
                         else
                             c.apply(key, skipVals ? true : res.value(), res.version());
