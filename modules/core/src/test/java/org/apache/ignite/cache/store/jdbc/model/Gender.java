@@ -17,11 +17,24 @@
 
 package org.apache.ignite.cache.store.jdbc.model;
 
+import java.util.Random;
+
 /**
  * Person gender enum.
  */
-public enum PersonGender {
+public enum Gender {
+    /** */
     MALE,
+    /** */
+    FEMALE;
 
-    FEMELE
+    /** */
+    private static final Random RAND = new Random();
+
+    /**
+     * Used for testing purposes.
+     */
+    public static Gender random() {
+        return values()[RAND.nextInt(values().length)];
+    }
 }

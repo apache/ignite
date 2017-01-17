@@ -30,7 +30,7 @@ import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Person;
-import org.apache.ignite.cache.store.jdbc.model.PersonGender;
+import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -204,7 +204,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
             new JdbcTypeField(Types.DATE, "BIRTHDAY", Date.class, "birthday"),
             new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
-            new JdbcTypeField(Types.VARCHAR, "GENDER", PersonGender.class, "gender"));
+            new JdbcTypeField(Types.VARCHAR, "GENDER", Gender.class, "gender"));
 
         return storeTypes;
     }
@@ -272,7 +272,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             prnStmt.setInt(2, i % 100);
             prnStmt.setDate(3, Date.valueOf(String.format("%d-%d-%d", 1970 + rnd.nextInt(50), 1 + rnd.nextInt(11), 1 + rnd.nextInt(27))));
             prnStmt.setString(4, "name" + i);
-            prnStmt.setString(5, PersonGender.values()[rnd.nextInt(2)].toString());
+            prnStmt.setString(5, Gender.random().toString());
 
             prnStmt.addBatch();
         }
@@ -414,7 +414,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             U.closeQuiet(rs);
 
             Date testDate = Date.valueOf("2001-05-05");
-            PersonGender testGender = PersonGender.values()[rnd.nextInt(2)];
+            Gender testGender = Gender.random();
 
             Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999, testGender);
 

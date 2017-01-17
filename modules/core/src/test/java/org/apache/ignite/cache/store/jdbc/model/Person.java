@@ -45,7 +45,7 @@ public class Person implements Serializable {
     private Integer salary;
 
     /** Value of person gender. */
-    private PersonGender gender;
+    private Gender gender;
 
     /**
      * Empty constructor.
@@ -63,7 +63,7 @@ public class Person implements Serializable {
         Date birthday,
         String name,
         Integer salary,
-        PersonGender gender
+        Gender gender
     ) {
         this.id = id;
         this.orgId = orgId;
@@ -169,7 +169,7 @@ public class Person implements Serializable {
      *
      * @return Gender.
      */
-    public PersonGender getGender() {
+    public Gender getGender() {
         return gender;
     }
 
@@ -178,7 +178,7 @@ public class Person implements Serializable {
      *
      * @param gender New value for gender.
      */
-    public void setGender(PersonGender gender) {
+    public void setGender(Gender gender) {
         this.gender = gender;
     }
 

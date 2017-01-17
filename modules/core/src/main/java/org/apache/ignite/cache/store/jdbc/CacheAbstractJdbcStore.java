@@ -80,6 +80,7 @@ import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_BATCH_SIZE;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_WRITE_ATTEMPTS;
+import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.numericTypes;
 
 /**
  * Implementation of {@link CacheStore} backed by JDBC.
@@ -1396,7 +1397,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     }
                 }
                 else if (field.getJavaFieldType().isEnum()) {
-                    if (JdbcTypesTransformer.numericTypes.contains(field.getDatabaseFieldType()))
+                    if (numericTypes.contains(field.getDatabaseFieldType()))
                         fieldVal = ((Enum) fieldVal).ordinal();
                     else fieldVal = fieldVal.toString();
                 }

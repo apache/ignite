@@ -37,7 +37,8 @@ import static java.sql.Types.TINYINT;
  * API for implementing custom mapping logic for loaded from store data.
  */
 public interface JdbcTypesTransformer extends Serializable {
-    List<Integer> numericTypes = U.sealList(TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, NUMERIC, DECIMAL);
+    /** Numeric types. */
+    public List<Integer> numericTypes = U.sealList(TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, NUMERIC, DECIMAL);
 
     /**
      * Retrieves the value of the designated column in the current row of this <code>ResultSet</code> object and

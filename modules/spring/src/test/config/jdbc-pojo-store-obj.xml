@@ -157,7 +157,7 @@
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
                                                     <property name="javaFieldName" value="gender"/>
-                                                    <property name="javaFieldType" value="org.apache.ignite.cache.store.jdbc.model.PersonGender"/>
+                                                    <property name="javaFieldType" value="org.apache.ignite.cache.store.jdbc.model.Gender"/>
                                                 </bean>
                                             </list>
                                         </property>

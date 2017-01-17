@@ -31,11 +31,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
 
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
+import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
 import org.apache.ignite.cache.store.jdbc.model.PersonComplexKey;
-import org.apache.ignite.cache.store.jdbc.model.PersonGender;
 import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -94,7 +94,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
             new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
-            new JdbcTypeField(Types.INTEGER, "GENDER", PersonGender.class, "gender"));
+            new JdbcTypeField(Types.INTEGER, "GENDER", Gender.class, "gender"));
 
         storeTypes[2] = new JdbcType();
         storeTypes[2].setDatabaseSchema("PUBLIC");
@@ -111,7 +111,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
             new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
             new JdbcTypeField(Types.INTEGER, "SALARY", Integer.class, "salary"),
-            new JdbcTypeField(Types.VARCHAR, "GENDER", PersonGender.class, "gender"));
+            new JdbcTypeField(Types.VARCHAR, "GENDER", Gender.class, "gender"));
 
         storeTypes[3] = new JdbcType();
         storeTypes[3].setDatabaseSchema("PUBLIC");
@@ -377,7 +377,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             prnComplexStmt.setString(4, "name");
             prnComplexStmt.setInt(5, 1000 + i * 500);
 
-            prnComplexStmt.setString(6, PersonGender.values()[rnd.nextInt(2)].toString());
+            prnComplexStmt.setString(6, Gender.random().toString());
 
             prnComplexStmt.addBatch();
         }
