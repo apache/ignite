@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Java Virtual Machine performance suggestions.
@@ -46,19 +45,19 @@ public class JvmPerformanceSuggestions {
     /**
      * Log suggestions of JVM-tuning to increase Ignite performance.
      *
-     * @param log Log.
+     * @param log - Logger.
      */
     public static synchronized void logSuggestions(IgniteLogger log) {
 
         if (U.heapSize(1) > 30.5)
-            U.quietAndInfo(log, "Heap size is greater than 30,5G, JVM can not use compressed oops!");
+            U.quietAndInfo(log, "Heap size is greater than 30.5Gb, JVM will not use compressed oops.");
 
         List<String> args = U.jvmArgs();
         List<String> gcLoggingOptions = getGCLoggingOptions(args);
 
         if (!gcLoggingOptions.isEmpty()) {
-            U.quietAndInfo(log, "JVM Garbage Collection logging is configured not completely.");
-            U.quietAndInfo(log, "Please add the following parameters to the JVM configuration:");
+            U.quietAndInfo(log, "JVM Garbage Collection logging is not configured properly.");
+            U.quietAndInfo(log, "Please, add the following parameters to the JVM configuration:");
             for (String option : gcLoggingOptions)
                 U.quietAndInfo(log, "    " + option);
         }
@@ -107,7 +106,7 @@ public class JvmPerformanceSuggestions {
         if (!U.jvmName().toLowerCase().contains("server"))
             options.add(SERVER);
 
-        if (getMaxHeapSizeOption(args) == null)
+        if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
             options.add(XMX + "<size>[g|G|m|M|k|K]");
 
         if (!anyStartWith(args, MAX_DIRECT_MEMORY_SIZE))
@@ -128,15 +127,6 @@ public class JvmPerformanceSuggestions {
                 return true;
 
         return false;
-    }
-
-    @Nullable
-    private static String getMaxHeapSizeOption(List<String> lines) {
-        for (String line : lines)
-            if (line.startsWith(XMX) || line.startsWith(MX))
-                return line;
-
-        return null;
     }
 
     /** {@inheritDoc} */
