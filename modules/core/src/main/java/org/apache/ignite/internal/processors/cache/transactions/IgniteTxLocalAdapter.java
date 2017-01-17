@@ -441,11 +441,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry == null ? keepBinary : txEntry.keepBinary(),
                             null);
 
-                        if (res.value() == null) {
+                        if (res == null) {
                             if (misses == null)
                                 misses = new LinkedHashMap<>();
 
-                            misses.put(key, res.version());
+                            misses.put(key, entry.version());
                         }
                         else
                             c.apply(key, skipVals ? true : res.value(), res.version());
@@ -478,12 +478,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    T2<CacheObject, GridCacheVersion> setVer = entry.versionedValue(cacheVal, ver, null, null);
+                                    T2<CacheObject, GridCacheVersion> verVal = entry.versionedValue(cacheVal,
+                                        ver,
+                                        null,
+                                        null);
 
-                                    if (log.isDebugEnabled())
-                                        log.debug("Set value loaded from store into entry [oldVer="
-                                            + ver + ", newVer=" + setVer.get2() + ", " +
-                                            "entry=" + entry + ']');
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Set value loaded from store into entry [" +
+                                            "oldVer=" + ver +
+                                            ", newVer=" + verVal.get2() +
+                                            ", entry=" + entry + ']');
+                                    }
+
+                                    val = verVal.get1();
+                                    ver = verVal.get2();
 
                                     break;
                                 }
@@ -1231,8 +1239,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     txEntry.keepBinary(),
                                     null);
 
-                                val = res.value();
-                                readVer = res.version();
+                                if (res != null) {
+                                    val = res.value();
+                                    readVer = res.version();
+                                }
                             }
                             else {
                                 val = txEntry.cached().innerGet(
@@ -1665,8 +1675,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.keepBinary(),
                                             null);
 
-                                        val = res.value();
-                                        readVer = res.version();
+                                        if (res != null) {
+                                            val = res.value();
+                                            readVer = res.version();
+                                        }
                                     }
                                     else{
                                         val = cached.innerGet(

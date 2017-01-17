@@ -1967,11 +1967,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     !deserializeBinary,
                                     readerArgs);
 
-                                if (res.value() == null) {
+                                if (res == null)
                                     ctx.evicts().touch(entry, topVer);
-
-                                    res = null;
-                                }
                             }
 
                             if (res != null) {
@@ -2026,25 +2023,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                T2<CacheObject, GridCacheVersion> verSet = entry.versionedValue(
-                                                    cacheVal, res.version(), null, readerArgs);
+                                                T2<CacheObject, GridCacheVersion> verVal = entry.versionedValue(
+                                                    cacheVal,
+                                                    res.version(),
+                                                    null,
+                                                    readerArgs);
 
                                                 if (log.isDebugEnabled())
                                                     log.debug("Set value loaded from store into entry [" +
                                                         "oldVer=" + res.version() +
-                                                        ", newVer=" + verSet.get2() + ", " +
+                                                        ", newVer=" + verVal.get2() + ", " +
                                                         "entry=" + entry + ']');
 
                                                 // Don't put key-value pair into result map if value is null.
-                                                if (verSet.get1() != null) {
+                                                if (verVal.get1() != null) {
                                                     ctx.addResult(map,
                                                         key,
-                                                        verSet.get1(),
+                                                        verVal.get1(),
                                                         skipVals,
                                                         keepCacheObjects,
                                                         deserializeBinary,
                                                         true,
-                                                        needVer ? verSet.get2() : null);
+                                                        needVer ? verVal.get2() : null);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

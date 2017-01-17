@@ -1023,7 +1023,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         if (ret == null && !evt)
-            return retVer ? new EntryGetResult(null, startVer, false) : null;
+            return null;
 
         synchronized (this) {
             long ttl = ttlExtras();
@@ -1088,10 +1088,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         assert ret == null || !retVer;
         assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
-
-        // Always return version
-        if (ret == null && retVer)
-            return new EntryGetResult(null, startVer, false);
 
         return ret;
     }

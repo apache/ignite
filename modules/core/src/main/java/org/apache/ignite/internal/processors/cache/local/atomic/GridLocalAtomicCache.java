@@ -530,10 +530,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 !deserializeBinary,
                                 null);
 
-                            v = res.value();
-                            ver = res.version();
+                            if (res != null) {
+                                v = res.value();
+                                ver = res.version();
 
-                            if (v != null) {
                                 ctx.addResult(
                                     vals,
                                     cacheKey,

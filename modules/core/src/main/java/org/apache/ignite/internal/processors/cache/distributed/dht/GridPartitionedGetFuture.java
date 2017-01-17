@@ -446,7 +446,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
-                    CacheObject v;
+                    CacheObject v = null;
                     GridCacheVersion ver = null;
 
                     if (needVer) {
@@ -464,8 +464,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             !deserializeBinary,
                             null);
 
-                        v = res.value();
-                        ver = res.version();
+                        if (res != null) {
+                            v = res.value();
+                            ver = res.version();
+                        }
                     }
                     else {
                         v = entry.innerGet(

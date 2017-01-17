@@ -347,7 +347,7 @@ public interface GridCacheEntryEx {
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
-     * @return Cached value and entry version.
+     * @param readerArgs Reader will be added if not null.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @return Cached value, entry version and flag indicating if entry was reserved.
@@ -756,7 +756,7 @@ public interface GridCacheEntryEx {
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
      * @param readerArgs Reader will be added if not null.
-     * @return Non null version if value was set.
+     * @return Current version and value.
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
