@@ -126,7 +126,7 @@
 
                     <property name="atomicityMode" value="ATOMIC"/>
 
-                    <property name="typeMetadata">
+                    <property name="indexedTypes">
                         <list>
                             <value>java.lang.Integer</value>
                             <value>org.apache.ignite.yardstick.cache.model.Person1</value>

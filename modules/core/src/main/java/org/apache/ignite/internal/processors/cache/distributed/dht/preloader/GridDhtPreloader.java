@@ -572,7 +572,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             GridDhtForceKeysFuture<?, ?> f = forceKeyFuts.get(msg.futureId());
 
             if (f != null)
-                f.onResult(node.id(), msg);
+                f.onResult(msg);
             else if (log.isDebugEnabled())
                 log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
                     ", res=" + msg + ']');

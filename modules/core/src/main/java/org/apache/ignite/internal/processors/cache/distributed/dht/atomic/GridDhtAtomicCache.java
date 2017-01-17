@@ -3273,36 +3273,36 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             long ttl = req.ttl(i);
                             long expireTime = req.conflictExpireTime(i);
 
-                        GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
-                            ver,
-                            nodeId,
-                            nodeId,
-                            op,
-                            op == TRANSFORM ? entryProcessor : val,
-                            op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/(ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly())
-                                && writeThrough() && !req.skipStore(),
-                            /*read-through*/false,
-                            /*retval*/false,
-                            req.keepBinary(),
-                            /*expiry policy*/null,
-                            /*event*/true,
-                            /*metrics*/true,
-                            /*primary*/false,
-                            /*check version*/!req.forceTransformBackups(),
-                            req.topologyVersion(),
-                            CU.empty0(),
-                            replicate ? DR_BACKUP : DR_NONE,
-                            ttl,
-                            expireTime,
-                            req.conflictVersion(i),
-                            false,
-                            intercept,
-                            req.subjectId(),
-                            taskName,
-                            prevVal,
-                            updateIdx,
-                            null);
+                            GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
+                                ver,
+                                nodeId,
+                                nodeId,
+                                op,
+                                op == TRANSFORM ? entryProcessor : val,
+                                op == TRANSFORM ? req.invokeArguments() : null,
+                                /*write-through*/(ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly())
+                                    && writeThrough() && !req.skipStore(),
+                                /*read-through*/false,
+                                /*retval*/false,
+                                req.keepBinary(),
+                                /*expiry policy*/null,
+                                /*event*/true,
+                                /*metrics*/true,
+                                /*primary*/false,
+                                /*check version*/!req.forceTransformBackups(),
+                                req.topologyVersion(),
+                                CU.empty0(),
+                                replicate ? DR_BACKUP : DR_NONE,
+                                ttl,
+                                expireTime,
+                                req.conflictVersion(i),
+                                false,
+                                intercept,
+                                req.subjectId(),
+                                taskName,
+                                prevVal,
+                                updateIdx,
+                                null);
 
                             if (updRes.removeVersion() != null)
                                 ctx.onDeferredDelete(entry, updRes.removeVersion());

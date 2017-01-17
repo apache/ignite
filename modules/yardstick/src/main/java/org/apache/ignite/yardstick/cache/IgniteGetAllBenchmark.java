@@ -15,38 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.yardstick.cache;
 
-import java.util.Iterator;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.lang.GridCursor;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Wrap {@code Iterator} and adapt it to {@code GridCursor}.
+ * Ignite benchmark that performs getAll operations.
  */
-public class GridCursorIteratorWrapper<V> implements GridCursor<V> {
-    /** Iterator. */
-    private Iterator<V> iter;
-
-    /** Next. */
-    private V next;
-
-    /**
-     * @param iter Iterator.
-     */
-    public GridCursorIteratorWrapper(Iterator<V> iter) {
-        this.iter = iter;
-    }
-
+public class IgniteGetAllBenchmark extends IgniteGetBenchmark {
     /** {@inheritDoc} */
-    @Override public V get() throws IgniteCheckedException {
-        return next;
-    }
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        Set<Integer> keys = U.newHashSet(args.batch());
 
-    /** {@inheritDoc} */
-    @Override public boolean next() throws IgniteCheckedException {
-        next = iter.hasNext() ? iter.next() : null;
+        while (keys.size() < args.batch()) {
+            int key = nextRandom(args.range());
 
-        return next != null;
+            keys.add(key);
+        }
+
+        cache.getAll(keys);
+
+        return true;
     }
 }

@@ -205,7 +205,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean centralizedAff;
 
     /** Change global state exception. */
-    private Exception changeGlobalStateException;
+    private Exception changeGlobalStateE;
 
     /** Change global state exceptions. */
     private final Map<UUID, Exception> changeGlobalStateExceptions = new ConcurrentHashMap8<>();
@@ -488,9 +488,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
-            AffinityTopologyVersion topVersion = topologyVersion();
+            AffinityTopologyVersion topVer = topologyVersion();
 
-            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topVersion));
+            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topVer));
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
@@ -522,7 +522,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
             else {
                 if (discoEvt.type() == EVT_NODE_JOINED) {
-                    Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(topVersion);
+                    Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(topVer);
 
                     if (!discoEvt.eventNode().isLocal())
                         cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
@@ -568,7 +568,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 case NONE: {
                     initTopologies();
 
-                    onDone(topVersion);
+                    onDone(topVer);
 
                     break;
                 }
@@ -654,10 +654,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         GridClusterStateProcessor stateProc = cctx.kernalContext().state();
 
         if (exchangeOnChangeGlobalState = stateProc.changeGlobalState(reqs, topologyVersion())) {
-            changeGlobalStateException = stateProc.onChangeGlobalState();
+            changeGlobalStateE = stateProc.onChangeGlobalState();
 
-            if (crd && changeGlobalStateException != null)
-                changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateException);
+            if (crd && changeGlobalStateE != null)
+                changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateE);
         }
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
@@ -1044,8 +1044,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(
             node, exchangeId(), clientOnlyExchange, true);
 
-        if (exchangeOnChangeGlobalState && changeGlobalStateException != null)
-            m.setException(changeGlobalStateException);
+        if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
+            m.setException(changeGlobalStateE);
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
@@ -1199,6 +1199,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (discoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)discoEvt).customMessage(null);
 
+            cctx.exchange().lastFinishedFuture(this);
+
             return true;
         }
 
@@ -1213,6 +1215,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         @Nullable Object key,
         @Nullable Collection<?> keys
     ) {
+        assert isDone() : this;
+
         Throwable err = error();
 
         if (err != null)
@@ -1318,7 +1322,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         changeGlobalStateExceptions.clear();
         crd = null;
         partReleaseFut = null;
-        changeGlobalStateException = null;
+        changeGlobalStateE = null;
     }
 
     /**
@@ -1920,8 +1924,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         if (crd0.isLocal()) {
-                            if (exchangeOnChangeGlobalState && changeGlobalStateException!=null)
-                                changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateException);
+                            if (exchangeOnChangeGlobalState && changeGlobalStateE !=null)
+                                changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
 
                             if (allReceived) {
                                 onAllReceived();
