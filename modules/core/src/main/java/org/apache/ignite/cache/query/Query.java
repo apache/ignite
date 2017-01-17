@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -105,19 +106,35 @@ public abstract class Query<R> implements Serializable {
     }
 
     /**
-     * Sets partitions for the query.
-     * Only nodes which are holding data for any partition from the set will execute the query.
-     * This is ignored for replicated caches.
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     * Queries over replicated caches ignore this value.
+     * <p/>
+     * Note: there is a special convention for efficient handling of partition ranges.
+     * Pass negative value to enable partitions range mode, when pass start value and count.
+     * On example, passing {@code [-1, 50, 100]} will specify partitions in range {@code [50-150)}.
      *
      * @param parts Partitions.
      * @return {@code this} for chaining.
      */
-    public Query<R> setPartitions(int[] parts) {
+    public Query<R> setPartitions(int... parts) {
         this.parts = parts;
 
-        // Ensures partitions are properly sorted.
-        if (this.parts != null)
-            Arrays.sort(this.parts);
+        if (this.parts != null) {
+            A.notEmpty(parts, "Partitions");
+
+            // Validate partitions.
+            for (int i = 0; i < parts.length; i++) {
+                if (parts[0] >= 0 && i < parts.length - 1)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+
+                if (i > 0)
+                    A.ensure(parts[i] >= 0, "Partition number must be positive");
+            }
+
+            if (this.parts.length > 2 && this.parts[0] >= 0)
+                Arrays.sort(this.parts);
+        }
 
         return this;
     }

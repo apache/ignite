@@ -1108,7 +1108,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?, ?> cctx, final GridCacheTwoStepQuery qry,
                                               final boolean keepCacheObj, final boolean enforceJoinOrder,
                                               final int timeoutMillis,
-                                              final GridQueryCancel cancel, final GridIntSet parts) {
+                                              final GridQueryCancel cancel, final int[] parts) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
                 return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, parts);
@@ -1333,7 +1333,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(),
-                cancel, qry.getPartitions() == null ? null : new GridIntSet(qry.getPartitions())), cancel);
+                cancel, qry.getPartitions()), cancel);
 
         cursor.fieldsMeta(meta);
 
