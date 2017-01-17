@@ -1089,6 +1089,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert ret == null || !retVer;
         assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
 
+        // Always return version
+        if (ret == null && retVer)
+            return new EntryGetResult(null, startVer, false);
+
         return ret;
     }
 

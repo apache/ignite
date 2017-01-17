@@ -1967,8 +1967,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     !deserializeBinary,
                                     readerArgs);
 
-                                if (res == null)
+                                if (res.value() == null) {
                                     ctx.evicts().touch(entry, topVer);
+
+                                    res = null;
+                                }
                             }
 
                             if (res != null) {

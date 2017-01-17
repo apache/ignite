@@ -370,7 +370,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
-                    CacheObject v = null;
+                    CacheObject v;
                     GridCacheVersion ver = null;
 
                     if (needVer) {
