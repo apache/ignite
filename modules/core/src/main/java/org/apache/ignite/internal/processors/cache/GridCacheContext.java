@@ -1718,6 +1718,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if the value for the cache object has to be copied because
+     * of {@link CacheConfiguration#isCopyOnRead()}.
+     */
+    public boolean needValueCopy() {
+        return affNode && cacheCfg.isCopyOnRead() && cacheCfg.getMemoryMode() != OFFHEAP_VALUES;
+    }
+
+    /**
      * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
@@ -2038,7 +2046,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            IgniteKernal grid = IgnitionEx.gridx(t.get1());
+            IgniteKernal grid = IgnitionEx.localIgnite();
 
             GridCacheAdapter<K, V> cache = grid.internalCache(t.get2());
 
