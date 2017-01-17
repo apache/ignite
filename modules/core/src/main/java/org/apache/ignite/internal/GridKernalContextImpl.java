@@ -82,7 +82,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.suggestions.ConfigurationSuggestions;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -358,7 +358,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private GridClockSource clockSrc = new GridJvmClockSource();
 
     /** Performance suggestions. */
-    private final ConfigurationSuggestions perf = new ConfigurationSuggestions();
+    private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
@@ -862,7 +862,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ConfigurationSuggestions performance() {
+    @Override public GridPerformanceSuggestions performance() {
         return perf;
     }
 

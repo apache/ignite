@@ -138,7 +138,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.suggestions.ConfigurationSuggestions;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmPerformanceSuggestions;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -1170,7 +1170,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         JvmPerformanceSuggestions.logSuggestions(log);
 
-        U.quietAndInfo(log, "Get more information on performance tuning: " + ConfigurationSuggestions.SUGGESTIONS_LINK);
+        U.quietAndInfo(log, "Get more information on performance tuning: " + GridPerformanceSuggestions.SUGGESTIONS_LINK);
         U.quietAndInfo(log, "");
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
@@ -1291,7 +1291,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param cfg Configuration to check for possible performance issues.
      */
     private void suggestOptimizations(IgniteConfiguration cfg) {
-        ConfigurationSuggestions perf = ctx.performance();
+        GridPerformanceSuggestions perf = ctx.performance();
 
         if (ctx.collision().enabled())
             perf.add("Disable collision resolution (remove 'collisionSpi' from configuration)");

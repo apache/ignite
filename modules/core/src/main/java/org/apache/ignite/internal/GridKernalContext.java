@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.suggestions.ConfigurationSuggestions;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -470,7 +470,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * @return Performance suggestions object.
      */
-    public ConfigurationSuggestions performance();
+    public GridPerformanceSuggestions performance();
 
     /**
      * Gets user version for given class loader by checking

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.suggestions;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGES
 /**
  * Grid performance suggestions.
  */
-public class ConfigurationSuggestions {
+public class GridPerformanceSuggestions {
     /** Link to article about Ignite performance tuning */
     public static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
 
@@ -91,6 +90,6 @@ public class ConfigurationSuggestions {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ConfigurationSuggestions.class, this);
+        return S.toString(GridPerformanceSuggestions.class, this);
     }
 }
