@@ -25,7 +25,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
-import org.apache.ignite.internal.jdbc2.JdbcUtils;
 
 /**
  * Default implementation of {@link JdbcTypesTransformer}.
@@ -116,7 +115,7 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
         }
 
         if (type.isEnum()) {
-            if (JdbcUtils.isNumeric(rs.getMetaData().getColumnType(colIdx))) {
+            if (JdbcTypesTransformer.numericTypes.contains(rs.getMetaData().getColumnType(colIdx))) {
                 int ordinal = rs.getInt(colIdx);
                 Object[] values = type.getEnumConstants();
 
