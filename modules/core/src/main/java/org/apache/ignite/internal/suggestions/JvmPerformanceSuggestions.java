@@ -35,12 +35,31 @@ public class JvmPerformanceSuggestions {
     private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
     private static final String USE_TLAB = "-XX:+UseTLAB";
     private static final String SERVER = "-server";
+    private static final String PRINT_GC_DETAILS = "-XX:+PrintGCDetails";
+    private static final String PRINT_GC_TIME_STAMPS = "-XX:+PrintGCTimeStamps";
+    private static final String PRINT_GC_DATE_STAMPS = "-XX:+PrintGCDateStamps";
+    private static final String USE_GC_LOG_FILE_ROTATION = "-XX:+UseGCLogFileRotation";
+    private static final String NUMBER_OF_GC_LOG_FILES = "-XX:NumberOfGCLogFiles";
+    private static final String GC_LOG_FILE_SIZE = "-XX:GCLogFileSize";
+    private static final String XLOGGC = "-Xloggc";
 
     /**
+     * Log suggestions of JVM-tuning to increase Ignite performance.
+     *
      * @param log Log.
      */
     public static synchronized void logSuggestions(IgniteLogger log) {
-        List<String> jvmOptions = JvmPerformanceSuggestions.getRecommendedOptions();
+        List<String> args = U.jvmArgs();
+
+        List<String> gcLoggingOptions = getGCLoggingOptions(args);
+        if (!gcLoggingOptions.isEmpty()) {
+            U.quietAndInfo(log, "JVM Garbage Collection logging is configured not completely.");
+            U.quietAndInfo(log, "Please add the following parameters to the JVM configuration:");
+            for (String option : gcLoggingOptions)
+                U.quietAndInfo(log, "    " + option);
+        }
+
+        List<String> jvmOptions = getRecommendedOptions(args);
 
         if (!jvmOptions.isEmpty()) {
             U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
@@ -50,13 +69,39 @@ public class JvmPerformanceSuggestions {
     }
 
     @NotNull
-    private static List<String> getRecommendedOptions() {
+    private static List<String> getGCLoggingOptions(List<String> args) {
+        List<String> options = new LinkedList<>();
+
+        if (!args.contains(PRINT_GC_DETAILS))
+            options.add(PRINT_GC_DETAILS);
+
+        if (!args.contains(PRINT_GC_TIME_STAMPS))
+            options.add(PRINT_GC_TIME_STAMPS);
+
+        if (!args.contains(PRINT_GC_DATE_STAMPS))
+            options.add(PRINT_GC_DATE_STAMPS);
+
+        if (!args.contains(USE_GC_LOG_FILE_ROTATION))
+            options.add(USE_GC_LOG_FILE_ROTATION);
+
+        if (!anyStartWith(args, NUMBER_OF_GC_LOG_FILES))
+            options.add(NUMBER_OF_GC_LOG_FILES + "=10");
+
+        if (!anyStartWith(args, GC_LOG_FILE_SIZE))
+            options.add(GC_LOG_FILE_SIZE + "=100M");
+
+        if (!anyStartWith(args, XLOGGC))
+            options.add(XLOGGC + ":/path/to/gc/logs/log.txt");
+
+        return options;
+    }
+
+    @NotNull
+    private static List<String> getRecommendedOptions(List<String> args) {
         List<String> options = new LinkedList<>();
         // option '-server' isn't in input arguments
         if (!U.jvmName().toLowerCase().contains("server"))
             options.add(SERVER);
-
-        List<String> args = U.jvmArgs();
 
         if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
             options.add(XMX + "<size>[g|G|m|M|k|K]");
