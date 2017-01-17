@@ -50,7 +50,7 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Test setup fixture.
  */
-struct ApiRobustnessTestSuiteFixture 
+struct ApiRobustnessTestSuiteFixture
 {
     void Prepare()
     {
@@ -206,6 +206,33 @@ struct ApiRobustnessTestSuiteFixture
 
         // Operation is not supported. However, there should be no crash.
         BOOST_CHECK(ret == SQL_ERROR);
+
+        CheckSQLStatementDiagnosticError("HY106");
+    }
+
+    void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
+    {
+        SQLCHAR state[ODBC_BUFFER_SIZE];
+        SQLINTEGER nativeError = 0;
+        SQLCHAR message[ODBC_BUFFER_SIZE];
+        SQLSMALLINT messageLen = 0;
+
+        SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
+
+        const std::string sqlState = reinterpret_cast<char*>(state);
+        BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
+        BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
+        BOOST_REQUIRE(messageLen > 0);
+    }
+
+    void CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
+    {
+        CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
+    }
+
+    void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
+    {
+        CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
     }
 
     /**
@@ -233,6 +260,43 @@ struct ApiRobustnessTestSuiteFixture
     /** ODBC Statement. */
     SQLHSTMT stmt;
 };
+
+SQLSMALLINT unsupportedC[] = {
+        SQL_C_INTERVAL_YEAR,
+        SQL_C_INTERVAL_MONTH,
+        SQL_C_INTERVAL_DAY,
+        SQL_C_INTERVAL_HOUR,
+        SQL_C_INTERVAL_MINUTE,
+        SQL_C_INTERVAL_SECOND,
+        SQL_C_INTERVAL_YEAR_TO_MONTH,
+        SQL_C_INTERVAL_DAY_TO_HOUR,
+        SQL_C_INTERVAL_DAY_TO_MINUTE,
+        SQL_C_INTERVAL_DAY_TO_SECOND,
+        SQL_C_INTERVAL_HOUR_TO_MINUTE,
+        SQL_C_INTERVAL_HOUR_TO_SECOND,
+        SQL_C_INTERVAL_MINUTE_TO_SECOND
+    };
+
+SQLSMALLINT unsupportedSql[] = {
+        SQL_WVARCHAR,
+        SQL_WLONGVARCHAR,
+        SQL_REAL,
+        SQL_NUMERIC,
+        SQL_TYPE_TIME,
+        SQL_INTERVAL_MONTH,
+        SQL_INTERVAL_YEAR,
+        SQL_INTERVAL_YEAR_TO_MONTH,
+        SQL_INTERVAL_DAY,
+        SQL_INTERVAL_HOUR,
+        SQL_INTERVAL_MINUTE,
+        SQL_INTERVAL_SECOND,
+        SQL_INTERVAL_DAY_TO_HOUR,
+        SQL_INTERVAL_DAY_TO_MINUTE,
+        SQL_INTERVAL_DAY_TO_SECOND,
+        SQL_INTERVAL_HOUR_TO_MINUTE,
+        SQL_INTERVAL_HOUR_TO_SECOND,
+        SQL_INTERVAL_MINUTE_TO_SECOND
+    };
 
 BOOST_FIXTURE_TEST_SUITE(ApiRobustnessTestSuite, ApiRobustnessTestSuiteFixture)
 
@@ -516,6 +580,19 @@ BOOST_AUTO_TEST_CASE(TestSQLBindCol)
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
+    //Unsupported data types
+    for(int i = 0; i < sizeof(unsupportedC)/sizeof(unsupportedC[0]); ++i)
+    {
+        ret = SQLBindCol(stmt, 1, unsupportedC[i], &ind1, sizeof(ind1), &len1);
+        BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+        CheckSQLStatementDiagnosticError("HY003");
+    }
+
+    // Size is negative.
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &ind1, -1, &len1);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    CheckSQLStatementDiagnosticError("HY090");
+
     // Size is null.
     SQLBindCol(stmt, 1, SQL_C_SLONG, &ind1, 0, &len1);
 
@@ -544,6 +621,24 @@ BOOST_AUTO_TEST_CASE(TestSQLBindParameter)
         SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    //Unsupported parameter type : output
+    SQLBindParameter(stmt, 2, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
+    CheckSQLStatementDiagnosticError("HY105");
+
+    //Unsupported parameter type : input/output
+    SQLBindParameter(stmt, 2, SQL_PARAM_INPUT_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
+    CheckSQLStatementDiagnosticError("HY105");
+
+
+    //Unsupported data types
+    for(int i = 0; i < sizeof(unsupportedSql)/sizeof(unsupportedSql[0]); ++i)
+    {
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, unsupportedSql[i], 100, 100, &ind1, sizeof(ind1), &len1);
+        BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+        CheckSQLStatementDiagnosticError("HYC00");
+    }
+
 
     // Size is null.
     SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, 0, &len1);
@@ -1109,6 +1204,22 @@ BOOST_AUTO_TEST_CASE(TestSQLError)
     SQLError(0, 0, stmt, 0, 0, 0, 0, 0);
 
     SQLError(0, 0, 0, 0, 0, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLDiagnosticRecords)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLHANDLE hnd;
+    SQLRETURN ret;
+
+    ret = SQLAllocHandle(SQL_HANDLE_DESC, dbc, &hnd);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    CheckSQLConnectionDiagnosticError("IM001");
+
+    ret = SQLFreeStmt(stmt, 4);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    CheckSQLStatementDiagnosticError("HY092");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
