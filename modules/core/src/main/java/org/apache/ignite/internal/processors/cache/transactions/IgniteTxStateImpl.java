@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -284,8 +285,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         nonLocCtx.topology().readLock();
 
         if (nonLocCtx.topology().stopping()) {
-            fut.onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                nonLocCtx.name()));
+            fut.onDone(new CacheStoppedException(nonLocCtx.name()));
 
             return null;
         }

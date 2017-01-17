@@ -62,6 +62,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Restart flag. */
+    private boolean restart;
+
     /** Destroy. */
     private boolean destroy;
 
@@ -232,6 +235,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void stop(boolean stop) {
         this.stop = stop;
+    }
+
+    /**
+     * @return {@code True} if this is a restart request.
+     */
+    public boolean restart() {
+        return restart;
+    }
+
+    /**
+     * @param restart New restart flag.
+     */
+    public void restart(boolean restart) {
+        this.restart = restart;
     }
 
     /**

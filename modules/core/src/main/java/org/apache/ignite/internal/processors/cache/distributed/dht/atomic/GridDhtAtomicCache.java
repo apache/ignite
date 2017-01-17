@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -1819,8 +1820,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 try {
                     if (top.stopping()) {
-                        res.addFailedKeys(req.keys(), new IgniteCheckedException("Failed to perform cache operation " +
-                            "(cache is stopped): " + name()));
+                        res.addFailedKeys(req.keys(), new CacheStoppedException(name()));
 
                         completionCb.apply(req, res);
 

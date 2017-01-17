@@ -163,7 +163,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCacheAdapter> stoppedCaches = new ConcurrentHashMap<>();
 
     /** Map of proxies. */
-    private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
+    private final ConcurrentMap<String, IgniteCacheProxy<?, ?>> jCacheProxies;
 
     /** Caches stop sequence. */
     private final Deque<String> stopSeq;
@@ -439,12 +439,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else if (cc.getRebalanceMode() == SYNC) {
                 if (delay < 0) {
                     U.warn(log, "Ignoring SYNC rebalance mode with manual rebalance start (node will not wait for " +
-                        "rebalancing to be finished): " + U.maskName(cc.getName()),
+                            "rebalancing to be finished): " + U.maskName(cc.getName()),
                         "Node will not wait for rebalance in SYNC mode: " + U.maskName(cc.getName()));
                 }
                 else {
                     U.warn(log, "Using SYNC rebalance mode with rebalance delay (node will wait until rebalancing is " +
-                        "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
+                            "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
                         "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + U.maskName(cc.getName()));
                 }
             }
@@ -565,7 +565,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
                 U.warn(log, "Deployment mode for cache is not CONTINUOUS or SHARED " +
-                    "(it is recommended that you change deployment mode and restart): " + depMode,
+                        "(it is recommended that you change deployment mode and restart): " + depMode,
                     "Deployment mode for cache is not CONTINUOUS or SHARED.");
         }
 
@@ -1807,13 +1807,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ClusterNode locNode = ctx.discovery().localNode();
 
+        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cfg.getName()));
+
         boolean affNodeStart = !clientStartOnly && CU.affinityNode(locNode, nodeFilter);
         boolean clientNodeStart = locNode.id().equals(initiatingNodeId);
+        boolean proxyRestart = proxy != null && proxy.isRestarting() && !caches.containsKey(maskNull(cfg.getName()));
 
         if (sharedCtx.cacheContext(CU.cacheId(cfg.getName())) != null)
             return;
 
-        if (affNodeStart || clientNodeStart || CU.isSystemCache(cfg.getName())) {
+        if (affNodeStart || clientNodeStart || proxyRestart || CU.isSystemCache(cfg.getName())) {
             if (clientNodeStart && !affNodeStart) {
                 if (nearCfg != null)
                     ccfg.setNearConfiguration(nearCfg);
@@ -1838,6 +1841,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             startCache(cache);
 
             onKernalStart(cache);
+
+            if (proxyRestart)
+                proxy.onRestarted(cacheCtx, cache);
         }
     }
 
@@ -1852,8 +1858,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(req.cacheName()));
 
             if (proxy != null) {
-                if (req.stop())
+                if (req.stop()) {
+                    if (req.restart())
+                        proxy.restart();
+
                     proxy.gate().stopped();
+                }
                 else
                     proxy.closeProxy();
             }
@@ -1866,8 +1876,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopGateway(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
 
+        IgniteCacheProxy<?, ?> proxy;
+
         // Break the proxy before exchange future is done.
-        IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(maskNull(req.cacheName()));
+        if (req.restart()) {
+            proxy = jCacheProxies.get(maskNull(req.cacheName()));
+
+            proxy.restart();
+        }
+        else
+            proxy = jCacheProxies.remove(maskNull(req.cacheName()));
 
         if (proxy != null)
             proxy.gate().onStopped();
@@ -1917,7 +1935,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 String masked = maskNull(cacheCtx.name());
 
-                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                jCacheProxies.putIfAbsent(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
             }
         }
 
@@ -1938,9 +1956,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             GridCacheAdapter<?, ?> cache = caches.get(masked);
 
                             if (cache != null)
-                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                                jCacheProxies.putIfAbsent(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
                         }
                         else {
+                            if (req.restart())
+                                proxy.restart();
+
                             proxy.context().gate().onStopped();
 
                             prepareCacheStop(req);
@@ -2508,7 +2529,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName, boolean checkThreadTx, boolean restart) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
@@ -2516,6 +2537,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         t.stop(true);
         t.destroy(true);
+
+        t.restart(restart);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
