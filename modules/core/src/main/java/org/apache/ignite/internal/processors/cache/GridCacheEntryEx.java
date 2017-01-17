@@ -324,7 +324,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+    public T2<CacheObject, GridCacheVersion> innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
@@ -732,7 +732,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public T2<GridCacheVersion, CacheObject> versionedValue(CacheObject val,
+    public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
         @Nullable GridCacheVersion newVer,
         @Nullable ReaderArguments readerArgs)

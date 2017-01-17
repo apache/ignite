@@ -498,10 +498,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     !deserializeBinary,
                                     null);
 
-                                if (res != null) {
-                                    v = res.get1();
-                                    ver = res.get2();
-                                }
+                                v = res.get1();
+                                ver = res.get2();
                             }
                             else {
                                 v = entry.innerGet(

@@ -451,10 +451,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             !deserializeBinary,
                             null);
 
-                        if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
-                        }
+                        v = res.get1();
+                        ver = res.get2();
                     }
                     else {
                         v = entry.innerGet(
@@ -592,10 +590,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             !deserializeBinary,
                             null);
 
-                        if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
-                        }
+                        v = res.get1();
+                        ver = res.get2();
                     }
                     else {
                         v = dhtEntry.innerGet(

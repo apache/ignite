@@ -974,7 +974,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         if (ret == null && !evt)
-            return null;
+            return retVer ? new T2<>(null, startVer) : null;
 
         synchronized (this) {
             long ttl = ttlExtras();
@@ -3558,7 +3558,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized T2<GridCacheVersion, CacheObject> versionedValue(CacheObject val,
+    @Override public synchronized T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable ReaderArguments readerArgs)
@@ -3573,7 +3573,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 GridCacheMvcc mvcc = mvccExtras();
 
                 if (mvcc != null && !mvcc.isEmpty())
-                    return new T2<>(null, this.val);
+                    return new T2<>(this.val, ver);
 
                 if (newVer == null)
                     newVer = cctx.versions().next();
@@ -3597,11 +3597,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // Version does not change for load ops.
                 update(val, expTime, ttl, newVer, true);
 
-                return new T2<>(newVer, val);
+                return new T2<>(val, newVer);
             }
         }
 
-        return new T2<>(null, this.val);
+        return new T2<>(this.val, ver);
     }
 
     /**

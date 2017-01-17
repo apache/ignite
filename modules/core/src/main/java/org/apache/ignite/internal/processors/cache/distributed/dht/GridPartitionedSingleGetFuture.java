@@ -387,10 +387,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                             true,
                             null);
 
-                        if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
-                        }
+                        v = res.get1();
+                        ver = res.get2();
                     }
                     else {
                         v = entry.innerGet(

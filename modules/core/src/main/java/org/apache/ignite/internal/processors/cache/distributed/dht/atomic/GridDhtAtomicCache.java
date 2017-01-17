@@ -1507,10 +1507,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     true,
                                     null);
 
-                                if (res != null) {
-                                    v = res.get1();
-                                    ver = res.get2();
-                                }
+                                v = res.get1();
+                                ver = res.get2();
                             }
                             else {
                                 v = entry.innerGet(null,

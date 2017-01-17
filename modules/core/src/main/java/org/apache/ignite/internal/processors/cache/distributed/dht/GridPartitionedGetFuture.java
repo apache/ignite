@@ -463,10 +463,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             !deserializeBinary,
                             null);
 
-                        if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
-                        }
+                        v = res.get1();
+                        ver = res.get2();
                     }
                     else {
                         v = entry.innerGet(

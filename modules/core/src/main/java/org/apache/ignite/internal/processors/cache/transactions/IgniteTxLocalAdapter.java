@@ -440,11 +440,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry == null ? keepBinary : txEntry.keepBinary(),
                             null);
 
-                        if (res == null) {
+                        if (res.get1() == null) {
                             if (misses == null)
                                 misses = new LinkedHashMap<>();
 
-                            misses.put(key, entry.version());
+                            misses.put(key, res.get2());
                         }
                         else
                             c.apply(key, skipVals ? true : res.get1(), res.get2());
@@ -477,18 +477,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    T2<GridCacheVersion, CacheObject> setVer = entry.versionedValue(cacheVal, ver, null, null);
-
-                                    final GridCacheVersion newVer = setVer.get1();
-
-                                    boolean set = newVer != null;
-
-                                    if (set)
-                                        ver = newVer;
+                                    T2<CacheObject, GridCacheVersion> setVer = entry.versionedValue(cacheVal, ver, null, null);
 
                                     if (log.isDebugEnabled())
-                                        log.debug("Set value loaded from store into entry [set=" + set +
-                                            ", curVer=" + ver + ", newVer=" + newVer + ", " +
+                                        log.debug("Set value loaded from store into entry [oldVer="
+                                            + ver + ", newVer=" + setVer.get2() + ", " +
                                             "entry=" + entry + ']');
 
                                     break;
@@ -1237,10 +1230,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     txEntry.keepBinary(),
                                     null);
 
-                                if (res != null) {
-                                    val = res.get1();
-                                    readVer = res.get2();
-                                }
+                                val = res.get1();
+                                readVer = res.get2();
                             }
                             else {
                                 val = txEntry.cached().innerGet(
@@ -1673,10 +1664,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.keepBinary(),
                                             null);
 
-                                        if (res != null) {
-                                            val = res.get1();
-                                            readVer = res.get2();
-                                        }
+                                        val = res.get1();
+                                        readVer = res.get2();
                                     }
                                     else{
                                         val = cached.innerGet(
