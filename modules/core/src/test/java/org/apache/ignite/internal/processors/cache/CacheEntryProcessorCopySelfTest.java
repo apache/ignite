@@ -68,10 +68,6 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMutableEntryWithP2PEnabled() throws Exception {
-        // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
-        // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
-        fail("https://ggsystems.atlassian.net/browse/GG-11148");
-
         doTestMutableEntry(true);
     }
 
@@ -79,10 +75,6 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMutableEntryWithP2PDisabled() throws Exception {
-        // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
-        // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
-        fail("https://ggsystems.atlassian.net/browse/GG-11148");
-
         doTestMutableEntry(false);
     }
 

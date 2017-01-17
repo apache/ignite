@@ -77,6 +77,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
+     * @return Iterable over all existing cache data stores.
+     */
+    public Iterable<CacheDataStore> cacheDataStores();
+
+    /**
      * @param p Partition ID.
      * @param store Data store.
      */
@@ -239,6 +244,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
     /**
      *
+     * @return Number of entries.
+     */
+    public long entriesCount();
+
+    /**
+     *
      */
     interface CacheDataStore {
         /**
@@ -280,7 +291,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         /**
          * @return Initial update counter.
          */
-        public long initialUpdateCounter();
+        public Long initialUpdateCounter();
 
         /**
          * @param key Key.
@@ -315,6 +326,15 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
+
+        /**
+         * @param lower Lower bound.
+         * @param upper Upper bound.
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(KeyCacheObject lower,
+            KeyCacheObject upper) throws IgniteCheckedException;
 
         /**
          * Destroys the tree associated with the store.

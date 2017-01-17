@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -202,6 +203,11 @@ public interface GridDhtPartitionTopology {
     public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
 
     /**
+     * @return {@code True} If one of cache nodes has partitions in {@link GridDhtPartitionState#MOVING} state.
+     */
+    public boolean hasMovingPartitions();
+
+    /**
      * @param e Entry removed from cache.
      */
     public void onRemoved(GridDhtCacheEntry e);
@@ -214,7 +220,7 @@ public interface GridDhtPartitionTopology {
      */
     public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, Long> cntrMap);
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
 
     /**
      * @param exchId Exchange ID.
@@ -224,7 +230,7 @@ public interface GridDhtPartitionTopology {
      */
     @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, Long> cntrMap);
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
 
     /**
      * Checks if there is at least one owner for each partition in the cache topology.
@@ -248,10 +254,15 @@ public interface GridDhtPartitionTopology {
     public Collection<Integer> lostPartitions();
 
     /**
+     *
+     */
+    public void checkEvictions();
+
+    /**
      * @param skipZeros If {@code true} then filters out zero counters.
      * @return Partition update counters.
      */
-    public Map<Integer, Long> updateCounters(boolean skipZeros);
+    public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros);
 
     /**
      * @param part Partition to own.
@@ -288,9 +299,8 @@ public interface GridDhtPartitionTopology {
      * Make nodes from provided set owners for a given partition.
      * State of all current owners that aren't contained in the set will be reset to MOVING.
      * @param p Partition ID.
-     * @param skipUpdSeq If should skip update sequence increment when updated.
+     * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
-     * @return Whether update sequence was updated.
      */
-    public boolean setOwners(int p, Set<UUID> owners, boolean skipUpdSeq);
+    public void setOwners(int p, Set<UUID> owners, boolean updateSeq);
 }

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1299,7 +1300,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    private static IgniteKernal gridx(@Nullable String name) {
+    public  static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1457,6 +1458,9 @@ public class IgnitionEx {
 
         /** System executor service. */
         private ThreadPoolExecutor sysExecSvc;
+
+        /** */
+        private StripedExecutor stripedExecSvc;
 
         /** Management executor service. */
         private ThreadPoolExecutor mgmtExecSvc;
@@ -1650,8 +1654,6 @@ public class IgnitionEx {
 
             execSvc.allowCoreThreadTimeOut(true);
 
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
             validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
 
             sysExecSvc = new IgniteThreadPoolExecutor(
@@ -1663,6 +1665,9 @@ public class IgnitionEx {
                 new LinkedBlockingQueue<Runnable>());
 
             sysExecSvc.allowCoreThreadTimeOut(true);
+
+            if (cfg.getStripedPoolSize() > 0)
+                stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getGridName(), "sys", log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1789,13 +1794,26 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
+                grid0.start(
+                    myCfg,
+                    utilityCacheExecSvc,
+                    marshCacheExecSvc,
+                    execSvc,
+                    sysExecSvc,
+                    stripedExecSvc,
+                    p2pExecSvc,
+                    mgmtExecSvc,
+                    igfsExecSvc,
+                    restExecSvc,
+                    affExecSvc,
+                    idxExecSvc,
+                    callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    });
+                    }
+                );
 
                 state = STARTED;
 
@@ -2363,7 +2381,8 @@ public class IgnitionEx {
 
                 grid = null;
 
-                stopExecutors(log);
+                if (log != null)
+                    stopExecutors(log);
 
                 log = null;
             }
@@ -2401,6 +2420,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), sysExecSvc, log);
 
             sysExecSvc = null;
+
+            U.shutdownNow(getClass(), stripedExecSvc, log);
+
+            stripedExecSvc = null;
 
             U.shutdownNow(getClass(), mgmtExecSvc, log);
 

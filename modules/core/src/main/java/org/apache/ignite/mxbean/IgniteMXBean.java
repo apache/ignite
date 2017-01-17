@@ -186,6 +186,27 @@ public interface IgniteMXBean {
     public boolean pingNode(String nodeId);
 
     /**
+     * @param active Activate/DeActivate flag.
+     */
+    @MXBeanDescription(
+        "Execute activate or deactivate process."
+    )
+    @MXBeanParametersNames(
+        "active"
+    )
+    public void active(boolean active);
+
+    /**
+     * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    @MXBeanDescription(
+        "Checks Ignite grid is active or is not active."
+    )
+    public boolean active();
+
+    /**
      * Makes the best attempt to undeploy a task from the whole grid. Note that this
      * method returns immediately and does not wait until the task will actually be
      * undeployed on every node.

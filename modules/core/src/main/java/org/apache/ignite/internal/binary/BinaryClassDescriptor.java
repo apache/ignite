@@ -28,7 +28,6 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -275,14 +274,19 @@ public class BinaryClassDescriptor {
             case OBJECT:
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
-                stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
                 Map<Object, BinaryFieldAccessor> fields0;
 
-                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                if (BinaryUtils.FIELDS_SORTED_ORDER) {
                     fields0 = new TreeMap<>();
-                else
+
+                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, Integer>() : null;
+                }
+                else {
                     fields0 = new LinkedHashMap<>();
+
+                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, Integer>() : null;
+                }
 
                 Set<String> duplicates = duplicateFields(cls);
 
@@ -751,6 +755,8 @@ public class BinaryClassDescriptor {
                                 schemaReg.addSchema(newSchema.schemaId(), newSchema);
                             }
                         }
+
+                        postWriteHashCode(writer, obj);
                     }
                     finally {
                         writer.popSchema();
@@ -780,6 +786,7 @@ public class BinaryClassDescriptor {
                         writer.schemaId(stableSchema.schemaId());
 
                         postWrite(writer, obj);
+                        postWriteHashCode(writer, obj);
                     }
                     finally {
                         writer.popSchema();
@@ -885,6 +892,18 @@ public class BinaryClassDescriptor {
         }
         else
             writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
+    }
+
+    /**
+     * Post-write routine for hash code.
+     *
+     * @param writer Writer.
+     * @param obj Object.
+     */
+    private void postWriteHashCode(BinaryWriterExImpl writer, Object obj) {
+        // No need to call "postWriteHashCode" here because we do not care about hash code.
+        if (!(obj instanceof CacheObjectImpl))
+            writer.postWriteHashCode(registered ? null : cls.getName());
     }
 
     /**

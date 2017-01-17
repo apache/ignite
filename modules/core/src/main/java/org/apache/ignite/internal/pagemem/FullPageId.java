@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
   * Compound object used to address a page in the global page space.
@@ -65,7 +66,7 @@ public class FullPageId {
     public static int hashCode(int cacheId, long pageId) {
         long effectiveId = PageIdUtils.effectivePageId(pageId);
 
-        return hashCode0(cacheId, effectiveId);
+        return U.hash(hashCode0(cacheId, effectiveId));
     }
 
     /**
@@ -76,13 +77,34 @@ public class FullPageId {
      * @return Hash code.
      */
     private static int hashCode0(int cacheId, long effectivePageId) {
-        int res = (int)(effectivePageId ^ (effectivePageId >>> 32));
-
-        res = 31 * res + cacheId;
-
-        return res;
+        return (int)(mix64(effectivePageId) ^ mix32(cacheId));
     }
 
+    /**
+     * MH3's plain finalization step.
+     */
+    private static int mix32(int k) {
+        k = (k ^ (k >>> 16)) * 0x85ebca6b;
+        k = (k ^ (k >>> 13)) * 0xc2b2ae35;
+
+        return k ^ (k >>> 16);
+    }
+
+    /**
+     * Computes David Stafford variant 9 of 64bit mix function (MH3 finalization step,
+     * with different shifts and constants).
+     *
+     * Variant 9 is picked because it contains two 32-bit shifts which could be possibly
+     * optimized into better machine code.
+     *
+     * @see "http://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html"
+     */
+    private static long mix64(long z) {
+        z = (z ^ (z >>> 32)) * 0x4cd6944c5cc20b6dL;
+        z = (z ^ (z >>> 29)) * 0xfc12c5b19d3259e9L;
+
+        return z ^ (z >>> 32);
+    }
     /**
      * @param pageId Page ID.
      * @param cacheId Cache ID.

@@ -294,14 +294,19 @@ public abstract class PageHandler<X, R> {
         GridUnsafe.copyMemory(srcArr, srcPtr + srcArrOff + srcOff, dstArr, dstPtr + dstArrOff + dstOff, cnt);
     }
 
-    public static void zeroMemory(ByteBuffer buf, int off, int length) {
+    /**
+     * Will zero memory in buf
+     * @param buf Buffer.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public static void zeroMemory(ByteBuffer buf, int off, int len) {
         if (buf.isDirect())
-            GridUnsafe.setMemory(((DirectBuffer)buf).address() + off, length, (byte)0);
+            GridUnsafe.setMemory(((DirectBuffer)buf).address() + off, len, (byte)0);
 
         else {
-            for (int i = off; i < off + length; i++)
-                buf.put(i, (byte)0);
-
+            for (int i = off; i < off + len; i++)
+                buf.put(i, (byte)0); //TODO Optimize!
         }
     }
 }

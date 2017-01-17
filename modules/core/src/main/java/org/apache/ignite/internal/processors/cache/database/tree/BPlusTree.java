@@ -55,8 +55,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
-import org.apache.ignite.internal.util.GridArrays;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -83,7 +82,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
-public abstract class BPlusTree<L, T extends L> extends DataStructure {
+public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
     /** */
     private static final Object[] EMPTY = {};
 
@@ -732,7 +731,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    @Override public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -761,7 +760,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Found row.
      */
     @SuppressWarnings("unchecked")
-    public final T findOne(L row) throws IgniteCheckedException {
+    @Override public final T findOne(L row) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1253,7 +1252,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public final T remove(L row) throws IgniteCheckedException {
+    @Override public final T remove(L row) throws IgniteCheckedException {
         return doRemove(row, false, null);
     }
 
@@ -1473,7 +1472,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Size.
      * @throws IgniteCheckedException If failed.
      */
-    public final long size() throws IgniteCheckedException {
+    @Override public final long size() throws IgniteCheckedException {
         checkDestroyed();
 
         long pageId;
@@ -1511,11 +1510,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     }
 
     /**
-     * @param row Row.
-     * @return Old row.
-     * @throws IgniteCheckedException If failed.
+     * {@inheritDoc}
      */
-    public final T put(T row) throws IgniteCheckedException {
+    @Override public final T put(T row) throws IgniteCheckedException {
         return put(row, null);
     }
 
@@ -3560,8 +3557,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         @SuppressWarnings("unchecked")
         private boolean fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx, int cnt)
             throws IgniteCheckedException {
-            assert io.isLeaf();
-            assert cnt != 0: cnt; // We can not see empty pages (empty tree handled in init).
+            assert io.isLeaf() : io;
+            assert cnt != 0 : cnt; // We can not see empty pages (empty tree handled in init).
             assert startIdx >= 0 : startIdx;
             assert cnt >= startIdx;
 

@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM node:4
+FROM node:6
 
 RUN mkdir -p /opt/web-console-backend
 
@@ -23,8 +23,8 @@ WORKDIR /opt/web-console-backend
 
 COPY build .
 
-RUN npm -g update npm && npm install --no-optional
+RUN npm install --only=production --no-optional
 
-EXPOSE 3000 3001
+EXPOSE 3000
 
 CMD ["npm", "start"]

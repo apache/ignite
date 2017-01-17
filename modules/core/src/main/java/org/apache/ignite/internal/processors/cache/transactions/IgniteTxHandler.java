@@ -473,13 +473,8 @@ public class IgniteTxHandler {
                 req.last());
 
             if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
-                try {
-                    if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
-                        tx.rollback();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to rollback transaction: " + tx, e);
-                }
+                if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
+                    tx.rollbackAsync();
             }
 
             final GridDhtTxLocal tx0 = tx;
@@ -680,7 +675,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
+    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
         GridNearTxFinishRequest req) {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
@@ -873,7 +868,7 @@ public class IgniteTxHandler {
 
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
-            IgniteInternalFuture<IgniteInternalTx> res = null;
+            IgniteInternalFuture<IgniteInternalTx> res;
 
             IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
@@ -885,7 +880,7 @@ public class IgniteTxHandler {
             if (e instanceof Error)
                 throw (Error)e;
 
-            return res == null ? new GridFinishedFuture<IgniteInternalTx>(e) : res;
+            return res;
         }
     }
 
@@ -1516,7 +1511,7 @@ public class IgniteTxHandler {
                                         if (log.isDebugEnabled())
                                             log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                        entry.cached(null);
+                                        entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                     }
                                 }
                             }

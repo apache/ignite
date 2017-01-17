@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -61,7 +61,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreCreate, memPtr);
         }
         finally {
             leave();
@@ -69,15 +69,14 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
      * @return Result.
      */
-    public int cacheStoreInvoke(long objPtr, long memPtr) {
+    public int cacheStoreInvoke(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreInvoke, memPtr);
         }
         finally {
             leave();
@@ -92,7 +91,7 @@ public class PlatformCallbackGateway {
             return;  // no need to destroy stores on grid stop
 
         try {
-            PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreDestroy, objPtr);
         }
         finally {
             leave();
@@ -102,14 +101,13 @@ public class PlatformCallbackGateway {
     /**
      * Creates cache store session.
      *
-     * @param storePtr Store instance pointer.
      * @return Session instance pointer.
      */
-    public long cacheStoreSessionCreate(long storePtr) {
+    public long cacheStoreSessionCreate() {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreSessionCreate(envPtr, storePtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreSessionCreate, 0);
         }
         finally {
             leave();
@@ -126,7 +124,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheEntryFilterCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheEntryFilterCreate, memPtr);
         }
         finally {
             leave();
@@ -134,15 +132,14 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * @param ptr Pointer.
      * @param memPtr Memory pointer.
      * @return Result.
      */
-    public int cacheEntryFilterApply(long ptr, long memPtr) {
+    public int cacheEntryFilterApply(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheEntryFilterApply(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheEntryFilterApply, memPtr);
         }
         finally {
             leave();
@@ -156,7 +153,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.cacheEntryFilterDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheEntryFilterDestroy, ptr);
         }
         finally {
             leave();
@@ -166,14 +163,13 @@ public class PlatformCallbackGateway {
     /**
      * Invoke cache entry processor.
      *
-     * @param outMemPtr Output memory pointer.
-     * @param inMemPtr Input memory pointer.
+     * @param memPtr Memory pointer.
      */
-    public void cacheInvoke(long outMemPtr, long inMemPtr) {
+    public void cacheInvoke(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.cacheInvoke(envPtr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheInvoke, memPtr);
         }
         finally {
             leave();
@@ -183,15 +179,13 @@ public class PlatformCallbackGateway {
     /**
      * Perform native task map. Do not throw exceptions, serializing them to the output stream instead.
      *
-     * @param taskPtr Task pointer.
-     * @param outMemPtr Output memory pointer (exists if topology changed, otherwise {@code 0}).
-     * @param inMemPtr Input memory pointer.
+     * @param memPtr Memory pointer.
      */
-    public void computeTaskMap(long taskPtr, long outMemPtr, long inMemPtr) {
+    public void computeTaskMap(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.computeTaskMap(envPtr, taskPtr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskMap, memPtr);
         }
         finally {
             leave();
@@ -203,14 +197,31 @@ public class PlatformCallbackGateway {
      *
      * @param taskPtr Task pointer.
      * @param jobPtr Job pointer.
-     * @param memPtr Memory pointer (always zero for local job execution).
      * @return Job result enum ordinal.
      */
-    public int computeTaskJobResult(long taskPtr, long jobPtr, long memPtr) {
+    public int computeTaskLocalJobResult(long taskPtr, long jobPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.computeTaskJobResult(envPtr, taskPtr, jobPtr, memPtr);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeTaskLocalJobResult, taskPtr, jobPtr, 0, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Perform native task job result notification.
+     *
+     * @param memPtr Memory pointer.
+     * @return Job result enum ordinal.
+     */
+    public int computeTaskJobResult(long memPtr) {
+        enter();
+
+        try {
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskJobResult, memPtr);
         }
         finally {
             leave();
@@ -226,7 +237,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeTaskReduce(envPtr, taskPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskReduce, taskPtr);
         }
         finally {
             leave();
@@ -243,7 +254,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeTaskComplete(envPtr, taskPtr, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeTaskComplete, taskPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -261,7 +273,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.computeJobSerialize(envPtr, jobPtr, memPtr);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeJobSerialize, jobPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -278,7 +291,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.computeJobCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobCreate, memPtr);
         }
         finally {
             leave();
@@ -290,13 +303,29 @@ public class PlatformCallbackGateway {
      *
      * @param jobPtr Job pointer.
      * @param cancel Cancel flag.
-     * @param memPtr Memory pointer to write result to for remote job execution or {@code 0} for local job execution.
      */
-    public void computeJobExecute(long jobPtr, int cancel, long memPtr) {
+    public void computeJobExecuteLocal(long jobPtr, long cancel) {
         enter();
 
         try {
-            PlatformCallbackUtils.computeJobExecute(envPtr, jobPtr, cancel, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, 0, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Execute native job on a node other than where it was created.
+     *
+     * @param memPtr Memory pointer.
+     */
+    public void computeJobExecute(long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobExecute, memPtr);
         }
         finally {
             leave();
@@ -312,7 +341,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeJobCancel(envPtr, jobPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobCancel, jobPtr);
         }
         finally {
             leave();
@@ -328,7 +357,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeJobDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobDestroy, ptr);
         }
         finally {
             leave();
@@ -338,14 +367,13 @@ public class PlatformCallbackGateway {
     /**
      * Invoke local callback.
      *
-     * @param cbPtr Callback pointer.
      * @param memPtr Memory pointer.
      */
-    public void continuousQueryListenerApply(long cbPtr, long memPtr) {
+    public void continuousQueryListenerApply(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.continuousQueryListenerApply(envPtr, cbPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ContinuousQueryListenerApply, memPtr);
         }
         finally {
             leave();
@@ -362,7 +390,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.continuousQueryFilterCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ContinuousQueryFilterCreate, memPtr);
         }
         finally {
             leave();
@@ -372,15 +400,14 @@ public class PlatformCallbackGateway {
     /**
      * Invoke remote filter.
      *
-     * @param filterPtr Filter pointer.
      * @param memPtr Memory pointer.
      * @return Result.
      */
-    public int continuousQueryFilterApply(long filterPtr, long memPtr) {
+    public long continuousQueryFilterApply(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.continuousQueryFilterApply(envPtr, filterPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ContinuousQueryFilterApply, memPtr);
         }
         finally {
             leave();
@@ -396,7 +423,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.continuousQueryFilterRelease(envPtr, filterPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.ContinuousQueryFilterRelease, filterPtr);
         }
         finally {
             leave();
@@ -414,7 +442,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.dataStreamerTopologyUpdate(envPtr, ptr, topVer, topSize);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.DataStreamerTopologyUpdate, ptr, topVer, topSize, null);
         }
         finally {
             leave();
@@ -424,16 +453,15 @@ public class PlatformCallbackGateway {
     /**
      * Invoke stream receiver.
      *
-     * @param ptr Receiver native pointer.
      * @param cache Cache object.
      * @param memPtr Stream pointer.
-     * @param keepBinary Binary flag.
      */
-    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepBinary) {
+    public void dataStreamerStreamReceiverInvoke(long ptr, PlatformTargetProxy cache, long memPtr, boolean keepBinary) {
         enter();
 
         try {
-            PlatformCallbackUtils.dataStreamerStreamReceiverInvoke(envPtr, ptr, cache, memPtr, keepBinary);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.DataStreamerStreamReceiverInvoke, memPtr, 0, 0, cache);
         }
         finally {
             leave();
@@ -446,11 +474,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureByteResult(long futPtr, int res) {
+    public void futureByteResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureByteResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureByteResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -463,11 +492,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureBoolResult(long futPtr, int res) {
+    public void futureBoolResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureBoolResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureBoolResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -480,11 +510,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureShortResult(long futPtr, int res) {
+    public void futureShortResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureShortResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureShortResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -497,11 +528,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureCharResult(long futPtr, int res) {
+    public void futureCharResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureCharResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureCharResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -514,11 +546,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureIntResult(long futPtr, int res) {
+    public void futureIntResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureIntResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureIntResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -531,11 +564,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureFloatResult(long futPtr, float res) {
+    public void futureFloatResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureFloatResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureFloatResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -552,7 +586,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureLongResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureLongResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -565,11 +600,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureDoubleResult(long futPtr, double res) {
+    public void futureDoubleResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureDoubleResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureDoubleResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -586,7 +622,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureObjectResult(envPtr, futPtr, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureObjectResult, futPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -602,7 +639,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureNullResult(envPtr, futPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.FutureNullResult, futPtr);
         }
         finally {
             leave();
@@ -619,7 +656,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureError(envPtr, futPtr, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureError, futPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -636,8 +674,9 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.messagingFilterCreate(envPtr, memPtr);
-        }
+            return PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.MessagingFilterCreate, memPtr);
+       }
         finally {
             leave();
         }
@@ -652,7 +691,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.messagingFilterApply(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.MessagingFilterApply, ptr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -665,7 +705,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.messagingFilterDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.MessagingFilterDestroy, ptr);
         }
         finally {
             leave();
@@ -682,7 +722,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.eventFilterCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.EventFilterCreate, memPtr);
         }
         finally {
             leave();
@@ -698,7 +738,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.eventFilterApply(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.EventFilterApply, ptr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -712,7 +753,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.eventFilterDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.EventFilterDestroy, ptr);
         }
         finally {
             leave();
@@ -728,7 +769,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.nodeInfo(envPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.NodeInfo, memPtr);
         }
         finally {
             leave();
@@ -745,7 +786,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.onStart(envPtr, proc, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.OnStart, memPtr, 0, 0, proc);
         }
         finally {
             leave();
@@ -762,7 +803,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.lifecycleEvent(envPtr, ptr, evt);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.LifecycleOnEvent, ptr, evt, 0, null);
         }
         finally {
             leave();
@@ -779,7 +821,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.memoryReallocate(envPtr, memPtr, cap);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.MemoryReallocate, memPtr, cap, 0, null);
         }
         finally {
             leave();
@@ -790,13 +833,13 @@ public class PlatformCallbackGateway {
      * Initializes native service.
      *
      * @param memPtr Pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public long serviceInit(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            return PlatformCallbackUtils.serviceInit(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceInit, memPtr);
         }
         finally {
             leave();
@@ -806,15 +849,14 @@ public class PlatformCallbackGateway {
     /**
      * Executes native service.
      *
-     * @param svcPtr Pointer to the service in the native platform.
      * @param memPtr Stream pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void serviceExecute(long svcPtr, long memPtr) throws IgniteCheckedException {
+    public void serviceExecute(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            PlatformCallbackUtils.serviceExecute(envPtr, svcPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceExecute, memPtr);
         }
         finally {
             leave();
@@ -824,15 +866,14 @@ public class PlatformCallbackGateway {
     /**
      * Cancels native service.
      *
-     * @param svcPtr Pointer to the service in the native platform.
      * @param memPtr Stream pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void serviceCancel(long svcPtr, long memPtr) throws IgniteCheckedException {
+    public void serviceCancel(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            PlatformCallbackUtils.serviceCancel(envPtr, svcPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceCancel, memPtr);
         }
         finally {
             leave();
@@ -842,16 +883,14 @@ public class PlatformCallbackGateway {
     /**
      * Invokes service method.
      *
-     * @param svcPtr Pointer to the service in the native platform.
-     * @param outMemPtr Output memory pointer.
-     * @param inMemPtr Input memory pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @param memPtr Memory pointer.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void serviceInvokeMethod(long svcPtr, long outMemPtr, long inMemPtr) throws IgniteCheckedException {
+    public void serviceInvokeMethod(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            PlatformCallbackUtils.serviceInvokeMethod(envPtr, svcPtr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceInvokeMethod, memPtr);
         }
         finally {
             leave();
@@ -867,7 +906,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.clusterNodeFilterApply(envPtr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ClusterNodeFilterApply, memPtr);
         }
         finally {
             leave();
@@ -885,7 +924,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.extensionCallbackInLongOutLong(envPtr, typ, arg1);
+            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ExtensionInLongOutLong, typ, arg1, 0, null);
         }
         finally {
             leave();
@@ -904,7 +944,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.extensionCallbackInLongLongOutLong(envPtr, typ, arg1, arg2);
+            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ExtensionInLongLongOutLong, typ, arg1, arg2, null);
         }
         finally {
             leave();
@@ -918,7 +959,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.onClientDisconnected(envPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnClientDisconnected, 0);
         }
         finally {
             leave();
@@ -934,7 +975,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.onClientReconnected(envPtr, clusterRestarted);
+            PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.OnClientReconnected, clusterRestarted ? 1 : 0);
         }
         finally {
             leave();
@@ -985,7 +1027,7 @@ public class PlatformCallbackGateway {
     public void onStop() {
         block();
 
-        PlatformCallbackUtils.onStop(envPtr);
+        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnStop, 0);
     }
 
     /**
@@ -995,11 +1037,12 @@ public class PlatformCallbackGateway {
      * @param baseFunc Optional func for base calls.
      * @return Affinity function pointer.
      */
-    public long affinityFunctionInit(long memPtr, PlatformAffinityFunctionTarget baseFunc) {
+    public long affinityFunctionInit(long memPtr, PlatformTargetProxy baseFunc) {
         enter();
 
         try {
-            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr, baseFunc);
+            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.AffinityFunctionInit,
+                memPtr, 0, 0, baseFunc);
         }
         finally {
             leave();
@@ -1009,15 +1052,15 @@ public class PlatformCallbackGateway {
     /**
      * Gets the partition from affinity function.
      *
-     * @param ptr Affinity function pointer.
-     * @param memPtr Pointer to a stream with key object.
+     * @param memPtr Pointer to a stream with data.
      * @return Partition number for a given key.
      */
-    public int affinityFunctionPartition(long ptr, long memPtr) {
+    public int affinityFunctionPartition(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.affinityFunctionPartition(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.AffinityFunctionPartition, memPtr);
         }
         finally {
             leave();
@@ -1027,15 +1070,13 @@ public class PlatformCallbackGateway {
     /**
      * Assigns the affinity partitions.
      *
-     * @param ptr Affinity function pointer.
-     * @param outMemPtr Pointer to a stream with affinity context.
-     * @param inMemPtr Pointer to a stream with result.
+     * @param memPtr Pointer to a stream.
      */
-    public void affinityFunctionAssignPartitions(long ptr, long outMemPtr, long inMemPtr){
+    public void affinityFunctionAssignPartitions(long memPtr){
         enter();
 
         try {
-            PlatformCallbackUtils.affinityFunctionAssignPartitions(envPtr, ptr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.AffinityFunctionAssignPartitions, memPtr);
         }
         finally {
             leave();
@@ -1045,14 +1086,13 @@ public class PlatformCallbackGateway {
     /**
      * Removes the node from affinity function.
      *
-     * @param ptr Affinity function pointer.
-     * @param memPtr Pointer to a stream with node id.
+     * @param memPtr Pointer to a stream.
      */
-    public void affinityFunctionRemoveNode(long ptr, long memPtr) {
+    public void affinityFunctionRemoveNode(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.affinityFunctionRemoveNode(envPtr, ptr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.AffinityFunctionRemoveNode, memPtr);
         }
         finally {
             leave();
@@ -1069,7 +1109,7 @@ public class PlatformCallbackGateway {
             return;  // skip: destroy is not necessary during shutdown.
 
         try {
-            PlatformCallbackUtils.affinityFunctionDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.AffinityFunctionDestroy, ptr);
         }
         finally {
             leave();
@@ -1097,7 +1137,7 @@ public class PlatformCallbackGateway {
     /**
      * Enter gateway.
      */
-    protected boolean tryEnter() {
+    private boolean tryEnter() {
         return lock.enterBusy();
     }
 

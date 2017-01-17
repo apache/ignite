@@ -47,6 +47,7 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPartitionAffinity;
 import org.apache.ignite.internal.client.GridClientPredicate;
@@ -104,6 +105,9 @@ public class GridClientImpl implements GridClient {
 
     /** Main compute projection. */
     private final GridClientComputeImpl compute;
+
+    /** Cluster state projection. */
+    private final GridClientClusterStateImpl clusterState;
 
     /** Data projections. */
     private ConcurrentMap<Object, GridClientDataImpl> dataMap = new ConcurrentHashMap<>();
@@ -212,6 +216,8 @@ public class GridClientImpl implements GridClient {
 
             compute = new GridClientComputeImpl(this, null, null, cfg.getBalancer());
 
+            clusterState = new GridClientClusterStateImpl(this, null, null, cfg.getBalancer());
+
             if (log.isLoggable(Level.INFO))
                 log.info("Client started [id=" + id + ", protocol=" + cfg.getProtocol() + ']');
 
@@ -305,6 +311,11 @@ public class GridClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public GridClientCompute compute() {
         return compute;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientClusterState state() {
+        return clusterState;
     }
 
     /** {@inheritDoc} */

@@ -35,7 +35,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID requestId;
+    private UUID reqId;
 
     /** Start ID. */
     private IgniteUuid deploymentId;
@@ -62,6 +62,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Destroy. */
+    private boolean destroy;
+
     /** Close flag. */
     private boolean close;
 
@@ -75,7 +78,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private UUID rcvdFrom;
 
     /** Cache state. Set to non-null when global state is changed. */
-    private CacheState state;
+    private ClusterState state;
 
     /** Reset lost partitions flag. */
     private boolean resetLostPartitions;
@@ -92,8 +95,8 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(UUID requestId, String cacheName, UUID initiatingNodeId) {
-        this.requestId = requestId;
+    public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
+        this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
     }
@@ -102,7 +105,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return Request ID.
      */
     public UUID requestId() {
-        return requestId;
+        return reqId;
     }
 
     /**
@@ -115,14 +118,14 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return State.
      */
-    public CacheState state() {
+    public ClusterState state() {
         return state;
     }
 
     /**
      * @param state State.
      */
-    public void state(CacheState state) {
+    public void state(ClusterState state) {
         this.state = state;
     }
 
@@ -208,6 +211,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean stop() {
         return stop;
+    }
+
+    /**
+     *
+     */
+    public boolean destroy(){
+        return destroy;
+    }
+
+    /**
+     * @param destroy Destroy.
+     */
+    public void destroy(boolean destroy) {
+        this.destroy = destroy;
     }
 
     /**

@@ -761,17 +761,17 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (wrapper != null)
                             wrapper.initialize(ret);
                     }
-
-                    if (err != null) {
-                        state(UNKNOWN);
-
-                        throw err;
-                    }
-
-                    cctx.tm().commitTx(this);
-
-                    state(COMMITTED);
                 }
+
+                if (err != null) {
+                    state(UNKNOWN);
+
+                    throw err;
+                }
+
+                cctx.tm().commitTx(this);
+
+                state(COMMITTED);
             }
         }
     }

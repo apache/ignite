@@ -20,14 +20,15 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
-#include "ignite/jni/utils.h"
+#include "ignite/impl/handle_registry.h"
 
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /**
          * Defines environment in which Ignite operates.
@@ -39,6 +40,16 @@ namespace ignite
              * Default memory block allocation size.
              */
             enum { DEFAULT_ALLOCATION_SIZE = 1024 };
+
+            /**
+             * Default fast path handle registry containers capasity.
+             */
+            enum { DEFAULT_FAST_PATH_CONTAINERS_CAP = 1024 };
+
+            /**
+            * Default slow path handle registry containers capasity.
+            */
+            enum { DEFAULT_SLOW_PATH_CONTAINERS_CAP = 16 };
 
             /**
              * Default constructor.
@@ -76,6 +87,13 @@ namespace ignite
              * @param memPtr Memory pointer.
              */
             void OnStartCallback(long long memPtr, jobject proc);
+
+            /**
+             * Continuous query listener apply callback.
+             *
+             * @param mem Memory with data.
+             */
+            void OnContinuousQueryListenerApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Get name of Ignite instance.
@@ -133,6 +151,13 @@ namespace ignite
              */
             void ProcessorReleaseStart();
 
+            /**
+             * Get handle registry.
+             *
+             * @return Handle registry.
+             */
+            HandleRegistry& GetHandleRegistry();
+
         private:
             /** Context to access Java. */
             common::concurrent::SharedPointer<jni::java::JniContext> ctx;
@@ -151,6 +176,9 @@ namespace ignite
 
             /** Type updater. */
             binary::BinaryTypeUpdater* metaUpdater;
+
+            /** Handle registry. */
+            HandleRegistry registry;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

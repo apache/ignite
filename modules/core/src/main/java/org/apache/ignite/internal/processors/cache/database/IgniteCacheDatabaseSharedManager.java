@@ -23,12 +23,13 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -37,12 +38,13 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImp
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter {
+public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     protected PageMemory pageMem;
 
@@ -51,9 +53,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        if (!cctx.kernalContext().clientNode())
+            init();
+    }
 
-        if (!cctx.kernalContext().clientNode()) {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void init() throws IgniteCheckedException {
+        if (pageMem == null) {
+            MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
+
             if (dbCfg == null)
                 dbCfg = new MemoryConfiguration();
 
@@ -70,6 +80,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void initDataStructures() throws IgniteCheckedException {
         freeList = new FreeListImpl(0, cctx.gridName(), pageMem, null, cctx.wal(), 0L, true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void initDataBase() throws IgniteCheckedException{
+        // No-op.
     }
 
     /**
@@ -111,6 +128,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public void lock() throws IgniteCheckedException {
+
+    }
+
+    /**
+     *
+     */
+    public void unLock(){
+
+    }
+
+    /**
      * No-op for non-persistent storage.
      */
     public void checkpointReadLock() {
@@ -143,7 +174,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForBackup(long backupId, UUID backupNodeId,
+    @Nullable public IgniteInternalFuture wakeupForSnapshot(long snapshotId, UUID snapshotNodeId,
         Collection<String> cacheNames) {
         return null;
     }
@@ -170,13 +201,22 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param backupMsg Backup message.
+     * @param snapshotMsg Snapshot message.
      * @param initiator Initiator node.
-     * @return Backup init future or {@code null} if backup is not available.
+     * @param msg message to log
+     * @return Snapshot creation init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalBackup(StartFullBackupAckDiscoveryMessage backupMsg, ClusterNode initiator)
+    @Nullable public IgniteInternalFuture startLocalSnapshotCreation(StartFullSnapshotAckDiscoveryMessage snapshotMsg,
+        ClusterNode initiator, String msg)
         throws IgniteCheckedException {
+        return null;
+    }
+
+    /**
+     * @return Future that will be completed when indexes for given cache are restored.
+     */
+    @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return null;
     }
 
@@ -232,5 +272,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File workDir = igniteHome == null ? new File(path) : new File(igniteHome, path);
 
         return new File(workDir, consId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 }

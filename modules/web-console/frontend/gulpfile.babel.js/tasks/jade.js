@@ -19,10 +19,10 @@ import gulp from 'gulp';
 import ll from 'gulp-ll';
 import jade from 'gulp-jade';
 
-import { jadeViewsPaths, jadeAppModulePaths, jadeModulePaths, destDir } from '../paths';
+import { jadeViewsPaths, jadeAppModulePaths, jadeModulePaths, destDir, rootDir } from '../paths';
 
 const jadeOptions = {
-    basedir: './',
+    basedir: rootDir,
     cache: true
 };
 

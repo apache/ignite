@@ -14,11 +14,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'checkpoint'
 -var model = 'backupItem.checkpointSpi'
 -var CustomCheckpoint = 'model.kind === "Custom"'
+-var CacheCheckpoint = 'model.kind === "Cache"'
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
@@ -26,7 +27,7 @@ include ../../../../../app/helpers/jade/mixins.jade
         label Checkpointing
         ignite-form-field-tooltip.tipLabel
             | Checkpointing provides an ability to save an intermediate job state#[br]
-            | #[a(href="http://apacheignite.gridgain.org/docs/checkpointing" target="_blank") More info]
+            | #[a(href="http://apacheignite.readme.io/docs/checkpointing" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -44,7 +45,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                         .group-content(ng-show='#{model} && #{model}.length > 0' ng-repeat='model in #{model} track by $index')
                             hr(ng-if='$index != 0')
                             .settings-row
-                                +dropdown-required('Checkpoint SPI:', 'model.kind', '"checkpointKind" + $index', 'true', 'true', 'Choose checkpoint configuration variant', '[\
+                                +dropdown-required-autofocus('Checkpoint SPI:', 'model.kind', '"checkpointKind" + $index', 'true', 'true', 'Choose checkpoint configuration variant', '[\
                                         {value: "FS", label: "File System"},\
                                         {value: "Cache", label: "Cache"},\
                                         {value: "S3", label: "Amazon S3"},\
@@ -61,16 +62,16 @@ include ../../../../../app/helpers/jade/mixins.jade
                                     </ul>')
                                     +table-remove-button(model, 'Remove Checkpoint SPI')
 
-                            div(ng-if='model.kind === "FS"')
+                            div(ng-show='model.kind === "FS"')
                                 include ./checkpoint/fs.jade
 
-                            div(ng-if='model.kind === "Cache"')
+                            div(ng-show=CacheCheckpoint)
                                 .settings-row
-                                    +dropdown-required-empty('Cache:', 'model.Cache.cache', '"checkpointCacheCache"+ $index', 'true', 'true',
+                                    +dropdown-required-empty('Cache:', 'model.Cache.cache', '"checkpointCacheCache"+ $index', 'true', CacheCheckpoint,
                                         'Choose cache', 'No caches configured for current cluster', 'clusterCaches', 'Cache to use for storing checkpoints')
                                 .settings-row
                                     +java-class('Listener:', 'model.Cache.checkpointListener', '"checkpointCacheListener" + $index', 'true', 'false',
-                                        'Checkpoint listener implementation class name')
+                                        'Checkpoint listener implementation class name', CacheCheckpoint)
 
                             div(ng-show='model.kind === "S3"')
                                 include ./checkpoint/s3.jade
@@ -80,6 +81,6 @@ include ../../../../../app/helpers/jade/mixins.jade
 
                             .settings-row(ng-show=CustomCheckpoint)
                                 +java-class('Class name:', 'model.Custom.className', '"checkpointCustomClassName" + $index', 'true', CustomCheckpoint,
-                                'Custom CheckpointSpi implementation class')
+                                'Custom CheckpointSpi implementation class', CustomCheckpoint)
             .col-sm-6
                 +preview-xml-java('backupItem', 'clusterCheckpoint', 'caches')

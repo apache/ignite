@@ -121,6 +121,8 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
         this.client = false;
 
         try (Ignite newSrv = startGrid(3)) {
+            awaitPartitionMapExchange();
+
             Integer key = primaryKey(newSrv.cache(null));
 
             newSrv.cache(null).put(key, 1);

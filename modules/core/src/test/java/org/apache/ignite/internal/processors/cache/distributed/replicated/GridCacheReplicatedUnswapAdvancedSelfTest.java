@@ -69,6 +69,9 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testUnswapAdvanced() throws Exception {
+        //TODO GG-11141
+        fail();
+
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 

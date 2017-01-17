@@ -17,6 +17,11 @@
 
 import _ from 'lodash';
 
+_.mixin({
+    nonNil: _.negate(_.isNil),
+    nonEmpty: _.negate(_.isEmpty)
+});
+
 export class EmptyBean {
     /**
      * @param {String} clsName
@@ -217,6 +222,12 @@ export class Bean extends EmptyBean {
 
     propertyChar(name, value, hint) {
         this.properties.push({clsName: 'PROPERTY_CHAR', name, value, hint});
+
+        return this;
+    }
+
+    propertyInt(name, value, hint) {
+        this.properties.push({clsName: 'PROPERTY_INT', name, value, hint});
 
         return this;
     }

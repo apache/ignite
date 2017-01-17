@@ -173,6 +173,39 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public void testFind() throws IgniteCheckedException {
+        TestTree tree = createTestTree(true);
+        TreeMap<Long, Long> map = new TreeMap<>();
+
+        long size = CNT * CNT;
+
+        for (long i = 1; i <= size; i++) {
+            tree.put(i);
+            map.put(i, i);
+        }
+
+        checkCursor(tree.find(null, null), map.values().iterator());
+        checkCursor(tree.find(10L, 70L), map.subMap(10L, true, 70L, true).values().iterator());
+    }
+
+    /**
+     * @param cursor cursor to check.
+     * @param iterator iterator with expected result.
+     * @throws IgniteCheckedException If failed
+     */
+    private void checkCursor(GridCursor<Long> cursor, Iterator<Long> iterator) throws IgniteCheckedException {
+        while (cursor.next()) {
+            assertTrue(iterator.hasNext());
+
+            assertEquals(iterator.next(), cursor.get());
+        }
+
+        assertFalse(iterator.hasNext());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void testPutRemove_1_20_mm_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 20;

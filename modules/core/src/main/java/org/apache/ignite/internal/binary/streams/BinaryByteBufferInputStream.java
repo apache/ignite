@@ -261,6 +261,16 @@ public class BinaryByteBufferInputStream implements BinaryInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int capacity() {
+        return buf.capacity();
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] array() {
         return buf.array();
     }

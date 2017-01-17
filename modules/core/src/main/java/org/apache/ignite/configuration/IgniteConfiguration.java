@@ -213,7 +213,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for late affinity assignment flag. */
-    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = false;
 
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
@@ -236,6 +236,12 @@ public class IgniteConfiguration {
 
     /** Async Callback pool size. */
     private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /**
+     * Use striped pool for internal requests processing when possible
+     * (e.g. cache requests per-partition striping).
+     */
+    private int stripedPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
     /** System pool size. */
     private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
@@ -558,6 +564,7 @@ public class IgniteConfiguration {
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
+        stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -712,6 +719,47 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setGridLogger(IgniteLogger log) {
         this.log = log;
+
+        return this;
+    }
+
+    /**
+     * Returns striped pool size that should be used for cache requests
+     * processing.
+     * <p>
+     * If set to non-positive value then requests get processed in system pool.
+     * <p>
+     * Striped pool is better for typical cache operations.
+     *
+     * @return Positive value if striped pool should be initialized
+     *      with configured number of threads (stripes) and used for requests processing
+     *      or non-positive value to process requests in system pool.
+     *
+     * @see #getPublicThreadPoolSize()
+     * @see #getSystemThreadPoolSize()
+     */
+    public int getStripedPoolSize() {
+        return stripedPoolSize;
+    }
+
+    /**
+     * Sets striped pool size that should be used for cache requests
+     * processing.
+     * <p>
+     * If set to non-positive value then requests get processed in system pool.
+     * <p>
+     * Striped pool is better for typical cache operations.
+     *
+     * @param stripedPoolSize Positive value if striped pool should be initialized
+     *      with passed in number of threads (stripes) and used for requests processing
+     *      or non-positive value to process requests in system pool.
+     * @return {@code this} for chaining.
+     *
+     * @see #getPublicThreadPoolSize()
+     * @see #getSystemThreadPoolSize()
+     */
+    public IgniteConfiguration setStripedPoolSize(int stripedPoolSize) {
+        this.stripedPoolSize = stripedPoolSize;
 
         return this;
     }

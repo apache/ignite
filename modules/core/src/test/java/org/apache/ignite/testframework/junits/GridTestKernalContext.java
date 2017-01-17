@@ -63,7 +63,9 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                U.allPluginProviders());
+                null,
+                U.allPluginProviders()
+        );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
 
@@ -77,7 +79,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void start() throws IgniteCheckedException {
         for (GridComponent comp : this)
-            comp.start();
+            comp.start(config().isActiveOnStart());
     }
 
     /**
