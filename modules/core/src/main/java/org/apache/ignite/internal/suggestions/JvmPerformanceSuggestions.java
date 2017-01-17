@@ -17,24 +17,23 @@
 
 package org.apache.ignite.internal.suggestions;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.internal.suggestions.JvmOptions.DISABLE_EXPLICIT_GC;
-import static org.apache.ignite.internal.suggestions.JvmOptions.MAX_DIRECT_MEMORY_SIZE;
-import static org.apache.ignite.internal.suggestions.JvmOptions.SERVER;
-import static org.apache.ignite.internal.suggestions.JvmOptions.USE_COMPRESSED_OOPS;
-import static org.apache.ignite.internal.suggestions.JvmOptions.USE_TLAB;
-import static org.apache.ignite.internal.suggestions.JvmOptions.XMX;
 
 /**
  * Java Virtual Machine performance suggestions.
  */
 class JvmPerformanceSuggestions {
+    private static final String XMX = "-Xmx";
+    private static final String MX = "-mx";
+    private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
+    private static final String USE_COMPRESSED_OOPS = "-XX:+UseCompressedOops";
+    private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
+    private static final String USE_TLAB = "-XX:+UseTLAB";
+    private static final String SERVER = "-server";
 
     /**
      * @return list of recommended jvm options
@@ -47,10 +46,10 @@ class JvmPerformanceSuggestions {
 
         List<String> args = U.jvmArgs();
 
-        if (!args.stream().anyMatch(o -> o.startsWith(XMX)))
+        if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
             options.add(XMX + "<size>[g|G|m|M|k|K]");
 
-        if (!args.stream().anyMatch(o -> o.startsWith(MAX_DIRECT_MEMORY_SIZE)))
+        if (!anyStartWith(args, MAX_DIRECT_MEMORY_SIZE))
             options.add(MAX_DIRECT_MEMORY_SIZE + "=size[g|G|m|M|k|K]");
 
         if (!args.contains(USE_TLAB))
@@ -63,5 +62,18 @@ class JvmPerformanceSuggestions {
             options.add(USE_COMPRESSED_OOPS);
 
         return options;
+    }
+
+    private static boolean anyStartWith(List<String> lines, String prefix) {
+        for (String line : lines)
+            if (line.startsWith(prefix))
+                return true;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JvmPerformanceSuggestions.class, this);
     }
 }
