@@ -830,7 +830,15 @@ public class BinaryClassDescriptor {
                 reader.setHandle(res);
 
                 for (BinaryFieldAccessor info : fields)
-                    info.read(res, reader);
+                    try {
+                        info.read(res, reader);
+                    }
+                    catch (BinaryObjectException ex) {
+                        String fieldName = info.name();
+                        if (fieldName == null || fieldName.isEmpty())
+                            fieldName = String.valueOf(info.id());
+                        throw ex.fieldName(fieldName);
+                    }
 
                 break;
 

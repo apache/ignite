@@ -35,6 +35,9 @@ public abstract class BinaryFieldAccessor {
     /** Field ID. */
     protected final int id;
 
+    /** Field name */
+    protected final String name;
+
     /** Mode. */
     protected final BinaryWriteMode mode;
 
@@ -116,10 +119,12 @@ public abstract class BinaryFieldAccessor {
      * @param id Field ID.
      * @param mode Mode;
      */
-    protected BinaryFieldAccessor(int id, BinaryWriteMode mode) {
+    protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode) {
+        assert field != null;
         assert id != 0;
         assert mode != null;
 
+        this.name = field.getName();
         this.id = id;
         this.mode = mode;
     }
@@ -131,6 +136,24 @@ public abstract class BinaryFieldAccessor {
      */
     public BinaryWriteMode mode() {
         return mode;
+    }
+
+    /**
+     * Get field ID
+     *
+     * @return ID.
+     */
+    public int id() {
+        return id;
+    }
+
+    /**
+     * Get field name
+     *
+     * @return Name.
+     */
+    public String name() {
+        return name;
     }
 
     /**
@@ -166,7 +189,7 @@ public abstract class BinaryFieldAccessor {
          * @param mode Mode.
          */
         protected AbstractPrimitiveAccessor(Field field, int id, BinaryWriteMode mode) {
-            super(id, mode);
+            super(field, id, mode);
 
             assert field != null;
 
@@ -432,7 +455,7 @@ public abstract class BinaryFieldAccessor {
          * @param mode Mode.
          */
         DefaultFinalClassAccessor(Field field, int id, BinaryWriteMode mode, boolean dynamic) {
-            super(id, mode);
+            super(field, id, mode);
 
             assert field != null;
 

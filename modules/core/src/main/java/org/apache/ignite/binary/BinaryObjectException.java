@@ -27,6 +27,12 @@ public class BinaryObjectException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private String typeName;
+    
+    /** */
+    private String fieldName;
+
     /**
      * Creates binary exception with error message.
      *
@@ -53,5 +59,33 @@ public class BinaryObjectException extends IgniteException {
      */
     public BinaryObjectException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
+    }
+
+    /** Initialize the typeName */
+    public BinaryObjectException typeName(String typeName) {
+        if (this.typeName != null)
+            throw new IllegalStateException("typeName was already set");
+        if (typeName != null || !typeName.isEmpty())
+            this.typeName = typeName;
+        return this;
+    }
+    
+    /** Initialize the fieldName */
+    public BinaryObjectException fieldName(String fieldName) {
+        if (this.fieldName != null)
+            throw new IllegalStateException("fieldName was already set");
+        if (fieldName != null || !fieldName.isEmpty())
+            this.fieldName = fieldName;
+        return this;
+    }
+
+    /** Gets the typeName of the BinaryObject has been read */
+    public String  getTypeName() {
+        return typeName;
+    }
+
+    /** Gets the fieldName of the BinaryObject has been read */
+    public String getFieldName() {
+        return fieldName;
     }
 }

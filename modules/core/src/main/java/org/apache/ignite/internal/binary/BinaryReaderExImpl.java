@@ -79,6 +79,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIMESTAMP_A
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.flagName;
 
 /**
  * Binary reader implementation.
@@ -421,9 +422,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         return (T)obj;
     }
+
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws BinaryObjectException {
-        return findFieldByName(fieldName) && checkFlagNoHandles(BYTE) == Flag.NORMAL ? in.readByte() : 0;
+        try {
+            return findFieldByName(fieldName) && checkFlagNoHandles(BYTE) == Flag.NORMAL ? in.readByte() : 0;
+        }
+        catch (BinaryObjectException ex) {
+            throw ex.fieldName(fieldName);
+        }
     }
 
     /**
@@ -1421,8 +1428,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         int pos = BinaryUtils.positionForHandle(in);
 
-        throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
-            ", actual=" + flag + ']');
+        throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + flagName(expFlag) +
+            ", actual=" + flagName(flag) + ']');
     }
 
     /** {@inheritDoc} */
@@ -1495,7 +1502,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 if (desc == null)
                     throw new BinaryInvalidTypeException("Unknown type ID: " + typeId);
 
-                obj = desc.read(this);
+                try {
+                    obj = desc.read(this);
+                }
+                catch (BinaryObjectException ex) {
+                    String typeName = desc.typeName();
+                    if (typeName == null || typeName.isEmpty())
+                        typeName = String.valueOf(desc.typeId());
+                    return ex.typeName(typeName);
+                }
 
                 streamPosition(footerStart + footerLen);
 

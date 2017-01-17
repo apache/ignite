@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
@@ -218,6 +218,57 @@ public class GridBinaryMarshaller {
 
     /** */
     private final BinaryContext ctx;
+
+    /** Converts the flag to the string representation */
+    static String flagName(int flag) {
+
+        switch (flag) {
+            case BYTE:
+                return "BYTE";
+
+            case SHORT:
+                return "SHORT";
+
+            case INT:
+                return "INT";
+
+            case LONG:
+                return "LONG";
+
+            case FLOAT:
+                return "FLOAT";
+
+            case DOUBLE:
+                return "DOUBLE";
+
+            case CHAR:
+                return "CHAR";
+
+            case BOOLEAN:
+                return "BOOLEAN";
+
+            case DECIMAL:
+                return "DECIMAL";
+
+            case STRING:
+                return "STRING";
+
+            case UUID:
+                return "UUID";
+
+            case DATE:
+                return "DATE";
+
+            case ENUM:
+                return "ENUM";
+
+            case TIMESTAMP:
+                return "TIMESTAMP";
+
+            default:
+                return String.valueOf(flag);
+        }
+    }
 
     /**
      * @param ctx Context.
