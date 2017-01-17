@@ -921,6 +921,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 if (pendingEntries != null && expireTime != 0)
                     pendingEntries.put(new PendingRow(expireTime, dataRow.link()));
+
+                updateIgfsMetrics(key, (old != null ? old.value() : null), val);
             }
             finally {
                 busyLock.leaveBusy();
@@ -961,6 +963,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 if (dataRow != null)
                     rowStore.removeRow(dataRow.link());
+
+                updateIgfsMetrics(key, (dataRow != null ? dataRow.value() : null), null);
             }
             finally {
                 busyLock.leaveBusy();
@@ -1028,6 +1032,50 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             initCntr = updCntr;
             storageSize.set(size);
             cntr.set(updCntr);
+        }
+
+        /**
+         * @param key Key.
+         * @param oldVal Old value.
+         * @param newVal New value.
+         */
+        private void updateIgfsMetrics(
+            KeyCacheObject key,
+            CacheObject oldVal,
+            CacheObject newVal
+            ) throws IgniteCheckedException {
+            // In case we deal with IGFS cache, count updated data
+            if (cctx.cache().isIgfsDataCache() &&
+                !cctx.isNear() &&
+                cctx.kernalContext()
+                    .igfsHelper()
+                    .isIgfsBlockKey(key.value(cctx.cacheObjectContext(), false))) {
+                int oldSize = valueLength(oldVal);
+                int newSize = valueLength(newVal);
+
+                int delta = newSize - oldSize;
+
+                if (delta != 0)
+                    cctx.cache().onIgfsDataSizeChanged(delta);
+            }
+        }
+
+        /**
+         * Isolated method to get length of IGFS block.
+         *
+         * @param val Value.
+         * @return Length of value.
+         */
+        private int valueLength(@Nullable CacheObject val) {
+            if (val == null)
+                return 0;
+
+            byte[] bytes = val.value(cctx.cacheObjectContext(), false);
+
+            if (bytes != null)
+                return bytes.length;
+            else
+                return 0;
         }
     }
 

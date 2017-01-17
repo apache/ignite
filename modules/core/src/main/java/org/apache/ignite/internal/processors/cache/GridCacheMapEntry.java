@@ -205,38 +205,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void value(@Nullable CacheObject val) {
         assert Thread.holdsLock(this);
 
-        // In case we deal with IGFS cache, count updated data
-        if (cctx.cache().isIgfsDataCache() &&
-            cctx.kernalContext().igfsHelper().isIgfsBlockKey(keyValue(false))) {
-            int newSize = valueLength0(val, null);
-            int oldSize = valueLength0(this.val, null);
-
-            int delta = newSize - oldSize;
-
-            if (delta != 0 && !cctx.isNear())
-                cctx.cache().onIgfsDataSizeChanged(delta);
-        }
-
         this.val = val;
-    }
-
-    /**
-     * Isolated method to get length of IGFS block.
-     *
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @return Length of value.
-     */
-    private int valueLength0(@Nullable CacheObject val, @Nullable IgniteBiTuple<byte[], Byte> valBytes) {
-        byte[] bytes = val != null ? (byte[])val.value(cctx.cacheObjectContext(), false) : null;
-
-        if (bytes != null)
-            return bytes.length;
-
-        if (valBytes == null)
-            return 0;
-
-        return valBytes.get1().length - (((valBytes.get2() == CacheObject.TYPE_BYTE_ARR) ? 0 : 6));
     }
 
     /** {@inheritDoc} */
