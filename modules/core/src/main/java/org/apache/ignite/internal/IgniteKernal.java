@@ -1168,7 +1168,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         ctx.performance().logSuggestions(log, gridName);
 
-        JvmPerformanceSuggestions.logSuggestions(log, gridName);
+        JvmPerformanceSuggestions.logSuggestions(log);
 
         U.quietAndInfo(log, "Get more information on performance tuning: " + ConfigurationSuggestions.SUGGESTIONS_LINK);
         U.quietAndInfo(log, "");
