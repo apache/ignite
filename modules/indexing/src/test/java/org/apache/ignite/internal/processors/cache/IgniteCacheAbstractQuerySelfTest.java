@@ -348,6 +348,43 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     }
 
     /**
+     * Test table alias in SqlQuery.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testTableAliasInSqlQuery() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+
+        int key = 898;
+
+        int val = 2;
+
+        cache.put(key, val);
+
+        SqlQuery<Integer, Integer> sqlQry = new SqlQuery<>(Integer.class, "t1._key = ? and t1._val > 1");
+
+        QueryCursor<Cache.Entry<Integer, Integer>> qry = cache.query(sqlQry.setAlias("t1").setArgs(key));
+
+        Cache.Entry<Integer, Integer> entry = F.first(qry.getAll());
+
+        assert entry != null;
+
+        assertEquals(key, entry.getKey().intValue());
+        assertEquals(val, entry.getValue().intValue());
+
+        sqlQry = new SqlQuery<>(Integer.class, "FROM Integer as t1 WHERE t1._key = ? and t1._val > 1");
+
+        qry = cache.query(sqlQry.setAlias("t1").setArgs(key));
+
+        entry = F.first(qry.getAll());
+
+        assert entry != null;
+
+        assertEquals(key, entry.getKey().intValue());
+        assertEquals(val, entry.getValue().intValue());
+    }
+
+    /**
      * Tests UDFs.
      *
      * @throws IgniteCheckedException If failed.

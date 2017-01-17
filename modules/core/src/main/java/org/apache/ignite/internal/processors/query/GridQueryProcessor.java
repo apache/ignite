@@ -796,7 +796,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (type == null || !type.registered())
                         throw new CacheException("Failed to find SQL table for type: " + resType);
 
-                    return idx.queryLocalSql(space, clause, params, type, filters);
+                    return idx.queryLocalSql(space, clause, null, params, type, filters);
                 }
             }, false);
         }
@@ -890,7 +890,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.queryLocalSql(
                             space,
-                            sqlQry,
+                            qry.getSql(),
+                            qry.getAlias(),
                             F.asList(params),
                             typeDesc,
                             idx.backupFilter(requestTopVer.get(), null));
