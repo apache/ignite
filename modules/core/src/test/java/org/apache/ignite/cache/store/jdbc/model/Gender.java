@@ -17,12 +17,13 @@
 
 package org.apache.ignite.cache.store.jdbc.model;
 
+import java.io.Serializable;
 import java.util.Random;
 
 /**
  * Person gender enum.
  */
-public enum Gender {
+public enum Gender implements Serializable {
     /** */
     MALE,
     /** */
