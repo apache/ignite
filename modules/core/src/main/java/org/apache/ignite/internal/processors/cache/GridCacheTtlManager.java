@@ -70,19 +70,30 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
+        if (cleanupDisabled())
+            return;
+
+        pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        if (cleanupDisabled())
+            return;
+
+        cctx.shared().ttl().register(this);
+    }
+
+    /**
+     * @return {@code Tu}
+     */
+    private boolean cleanupDisabled() {
+        return cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
             CU.isAtomicsCache(cctx.name()) ||
             CU.isMarshallerCache(cctx.name()) ||
             CU.isUtilityCache(cctx.name()) ||
             (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
-
-        if (cleanupDisabled)
-            return;
-
-        cctx.shared().ttl().register(this);
-
-        pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
     }
 
     /** {@inheritDoc} */
