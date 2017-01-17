@@ -92,7 +92,6 @@ import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -211,7 +210,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private boolean enabled;
 
     /** */
-    private boolean isDefaultIndexerEnabled;
+    private boolean qryProcEnabled;
 
 
     /** */
@@ -221,13 +220,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration ccfg = cctx.config();
 
-        isDefaultIndexerEnabled = GridQueryProcessor.isEnabled(ccfg);
+        qryProcEnabled = GridQueryProcessor.isEnabled(ccfg);
 
         qryProc = cctx.kernalContext().query();
 
         space = cctx.name();
 
-        enabled = isDefaultIndexerEnabled || (cctx.kernalContext().indexing().enabled() && !CU.isSystemCache(space));
+        enabled = qryProcEnabled || (isIndexingSpiEnabled() && !CU.isSystemCache(space));
 
         maxIterCnt = ccfg.getMaxQueryIteratorsCount();
 
@@ -389,18 +388,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            if (cctx.kernalContext().indexing().enabled()) {
+            if (isIndexingSpiEnabled()) {
                 Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
 
                 cctx.kernalContext().indexing().onSwap(space, key0);
             }
 
-            if(isDefaultIndexerEnabled)
+            if(qryProcEnabled)
                 qryProc.onSwap(space, key);
         }
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * Checks if IndexinSPI is enabled.
+     * @return IndexingSPI enabled flag.
+     */
+    private boolean isIndexingSpiEnabled() {
+        return cctx.kernalContext().indexing().enabled();
     }
 
     /**
@@ -418,7 +425,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            if (cctx.kernalContext().indexing().enabled()) {
+            if (isIndexingSpiEnabled()) {
                 CacheObjectContext coctx = cctx.cacheObjectContext();
 
                 Object key0 = unwrapIfNeeded(key, coctx);
@@ -428,7 +435,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().onUnswap(space, key0, val0);
             }
 
-            if(isDefaultIndexerEnabled)
+            if(qryProcEnabled)
                 qryProc.onUnswap(space, key, val);
         }
         finally {
@@ -466,7 +473,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            if (cctx.kernalContext().indexing().enabled()) {
+            if (isIndexingSpiEnabled()) {
                 CacheObjectContext coctx = cctx.cacheObjectContext();
 
                 Object key0 = unwrapIfNeeded(key, coctx);
@@ -476,7 +483,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().store(space, key0, val0, expirationTime);
             }
 
-            if(isDefaultIndexerEnabled)
+            if(qryProcEnabled)
                 qryProc.store(space, key, val, CU.versionToBytes(ver), expirationTime);
         }
         finally {
@@ -502,13 +509,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            if (cctx.kernalContext().indexing().enabled()) {
+            if (isIndexingSpiEnabled()) {
                 Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
 
                 cctx.kernalContext().indexing().remove(space, key0);
             }
 
-            if(isDefaultIndexerEnabled)
+            if(qryProcEnabled)
                 qryProc.remove(space, key, val);
         }
         finally {
