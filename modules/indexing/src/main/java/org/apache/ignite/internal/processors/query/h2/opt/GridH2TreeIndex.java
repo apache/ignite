@@ -521,7 +521,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             else if (lower == null)
                 rows = tree.headMap(upper).values();
             else
-                rows = tree.subMap(lower, true, upper, true).values();
+                rows = tree.subMap(lower, false, upper, false).values();
 
             return new GridCursorIteratorWrapper<>(rows.iterator());
         }

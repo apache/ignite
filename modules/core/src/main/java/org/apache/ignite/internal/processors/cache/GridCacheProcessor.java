@@ -2062,9 +2062,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (desc == null)
                     continue;
-                // requestId must be null because on different node will be different byte [] and we get duplicate discovery data
-                // see TcpDiscoveryNodeAddedMessage#addDiscoveryData 'Arrays.equals(curData, discoDataEntry.getValue())'
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(null, cache.name(), null);
+
+                // RequestId must be null because on different node will be different byte [] and
+                // we get duplicate discovery data, for more details see
+                // TcpDiscoveryNodeAddedMessage#addDiscoveryData.
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
+                    null, cache.name(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
