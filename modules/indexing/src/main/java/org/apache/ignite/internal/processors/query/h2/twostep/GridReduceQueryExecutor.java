@@ -407,8 +407,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      */
     private boolean needPartFilter(AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx,
-        @Nullable PartitionSet parts) {
+        final GridCacheContext<?, ?> cctx, @Nullable IntArrayWrapper parts) {
         if (parts == null)
             return false;
 
@@ -439,16 +438,15 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      */
     private Map<ClusterNode, IntArray> stableDataNodesMap(AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx,
-        PartitionSet parts) {
+        final GridCacheContext<?, ?> cctx, @Nullable IntArrayWrapper parts) {
         if (parts == null)
-            parts = new PartitionSet(-1, 0, cctx.affinity().partitions());
+            parts = new IntArrayWrapper(-1, 0, cctx.affinity().partitions());
 
         Map<ClusterNode, IntArray> mapping = new HashMap<>(parts.size());
 
         List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
 
-        PartitionSet.Iterator iter = parts.iterator();
+        IntArrayWrapper.Iterator iter = parts.iterator();
 
         while(iter.hasNext()) {
             int partId = iter.next();
@@ -479,21 +477,20 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      */
     private Set<ClusterNode> stableDataNodesSet(AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx,
-        PartitionSet parts) {
+        final GridCacheContext<?, ?> cctx, @Nullable IntArrayWrapper parts) {
         Set<ClusterNode> nodes;
 
         // Partition set has no meaning for replicated caches.
         if (!cctx.isReplicated()) {
             if (parts == null)
-                parts = new PartitionSet(-1, 0, cctx.affinity().partitions());
+                parts = new IntArrayWrapper(-1, 0, cctx.affinity().partitions());
 
             nodes = new HashSet<>(parts.size());
 
             // TODO FIXME caching might be useful.
             List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
 
-            PartitionSet.Iterator iter = parts.iterator();
+            IntArrayWrapper.Iterator iter = parts.iterator();
 
             while(iter.hasNext()) {
                 int partId = iter.next();
@@ -521,7 +518,7 @@ public class GridReduceQueryExecutor {
             AffinityTopologyVersion topVer,
             final GridCacheContext<?, ?> cctx,
             List<Integer> extraSpaces,
-            PartitionSet parts) {
+            IntArrayWrapper parts) {
 
         boolean needPartFilter = needPartFilter(topVer, cctx, parts);
 
@@ -645,13 +642,13 @@ public class GridReduceQueryExecutor {
                 if (cctx.isReplicated())
                     nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
                 else {
-                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces, parts == null ? null : new PartitionSet(parts));
+                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces, parts == null ? null : new IntArrayWrapper(parts));
 
                     nodes = partsMap == null ? null : partsMap.keySet();
                 }
             }
             else {
-                Map<ClusterNode, IntArray> map = stableDataNodes(topVer, cctx, extraSpaces, parts == null ? null : new PartitionSet(parts));
+                Map<ClusterNode, IntArray> map = stableDataNodes(topVer, cctx, extraSpaces, parts == null ? null : new IntArrayWrapper(parts));
 
                 if (map != null) {
                     nodes = map.keySet();
@@ -1118,11 +1115,11 @@ public class GridReduceQueryExecutor {
      */
     @SuppressWarnings("unchecked")
     private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(final GridCacheContext<?, ?> cctx,
-                                                                    List<Integer> extraSpaces, PartitionSet parts) {
+                                                                    List<Integer> extraSpaces, @Nullable IntArrayWrapper parts) {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
         if (parts == null)
-            parts = new PartitionSet(0, cctx.affinity().partitions());
+            parts = new IntArrayWrapper(0, cctx.affinity().partitions());
 
         int allPartsCnt = cctx.affinity().partitions();
 
@@ -1146,7 +1143,7 @@ public class GridReduceQueryExecutor {
         Set<ClusterNode>[] partLocs = new Set[partsCnt];
 
         // Fill partition locations for main cache.
-        PartitionSet.Iterator iter = parts.iterator();
+        IntArrayWrapper.Iterator iter = parts.iterator();
 
         int c = 0;
 
@@ -1554,12 +1551,12 @@ public class GridReduceQueryExecutor {
     /**
      *
      */
-    private static class PartitionSet  {
+    private static class IntArrayWrapper {
         /** Partition ids. */
         private final int[] partIds;
 
         /** */
-        PartitionSet(int... partIds) {
+        IntArrayWrapper(int... partIds) {
             this.partIds = partIds;
         }
 
