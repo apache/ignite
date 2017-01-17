@@ -62,20 +62,20 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
 
     /** @throws Exception If failed. */
     public void testLocalQuery() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache( null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         awaitPartitionMapExchange(true, true, null);
 
-        int expected = 0;
+        int exp = 0;
 
         for(Cache.Entry e: cache.localEntries(CachePeekMode.PRIMARY)){
             if(e.getValue() instanceof Integer)
-                expected++;
+                exp++;
         }
 
         QueryCursor<List<?>> qry = cache
             .query(new SqlFieldsQuery("select _key, _val from Integer").setLocal(true));
 
-        assertEquals(expected, qry.getAll().size());
+        assertEquals(exp, qry.getAll().size());
     }
 }

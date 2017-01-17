@@ -1899,14 +1899,14 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     continue;
 
                 T2<Long, Long> cntr0 = res.get(part.id());
-                Long initCntr = part.state() == MOVING ? part.initialUpdateCounter() : part.updateCounter();
-                Long updateCntr = part.updateCounter();
+                Long initCntr = part.initialUpdateCounter();
 
-                if (skipZeros && initCntr == 0 && updateCntr == 0)
-                    continue;
+                if (cntr0 == null || initCntr >= cntr0.get1()) {
+                    if (skipZeros && initCntr == 0L && part.updateCounter() == 0L)
+                        continue;
 
-                if (cntr0 == null || initCntr > cntr0.get1() || initCntr.equals(cntr0.get1()) && updateCntr > cntr0.get2())
-                    res.put(part.id(), new T2<>(initCntr, updateCntr));
+                    res.put(part.id(), new T2<>(initCntr, part.updateCounter()));
+                }
             }
 
             return res;

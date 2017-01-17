@@ -27,16 +27,14 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
@@ -69,6 +67,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String PK_NAME = "__GG_PK_";
+
+    /** Hash. */
+    private static final String HASH = "__GG_HASH";
 
     /** */
     private static final String STR_IDX_NAME = "__GG_IDX_";
@@ -105,6 +106,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
                 idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
+                idxs.add(new GridH2TreeIndex(HASH, tbl, true, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
                 idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
 
@@ -601,7 +603,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
             //((GridH2SnapTreeSet)((GridH2Index)idx).tree).print();
 
-            if (rowSet == null)
+            if (rowSet == null || rowSet.isEmpty())
                 rowSet = set;
             else
                 assertEquals(rowSet, set);
@@ -635,6 +637,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         while (cursor.next()) {
             GridH2Row row = cursor.get();
+
+            System.out.println(row);
 
             assertNotNull(row);
 

@@ -60,11 +60,11 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
                 for (int i = 0; i < 100; i++) {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
                     ccfg.setName("cache-" + idx + "-" + i);
                     ccfg.setEvictionPolicy(new LruEvictionPolicy(1000));
 
-                    IgniteCache cache = ignite.createCache(ccfg);
+                    IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
                     for (int k = 0; k < 5000; k++)
                         cache.put(k, new byte[1024]);

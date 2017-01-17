@@ -34,7 +34,7 @@ public class GridCacheAttributesObsoleteEntryExtras extends GridCacheEntryExtras
      *
      * @param obsoleteVer Obsolete version.
      */
-    public GridCacheAttributesObsoleteEntryExtras(GridCacheVersion obsoleteVer) {
+    GridCacheAttributesObsoleteEntryExtras(GridCacheVersion obsoleteVer) {
         assert obsoleteVer != null;
 
         this.obsoleteVer = obsoleteVer;

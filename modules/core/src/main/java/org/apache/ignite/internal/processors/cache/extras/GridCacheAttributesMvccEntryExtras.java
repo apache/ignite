@@ -35,7 +35,7 @@ public class GridCacheAttributesMvccEntryExtras extends GridCacheEntryExtrasAdap
      *
      * @param mvcc MVCC.
      */
-    public GridCacheAttributesMvccEntryExtras(GridCacheMvcc mvcc) {
+    GridCacheAttributesMvccEntryExtras(GridCacheMvcc mvcc) {
         assert mvcc != null;
 
         this.mvcc = mvcc;

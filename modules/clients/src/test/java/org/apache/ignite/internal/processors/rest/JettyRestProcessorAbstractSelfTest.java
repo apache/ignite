@@ -1403,7 +1403,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorQueryTask.class)
             .forNode(locNode)
-            .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person", CHARSET), false, 1));
+            .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person", CHARSET), false, false, 1));
 
         info("VisorQueryTask result: " + ret);
 
