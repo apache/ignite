@@ -14,18 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.hadoop;
 
-package org.apache.ignite.internal.processors.hadoop;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import java.util.Collection;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Extended job description.
+ * Compact job description.
  */
-public interface HadoopJobInfo {
+public interface HadoopJob {
+    /**
+     * Gets collection of input splits for this job.
+     *
+     * @return Input splits.
+     */
+    public Collection<HadoopInputSplit> input();
+
     /**
      * Gets optional configuration property for the job.
      *
@@ -67,22 +71,4 @@ public interface HadoopJobInfo {
      * @return User name.
      */
     String user();
-
-    /**
-     * Creates new job instance for the given ID.
-     * {@link HadoopJobInfo} is reusable for multiple jobs while {@link HadoopJobEx} is for one job execution.
-     * This method will be called once for the same ID on one node, though it can be called on the same host
-     * multiple times from different processes (in case of multiple nodes on the same host or external execution).
-     *
-     * @param jobCls The job class.
-     * @param jobId Job ID.
-     * @param log Logger.
-     * @param libNames Optional additional native library names.
-     * @param helper HadoopHelper.
-     * @return Job.
-     * @throws IgniteCheckedException If failed.
-     */
-    public HadoopJobEx createJob(Class<? extends HadoopJobEx> jobCls,
-        HadoopJobId jobId, IgniteLogger log, @Nullable String[] libNames, HadoopHelper helper)
-            throws IgniteCheckedException;
 }

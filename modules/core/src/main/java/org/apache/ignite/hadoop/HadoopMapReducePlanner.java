@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
+package org.apache.ignite.hadoop;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Counter writer delegate interface.
+ * Map-reduce execution planner.
  */
-public interface HadoopFileSystemCounterWriterDelegate {
+public interface HadoopMapReducePlanner {
     /**
-     * Writes counters of given job to some statistics storage.
+     * Prepares map-reduce execution plan for the given job and topology.
      *
-     * @param job The job.
-     * @param cntrs Counters.
-     * @throws IgniteCheckedException If failed.
+     * @param job Job.
+     * @param top Topology.
+     * @param oldPlan Old plan in case of partial failure.
+     * @return Map reduce plan.
+     * @throws IgniteCheckedException If an error occurs.
      */
-    public void write(HadoopJobEx job, HadoopCounters cntrs) throws IgniteCheckedException;
+    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
+        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
 }
