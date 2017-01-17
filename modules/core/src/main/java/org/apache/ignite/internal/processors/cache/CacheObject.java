@@ -68,6 +68,13 @@ public interface CacheObject extends Message {
     public boolean putValue(ByteBuffer buf) throws IgniteCheckedException;
 
     /**
+     * @param addr Address tp write value to.
+     * @return Number of bytes written.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int putValue(long addr) throws IgniteCheckedException;
+
+    /**
      * @param buf Buffer to write value to.
      * @param off Offset in source binary data.
      * @param len Length of the data to write.

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.pagemem;
 
-import java.nio.ByteBuffer;
-import org.jetbrains.annotations.Nullable;
-
 /**
  *
  */
@@ -39,9 +36,9 @@ public interface Page extends AutoCloseable {
     public FullPageId fullId();
 
     /**
-     * @return ByteBuffer for modifying the page.
+     * @return Pointer for modifying the page.
      */
-    public ByteBuffer getForRead();
+    public long getForReadPointer();
 
     /**
      * Releases reserved page. Released page can be evicted from RAM after flushing modifications to disk.
@@ -51,12 +48,12 @@ public interface Page extends AutoCloseable {
     /**
      * @return ByteBuffer for modifying the page.
      */
-    public ByteBuffer getForWrite();
+    public long getForWritePointer();
 
     /**
      * @return ByteBuffer for modifying the page of {@code null} if failed to get write lock.
      */
-    @Nullable public ByteBuffer tryGetForWrite();
+    public long tryGetForWritePointer();
 
     /**
      * Releases reserved page. Released page can be evicted from RAM after flushing modifications to disk.

@@ -15,34 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.record.delta;
-
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
+package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 /**
  *
  */
-public class MetaPageCutRootRecord extends PageDeltaRecord {
+public class DataPagePayload {
+    /** */
+    private final int off;
+
+    /** */
+    private final int payloadSize;
+
+    /** */
+    private final long nextLink;
+
     /**
-     * @param cacheId Cache ID.
-     * @param pageId  Page ID.
+     * @param off Offset.
+     * @param payloadSize Payload size.
+     * @param nextLink Next link.
      */
-    public MetaPageCutRootRecord(int cacheId, long pageId) {
-        super(cacheId, pageId);
+    DataPagePayload(int off, int payloadSize, long nextLink) {
+        this.off = off;
+        this.payloadSize = payloadSize;
+        this.nextLink = nextLink;
     }
 
-    /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-        io.cutRoot(pageAddr, pageMem.pageSize());
+    /**
+     * @return Offset.
+     */
+    public int offset() {
+        return off;
     }
 
-    /** {@inheritDoc} */
-    @Override public RecordType type() {
-        return RecordType.BTREE_META_PAGE_CUT_ROOT;
+    /**
+     * @return Payload size.
+     */
+    public int payloadSize() {
+        return payloadSize;
+    }
+
+    /**
+     * @return Next link.
+     */
+    public long nextLink() {
+        return nextLink;
     }
 }

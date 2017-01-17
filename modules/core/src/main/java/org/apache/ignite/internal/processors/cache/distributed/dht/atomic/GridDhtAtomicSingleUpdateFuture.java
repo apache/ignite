@@ -163,7 +163,8 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
 
     /** {@inheritDoc} */
     @Override protected void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err) {
-        updateRes.addFailedKey(key, err);
+        if (key != null)
+            updateRes.addFailedKey(key, err);
     }
 
     /**

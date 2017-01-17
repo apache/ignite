@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -25,6 +26,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  *
@@ -33,13 +35,15 @@ public class TrackingPageIOTest extends TestCase {
     /** Page size. */
     public static final int PAGE_SIZE = 2048;
 
+    /** */
     private final TrackingPageIO io = TrackingPageIO.VERSIONS.latest();
 
     /**
      *
      */
     public void testBasics() {
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
+        buf.order(ByteOrder.nativeOrder());
 
         io.markChanged(buf, 2, 0, -1, PAGE_SIZE);
 
@@ -54,7 +58,8 @@ public class TrackingPageIOTest extends TestCase {
      *
      */
     public void testMarkingRandomly() {
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
+        buf.order(ByteOrder.nativeOrder());
 
         int cntOfPageToTrack = io.countOfPageToTrack(PAGE_SIZE);
 
@@ -66,7 +71,8 @@ public class TrackingPageIOTest extends TestCase {
      *
      */
     public void testZeroingRandomly() {
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
+        buf.order(ByteOrder.nativeOrder());
 
         for (int i = 0; i < 1001; i++)
             checkMarkingRandomly(buf, i, true);
@@ -87,7 +93,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(buf, basePageId);
+        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
 
         Map<Long, Boolean> map = new HashMap<>();
 
@@ -122,8 +128,12 @@ public class TrackingPageIOTest extends TestCase {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testFindNextChangedPage() throws Exception {
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
+        buf.order(ByteOrder.nativeOrder());
 
         for (int i = 0; i < 101; i++)
             checkFindingRandomly(buf, i);
@@ -144,7 +154,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(buf, basePageId);
+        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
 
         try {
             TreeSet<Long> setIdx = new TreeSet<>();
@@ -174,8 +184,12 @@ public class TrackingPageIOTest extends TestCase {
         }
     }
 
+    /**
+     *
+     */
     public void testMerging() {
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
+        buf.order(ByteOrder.nativeOrder());
 
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
@@ -185,7 +199,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(buf, basePageId);
+        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
 
         TreeSet<Long> setIdx = new TreeSet<>();
 
@@ -209,8 +223,12 @@ public class TrackingPageIOTest extends TestCase {
             assertFalse(io.wasChanged(buf, i, 5, 4, PAGE_SIZE));
     }
 
+    /**
+     *
+     */
     public void testMerging_MarksShouldBeDropForSuccessfulBackup() {
-        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
+        buf.order(ByteOrder.nativeOrder());
 
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
@@ -220,7 +238,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(buf, basePageId);
+        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
 
         TreeSet<Long> setIdx = new TreeSet<>();
 

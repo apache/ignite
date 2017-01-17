@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests for correct distributed sql joins.
@@ -36,8 +36,14 @@ import java.util.*;
 public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private static final int NODES_COUNT = 2;
+
+    /** */
     private static final int ORG_COUNT = NODES_COUNT;
+
+    /** */
     private static final int PERSON_PER_ORG_COUNT = 50;
 
     /** {@inheritDoc} */
@@ -81,7 +87,7 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testNonCollocatedDistributedJoin() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true, String.class, Person.class);
@@ -141,11 +147,19 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     private static class Person {
+        /** */
         @QuerySqlField(index = true)
         private String id;
+
+        /** */
         @QuerySqlField(index = true)
         private String orgId;
+
+        /** */
         @QuerySqlField(index = true)
         private String name;
 
@@ -162,9 +176,15 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         public void setName(String name) { this.name = name; }
     }
 
+    /**
+     *
+     */
     private static class Organization {
+        /** */
         @QuerySqlField(index = true)
         private String id;
+
+        /** */
         @QuerySqlField(index = true)
         private String name;
 

@@ -160,6 +160,6 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
 
-        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE);
+        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE, true);
     }
 }

@@ -31,13 +31,13 @@ import org.h2.result.*;
  */
 public class H2Cursor implements Cursor {
     /** */
-    final GridCursor<GridH2Row> cursor;
+    private final GridCursor<GridH2Row> cursor;
 
     /** */
-    final IgniteBiPredicate<Object,Object> filter;
+    private final IgniteBiPredicate<Object,Object> filter;
 
     /** */
-    final long time = U.currentTimeMillis();
+    private final long time = U.currentTimeMillis();
 
     /**
      * @param cursor Cursor.
@@ -50,6 +50,9 @@ public class H2Cursor implements Cursor {
         this.filter = filter;
     }
 
+    /**
+     * @param cursor Cursor.
+     */
     public H2Cursor(GridCursor<GridH2Row> cursor) {
         this(cursor, null);
     }
