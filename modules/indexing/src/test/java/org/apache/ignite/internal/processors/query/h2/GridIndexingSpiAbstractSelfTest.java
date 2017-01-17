@@ -539,6 +539,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return name;
         }
 
+        /** {@inheritDoc} */
+        @Override public String tableName() {
+            return null;
+        }
+
         /**
          * @return Space name.
          */
