@@ -71,7 +71,6 @@
             <outputDirectory>/libs</outputDirectory>
             <excludes>
                 <exclude>optional/**</exclude>
-                <exclude>optional/**</exclude>
             </excludes>
         </fileSet>
 

@@ -458,9 +458,8 @@
         </profile>
 
         <profile>
-            <id>benchmarks</id>
+            <id>yardstick</id>
             <modules>
-                <module>modules/benchmarks</module>
                 <module>modules/yardstick</module>
             </modules>
             <build>
@@ -524,28 +523,24 @@
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
+                                        <copy file="${basedir}/modules/yardstick/pom.xml"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml" overwrite="true">
+                                            <filterchain>
+                                                <replaceregex pattern="&lt;/modelVersion&gt;(.+?)&lt;/parent&gt;" replace="&lt;/modelVersion&gt;" flags="gis" byline="false"/>
+                                                <replaceregex pattern="&lt;artifactId&gt;ignite-yardstick" replace="&lt;groupId&gt;org.apache.ignite&lt;/groupId&gt;${line.separator}        &lt;artifactId&gt;ignite-yardstick" flags="gis" byline="false"/>
+                                                <replaceregex pattern="ignite-yardstick&lt;/artifactId&gt;(.+?)&lt;/version&gt;" replace="ignite-yardstick&lt;/artifactId&gt;${line.separator}        &lt;version&gt;${project.version}&lt;/version&gt;" flags="gis" byline="false"/>
+                                            </filterchain>
+                                        </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/README-standalone.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/README.txt"/>
+                                        <copy file="${basedir}/modules/yardstick/README.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
+                                            <filterchain>
+                                                <replaceregex pattern="Installation(.+?)Provided Benchmarks" replace="Provided Benchmarks" flags="gis" byline="false"/>
+                                            </filterchain>
+                                        </copy>
 
-                                        <concat destfile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt">
-Yardstick Ignite Maven Build Instructions
-=========================================
-
-mvn clean package
-
-Look for compiled binaries in ./target/assemply directory.
-                                        </concat>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
-                                            <substitution expression="${project.version}"/>
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
-                                                <include name="pom.xml"/>
-                                            </fileset>
-                                        </replaceregexp>
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
                                 </configuration>
                             </execution>
@@ -553,6 +548,13 @@ Look for compiled binaries in ./target/assemply directory.
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>benchmarks</id>
+            <modules>
+                <module>modules/benchmarks</module>
+            </modules>
         </profile>
 
         <profile>

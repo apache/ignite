@@ -1,0 +1,6 @@
+Yardstick Ignite Maven Build Instructions
+=========================================
+
+mvn clean package
+
+Look for compiled binaries in ./target/assemply directory.
