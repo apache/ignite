@@ -144,7 +144,14 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
             runTask(perfCntr);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                ctx.taskInfo(new HadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
+                HadoopTaskInfo combineTaskInfo = new HadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(),
+                    info.attempt(), null);
+
+//                log.info("+++ Set mapper index: " + ctx.taskInfo().mapperIndex());
+
+                combineTaskInfo.mapperIndex(ctx.taskInfo().mapperIndex());
+
+                ctx.taskInfo(combineTaskInfo);
 
                 try {
                     runTask(perfCntr);

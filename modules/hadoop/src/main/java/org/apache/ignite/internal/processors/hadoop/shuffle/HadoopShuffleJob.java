@@ -999,7 +999,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 if (stripeMappers) {
                     int mapperIdx = HadoopMapperUtils.mapperIndex();
 
-                    assert mapperIdx >= 0;
+//                    if(mapperIdx < 0) {
+//                        log.info("+++ There is no mapper index");
+//                        mapperIdx = HadoopMapperUtils.mapperIndex();
+//                    }
 
                     int idx = totalReducerCnt * mapperIdx + part;
 
@@ -1032,7 +1035,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             if (stripeMappers) {
                 int mapperIdx = HadoopMapperUtils.mapperIndex();
 
-                assert mapperIdx >= 0;
+//                assert mapperIdx >= 0;
 
                 for (int i = 0; i < totalReducerCnt; i++) {
                     int idx = totalReducerCnt * mapperIdx + i;

@@ -24,6 +24,7 @@ import org.apache.hadoop.mapreduce.lib.reduce.WrappedReducer;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 
 /**
@@ -53,6 +54,12 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
 
         JobContextImpl jobCtx = taskCtx.jobContext();
 
+        // Set mapper index for combiner tasks
+        if (!reduce && taskCtx.taskInfo().hasMapperIndex())
+            HadoopMapperUtils.mapperIndex(taskCtx.taskInfo().mapperIndex());
+        else
+            HadoopMapperUtils.clearMapperIndex();
+
         try {
             outputFormat = reduce || !taskCtx.job().info().hasReducer() ? prepareWriter(jobCtx) : null;
 
@@ -64,6 +71,9 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
 
             try {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));
+
+                if (!reduce)
+                    hadoopContext().onMapperFinished();
             }
             finally {
                 closeWriter();
@@ -84,6 +94,8 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
+            HadoopMapperUtils.clearMapperIndex();
+
             if (err != null)
                 abort(outputFormat);
         }

@@ -46,13 +46,10 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
  * Grouping test.
  */
 public class HadoopCombinerTest extends HadoopAbstractSelfTest {
-    /** Key count. */
-    private static AtomicInteger keyCount = new AtomicInteger();
-
-    /** Key count. */
+    /** Splits count. */
     private static final int SPLITS_COUNT = 10;
 
-    /** Key count. */
+    /** Split length. */
     private static final int SPLIT_LEN = 20;
 
     /** {@inheritDoc} */
@@ -108,7 +105,7 @@ public class HadoopCombinerTest extends HadoopAbstractSelfTest {
     public static class TestMapper extends Mapper<IntWritable, Text, IntWritable, IntWritable> {
         @Override protected void map(IntWritable key, Text value,
             Context context) throws IOException, InterruptedException {
-            System.out.println("---" + key + " " + value);
+//            System.out.println("--- " + Thread.currentThread().getName() + " " + key + " " + value);
 
             context.write(new IntWritable(key.get() % 2), new IntWritable(1));
         }
@@ -127,6 +124,7 @@ public class HadoopCombinerTest extends HadoopAbstractSelfTest {
             for (Iterator<IntWritable> it = values.iterator(); it.hasNext(); it.next())
                 cnt++;
 
+//            System.out.println("+++ " + Thread.currentThread().getName() + " " + key + " " + cnt);
             context.write(key, new IntWritable(cnt));
         }
     }
@@ -173,7 +171,7 @@ public class HadoopCombinerTest extends HadoopAbstractSelfTest {
                 Text val = new Text();
 
                 @Override public void initialize(InputSplit split, TaskAttemptContext context) {
-                    keyCount.set(0);
+                    // No-op.
                 }
 
                 @Override public boolean nextKeyValue() throws IOException, InterruptedException {
@@ -181,7 +179,7 @@ public class HadoopCombinerTest extends HadoopAbstractSelfTest {
                 }
 
                 @Override public IntWritable getCurrentKey() {
-                    return new IntWritable(keyCount.getAndIncrement());
+                    return new IntWritable(cnt);
                 }
 
                 @Override public Text getCurrentValue() {
