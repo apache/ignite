@@ -19,6 +19,7 @@ package org.apache.ignite.internal.suggestions;
 
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Java Virtual Machine performance suggestions.
  */
-class JvmPerformanceSuggestions {
+public class JvmPerformanceSuggestions {
     private static final String XMX = "-Xmx";
     private static final String MX = "-mx";
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
@@ -36,9 +37,20 @@ class JvmPerformanceSuggestions {
     private static final String SERVER = "-server";
 
     /**
-     * @return list of recommended jvm options
+     * @param log Log.
      */
-    @NotNull static List<String> getRecommendedOptions() {
+    public static synchronized void logSuggestions(IgniteLogger log) {
+        List<String> jvmOptions = JvmPerformanceSuggestions.getRecommendedOptions();
+
+        if (!jvmOptions.isEmpty()) {
+            U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
+            for (String option : jvmOptions)
+                U.quietAndInfo(log, "    " + option);
+        }
+    }
+
+    @NotNull
+    private static List<String> getRecommendedOptions() {
         List<String> options = new LinkedList<>();
         // option '-server' isn't in input arguments
         if (!U.jvmName().toLowerCase().contains("server"))

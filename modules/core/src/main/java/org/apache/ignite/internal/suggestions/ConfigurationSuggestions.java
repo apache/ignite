@@ -33,10 +33,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGES
  * Grid performance suggestions.
  */
 public class ConfigurationSuggestions {
+    /** Link to article about Ignite performance tuning */
+    public static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
+
     /** */
     private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
-
-    private static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
 
     /** */
     private final Collection<String> perfs = !disabled ? new LinkedHashSet<String>() : null;
@@ -86,15 +87,6 @@ public class ConfigurationSuggestions {
 
             perfs.clear();
         }
-        List<String> jvmOptions = JvmPerformanceSuggestions.getRecommendedOptions();
-
-        if (!jvmOptions.isEmpty()) {
-            U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
-            for (String option : jvmOptions)
-                U.quietAndInfo(log, "    " + option);
-        }
-        U.quietAndInfo(log, "Get more information on performance tuning: " + SUGGESTIONS_LINK);
-        U.quietAndInfo(log, "");
     }
 
     /** {@inheritDoc} */
