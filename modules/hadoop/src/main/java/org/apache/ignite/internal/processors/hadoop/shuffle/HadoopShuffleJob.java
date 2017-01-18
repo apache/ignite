@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.GZIPInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -55,17 +65,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
@@ -354,6 +353,12 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     public void onDirectShuffleMessage(T src, HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
         byte[] buf = extractBuffer(msg);
 
+//        StringBuilder sb = new StringBuilder();
+//        for (int i = 0; i < buf.length; ++i)
+//            sb.append(Integer.toHexString(buf[i] & 0xFF).toUpperCase()).append(' ');
+//
+//        log.info("+++ onDirectShuffleMessage " + sb.toString());
+
         assert buf != null;
 
         int rdc = msg.reducer();
@@ -636,6 +641,12 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         HadoopDirectShuffleMessage msg = new HadoopDirectShuffleMessage(job.id(), rmtRdcIdx, cnt,
             state.buffer(), state.bufferLength(), state.dataLength());
+
+//        StringBuilder sb = new StringBuilder();
+//        for (int i = 0; i < state.dataLength(); ++i)
+//            sb.append(Integer.toHexString(state.buffer()[i] & 0xFF).toUpperCase()).append(' ');
+//
+//        log.info("+++ send " + sb.toString());
 
         T nodeId = reduceAddrs[rmtRdcIdx];
 
@@ -999,10 +1010,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 if (stripeMappers) {
                     int mapperIdx = HadoopMapperUtils.mapperIndex();
 
-//                    if(mapperIdx < 0) {
-//                        log.info("+++ There is no mapper index");
-//                        mapperIdx = HadoopMapperUtils.mapperIndex();
-//                    }
+                    if (mapperIdx < 0)
+                        assert mapperIdx >= 0;
 
                     int idx = totalReducerCnt * mapperIdx + part;
 
@@ -1035,7 +1044,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             if (stripeMappers) {
                 int mapperIdx = HadoopMapperUtils.mapperIndex();
 
-//                assert mapperIdx >= 0;
+                assert mapperIdx >= 0;
 
                 for (int i = 0; i < totalReducerCnt; i++) {
                     int idx = totalReducerCnt * mapperIdx + i;

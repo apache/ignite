@@ -50,7 +50,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public int read() throws IOException {
-        return readByte();
+        return (int)readByte() & 0xFF;
     }
 
     /** {@inheritDoc} */
@@ -221,6 +221,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     /**
      * Ensures the position is still within the buffer.
      *
+     * @param bytesToRead Range size (in bytes) to check
      * @throws EOFException if an attempt is made to read beyond the buffer end.
      */
     private void checkRange(int bytesToRead) throws EOFException {

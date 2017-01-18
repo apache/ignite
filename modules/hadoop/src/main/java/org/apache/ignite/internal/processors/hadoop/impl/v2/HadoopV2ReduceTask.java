@@ -94,7 +94,8 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
-            HadoopMapperUtils.clearMapperIndex();
+            if (!reduce)
+                HadoopMapperUtils.clearMapperIndex();
 
             if (err != null)
                 abort(outputFormat);
