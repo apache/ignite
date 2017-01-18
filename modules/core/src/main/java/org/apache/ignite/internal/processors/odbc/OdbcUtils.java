@@ -57,12 +57,13 @@ public class OdbcUtils {
     }
 
     /**
-     * Lookup Ignite data type corresponding to specific ODCB data type
+     * Lookup Ignite data type corresponding to specific ODBC data type
      *
      * @param odbcDataType ODBC data type identifier
      * @return Ignite data type name
      */
     public static String getIgniteTypeFromOdbcType(String odbcDataType) {
+        assert odbcDataType != null;
         switch (odbcDataType.toUpperCase()) {
             case OdbcTypes.SQL_BIGINT:
                 return IgniteTypes.BIGINT;

@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt8)
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionByteArray)
 {
-    int32_t value = HostToNetwork32(123456);
+    int32_t value = ToBigEndian(123456);
 
     std::vector<int8_t> val;
     val.assign((const int8_t*)&value, (const int8_t*)&value+sizeof(value));
