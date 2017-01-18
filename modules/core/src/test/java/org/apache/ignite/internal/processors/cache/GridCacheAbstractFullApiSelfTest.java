@@ -64,6 +64,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -73,6 +74,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -292,18 +294,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
 
             cacheCfgMap = null;
-        }
-
-        // We won't deploy service unless non-client node is configured.
-        for (int i = 0; i < gridCount(); i++) {
-            Boolean clientMode = grid(i).configuration().isClientMode();
-
-            if (clientMode != null && clientMode) // Can be null in multi jvm tests.
-                continue;
-
-            grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
-
-            break;
         }
 
         for (int i = 0; i < gridCount(); i++)
@@ -5521,6 +5511,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTransformResourceInjection() throws Exception {
+        ClusterGroup servers = grid(0).cluster().forServers();
+
+        if(!F.isEmpty(servers.nodes()))
+            grid(0).services(servers).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+
         IgniteCache<String, Integer> cache = jcache();
         Ignite ignite = ignite(0);
 
