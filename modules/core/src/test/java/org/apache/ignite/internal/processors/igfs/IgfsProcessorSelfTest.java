@@ -230,7 +230,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
             for (int i = 0; i < nodesCount(); i++) {
                 IgfsEntryInfo fileInfo =
-                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
+                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), null, null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
