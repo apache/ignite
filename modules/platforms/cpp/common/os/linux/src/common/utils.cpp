@@ -132,5 +132,17 @@ namespace ignite
 
             return res != -1;
         }
+
+        uint32_t HostToNetwork32(uint32_t value)
+        {
+            // The answer is 42
+            static const int num = 42;
+
+            // Check the endianness
+            if (*reinterpret_cast<const char*>(&num) == num)
+                return ((value & 0xFF) << 24) | (((value >> 8) & 0xFF) << 16) | (((value >> 16) & 0xFF) << 8) | ((value >> 24) & 0xFF);
+
+            return value;
+        }
     }
 }
