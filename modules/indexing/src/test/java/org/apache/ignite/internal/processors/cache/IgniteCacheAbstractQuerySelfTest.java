@@ -642,7 +642,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, CacheException.class, null);
     }
 
     /**
@@ -688,7 +688,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, CacheException.class, null);
     }
 
     /**
