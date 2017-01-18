@@ -378,8 +378,8 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @return {@code true} if given key belongs to local node.
      */
-    public boolean localNode(Object key, AffinityTopologyVersion topVer) {
-        return localNode(partition(key), topVer);
+    public boolean keyLocalNode(Object key, AffinityTopologyVersion topVer) {
+        return partitionLocalNode(partition(key), topVer);
     }
 
     /**
@@ -387,7 +387,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @return {@code true} if given partition belongs to local node.
      */
-    public boolean localNode(int part, AffinityTopologyVersion topVer) {
+    public boolean partitionLocalNode(int part, AffinityTopologyVersion topVer) {
         assert part >= 0 : "Invalid partition: " + part;
 
         return nodes(part, topVer).contains(cctx.localNode());
