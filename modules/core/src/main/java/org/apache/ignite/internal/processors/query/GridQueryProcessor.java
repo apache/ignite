@@ -435,6 +435,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (altTypeId != null)
                         types.put(altTypeId, desc);
 
+                    desc.typeId(typeId.valType != null ? typeId.valType.getName().hashCode() : typeId.valTypeId);
+
                     desc.registered(idx.registerType(ccfg.getName(), desc));
                 }
             }
