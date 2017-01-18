@@ -55,7 +55,7 @@ import org.jsr166.ThreadLocalRandom8;
  *
  * The test assigns partition ranges to specific grid nodes using special affinity implementation.
  */
-public class IgniteCacheDistributedQueryPartitionSetSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbstractTest {
     /** Region node attribute name. */
     private static final String REGION_ATTR_NAME = "reg";
 
