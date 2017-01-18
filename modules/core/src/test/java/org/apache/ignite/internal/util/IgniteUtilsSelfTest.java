@@ -50,6 +50,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -789,11 +790,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput dout = new DataOutputStream(baos);
 
-        IgniteUtils.writeUTFStringNullable(dout, s0);
+        IgfsUtils.writeUTFStringNullable(dout, s0);
 
         DataInput din = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
 
-        String s1 = IgniteUtils.readUTFStringNullable(din);
+        String s1 = IgfsUtils.readUTFStringNullable(din);
 
         assertEquals(s0, s1);
     }
