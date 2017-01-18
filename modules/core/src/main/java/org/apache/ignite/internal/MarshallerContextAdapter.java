@@ -154,7 +154,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         String clsName = map.get(id);
 
         if (clsName == null) {
-            registered = registerClassName(id, cls.getName());
+            registered = true;//registerClassName(id, cls.getName());
 
             if (registered)
                 map.putIfAbsent(id, cls.getName());

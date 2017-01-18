@@ -71,7 +71,7 @@ public class OperationStatistic {
     }
 
     public final void startOp(int op) {
-//        assert time[op] == -1L : time[op];
+        assert time[op] == -1L : time[op];
 
         time[op] = System.nanoTime();
     }
@@ -79,7 +79,7 @@ public class OperationStatistic {
     public final void endOp(int op) {
         long start = time[op];
 
-        //assert start > 0 : start;
+        assert start > 0 : start;
 
         time[op] = System.nanoTime() - start;
     }
