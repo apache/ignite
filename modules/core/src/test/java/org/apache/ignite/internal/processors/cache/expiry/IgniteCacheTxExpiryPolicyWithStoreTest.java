@@ -53,11 +53,11 @@ public class IgniteCacheTxExpiryPolicyWithStoreTest extends IgniteCacheExpiryPol
         getReadThrough(false, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
         getReadThrough(true, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
 
-//        getReadThrough(false, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
-//        getReadThrough(true, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
-//        getReadThrough(false, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-//        getReadThrough(true, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-//        getReadThrough(false, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
-//        getReadThrough(true, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
+        getReadThrough(false, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+        getReadThrough(true, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+        getReadThrough(false, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+        getReadThrough(true, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+        getReadThrough(false, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
+        getReadThrough(true, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
     }
 }

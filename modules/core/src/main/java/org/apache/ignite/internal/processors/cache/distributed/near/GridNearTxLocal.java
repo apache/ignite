@@ -1167,6 +1167,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param keys Keys.
      * @param retval Return value flag.
      * @param read Read flag.
+     * @param accessTtl Create ttl.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.
@@ -1177,6 +1178,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final Collection<? extends K> keys,
         boolean retval,
         boolean read,
+        long createTtl,
         long accessTtl,
         boolean skipStore,
         boolean keepBinary) {
@@ -1211,6 +1213,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             read,
             retval,
             isolation,
+            createTtl,
             accessTtl,
             CU.empty0(),
             skipStore,

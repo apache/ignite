@@ -248,7 +248,6 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
             for (Integer key : singleKeys)
                 assertEquals(key, cache.get(key));
 
-
             Map<Integer, Integer> res = new HashMap<>();
 
             res.putAll(cache.getAll(prims));
@@ -260,7 +259,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
             for (Map.Entry<Integer, Integer> e : res.entrySet())
                 assertEquals(e.getKey(), e.getValue());
 
-            tx.commit();
+            tx.rollback();
         }
 
         for (Integer key : keys)

@@ -1604,6 +1604,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     expiryPlc = cacheCtx.expiry();
 
                 long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
+                long createTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForCreation()) : CU.TTL_NOT_CHANGED;
 
                 long timeout = remainingTime();
 
@@ -1617,6 +1618,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     true,
                     isolation,
                     isInvalidate(),
+                    createTtl,
                     accessTtl);
 
                 final ExpiryPolicy expiryPlc0 = expiryPlc;
@@ -2967,6 +2969,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     retval,
                     isolation,
                     isInvalidate(),
+                    -1L,
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
@@ -3145,6 +3148,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     retval,
                     isolation,
                     isInvalidate(),
+                    -1L,
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
@@ -3439,6 +3443,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 retval,
                 isolation,
                 isInvalidate(),
+                -1L,
                 -1L);
 
             PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
