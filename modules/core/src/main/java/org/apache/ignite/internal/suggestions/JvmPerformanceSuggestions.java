@@ -41,6 +41,7 @@ public class JvmPerformanceSuggestions {
     private static final String NUMBER_OF_GC_LOG_FILES = "-XX:NumberOfGCLogFiles";
     private static final String GC_LOG_FILE_SIZE = "-XX:GCLogFileSize";
     private static final String XLOGGC = "-Xloggc";
+    private static final String USE_G1_GC = "-XX:+UseG1GC";
 
     /**
      * Log suggestions of JVM-tuning to increase Ignite performance.
@@ -68,6 +69,11 @@ public class JvmPerformanceSuggestions {
             U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
             for (String option : jvmOptions)
                 U.quietAndInfo(log, "    " + option);
+        }
+
+        if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC)) {
+            U.quietAndInfo(log, "For JDK 1.8 use the G1 garbage collector:");
+            U.quietAndInfo(log, "    " + USE_G1_GC);
         }
     }
 
