@@ -7,9 +7,13 @@ mvn clean package
 
 Artifacts can be found in /target/assembly directory.
 
-To build yardstick from Apache-Ignite sources use:
+To build yardstick from Apache Ignite sources use:
 
 mvn clean package -Pyardstick -pl modules/yardstick -am -DskipTests
+
+in Apache Ignite root directory
+
+Artifacts can be found in modules/yardstick/target/assembly directory.
 
 
 
