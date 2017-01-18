@@ -64,6 +64,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\binary_test_defs.h" />
     <ClInclude Include="..\..\include\ignite\binary_test_utils.h" />
+    <ClInclude Include="..\..\include\ignite\complex_type.h" />
+    <ClInclude Include="..\..\include\ignite\test_type.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

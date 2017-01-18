@@ -24,6 +24,9 @@
 #include <ignite/binary/binary_object.h>
 #include <ignite/binary/binary_writer.h>
 
+#include "ignite/test_type.h"
+#include "ignite/complex_type.h"
+
 using namespace ignite;
 using namespace ignite::binary;
 using namespace ignite::impl::interop;
@@ -172,6 +175,28 @@ BOOST_AUTO_TEST_CASE(PrimitiveTimestamp)
     CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(1998, 12, 3, 18, 32, 01, 593846589));
     CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(2017, 1, 18, 20, 50, 41, 920700532));
     CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampLocal(1998, 12, 3, 18, 32, 01, 2385));
+}
+
+BOOST_AUTO_TEST_CASE(UserTestType)
+{
+    CheckSimpleNP<TestType>(TestType());
+    CheckSimpleNP<TestType>(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
+        BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
+}
+
+BOOST_AUTO_TEST_CASE(UserComplexType)
+{
+    CheckSimpleNP<ComplexType>(ComplexType());
+
+    ComplexType nonDefault;
+
+    nonDefault.i32Field = 589630659;
+    nonDefault.strField = "Some string value";
+    nonDefault.objField.f1 = 403685016;
+    nonDefault.objField.f2 = "Whatever";
+
+    CheckSimpleNP<ComplexType>(nonDefault);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
