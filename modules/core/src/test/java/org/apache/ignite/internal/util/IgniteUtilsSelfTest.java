@@ -812,13 +812,13 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         checkString("Quick brown fox jumps over the lazy dog.");
 
-        String x = composeString(IgniteUtils.MAX_SAFE_WRITEUTF_LENGTH / 3);
+        String x = composeString(0xFFFF / 4 - 1);
         checkString(x);
 
-        x = composeString(IgniteUtils.MAX_SAFE_WRITEUTF_LENGTH / 3 + 1);
+        x = composeString(0xFFFF / 4);
         checkString(x);
 
-        x = composeString(65537);
+        x = composeString(0xFFFF / 4 + 1);
         checkString(x);
     }
 
