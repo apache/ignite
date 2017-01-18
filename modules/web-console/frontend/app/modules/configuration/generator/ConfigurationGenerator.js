@@ -1453,6 +1453,41 @@ export default class IgniteConfigurationGenerator {
         return ccfg;
     }
 
+    // Generation of constructor for affinity function.
+    static cacheAffinityFunction(cls, func) {
+        const affBean = new Bean(cls, 'affinityFunction', func);
+
+        affBean.boolConstructorArgument('excludeNeighbors')
+            .intProperty('partitions')
+            .emptyBeanProperty('affinityBackupFilter');
+
+        return affBean;
+    }
+
+    // Generate cache memory group.
+    static cacheAffinity(cache, ccfg = this.cacheConfigurationBean(cache)) {
+        switch (_.get(cache, 'affinity.kind')) {
+            case 'Rendezvous':
+                ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction', cache.affinity.Rendezvous));
+
+                break;
+            case 'Fair':
+                ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.fair.FairAffinityFunction', cache.affinity.Fair));
+
+                break;
+            case 'Custom':
+                ccfg.emptyBeanProperty('affinity.Custom.className', 'affinity');
+
+                break;
+            default:
+                // No-op.
+        }
+
+        ccfg.emptyBeanProperty('affinityMapper');
+
+        return ccfg;
+    }
+
     // Generate cache memory group.
     static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.enumProperty('memoryMode');
@@ -1728,6 +1763,7 @@ export default class IgniteConfigurationGenerator {
 
     static cacheConfiguration(cache, ccfg = this.cacheConfigurationBean(cache)) {
         this.cacheGeneral(cache, ccfg);
+        this.cacheAffinity(cache, ccfg);
         this.cacheMemory(cache, ccfg);
         this.cacheQuery(cache, cache.domains, ccfg);
         this.cacheStore(cache, cache.domains, ccfg);
