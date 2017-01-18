@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
@@ -666,6 +667,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             nodes = fallbacks(cctx.discovery().topologyVersionEx());
 
+            if (nodes.isEmpty()) {
+                throw new ClusterTopologyException(
+                        "Failed to execute the query (all cache affinity nodes left the grid)" +
+                                " [start topology version = " + cctx.versions().last().topologyVersion() +
+                                ", current topology version = " + qryMgr.queryTopologyVersion().topologyVersion() + ']');
+            }
             init();
         }
 
