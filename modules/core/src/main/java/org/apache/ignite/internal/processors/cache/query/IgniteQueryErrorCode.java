@@ -51,7 +51,7 @@ public final class IgniteQueryErrorCode {
     public final static int INVALID_STREAMING_STMT = 2004;
 
     /** Number of statement parameters does not divide number of given arguments evenly. */
-    public final static int ODD_BATCH_SIZE = 2005;
+    public final static int INVALID_PARAMS_NUMBER = 2005;
 
     /** Attempt to run a streamed DML query against the cache different than the one statement's streamer
      * is pinned to. */

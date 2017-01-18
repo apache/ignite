@@ -296,13 +296,13 @@ public class IgniteJdbcDriver implements Driver {
     private static final String PARAM_STREAMING = "streaming";
 
     /** DML streaming auto flush frequency. */
-    private static final String PARAM_STREAMING_FLUSH_FREQ = "streamingFlushFreq";
+    private static final String PARAM_STREAMING_FLUSH_FREQ = "streamingFlushFrequency";
 
     /** DML streaming node buffer size. */
-    private static final String PARAM_STREAMING_NODE_BUFFER_SIZE = "streamingBufSize";
+    private static final String PARAM_STREAMING_NODE_BUFFER_SIZE = "streamingBufferSizePerNode";
 
     /** DML streaming parallel operations per node. */
-    private static final String PARAM_STREAMING_NODE_PAR_OPS = "streamingParOps";
+    private static final String PARAM_STREAMING_NODE_PAR_OPS = "streamingParallelOperationsPerNode";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";

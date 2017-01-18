@@ -104,7 +104,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         Properties props = new Properties();
 
         props.setProperty(IgniteJdbcDriver.PROP_STREAM, "true");
-        props.setProperty(IgniteJdbcDriver.PROP_STREAM_FLUSH_TIMEOUT, "500");
+        props.setProperty(IgniteJdbcDriver.PROP_STREAM_FLUSH_FREQ, "500");
 
         conn = DriverManager.getConnection(BASE_URL, props);
     }

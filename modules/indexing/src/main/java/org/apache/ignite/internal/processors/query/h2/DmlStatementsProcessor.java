@@ -240,8 +240,9 @@ public class DmlStatementsProcessor {
 
         if (paramsCnt == 0)
             batchSize = 1;
-        else if (argsCnt < paramsCnt || argsCnt % paramsCnt != 0)
-            throw new IgniteSQLException("Odd number of query arguments", IgniteQueryErrorCode.ODD_BATCH_SIZE);
+        else if (argsCnt % paramsCnt != 0)
+            throw new IgniteSQLException("Invalid number of query arguments - " + paramsCnt + " expected, " +
+                (argsCnt % paramsCnt) + " given", IgniteQueryErrorCode.INVALID_PARAMS_NUMBER);
         else
             batchSize = argsCnt / paramsCnt;
 
@@ -405,8 +406,9 @@ public class DmlStatementsProcessor {
 
         if (paramsCnt == 0)
             batchSize = 1;
-        else if (argsCnt < paramsCnt || argsCnt % paramsCnt != 0)
-            throw new IgniteSQLException("Odd number of query arguments", IgniteQueryErrorCode.ODD_BATCH_SIZE);
+        else if (argsCnt % paramsCnt != 0)
+            throw new IgniteSQLException("Invalid number of query arguments - " + paramsCnt + " expected, " +
+                (argsCnt % paramsCnt) + " given", IgniteQueryErrorCode.INVALID_PARAMS_NUMBER);
         else
             batchSize = argsCnt / paramsCnt;
         
