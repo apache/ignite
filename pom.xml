@@ -491,6 +491,7 @@
                                             <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
                                         </copy>
 
+                                        <!--todo: only required jars should be exported to /benchmarks/libs during compilation-->
                                         <delete>
                                             <fileset dir="${basedir}/target/release-package/benchmarks/libs/">
                                                 <include name="junit-*.jar" />
@@ -500,6 +501,7 @@
                                             </fileset>
                                         </delete>
 
+                                        <!--todo: config structure should be refactored to be the same at "sources" and "released sources"-->
                                         <delete>
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config/">
                                                 <include name="*.*" />
@@ -523,6 +525,7 @@
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
                                         </copy>
 
+                                        <!--todo: replace with standalone pom.xml-->
                                         <copy file="${basedir}/modules/yardstick/pom.xml"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml" overwrite="true">
                                             <filterchain>
@@ -532,6 +535,7 @@
                                             </filterchain>
                                         </copy>
 
+                                        <!--todo: add section "build from standalone sources" or "build from Ignite sources" where necessary, instead of removing lines.-->
                                         <copy file="${basedir}/modules/yardstick/README.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                             <filterchain>
@@ -539,6 +543,8 @@
                                             </filterchain>
                                         </copy>
 
+                                        <!--todo: DEVNOTES as well as README should be present at both sources (original and released)-->
+                                        <!--todo: add section "standalone sources" or "Ignite sources" where necessary-->
                                         <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
