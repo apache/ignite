@@ -1509,7 +1509,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     String typeName = desc.typeName();
                     if (typeName == null || typeName.isEmpty())
                         typeName = String.valueOf(desc.typeId());
-                    return ex.typeName(typeName);
+                    throw ex.typeName(typeName);
                 }
 
                 streamPosition(footerStart + footerLen);

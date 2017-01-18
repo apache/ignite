@@ -16,10 +16,19 @@
  */
 package org.apache.ignite.internal.binary;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -28,8 +37,67 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
 
     /** */
-    public void testUnexpectedFlagValue() throws Exception {
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new BinaryMarshaller());
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+        ccfg.setCopyOnRead(true);
+        cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /** */
+    public void testUnexpectedFlagValue() throws Exception {
+        IgniteEx grid = grid();
+        IgniteCache<String, Value> cache = grid.cache(null);
+        String n = "key";
+        cache.put(n, new Value());
+        BinaryObjectImpl b = (BinaryObjectImpl)cache.withKeepBinary().get(n);
+        b.deserialize(); // deserialize working
+        byte[] a = b.array();
+        int unexpectedCnt = 0;
+        Field[] fields = Value.class.getDeclaredFields();
+        for (int i = b.dataStartOffset(), j = b.footerStartOffset(); i < j; ++i) {
+            byte old = a[i];
+            a[i] = -1;
+            try {
+                b.deserialize(); // deserialize error
+            }
+            catch (BinaryObjectException ex) {
+                if (ex.getMessage().startsWith("Unexpected flag value")) {
+                    String s = ex.toString();
+                    log().info(s);
+                    Field f = fields[unexpectedCnt];
+                    assertTrue("typeName must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value\"",
+                        s.contains("typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value"));
+                    assertTrue("fieldName must be equal " + f.getName(),
+                        s.contains("fieldName=" + f.getName()));
+                    ++unexpectedCnt;
+                }
+            }
+            catch (Exception ignore) {
+            }
+            a[i] = old;
+        }
+        assertEquals("Fields count must match \"Unexpected flag value\" exception count",
+            fields.length, unexpectedCnt);
     }
 
     /** */

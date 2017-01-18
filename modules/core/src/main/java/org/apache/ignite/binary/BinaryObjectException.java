@@ -18,6 +18,7 @@
 package org.apache.ignite.binary;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,7 +30,7 @@ public class BinaryObjectException extends IgniteException {
 
     /** */
     private String typeName;
-    
+
     /** */
     private String fieldName;
 
@@ -69,7 +70,7 @@ public class BinaryObjectException extends IgniteException {
             this.typeName = typeName;
         return this;
     }
-    
+
     /** Initialize the fieldName */
     public BinaryObjectException fieldName(String fieldName) {
         if (this.fieldName != null)
@@ -80,12 +81,16 @@ public class BinaryObjectException extends IgniteException {
     }
 
     /** Gets the typeName of the BinaryObject has been read */
-    public String  getTypeName() {
+    public String getTypeName() {
         return typeName;
     }
 
     /** Gets the fieldName of the BinaryObject has been read */
     public String getFieldName() {
         return fieldName;
+    }
+
+    @Override public String toString() {
+        return S.toString(BinaryObjectException.class, this, "message", getMessage());
     }
 }
