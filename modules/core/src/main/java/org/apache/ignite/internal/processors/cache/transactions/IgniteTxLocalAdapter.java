@@ -490,7 +490,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             ", entry=" + entry + ']');
                                     }
 
-                                    val = verVal.get1();
                                     ver = verVal.get2();
 
                                     break;
