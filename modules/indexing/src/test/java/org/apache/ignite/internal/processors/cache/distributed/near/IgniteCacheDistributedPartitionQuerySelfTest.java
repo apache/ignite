@@ -389,7 +389,23 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         }
 
         try {
-            qty.setPartitions(0, 1, -11);
+            qty.setPartitions(0, 1, -1);
+            fail();
+        } catch (Exception e) {
+            // No-op.
+        }
+
+        try {
+            qty.setPartitions(-1, -1, 1);
+            fail();
+        } catch (Exception e) {
+            // No-op.
+        }
+
+        qty.setPartitions(-1, CacheConfiguration.MAX_PARTITIONS_COUNT - 1, 1);
+
+        try {
+            qty.setPartitions(-1, CacheConfiguration.MAX_PARTITIONS_COUNT - 1, 2);
             fail();
         } catch (Exception e) {
             // No-op.
