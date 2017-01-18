@@ -1,7 +1,0 @@
-Yardstick Ignite Maven Build Instructions
-=========================================
-
-Yardstick can be build from sources using following maven command
-mvn clean package
-
-Artifacts can be found in /target/assembly directory.

@@ -525,27 +525,24 @@
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
                                         </copy>
 
-                                        <!--todo: replace with standalone pom.xml-->
-                                        <copy file="${basedir}/modules/yardstick/pom.xml"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml" overwrite="true">
-                                            <filterchain>
-                                                <replaceregex pattern="&lt;/modelVersion&gt;(.+?)&lt;/parent&gt;" replace="&lt;/modelVersion&gt;" flags="gis" byline="false"/>
-                                                <replaceregex pattern="&lt;artifactId&gt;ignite-yardstick" replace="&lt;groupId&gt;org.apache.ignite&lt;/groupId&gt;${line.separator}&#32;&#32;&#32;&#32;&lt;artifactId&gt;ignite-yardstick" flags="gis" byline="false"/>
-                                                <replaceregex pattern="ignite-yardstick&lt;/artifactId&gt;(.+?)&lt;/version&gt;" replace="ignite-yardstick&lt;/artifactId&gt;${line.separator}&#32;&#32;&#32;&#32;&lt;version&gt;${project.version}&lt;/version&gt;" flags="gis" byline="false"/>
-                                            </filterchain>
-                                        </copy>
+                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
 
-                                        <!--todo: add section "build from standalone sources" or "build from Ignite sources" where necessary, instead of removing lines.-->
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
+                                            <substitution expression="${project.version}"/>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
+                                                <include name="pom.xml"/>
+                                            </fileset>
+                                        </replaceregexp>
+
                                         <copy file="${basedir}/modules/yardstick/README.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
-                                            <filterchain>
-                                                <replaceregex pattern="Installation(.+?)Provided Benchmarks" replace="Provided Benchmarks" flags="gis" byline="false"/>
-                                            </filterchain>
                                         </copy>
 
                                         <!--todo: DEVNOTES as well as README should be present at both sources (original and released)-->
                                         <!--todo: add section "standalone sources" or "Ignite sources" where necessary-->
-                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
                                 </configuration>

@@ -17,6 +17,15 @@ mvn package
 
 command for Yardstick Ignite POM
 
+Building from standalone sources
+=====================
+Run
+
+mvn package
+
+command for Yardstick Ignite POM
+
+
 Provided Benchmarks
 ===================
 The following benchmarks are provided:
