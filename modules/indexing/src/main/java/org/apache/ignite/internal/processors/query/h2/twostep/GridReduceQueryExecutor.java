@@ -402,7 +402,8 @@ public class GridReduceQueryExecutor {
     /**
      * Checks if data nodes hold only partitions from passed partition set.
      * If yes we can skip partitions filtering for query.
-     *  @param topVer Topology version.
+     *
+     * @param topVer Topology version.
      * @param cctx Cache context.
      * @param parts Partitions.
      */
@@ -519,7 +520,6 @@ public class GridReduceQueryExecutor {
             final GridCacheContext<?, ?> cctx,
             List<Integer> extraSpaces,
             IntArrayWrapper parts) {
-
         boolean needPartFilter = needPartFilter(topVer, cctx, parts);
 
         Set<ClusterNode> nodes;
@@ -534,7 +534,7 @@ public class GridReduceQueryExecutor {
             nodes = stableDataNodesSet(topVer, cctx, parts);
 
             for (ClusterNode node : nodes)
-                map.put(node, null); // null value represents absence of partition filtering.
+                map.put(node, null); // Partition filter is not needed.
         }
 
         if (F.isEmpty(map))
@@ -642,13 +642,15 @@ public class GridReduceQueryExecutor {
                 if (cctx.isReplicated())
                     nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
                 else {
-                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces, parts == null ? null : new IntArrayWrapper(parts));
+                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces,
+                        parts == null ? null : new IntArrayWrapper(parts));
 
                     nodes = partsMap == null ? null : partsMap.keySet();
                 }
             }
             else {
-                Map<ClusterNode, IntArray> map = stableDataNodes(topVer, cctx, extraSpaces, parts == null ? null : new IntArrayWrapper(parts));
+                Map<ClusterNode, IntArray> map = stableDataNodes(topVer, cctx, extraSpaces,
+                    parts == null ? null : new IntArrayWrapper(parts));
 
                 if (map != null) {
                     nodes = map.keySet();
@@ -1552,35 +1554,33 @@ public class GridReduceQueryExecutor {
      *
      */
     private static class IntArrayWrapper {
-        /** Partition ids. */
-        private final int[] partIds;
+        /** Values. If first value is negative, then next two values represent start and count. */
+        private final int[] vals;
 
         /** */
-        IntArrayWrapper(int... partIds) {
-            this.partIds = partIds;
+        IntArrayWrapper(int... vals) {
+            this.vals = vals;
         }
 
         /** */
         private boolean isRange() {
-            return partIds[0] < 0;
+            return vals[0] < 0;
         }
 
         /**
          * Partition iterator.
-         *
-         *
          */
-        Iterator iterator() {
+        private Iterator iterator() {
             if (isRange())
                 return new Iterator() {
                     int c = 0;
 
                     @Override public boolean hasNext() {
-                        return c < partIds[2];
+                        return c < vals[2];
                     }
 
                     @Override public int next() {
-                        return partIds[1] + c++;
+                        return vals[1] + c++;
                     }
                 };
             else
@@ -1588,11 +1588,11 @@ public class GridReduceQueryExecutor {
                     int c = 0;
 
                     @Override public boolean hasNext() {
-                        return c < partIds.length;
+                        return c < vals.length;
                     }
 
                     @Override public int next() {
-                        return partIds[c++];
+                        return vals[c++];
                     }
                 };
         }
@@ -1600,35 +1600,33 @@ public class GridReduceQueryExecutor {
         /**
          * Returns a size of partitions set.
          */
-        int size() {
-            return isRange() ? partIds[1] : partIds.length;
+        private int size() {
+            return isRange() ? vals[1] : vals.length;
         }
 
         /**
-         * Check if set contains a partition.
+         * Check if set contains a value.
          *
-         * @param partId Partition id.
+         * @param val Value.
          */
-        boolean contains(int partId) {
+        private boolean contains(int val) {
             if (isRange())
-                return partIds[1] <= partId && partId < partIds[1] + partIds[2];
+                return vals[1] <= val && val < vals[1] + vals[2];
             else
-                return Arrays.binarySearch(partIds, partId) >= 0;
+                return Arrays.binarySearch(vals, val) >= 0;
         }
 
         /**
-         * Iterator over partitions.
-         *
-         * Partitions are returned in ascending order.
+         * Primitive int iterator. Values are returned in ascending order.
          */
         interface Iterator {
             /**
-             * @return {@code true} whether there is another partition.
+             * @return {@code true} if there is next value.
              */
             boolean hasNext();
 
             /**
-             * @return Next partition.
+             * @return Next value.
              */
             int next();
         }
