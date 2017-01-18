@@ -24,7 +24,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,7 +78,6 @@ import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_BATCH_SIZE;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_WRITE_ATTEMPTS;
-import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.numericTypes;
 
 /**
  * Implementation of {@link CacheStore} backed by JDBC.
@@ -1383,26 +1380,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         throws CacheException {
         try {
             if (fieldVal != null) {
-                if (field.getJavaFieldType() == UUID.class) {
-                    switch (field.getDatabaseFieldType()) {
-                        case Types.BINARY:
-                            fieldVal = U.uuidToBytes((UUID)fieldVal);
+                Object paramVal = getTransformer().getParameterValue(field, fieldVal);
 
-                            break;
-                        case Types.CHAR:
-                        case Types.VARCHAR:
-                            fieldVal = fieldVal.toString();
-
-                            break;
-                    }
-                }
-                else if (field.getJavaFieldType().isEnum()) {
-                    if (numericTypes.contains(field.getDatabaseFieldType()))
-                        fieldVal = ((Enum) fieldVal).ordinal();
-                    else fieldVal = fieldVal.toString();
-                }
-
-                stmt.setObject(idx, fieldVal);
+                stmt.setObject(idx, paramVal);
             }
             else
                 stmt.setNull(idx, field.getDatabaseFieldType());

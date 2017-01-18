@@ -20,26 +20,11 @@ package org.apache.ignite.cache.store.jdbc;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static java.sql.Types.BIGINT;
-import static java.sql.Types.DECIMAL;
-import static java.sql.Types.DOUBLE;
-import static java.sql.Types.FLOAT;
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.NUMERIC;
-import static java.sql.Types.REAL;
-import static java.sql.Types.SMALLINT;
-import static java.sql.Types.TINYINT;
 
 /**
  * API for implementing custom mapping logic for loaded from store data.
  */
 public interface JdbcTypesTransformer extends Serializable {
-    /** Numeric types. */
-    public List<Integer> numericTypes = U.sealList(TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, NUMERIC, DECIMAL);
-
     /**
      * Retrieves the value of the designated column in the current row of this <code>ResultSet</code> object and
      * will convert to the requested Java data type.
@@ -51,4 +36,13 @@ public interface JdbcTypesTransformer extends Serializable {
      * @throws SQLException If a database access error occurs or this method is called.
      */
     public Object getColumnValue(ResultSet rs, int colIdx, Class<?> type) throws SQLException;
+
+    /**
+     * Convert designated parameter to the requested database type.
+     *
+     * @param field Field descriptor.
+     * @param fieldVal Field value.
+     * @return Converter value.
+     */
+    public Object getParameterValue(JdbcTypeField field, Object fieldVal);
 }
