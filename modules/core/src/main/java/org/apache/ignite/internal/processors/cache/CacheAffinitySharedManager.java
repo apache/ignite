@@ -115,7 +115,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        lateAffAssign = cctx.kernalContext().config().isLateAffinityAssignment();
+        if (cctx.database().persistenceEnabled() && !cctx.kernalContext().config().isLateAffinityAssignment())
+            U.quietAndWarn(log,
+                "Persistence is enabled, but late affinity assignment is disabled. " +
+                    "Since it is required for persistence mode, it will be implicitly enabled.");
+
+        lateAffAssign = cctx.kernalContext().config().isLateAffinityAssignment() || cctx.database().persistenceEnabled();
 
         cctx.kernalContext().event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -488,7 +493,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      *
      */
-    public void removeAllCacheInfo(){
+    public void removeAllCacheInfo() {
         caches.clear();
 
         registeredCaches.clear();
@@ -690,7 +695,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processAffinityAssignmentResponse(Integer cacheId, UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+    private void processAffinityAssignmentResponse(Integer cacheId, UUID nodeId,
+        GridDhtAffinityAssignmentResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment response [node=" + nodeId + ", res=" + res + ']');
 
@@ -1263,8 +1269,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary,
         Map<Object, List<List<ClusterNode>>> affCache)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert lateAffAssign;
 
         AffinityTopologyVersion topVer = fut.topologyVersion();

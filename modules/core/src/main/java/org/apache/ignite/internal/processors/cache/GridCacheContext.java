@@ -1950,7 +1950,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache 'get' operation is allowed to get entry locally.
      */
     public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
-        return affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+        boolean result = affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+
+        // When persistence is enabled, only reading from partitions with OWNING state is allowed.
+        assert !result || !ctx.cache().context().database().persistenceEnabled() ||
+            topology().partitionState(localNodeId(), part) == OWNING;
+
+        return result;
     }
 
     /**
