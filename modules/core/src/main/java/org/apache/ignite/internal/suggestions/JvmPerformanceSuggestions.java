@@ -47,7 +47,7 @@ public class JvmPerformanceSuggestions {
      *
      * @param log - Logger.
      */
-    public static synchronized void logSuggestions(IgniteLogger log) {
+    public static synchronized void logSuggestions(@NotNull IgniteLogger log) {
 
         if (U.heapSize(1) > 30.5)
             U.quietAndInfo(log, "Heap size is greater than 30.5Gb, JVM will not use compressed oops.");
@@ -72,7 +72,7 @@ public class JvmPerformanceSuggestions {
     }
 
     @NotNull
-    private static List<String> getGCLoggingOptions(List<String> args) {
+    private static List<String> getGCLoggingOptions(@NotNull List<String> args) {
         List<String> options = new LinkedList<>();
 
         if (!args.contains(PRINT_GC_DETAILS))
@@ -100,7 +100,7 @@ public class JvmPerformanceSuggestions {
     }
 
     @NotNull
-    private static List<String> getRecommendedOptions(List<String> args) {
+    private static List<String> getRecommendedOptions(@NotNull List<String> args) {
         List<String> options = new LinkedList<>();
         // option '-server' isn't in input arguments
         if (!U.jvmName().toLowerCase().contains("server"))
@@ -121,7 +121,7 @@ public class JvmPerformanceSuggestions {
         return options;
     }
 
-    private static boolean anyStartWith(List<String> lines, String prefix) {
+    private static boolean anyStartWith(@NotNull List<String> lines, @NotNull String prefix) {
         for (String line : lines)
             if (line.startsWith(prefix))
                 return true;
