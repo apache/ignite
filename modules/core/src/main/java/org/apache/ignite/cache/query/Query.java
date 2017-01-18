@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -124,16 +125,21 @@ public abstract class Query<R> implements Serializable {
             A.notEmpty(parts, "Partitions");
 
             // Validate partitions.
-            for (int i = 0; i < parts.length; i++) {
-                if (parts[0] >= 0 && i < parts.length - 1)
-                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+            if (parts[0] < 0)
+                A.ensure(parts[1] >= 0 &&
+                        parts[1] < CacheConfiguration.MAX_PARTITIONS_COUNT && parts[2] > 0 &&
+                        parts[1] + parts[2] <= CacheConfiguration.MAX_PARTITIONS_COUNT, "Partition range is invalid");
+            else {
+                for (int i = 0; i < parts.length; i++) {
+                    if (i < parts.length - 1)
+                        A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
 
-                if (i > 0)
-                    A.ensure(parts[i] >= 0, "Partition number must be positive");
+                    A.ensure(parts[i] >= 0 && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
+                }
+
+                if (this.parts.length > 2)
+                    Arrays.sort(this.parts);
             }
-
-            if (this.parts.length > 2 && this.parts[0] >= 0)
-                Arrays.sort(this.parts);
         }
 
         return this;
