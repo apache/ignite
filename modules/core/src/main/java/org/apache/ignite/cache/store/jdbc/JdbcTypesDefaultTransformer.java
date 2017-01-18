@@ -168,7 +168,8 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
                     return fieldVal;
             }
         }
-        else if (field.getJavaFieldType().isEnum()) {
+
+        if (field.getJavaFieldType().isEnum()) {
             if (numericTypes.contains(field.getDatabaseFieldType()))
                 return ((Enum) fieldVal).ordinal();
 

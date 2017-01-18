@@ -2054,12 +2054,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                 int idx = 1;
 
-                for (Object key : keys)
+                for (Object key : keys) {
                     for (JdbcTypeField field : em.keyColumns()) {
                         Object fieldVal = extractParameter(em.cacheName, em.keyType(), em.keyKind(), field.getJavaFieldName(), key);
 
                         fillParameter(stmt, idx++, field, fieldVal);
                     }
+                }
 
                 ResultSet rs = stmt.executeQuery();
 
