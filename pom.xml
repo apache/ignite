@@ -540,8 +540,6 @@
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
-                                        <!--todo: DEVNOTES as well as README should be present at both sources (original and released)-->
-                                        <!--todo: add section "standalone sources" or "Ignite sources" where necessary-->
                                         <copy file="${basedir}/modules/yardstick/DEVNOTES.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
