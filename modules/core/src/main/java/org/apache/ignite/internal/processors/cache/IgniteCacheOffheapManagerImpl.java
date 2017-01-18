@@ -903,7 +903,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
+                CacheStatistics.opStart(PutStatistic.Ops.STORE_ADD);
+
                 rowStore.addRow(dataRow);
+
+                CacheStatistics.opEnd(PutStatistic.Ops.STORE_ADD);
 
                 assert dataRow.link() != 0 : dataRow;
 

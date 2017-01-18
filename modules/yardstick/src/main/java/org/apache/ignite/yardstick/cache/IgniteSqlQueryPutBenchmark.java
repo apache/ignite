@@ -48,9 +48,30 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        int i = rnd.nextInt(args.range());
+        if (rnd.nextBoolean()) {
+            double salary = rnd.nextDouble() * args.range() * 1000;
 
-        cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
+            double maxSalary = salary + 1000;
+
+            Collection<Cache.Entry<Integer, Object>> entries = executeQuery(salary, maxSalary);
+
+            for (Cache.Entry<Integer, Object> entry : entries) {
+                Person p = (Person)entry.getValue();
+
+                if (p.getSalary() < salary || p.getSalary() > maxSalary)
+                    throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
+                            ", person=" + p + ']');
+            }
+
+            qryCnt.getAndIncrement();
+        }
+        else {
+            int i = rnd.nextInt(args.range());
+
+            cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
+
+            putCnt.getAndIncrement();
+        }
 
         return true;
     }

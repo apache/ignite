@@ -29,8 +29,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.CacheStatistics;
-import org.apache.ignite.internal.util.PutStatistic;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**

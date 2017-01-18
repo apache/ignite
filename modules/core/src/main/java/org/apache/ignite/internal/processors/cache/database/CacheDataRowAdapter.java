@@ -58,7 +58,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected CacheObject val;
 
     /** */
-    protected long expireTime;
+    protected long expireTime = -1;
 
     /** */
     @GridToStringInclude
