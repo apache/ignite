@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -318,11 +319,12 @@ public interface GridCacheEntryEx {
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
+     * @param readerArgs Reader will be added if not null.
      * @return Cached value and entry version.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public EntryGetResult innerGetVersioned(
+    public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
@@ -333,7 +335,8 @@ public interface GridCacheEntryEx {
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary)
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -344,7 +347,7 @@ public interface GridCacheEntryEx {
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
-     * @return Cached value and entry version.
+     * @param readerArgs Reader will be added if not null.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @return Cached value, entry version and flag indicating if entry was reserved.
@@ -355,7 +358,8 @@ public interface GridCacheEntryEx {
         UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param ver Expected entry version.
@@ -751,13 +755,15 @@ public interface GridCacheEntryEx {
      * @param val New value.
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
-     * @return Non null version if value was set.
+     * @param readerArgs Reader will be added if not null.
+     * @return Current version and value.
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public GridCacheVersion versionedValue(CacheObject val,
+    public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
-        @Nullable GridCacheVersion newVer)
+        @Nullable GridCacheVersion newVer,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

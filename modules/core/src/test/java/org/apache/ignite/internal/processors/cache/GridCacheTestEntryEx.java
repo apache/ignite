@@ -430,7 +430,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean keepBinary,
+        @Nullable ReaderArguments args) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;
 
         return null;
@@ -448,7 +449,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) {
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;
@@ -684,9 +686,10 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersion versionedValue(CacheObject val,
+    @Override public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer) {
+        GridCacheVersion newVer,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;

@@ -1505,7 +1505,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     null,
                                     taskName,
                                     expiry,
-                                    true);
+                                    true,
+                                    null);
 
                                 if (res != null) {
                                     v = res.value();
@@ -2292,7 +2293,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         try {
                             GridCacheVersion ver = entry.version();
 
-                            entry.versionedValue(ctx.toCacheObject(v), null, ver);
+                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null);
                         }
                         catch (GridCacheEntryRemovedException e) {
                             assert false : "Entry should not get obsolete while holding lock [entry=" + entry +

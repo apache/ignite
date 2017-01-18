@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
-import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
@@ -528,7 +527,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 expiry,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                null);
 
                             if (res != null) {
                                 v = res.value();
@@ -602,6 +602,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         return getAllAsync(
             keys,
+            null,
             opCtx == null || !opCtx.skipStore(),
             false,
             subjId,
