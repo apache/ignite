@@ -790,11 +790,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput dout = new DataOutputStream(baos);
 
-        IgfsUtils.writeUTFStringNullable(dout, s0);
+        IgfsUtils.writeUTF(dout, s0);
 
         DataInput din = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
 
-        String s1 = IgfsUtils.readUTFStringNullable(din);
+        String s1 = IgfsUtils.readUTF(din);
 
         assertEquals(s0, s1);
     }

@@ -993,7 +993,7 @@ public class IgfsUtils {
             Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
-                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
+                map.put(readUTF(in), readUTF(in));
 
             return map;
         }
@@ -1011,8 +1011,8 @@ public class IgfsUtils {
             out.writeInt(map.size());
 
             for (Map.Entry<String, String> e : map.entrySet()) {
-                writeUTFStringNullable(out, e.getKey());
-                writeUTFStringNullable(out, e.getValue());
+                writeUTF(out, e.getKey());
+                writeUTF(out, e.getValue());
             }
         }
         else
@@ -1026,7 +1026,7 @@ public class IgfsUtils {
      * @param val Value.
      * @throws IOException If failed.
      */
-    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
         if (val == null)
             out.writeInt(-1);
         else {
@@ -1035,21 +1035,16 @@ public class IgfsUtils {
             if (val.length() <= MAX_STR_LEN)
                 out.writeUTF(val); // Optimized write in 1 chunk.
             else {
-                int begin = 0;
-                int end = MAX_STR_LEN;
+                int written = 0;
 
-                String part;
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
 
-                while (true) {
-                    part = val.substring(begin, end);
+                    String part = val.substring(written, written + partLen);
 
-                    out.writeUTF(part); // Write the part
+                    out.writeUTF(part);
 
-                    if (end == val.length())
-                        break;
-
-                    begin = end;
-                    end = (end + MAX_STR_LEN > val.length()) ? val.length() : end + MAX_STR_LEN;
+                    written += partLen;
                 }
             }
         }
@@ -1062,7 +1057,7 @@ public class IgfsUtils {
      * @return Value.
      * @throws IOException If failed.
      */
-    public static String readUTFStringNullable(DataInput in) throws IOException {
+    public static String readUTF(DataInput in) throws IOException {
         int len = in.readInt(); // May be zero.
 
         if (len < 0)
