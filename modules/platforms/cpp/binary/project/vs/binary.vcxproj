@@ -180,6 +180,7 @@
     <ClInclude Include="..\..\include\ignite\binary\binary.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_consts.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_containers.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_object.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />

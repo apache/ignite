@@ -38,6 +38,7 @@
     <None Include="..\..\config\invalid.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\binary_object_test.cpp" />
     <ClCompile Include="..\..\src\cache_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\decimal_test.cpp" />

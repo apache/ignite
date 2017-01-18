@@ -1,0 +1,177 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef _MSC_VER
+#   define BOOST_TEST_DYN_LINK
+#endif
+
+#include <boost/test/unit_test.hpp>
+
+#include <ignite/binary/binary_object.h>
+#include <ignite/binary/binary_writer.h>
+
+using namespace ignite;
+using namespace ignite::binary;
+using namespace ignite::impl::interop;
+using namespace ignite::impl::binary;
+
+template<typename T>
+void FillMem(InteropMemory& mem, const T& value)
+{
+    InteropOutputStream stream(&mem);
+    BinaryWriterImpl writer(&stream, 0);
+
+    writer.WriteObject<T>(value);
+
+    stream.Synchronize();
+}
+
+template<typename T>
+void CheckSimple(const T& value)
+{
+    InteropUnpooledMemory mem(1024);
+
+    FillMem<T>(mem, value);
+
+    BinaryObject obj(mem, 0);
+
+    T actual = obj.Deserialize<T>();
+
+    BOOST_REQUIRE_EQUAL(value, actual);
+}
+
+template<typename T>
+void CheckSimpleNP(const T& value)
+{
+    InteropUnpooledMemory mem(1024);
+
+    FillMem<T>(mem, value);
+
+    BinaryObject obj(mem, 0);
+
+    T actual = obj.Deserialize<T>();
+
+    BOOST_REQUIRE(value == actual);
+}
+
+BOOST_AUTO_TEST_SUITE(BinaryObjectTestSuite)
+
+BOOST_AUTO_TEST_CASE(PrimitiveInt8)
+{
+    CheckSimple<int8_t>(0);
+    CheckSimple<int8_t>(INT8_MAX);
+    CheckSimple<int8_t>(INT8_MIN);
+    CheckSimple<int8_t>(42);
+    CheckSimple<int8_t>(-12);
+    CheckSimple<int8_t>(0x7D);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveInt16)
+{
+    CheckSimple<int32_t>(0);
+    CheckSimple<int32_t>(INT16_MAX);
+    CheckSimple<int32_t>(INT16_MIN);
+    CheckSimple<int32_t>(42);
+    CheckSimple<int32_t>(12321);
+    CheckSimple<int32_t>(0x7AB0);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveInt32)
+{
+    CheckSimple<int32_t>(0);
+    CheckSimple<int32_t>(INT32_MAX);
+    CheckSimple<int32_t>(INT32_MIN);
+    CheckSimple<int32_t>(42);
+    CheckSimple<int32_t>(1337);
+    CheckSimple<int32_t>(0xA2496BC9);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveInt64)
+{
+    CheckSimple<int64_t>(0);
+    CheckSimple<int64_t>(INT64_MAX);
+    CheckSimple<int64_t>(INT64_MIN);
+    CheckSimple<int64_t>(42);
+    CheckSimple<int64_t>(13371337133713371337LL);
+    CheckSimple<int64_t>(0xA928673F501CC09E);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveBool)
+{
+    CheckSimple<bool>(true);
+    CheckSimple<bool>(false);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveFloat)
+{
+    CheckSimple<float>(0.0);
+    CheckSimple<float>(1E38f);
+    CheckSimple<float>(-1E38f);
+    CheckSimple<float>(1E-38f);
+    CheckSimple<float>(-1E-38f);
+    CheckSimple<float>(42.0f);
+    CheckSimple<float>(42.42f);
+    CheckSimple<float>(1337.1337f);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveDouble)
+{
+    CheckSimple<double>(0);
+    CheckSimple<double>(1E127);
+    CheckSimple<double>(-1E127);
+    CheckSimple<double>(1E-127);
+    CheckSimple<double>(-1E-127);
+    CheckSimple<double>(42);
+    CheckSimple<double>(42.42);
+    CheckSimple<double>(1337.1337 * 1337.1337);
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveString)
+{
+    CheckSimple<std::string>("");
+    CheckSimple<std::string>("Lorem ipsum");
+    CheckSimple<std::string>("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
+        "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, "
+        "quis nostrud exercitation");
+
+    CheckSimple<std::string>(std::string(1000, '.'));
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveGuid)
+{
+    CheckSimple<Guid>(Guid(0, 0));
+    CheckSimple<Guid>(Guid(0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF));
+    CheckSimple<Guid>(Guid(0x4F9039DEF0FB8000, 0x905AE8A2D6FD49C1));
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveDate)
+{
+    CheckSimpleNP<Date>(Date(0));
+    CheckSimpleNP<Date>(BinaryUtils::MakeDateGmt(1998, 12, 3, 18, 32, 01));
+    CheckSimpleNP<Date>(BinaryUtils::MakeDateGmt(2017, 1, 18, 20, 50, 41));
+    CheckSimpleNP<Date>(BinaryUtils::MakeDateLocal(1998, 12, 3, 18, 32, 01));
+}
+
+BOOST_AUTO_TEST_CASE(PrimitiveTimestamp)
+{
+    CheckSimpleNP<Timestamp>(Timestamp(0));
+    CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(1998, 12, 3, 18, 32, 01, 593846589));
+    CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(2017, 1, 18, 20, 50, 41, 920700532));
+    CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampLocal(1998, 12, 3, 18, 32, 01, 2385));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
