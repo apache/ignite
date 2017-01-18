@@ -1229,7 +1229,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
-            initNew();
+            initTree(true);
         }
 
         /** {@inheritDoc} */

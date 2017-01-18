@@ -54,7 +54,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.GridArrays;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -114,6 +116,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private final AtomicLong globalRmvId;
+
+    /** */
+    private volatile TreeMetaData treeMeta;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -248,7 +253,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     return NOT_FOUND;
             }
 
-            assert !io.isLeaf();
+            assert !io.isLeaf() : io;
 
             // If idx == cnt then we go right down, else left down: getLeft(cnt) == getRight(cnt - 1).
             g.pageId = inner(io).getLeft(pageAddr, idx);
@@ -531,6 +536,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (needWalDeltaRecord(meta))
                 wal.log(new MetaPageCutRootRecord(cacheId, meta.id()));
 
+            int newLvl = lvl - 1;
+
+            assert io.getRootLevel(pageAddr) == newLvl;
+
+            treeMeta = new TreeMetaData(newLvl, io.getFirstPageId(pageAddr, newLvl));
+
             return TRUE;
         }
     };
@@ -551,6 +562,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (needWalDeltaRecord(meta))
                 wal.log(new MetaPageAddRootRecord(cacheId, meta.id(), rootPageId));
 
+            assert io.getRootLevel(pageAddr) == lvl;
+            assert io.getFirstPageId(pageAddr, lvl) == rootPageId;
+
+            treeMeta = new TreeMetaData(lvl, rootPageId);
+
             return TRUE;
         }
     };
@@ -568,6 +584,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             if (needWalDeltaRecord(meta))
                 wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+
+            assert io.getRootLevel(pageAddr) == 0;
+            assert io.getFirstPageId(pageAddr, 0) == rootId;
+
+            treeMeta = new TreeMetaData(0, rootId);
 
             return TRUE;
         }
@@ -633,39 +654,73 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * Initialize new index.
+     * Initialize new tree.
      *
+     * @param initNew {@code True} if new tree should be created.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void initNew() throws IgniteCheckedException {
-        // Allocate the first leaf page, it will be our root.
-        long rootId = allocatePage(null);
+    protected final void initTree(boolean initNew) throws IgniteCheckedException {
+        if (initNew) {
+            // Allocate the first leaf page, it will be our root.
+            long rootId = allocatePage(null);
 
-        try (Page root = page(rootId)) {
-            initPage(pageMem, root, this, latestLeafIO(), wal);
-        }
+            try (Page root = page(rootId)) {
+                initPage(pageMem, root, this, latestLeafIO(), wal);
+            }
 
-        // Initialize meta page with new root page.
-        try (Page meta = page(metaPageId)) {
-            Bool res = writePage(pageMem, meta, this, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0, FALSE);
+            // Initialize meta page with new root page.
+            try (Page meta = page(metaPageId)) {
+                Bool res = writePage(pageMem, meta, this, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0, FALSE);
 
-            assert res == TRUE: res;
+                assert res == TRUE: res;
+            }
+
+            assert treeMeta != null;
         }
     }
 
     /**
-     * @param meta Meta page.
-     * @return Root level.
+     * @return Tree meta data.
+     * @throws IgniteCheckedException If failed.
      */
-    private int getRootLevel(Page meta) {
-        long pageAddr = readLock(meta); // Meta can't be removed.
+    private TreeMetaData treeMeta() throws IgniteCheckedException {
+        TreeMetaData meta0 = treeMeta;
 
-        try {
-            return BPlusMetaIO.VERSIONS.forPage(pageAddr).getRootLevel(pageAddr);
+        if (meta0 != null)
+            return meta0;
+
+        try (Page meta = page(metaPageId)) {
+            long pageAddr = readLock(meta); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
+
+                int rootLvl = io.getRootLevel(pageAddr);
+                long rootId = io.getFirstPageId(pageAddr, rootLvl);
+
+                treeMeta = meta0 = new TreeMetaData(rootLvl, rootId);
+            }
+            finally {
+                readUnlock(meta, pageAddr);
+            }
         }
-        finally {
-            readUnlock(meta, pageAddr);
-        }
+
+        return meta0;
+    }
+
+    /**
+     * @return Root level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int getRootLevel() throws IgniteCheckedException {
+        TreeMetaData meta0 = treeMeta();
+
+        assert meta0 != null;
+
+        return meta0.rootLvl;
     }
 
     /**
@@ -790,24 +845,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     private void doFind(Get g) throws IgniteCheckedException {
-        try {
-            for (;;) { // Go down with retries.
-                g.init();
+        for (;;) { // Go down with retries.
+            g.init();
 
-                switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
-                    case RETRY:
-                    case RETRY_ROOT:
-                        checkInterrupted();
+            switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
+                case RETRY:
+                case RETRY_ROOT:
+                    checkInterrupted();
 
-                        continue;
+                    continue;
 
-                    default:
-                        return;
-                }
+                default:
+                    return;
             }
-        }
-        finally {
-            g.releaseMeta();
         }
     }
 
@@ -904,7 +954,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         int rootLvl;
 
         try (Page meta = page(metaPageId)) {
-            rootLvl = getRootLevel(meta);
+            rootLvl = getRootLevel();
 
             if (rootLvl < 0)
                 fail("Root level: " + rootLvl);
@@ -913,7 +963,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             rootPageId = getFirstPageId(meta, rootLvl);
 
-            validateDownPages(meta, rootPageId, 0L, rootLvl);
+            validateDownPages(rootPageId, 0L, rootLvl);
 
             validateDownKeys(rootPageId, null);
         }
@@ -1064,13 +1114,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param meta Meta page.
      * @param pageId Page ID.
      * @param fwdId Forward ID.
      * @param lvl Level.
      * @throws IgniteCheckedException If failed.
      */
-    private void validateDownPages(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
+    private void validateDownPages(long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
             long pageAddr = readLock(page); // No correctness guaranties.
 
@@ -1096,13 +1145,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     fail("Negative count: " + cnt);
 
                 if (io.isLeaf()) {
-                    if (cnt == 0 && getRootLevel(meta) != 0)
+                    if (cnt == 0 && getRootLevel() != 0)
                         fail("Empty leaf page.");
                 }
                 else {
                     // Recursively go down if we are on inner level.
                     for (int i = 0; i < cnt; i++)
-                        validateDownPages(meta, inner(io).getLeft(pageAddr, i), inner(io).getRight(pageAddr, i), lvl - 1);
+                        validateDownPages(inner(io).getLeft(pageAddr, i), inner(io).getRight(pageAddr, i), lvl - 1);
 
                     if (fwdId != 0) {
                         // For the rightmost child ask neighbor.
@@ -1123,7 +1172,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     pageId = inner(io).getLeft(pageAddr, cnt); // The same as io.getRight(cnt - 1) but works for routing pages.
 
-                    validateDownPages(meta, pageId, fwdId, lvl - 1);
+                    validateDownPages(pageId, fwdId, lvl - 1);
                 }
             }
             finally {
@@ -1290,7 +1339,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                             // If not found, then the tree grew beyond our call stack -> retry from the actual root.
                             if (res == RETRY || res == NOT_FOUND) {
-                                int root = getRootLevel(r.meta);
+                                int root = getRootLevel();
 
                                 boolean checkRes = r.checkTailLevel(root);
 
@@ -1321,7 +1370,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         finally {
             r.releaseTail();
-            r.releaseMeta();
 
             r.reuseFreePages();
         }
@@ -1466,9 +1514,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public final int rootLevel() throws IgniteCheckedException {
         checkDestroyed();
 
-        try (Page meta = page(metaPageId)) {
-            return getRootLevel(meta);
-        }
+        return getRootLevel();
     }
 
     /**
@@ -1551,7 +1597,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             // It must be impossible to have an insert higher than the current root,
                             // because we are making decision about creating new root while keeping
                             // write lock on current root, so it can't concurrently change.
-                            assert p.btmLvl <= getRootLevel(p.meta);
+                            assert p.btmLvl <= getRootLevel();
 
                             checkInterrupted();
 
@@ -1573,9 +1619,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on row: " + row, e);
-        }
-        finally {
-            p.releaseMeta();
         }
     }
 
@@ -1898,9 +1941,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** Starting point root ID. May be outdated. Must be modified only in {@link Get#init()}. */
         protected long rootId;
 
-        /** Meta page. Initialized by {@link Get#init()}, released by {@link Get#releaseMeta()}. */
-        protected Page meta;
-
         /** */
         protected L row;
 
@@ -1928,33 +1968,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * Initialize operation.
          *
-         * !!! Symmetrically with this method must be called {@link Get#releaseMeta()} in {@code finally} block.
-         *
          * @throws IgniteCheckedException If failed.
          */
         final void init() throws IgniteCheckedException {
-            if (meta == null)
-                meta = page(metaPageId);
+            TreeMetaData meta0 = treeMeta();
 
-            int rootLvl;
-            long rootId;
+            assert meta0 != null;
 
-            long pageAddr = readLock(meta); // Meta can't be removed.
-
-            assert pageAddr != 0 : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-                rootLvl = io.getRootLevel(pageAddr);
-                rootId = io.getFirstPageId(pageAddr, rootLvl);
-            }
-            finally {
-                readUnlock(meta, pageAddr);
-            }
-
-            restartFromRoot(rootId, rootLvl, globalRmvId.get());
+            restartFromRoot(meta0.rootId, meta0.rootLvl, globalRmvId.get());
         }
 
         /**
@@ -1994,16 +2015,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert lvl >= 0;
 
             return lvl == 0; // Stop if we are at the bottom.
-        }
-
-        /**
-         * Release meta page.
-         */
-        final void releaseMeta() {
-            if (meta != null) {
-                meta.close();
-                meta = null;
-            }
         }
 
         /**
@@ -2269,7 +2280,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             wal.log(new FixCountRecord(cacheId, page.id(), cnt - 1));
                     }
 
-                    if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
+                    if (!hadFwd && lvl == getRootLevel()) { // We are splitting root.
                         long newRootId = allocatePage(bag);
 
                         try (Page newRoot = page(newRootId)) {
@@ -2303,9 +2314,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             }
                         }
 
-                        Bool res = writePage(pageMem, meta, BPlusTree.this, addRoot, newRootId, lvl + 1, FALSE);
+                        try (Page meta = page(metaPageId)) {
+                            Bool res = writePage(pageMem, meta, BPlusTree.this, addRoot, newRootId, lvl + 1, FALSE);
 
-                        assert res == TRUE: res;
+                            assert res == TRUE : res;
+                        }
 
                         return null; // We've just moved link up to root, nothing to return here.
                     }
@@ -2624,7 +2637,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     assert needReplaceInner != TRUE;
 
-                    if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl) {
+                    if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel() == tail.lvl) {
                         // Free root if it became empty after merge.
                         cutRoot(tail.lvl);
                         freePage(tail.page, tail.buf, false);
@@ -2995,9 +3008,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void cutRoot(int lvl) throws IgniteCheckedException {
-            Bool res = writePage(pageMem, meta, BPlusTree.this, cutRoot, null, lvl, FALSE);
+            try (Page meta = page(metaPageId)) {
+                Bool res = writePage(pageMem, meta, BPlusTree.this, cutRoot, null, lvl, FALSE);
 
-            assert res == TRUE: res;
+                assert res == TRUE : res;
+            }
         }
 
         /**
@@ -3777,6 +3792,31 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public long pollFreePage() {
             return isEmpty() ? 0 : remove();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TreeMetaData {
+        /** */
+        final int rootLvl;
+
+        /** */
+        final long rootId;
+
+        /**
+         * @param rootLvl Root level.
+         * @param rootId Root page ID.
+         */
+        TreeMetaData(int rootLvl, long rootId) {
+            this.rootLvl = rootLvl;
+            this.rootId = rootId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TreeMetaData.class, this);
         }
     }
 

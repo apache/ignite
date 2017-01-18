@@ -182,8 +182,7 @@ public class MetadataStorage implements MetaStore {
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
 
-            if (initNew)
-                initNew();
+            initTree(initNew);
         }
 
         /** {@inheritDoc} */

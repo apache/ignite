@@ -63,8 +63,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
         this.rowStore = rowStore;
 
-        if (initNew)
-            initNew();
+        initTree(initNew);
     }
 
     /**

@@ -391,7 +391,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                     if (sharedCtx.pageStore() != null)
                         sharedCtx.pageStore().onDeActivate(ctx);
 
-                    sharedCtx.wal().onDeActivate(ctx);
+                    if (sharedCtx.wal() != null)
+                        sharedCtx.wal().onDeActivate(ctx);
                 }
             }
             catch (Exception e) {
@@ -443,7 +444,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 if (sharedCtx.pageStore() != null)
                     sharedCtx.pageStore().onActivate(ctx);
 
-                sharedCtx.wal().onActivate(ctx);
+                if (sharedCtx.wal() != null)
+                    sharedCtx.wal().onActivate(ctx);
 
                 sharedCtx.database().initDataBase();
 
@@ -576,7 +578,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 if (sharedCtx.pageStore() != null)
                     sharedCtx.pageStore().onDeActivate(ctx);
 
-                sharedCtx.wal().onDeActivate(ctx);
+                if (sharedCtx.wal() != null)
+                    sharedCtx.wal().onDeActivate(ctx);
 
                 sharedCtx.affinity().removeAllCacheInfo();
             }

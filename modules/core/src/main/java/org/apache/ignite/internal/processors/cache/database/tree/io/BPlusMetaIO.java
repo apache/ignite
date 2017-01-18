@@ -104,7 +104,7 @@ public class BPlusMetaIO extends PageIO {
      * @param pageId Page ID.
      */
     private void setFirstPageId(long pageAddr, int lvl, long pageId) {
-        assert lvl >= 0 && lvl < getLevelsCount(pageAddr);
+        assert lvl >= 0 && lvl < getLevelsCount(pageAddr) : lvl;
 
         PageUtils.putLong(pageAddr, offset(lvl), pageId);
 
