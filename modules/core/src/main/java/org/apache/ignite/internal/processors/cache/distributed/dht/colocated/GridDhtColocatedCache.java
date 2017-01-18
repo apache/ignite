@@ -496,7 +496,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    null);
 
                                 if (res != null) {
                                     v = res.value();

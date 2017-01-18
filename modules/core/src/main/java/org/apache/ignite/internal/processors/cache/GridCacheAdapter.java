@@ -1789,6 +1789,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return getAllAsync(keys,
+            null,
             opCtx == null || !opCtx.skipStore(),
             !skipTx,
             subjId,
@@ -1803,6 +1804,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
+     * @param readerArgs Near cache reader will be added if not null.
      * @param readThrough Read through.
      * @param checkTx Check tx.
      * @param subjId Subj Id.
@@ -1817,6 +1819,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @see GridCacheAdapter#getAllAsync(Collection)
      */
     public final IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
+        @Nullable final ReaderArguments readerArgs,
         boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1834,6 +1837,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
+            readerArgs,
             readThrough,
             checkTx,
             subjId,
@@ -1848,6 +1852,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
+     * @param readerArgs Near cache reader will be added if not null.
      * @param readThrough Read-through flag.
      * @param checkTx Check local transaction flag.
      * @param subjId Subject ID.
@@ -1862,6 +1867,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
         @Nullable final Collection<KeyCacheObject> keys,
+        @Nullable final ReaderArguments readerArgs,
         final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1932,7 +1938,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     subjId,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    readerArgs);
 
                                 assert res != null;
 
@@ -1957,7 +1964,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     null,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    readerArgs);
 
                                 if (res == null)
                                     ctx.evicts().touch(entry, topVer);
@@ -2015,29 +2023,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                GridCacheVersion verSet = entry.versionedValue(cacheVal,
+                                                T2<CacheObject, GridCacheVersion> verVal = entry.versionedValue(
+                                                    cacheVal,
                                                     res.version(),
-                                                    null);
-
-                                                boolean set = verSet != null;
+                                                    null,
+                                                    readerArgs);
 
                                                 if (log.isDebugEnabled())
                                                     log.debug("Set value loaded from store into entry [" +
-                                                        "set=" + set +
-                                                        ", curVer=" + res.version() +
-                                                        ", newVer=" + verSet + ", " +
+                                                        "oldVer=" + res.version() +
+                                                        ", newVer=" + verVal.get2() + ", " +
                                                         "entry=" + entry + ']');
 
                                                 // Don't put key-value pair into result map if value is null.
-                                                if (val != null) {
+                                                if (verVal.get1() != null) {
                                                     ctx.addResult(map,
                                                         key,
-                                                        cacheVal,
+                                                        verVal.get1(),
                                                         skipVals,
                                                         keepCacheObjects,
                                                         deserializeBinary,
-                                                        false,
-                                                        needVer ? set ? verSet : res.version() : null);
+                                                        true,
+                                                        needVer ? verVal.get2() : null);
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

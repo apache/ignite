@@ -438,7 +438,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             null,
                             resolveTaskName(),
                             expiryPlc,
-                            txEntry == null ? keepBinary : txEntry.keepBinary());
+                            txEntry == null ? keepBinary : txEntry.keepBinary(),
+                            null);
 
                         if (res == null) {
                             if (misses == null)
@@ -477,17 +478,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null);
+                                    T2<CacheObject, GridCacheVersion> verVal = entry.versionedValue(cacheVal,
+                                        ver,
+                                        null,
+                                        null);
 
-                                    boolean set = setVer != null;
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Set value loaded from store into entry [" +
+                                            "oldVer=" + ver +
+                                            ", newVer=" + verVal.get2() +
+                                            ", entry=" + entry + ']');
+                                    }
 
-                                    if (set)
-                                        ver = setVer;
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Set value loaded from store into entry [set=" + set +
-                                            ", curVer=" + ver + ", newVer=" + setVer + ", " +
-                                            "entry=" + entry + ']');
+                                    ver = verVal.get2();
 
                                     break;
                                 }
@@ -1232,7 +1235,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     transformClo,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary());
+                                    txEntry.keepBinary(),
+                                    null);
 
                                 if (res != null) {
                                     val = res.value();
@@ -1316,7 +1320,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
-                                        !deserializeBinary) : null;
+                                        !deserializeBinary,
+                                        null) : null;
 
                                 if (res != null) {
                                     val = res.value();
@@ -1666,7 +1671,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             transformClo,
                                             resolveTaskName(),
                                             null,
-                                            txEntry.keepBinary());
+                                            txEntry.keepBinary(),
+                                            null);
 
                                         if (res != null) {
                                             val = res.value();
@@ -2390,7 +2396,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         entryProcessor,
                                         resolveTaskName(),
                                         null,
-                                        keepBinary) : null;
+                                        keepBinary,
+                                        null) : null;
 
                                 if (res != null) {
                                     old = res.value();
