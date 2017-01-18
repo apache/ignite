@@ -196,7 +196,7 @@ public class Person implements Serializable {
     @Override public String toString() {
         return "Person [id=" + id +
             ", orgId=" + orgId +
-            ", birthday=" + birthday.getTime() +
+            ", birthday=" + (birthday == null ? null : birthday.getTime()) +
             ", name=" + name +
             "]";
     }
