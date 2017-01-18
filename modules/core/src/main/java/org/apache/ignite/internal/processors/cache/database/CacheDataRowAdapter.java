@@ -21,14 +21,17 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -88,26 +91,37 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean first = true;
 
         do {
-            try (Page page = page(pageId(nextLink), cctx)) {
-                ByteBuffer buf = page.getForRead(); // Non-empty data page must not be recycled.
+            PageMemory pageMem = cctx.shared().database().pageMemory();
 
-                assert buf != null: nextLink;
+            try (Page page = page(pageId(nextLink), cctx)) {
+                long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
+
+                assert pageAddr != 0L : nextLink;
 
                 try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    nextLink = io.setPositionAndLimitOnPayload(buf, itemId(nextLink));
+                    DataPagePayload data = io.readPayload(pageAddr,
+                        itemId(nextLink),
+                        pageMem.pageSize());
+
+                    nextLink = data.nextLink();
 
                     if (first) {
                         if (nextLink == 0) {
                             // Fast path for a single page row.
-                            readFullRow(coctx, buf, keyOnly);
+                            readFullRow(coctx, pageAddr + data.offset(), keyOnly);
 
                             return;
                         }
 
                         first = false;
                     }
+
+                    ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+
+                    buf.position(data.offset());
+                    buf.limit(data.offset() + data.payloadSize());
 
                     incomplete = readFragment(coctx, buf, keyOnly, incomplete);
 
@@ -121,7 +135,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
         while(nextLink != 0);
 
-        assert isReady(): "ready";
+        assert isReady() : "ready";
     }
 
     /**
@@ -130,6 +144,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param keyOnly {@code true} If need to read only key object.
      * @param incomplete Incomplete object.
      * @throws IgniteCheckedException If failed.
+     * @return Read object.
      */
     private IncompleteObject<?> readFragment(
         CacheObjectContext coctx,
@@ -175,12 +190,23 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /**
      * @param coctx Cache object context.
-     * @param buf Buffer.
+     * @param addr Address.
      * @param keyOnly {@code true} If need to read only key object.
      * @throws IgniteCheckedException If failed.
      */
-    private void readFullRow(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly) throws IgniteCheckedException {
-        key = coctx.processor().toKeyCacheObject(coctx, buf);
+    private void readFullRow(CacheObjectContext coctx, long addr, boolean keyOnly) throws IgniteCheckedException {
+        int off = 0;
+
+        int len = PageUtils.getInt(addr, off);
+        off += 4;
+
+        byte type = PageUtils.getByte(addr, off);
+        off++;
+
+        byte[] bytes = PageUtils.getBytes(addr, off, len);
+        off += len;
+
+        key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
 
         if (keyOnly) {
             assert key != null: "key";
@@ -188,9 +214,22 @@ public class CacheDataRowAdapter implements CacheDataRow {
             return;
         }
 
-        val = coctx.processor().toCacheObject(coctx, buf);
-        ver = CacheVersionIO.read(buf, false);
-        expireTime = buf.getLong();
+        len = PageUtils.getInt(addr, off);
+        off += 4;
+
+        type = PageUtils.getByte(addr, off);
+        off++;
+
+        bytes = PageUtils.getBytes(addr, off, len);
+        off += len;
+
+        val = coctx.processor().toCacheObject(coctx, type, bytes);
+
+        ver = CacheVersionIO.read(addr + off, false);
+
+        off += CacheVersionIO.size(ver, false);
+
+        expireTime = PageUtils.getLong(addr, off);
 
         assert isReady(): "ready";
     }
@@ -249,6 +288,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
      */
     private IncompleteObject<?> readIncompleteExpireTime(
         ByteBuffer buf,
@@ -292,6 +332,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
      */
     private IncompleteObject<?> readIncompleteVersion(
         ByteBuffer buf,
@@ -381,6 +422,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public void link(long link) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hash() {
         throw new UnsupportedOperationException();
     }
 

@@ -90,6 +90,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
@@ -237,7 +238,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
@@ -634,16 +635,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
 
-            // Check discovery.
-            ClusterNode node = ctx.discovery().node(nodeId);
-
-            if (node == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Ignoring message from dead node [senderId=" + nodeId + ", msg=" + msg + ']');
-
-                return; // We can't receive messages from non-discovered ones.
-            }
-
             if (msg.topic() == null) {
                 int topicOrd = msg.topicOrdinal();
 
@@ -696,6 +687,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case MARSH_CACHE_POOL:
                 case IDX_POOL:
                 case IGFS_POOL:
+                case DATA_STREAMER_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -798,7 +790,30 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     msgC.run();
                 }
             }
+
+            @Override public String toString() {
+                return "Message closure [msg=" + msg + ']';
+            }
         };
+
+        if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
+            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
+
+            if (msg0.processFromNioThread()) {
+                c.run();
+
+                return;
+            }
+        }
+
+        if (ctx.config().getStripedPoolSize() > 0 &&
+            plc == GridIoPolicy.SYSTEM_POOL &&
+            msg.partition() != Integer.MIN_VALUE
+            ) {
+            ctx.getStripedExecutorService().execute(msg.partition(), c);
+
+            return;
+        }
 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();

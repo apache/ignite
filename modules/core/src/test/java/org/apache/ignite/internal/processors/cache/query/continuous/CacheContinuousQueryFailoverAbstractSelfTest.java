@@ -136,6 +136,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setLateAffinityAssignment(true);
+
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -537,11 +539,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             Affinity<Object> aff = grid(i).affinity(null);
 
-            Map<Integer, Long> act = grid(i).cachex(null).context().topology().updateCounters(false);
+            Map<Integer, T2<Long, Long>> act = grid(i).cachex(null).context().topology().updateCounters(false);
 
             for (Map.Entry<Integer, Long> e : updCntrs.entrySet()) {
                 if (aff.mapPartitionToPrimaryAndBackups(e.getKey()).contains(grid(i).localNode()))
-                    assertEquals(e.getValue(), act.get(e.getKey()));
+                    assertEquals(e.getValue(), act.get(e.getKey()).get2());
             }
         }
 

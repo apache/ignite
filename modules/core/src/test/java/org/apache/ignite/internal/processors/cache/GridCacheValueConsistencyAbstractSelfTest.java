@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -28,8 +27,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
@@ -397,8 +394,6 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         info("Checking keySet consistency");
 
-        for (int g = 0; g < gridCount(); g++)
-            checkKeySet(grid(g));
     }
 
     /**
@@ -420,30 +415,5 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                 ", primary=" + primary +
                 ", backup=" + backup + ']');
         }
-    }
-
-    /**
-     * @param g Grid to check.
-     */
-    private void checkKeySet(Ignite g) {
-        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
-
-        Set<Object> keys = cache.keySet();
-
-        int cacheSize = cache.size();
-        int keySetSize = keys.size();
-
-        int itSize = 0;
-
-        for (Object ignored : keys)
-            itSize++;
-
-        int valsSize = F.size(cache.values().iterator());
-
-        info("cacheSize=" + cacheSize + ", keysSize=" + keySetSize + ", valsSize=" + valsSize +
-            ", itSize=" + itSize + ']');
-
-        assertEquals("cacheSize vs itSize", cacheSize, itSize);
-        assertEquals("cacheSize vs keySeySize", cacheSize, keySetSize);
     }
 }

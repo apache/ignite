@@ -54,8 +54,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -67,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -215,7 +216,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (detailMetricsSz > 0)
             detailMetrics = new ConcurrentHashMap8<>(detailMetricsSz);
-        
+
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
@@ -433,7 +434,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // No-op.
 
         if (!enterBusy())
-            return; // Ignore index update when node is stopping.
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
         try {
             qryProc.store(space, key, partId, prevVal, prevVer, val, ver, expirationTime, link);
@@ -1247,16 +1248,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (log.isDebugEnabled()) {
                         ClusterNode primaryNode = CU.primaryNode(cctx, key);
 
-                        log.debug("Record [key=" + key +
-                            ", val=" + val +
-                            ", incBackups=" + incBackups +
-                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
-                            ", node=" + U.id8(cctx.localNode().id()) + ']');
+                        log.debug(S.toString("Record",
+                            "key", key, true,
+                            "val", val, true,
+                            "incBackups", incBackups, false,
+                            "priNode", primaryNode != null ? U.id8(primaryNode.id()) : null, false,
+                            "node", U.id8(cctx.localNode().id()), false));
                     }
 
                     if (val == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Unsuitable record value: " + val);
+                            log.debug(S.toString("Unsuitable record value", "val", val, true));
 
                         continue;
                     }
@@ -1269,9 +1271,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
+                    K key0 = null;
+                    V val0 = null;
+
                     if (readEvt) {
-                        K key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
-                        V val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
+                        key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
 
                         switch (type) {
                             case SQL:
@@ -1340,12 +1345,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (rdc != null || trans != null) {
-                        Cache.Entry<K, V> entry;
+                        if (key0 == null)
+                            key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        if (val0 == null)
+                            val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
 
-                        if (qry.keepBinary())
-                            entry = cache.<K, V>keepBinary().getEntry(key);
-                        else
-                            entry = cache.<K, V>getEntry(key);
+                        Cache.Entry<K, V> entry = new CacheEntryImpl(key0, val0);
 
                         // Reduce.
                         if (rdc != null) {
@@ -1942,7 +1947,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty())
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true);
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
@@ -2892,6 +2897,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private GridIterator<CacheDataRow> it;
 
+        /** Need advance. */
+        private boolean needAdvance;
+
         /**
          * @param it Iterator.
          * @param plc Expiry policy.
@@ -2920,24 +2928,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             this.keepBinary = keepBinary;
             expiryPlc = cctx.cache().expiryPolicy(plc);
 
-            advance();
+            needAdvance = true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean onHasNext() {
+            if (needAdvance) {
+                advance();
+
+                needAdvance = false;
+            }
+
             return next != null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteBiTuple<K, V> onNext() {
+            if (needAdvance)
+                advance();
+            else
+                needAdvance = true;
+
             if (next == null)
                 throw new NoSuchElementException();
 
-            IgniteBiTuple<K, V> next0 = next;
-
-            advance();
-
-            return next0;
+            return next;
         }
 
         /** {@inheritDoc} */

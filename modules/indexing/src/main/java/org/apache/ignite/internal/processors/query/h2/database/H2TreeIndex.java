@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -26,18 +25,16 @@ import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseS
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.processors.query.h2.opt.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
-import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
@@ -81,18 +78,23 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         name = BPlusTree.treeName(name, "H2Tree");
 
-        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
+        if (cctx.affinityNode()) {
+            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        RootPage page = cctx.offheap().rootPageForIndex(name);
+            RootPage page = cctx.offheap().rootPageForIndex(name);
 
-        tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
-            dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
-            tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
-            @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
-                throws IgniteCheckedException {
-                return compareRows(getRow(io, buf, idx, false), row);
-            }
-        };
+            tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
+                dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
+                tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
+                @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
+                    throws IgniteCheckedException {
+                    return compareRows(getRow(io, pageAddr, idx), row);
+                }
+            };
+        }
+        else
+            // We need indexes on the client node, but index will not contain any data.
+            tree = null;
 
         initDistributedJoinMessaging(tbl);
     }
@@ -196,9 +198,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public void destroy() {
         try {
-            tree.destroy();
+            if (!cctx.kernalContext().clientNode()) {
+                tree.destroy();
 
-            cctx.offheap().dropRootPageForIndex(tree.getName());
+                cctx.offheap().dropRootPageForIndex(tree.getName());
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -209,83 +213,34 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object doTakeSnapshot() {
-        assert false;
-
-        return this;
+    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot() {
+        return tree;
     }
 
-    /**
-     * Cursor.
-     */
-    private static class H2Cursor implements Cursor {
-        /** */
-        final GridCursor<GridH2Row> cursor;
+    /** {@inheritDoc} */
+    protected IgniteTree<SearchRow, GridH2Row> treeForRead() {
+        return tree;
+    }
 
-        /** */
-        final IgniteBiPredicate<Object,Object> filter;
+    /** {@inheritDoc} */
+    protected GridCursor<GridH2Row> doFind0(
+        IgniteTree t,
+        @Nullable SearchRow first,
+        boolean includeFirst,
+        @Nullable SearchRow last,
+        IndexingQueryFilter filter) {
+        includeFirst &= first != null;
 
-        /** */
-        final long time = U.currentTimeMillis();
+        try {
+            GridCursor<GridH2Row> range = tree.find(first, last);
 
-        /**
-         * @param cursor Cursor.
-         * @param filter Filter.
-         */
-        private H2Cursor(GridCursor<GridH2Row> cursor, IgniteBiPredicate<Object,Object> filter) {
-            assert cursor != null;
+            if (range == null)
+                return EMPTY_CURSOR;
 
-            this.cursor = cursor;
-            this.filter = filter;
+            return filter(range, filter);
         }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            try {
-                return cursor.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            try {
-                while (cursor.next()) {
-                    GridH2Row row = cursor.get();
-
-                    if (row.expireTime() > 0 && row.expireTime() <= time)
-                        continue;
-
-                    if (filter == null)
-                        return true;
-
-                    Object key = row.getValue(0).getObject();
-                    Object val = row.getValue(1).getObject();
-
-                    assert key != null;
-                    assert val != null;
-
-                    if (filter.apply(key, val))
-                        return true;
-                }
-
-                return false;
-            }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            throw DbException.getUnsupportedException("previous");
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
         }
     }
 }

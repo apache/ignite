@@ -81,6 +81,9 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
+    /** */
+    private transient AffinityTopologyVersion clientCacheStartVer;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -300,6 +303,20 @@ public class DynamicCacheDescriptor {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Version when client cache on local node was started.
+     */
+    @Nullable AffinityTopologyVersion clientCacheStartVersion() {
+        return clientCacheStartVer;
+    }
+
+    /**
+     * @param clientCacheStartVer Version when client cache on local node was started.
+     */
+    public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
+        this.clientCacheStartVer = clientCacheStartVer;
     }
 
     /** {@inheritDoc} */

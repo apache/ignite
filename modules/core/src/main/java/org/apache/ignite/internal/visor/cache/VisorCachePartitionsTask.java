@@ -125,9 +125,9 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<String, Map<UUI
 
                         // Pass -1 as topology version in order not to wait for topology version.
                         if (part.primary(AffinityTopologyVersion.NONE))
-                            parts.addPrimary(p, sz, 0, 0);
+                            parts.addPrimary(p, sz, 0);
                         else if (part.state() == GridDhtPartitionState.OWNING && part.backup(AffinityTopologyVersion.NONE))
-                            parts.addBackup(p, sz, 0, 0);
+                            parts.addBackup(p, sz, 0);
                     }
                 }
             }

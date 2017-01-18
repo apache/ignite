@@ -83,7 +83,9 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     private static String initCp;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected final void beforeTestsStarted() throws Exception {
+        HadoopFileSystemsUtils.clearFileSystemCache();
+
         // Add surefire classpath to regular classpath.
         initCp = System.getProperty("java.class.path");
 
@@ -93,6 +95,16 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
             System.setProperty("java.class.path", initCp + File.pathSeparatorChar + surefireCp);
 
         super.beforeTestsStarted();
+
+        beforeTestsStarted0();
+    }
+
+    /**
+     * Performs additional initialization in the beginning of test class execution.
+     * @throws Exception If failed.
+     */
+    protected void beforeTestsStarted0() throws Exception {
+        // noop
     }
 
     /** {@inheritDoc} */
@@ -234,6 +246,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS scheme for test.
      */
     protected String igfsScheme() {
-        return "igfs://:" + getTestGridName(0) + "@/";
+        return "igfs://@/";
     }
 }

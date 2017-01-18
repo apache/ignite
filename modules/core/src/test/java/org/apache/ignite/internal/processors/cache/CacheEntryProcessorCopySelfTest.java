@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -68,10 +69,6 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMutableEntryWithP2PEnabled() throws Exception {
-        // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
-        // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
-        fail("https://ggsystems.atlassian.net/browse/GG-11148");
-
         doTestMutableEntry(true);
     }
 
@@ -79,10 +76,6 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMutableEntryWithP2PDisabled() throws Exception {
-        // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
-        // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
-        fail("https://ggsystems.atlassian.net/browse/GG-11148");
-
         doTestMutableEntry(false);
     }
 
@@ -101,8 +94,9 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
             doTest(true, false, OLD_VAL, 1);
 
             // One deserialization due to copyOnRead == true.
-            // Additional deserialization in case p2p enabled due to storeValue == true on update entry.
-            doTest(true, true, NEW_VAL, p2pEnabled ? 2 : 1);
+            // Additional deserialization in case p2p enabled and not BinaryMarshaller due to storeValue == true on update entry.
+            doTest(true, true, NEW_VAL, p2pEnabled &&
+                !(grid.configuration().getMarshaller() instanceof BinaryMarshaller) ? 2 : 1);
 
             // No deserialization.
             doTest(false, false, NEW_VAL, 0);

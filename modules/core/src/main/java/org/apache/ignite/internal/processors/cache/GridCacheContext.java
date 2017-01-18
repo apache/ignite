@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.CacheStatistics;
 import org.apache.ignite.internal.util.F0;
@@ -1961,6 +1962,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
         return affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+    }
+
+    /**
+     * @return {@code True} if fast eviction is allowed.
+     */
+    public boolean allowFastEviction() {
+        return shared().database().persistenceEnabled() && !GridQueryProcessor.isEnabled(cacheCfg);
     }
 
     /**

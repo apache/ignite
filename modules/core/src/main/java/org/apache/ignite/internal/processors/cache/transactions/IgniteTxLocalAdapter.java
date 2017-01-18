@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -395,7 +396,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> loadMissing(
         final GridCacheContext cacheCtx,
-        AffinityTopologyVersion topVer,
+        final AffinityTopologyVersion topVer,
         final boolean readThrough,
         boolean async,
         final Collection<KeyCacheObject> keys,
@@ -475,10 +476,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
                             while (true) {
-                                GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
+                                GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
 
                                 try {
-                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null);
+                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null, null);
 
                                     boolean set = setVer != null;
 
@@ -1031,8 +1032,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
+     * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit) {
+    public void tmFinish(boolean commit) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
@@ -1093,7 +1095,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             setRollbackOnly();
 
             throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
-                ", tx=" + this + ']', commitErr);
+                ", tx=" + this + ']');
         }
 
         if (near()) {
@@ -1104,27 +1106,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            try {
-                cctx.tm().rollbackTx(this);
+            cctx.tm().rollbackTx(this);
 
-                if (!internal()) {
-                    Collection<CacheStoreManager> stores = txState.stores(cctx);
+            if (!internal()) {
+                Collection<CacheStoreManager> stores = txState.stores(cctx);
 
-                    if (stores != null && !stores.isEmpty()) {
-                        assert isWriteToStoreFromDhtValid(stores) :
-                            "isWriteToStoreFromDht can't be different within one transaction";
+                if (stores != null && !stores.isEmpty()) {
+                    assert isWriteToStoreFromDhtValid(stores) :
+                        "isWriteToStoreFromDht can't be different within one transaction";
 
-                        boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+                    boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
 
-                        if (stores != null && !stores.isEmpty() && (near() || isWriteToStoreFromDht))
-                            sessionEnd(stores, false);
-                    }
+                    if (!stores.isEmpty() && (near() || isWriteToStoreFromDht))
+                        sessionEnd(stores, false);
                 }
-            }
-            catch (Error | IgniteCheckedException | RuntimeException e) {
-                U.addLastCause(e, commitErr, log);
-
-                throw e;
             }
         }
     }
@@ -1533,7 +1528,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         assert txEntry != null || readCommitted() || skipVals;
 
-                        GridCacheEntryEx e = txEntry == null ? entryEx(cacheCtx, txKey) : txEntry.cached();
+                        GridCacheEntryEx e = txEntry == null ? entryEx(cacheCtx, txKey, topVer) : txEntry.cached();
 
                         if (readCommitted() || skipVals) {
                             cacheCtx.evicts().touch(e, topologyVersion());
@@ -3359,10 +3354,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         assert keys0 != null;
 
-        if (log.isDebugEnabled()) {
-            log.debug("Called removeAllAsync(...) [tx=" + this + ", keys=" + keys0 + ", implicit=" + implicit +
-                ", retval=" + retval + "]");
-        }
+        if (log.isDebugEnabled())
+            log.debug(S.toString("Called removeAllAsync(...)",
+                "tx", this, false,
+                "keys", keys0, true,
+                "implicit", implicit, false,
+                "retval", retval, false));
 
         try {
             checkValid();

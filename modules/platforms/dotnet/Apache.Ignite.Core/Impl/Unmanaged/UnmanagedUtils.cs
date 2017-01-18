@@ -38,9 +38,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var platfrom = Environment.Is64BitProcess ? "x64" : "x86";
+            var platform = Environment.Is64BitProcess ? "x64" : "x86";
 
-            var resName = string.Format("{0}.{1}", platfrom, IgniteUtils.FileIgniteJniDll);
+            var resName = string.Format("{0}.{1}", platform, IgniteUtils.FileIgniteJniDll);
 
             var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
@@ -514,11 +514,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void DestroyJvm(void* ctx)
         {
             JNI.DestroyJvm(ctx);
-        }
-
-        internal static bool ListenableCancel(IUnmanagedTarget target)
-        {
-            return JNI.ListenableCancel(target.Context, target.Target);
         }
 
         #endregion

@@ -110,6 +110,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REST_MAX_TASK_RESULTS = "IGNITE_REST_MAX_TASK_RESULTS";
 
     /**
+     * This property allows to override default behavior that rest processor
+     * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
+     */
+    public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
+
+    /**
      * This property defines the maximum number of attempts to remap near get to the same
      * primary node. Remapping may be needed when topology is changed concurrently with
      * get operation.
@@ -125,6 +131,11 @@ public final class IgniteSystemProperties {
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
+
+    /**
+     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     */
+    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -488,6 +499,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
+     * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
+     * only one node for host in cluster.
+     */
+    public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
+
+    /** */
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
+
+    /**
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
      * <p>
@@ -495,6 +515,29 @@ public final class IgniteSystemProperties {
      */
     @Deprecated
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
+
+    /**
+     * Whether Ignite can access unaligned memory addresses.
+     * <p>
+     * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
+     */
+    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
+
+    /**
+     * When unsafe memory copy if performed below this threshold, Ignite will do it on per-byte basis instead of
+     * calling to Unsafe.copyMemory().
+     * <p>
+     * Defaults to 0, meaning that threshold is disabled.
+     */
+    public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
+
+    /**
+     * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
+     * old behavior query processor with IndexingSpi.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
     /**
      * Enforces singleton.
@@ -584,6 +627,34 @@ public final class IgniteSystemProperties {
 
         try {
             res = Integer.parseInt(s);
+        }
+        catch (NumberFormatException ignore) {
+            res = dflt;
+        }
+
+        return res;
+    }
+
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value
+     * @return Float value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
+    public static float getFloat(String name, float dflt) {
+        String s = getString(name);
+
+        if (s == null)
+            return dflt;
+
+        float res;
+
+        try {
+            res = Float.parseFloat(s);
         }
         catch (NumberFormatException ignore) {
             res = dflt;

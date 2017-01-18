@@ -20,15 +20,14 @@ package org.apache.ignite.internal.pagemem.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemory;
-import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
@@ -90,10 +88,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     public static final int PAGE_ID_OFFSET = 8;
 
     /** Page pin counter offset. */
-    public static final int PIN_CNT_OFFSET = 16;
-
-    /** Page pin counter offset. */
-    public static final int LOCK_OFFSET = 24;
+    public static final int LOCK_OFFSET = 16;
 
     /**
      * Need a 8-byte pointer for linked list, 8 bytes for internal needs (flags),
@@ -134,21 +129,28 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private OffheapReadWriteLock rwLock;
 
+    /** */
+    private final boolean trackAcquiredPages;
+
     /**
+     * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
+     * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
     public PageMemoryNoStoreImpl(
         IgniteLogger log,
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
-        int pageSize
+        int pageSize,
+        boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;
 
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
         this.directMemoryProvider = directMemoryProvider;
+        this.trackAcquiredPages = trackAcquiredPages;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -205,6 +207,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
+    @Override public ByteBuffer pageBuffer(long pageAddr) {
+        return wrapPointer(pageAddr, pageSize());
+    }
+
+    /** {@inheritDoc} */
     @Override public long allocatePage(int cacheId, int partId, byte flags) {
         long relPtr = INVALID_REL_PTR;
         long absPtr = 0;
@@ -213,13 +220,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             relPtr = seg.borrowFreePage();
 
             if (relPtr != INVALID_REL_PTR) {
-                absPtr = seg.absolute(relPtr);
+                absPtr = seg.absolute(PageIdUtils.pageIndex(relPtr));
 
                 break;
             }
         }
 
-        // No segments conatined a free page.
+        // No segments contained a free page.
         if (relPtr == INVALID_REL_PTR) {
             int segAllocIdx = nextRoundRobinIndex();
 
@@ -231,7 +238,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 relPtr = seg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
-                    absPtr = seg.absolute(relPtr);
+                    absPtr = seg.absolute(PageIdUtils.pageIndex(relPtr));
 
                     break;
                 }
@@ -248,9 +255,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         writePageId(absPtr, pageId);
 
-        // Clear pin counter.
-        GridUnsafe.putLong(absPtr + PIN_CNT_OFFSET, 0);
-
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
 
@@ -259,7 +263,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public boolean freePage(int cacheId, long pageId) {
-        Segment seg = segment(pageId);
+        Segment seg = segment(PageIdUtils.pageIndex(pageId));
 
         seg.releaseFreePage(pageId);
 
@@ -268,25 +272,25 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public Page page(int cacheId, long pageId) throws IgniteCheckedException {
-        Segment seg = segment(pageId);
+        int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        return seg.acquirePage(cacheId, pageId, false);
+        Segment seg = segment(pageIdx);
+
+        return seg.acquirePage(pageIdx, pageId);
     }
 
     /** {@inheritDoc} */
     @Override public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
-        Segment seg = segment(pageId);
-
-        return seg.acquirePage(cacheId, pageId, restore);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void releasePage(Page p) {
-        PageNoStoreImpl page = (PageNoStoreImpl)p;
+        if (trackAcquiredPages) {
+            Segment seg = segment(PageIdUtils.pageIndex(p.id()));
 
-        Segment seg = segments[page.segmentIndex()];
-
-        seg.releasePage(page);
+            seg.onPageRelease();
+        }
     }
 
     /** {@inheritDoc} */
@@ -414,7 +418,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     ByteBuffer wrapPointer(long ptr, int len) {
         ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
 
-        buf.order(ByteOrder.nativeOrder());
+        buf.order(NATIVE_BYTE_ORDER);
 
         return buf;
     }
@@ -435,17 +439,15 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param absPtr Absolute memory pointer to the page header.
      * @param pageId Page ID to write.
      */
-    void writePageId(long absPtr, long pageId) {
+    private void writePageId(long absPtr, long pageId) {
         GridUnsafe.putLong(absPtr + PAGE_ID_OFFSET, pageId);
     }
 
     /**
-     * @param pageId Page ID.
+     * @param pageIdx Page index.
      * @return Segment.
      */
-    private Segment segment(long pageId) {
-        long pageIdx = PageIdUtils.pageIndex(pageId);
-
+    private Segment segment(int pageIdx) {
         int segIdx = segmentIndex(pageIdx);
 
         return segments[segIdx];
@@ -539,63 +541,31 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          * @return Pinned page impl.
          */
         @SuppressWarnings("TypeMayBeWeakened")
-        private PageNoStoreImpl acquirePage(int cacheId, long pageId, boolean restore) {
-            long absPtr = absolute(pageId);
+        private PageNoStoreImpl acquirePage(int pageIdx, long pageId) {
+            long absPtr = absolute(pageIdx);
 
-            long marker = GridUnsafe.getLong(absPtr);
+            if (trackAcquiredPages)
+                acquiredPages.incrementAndGet();
 
-            if (marker != PAGE_MARKER)
-                throw new IllegalStateException("Page was not allocated [absPtr=" + U.hexLong(absPtr) +
-                    ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) +
-                    ", marker=" + U.hexLong(marker) + ']');
-
-            while (true) {
-                long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
-
-                if (pinCnt < 0)
-                    throw new IllegalStateException("Page has been deallocated [absPtr=" + U.hexLong(absPtr) +
-                        ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) + ", pinCnt=" + pinCnt + ']');
-
-                if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt + 1))
-                    break;
-            }
-
-            acquiredPages.incrementAndGet();
-
-            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, idx, absPtr, cacheId, pageId, restore);
+            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, absPtr, pageId);
         }
 
         /**
-         * @param pinnedPage Page to unpin.
          */
-        private void releasePage(PageNoStoreImpl pinnedPage) {
-            long absPtr = pinnedPage.absolutePointer();
-
-            while (true) {
-                long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
-
-                assert pinCnt > 0 : "Releasing a page that was not pinned [page=" + pinnedPage +
-                    ", pinCnt=" + pinCnt + ']';
-
-                if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt - 1))
-                    break;
-            }
-
+        private void onPageRelease() {
             acquiredPages.decrementAndGet();
         }
 
         /**
-         * @param relativePtr Relative pointer.
+         * @param pageIdx Page index.
          * @return Absolute pointer.
          */
-        private long absolute(long relativePtr) {
-            int pageIdx = PageIdUtils.pageIndex(relativePtr);
-
+        private long absolute(int pageIdx) {
             pageIdx &= idxMask;
 
-            long offset = pageIdx * sysPageSize;
+            long off = ((long)pageIdx) * sysPageSize;
 
-            return pagesBase + offset;
+            return pagesBase + off;
         }
 
         /**
@@ -616,24 +586,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          * @param pageId Page ID to release.
          */
         private void releaseFreePage(long pageId) {
+            int pageIdx = PageIdUtils.pageIndex(pageId);
+
             // Clear out flags and file ID.
-            long relPtr = PageIdUtils.pageId(0, (byte)0, PageIdUtils.pageIndex(pageId));
+            long relPtr = PageIdUtils.pageId(0, (byte)0, pageIdx);
 
-            long absPtr = absolute(relPtr);
-
-            // Prepare page to free.
-            // First, swap pin counter down to -1.
-            while (true) {
-                long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
-
-                assert pinCnt >= 0 : "pinCnt=" + pinCnt + ", relPtr=" + U.hexLong(relPtr);
-
-                if (pinCnt > 0)
-                    throw new IllegalStateException("Releasing a page being in use: " + U.hexLong(relPtr));
-
-                if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, 0, -1))
-                    break;
-            }
+            long absPtr = absolute(pageIdx);
 
             // Second, write clean relative pointer instead of page ID.
             writePageId(absPtr, relPtr);
@@ -665,7 +623,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
                 if (freePageRelPtr != INVALID_REL_PTR) {
-                    long freePageAbsPtr = absolute(freePageRelPtr);
+                    long freePageAbsPtr = absolute(PageIdUtils.pageIndex(freePageRelPtr));
 
                     long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
 

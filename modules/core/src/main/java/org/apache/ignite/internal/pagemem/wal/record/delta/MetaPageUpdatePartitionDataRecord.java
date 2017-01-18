@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 
 /**
@@ -37,17 +37,23 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private byte state;
 
+    /** */
+    private int allocatedIdxCandidate;
+
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
+     * @param allocatedIdxCandidate Page Allocated index candidate
      */
-    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize, byte state) {
+    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize,
+        byte state, int allocatedIdxCandidate) {
         super(cacheId, pageId);
 
         this.updateCntr = updateCntr;
         this.globalRmvId = globalRmvId;
         this.partSize = partSize;
         this.state = state;
+        this.allocatedIdxCandidate = allocatedIdxCandidate;
     }
 
     /**
@@ -79,12 +85,19 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(buf);
+    @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
+        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setUpdateCounter(buf, updateCntr);
-        io.setGlobalRemoveId(buf, globalRmvId);
-        io.setSize(buf, partSize);
+        io.setUpdateCounter(pageAddr, updateCntr);
+        io.setGlobalRemoveId(pageAddr, globalRmvId);
+        io.setSize(pageAddr, partSize);
+    }
+
+    /**
+     *
+     */
+    public int allocatedIndexCandidate() {
+        return allocatedIdxCandidate;
     }
 
     /** {@inheritDoc} */

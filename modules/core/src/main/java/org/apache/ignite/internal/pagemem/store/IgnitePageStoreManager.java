@@ -25,11 +25,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgnitePageStoreManager extends GridCacheSharedManager {
+public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
      * Invoked before starting checkpoint recover.
      */
@@ -75,7 +76,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public void onPartitionDestroyed(int cacheId, int partId) throws IgniteCheckedException;
+    public void onPartitionDestroyed(int cacheId, int partId, int tag) throws IgniteCheckedException;
 
     /**
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
@@ -115,7 +116,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    public void write(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void write(int cacheId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the page store file.
@@ -182,4 +183,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @return saved configuration for cache
      */
     public CacheConfiguration readConfiguration(String cacheName);
+
+    /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if index store for given cache existed before node started.
+     */
+    public boolean hasIndexStore(int cacheId);
 }

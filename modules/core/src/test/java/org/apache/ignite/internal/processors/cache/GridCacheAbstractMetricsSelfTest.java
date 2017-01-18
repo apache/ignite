@@ -615,6 +615,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMisses() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         int keyCnt = keyCount();
@@ -657,12 +659,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMissesOnEmptyCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
         assertEquals("Expected 0 miss", 0, cache.localMetrics().getCacheMisses());
 
-        Integer key =  null;
+        Integer key = null;
 
         for (int i = 0; i < 1000; i++) {
             if (affinity(cache).isPrimary(grid(0).localNode(), i)) {
@@ -709,6 +713,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testManualEvictions() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
@@ -765,7 +771,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());
 
-        long startTime = System.currentTimeMillis();
+        long startTime = U.currentTimeMillis();
 
         if (inTx) {
             // Rollback transaction for the first time.
@@ -804,11 +810,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
 
-                assert curEntry.expireTime() > startTime;
+                assertTrue(curEntry.expireTime() >= startTime);
 
                 expireTimes[i] = curEntry.expireTime();
             }
@@ -834,11 +840,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
 
-                assert curEntry.expireTime() > startTime;
+                assertTrue(curEntry.expireTime() >= startTime);
 
                 expireTimes[i] = curEntry.expireTime();
             }
@@ -864,11 +870,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
 
-                assert curEntry.expireTime() > startTime;
+                assertTrue(curEntry.expireTime() >= startTime);
 
                 expireTimes[i] = curEntry.expireTime();
             }
@@ -898,9 +904,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
+
                 assertEquals(expireTimes[i], curEntry.expireTime());
             }
         }
@@ -919,7 +926,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                     GridCacheAdapter c0 = cacheFromCtx(c);
 
                     if (!c0.context().deferredDelete()) {
-                        GridCacheEntryEx e0 = c0.peekEx(key);
+                        GridCacheEntryEx e0 = c0.entryEx(key);
 
                         return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
                     }
@@ -940,7 +947,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Ensure that old TTL and expire time are not longer "visible".
         entry = c0.entryEx(key);
 
-        assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());
     }
 }

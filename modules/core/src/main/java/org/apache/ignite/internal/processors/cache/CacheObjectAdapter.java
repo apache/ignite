@@ -24,7 +24,9 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -37,7 +39,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     private static final long serialVersionUID = 2006765505127197251L;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     protected Object val;
 
@@ -74,6 +76,35 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
         return putValue(buf, 0, objectPutSize(valBytes.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(addr, cacheObjectType(), valBytes, 0);
+    }
+
+    /**
+     * @param addr Write address.
+     * @param type Object type.
+     * @param valBytes Value bytes array.
+     * @param valOff Value bytes array offset.
+     * @return
+     */
+    public static int putValue(long addr, byte type, byte[] valBytes, int valOff) {
+        int off = 0;
+
+        PageUtils.putInt(addr, off, valBytes.length);
+        off += 4;
+
+        PageUtils.putByte(addr, off, type);
+        off++;
+
+        PageUtils.putBytes(addr, off, valBytes, valOff);
+        off += valBytes.length - valOff;
+
+        return off;
     }
 
     /** {@inheritDoc} */
@@ -142,7 +173,9 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     public String toString() {
-        return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
+        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "CacheObject",
+            "val", val, true,
+            "hasValBytes", valBytes != null, false);
     }
 
     /**
@@ -164,8 +197,14 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return {@code True} if data were successfully written.
      * @throws IgniteCheckedException If failed.
      */
-    public static boolean putValue(byte cacheObjType, final ByteBuffer buf, int off, int len,
-        byte[] valBytes, final int start) throws IgniteCheckedException {
+    public static boolean putValue(byte cacheObjType,
+        final ByteBuffer buf,
+        int off,
+        int len,
+        byte[] valBytes,
+        final int start)
+        throws IgniteCheckedException
+    {
         int dataLen = valBytes.length;
 
         if (buf.remaining() < len)

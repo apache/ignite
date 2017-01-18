@@ -17,11 +17,11 @@
 
 import JavaTypes from '../../app/services/JavaTypes.service.js';
 
-import ClusterDflts from '../../app/modules/configuration/generator/defaults/cluster.provider';
-import CacheDflts from '../../app/modules/configuration/generator/defaults/cache.provider';
-import IgfsDflts from '../../app/modules/configuration/generator/defaults/igfs.provider';
+import ClusterDflts from '../../app/modules/configuration/generator/defaults/Cluster.service';
+import CacheDflts from '../../app/modules/configuration/generator/defaults/Cache.service';
+import IgfsDflts from '../../app/modules/configuration/generator/defaults/IGFS.service';
 
-const INSTANCE = new JavaTypes((new ClusterDflts()).$get[0](), (new CacheDflts()).$get[0](), (new IgfsDflts()).$get[0]());
+const INSTANCE = new JavaTypes(new ClusterDflts(), new CacheDflts(), new IgfsDflts());
 
 import { assert } from 'chai';
 
@@ -58,9 +58,14 @@ suite('JavaTypesTestsSuite', () => {
 
     test('shortClassName', () => {
         assert.equal(INSTANCE.shortClassName('java.math.BigDecimal'), 'BigDecimal');
+        assert.equal(INSTANCE.shortClassName('BigDecimal'), 'BigDecimal');
         assert.equal(INSTANCE.shortClassName('int'), 'int');
         assert.equal(INSTANCE.shortClassName('java.lang.Integer'), 'Integer');
+        assert.equal(INSTANCE.shortClassName('Integer'), 'Integer');
         assert.equal(INSTANCE.shortClassName('java.util.UUID'), 'UUID');
+        assert.equal(INSTANCE.shortClassName('java.sql.Date'), 'Date');
+        assert.equal(INSTANCE.shortClassName('Date'), 'Date');
+        assert.equal(INSTANCE.shortClassName('com.my.Abstract'), 'Abstract');
         assert.equal(INSTANCE.shortClassName('Abstract'), 'Abstract');
     });
 
@@ -113,8 +118,8 @@ suite('JavaTypesTestsSuite', () => {
         assert.equal(INSTANCE.isKeyword(' '), false);
     });
 
-    test('isJavaPrimitive', () => {
-        assert.equal(INSTANCE.isJavaPrimitive('boolean'), true);
+    test('isPrimitive', () => {
+        assert.equal(INSTANCE.isPrimitive('boolean'), true);
     });
 
     test('validUUID', () => {

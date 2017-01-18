@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.pagemem.impl;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -32,6 +30,7 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -190,7 +189,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             // Check that initial pages are accessible.
             for (FullPageId id : old) {
                 try (Page page = mem.page(id.cacheId(), id.pageId())) {
-                    ByteBuffer buf = page.getForWrite();
+                    long buf = page.getForWritePointer();
 
                     assertNotNull(buf);
 
@@ -210,17 +209,17 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             // Check that updated pages are inaccessible using old IDs.
             for (FullPageId id : old) {
                 try (Page page = mem.page(id.cacheId(), id.pageId())) {
-                    ByteBuffer buf = page.getForWrite();
+                    long pageAddr = page.getForWritePointer();
 
-                    if (buf != null) {
+                    if (pageAddr != 0L) {
                         page.releaseWrite(false);
 
                         fail("Was able to acquire page write lock.");
                     }
 
-                    buf = page.getForRead();
+                    pageAddr = page.getForReadPointer();
 
-                    if (buf != null) {
+                    if (pageAddr != 0) {
                         page.releaseRead();
 
                         fail("Was able to acquire page read lock.");
@@ -231,7 +230,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             // Check that updated pages are accessible using new IDs.
             for (FullPageId id : updated) {
                 try (Page page = mem.page(id.cacheId(), id.pageId())) {
-                    ByteBuffer buf = page.getForWrite();
+                    long buf = page.getForWritePointer();
 
                     assertNotNull(buf);
 
@@ -242,7 +241,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                         page.releaseWrite(false);
                     }
 
-                    buf = page.getForRead();
+                    buf = page.getForReadPointer();
 
                     assertNotNull(buf);
 
@@ -274,7 +273,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir, true,
             sizes);
 
-        return new PageMemoryNoStoreImpl(log(), provider, null, PAGE_SIZE);
+        return new PageMemoryNoStoreImpl(log(), provider, null, PAGE_SIZE, true);
     }
 
     /**
@@ -282,13 +281,13 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @param val Value to write.
      */
     private void writePage(Page page, int val) {
-        ByteBuffer bytes = page.getForWrite();
+        long bytes = page.getForWritePointer();
 
         try {
             PageIO.setPageId(bytes, page.id());
 
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
-                bytes.put(i, (byte)val);
+                PageUtils.putByte(bytes, i, (byte)val);
         }
         finally {
             page.releaseWrite(true);
@@ -302,13 +301,13 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     private void readPage(Page page, int expVal) {
         expVal &= 0xFF;
 
-        ByteBuffer bytes = page.getForRead();
+        long pageAddr = page.getForReadPointer();
 
-        assertNotNull(bytes);
+        assert(pageAddr != 0);
 
         try {
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++) {
-                int val = bytes.get(i) & 0xFF;
+                int val = PageUtils.getByte(pageAddr, i) & 0xFF;
 
                 assertEquals("Unexpected value at position: " + i, expVal, val);
             }
@@ -323,6 +322,6 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page.
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
-        return new FullPageId(mem.allocatePage(0, 1, PageIdAllocator.FLAG_DATA), 0);
+        return new FullPageId(mem.allocatePage(-1, 1, PageIdAllocator.FLAG_DATA), -1);
     }
 }

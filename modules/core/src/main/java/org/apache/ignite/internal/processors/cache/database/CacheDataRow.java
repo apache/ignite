@@ -18,18 +18,12 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Cache data row.
  */
-public interface CacheDataRow {
-    /**
-     * @return Cache key.
-     */
-    public KeyCacheObject key();
-
+public interface CacheDataRow extends CacheSearchRow {
     /**
      * @return Cache value.
      */
@@ -49,11 +43,6 @@ public interface CacheDataRow {
      * @return Partition for this key.
      */
     public int partition();
-
-    /**
-     * @return Link for this row.
-     */
-    public long link();
 
     /**
      * @param link Link for this row.

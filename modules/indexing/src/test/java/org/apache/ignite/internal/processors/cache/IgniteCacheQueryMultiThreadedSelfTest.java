@@ -221,8 +221,14 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                     for (Cache.Entry<Object, Object> e : c.localEntries())
                         c.remove(e.getKey());
                 }
+            }
+        }
 
-                U.sleep(5000);
+        U.sleep(5000);
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            for(String cacheName : grid(i).cacheNames()) {
+                IgniteCache<Object, Object> c = grid(i).cache(cacheName);
 
                 assertEquals(0, c.size(CachePeekMode.OFFHEAP));
                 assertEquals(0, c.size(CachePeekMode.PRIMARY));
@@ -743,7 +749,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final IgniteCache<Integer, TestValue> c = g.cache(null);
+        final IgniteCache<Integer, TestValue> c = cache(Integer.class, TestValue.class);
 
         for (int i = 0; i < keyCnt; i++)
             c.put(i, new TestValue(i));

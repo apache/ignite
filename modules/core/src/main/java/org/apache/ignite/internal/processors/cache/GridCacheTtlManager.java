@@ -36,7 +36,6 @@ import org.jsr166.LongAdder8;
  * Eagerly removes expired entries from cache when
  * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
-@SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private  GridConcurrentSkipListSetEx pendingEntries;
@@ -83,7 +82,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         cctx.shared().ttl().register(this);
 
-        pendingEntries = cctx.config().getNearConfiguration() != null ? new GridConcurrentSkipListSetEx() : null;
+        pendingEntries = (!cctx.isLocal() && cctx.config().getNearConfiguration() != null) ? new GridConcurrentSkipListSetEx() : null;
     }
 
     /** {@inheritDoc} */
@@ -152,9 +151,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     public boolean expire(int amount) {
         long now = U.currentTimeMillis();
 
-
         try {
             if (pendingEntries != null) {
+                //todo may be not only for near? may be for local too.
                 GridNearCacheAdapter nearCache = cctx.near();
 
                 GridCacheVersion obsoleteVer = null;
@@ -165,7 +164,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                     EntryWrapper e = pendingEntries.firstx();
 
                     if (e == null || e.expireTime > now)
-                        return false; // All expired entries are processed.
+                        break; // All expired entries are processed.
 
                     if (pendingEntries.remove(e)) {
                         if (obsoleteVer == null)
@@ -182,7 +181,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             boolean more = cctx.offheap().expire(expireC, amount);
 
             if (more)
-                return more;
+                return true;
 
             if (amount != -1 && pendingEntries != null) {
                 EntryWrapper e = pendingEntries.firstx();

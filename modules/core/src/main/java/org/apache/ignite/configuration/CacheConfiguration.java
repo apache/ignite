@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -383,9 +384,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private transient Class<?>[] indexedTypes;
 
-    /** */
-    private boolean snapshotableIdx;
-
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
@@ -479,7 +477,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
-        snapshotableIdx = cc.isSnapshotableIndex();
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
@@ -1991,32 +1988,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether SQL indexes should support snapshots.
-     *
-     * @return {@code True} if SQL indexes should support snapshots.
-     */
-    public boolean isSnapshotableIndex() {
-        return snapshotableIdx;
-    }
-
-    /**
-     * Sets flag indicating whether SQL indexes should support snapshots.
-     * <p>
-     * Default value is {@code false}.
-     * <p>
-     * <b>Note</b> that this flag is ignored if indexes are stored in offheap memory,
-     * for offheap indexes snapshots are always enabled.
-     *
-     * @param snapshotableIdx {@code True} if SQL indexes should support snapshots.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSnapshotableIndex(boolean snapshotableIdx) {
-        this.snapshotableIdx = snapshotableIdx;
-
-        return this;
-    }
-
-    /**
      * Gets array of cache plugin configurations.
      *
      * @return Cache plugin configurations.
@@ -2190,7 +2161,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param desc Type descriptor.
      * @return Type metadata.
      */
-    static QueryEntity convert(TypeDescriptor desc) {
+    private static QueryEntity convert(TypeDescriptor desc) {
         QueryEntity entity = new QueryEntity();
 
         // Key and val types.
@@ -2199,6 +2170,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
+
+        entity.setKeyFields(desc.keyProperties);
 
         QueryIndex txtIdx = null;
 
@@ -2347,7 +2320,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
 
-                    type.addProperty(prop, true);
+                    type.addProperty(prop, key, true);
                 }
             }
 
@@ -2369,7 +2342,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
 
-                    type.addProperty(prop, true);
+                    type.addProperty(prop, key, true);
                 }
             }
         }
@@ -2450,6 +2423,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         @GridToStringExclude
         private final Map<String, ClassProperty> props = new LinkedHashMap<>();
+
+        /** */
+        @GridToStringInclude
+        private final Set<String> keyProperties = new HashSet<>();
 
         /** */
         @GridToStringInclude
@@ -2559,15 +2536,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * Adds property to the type descriptor.
          *
          * @param prop Property.
+         * @param key Property ownership flag (key or not).
          * @param failOnDuplicate Fail on duplicate flag.
          */
-        public void addProperty(ClassProperty prop, boolean failOnDuplicate) {
+        void addProperty(ClassProperty prop, boolean key, boolean failOnDuplicate) {
             String name = prop.fullName();
 
             if (props.put(name, prop) != null && failOnDuplicate)
                 throw new CacheException("Property with name '" + name + "' already exists.");
 
             fields.put(name, prop.type());
+
+            if (key)
+                keyProperties.add(name);
         }
 
         /**

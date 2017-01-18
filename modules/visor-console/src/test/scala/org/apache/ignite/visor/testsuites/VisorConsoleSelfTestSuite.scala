@@ -26,7 +26,6 @@ import org.apache.ignite.visor.commands.ack.VisorAckCommandSpec
 import org.apache.ignite.visor.commands.alert.VisorAlertCommandSpec
 import org.apache.ignite.visor.commands.cache.{VisorCacheClearCommandSpec, VisorCacheCommandSpec}
 import org.apache.ignite.visor.commands.config.VisorConfigurationCommandSpec
-import org.apache.ignite.visor.commands.cswap.VisorCacheSwapCommandSpec
 import org.apache.ignite.visor.commands.deploy.VisorDeployCommandSpec
 import org.apache.ignite.visor.commands.disco.VisorDiscoveryCommandSpec
 import org.apache.ignite.visor.commands.events.VisorEventsCommandSpec
@@ -56,7 +55,6 @@ class VisorConsoleSelfTestSuite extends Suites (
     new VisorCacheCommandSpec,
     new VisorCacheClearCommandSpec,
     new VisorConfigurationCommandSpec,
-    new VisorCacheSwapCommandSpec,
     new VisorDeployCommandSpec,
     new VisorDiscoveryCommandSpec,
     new VisorEventsCommandSpec,

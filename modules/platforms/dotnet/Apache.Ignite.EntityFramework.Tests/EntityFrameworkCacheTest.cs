@@ -321,6 +321,55 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
+        /// Queries with entity sets used multiple times are handled correctly.
+        /// </summary>
+        [Test]
+        public void TestDuplicateEntitySets()
+        {
+            using (var ctx = GetDbContext())
+            {
+                var blog = new Blog
+                {
+                    Name = "Foo",
+                    Posts = new List<Post>
+                    {
+                        new Post {Title = "Foo"},
+                        new Post {Title = "Foo"},
+                        new Post {Title = "Foo"},
+                        new Post {Title = "Bar"}
+                    }
+                };
+                ctx.Blogs.Add(blog);
+
+                Assert.AreEqual(5, ctx.SaveChanges());
+
+                var res = ctx.Blogs.Select(b => new
+                {
+                    X = b.Posts.FirstOrDefault(p => p.Title == b.Name),
+                    Y = b.Posts.Count(p => p.Title == b.Name)
+                }).ToArray();
+
+                Assert.AreEqual(1, res.Length);
+                Assert.AreEqual("Foo", res[0].X.Title);
+                Assert.AreEqual(3, res[0].Y);
+
+                // Modify and check updated result.
+                ctx.Posts.Remove(ctx.Posts.First(x => x.Title == "Foo"));
+                Assert.AreEqual(1, ctx.SaveChanges());
+
+                res = ctx.Blogs.Select(b => new
+                {
+                    X = b.Posts.FirstOrDefault(p => p.Title == b.Name),
+                    Y = b.Posts.Count(p => p.Title == b.Name)
+                }).ToArray();
+
+                Assert.AreEqual(1, res.Length);
+                Assert.AreEqual("Foo", res[0].X.Title);
+                Assert.AreEqual(2, res[0].Y);
+            }
+        }
+
+        /// <summary>
         /// Tests transactions created with BeginTransaction.
         /// </summary>
         [Test]
@@ -662,10 +711,13 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
-            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 10);
+            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 5);
+
+            // Run once again to force cleanup.
+            CreateRemoveBlog();
 
             // Wait for the cleanup to complete.
-            Thread.Sleep(500);
+            Thread.Sleep(1000);
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
@@ -700,7 +752,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
 
                 Interlocked.Increment(ref opCnt);
-            }, 4, 10);
+            }, 4, 5);
 
             var setVersion = _metaCache["Blog"];
 

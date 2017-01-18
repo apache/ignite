@@ -90,7 +90,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         IgniteConfiguration igniteCfg = ctx.config();
 
         if (igniteCfg.isDaemon())
@@ -188,7 +188,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -25,22 +26,25 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PageMetaIO extends PageIO {
     /** */
-    private static final int METASTORE_ROOT_OFF = PageIO.COMMON_HEADER_END;
+    private static final int TREE_ROOT_OFF = PageIO.COMMON_HEADER_END + 8;
 
     /** */
-    private static final int REUSE_LIST_ROOT_OFF = METASTORE_ROOT_OFF + 8;
+    private static final int REUSE_LIST_ROOT_OFF = TREE_ROOT_OFF + 8;
 
-    /** Last successful backup id offset. */
-    private static final int LAST_SUCCESSFUL_BACKUP_ID_OFF = REUSE_LIST_ROOT_OFF + 8;
+    /** Last successful snapshot id offset. */
+    private static final int LAST_SUCCESSFUL_SNAPSHOT_ID_OFF = REUSE_LIST_ROOT_OFF + 8;
 
-    /** Last successful full backup id offset. */
-    private static final int LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF = LAST_SUCCESSFUL_BACKUP_ID_OFF + 8;
+    /** Last successful full snapshot id offset. */
+    private static final int LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF = LAST_SUCCESSFUL_SNAPSHOT_ID_OFF + 8;
 
-    /** Next backup id offset. */
-    private static final int NEXT_BACKUP_ID_OFF = LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF + 8;
+    /** Next snapshot id offset. */
+    private static final int NEXT_SNAPSHOT_TAG_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF + 8;
+
+    /** Last successful full snapshot tag offset. */
+    private static final int LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF = NEXT_SNAPSHOT_TAG_OFF + 8;
 
     /** Last allocated index offset. */
-    private static final int LAST_ALLOCATED_INDEX_OFF = NEXT_BACKUP_ID_OFF + 8;
+    private static final int LAST_ALLOCATED_INDEX_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF + 8;
 
     /** Candidate allocated index offset. */
     private static final int CANDIDATE_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
@@ -65,98 +69,121 @@ public class PageMetaIO extends PageIO {
      * @param ver Version.
      */
     protected PageMetaIO(int type, int ver) {
-       super(type, ver);
+        super(type, ver);
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(ByteBuffer buf, long pageId) {
-        super.initNewPage(buf, pageId);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize);
 
-        setTreeRoot(buf, 0);
-        setReuseListRoot(buf, 0);
-        setLastSuccessfulFullBackupId(buf, 0);
-        setLastSuccessfulBackupId(buf, 0);
-        setNextBackupId(buf, 1);
-        setLastAllocatedIndex(buf, 0);
-        setCandidateAllocatedIndex(buf, 0);
+        setTreeRoot(pageAddr, 0);
+        setReuseListRoot(pageAddr, 0);
+        setLastSuccessfulFullSnapshotId(pageAddr, 0);
+        setLastSuccessfulSnapshotId(pageAddr, 0);
+        setNextSnapshotTag(pageAddr, 1);
+        setLastSuccessfulSnapshotTag(pageAddr, 0);
+        setLastAllocatedIndex(pageAddr, 0);
+        setCandidateAllocatedIndex(pageAddr, 0);
     }
 
     /**
-     * @param buf Buffer.
-     * @return Meta store root page.
+     * @param pageAddr Page address.
+     * @return Tree root page.
      */
-    public long getTreeRoot(ByteBuffer buf) {
-        return buf.getLong(METASTORE_ROOT_OFF);
+    public long getTreeRoot(long pageAddr) {
+        return PageUtils.getLong(pageAddr, TREE_ROOT_OFF);
     }
 
     /**
-     * @param buf Buffer.
-     * @param metastoreRoot metastore root
+     * @param pageAddr Page address.
+     * @param treeRoot Tree root
      */
-    public void setTreeRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
-        buf.putLong(METASTORE_ROOT_OFF, metastoreRoot);
+    public void setTreeRoot(long pageAddr, long treeRoot) {
+        PageUtils.putLong(pageAddr, TREE_ROOT_OFF, treeRoot);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @return Reuse list root page.
      */
-    public long getReuseListRoot(ByteBuffer buf) {
-        return buf.getLong(REUSE_LIST_ROOT_OFF);
+    public long getReuseListRoot(long pageAddr) {
+        return PageUtils.getLong(pageAddr, REUSE_LIST_ROOT_OFF);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param pageId Root page ID.
      */
-    public void setReuseListRoot(@NotNull ByteBuffer buf, long pageId) {
-        buf.putLong(REUSE_LIST_ROOT_OFF, pageId);
+    public void setReuseListRoot(long pageAddr, long pageId) {
+        PageUtils.putLong(pageAddr, REUSE_LIST_ROOT_OFF, pageId);
     }
 
     /**
-     * @param buf Buffer.
-     * @param lastSuccessfulBackupId Last successful backup id.
+     * @param pageAddr Page address.
+     * @param lastSuccessfulSnapshotId Last successful snapshot id.
      */
-    public void setLastSuccessfulBackupId(@NotNull ByteBuffer buf, long lastSuccessfulBackupId) {
-        buf.putLong(LAST_SUCCESSFUL_BACKUP_ID_OFF, lastSuccessfulBackupId);
+    public void setLastSuccessfulSnapshotId(long pageAddr, long lastSuccessfulSnapshotId) {
+        PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_SNAPSHOT_ID_OFF, lastSuccessfulSnapshotId);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    public long getLastSuccessfulBackupId(@NotNull ByteBuffer buf) {
-        return buf.getLong(LAST_SUCCESSFUL_BACKUP_ID_OFF);
+    public long getLastSuccessfulSnapshotId(long pageAddr) {
+        return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_SNAPSHOT_ID_OFF);
     }
 
     /**
-     * @param buf Buffer.
-     * @param lastSuccessfulFullBackupId Last successful full backup id.
+     * @param pageAddr Page address.
+     * @param lastSuccessfulFullSnapshotId Last successful full snapshot id.
      */
-    public void setLastSuccessfulFullBackupId(@NotNull ByteBuffer buf, long lastSuccessfulFullBackupId) {
-        buf.putLong(LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF, lastSuccessfulFullBackupId);
+    public void setLastSuccessfulFullSnapshotId(long pageAddr, long lastSuccessfulFullSnapshotId) {
+        PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF, lastSuccessfulFullSnapshotId);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    public long getLastSuccessfulFullBackupId(@NotNull ByteBuffer buf) {
-        return buf.getLong(LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF);
+    public long getLastSuccessfulFullSnapshotId(long pageAddr) {
+        return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_ID_OFF);
     }
 
     /**
-     * @param buf Buffer.
-     * @param nextBackupId Next backup id.
+     * @param pageAddr Page address.
+     * @param nextSnapshotId Next snapshot id.
      */
-    public void setNextBackupId(@NotNull ByteBuffer buf, long nextBackupId) {
-        buf.putLong(NEXT_BACKUP_ID_OFF, nextBackupId);
+    public void setNextSnapshotTag(long pageAddr, long nextSnapshotId) {
+        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotId);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
+     */
+    public long getLastSuccessfulSnapshotTag(long pageAddr) {
+        return PageUtils.getLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
+     */
+    public void setLastSuccessfulSnapshotTag(long pageAddr, long lastSuccessfulSnapshotTag) {
+        PageUtils.putLong(pageAddr, LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF, lastSuccessfulSnapshotTag);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    public long getNextSnapshotTag(long pageAddr) {
+        return PageUtils.getLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param lastAllocatedIdx Last allocated index.
      */
-    public void setLastAllocatedIndex(@NotNull ByteBuffer buf, int lastAllocatedIdx) {
-        buf.putInt(LAST_ALLOCATED_INDEX_OFF, lastAllocatedIdx);
+    public void setLastAllocatedIndex(long pageAddr, int lastAllocatedIdx) {
+        PageUtils.putInt(pageAddr, LAST_ALLOCATED_INDEX_OFF, lastAllocatedIdx);
     }
 
     /**
@@ -167,24 +194,24 @@ public class PageMetaIO extends PageIO {
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
+     */
+    public int getLastAllocatedIndex(long pageAddr) {
+        return PageUtils.getInt(pageAddr, LAST_ALLOCATED_INDEX_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param previousAllocatedIdx Last allocated index.
      */
-    public void setCandidateAllocatedIndex(@NotNull ByteBuffer buf, int previousAllocatedIdx) {
-        buf.putInt(CANDIDATE_ALLOCATED_INDEX_OFF, previousAllocatedIdx);
+    public void setCandidateAllocatedIndex(long pageAddr, int previousAllocatedIdx) {
+        PageUtils.putInt(pageAddr, CANDIDATE_ALLOCATED_INDEX_OFF, previousAllocatedIdx);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    public int getCandidateAllocatedIndex(@NotNull ByteBuffer buf) {
-        return buf.getInt(CANDIDATE_ALLOCATED_INDEX_OFF);
-    }
-
-    /**
-     * @param buf Buffer.
-     */
-    public long getNextBackupId(@NotNull ByteBuffer buf) {
-        return buf.getLong(NEXT_BACKUP_ID_OFF);
+    public int getCandidateAllocatedIndex(long pageAddr) {
+        return PageUtils.getInt(pageAddr, CANDIDATE_ALLOCATED_INDEX_OFF);
     }
 }

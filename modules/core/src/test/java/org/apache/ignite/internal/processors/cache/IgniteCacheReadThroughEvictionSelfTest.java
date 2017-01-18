@@ -148,9 +148,10 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     }
 
     /**
+     * // TODO GG-11140: enable when eviction is implemented.
      * @throws Exception if failed.
      */
-    public void testReadThroughEvictionPolicy() throws Exception {
+    public void _testReadThroughEvictionPolicy() throws Exception {
         Ignite ig = testedGrid();
 
         CacheConfiguration<Object, Object> cc = variationConfig("eviction");
@@ -175,7 +176,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
 
                     return size <= testsCfg.gridCount() && offheapSize < KEYS;
                 }
-            }, getTestTimeout()));
+            }, 30_000));
 
             for (int i = 0; i < KEYS; i++)
                 assertEquals(value(i), cache.get(key(i)));

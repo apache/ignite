@@ -27,6 +27,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/log.h"
 
 namespace ignite
 {
@@ -50,26 +51,57 @@ namespace ignite
             // No-op.
         }
 
-        void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
+        void Statement::BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            IGNITE_ODBC_API_CALL(InternalBindColumn(columnIdx, targetType, targetValue, bufferLength, strLengthOrIndicator));
+        }
 
+        SqlResult Statement::InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
+        {
+            using namespace odbc::type_traits;
+            IgniteSqlType driverType = ToDriverType(targetType);
+
+            if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
+            {
+                AddStatusRecord(odbc::SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE, "The argument TargetType was not a valid data type.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (bufferLength < 0)
+            {
+                AddStatusRecord(odbc::SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH,
+                    "The value specified for the argument BufferLength was less than 0.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (targetValue || strLengthOrIndicator)
+            {
+                app::ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
+
+                SafeBindColumn(columnIdx, dataBuffer);
+            }
+            else
+                SafeUnbindColumn(columnIdx);
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        void Statement::SafeBindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
+        {
             columnBindings[columnIdx] = buffer;
 
             columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
         }
 
-        void Statement::UnbindColumn(uint16_t columnIdx)
+        void Statement::SafeUnbindColumn(uint16_t columnIdx)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             columnBindings.erase(columnIdx);
         }
 
-        void Statement::UnbindAllColumns()
+        void Statement::SafeUnbindAllColumns()
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             columnBindings.clear();
         }
 
@@ -108,14 +140,21 @@ namespace ignite
             return SQL_RESULT_SUCCESS;
         }
 
-        void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
+        void Statement::BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                                      SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
-            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, param));
+            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, ioType, bufferType, paramSqlType, columnSize, decDigits, buffer, bufferLen, resLen));
         }
 
-
-        SqlResult Statement::InternalBindParameter(uint16_t paramIdx, const app::Parameter& param)
+        SqlResult Statement::InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                                                   SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
+            using namespace odbc::type_traits;
+            using odbc::Statement;
+            using odbc::app::ApplicationDataBuffer;
+            using odbc::app::Parameter;
+            using odbc::type_traits::IsSqlTypeSupported;
+
             if (paramIdx == 0)
             {
                 AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
@@ -124,24 +163,60 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            paramBindings[paramIdx] = param;
+            if (ioType != SQL_PARAM_INPUT)
+            {
+                AddStatusRecord(SQL_STATE_HY105_INVALID_PARAMETER_TYPE,
+                    "The value specified for the argument InputOutputType was not SQL_PARAM_INPUT.");
 
-            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+                return SQL_RESULT_ERROR;
+            }
+
+            if (!IsSqlTypeSupported(paramSqlType))
+            {
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    "Data type is not supported.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            IgniteSqlType driverType = ToDriverType(bufferType);
+
+            if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
+            {
+                AddStatusRecord(odbc::SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE,
+                    "The argument TargetType was not a valid data type.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (buffer)
+            {
+                ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
+
+                Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
+
+                SafeBindParameter(paramIdx, param);
+            }
+            else
+                SafeUnbindParameter(paramIdx);
 
             return SQL_RESULT_SUCCESS;
         }
 
-        void Statement::UnbindParameter(uint16_t paramIdx)
+        void Statement::SafeBindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            paramBindings[paramIdx] = param;
 
+            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+        }
+
+        void Statement::SafeUnbindParameter(uint16_t paramIdx)
+        {
             paramBindings.erase(paramIdx);
         }
 
-        void Statement::UnbindAllParameters()
+        void Statement::SafeUnbindAllParameters()
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             paramBindings.clear();
         }
 
@@ -158,7 +233,7 @@ namespace ignite
                 {
                     SQLULEN val = reinterpret_cast<SQLULEN>(value);
 
-                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: %d\n", val);
+                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: " << val);
 
                     if (val != 1)
                     {
@@ -320,11 +395,13 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalGetColumnData(columnIdx, buffer));
         }
 
-        SqlResult Statement::InternalGetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+        SqlResult Statement::InternalGetColumnData(uint16_t columnIdx,
+            app::ApplicationDataBuffer& buffer)
         {
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
+                    "Cursor is not in the open state.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -336,39 +413,30 @@ namespace ignite
 
         void Statement::PrepareSqlQuery(const std::string& query)
         {
-            return PrepareSqlQuery(query.data(), query.size());
+            IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query));
         }
 
-        void Statement::PrepareSqlQuery(const char* query, size_t len)
-        {
-            IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query, len));
-        }
-
-        SqlResult Statement::InternalPrepareSqlQuery(const char* query, size_t len)
+        SqlResult Statement::InternalPrepareSqlQuery(const std::string& query)
         {
             if (currentQuery.get())
                 currentQuery->Close();
 
-            std::string sql(query, len);
+            currentQuery.reset(new query::DataQuery(*this, connection, query, paramBindings));
 
-            currentQuery.reset(new query::DataQuery(*this, connection, sql, paramBindings));
+            // Resetting parameters types as we are changing the query.
+            paramTypes.clear();
 
             return SQL_RESULT_SUCCESS;
         }
 
         void Statement::ExecuteSqlQuery(const std::string& query)
         {
-            ExecuteSqlQuery(query.data(), query.size());
+            IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery(query));
         }
 
-        void Statement::ExecuteSqlQuery(const char* query, size_t len)
+        SqlResult Statement::InternalExecuteSqlQuery(const std::string& query)
         {
-            IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery(query, len));
-        }
-
-        SqlResult Statement::InternalExecuteSqlQuery(const char* query, size_t len)
-        {
-            SqlResult result = InternalPrepareSqlQuery(query, len);
+            SqlResult result = InternalPrepareSqlQuery(query);
 
             if (result != SQL_RESULT_SUCCESS)
                 return result;
@@ -425,7 +493,8 @@ namespace ignite
             if (cache.empty())
                 cache = connection.GetCache();
 
-            currentQuery.reset(new query::ColumnMetadataQuery(*this, connection, cache, table, column));
+            currentQuery.reset(new query::ColumnMetadataQuery(*this,
+                connection, cache, table, column));
 
             return currentQuery->Execute();
         }
@@ -433,7 +502,8 @@ namespace ignite
         void Statement::ExecuteGetTablesMetaQuery(const std::string& catalog,
             const std::string& schema, const std::string& table, const std::string& tableType)
         {
-            IGNITE_ODBC_API_CALL(InternalExecuteGetTablesMetaQuery(catalog, schema, table, tableType));
+            IGNITE_ODBC_API_CALL(InternalExecuteGetTablesMetaQuery(
+                catalog, schema, table, tableType));
         }
 
         SqlResult Statement::InternalExecuteGetTablesMetaQuery(const std::string& catalog,
@@ -442,7 +512,8 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::TableMetadataQuery(*this, connection, catalog, schema, table, tableType));
+            currentQuery.reset(new query::TableMetadataQuery(*this,
+                connection, catalog, schema, table, tableType));
 
             return currentQuery->Execute();
         }
@@ -464,25 +535,26 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::ForeignKeysQuery(*this, connection, primaryCatalog, primarySchema,
-                primaryTable, foreignCatalog, foreignSchema, foreignTable));
+            currentQuery.reset(new query::ForeignKeysQuery(*this, connection, primaryCatalog,
+                primarySchema, primaryTable, foreignCatalog, foreignSchema, foreignTable));
 
             return currentQuery->Execute();
         }
 
-        void Statement::ExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
-            const std::string& table)
+        void Statement::ExecuteGetPrimaryKeysQuery(const std::string& catalog,
+            const std::string& schema, const std::string& table)
         {
             IGNITE_ODBC_API_CALL(InternalExecuteGetPrimaryKeysQuery(catalog, schema, table));
         }
 
-        SqlResult Statement::InternalExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
-            const std::string& table)
+        SqlResult Statement::InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
+            const std::string& schema, const std::string& table)
         {
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::PrimaryKeysQuery(*this, connection, catalog, schema, table));
+            currentQuery.reset(new query::PrimaryKeysQuery(*this,
+                connection, catalog, schema, table));
 
             return currentQuery->Execute();
         }
@@ -525,7 +597,8 @@ namespace ignite
         {
             if (!type_traits::IsSqlTypeSupported(sqlType))
             {
-                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, "Data type is not supported.");
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    "Data type is not supported.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -538,6 +611,50 @@ namespace ignite
             return currentQuery->Execute();
         }
 
+        void Statement::FreeResources(int16_t option)
+        {
+            IGNITE_ODBC_API_CALL(InternalFreeResources(option));
+        }
+
+        SqlResult Statement::InternalFreeResources(int16_t option)
+        {
+            switch (option)
+            {
+                case SQL_DROP:
+                {
+                    AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Deprecated, call SQLFreeHandle instead");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                case SQL_CLOSE:
+                {
+                    return InternalClose();
+                }
+
+                case SQL_UNBIND:
+                {
+                    SafeUnbindAllColumns();
+
+                    break;
+                }
+
+                case SQL_RESET_PARAMS:
+                {
+                    SafeUnbindAllParameters();
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE, "The value specified for the argument Option was invalid");
+                    return SQL_RESULT_ERROR;
+                }
+            }
+            return SQL_RESULT_SUCCESS;
+        }
+
         void Statement::Close()
         {
             IGNITE_ODBC_API_CALL(InternalClose());
@@ -546,11 +663,7 @@ namespace ignite
         SqlResult Statement::InternalClose()
         {
             if (!currentQuery.get())
-            {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
-
-                return SQL_RESULT_ERROR;
-            }
+                return SQL_RESULT_SUCCESS;
 
             SqlResult result = currentQuery->Close();
 
@@ -558,6 +671,24 @@ namespace ignite
                 currentQuery.reset();
 
             return result;
+        }
+
+        void Statement::FetchScroll(int16_t orientation, int64_t offset)
+        {
+            IGNITE_ODBC_API_CALL(InternalFetchScroll(orientation, offset));
+        }
+
+        SqlResult Statement::InternalFetchScroll(int16_t orientation, int64_t offset)
+        {
+            UNREFERENCED_PARAMETER(offset);
+
+            if (orientation != SQL_FETCH_NEXT)
+            {
+                AddStatusRecord(SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE, "The value specified for the argument FetchOrientation was not SQL_FETCH_NEXT.");
+                return SQL_RESULT_ERROR;
+            }
+
+            return InternalFetchRow();
         }
 
         void Statement::FetchRow()
@@ -572,7 +703,8 @@ namespace ignite
 
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
+                    "Cursor is not in the open state.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -604,6 +736,21 @@ namespace ignite
             return currentQuery.get() && currentQuery->DataAvailable();
         }
 
+        void Statement::NextResults()
+        {
+            IGNITE_ODBC_API_CALL(InternalNextResults());
+        }
+
+        SqlResult Statement::InternalNextResults()
+        {
+            if (!currentQuery.get())
+                return SQL_RESULT_NO_DATA;
+
+            SqlResult result = currentQuery->Close();
+
+            return result == SQL_RESULT_SUCCESS ? SQL_RESULT_NO_DATA : result;
+        }
+
         void Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId,
             char* strbuf, int16_t buflen, int16_t* reslen, SqlLen* numbuf)
         {
@@ -626,7 +773,8 @@ namespace ignite
 
             if (colIdx > meta->size() + 1 || colIdx < 1)
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Column index is out of range.", 0, colIdx);
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR,
+                    "Column index is out of range.", 0, colIdx);
 
                 return SQL_RESULT_ERROR;
             }
@@ -655,7 +803,8 @@ namespace ignite
 
             if (!found)
             {
-                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, "Unknown attribute.");
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    "Unknown attribute.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -715,7 +864,8 @@ namespace ignite
         {
             if (!paramPtr)
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Invalid parameter: ValuePtrPtr is null.");
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR,
+                    "Invalid parameter: ValuePtrPtr is null.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -806,6 +956,145 @@ namespace ignite
 
             return SQL_RESULT_SUCCESS;
         }
+
+        void Statement::DescribeParam(int16_t paramNum, int16_t* dataType,
+            SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable)
+        {
+            IGNITE_ODBC_API_CALL(InternalDescribeParam(paramNum,
+                dataType, paramSize, decimalDigits, nullable));
+        }
+
+        SqlResult Statement::InternalDescribeParam(int16_t paramNum, int16_t* dataType,
+            SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable)
+        {
+            query::Query *qry = currentQuery.get();
+            if (!qry)
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not prepared.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (qry->GetType() != query::Query::DATA)
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not SQL data query.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            int8_t type = 0;
+
+            if (paramNum > 0 && static_cast<size_t>(paramNum) <= paramTypes.size())
+                type = paramTypes[paramNum - 1];
+
+            LOG_MSG("Type: " << type);
+
+            if (!type)
+            {
+                SqlResult res = UpdateParamsMeta();
+
+                if (res != SQL_RESULT_SUCCESS)
+                    return res;
+
+                if (paramNum < 1 || static_cast<size_t>(paramNum) > paramTypes.size())
+                    type = impl::binary::IGNITE_HDR_NULL;
+                else
+                    type = paramTypes[paramNum - 1];
+            }
+
+            if (dataType)
+                *dataType = type_traits::BinaryToSqlType(type);
+
+            if (paramSize)
+                *paramSize = type_traits::BinaryTypeColumnSize(type);
+
+            if (decimalDigits)
+                *decimalDigits = type_traits::BinaryTypeDecimalDigits(type);
+
+            if (nullable)
+                *nullable = type_traits::BinaryTypeNullability(type);
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        SqlResult Statement::UpdateParamsMeta()
+        {
+            query::Query *qry0 = currentQuery.get();
+
+            assert(qry0 != 0);
+            assert(qry0->GetType() == query::Query::DATA);
+
+            query::DataQuery* qry = static_cast<query::DataQuery*>(qry0);
+
+            const std::string& cacheName = connection.GetCache();
+            const std::string& sql = qry->GetSql();
+
+            QueryGetParamsMetaRequest req(cacheName, sql);
+            QueryGetParamsMetaResponse rsp;
+
+            try
+            {
+                connection.SyncMessage(req, rsp);
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: " << rsp.GetError());
+
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            paramTypes = rsp.GetTypeIds();
+
+            for (size_t i = 0; i < paramTypes.size(); ++i)
+            {
+                LOG_MSG("[" << i << "] Parameter type: " << paramTypes[i]);
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -86,7 +86,6 @@ import scala.language.implicitConversions
  *            cl Cloud events.
  *            ca Cache events.
  *            cr Cache rebalance events.
- *            sw Swapspace events.
  *     -t=<num>s|m|h|d
  *         Defines time frame for querying events:
  *            =<num>s Queries events fired during last <num> seconds.
@@ -168,7 +167,6 @@ class VisorEventsCommand extends VisorConsoleCommand {
             case "ta" => EVTS_TASK_EXECUTION
             case "ca" => EVTS_CACHE
             case "cr" => EVTS_CACHE_REBALANCE
-            case "sw" => EVTS_SWAPSPACE
             case t => throw new IllegalArgumentException("Unknown event mnemonic: " + t)
         }
     }
@@ -192,7 +190,6 @@ class VisorEventsCommand extends VisorConsoleCommand {
             case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
             case t if EVTS_CACHE.contains(t) => "ca"
             case t if EVTS_CACHE_REBALANCE.contains(t) => "cr"
-            case t if EVTS_SWAPSPACE.contains(t) => "sw"
             case t => throw new IllegalArgumentException("Unknown event type: " + t)
         }
     }
@@ -242,7 +239,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
 
                     val sortedOpt = sort(evts.toList, argValue("s", argLst), hasArgName("r", argLst))
 
-                    if (!sortedOpt.isDefined)
+                    if (sortedOpt.isEmpty)
                         return
 
                     val sorted = sortedOpt.get
@@ -428,8 +425,7 @@ object VisorEventsCommand {
                 "   jo Job execution events.",
                 "   ta Task execution events.",
                 "   ca Cache events.",
-                "   cr Cache rebalance events.",
-                "   sw Swapspace events."
+                "   cr Cache rebalance events."
             ),
             "-t=<num>s|m|h|d" -> List(
                 "Defines time frame for quering events:",

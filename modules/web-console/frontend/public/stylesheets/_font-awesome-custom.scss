@@ -30,3 +30,42 @@ $fa-font-path: '~font-awesome/fonts';
 @import '~font-awesome/scss/rotated-flipped';
 @import '~font-awesome/scss/stacked';
 @import '~font-awesome/scss/icons';
+
+.fa {
+  cursor: pointer;
+}
+
+.icon-help {
+  @extend .fa;
+  @extend .fa-question-circle-o;
+
+  cursor: default;
+}
+
+.icon-confirm {
+  @extend .fa;
+  @extend .fa-question-circle-o;
+
+  cursor: default;
+}
+
+.icon-note {
+  @extend .fa;
+  @extend .fa-info-circle;
+
+  cursor: default;
+}
+
+.icon-danger {
+  @extend .fa;
+  @extend .fa-exclamation-triangle;
+
+  cursor: default;
+}
+
+.icon-success {
+  @extend .fa;
+  @extend .fa-check-circle-o;
+
+  cursor: default;
+}

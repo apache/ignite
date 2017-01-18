@@ -375,12 +375,12 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 if (snd != null) {
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
-                            return snd.messagesFutures().isEmpty();
+                            return snd.messagesRequests().isEmpty();
                         }
                     }, 10_000);
 
-                    assertEquals("Unexpected messages: " + snd.messagesFutures(), 0,
-                        snd.messagesFutures().size());
+                    assertEquals("Unexpected messages: " + snd.messagesRequests(), 0,
+                        snd.messagesRequests().size());
                 }
             }
         }
@@ -477,9 +477,9 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         timeoutProcessor = new GridTimeoutProcessor(new GridTestKernalContext(log));
 
-        timeoutProcessor.start();
+        timeoutProcessor.start(true);
 
-        timeoutProcessor.onKernalStart();
+        timeoutProcessor.onKernalStart(true);
 
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<Message> spi = newCommunicationSpi();
@@ -557,6 +557,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                                 return false;
                         }
                     }
+
                     return true;
                 }
             }, getTestTimeout()) : "Clients: " + clients;

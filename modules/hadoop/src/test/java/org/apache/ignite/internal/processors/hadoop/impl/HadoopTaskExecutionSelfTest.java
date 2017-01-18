@@ -83,9 +83,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTestsStarted0() throws Exception {
         startGrids(gridCount());
     }
 
@@ -139,8 +137,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -183,8 +181,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output"));
 
         job.setJarByClass(getClass());
 
@@ -222,8 +220,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -284,8 +282,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(InFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -411,6 +409,9 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         assertFalse(killRes);
     }
 
+    /**
+     *
+     */
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
         private int mapperId;
 

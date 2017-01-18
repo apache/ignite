@@ -198,7 +198,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
             canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
 
-        Throwable err = cctx.topology().topologyVersionFuture().validateCache(cctx, recovery, true, key, null);
+        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, key, null) : null;
 
         if (err != null) {
             onDone(err);

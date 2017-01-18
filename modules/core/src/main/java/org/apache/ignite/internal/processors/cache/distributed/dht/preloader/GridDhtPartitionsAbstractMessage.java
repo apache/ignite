@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -87,7 +88,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      * @param cacheId Cache ID.
      * @return Parition update counters.
      */
-    public abstract Map<Integer, Long> partitionUpdateCounters(int cacheId);
+    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId);
 
     /**
      * @return Last used version among all nodes.

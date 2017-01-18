@@ -1531,7 +1531,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             if (joinRes == null) {
                 if (join)
-                    joinError(new IgniteSpiException("Join process timed out."));
+                    joinError(new IgniteSpiException("Join process timed out (timeout = " + spi.joinTimeout + ")."));
                 else {
                     state = SEGMENTED;
 

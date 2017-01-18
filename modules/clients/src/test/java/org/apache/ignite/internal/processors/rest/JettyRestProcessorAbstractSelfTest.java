@@ -72,7 +72,6 @@ import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
@@ -1286,14 +1285,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
-        ret = content(new VisorGatewayArgument(VisorCacheSwapBackupsTask.class)
-            .forNode(locNode)
-            .set(String.class, "person"));
-
-        info("VisorCacheSwapBackupsTask result: " + ret);
-
-        jsonTaskResult(ret);
-
         ret = content(new VisorGatewayArgument(VisorCacheRebalanceTask.class)
             .forNode(locNode)
             .set(String.class, "person"));
@@ -1412,7 +1403,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorQueryTask.class)
             .forNode(locNode)
-            .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person", CHARSET), false, 1));
+            .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person", CHARSET), false, false, 1));
 
         info("VisorQueryTask result: " + ret);
 
@@ -1522,7 +1513,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
-        /** Spring XML to start cache via Visor task. */
+        // Spring XML to start cache via Visor task.
         final String START_CACHE =
             "<beans xmlns=\"http://www.springframework.org/schema/beans\"\n" +
                     "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +

@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.store.CacheStore;
@@ -299,6 +300,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cursor.
      * @see ScanQuery
      * @see SqlQuery
+     * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
      */
@@ -881,6 +883,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteFuture<?> rebalance();
+
+    /**
+     * Returns future that will be completed when all indexes for this cache are ready to use.
+     *
+     * @return Future.
+     */
+    public IgniteFuture<?> indexReadyFuture();
 
     /**
      * Gets whole cluster snapshot metrics (statistics) for this cache.

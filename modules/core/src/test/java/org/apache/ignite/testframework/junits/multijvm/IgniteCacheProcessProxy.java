@@ -470,6 +470,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<?> indexReadyFuture() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         throw new UnsupportedOperationException("Method should be supported.");
     }

@@ -62,7 +62,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -115,16 +114,12 @@ import org.jsr166.LongAdder8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  * Data streamer implementation.
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
-    /** Default policy resolver. */
-    private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
-
     /** Isolated receiver. */
     private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
@@ -138,7 +133,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private byte[] updaterBytes;
 
     /** IO policy resovler for data load request. */
-    private IgniteClosure<ClusterNode, Byte> ioPlcRslvr = DFLT_IO_PLC_RSLVR;
+    private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
 
     /** Max remap count before issuing an error. */
     private static final int DFLT_MAX_REMAP_CNT = 32;
@@ -1512,10 +1507,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param entries Entries.
          * @param reqTopVer Request topology version.
          * @param curFut Current future.
+         * @param plc Policy.
          */
         private void localUpdate(final Collection<DataStreamerEntry> entries,
             final AffinityTopologyVersion reqTopVer,
-            final GridFutureAdapter<Object> curFut) {
+            final GridFutureAdapter<Object> curFut,
+            final byte plc) {
             try {
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
@@ -1546,7 +1543,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 skipStore,
                                 keepBinary,
                                 rcvr),
-                            false);
+                            plc);
 
                         locFuts.add(callFut);
 
@@ -1576,7 +1573,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     else {
                         fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                                localUpdate(entries, reqTopVer, curFut);
+                                localUpdate(entries, reqTopVer, curFut, plc);
                             }
                         });
                     }
@@ -1620,13 +1617,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             IgniteInternalFuture<Object> fut;
 
-            Byte plc = ioPlcRslvr.apply(node);
+            byte plc = DataStreamProcessor.ioPolicy(ioPlcRslvr, node);
 
-            if (plc == null)
-                plc = PUBLIC_POOL;
-
-            if (isLocNode && plc == GridIoPolicy.PUBLIC_POOL)
-                localUpdate(entries, topVer, curFut);
+            if (isLocNode)
+                localUpdate(entries, topVer, curFut, plc);
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
@@ -2033,19 +2027,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
                 }
             }
-        }
-    }
-
-    /**
-     * Default IO policy resolver.
-     */
-    private static class DefaultIoPolicyResolver implements IgniteClosure<ClusterNode, Byte> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public Byte apply(ClusterNode gridNode) {
-            return PUBLIC_POOL;
         }
     }
 

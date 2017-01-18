@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCac
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
+import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
@@ -116,6 +118,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
+        suite.addTestSuite(GridClosureSerializationTest.class);
         suite.addTestSuite(ClosureServiceClientsNodesTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
         suite.addTestSuite(GridProjectionForCachesSelfTest.class);
@@ -153,6 +156,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(MarshallerContextSelfTest.class);
 
         suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
+
+        suite.addTestSuite(AttributeNodeFilterSelfTest.class);
 
         // Basic DB data structures.
         suite.addTestSuite(BPlusTreeSelfTest.class);

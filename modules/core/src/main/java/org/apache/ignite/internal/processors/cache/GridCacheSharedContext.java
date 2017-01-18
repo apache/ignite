@@ -59,8 +59,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
@@ -112,7 +114,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
     /** Cache contexts map. */
-    private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
+    private ConcurrentHashMap8<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
@@ -184,7 +186,7 @@ public class GridCacheSharedContext<K, V> {
 
         txMetrics = new TransactionMetricsAdapter();
 
-        ctxMap = new ConcurrentHashMap<>();
+        ctxMap = new ConcurrentHashMap8<>();
 
         locStoreCnt = new AtomicInteger();
 
@@ -348,6 +350,23 @@ public class GridCacheSharedContext<K, V> {
      */
     public Collection<GridCacheContext> cacheContexts() {
         return (Collection)ctxMap.values();
+    }
+
+    /**
+     * @param c Cache context closure.
+     */
+    void forAllCaches(final IgniteInClosure<GridCacheContext> c) {
+        for (Integer cacheId : ctxMap.keySet()) {
+            ctxMap.computeIfPresent(cacheId,
+                new ConcurrentHashMap8.BiFun<Integer, GridCacheContext<K, V>, GridCacheContext<K, V>>() {
+                    @Override public GridCacheContext<K, V> apply(Integer cacheId, GridCacheContext<K, V> ctx) {
+                        c.apply(ctx);
+
+                        return ctx;
+                    }
+                }
+            );
+        }
     }
 
     /**

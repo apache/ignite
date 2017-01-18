@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -144,7 +145,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_DEPLOY: {
@@ -195,7 +196,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_SERVICES: {
@@ -223,8 +224,8 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, PlatformTarget arg,
+        BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_INVOKE: {
                 assert arg != null;
@@ -260,7 +261,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_DESCRIPTORS: {
                 Collection<ServiceDescriptor> descs = services.serviceDescriptors();
@@ -299,7 +300,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
             case OP_WITH_ASYNC:
                 if (services.isAsync())
@@ -315,7 +316,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_CANCEL_ALL:
                 services.cancelAll();
@@ -327,7 +328,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_SERVICE_PROXY: {
                 String name = reader.readString();
@@ -340,17 +341,17 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
                     ? services.serviceProxy(name, PlatformService.class, sticky)
-                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky,
+                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
                         platformCtx.kernalContext());
 
-                return new ServiceProxyHolder(proxy, d.serviceClass());
+                return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
         }
         return super.processInStreamOutObject(type, reader);
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)servicesAsync.future()).internalFuture();
     }
 
@@ -392,7 +393,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * Proxy holder.
      */
     @SuppressWarnings("unchecked")
-    private static class ServiceProxyHolder {
+    private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
         private final Object proxy;
 
@@ -422,7 +423,9 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param proxy Proxy object.
          * @param clazz Proxy class.
          */
-        private ServiceProxyHolder(Object proxy, Class clazz) {
+        private ServiceProxyHolder(Object proxy, Class clazz, PlatformContext ctx) {
+            super(ctx);
+
             assert proxy != null;
             assert clazz != null;
 

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.clock.GridClockSource;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.InternalStatistics;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -194,6 +196,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Cache processor.
      */
     public GridCacheProcessor cache();
+
+    /**
+     * Gets cluster state processor.
+     *
+     * @return Cluster state processor.
+     */
+    public GridClusterStateProcessor state();
 
     /**
      * Gets task session processor.
@@ -496,6 +505,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getSystemExecutorService();
 
     /**
+     * Executor service that is in charge of processing internal system messages
+     * in stripes (dedicated threads).
+     *
+     * @return Thread pool implementation to be used in grid for internal system messages.
+     */
+    public StripedExecutor getStripedExecutorService();
+
+    /**
      * Executor service that is in charge of processing internal and Visor
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      *
@@ -516,6 +533,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Thread pool implementation to be used for IGFS outgoing message sending.
      */
     public ExecutorService getIgfsExecutorService();
+
+    /**
+     * Executor service that is in charge of processing data stream messages.
+     *
+     * @return Thread pool implementation to be used for data stream messages.
+     */
+    public ExecutorService getDataStreamerExecutorService();
 
     /**
      * Should return an instance of fully configured thread pool to be used for

@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+
+import org.apache.ignite.IgniteSystemProperties;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -48,6 +52,10 @@ public abstract class GridUnsafe {
 
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
+
+    /** Per-byte copy threshold. */
+    private static final long PER_BYTE_THRESHOLD =
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, 0L);
 
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
@@ -1025,6 +1033,56 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Copy memory between offheap locations.
+     *
+     * @param srcAddr Source address.
+     * @param dstAddr Destination address.
+     * @param len Length.
+     */
+    public static void copyOffheapOffheap(long srcAddr, long dstAddr, long len) {
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcAddr + i));
+        }
+        else
+            UNSAFE.copyMemory(srcAddr, dstAddr, len);
+    }
+
+    /**
+     * Copy memory from offheap to heap.
+     *
+     * @param srcAddr Source address.
+     * @param dstBase Destination base.
+     * @param dstOff Destination offset.
+     * @param len Length.
+     */
+    public static void copyOffheapHeap(long srcAddr, Object dstBase, long dstOff, long len) {
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcAddr + i));
+        }
+        else
+            UNSAFE.copyMemory(null, srcAddr, dstBase, dstOff, len);
+    }
+
+    /**
+     * Copy memory from heap to offheap.
+     *
+     * @param srcBase Source base.
+     * @param srcOff Source offset.
+     * @param dstAddr Destination address.
+     * @param len Length.
+     */
+    public static void copyHeapOffheap(Object srcBase, long srcOff, long dstAddr, long len) {
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcBase, srcOff + i));
+        }
+        else
+            UNSAFE.copyMemory(srcBase, srcOff, null, dstAddr, len);
+    }
+
+    /**
      * Copies memory.
      *
      * @param src Source.
@@ -1045,7 +1103,12 @@ public abstract class GridUnsafe {
      * @param len Length.
      */
     public static void copyMemory(Object srcBase, long srcOff, Object dstBase, long dstOff, long len) {
-        UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
+        if (len <= PER_BYTE_THRESHOLD && srcBase != null && dstBase != null) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcBase, srcOff + i));
+        }
+        else
+            UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
     }
 
     /**
@@ -1204,7 +1267,12 @@ public abstract class GridUnsafe {
     private static boolean unaligned() {
         String arch = System.getProperty("os.arch");
 
-        return arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
+        boolean res = arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
+
+        if (!res)
+            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS, false);
+
+        return res;
     }
 
     /**
@@ -1535,5 +1603,15 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * @param buf Direct buffer.
+     * @return Buffer memory address.
+     */
+    public static long bufferAddress(ByteBuffer buf) {
+        assert buf instanceof DirectBuffer : buf;
+
+        return ((DirectBuffer)buf).address();
     }
 }

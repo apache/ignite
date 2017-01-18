@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -77,6 +78,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setLateAffinityAssignment(true);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -346,9 +349,22 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         assertCacheSize();
     }
 
-    /** Asserts cache size. */
-    protected void assertCacheSize() {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+    /**
+     * @throws Exception If failed.
+     */
+    private void assertCacheSize() throws Exception {
+        final IgniteCache<Integer, String> cache = grid(0).cache(null);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                int size = cache.size(CachePeekMode.PRIMARY);
+
+                if (size != KEYS_CNT)
+                    log.info("Cache size: " + size);
+
+                return size == KEYS_CNT;
+            }
+        }, 2 * 60_000);
 
         assertEquals("Data lost.", KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
 

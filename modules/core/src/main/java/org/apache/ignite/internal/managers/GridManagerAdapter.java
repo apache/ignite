@@ -90,6 +90,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     private final Map<IgniteSpi, Boolean> spiMap = new IdentityHashMap<>();
 
     /** */
+    @GridToStringExclude
     private boolean injected;
 
     /**
@@ -211,7 +212,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     /**
      * Injects resources to SPI.
      *
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     protected void inject() throws IgniteCheckedException {
         if (injected)
@@ -358,7 +359,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws IgniteCheckedException {
+    @Override public final void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new IgniteSpiContext() {
