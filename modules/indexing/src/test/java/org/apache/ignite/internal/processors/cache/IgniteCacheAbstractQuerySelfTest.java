@@ -633,7 +633,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(2, qry.getAll().size());
 
-        GridTestUtils.assertThrows(log, new GridPlainCallable<Void>() {
+        Throwable throwable = GridTestUtils.assertThrowsInherited(log, new GridPlainCallable<Void>() {
             @Override public Void call() throws Exception {
                 QueryCursor<Cache.Entry<Integer, Type1>> qry =
                     cache.query(new SqlQuery<Integer, Type1>(Type1.class, "FROM Type1"));
@@ -642,7 +642,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                 return null;
             }
-        }, CacheException.class, null);
+        }, RuntimeException.class, null);
+
+        assertNotNull(throwable);
+
+        assertTrue(throwable instanceof IgniteException || throwable instanceof CacheException);
     }
 
     /**
