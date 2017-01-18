@@ -361,6 +361,43 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         stopAllGrids();
     }
 
+    /** Tests API validation. */
+    public void testValidation() {
+        SqlFieldsQuery qty = new SqlFieldsQuery("");
+
+        qty.setPartitions(-1, 0, CacheConfiguration.MAX_PARTITIONS_COUNT);
+
+        try {
+            qty.setPartitions(0, CacheConfiguration.MAX_PARTITIONS_COUNT);
+            fail();
+        } catch (Exception e) {
+            // No-op.
+        }
+
+        try {
+            qty.setPartitions(-1, 0, CacheConfiguration.MAX_PARTITIONS_COUNT + 1);
+            fail();
+        } catch (Exception e) {
+            // No-op.
+        }
+
+        try {
+            qty.setPartitions(0, 1, 1);
+            fail();
+        } catch (Exception e) {
+            // No-op.
+        }
+
+        try {
+            qty.setPartitions(0, 1, -11);
+            fail();
+        } catch (Exception e) {
+            // No-op.
+        }
+
+        qty.setPartitions(-1, 1, 1);
+    }
+
     /** Tests query within region. */
     public void testRegionQuery() {
         doTestRegionQuery(grid(0));
