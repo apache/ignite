@@ -79,6 +79,8 @@ public class OsConfigurationSuggestions {
             if (!suggestions.isEmpty()) {
                 U.quietAndInfo(log, "Please, use the following commands to configure your OS:");
                 for (String suggestion : suggestions)
+                    U.quietAndInfo(log, "    " + suggestion);
+                U.quietAndInfo(log, "Consult with your IT department before making changes at the Linux kernel level in production!");
             }
         }
     }
