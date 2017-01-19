@@ -905,7 +905,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }, true);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();

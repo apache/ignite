@@ -46,7 +46,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -263,7 +262,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         super.afterTestsStopped();
 
         stopAllGrids();
-
 
         store.reset();
     }

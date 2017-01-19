@@ -328,8 +328,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
+        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
 
             assertTrue(val instanceof BinaryObject);

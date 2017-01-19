@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
@@ -185,9 +184,8 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
                     pages.incrementAndGet();
                 }
-                else if (msg0 instanceof GridCacheQueryResponse) {
+                else if (msg0 instanceof GridCacheQueryResponse)
                     assertTrue(((GridCacheQueryResponse)msg0).data().size() <= pageSize);
-                }
             }
         };
 
@@ -211,15 +209,15 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
      *
      */
     private static class TestTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** */
         volatile IgniteInClosure<Message> filter;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
-            throws IgniteSpiException {
-            if(filter != null)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            if (filter != null)
                 filter.apply(msg);
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
     }
 }
