@@ -17,17 +17,27 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StreamCorruptedException;
+import java.net.Socket;
 import java.util.concurrent.Callable;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests cases when node connects to cluster with different SSL configuration.
  * Exception with meaningful message should be thrown.
  */
 public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest {
+    /** */
+    private volatile TcpDiscoverySpi spi;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -36,6 +46,14 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
 
         if (gridName.contains("ssl"))
             cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        if (spi != null) {
+            final TcpDiscoveryIpFinder finder = ((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder();
+
+            spi.setIpFinder(finder);
+
+            cfg.setDiscoverySpi(spi);
+        }
 
         return cfg;
     }
@@ -74,6 +92,47 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPlainServerNodesRestart() throws Exception {
+        checkNodesRestart("plain-server-1", "plain-server-2");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSslServerNodesRestart() throws Exception {
+        checkNodesRestart("ssl-server-1", "ssl-server-2");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPlainClientNodesRestart() throws Exception {
+        checkNodesRestart("plain-server", "plain-client");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSslClientNodesRestart() throws Exception {
+        checkNodesRestart("ssl-server", "ssl-client");
+    }
+
+    /**
+     * @param name1 First grid name.
+     * @param name2 Second grid name.
+     * @throws Exception If failed.
+     */
+    private void checkNodesRestart(String name1, String name2) throws Exception {
+        startGrid(name1);
+
+        spi = new FailDiscoverySpi(!name1.contains("ssl"));
+
+        startGrid(name2);
+    }
+
+    /**
      * @param name1 First grid name.
      * @param name2 Second grid name.
      * @throws Exception If failed.
@@ -90,4 +149,37 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
             }
         }, IgniteCheckedException.class, null);
     }
+
+    /**
+     *
+     */
+    private class FailDiscoverySpi extends TcpDiscoverySpi {
+        /** */
+        private int cnt = 1;
+
+        /** */
+        private final boolean plain;
+
+        /**
+         * @param plain Plain conection flag.
+         */
+        private FailDiscoverySpi(final boolean plain) {
+            this.plain = plain;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected <T> T readMessage(final Socket sock, @Nullable final InputStream in,
+            final long timeout) throws IOException, IgniteCheckedException {
+            if (cnt-- > 0) {
+                if (plain)
+                    throw new StreamCorruptedException("Test exception");
+                else
+                    throw new SSLException("Test SSL exception");
+            }
+
+            return super.readMessage(sock, in, timeout);
+        }
+    }
+
+
 }
