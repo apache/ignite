@@ -52,7 +52,7 @@ namespace ignite
         {
             void BinaryUtils::CheckEnoughData(interop::InteropMemory& mem, int32_t pos, int32_t len)
             {
-                if (mem.Length() > (pos + len))
+                if (mem.Length() < (pos + len))
                 {
                     IGNITE_ERROR_FORMATTED_4(ignite::IgniteError::IGNITE_ERR_MEMORY, "Not enough data in "
                         "the binary object", "memPtr", mem.PointerLong(), "len", mem.Length(), "pos", pos,
@@ -108,6 +108,11 @@ namespace ignite
             int16_t BinaryUtils::ReadInt16(InteropInputStream* stream)
             {
                 return stream->ReadInt16();
+            }
+
+            int16_t BinaryUtils::ReadInt16(interop::InteropMemory & mem, int32_t pos)
+            {
+                return ReadPrimitive<int16_t>(mem, pos);
             }
 
             void BinaryUtils::WriteInt16(InteropOutputStream* stream, int16_t val)

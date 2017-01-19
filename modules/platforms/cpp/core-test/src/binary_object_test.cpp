@@ -21,9 +21,11 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <ignite/common/fixed_size_array.h>
 #include <ignite/binary/binary_object.h>
 #include <ignite/binary/binary_writer.h>
 
+#include "ignite/binary_test_defs.h"
 #include "ignite/test_type.h"
 #include "ignite/complex_type.h"
 
@@ -31,6 +33,7 @@ using namespace ignite;
 using namespace ignite::binary;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
+using namespace ignite_test::core::binary;
 
 template<typename T>
 void FillMem(InteropMemory& mem, const T& value)
@@ -69,6 +72,23 @@ void CheckSimpleNP(const T& value)
     T actual = obj.Deserialize<T>();
 
     BOOST_REQUIRE(value == actual);
+}
+
+template<typename T>
+void GetObjectData(const T& obj, common::FixedSizeArray<int8_t>& data)
+{
+    DummyIdResolver idResolver;
+
+    InteropUnpooledMemory mem(1024);
+    InteropOutputStream stream(&mem);
+    BinaryWriterImpl writerImpl(&stream, &idResolver, 0, 0, 0);
+    BinaryWriter writer(&writerImpl);
+
+    BinaryType<T> bt;
+
+    bt.Write(writer, obj);
+
+    data.Assign(mem.Data(), stream.Position());
 }
 
 BOOST_AUTO_TEST_SUITE(BinaryObjectTestSuite)
@@ -201,6 +221,27 @@ BOOST_AUTO_TEST_CASE(UserComplexType)
     nonDefault.objField.f2 = "Whatever";
 
     CheckSimpleNP<ComplexType>(nonDefault);
+}
+
+BOOST_AUTO_TEST_CASE(UserGetLength)
+{
+    ComplexType obj;
+    common::FixedSizeArray<int8_t> objData;
+
+    GetObjectData(obj, objData);
+
+    InteropUnpooledMemory mem(1024);
+
+    FillMem<ComplexType>(mem, obj);
+
+    BinaryObject binObj(mem, 0);
+
+    BOOST_CHECK_EQUAL(binObj.GetLength(), objData.GetSize());
+
+    common::FixedSizeArray<int8_t> binObjData(binObj.GetData(), binObj.GetLength());
+
+    for (int32_t i = 0; i < objData.GetSize(); ++i)
+        BOOST_CHECK_EQUAL(objData[i], binObjData[i]);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -143,6 +143,15 @@ namespace ignite
                 static int16_t ReadInt16(interop::InteropInputStream* stream);
 
                 /**
+                 * Utility method to read signed 16-bit integer from memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int16_t ReadInt16(interop::InteropMemory& mem, int32_t pos);
+
+                /**
                  * Utility method to write signed 16-bit integer to stream.
                  *
                  * @param stream Stream.

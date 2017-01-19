@@ -77,6 +77,25 @@ namespace ignite_test
                     // No-op.   
                 }
             };
+
+            class DummyIdResolver : public ignite::impl::binary::BinaryIdResolver
+            {
+            public:
+                virtual ~DummyIdResolver()
+                {
+                    // No-op.
+                }
+
+                virtual int32_t GetTypeId()
+                {
+                    return 0;
+                }
+
+                virtual int32_t GetFieldId(const int32_t, const char*)
+                {
+                    return 0;
+                }
+            };
         }
     }
 }

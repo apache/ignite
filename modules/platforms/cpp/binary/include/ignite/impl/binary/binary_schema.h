@@ -67,7 +67,7 @@ namespace ignite
                 /**
                  * Add another field to schema.
                  *
-                 * @param id Field id.
+                 * @param fieldId Field id.
                  * @param offset Field offset.
                  */
                 void AddField(int32_t fieldId, int32_t offset);

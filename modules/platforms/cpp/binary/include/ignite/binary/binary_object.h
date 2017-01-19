@@ -88,7 +88,16 @@ namespace ignite
              */
             int32_t GetLength() const
             {
-                return impl::binary::BinaryUtils::ReadInt32(mem, start + impl::binary::IGNITE_OFFSET_LEN);
+                int16_t flags = GetFlags();
+
+                int32_t end = 0;
+
+                if (flags & impl::binary::IGNITE_BINARY_FLAG_HAS_SCHEMA)
+                    end = impl::binary::BinaryUtils::ReadInt32(mem, start + impl::binary::IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+                else
+                    end = impl::binary::BinaryUtils::ReadInt32(mem, start + impl::binary::IGNITE_OFFSET_LEN);
+
+                return end - impl::binary::IGNITE_OFFSET_DATA;
             }
 
         private:
@@ -101,6 +110,17 @@ namespace ignite
             int8_t GetType() const
             {
                 return impl::binary::BinaryUtils::ReadInt8(mem, start);
+            }
+
+            /**
+             * Get object flags.
+             * @throw IgniteError if the object is not in a valid state.
+             *
+             * @return Object flags.
+             */
+            int16_t GetFlags() const
+            {
+                return impl::binary::BinaryUtils::ReadInt16(mem, start);
             }
 
             /** Underlying object memory. */
