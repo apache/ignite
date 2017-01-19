@@ -24,20 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static java.sql.Types.BIGINT;
-import static java.sql.Types.DECIMAL;
-import static java.sql.Types.DOUBLE;
-import static java.sql.Types.FLOAT;
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.NUMERIC;
-import static java.sql.Types.REAL;
-import static java.sql.Types.SMALLINT;
-import static java.sql.Types.TINYINT;
 
 /**
  * Default implementation of {@link JdbcTypesTransformer}.
@@ -45,10 +32,6 @@ import static java.sql.Types.TINYINT;
 public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Numeric types. */
-    protected List<Integer> numericTypes =
-        U.sealList(TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, NUMERIC, DECIMAL);
 
     /** Singleton instance to use. */
     public static final JdbcTypesDefaultTransformer INSTANCE = new JdbcTypesDefaultTransformer();
@@ -132,7 +115,7 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
         }
 
         if (type.isEnum()) {
-            if (numericTypes.contains(rs.getMetaData().getColumnType(colIdx))) {
+            if (NUMERIC_TYPES.contains(rs.getMetaData().getColumnType(colIdx))) {
                 int ordinal = rs.getInt(colIdx);
 
                 Object[] values = type.getEnumConstants();
@@ -151,31 +134,5 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
         }
 
         return rs.getObject(colIdx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getParameterValue(JdbcTypeField field, Object fieldVal) {
-        if (field.getJavaFieldType() == UUID.class) {
-            switch (field.getDatabaseFieldType()) {
-                case Types.BINARY:
-                    return U.uuidToBytes((UUID)fieldVal);
-
-                case Types.CHAR:
-                case Types.VARCHAR:
-                    return fieldVal.toString();
-
-                default:
-                    return fieldVal;
-            }
-        }
-
-        if (field.getJavaFieldType().isEnum()) {
-            if (numericTypes.contains(field.getDatabaseFieldType()))
-                return ((Enum) fieldVal).ordinal();
-
-            return fieldVal.toString();
-        }
-
-        return fieldVal;
     }
 }
