@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -294,6 +295,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Pool processor.
      */
     public PoolProcessor pools();
+
+    /**
+     * Gets grid marshaller mapping processor.
+     *
+     * @return Mapping processor.
+     */
+    public GridMarshallerMappingProcessor mapping();
 
     /**
      * Gets Hadoop helper.

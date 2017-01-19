@@ -267,6 +267,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private GridMarshallerMappingProcessor mappingProc;
+
+    /** */
+    @GridToStringExclude
     private IgnitePluginProcessor pluginProc;
 
     /** */
@@ -564,8 +568,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             platformProc = (PlatformProcessor)comp;
         else if (comp instanceof PoolProcessor)
             poolProc = (PoolProcessor) comp;
+        else if (comp instanceof GridMarshallerMappingProcessor)
+            mappingProc = (GridMarshallerMappingProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
-                || comp instanceof GridMarshallerMappingProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -792,6 +797,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PoolProcessor pools() {
         return poolProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridMarshallerMappingProcessor mapping() {
+        return mappingProc;
     }
 
     /** {@inheritDoc} */
