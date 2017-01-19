@@ -217,9 +217,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
         Integer back = backupKeys(cache, 1, 0).get(0);
         Integer near = nearKeys(cache, 1, 0).get(0);
 
-        Set<Integer> prims = new HashSet<>(primaryKeys(cache, 1_000, prim + 1));
-        Set<Integer> backs = new HashSet<>(backupKeys(cache, 1_000, back + 1));
-        Set<Integer> nears = new HashSet<>(nearKeys(cache, 1_000, near + 1));
+        Set<Integer> prims = new HashSet<>(primaryKeys(cache, 10, prim + 1));
+        Set<Integer> backs = new HashSet<>(backupKeys(cache, 10, back + 1));
+        Set<Integer> nears = new HashSet<>(nearKeys(cache, 10, near + 1));
 
         Set<Integer> keys = new HashSet<>();
 
@@ -254,7 +254,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
             res.putAll(cache.getAll(backs));
             res.putAll(cache.getAll(nears));
 
-            assertEquals(3_000, res.size());
+            assertEquals(30, res.size());
 
             for (Map.Entry<Integer, Integer> e : res.entrySet())
                 assertEquals(e.getKey(), e.getValue());
