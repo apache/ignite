@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.odbc.escape;
 
 import org.apache.ignite.IgniteException;
-
+import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -39,6 +40,11 @@ public class OdbcEscapeUtils {
     /** GUID regexp pattern: '12345678-9abc-def0-1234-123456789abc' */
     private static final Pattern GUID_PATTERN =
         Pattern.compile("^'\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}'$");
+
+    /** CONVERT function data type parameter pattern: last parameter, after comma */
+    private static final Pattern CONVERT_TYPE_PATTERN =
+        Pattern.compile(",\\s*(SQL_[\\w_]+)\\s*(?:\\(\\s*\\d+\\s*(?:,\\s*\\d+\\s*)?\\))?\\s*\\)\\s*$",
+                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     /**
      * Parse escape sequence.
@@ -248,7 +254,7 @@ public class OdbcEscapeUtils {
 
         switch (token.type()) {
             case SCALAR_FUNCTION:
-                return parseExpression(text, startPos0, len0);
+                return parseScalarFunctionExpression(text, startPos0, len0);
 
             case GUID: {
                 String res = parseExpression(text, startPos0, len0, token.type(), GUID_PATTERN);
@@ -323,6 +329,48 @@ public class OdbcEscapeUtils {
             throw new IgniteException("Invalid " + type + " escape sequence: " + substring(text, startPos, len));
 
         return val;
+    }
+
+    /**
+     * Parse scalar function expression.
+     *
+     * @param text Text.
+     * @param startPos Start position.
+     * @param len Length.
+     * @return Parsed expression.
+     */
+    private static String parseScalarFunctionExpression(String text, int startPos, int len) {
+        int pos = startPos;
+        int endPos = startPos + len;
+        final String errPrefix = "Malformed scalar function escape sequence.";
+
+        while ((++pos < endPos) && Character.isWhitespace(text.charAt(pos)));
+        if (pos == endPos)
+            throw new IgniteException(errPrefix + " Expected function name.");
+
+        int funcNamePos = pos;
+        while ((++pos < endPos) && Character.isAlphabetic(text.charAt(pos)));
+        if (pos == endPos)
+            throw new IgniteException(errPrefix + " Expected function parameter list: " +
+                                      substring(text, startPos, len));
+
+        String funcName = text.substring(funcNamePos, pos);
+
+        switch (funcName.toUpperCase()) {
+            case "CONVERT": {
+                Matcher matcher = CONVERT_TYPE_PATTERN.matcher(text.substring(startPos, endPos));
+
+                if (!matcher.find())
+                    throw new IgniteException(errPrefix + " Invalid arguments :" +
+                                              substring(text, startPos, len));
+
+                return (text.substring(startPos, startPos + matcher.start(1)) +
+                        OdbcUtils.getIgniteTypeFromOdbcType(matcher.group(1)) +
+                        text.substring(startPos + matcher.end(1), startPos + len)).trim();
+            }
+            default:
+                return substring(text, startPos, len).trim();
+        }
     }
 
     /**
