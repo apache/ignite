@@ -17,6 +17,9 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.FileTime;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -343,10 +346,14 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
 
-        if (isDir)
-            return new LocalFileSystemIgfsFile(path, false, true, 0, file.lastModified(), 0, props);
-        else
-            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0, file.lastModified(), file.length(), props);
+        if (isDir) {
+            return new LocalFileSystemIgfsFile(path, false, true, 0,
+                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), 0, props);
+        }
+        else {
+            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0,
+                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), file.length(), props);
+        }
     }
 
     /** {@inheritDoc} */
@@ -362,6 +369,25 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
         catch (IOException e) {
             throw new IgfsException("Failed to calculate used space size.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+        Path p = fileForPath(path).toPath();
+
+        if (!Files.exists(p))
+            throw new IgfsPathNotFoundException("Failed to set times (path not found): " + path);
+
+        try {
+            Files.getFileAttributeView(p, BasicFileAttributeView.class)
+                .setTimes(
+                    (modificationTime >= 0) ? FileTime.from(modificationTime, TimeUnit.MILLISECONDS) : null,
+                    (accessTime >= 0) ? FileTime.from(accessTime, TimeUnit.MILLISECONDS) : null,
+                    null);
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to set times for path: " + path, e);
         }
     }
 
