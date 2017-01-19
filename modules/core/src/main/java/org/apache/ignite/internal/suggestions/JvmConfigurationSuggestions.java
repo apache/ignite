@@ -25,9 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Java Virtual Machine performance suggestions.
+ * Java Virtual Machine configuration suggestions.
  */
-public class JvmPerformanceSuggestions {
+public class JvmConfigurationSuggestions {
     private static final String XMX = "-Xmx";
     private static final String MX = "-mx";
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
@@ -44,7 +44,7 @@ public class JvmPerformanceSuggestions {
     private static final String USE_G1_GC = "-XX:+UseG1GC";
 
     /**
-     * Log suggestions of JVM-tuning to increase Ignite performance.
+     * Log suggestions of JVM configuration tuning to increase Ignite performance.
      *
      * @param log - Logger.
      */
@@ -137,6 +137,6 @@ public class JvmPerformanceSuggestions {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JvmPerformanceSuggestions.class, this);
+        return S.toString(JvmConfigurationSuggestions.class, this);
     }
 }
