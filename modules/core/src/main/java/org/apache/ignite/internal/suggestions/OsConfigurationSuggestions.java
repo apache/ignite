@@ -32,10 +32,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
+
 /**
  * Operation System configuration suggestions.
  */
 public class OsConfigurationSuggestions {
+    private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
+
     private static final String VM_PARAMS_BASE_PATH = "/proc/sys/vm/";
     private static final String DIRTY_WRITEBACK_CENTISECS = "dirty_writeback_centisecs";
     private static final String DIRTY_EXPIRE_CENTISECS = "dirty_expire_centisecs";
@@ -49,6 +53,9 @@ public class OsConfigurationSuggestions {
      * @param log - Logger.
      */
     public static synchronized void logSuggestions(@NotNull IgniteLogger log) {
+        if (disabled)
+            return;
+
         if (isRedHat()) {
             List<String> suggestions = new LinkedList<>();
             String sysctlWVM = "sysctl –w vm.";
@@ -72,7 +79,6 @@ public class OsConfigurationSuggestions {
             if (!suggestions.isEmpty()) {
                 U.quietAndInfo(log, "Please, use the following commands to configure your OS:");
                 for (String suggestion : suggestions)
-                    U.quietAndInfo(log, suggestion);
             }
         }
     }

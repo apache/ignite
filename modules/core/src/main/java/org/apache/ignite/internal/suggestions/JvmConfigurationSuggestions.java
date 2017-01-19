@@ -24,10 +24,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
+
 /**
  * Java Virtual Machine configuration suggestions.
  */
 public class JvmConfigurationSuggestions {
+    private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
+
     private static final String XMX = "-Xmx";
     private static final String MX = "-mx";
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
@@ -49,6 +53,8 @@ public class JvmConfigurationSuggestions {
      * @param log - Logger.
      */
     public static synchronized void logSuggestions(@NotNull IgniteLogger log) {
+        if (disabled)
+            return;
 
         if (U.heapSize(1) > 30.5)
             U.quietAndInfo(log, "Heap size is greater than 30.5Gb, JVM will not use compressed oops.");
