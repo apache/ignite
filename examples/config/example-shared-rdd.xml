@@ -23,13 +23,11 @@
     This file demonstrates how to configure cache using Spring. Provided cache
     will be created on node startup.
 
-    Use this configuration file when running HTTP REST examples (see 'examples/rest' folder).
-
     When starting a standalone node, you need to execute the following command:
-    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-cache.xml
+    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-shared-rdd.xml
 
     When starting Ignite from Java IDE, pass path to this file to Ignition:
-    Ignition.start("examples/config/example-cache.xml");
+    Ignition.start("examples/config/example-shared-rdd.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

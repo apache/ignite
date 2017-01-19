@@ -26,8 +26,8 @@ import org.apache.spark.{SparkConf, SparkContext}
   * example is to provide the simplest code example of this logic.
   * <p/>
   * This example will start Ignite in embedded mode and will start an
-  * IgniteContext on each Spark worker node. It can also be also
-  * started in standalone mode which can bet set while instantiating IgniteContext
+  * IgniteContext on each Spark worker node. It can also be
+  * in standalone mode which can bet set while instantiating IgniteContext
   * (set isClient to true, it is currently set to false as last argument to
   * IgniteContext constructor) and running an Ignite node separately.
   * <p/>
