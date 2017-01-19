@@ -213,9 +213,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
                 }
             });
 
-        Integer prim = primaryKeys(cache, 1, 0).get(0);
-        Integer back = backupKeys(cache, 1, 0).get(0);
-        Integer near = nearKeys(cache, 1, 0).get(0);
+        Integer prim = primaryKeys(cache, 1, 1000).get(0);
+        Integer back = backupKeys(cache, 1, 1000).get(0);
+        Integer near = nearKeys(cache, 1, 1000).get(0);
 
         Set<Integer> prims = new HashSet<>(primaryKeys(cache, 10, prim + 1));
         Set<Integer> backs = new HashSet<>(backupKeys(cache, 10, back + 1));
