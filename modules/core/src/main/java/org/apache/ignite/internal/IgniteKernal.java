@@ -140,6 +140,7 @@ import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmPerformanceSuggestions;
+import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1167,12 +1168,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
         ctx.performance().logSuggestions(log, gridName);
-
         JvmPerformanceSuggestions.logSuggestions(log);
-
+        OsConfigurationSuggestions.logSuggestions(log);
         U.quietAndInfo(log, "Get more information on performance tuning: " + GridPerformanceSuggestions.SUGGESTIONS_LINK);
         U.quietAndInfo(log, "");
-
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
         ackStart(rtBean);
