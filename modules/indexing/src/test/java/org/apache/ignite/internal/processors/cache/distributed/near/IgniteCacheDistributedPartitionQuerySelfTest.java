@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -365,17 +364,8 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     public void testValidation() {
         SqlFieldsQuery qty = new SqlFieldsQuery("");
 
-        qty.setPartitions(-1, 0, CacheConfiguration.MAX_PARTITIONS_COUNT);
-
         try {
             qty.setPartitions(0, CacheConfiguration.MAX_PARTITIONS_COUNT);
-            fail();
-        } catch (Exception e) {
-            // No-op.
-        }
-
-        try {
-            qty.setPartitions(-1, 0, CacheConfiguration.MAX_PARTITIONS_COUNT + 1);
             fail();
         } catch (Exception e) {
             // No-op.
@@ -394,24 +384,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         } catch (Exception e) {
             // No-op.
         }
-
-        try {
-            qty.setPartitions(-1, -1, 1);
-            fail();
-        } catch (Exception e) {
-            // No-op.
-        }
-
-        qty.setPartitions(-1, CacheConfiguration.MAX_PARTITIONS_COUNT - 1, 1);
-
-        try {
-            qty.setPartitions(-1, CacheConfiguration.MAX_PARTITIONS_COUNT - 1, 2);
-            fail();
-        } catch (Exception e) {
-            // No-op.
-        }
-
-        qty.setPartitions(-1, 1, 1);
     }
 
     /** Tests query within region. */
@@ -473,7 +445,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
             SqlQuery<ClientKey, Client> qry2 = new SqlQuery<>(Client.class, "1=1");
-            qry2.setPartitions(-1, range.get(0), range.get(1));
+            qry2.setPartitions(createRange(range.get(0), range.get(1)));
 
             List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
 
@@ -482,6 +454,16 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             // Query must produce only results from single region.
             validateClients(regionId, clients2);
         }
+    }
+
+    /** */
+    private int[] createRange(int start, int cnt) {
+        int[] vals = new int[cnt];
+
+        for (int i = 0; i < cnt; i++)
+            vals[i] = start + i;
+
+        return vals;
     }
 
     /**
@@ -544,7 +526,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, de._KEY, de._VAL, re._KEY, re._VAL from " +
                 "\"cl\".Client cl, \"de\".Deposit de, \"re\".Region re where cl.clientId=de.clientId and de.regionId=re._KEY");
 
-            qry.setPartitions(-1, range.get(0), range.get(1));
+            qry.setPartitions(createRange(range.get(0), range.get(1)));
 
             List<List<?>> rows = cl.query(qry).getAll();
 
@@ -572,7 +554,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, pa._VAL from " +
                 "\"cl\".Client cl, \"pa\".Integer pa where cl.passport=pa._KEY");
 
-            qry.setPartitions(-1, range.get(0), range.get(1));
+            qry.setPartitions(createRange(range.get(0), range.get(1)));
             qry.setDistributedJoins(true);
 
             List<List<?>> rows = cl.query(qry).getAll();

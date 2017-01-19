@@ -169,7 +169,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
                 });
 
                 if (scanPartitions)
-                    qry.setPartition(i);
+                    qry.setPartitions(i);
 
                 List<Cache.Entry<Key, Person>> res = cache.query(qry).getAll();
 
@@ -193,7 +193,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
                 qry = new ScanQuery<>();
 
                 if (scanPartitions)
-                    qry.setPartition(i);
+                    qry.setPartitions(i);
 
                 res = cache.query(qry).getAll();
 

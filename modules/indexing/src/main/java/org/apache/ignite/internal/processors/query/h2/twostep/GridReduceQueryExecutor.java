@@ -1121,7 +1121,7 @@ public class GridReduceQueryExecutor {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
         if (parts == null)
-            parts = new IntArrayWrapper(0, cctx.affinity().partitions());
+            parts = new IntArrayWrapper(-1, 0, cctx.affinity().partitions());
 
         int allPartsCnt = cctx.affinity().partitions();
 
@@ -1601,7 +1601,7 @@ public class GridReduceQueryExecutor {
          * Returns a size of partitions set.
          */
         private int size() {
-            return isRange() ? vals[1] : vals.length;
+            return isRange() ? vals[2] : vals.length;
         }
 
         /**

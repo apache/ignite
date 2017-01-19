@@ -489,7 +489,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        qry = ctx.queries().createScanQuery(p, transformer,
+            scanQry.getPartitions() == null ? null : scanQry.getPartitions()[0], isKeepBinary);
 
         if (grp != null)
             qry.projection(grp);

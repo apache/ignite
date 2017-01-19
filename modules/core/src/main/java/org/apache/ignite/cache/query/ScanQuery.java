@@ -35,9 +35,6 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private IgniteBiPredicate<K, V> filter;
 
-    /** */
-    private Integer part;
-
     /**
      * Create scan query returning all entries.
      */
@@ -101,9 +98,15 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param part Partition number over which this query should iterate.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setPartitions(int... parts)} instead.}
      */
+    @Deprecated
     public ScanQuery<K, V> setPartition(@Nullable Integer part) {
-        this.part = part;
+        if (part == null)
+            setPartitions(null);
+        else
+            setPartitions(part);
 
         return this;
     }
@@ -113,9 +116,12 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * set. In this case query will iterate over all partitions in the cache.
      *
      * @return Partition number or {@code null}.
+     *
+     * @deprecated Use {@link #getPartitions()} instead.}
      */
+    @Deprecated
     @Nullable public Integer getPartition() {
-        return part;
+        return getPartitions() == null ? null : getPartitions()[0];
     }
 
     /** {@inheritDoc} */

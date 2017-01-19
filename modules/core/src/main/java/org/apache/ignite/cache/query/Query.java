@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for all Ignite cache queries.
@@ -102,44 +103,32 @@ public abstract class Query<R> implements Serializable {
     /**
      * Gets partitions for query, in ascending order.
      */
-    public int[] getPartitions() {
+    @Nullable public int[] getPartitions() {
         return parts;
     }
 
     /**
      * Sets partitions for a query.
      * The query will be executed only on nodes which are primary for specified partitions.
-     * Queries over replicated caches ignore this value.
-     * <p/>
-     * Note: there is a special convention for efficient handling of partition ranges.
-     * Pass negative value to enable partitions range mode, when pass start value and count.
-     * On example, passing {@code [-1, 50, 100]} will specify partitions in range {@code [50-150)}.
      *
      * @param parts Partitions.
      * @return {@code this} for chaining.
      */
-    public Query<R> setPartitions(int... parts) {
+    public Query<R> setPartitions(@Nullable int... parts) {
         this.parts = parts;
 
         if (this.parts != null) {
             A.notEmpty(parts, "Partitions");
 
             // Validate partitions.
-            if (parts[0] < 0)
-                A.ensure(parts[1] >= 0 &&
-                        parts[1] < CacheConfiguration.MAX_PARTITIONS_COUNT && parts[2] > 0 &&
-                        parts[1] + parts[2] <= CacheConfiguration.MAX_PARTITIONS_COUNT, "Partition range is invalid");
-            else {
-                for (int i = 0; i < parts.length; i++) {
-                    if (i < parts.length - 1)
-                        A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+            for (int i = 0; i < parts.length; i++) {
+                if (i < parts.length - 1)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
 
-                    A.ensure(parts[i] >= 0 && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
-                }
-
-                if (this.parts.length > 2)
-                    Arrays.sort(this.parts);
+                A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
             }
+
+            Arrays.sort(this.parts);
         }
 
         return this;
