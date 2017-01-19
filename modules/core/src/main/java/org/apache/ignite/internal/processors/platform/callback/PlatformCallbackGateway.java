@@ -1117,6 +1117,34 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Stops plugin processor.
+     */
+    public void pluginProcessorStop(boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorStop, cancel ? 1 : 0);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies plugin processor about Ignite stop.
+     */
+    public void pluginProcessorIgniteStop(boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorIgniteStop, cancel ? 1 : 0);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Redirects the console output to platform.
      *
      * @param str String to write.
