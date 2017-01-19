@@ -1388,16 +1388,17 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         case Types.BINARY:
                             fieldVal = U.uuidToBytes((UUID)fieldVal);
 
+                            break;
                         case Types.CHAR:
                         case Types.VARCHAR:
                             fieldVal = fieldVal.toString();
 
+                            break;
                         default:
                             // No-op.
                     }
                 }
-
-                if (field.getJavaFieldType().isEnum() && fieldVal instanceof Enum) {
+                else if (field.getJavaFieldType().isEnum() && fieldVal instanceof Enum) {
                     Enum val = (Enum)fieldVal;
                     
                     fieldVal = NUMERIC_TYPES.contains(field.getDatabaseFieldType()) ? val.ordinal() : val.name();
