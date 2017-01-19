@@ -245,7 +245,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             for (GridDhtLocalPartition locPart : cctx.topology().currentLocalPartitions()) {
                 if (primary) {
-                    if (cctx.affinity().primary(locNode, locPart.id(), topVer)) {
+                    if (cctx.affinity().primaryByKey(locNode, locPart.id(), topVer)) {
                         cnt += locPart.size();
 
                         continue;

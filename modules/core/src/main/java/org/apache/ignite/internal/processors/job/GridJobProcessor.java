@@ -1568,7 +1568,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
                     }
                     finally {
-                        if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
+                        if (checkPartMapping && !cctx.affinity().primaryByPartition(partId, topVer).id().equals(ctx.localNodeId()))
                             throw new IgniteException("Failed partition reservation. " +
                                 "Partition is not primary on the node. [partition=" + partId + ", cacheName=" + cctx.name() +
                                 ", nodeId=" + ctx.localNodeId() + ", topology=" + topVer + ']');

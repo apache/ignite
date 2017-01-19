@@ -780,7 +780,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             boolean nearKey;
 
             if (!(modes.near && modes.primary && modes.backup)) {
-                boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
+                boolean keyPrimary = ctx.affinity().primaryByKey(ctx.localNode(), part, topVer);
 
                 if (keyPrimary) {
                     if (!modes.primary)
@@ -3840,7 +3840,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /** {@inheritDoc} */
             @Override public boolean apply(ClusterNode clusterNode) {
                 return clusterNode.version().compareTo(PartitionSizeLongTask.SINCE_VER) >= 0 &&
-                    ((modes.primary && aff.primary(clusterNode, part, topVer)) ||
+                    ((modes.primary && aff.primaryByKey(clusterNode, part, topVer)) ||
                         (modes.backup && aff.backup(clusterNode, part, topVer)));
             }
         }).nodes();

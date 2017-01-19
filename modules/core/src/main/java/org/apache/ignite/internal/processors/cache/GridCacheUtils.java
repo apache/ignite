@@ -960,7 +960,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() != PARTITIONED)
             return ctx.localNode();
 
-        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
+        return ctx.affinity().primaryByKey(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**

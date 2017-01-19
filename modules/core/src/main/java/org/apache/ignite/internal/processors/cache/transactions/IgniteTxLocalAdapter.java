@@ -1128,7 +1128,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @return {@code True} if local node is current primary for given entry.
      */
     private boolean primaryLocal(GridCacheEntryEx entry) {
-        return entry.context().affinity().primary(cctx.localNode(), entry.partition(), AffinityTopologyVersion.NONE);
+        return entry.context().affinity().primaryByKey(cctx.localNode(), entry.partition(), AffinityTopologyVersion.NONE);
     }
 
     /**

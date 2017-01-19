@@ -610,7 +610,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             node = cctx.discovery().node(nodeId);
         }
         else // Get primary node for current topology version.
-            node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+            node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
 
         if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
             throw new GridH2RetryException("Failed to find node.");

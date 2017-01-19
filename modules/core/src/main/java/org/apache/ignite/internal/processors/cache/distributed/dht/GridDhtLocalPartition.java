@@ -817,7 +817,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if local node is primary for this partition.
      */
     public boolean primary(AffinityTopologyVersion topVer) {
-        return cctx.affinity().primary(cctx.localNode(), id, topVer);
+        return cctx.affinity().primaryByKey(cctx.localNode(), id, topVer);
     }
 
     /**
