@@ -111,6 +111,9 @@ public class GridReduceQueryExecutor {
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
     /** */
+    public int sqlQryParallelismLvl;
+
+    /** */
     private GridKernalContext ctx;
 
     /** */
@@ -183,6 +186,8 @@ public class GridReduceQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridReduceQueryExecutor.class);
+
+        sqlQryParallelismLvl = ctx.config().getSqlQueryParallelismLevel();
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -290,6 +295,7 @@ public class GridReduceQueryExecutor {
     private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
+        final int seg = msg.segmentId();
 
         final QueryRun r = runs.get(qryReqId);
 
@@ -322,7 +328,7 @@ public class GridReduceQueryExecutor {
                     }
 
                     try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize);
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
@@ -539,6 +545,8 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
+            final int indexSegments = h2.isSegmentedIndex(cctx) ? sqlQryParallelismLvl : 1;
+
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
@@ -559,12 +567,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes);
+                idx.setSources(nodes, indexSegments);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size());
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * indexSegments);
 
             runs.put(qryReqId, r);
 
@@ -623,8 +631,8 @@ public class GridReduceQueryExecutor {
                             .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
                             .timeout(timeoutMillis),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
-                    distributedJoins)
-                    ) {
+                    distributedJoins)) {
+
                     awaitAllReplies(r, nodes);
 
                     cancel.checkCancelled();
