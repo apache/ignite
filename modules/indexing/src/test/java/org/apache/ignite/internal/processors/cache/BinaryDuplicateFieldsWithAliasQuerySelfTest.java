@@ -67,8 +67,8 @@ public class BinaryDuplicateFieldsWithAliasQuerySelfTest extends GridCommonAbstr
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
         cfg.setDiscoverySpi(discoSpi);
 
-        //cfg.setMarshaller(new BinaryMarshaller());
-        cfg.setMarshaller(new OptimizedMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
+        //cfg.setMarshaller(new OptimizedMarshaller() {{setRequireSerializable(false);}});
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
@@ -105,6 +105,10 @@ public class BinaryDuplicateFieldsWithAliasQuerySelfTest extends GridCommonAbstr
         cache.put(1, new Entity2(10, 11));
         cache.put(2, new Entity2(20, 21));
         cache.put(3, new Entity2(30, 31));
+
+        Entity2 e2 = cache.get(2);
+        assertEquals(20, e2.get1());
+        assertEquals(21, e2.get2());
 
         // Test first field.
         Iterator iter = cache.query(new SqlQuery(Entity2.class, FIELD_1 + "=20")).iterator();

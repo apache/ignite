@@ -1897,14 +1897,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         Class cls0 = cls;
+        int clsSepPos = prop.indexOf('$');
+        if (clsSepPos >= 0) {
+            String exactClsName = prop.substring(0, clsSepPos);
+            String fldName = prop.substring(clsSepPos + 1);
 
-        while (cls0 != null)
             try {
-                return new FieldAccessor(cls0.getDeclaredField(prop));
+                while (cls0 != null) {
+                    if (cls0.getSimpleName().equals(exactClsName))
+                        return new FieldAccessor(cls0.getDeclaredField(fldName));
+                    cls0 = cls0.getSuperclass();
+                }
             }
             catch (NoSuchFieldException ignored) {
-                cls0 = cls0.getSuperclass();
+                // No-op
             }
+        } else {
+            while (cls0 != null)
+                try {
+                    return new FieldAccessor(cls0.getDeclaredField(prop));
+                } catch (NoSuchFieldException ignored) {
+                    cls0 = cls0.getSuperclass();
+                }
+        }
 
         try {
             Method getter = cls.getMethod(prop);

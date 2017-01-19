@@ -2709,7 +2709,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         ClassProperty(Member member) {
             this.member = member;
 
-            name = member.getName();
+            name = member.getDeclaringClass().getSimpleName() + '$' + member.getName();
 
             if (member instanceof Method) {
                 if (member.getName().startsWith("get") && member.getName().length() > 3)
