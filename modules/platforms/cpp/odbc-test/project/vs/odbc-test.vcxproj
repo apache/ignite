@@ -178,6 +178,7 @@
     <ClCompile Include="..\..\src\sql_operators_test.cpp" />
     <ClCompile Include="..\..\src\sql_string_functions_test.cpp" />
     <ClCompile Include="..\..\src\sql_system_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_esc_convert_function_test.cpp" />
     <ClCompile Include="..\..\src\sql_types_test.cpp" />
     <ClCompile Include="..\..\src\sql_value_expressions_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />

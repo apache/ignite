@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE(TestSQLConnect)
     // Everyting is ok.
     SQLRETURN ret = SQLGetInfo(dbc, SQL_DRIVER_NAME, buffer, ODBC_BUFFER_SIZE, &resLen);
 
-    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
     // Resulting length is null.
     SQLGetInfo(dbc, SQL_DRIVER_NAME, buffer, ODBC_BUFFER_SIZE, 0);
