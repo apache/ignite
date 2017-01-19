@@ -73,6 +73,8 @@ void CheckSimpleNP(const T& value)
 
 BOOST_AUTO_TEST_SUITE(BinaryObjectTestSuite)
 
+#ifdef CHECK_BINARY_OBJECT_WITH_PRIMITIVES
+
 BOOST_AUTO_TEST_CASE(PrimitiveInt8)
 {
     CheckSimple<int8_t>(0);
@@ -176,6 +178,8 @@ BOOST_AUTO_TEST_CASE(PrimitiveTimestamp)
     CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(2017, 1, 18, 20, 50, 41, 920700532));
     CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampLocal(1998, 12, 3, 18, 32, 01, 2385));
 }
+
+#endif //CHECK_BINARY_OBJECT_WITH_PRIMITIVES
 
 BOOST_AUTO_TEST_CASE(UserTestType)
 {
