@@ -137,7 +137,6 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
             perfCntr = HadoopPerformanceCounter.getCounter(ctx.counters(), nodeId);
 
             perfCntr.onTaskSubmit(info, submitTs);
-            perfCntr.onTaskSubmit(info, submitTs);
             perfCntr.onTaskPrepare(info, execStartTs);
 
             ctx.prepareTaskEnvironment();
@@ -148,6 +147,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
                 HadoopTaskInfo combineTaskInfo = new HadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(),
                     info.attempt(), null);
 
+                // Mapper index for combiner task == mapper index of map task.
                 if (ctx.taskInfo().hasMapperIndex())
                     combineTaskInfo.mapperIndex(ctx.taskInfo().mapperIndex());
 

@@ -165,7 +165,6 @@ public class HadoopV2Job extends HadoopJobEx {
             for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
                 jobConf.set(e.getKey(), e.getValue());
 
-
             jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
             rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
