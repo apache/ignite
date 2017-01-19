@@ -219,10 +219,10 @@ public class GridBinaryMarshaller {
     /** */
     private final BinaryContext ctx;
 
-    /** Converts the flag to the string representation */
-    static String flagName(int flag) {
+    /** Converts the type to the string representation */
+    static String typeName(int type) {
 
-        switch (flag) {
+        switch (type) {
             case BYTE:
                 return "BYTE";
 
@@ -266,7 +266,7 @@ public class GridBinaryMarshaller {
                 return "TIMESTAMP";
 
             default:
-                return String.valueOf(flag);
+                return String.valueOf(type);
         }
     }
 

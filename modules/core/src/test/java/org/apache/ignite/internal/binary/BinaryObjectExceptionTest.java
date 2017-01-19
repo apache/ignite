@@ -20,7 +20,9 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,6 +37,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * BinaryObjectExceptionTest
  */
 public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
+
+    /** */
+    private static final String TEST_KEY = "test_key";
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -55,7 +60,8 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrid();
+        startGrids(2);
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -65,24 +71,26 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
 
     /** */
     public void testUnexpectedFieldType() throws Exception {
-        IgniteEx grid = grid();
+        IgniteEx grid = grid(0);
         IgniteCache<String, Value> cache = grid.cache(null);
-        String n = "key";
-        cache.put(n, new Value());
-        BinaryObjectImpl b = (BinaryObjectImpl)cache.withKeepBinary().get(n);
+        cache.put(TEST_KEY, new Value());
+        BinaryObjectImpl b = (BinaryObjectImpl)cache.withKeepBinary().get(TEST_KEY);
         b.deserialize(); // deserialize working
         byte[] a = b.array();
         int unexpectedCnt = 0;
         Field[] fields = Value.class.getDeclaredFields();
+        StringBuilder sb = new StringBuilder(4 << 10);
         for (int i = b.dataStartOffset(), j = b.footerStartOffset(); i < j; ++i) {
             byte old = a[i];
             a[i] = -1;
             try {
-                b.deserialize(); // deserialize error
+                Iterator<Cache.Entry<String, Value>> it = cache.iterator();
+                while (it.hasNext())
+                    it.next();
             }
-            catch (BinaryObjectException ex) {
+            catch (Exception ex) {
                 Throwable root = ex;
-                StringBuilder sb = new StringBuilder(4 << 10);
+                sb.setLength(0);
                 sb.append(root.getMessage());
                 while (root.getCause() != null) {
                     root = root.getCause();
@@ -92,16 +100,15 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
                     root.getMessage().startsWith("Unexpected field type")) {
                     log().info(sb.toString());
                     Field f = fields[unexpectedCnt];
+                    Throwable t = ex;
                     assertTrue("type must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value\"",
-                        ex.getMessage().
-                            contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value"));
+                        t.getMessage().contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value"));
+                    t = t.getCause();
                     assertTrue("field must be equal \"" + f.getName() + "\"",
-                        ex.getCause().getMessage().
-                            contains("field: " + f.getName()));
+                        t.getMessage().contains("field: " + f.getName()));
                     ++unexpectedCnt;
-                }
-            }
-            catch (Exception ignore) {
+                } else
+                    log().info("Ignored exception: " + sb);
             }
             a[i] = old;
         }

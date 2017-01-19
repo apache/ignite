@@ -3529,49 +3529,54 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 K key = keyIt.next();
 
-                CacheObject val;
-
                 try {
-                    val = value(key);
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to peek value: " + e);
+                    CacheObject val;
 
-                    val = null;
-                }
+                    try {
+                        val = value(key);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to peek value: " + e);
 
-                if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
-                    dht.sendTtlUpdateRequest(expiryPlc);
-
-                    expiryPlc = cctx.cache().expiryPolicy(plc);
-                }
-
-                if (val != null) {
-                    boolean keepBinary0 = !locNode || keepBinary;
-
-                    next0 = F.t(
-                        (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
-                        (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
-
-                    boolean passPred = true;
-
-                    if (keyValFilter != null) {
-                        Object key0 = next0.getKey();
-                        Object val0 = next0.getValue();
-
-                        if (keepBinary0 && !keepBinary) {
-                            key0 = (K)cctx.unwrapBinaryIfNeeded(key0, keepBinary);
-                            val0 = (V)cctx.unwrapBinaryIfNeeded(val0, keepBinary);
-                        }
-
-                        passPred = keyValFilter.apply((K)key0, (V)val0);
+                        val = null;
                     }
 
-                    if (passPred)
-                        break;
-                    else
-                        next0 = null;
+                    if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
+                        dht.sendTtlUpdateRequest(expiryPlc);
+
+                        expiryPlc = cctx.cache().expiryPolicy(plc);
+                    }
+
+                    if (val != null) {
+                        boolean keepBinary0 = !locNode || keepBinary;
+
+                        next0 = F.t(
+                            (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
+                            (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
+
+                        boolean passPred = true;
+
+                        if (keyValFilter != null) {
+                            Object key0 = next0.getKey();
+                            Object val0 = next0.getValue();
+
+                            if (keepBinary0 && !keepBinary) {
+                                key0 = (K)cctx.unwrapBinaryIfNeeded(key0, keepBinary);
+                                val0 = (V)cctx.unwrapBinaryIfNeeded(val0, keepBinary);
+                            }
+
+                            passPred = keyValFilter.apply((K)key0, (V)val0);
+                        }
+
+                        if (passPred)
+                            break;
+                        else
+                            next0 = null;
+                    }
+                }
+                catch (RuntimeException ex) {
+                    throw S.INCLUDE_SENSITIVE ? new IgniteException("Failed to get a value with key: " + key, ex) : ex;
                 }
             }
 

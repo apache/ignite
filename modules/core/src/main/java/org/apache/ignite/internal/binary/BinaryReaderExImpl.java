@@ -35,6 +35,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,7 +80,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIMESTAMP_A
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.flagName;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.typeName;
 
 /**
  * Binary reader implementation.
@@ -1423,8 +1424,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         int pos = BinaryUtils.positionForHandle(in);
 
-        throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + flagName(expFlag) +
-            ", actual=" + flagName(flag) + ']');
+        throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + typeName(expFlag) +
+            ", actual=" + typeName(flag) + ']');
     }
 
     /** {@inheritDoc} */
@@ -1501,10 +1502,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     obj = desc.read(this);
                 }
                 catch (BinaryObjectException ex) {
-                    String typeName = desc.typeName();
-                    if (typeName == null || typeName.isEmpty())
-                        typeName = String.valueOf(desc.typeId());
-                    throw new BinaryObjectException("Failed to deserialize type: " + typeName, ex);
+                    if (S.INCLUDE_SENSITIVE) {
+                        String typeName = desc.typeName();
+                        if (typeName == null || typeName.isEmpty())
+                            typeName = String.valueOf(desc.typeId());
+                        throw new BinaryObjectException("Failed to deserialize type: " + typeName, ex);
+                    } else
+                        throw ex;
                 }
 
                 streamPosition(footerStart + footerLen);

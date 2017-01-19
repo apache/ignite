@@ -834,10 +834,13 @@ public class BinaryClassDescriptor {
                         info.read(res, reader);
                     }
                     catch (BinaryObjectException ex) {
-                        String fieldName = info.name();
-                        if (fieldName == null || fieldName.isEmpty())
-                            fieldName = String.valueOf(info.id());
-                        throw new BinaryObjectException("Failed to deserialize field: " + fieldName, ex);
+                        if (S.INCLUDE_SENSITIVE) {
+                            String fieldName = info.name();
+                            if (fieldName == null || fieldName.isEmpty())
+                                fieldName = String.valueOf(info.id());
+                            throw new BinaryObjectException("Failed to deserialize field: " + fieldName, ex);
+                        } else
+                            throw ex;
                     }
 
                 break;
