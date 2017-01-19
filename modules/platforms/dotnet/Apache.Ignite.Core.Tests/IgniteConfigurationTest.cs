@@ -545,7 +545,6 @@ namespace Apache.Ignite.Core.Tests
                             EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
                         }
                     }
-                }
                 },
                 PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
             };
