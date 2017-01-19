@@ -425,12 +425,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws BinaryObjectException {
-        try {
-            return findFieldByName(fieldName) && checkFlagNoHandles(BYTE) == Flag.NORMAL ? in.readByte() : 0;
-        }
-        catch (BinaryObjectException ex) {
-            throw ex.fieldName(fieldName);
-        }
+        return findFieldByName(fieldName) && checkFlagNoHandles(BYTE) == Flag.NORMAL ? in.readByte() : 0;
     }
 
     /**
@@ -1428,7 +1423,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         int pos = BinaryUtils.positionForHandle(in);
 
-        throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + flagName(expFlag) +
+        throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + flagName(expFlag) +
             ", actual=" + flagName(flag) + ']');
     }
 
@@ -1509,7 +1504,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     String typeName = desc.typeName();
                     if (typeName == null || typeName.isEmpty())
                         typeName = String.valueOf(desc.typeId());
-                    throw ex.typeName(typeName);
+                    throw new BinaryObjectException("Failed to deserialize type: " + typeName, ex);
                 }
 
                 streamPosition(footerStart + footerLen);

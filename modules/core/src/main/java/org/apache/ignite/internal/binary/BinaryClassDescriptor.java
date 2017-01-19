@@ -837,7 +837,7 @@ public class BinaryClassDescriptor {
                         String fieldName = info.name();
                         if (fieldName == null || fieldName.isEmpty())
                             fieldName = String.valueOf(info.id());
-                        throw ex.fieldName(fieldName);
+                        throw new BinaryObjectException("Failed to deserialize field: " + fieldName, ex);
                     }
 
                 break;

@@ -64,7 +64,7 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnexpectedFlagValue() throws Exception {
+    public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid();
         IgniteCache<String, Value> cache = grid.cache(null);
         String n = "key";
@@ -81,14 +81,23 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
                 b.deserialize(); // deserialize error
             }
             catch (BinaryObjectException ex) {
-                if (ex.getMessage().startsWith("Unexpected flag value")) {
-                    String s = ex.toString();
-                    log().info(s);
+                Throwable root = ex;
+                StringBuilder sb = new StringBuilder(4 << 10);
+                sb.append(root.getMessage());
+                while (root.getCause() != null) {
+                    root = root.getCause();
+                    sb.append(". ").append(root.getMessage());
+                }
+                if (root instanceof BinaryObjectException &&
+                    root.getMessage().startsWith("Unexpected field type")) {
+                    log().info(sb.toString());
                     Field f = fields[unexpectedCnt];
-                    assertTrue("typeName must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value\"",
-                        s.contains("typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value"));
-                    assertTrue("fieldName must be equal " + f.getName(),
-                        s.contains("fieldName=" + f.getName()));
+                    assertTrue("type must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value\"",
+                        ex.getMessage().
+                            contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value"));
+                    assertTrue("field must be equal \"" + f.getName() + "\"",
+                        ex.getCause().getMessage().
+                            contains("field: " + f.getName()));
                     ++unexpectedCnt;
                 }
             }
@@ -96,7 +105,7 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
             }
             a[i] = old;
         }
-        assertEquals("Fields count must match \"Unexpected flag value\" exception count",
+        assertEquals("Fields count must match \"Unexpected field type\" exception count",
             fields.length, unexpectedCnt);
     }
 
