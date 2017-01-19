@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+namespace Apache.Ignite.Core.Impl.Binary.IO
+{
+    using System;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
-
-/**
- * Map-reduce execution planner.
- */
-public interface HadoopMapReducePlanner {
-    /**
-     * Prepares map-reduce execution plan for the given job and topology.
-     *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
-     */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    /// <summary>
+    /// Binary stream processor.
+    /// </summary>
+    [CLSCompliant(false)]
+    public unsafe interface IBinaryStreamProcessor<in TArg, out T>
+    {
+        /// <summary>
+        /// Invokes the processor.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        T Invoke(byte* data, TArg arg);
+    }
 }

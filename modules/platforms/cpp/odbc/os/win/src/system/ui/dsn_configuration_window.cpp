@@ -17,6 +17,8 @@
 
 #include <Windowsx.h>
 
+#include "ignite/odbc/log.h"
+
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
 
 namespace ignite
@@ -300,14 +302,14 @@ namespace ignite
                     distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
                     enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
 
-                    LOG_MSG("Retriving arguments:\n");
-                    LOG_MSG("DSN:                %s\n", dsn.c_str());
-                    LOG_MSG("Address:            %s\n", address.c_str());
-                    LOG_MSG("Cache:              %s\n", cache.c_str());
-                    LOG_MSG("Page size:          %d\n", pageSize);
-                    LOG_MSG("Protocol version:   %s\n", version.c_str());
-                    LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
-                    LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
+                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("DSN:                " << dsn);
+                    LOG_MSG("Address:            " << address);
+                    LOG_MSG("Cache:              " << cache);
+                    LOG_MSG("Page size:          " << pageSize);
+                    LOG_MSG("Protocol version:   " << version);
+                    LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
