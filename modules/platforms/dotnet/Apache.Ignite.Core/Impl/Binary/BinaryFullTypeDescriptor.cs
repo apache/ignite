@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
@@ -66,6 +67,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Enum flag. */
         private readonly bool _isEnum;
 
+        /** Comparer. */
+        private readonly IBinaryEqualityComparer _equalityComparer;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -79,6 +83,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         /// <param name="isEnum">Enum flag.</param>
+        /// <param name="comparer">Equality comparer.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
             int typeId, 
@@ -89,7 +94,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinarySerializerInternal serializer, 
             bool keepDeserialized, 
             string affKeyFieldName,
-            bool isEnum)
+            bool isEnum, 
+            IEqualityComparer<IBinaryObject> comparer)
         {
             _type = type;
             _typeId = typeId;
@@ -101,6 +107,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
+
+            _equalityComparer = comparer as IBinaryEqualityComparer;
+
+            if (comparer != null && _equalityComparer == null)
+                throw new IgniteException(string.Format("Unsupported IEqualityComparer<IBinaryObject> " +
+                                                        "implementation: {0}. Only predefined implementations " +
+                                                        "are supported.", comparer.GetType()));
         }
 
         /// <summary>
@@ -179,6 +192,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool IsEnum
         {
             get { return _isEnum; }
+        }
+
+        /** <inheritdoc/> */
+        public IBinaryEqualityComparer EqualityComparer
+        {
+            get { return _equalityComparer; }
         }
 
         /** <inheritDoc /> */

@@ -157,8 +157,6 @@
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            CopyLocalProperties(configuration);
-
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
@@ -171,6 +169,8 @@
 
                 ReadCore(marsh.StartUnmarshal(stream));
             }
+
+            CopyLocalProperties(configuration);
         }
 
         /// <summary>
@@ -255,12 +255,37 @@
                 writer.WriteBoolean(false);
 
             // Binary config
-            var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
+            if (BinaryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
 
-            writer.WriteBoolean(isCompactFooterSet);
+                if (BinaryConfiguration.CompactFooterInternal != null)
+                {
+                    writer.WriteBoolean(true);
+                    writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);
+                }
 
-            if (isCompactFooterSet)
-                writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
+                // remote nodes can have no BinaryConfiguration.
+                var types = writer.Marshaller.GetUserTypeDescriptors().Where(x => x.EqualityComparer != null).ToList();
+
+                writer.WriteInt(types.Count);
+
+                foreach (var type in types)
+                {
+                    writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
+                    writer.WriteBoolean(type.IsEnum);
+                    BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
+                }
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
 
             // User attributes
             var attrs = UserAttributes;
@@ -361,7 +386,28 @@
             if (r.ReadBoolean())
             {
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
-                BinaryConfiguration.CompactFooter = r.ReadBoolean();
+
+                if (r.ReadBoolean())
+                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
+
+                var typeCount = r.ReadInt();
+
+                if (typeCount > 0)
+                {
+                    var types = new List<BinaryTypeConfiguration>(typeCount);
+
+                    for (var i = 0; i < typeCount; i++)
+                    {
+                        types.Add(new BinaryTypeConfiguration
+                        {
+                            TypeName = r.ReadString(),
+                            IsEnum = r.ReadBoolean(),
+                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
+                        });
+                    }
+
+                    BinaryConfiguration.TypeConfigurations = types;
+                }
             }
 
             // User attributes
@@ -402,17 +448,15 @@
         /// <param name="binaryReader">The binary reader.</param>
         private void Read(BinaryReader binaryReader)
         {
-            var r = binaryReader;
+            ReadCore(binaryReader);
 
-            CopyLocalProperties(r.Marshaller.Ignite.Configuration);
-
-            ReadCore(r);
+            CopyLocalProperties(binaryReader.Marshaller.Ignite.Configuration);
 
             // Misc
-            IgniteHome = r.ReadString();
+            IgniteHome = binaryReader.ReadString();
 
-            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
@@ -426,9 +470,16 @@
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
             GridName = cfg.GridName;
-            BinaryConfiguration = cfg.BinaryConfiguration == null
-                ? null
-                : new BinaryConfiguration(cfg.BinaryConfiguration);
+
+            if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
+            {
+                BinaryConfiguration.MergeTypes(cfg.BinaryConfiguration);
+            }
+            else if (cfg.BinaryConfiguration != null)
+            {
+                BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+            }
+            
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
