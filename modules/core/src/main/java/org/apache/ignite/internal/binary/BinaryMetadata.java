@@ -28,7 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,6 +60,9 @@ public class BinaryMetadata implements Externalizable {
     /** Schemas associated with type. */
     private Collection<BinarySchema> schemas;
 
+    /** Schema IDs registered for this type */
+    private Set<Integer> schemaIds;
+
     /** Whether this is enum type. */
     private boolean isEnum;
 
@@ -89,6 +92,16 @@ public class BinaryMetadata implements Externalizable {
         this.fields = fields;
         this.affKeyFieldName = affKeyFieldName;
         this.schemas = schemas;
+
+        if (schemas != null) {
+            schemaIds = U.newHashSet(schemas.size());
+
+            for (BinarySchema schema : schemas)
+                schemaIds.add(schema.schemaId());
+        }
+        else
+            schemaIds = Collections.emptySet();
+
         this.isEnum = isEnum;
     }
 
@@ -142,6 +155,10 @@ public class BinaryMetadata implements Externalizable {
      */
     public Collection<BinarySchema> schemas() {
         return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
+    }
+
+    public boolean hasSchema(int schemaId) {
+        return schemaIds.contains(schemaId);
     }
 
     /**
@@ -247,12 +264,16 @@ public class BinaryMetadata implements Externalizable {
         else {
             schemas = new ArrayList<>();
 
+            schemaIds = U.newHashSet(schemasSize);
+
             for (int i = 0; i < schemasSize; i++) {
                 BinarySchema schema = new BinarySchema();
 
                 schema.readFrom(in);
 
                 schemas.add(schema);
+
+                schemaIds.add(schema.schemaId());
             }
         }
 

@@ -1483,7 +1483,7 @@ public class BinaryUtils {
             return Object.class;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
         else {
             String clsName = doReadClassName(in);
 

@@ -1213,6 +1213,16 @@ public class BinaryContext {
 
     /**
      * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Meta data.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata(typeId, schemaId): null;
+    }
+
+    /**
+     * @param typeId Type ID.
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName(int typeId) {
