@@ -37,6 +37,10 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     /** */
     private GridBinaryMarshaller impl;
 
+    public BinaryMarshaller() {
+        Thread.dumpStack();
+    }
+
     /**
      * Checks whether {@code BinaryMarshaller} is able to work on the current JVM.
      * <p>

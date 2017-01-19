@@ -130,7 +130,7 @@ public class IgniteNodeRunner {
 
             cfg.setMarshaller(marsh);
 
-            X.println("Configured marshaller class: " + marsh.getClass().getName());
+            X.println("############## Configured marshaller class: " + marsh.getClass().getName());
 
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
             disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);

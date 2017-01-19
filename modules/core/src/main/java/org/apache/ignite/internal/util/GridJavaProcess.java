@@ -27,8 +27,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -69,6 +71,9 @@ public final class GridJavaProcess {
     /** Closure to be called when process termination is detected. */
     private GridAbsClosure procKilledC;
 
+    /** The process current directory. */
+    private File currDir;
+
     /**
      * Private constructor to promote factory method usage.
      */
@@ -89,7 +94,7 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
-        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, null, null);
+        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, null, null, null, null);
     }
 
     /**
@@ -107,8 +112,8 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
-        @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
-        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, jvmArgs, cp);
+        @Nullable Collection<String> jvmArgs, @Nullable String cp, @Nullable File dir) throws Exception {
+        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, jvmArgs, cp, dir, null);
     }
 
     /**
@@ -127,7 +132,10 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
-        @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
+        @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp,
+        @Nullable File dir, @Nullable Map<String, String> env) throws Exception {
+        System.out.println("#### JVM args: " + jvmArgs);
+
         GridJavaProcess gjProc = new GridJavaProcess();
 
         gjProc.log = log;
@@ -163,6 +171,18 @@ public final class GridJavaProcess {
         procCommands.addAll(procParams);
 
         ProcessBuilder builder = new ProcessBuilder(procCommands);
+
+        if (!F.isEmpty(env))
+            builder.environment().putAll(env);
+
+        if (dir != null) {
+            builder.directory(dir);
+
+            gjProc.currDir = dir;
+        }
+        else
+            // Directory of the current process.
+            gjProc.currDir = new File(".").getAbsoluteFile();
 
         builder.redirectErrorStream(true);
 
@@ -239,6 +259,15 @@ public final class GridJavaProcess {
      */
     public Process getProcess() {
         return proc;
+    }
+
+    /**
+     * Gets the process current directory.
+     *
+     * @return The current directory, null for default.
+     */
+    public File getProcessDirectory() {
+        return currDir;
     }
 
     /**

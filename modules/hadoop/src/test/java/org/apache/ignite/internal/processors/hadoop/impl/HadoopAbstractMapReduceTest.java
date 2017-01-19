@@ -64,6 +64,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -155,9 +156,26 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * Checks owner of the path.
      * @param p The path.
      */
-    private void checkOwner(IgfsPath p) {
+    private void checkOwner(final IgfsPath p) throws Exception {
         String ownerPrim = getOwner(igfs, p);
         assertEquals(USER, ownerPrim);
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    secondaryFs.info(p);
+
+                    System.out.println("+");
+
+                    return true;
+                }
+                catch (RuntimeException e) {
+                    System.out.println("-");
+
+                    return false;
+                }
+            }
+        }, 5000));
 
         String ownerSec = getOwnerSecondary(secondaryFs, p);
         assertEquals(USER, ownerSec);
@@ -386,6 +404,8 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setMarshaller(IgniteTestResources.getMarshaller());
 
         cfg.setGridName(gridName);
 

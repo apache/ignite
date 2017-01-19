@@ -105,6 +105,8 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     null,
                     null,
                     jvmArgs,
+                    null,
+                    null,
                     null
                 );
 
@@ -122,6 +124,8 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     null,
                     null,
                     jvmArgs,
+                    null,
+                    null,
                     null
                 );
 
@@ -143,7 +147,7 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     null,
                     null,
                     jvmArgs,
-                    cp
+                    cp, null, null
                 );
 
                 assertTrue(clientReadyLatch.await(60, SECONDS));

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.File;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -29,11 +30,15 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteNodeProxyBase;
+import org.apache.ignite.testframework.junits.multijvm.NodeProcessParameters;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -216,6 +221,11 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override protected final boolean isMultiJvm() {
+        return true;
+    }
+
     /**
      * @return {@code True} if REST is enabled on Hadoop nodes.
      */
@@ -228,6 +238,76 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected int gridCount() {
         return 3;
+    }
+
+    /** {@inheritDoc} */
+    protected boolean isRemoteJvm(String gridName) {
+        // Secondary Fs node should always be run in the test JVM:
+        if (gridName.toLowerCase().contains("secondary"))
+            return false;
+
+        return super.isRemoteJvm(gridName);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite startRemoteGrid(String gridName, IgniteConfiguration cfg,
+        GridSpringResourceContext ctx) throws Exception {
+        if (ctx != null)
+            throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
+
+        if (cfg == null)
+            cfg = optimize(getConfiguration(gridName));
+
+        int gridIdx = getTestGridIndex(gridName);
+
+        new IgniteNodeProxyBase(cfg, log, grid(0), getRemoteNodeParameters(gridIdx));
+
+        return null;
+    }
+
+    /**
+     * Gets special JVM parameters for the remote node.
+     *
+     * @param nodeIdx
+     * @return
+     */
+    NodeProcessParameters getRemoteNodeParameters(int nodeIdx) {
+        assert nodeIdx > 0;
+
+        return NodeProcessParameters.DEFAULT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkTopology(int cnt) throws Exception {
+        if (isMultiJvm()) {
+            for (int j = 0; j < 10; j++) {
+                boolean topOk = true;
+
+                for (int i = 0; i < cnt; i++) {
+                    // Special treatment of remote nodes:
+                    int size = i == 0 ? grid(i).cluster().nodes().size()
+                        : IgniteNodeProxyBase.ignite(getTestGridName(i)).nodes().size();
+
+                    if (cnt != size) {
+                        U.warn(log, "Grid size is incorrect (will re-run check in 1000 ms) " +
+                            "[name=" + grid(i).name() + ", size=" + size + ']');
+
+                        topOk = false;
+
+                        break;
+                    }
+                }
+
+                if (topOk)
+                    return;
+                else
+                    Thread.sleep(1000);
+            }
+
+            throw new Exception("Failed to wait for proper topology: " + cnt);
+        }
+        else
+            super.checkTopology(cnt);
     }
 
     /**

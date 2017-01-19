@@ -64,10 +64,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     /** Validation destination dir. */
     protected final String validateOutDir = getFsBase() + "/tera-validated";
 
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
+//    /** {@inheritDoc} */
+//    @Override protected boolean isMultiJvm() {
+//        return true;
+//    }
 
     /**
      * Extracts value of Hadoop package-private constant.

@@ -47,7 +47,8 @@ public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
             null,
             null,
             Collections.<String>emptyList(),
-            System.getProperty("surefire.test.class.path")
+            System.getProperty("surefire.test.class.path"),
+            null
         ).getProcess();
 
         readStreams(ps);

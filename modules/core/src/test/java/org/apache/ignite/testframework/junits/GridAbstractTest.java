@@ -1883,22 +1883,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param name Name.
-     * @param remote Remote.
-     * @param thisRemote This remote.
-     */
-    public static IgniteEx grid(String name, boolean remote, boolean thisRemote) {
-        if (!remote)
-            return (IgniteEx)G.ignite(name);
-        else {
-            if (thisRemote)
-                return IgniteNodeRunner.startedInstance();
-            else
-                return IgniteProcessProxy.ignite(name);
-        }
-    }
-
-    /**
      *
      */
     private static interface WriteReplaceOwner {
