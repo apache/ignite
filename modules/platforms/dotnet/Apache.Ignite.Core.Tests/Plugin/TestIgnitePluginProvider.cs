@@ -66,6 +66,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void Start(IPluginContext<TestIgnitePluginConfiguration> context)
         {
             Context = context;
+
+            EnsureIgniteWorks();
         }
 
         /** <inheritdoc /> */
@@ -80,11 +82,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void OnIgniteStart()
         {
             Started = true;
-
-            Assert.NotNull(Context);
-            Assert.NotNull(Context.Ignite);
-            Assert.NotNull(Context.IgniteConfiguration);
-            Assert.NotNull(Context.PluginConfiguration);
 
             EnsureIgniteWorks();
         }
@@ -124,6 +121,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             Assert.NotNull(Context);
             Assert.NotNull(Context.Ignite);
+            Assert.NotNull(Context.IgniteConfiguration);
+            Assert.NotNull(Context.PluginConfiguration);
 
             var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
 

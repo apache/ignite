@@ -42,7 +42,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
@@ -106,9 +105,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Log. */
         private readonly ILogger _log;
 
-        /** Plugin processor. */
-        private readonly PluginProcessor _pluginProcessor;
-
         /** Error type: generic. */
         private const int ErrGeneric = 1;
 
@@ -138,14 +134,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Constructor.
         /// </summary>
         /// <param name="log">Logger.</param>
-        /// <param name="pluginProcessor"></param>
-        public UnmanagedCallbacks(ILogger log, PluginProcessor pluginProcessor)
+        public UnmanagedCallbacks(ILogger log)
         {
             Debug.Assert(log != null);
-            Debug.Assert(pluginProcessor != null);
 
             _log = log;
-            _pluginProcessor = pluginProcessor;
 
             var cbs = new UnmanagedCallbackHandlers
             {
@@ -244,7 +237,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
             AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
-            AddHandler(UnmanagedCallbackOp.PluginProcessorStart, PluginProcessorStart);
             AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
             AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
         }
@@ -1141,23 +1133,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long PluginProcessorStart(long val)
-        {
-            _pluginProcessor.Start();
-
-            return 0;
-        }
-
         private long PluginProcessorIgniteStop(long val)
         {
-            _pluginProcessor.OnIgniteStop(val != 0);
+            _ignite.PluginProcessor.OnIgniteStop(val != 0);
 
             return 0;
         }
 
         private long PluginProcessorStop(long val)
         {
-            _pluginProcessor.Stop(val != 0);
+            _ignite.PluginProcessor.Stop(val != 0);
 
             return 0;
         }
@@ -1307,14 +1292,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public ILogger Log
         {
             get { return _log; }
-        }
-
-        /// <summary>
-        /// Gets the plugin processor.
-        /// </summary>
-        public PluginProcessor PluginProcessor
-        {
-            get { return _pluginProcessor; }
         }
 
         /// <summary>
