@@ -55,14 +55,14 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
         return cfg;
     }
 
-    /*
+    /**
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
         checkMultiReducerWholeMapReduceExecution(false);
     }
 
-    /*
+    /**
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecutionStriped() throws Exception {

@@ -76,6 +76,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.JOB_SHARED_CLASSLOADER;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.jobLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.taskLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.transformException;
@@ -164,9 +165,16 @@ public class HadoopV2Job extends HadoopJobEx {
             for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
                 jobConf.set(e.getKey(), e.getValue());
 
+
             jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
             rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
+
+            // Disable stripped for v1 API
+            if (!jobConf.getUseNewMapper() || jobConf.getCombinerClass() != null) {
+                jobConf.setBoolean(SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), false);
+                jobInfo.properties().put(SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "false");
+            }
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);

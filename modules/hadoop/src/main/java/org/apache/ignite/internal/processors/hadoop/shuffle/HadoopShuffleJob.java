@@ -353,12 +353,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     public void onDirectShuffleMessage(T src, HadoopDirectShuffleMessage msg) throws IgniteCheckedException {
         byte[] buf = extractBuffer(msg);
 
-//        StringBuilder sb = new StringBuilder();
-//        for (int i = 0; i < buf.length; ++i)
-//            sb.append(Integer.toHexString(buf[i] & 0xFF).toUpperCase()).append(' ');
-//
-//        log.info("+++ onDirectShuffleMessage " + sb.toString());
-
         assert buf != null;
 
         int rdc = msg.reducer();
@@ -641,12 +635,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         HadoopDirectShuffleMessage msg = new HadoopDirectShuffleMessage(job.id(), rmtRdcIdx, cnt,
             state.buffer(), state.bufferLength(), state.dataLength());
-
-//        StringBuilder sb = new StringBuilder();
-//        for (int i = 0; i < state.dataLength(); ++i)
-//            sb.append(Integer.toHexString(state.buffer()[i] & 0xFF).toUpperCase()).append(' ');
-//
-//        log.info("+++ send " + sb.toString());
 
         T nodeId = reduceAddrs[rmtRdcIdx];
 
@@ -1010,8 +998,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 if (stripeMappers) {
                     int mapperIdx = HadoopMapperUtils.mapperIndex();
 
-                    if (mapperIdx < 0)
-                        assert mapperIdx >= 0;
+                    assert mapperIdx >= 0;
 
                     int idx = totalReducerCnt * mapperIdx + part;
 

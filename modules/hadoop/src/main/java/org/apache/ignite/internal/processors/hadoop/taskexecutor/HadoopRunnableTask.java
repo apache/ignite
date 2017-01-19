@@ -122,7 +122,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
 
     /**
      * Implements actual task running.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException On error.
      */
     void call0() throws IgniteCheckedException {
         execStartTs = U.currentTimeMillis();
