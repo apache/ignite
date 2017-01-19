@@ -62,19 +62,19 @@ public class OsConfigurationSuggestions {
             Integer value;
 
             if ((value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && value != 500)
-                suggestions.add(sysctlWVM + DIRTY_WRITEBACK_CENTISECS);
+                suggestions.add(sysctlWVM + DIRTY_WRITEBACK_CENTISECS + "=500");
 
             if ((value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && value != 500)
-                suggestions.add(sysctlWVM + DIRTY_EXPIRE_CENTISECS);
+                suggestions.add(sysctlWVM + DIRTY_EXPIRE_CENTISECS + "=500");
 
             if ((value = readVmParam(SWAPPINESS)) != null && value != 10)
-                suggestions.add(sysctlWVM + SWAPPINESS);
+                suggestions.add(sysctlWVM + SWAPPINESS + "=10");
 
             if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && value != 0)
-                suggestions.add(sysctlWVM + ZONE_RECLAIM_MODE);
+                suggestions.add(sysctlWVM + ZONE_RECLAIM_MODE + "=0");
 
             if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && value != 1240000)
-                suggestions.add(sysctlWVM + EXTRA_FREE_KBYTES);
+                suggestions.add(sysctlWVM + EXTRA_FREE_KBYTES + "=1240000");
 
             if (!suggestions.isEmpty()) {
                 U.quietAndInfo(log, "Please, use the following commands to configure your OS:");
