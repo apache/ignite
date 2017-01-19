@@ -69,6 +69,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -1580,12 +1582,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (evt instanceof DiscoveryCustomEvent) {
                     DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
 
-                    topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
-
                     if (msg instanceof CacheAffinityChangeMessage) {
                         if (!((CacheAffinityChangeMessage)msg).exchangeNeeded())
                             return;
                     }
+
+                    if (msg instanceof MappingProposedMessage || msg instanceof MappingAcceptedMessage)
+                        return;
+
+                    topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
                 }
                 else
                     topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);

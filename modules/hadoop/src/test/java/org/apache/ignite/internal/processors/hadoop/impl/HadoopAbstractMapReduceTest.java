@@ -86,7 +86,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
+    protected static final String SECONDARY_URI = "igfs://igfs-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";

@@ -68,7 +68,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -94,6 +97,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 
 /**
@@ -1972,6 +1977,39 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test verifies Ignite nodes don't exchange system types on discovery phase but only user types.
+     */
+    public void testSystemMarshallerTypesFilteredOut() throws Exception {
+        try {
+            nodeSpi.set(new TestTcpDiscoveryMarshallerDataSpi());
+
+            Ignite srv1 = startGrid(0);
+
+            IgniteCache<Object, Object> organizations = srv1.createCache("organizations");
+
+            organizations.put(1, new Organization());
+
+            startGrid(1);
+
+            assertEquals("Expected items in marshaller discovery data: 1, actual: "
+                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                    1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+
+            IgniteCache<Object, Object> employees = srv1.createCache("employees");
+
+            employees.put(1, new Employee());
+
+            startGrid(2);
+
+            assertEquals("Expected items in marshaller discovery data: 2, actual: "
+                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                    2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testDuplicatedDiscoveryDataRemoved() throws Exception {
@@ -2084,6 +2122,51 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * SPI used in {@link #testSystemMarshallerTypesFilteredOut()} test to check that only
+     * user types get to discovery messages on joining new nodes.
+     */
+    private static class TestTcpDiscoveryMarshallerDataSpi extends TcpDiscoverySpi {
+        /** Marshalled items. */
+        static volatile int marshalledItems;
+
+        /** {@inheritDoc} */
+        @Override public TcpDiscoverySpi setDataExchange(final DiscoverySpiDataExchange exchange) {
+            return super.setDataExchange(new DiscoverySpiDataExchange() {
+                @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                    DiscoveryDataBag bag = exchange.collect(dataBag);
+
+                    if (bag.commonData().containsKey(MARSHALLER_PROC.ordinal()))
+                        marshalledItems = getJavaMappings(getAllMappings(dataBag)).size();
+
+                    return bag;
+                }
+
+                @Override public void onExchange(DiscoveryDataBag dataBag) {
+                    exchange.onExchange(dataBag);
+                }
+
+                private List getAllMappings(DiscoveryDataBag bag) {
+                    return (List) bag.commonData().get(MARSHALLER_PROC.ordinal());
+                }
+
+                private Map getJavaMappings(List allMappings) {
+                    return (Map) allMappings.get(JAVA_ID);
+                }
+            });
+        }
+    }
+
+    /**
+     * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
+     */
+    private static class Organization { }
+
+    /**
+     * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
+     */
+    private static class Employee { }
+
+    /**
      *
      */
     private static class TestDiscoveryDataDuplicateSpi extends TcpDiscoverySpi {
@@ -2101,14 +2184,22 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                Map<UUID, Map<Integer, byte[]>> discoData = ((TcpDiscoveryNodeAddedMessage)msg).oldNodesDiscoveryData();
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
 
-                checkDiscoData(discoData, msg);
+                if (dataPacket != null) {
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
+
+                    checkDiscoData(discoData, msg);
+                }
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                Map<UUID, Map<Integer, byte[]>> discoData = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
+                DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
 
-                checkDiscoData(discoData, msg);
+                if (dataPacket != null) {
+                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
+
+                    checkDiscoData(discoData, msg);
+                }
             }
 
             super.writeToSocket(sock, out, msg, timeout);
@@ -2122,9 +2213,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (discoData != null && discoData.size() > 1) {
                 int cnt = 0;
 
-                for (Map.Entry<UUID, Map<Integer, byte[]>> e : discoData.entrySet()) {
-                    Map<Integer, byte[]> map = e.getValue();
-
+                for (Map<Integer, byte[]> map : discoData.values()) {
                     if (map.containsKey(GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()))
                         cnt++;
                 }

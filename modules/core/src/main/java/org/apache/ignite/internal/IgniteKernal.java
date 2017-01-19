@@ -118,12 +118,14 @@ import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -668,6 +670,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
+     * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
@@ -678,13 +681,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     public void start(
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
-        ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
         final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
+        ExecutorService dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
@@ -787,13 +790,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 cfg,
                 gw,
                 utilityCachePool,
-                marshCachePool,
                 execSvc,
                 sysExecSvc,
                 stripedExecSvc,
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
+                dataStreamExecSvc,
                 restExecSvc,
                 affExecSvc,
                 idxExecSvc,
@@ -902,6 +905,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
+            startProcessor(new GridMarshallerMappingProcessor(ctx));
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -909,6 +913,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
+
+            // Start platform plugins.
+            startProcessor(new PlatformPluginProcessor(ctx));
 
             fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
@@ -1963,8 +1970,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             List<GridComponent> comps = ctx.components();
-
-            ctx.marshallerContext().onKernalStop();
 
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.
