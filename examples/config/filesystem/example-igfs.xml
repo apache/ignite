@@ -72,30 +72,6 @@
                     <!-- Set number of prefetch blocks. -->
                     <property name="prefetchBlocks" value="32"/>
 
-                    <property name="metaCacheConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                            <property name="cacheMode" value="REPLICATED"/>
-                            <property name="atomicityMode" value="TRANSACTIONAL"/>
-                            <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                        </bean>
-                    </property>
-
-                    <property name="dataCacheConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                            <property name="cacheMode" value="PARTITIONED"/>
-                            <property name="atomicityMode" value="TRANSACTIONAL"/>
-                            <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                            <property name="backups" value="0"/>
-                            <property name="affinityMapper">
-                                <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
-                                    <!-- Haw many blocks in row will be stored on the same node. -->
-                                    <constructor-arg value="512"/>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
-
-
                     <!--
                         Example of configured IPC loopback endpoint.
                     -->

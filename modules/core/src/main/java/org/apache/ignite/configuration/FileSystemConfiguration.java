@@ -280,8 +280,6 @@ public class FileSystemConfiguration {
      * Default configuration for the meta cache is:
      * <ul>
      *     <li>atomicityMode = TRANSACTIONAL</li>
-     *     <li>atomicWriteOrderMode = PRIMARY</li>
-     *     <li>writeSynchronizationMode = FULL_SYNC</li>
      *     <li>cacheMode = PARTITIONED</li>
      *     <li>backups = 1</li>
      * </ul>
@@ -307,10 +305,9 @@ public class FileSystemConfiguration {
      *
      * Default configuration for the data cache is:
      * <ul>
-     *     <li>atomicityMode = TRANSACTIONAL</li>
-     *     <li>atomicWriteOrderMode = PRIMARY</li>
-     *     <li>writeSynchronizationMode = FULL_SYNC</li>
+     *     <<li>atomicityMode = TRANSACTIONAL</li>
      *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 0</li>
      * </ul>
      *
      * @param dataCacheCfg Cache configuration object.
@@ -323,7 +320,7 @@ public class FileSystemConfiguration {
      * Cache name to store IGFS meta information.
      *
      * @return Cache name to store IGFS meta information.
-     * @deprecated Since 2.0, please use {@link #getMetaCacheConfiguration()} instead.
+     * @deprecated Since 2.0, use {@link #getMetaCacheConfiguration()} instead.
      */
     @Deprecated
     @Nullable public String getMetaCacheName() {
@@ -334,7 +331,7 @@ public class FileSystemConfiguration {
      * Sets cache name to store IGFS meta information.
      *
      * @param metaCacheName Cache name to store IGFS meta information.
-     * @deprecated Since 2.0, please use {@link #setMetaCacheConfiguration(CacheConfiguration)} instead.
+     * @deprecated Since 2.0, use {@link #setMetaCacheConfiguration(CacheConfiguration)} instead.
      */
     @Deprecated
     public void setMetaCacheName(String metaCacheName) {
@@ -345,7 +342,7 @@ public class FileSystemConfiguration {
      * Cache name to store IGFS data.
      *
      * @return Cache name to store IGFS data.
-     * @deprecated Since 2.0, please use {@link #getDataCacheConfiguration()} instead.
+     * @deprecated Since 2.0, use {@link #getDataCacheConfiguration()} instead.
      */
     @Deprecated
     @Nullable public String getDataCacheName() {
@@ -356,7 +353,7 @@ public class FileSystemConfiguration {
      * Sets cache name to store IGFS data.
      *
      * @param dataCacheName Cache name to store IGFS data.
-     * @deprecated Since 2.0? please use {@link #setDataCacheConfiguration(CacheConfiguration)} instead.
+     * @deprecated Since 2.0, use {@link #setDataCacheConfiguration(CacheConfiguration)} instead.
      */
     @Deprecated
     public void setDataCacheName(String dataCacheName) {
