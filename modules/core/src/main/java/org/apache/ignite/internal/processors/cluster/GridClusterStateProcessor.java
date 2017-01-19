@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ClusterState;
@@ -440,8 +441,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             if (!client) {
                 sharedCtx.database().lock();
 
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onActivate(ctx);
+                IgnitePageStoreManager pageStore = sharedCtx.pageStore();
+
+                if (pageStore != null)
+                    pageStore.onActivate(ctx);
 
                 sharedCtx.wal().onActivate(ctx);
 
@@ -449,14 +452,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (CU.isSystemCache(cfg.getName()))
-                        if (sharedCtx.pageStore() != null)
-                            sharedCtx.pageStore().initializeForCache(cfg);
+                        if (pageStore != null)
+                            pageStore.initializeForCache(cfg);
                 }
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (!CU.isSystemCache(cfg.getName()))
-                        if (sharedCtx.pageStore() != null)
-                            sharedCtx.pageStore().initializeForCache(cfg);
+                        if (pageStore != null)
+                            pageStore.initializeForCache(cfg);
                 }
 
                 sharedCtx.database().onActivate(ctx);

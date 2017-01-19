@@ -1882,7 +1882,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (req.restart()) {
             proxy = jCacheProxies.get(maskNull(req.cacheName()));
 
-            proxy.restart();
+            if (proxy != null)
+                proxy.restart();
         }
         else
             proxy = jCacheProxies.remove(maskNull(req.cacheName()));

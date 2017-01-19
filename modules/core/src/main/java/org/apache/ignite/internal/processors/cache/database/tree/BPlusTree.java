@@ -1597,6 +1597,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         try (Page meta = page(metaPageId)) {
             ByteBuffer metaBuf = writeLock(meta); // No checks, we must be out of use.
 
+            assert metaBuf != null;
+
             try {
                 for (long pageId : getFirstPageIds(metaBuf)) {
                     assert pageId != 0;
