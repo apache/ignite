@@ -5512,8 +5512,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testTransformResourceInjection() throws Exception {
         ClusterGroup servers = grid(0).cluster().forServers();
 
-        if(!F.isEmpty(servers.nodes()))
-            grid(0).services(servers).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+        if(F.isEmpty(servers.nodes()))
+            return;
+
+        grid(0).services( grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
 
         IgniteCache<String, Integer> cache = jcache();
         Ignite ignite = ignite(0);
