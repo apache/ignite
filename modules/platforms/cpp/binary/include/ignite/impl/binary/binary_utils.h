@@ -36,6 +36,7 @@ namespace ignite
         {
             class InteropInputStream;
             class InteropOutputStream;
+            class InteropMemory;
         }
 
         namespace binary
@@ -47,12 +48,31 @@ namespace ignite
             {
             public:
                 /**
+                 * Check if there is enough data in memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position.
+                 * @param len Data to read.
+                 */
+                static void CheckEnoughData(interop::InteropMemory& mem, int32_t pos, int32_t len);
+
+                /**
                  * Utility method to read signed 8-bit integer from stream.
                  *
                  * @param stream Stream.
                  * @return Value.
                  */
                 static int8_t ReadInt8(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to read signed 8-bit integer from memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int8_t ReadInt8(interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 8-bit integer to stream.
@@ -189,6 +209,15 @@ namespace ignite
                  * @return Value.
                  */
                 static int32_t ReadInt32(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to read signed 32-bit integer from memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int32_t ReadInt32(interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 32-bit integer to stream.

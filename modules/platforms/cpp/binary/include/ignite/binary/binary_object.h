@@ -27,7 +27,8 @@
 
 #include <ignite/impl/interop/interop.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
-
+#include <ignite/impl/binary/binary_common.h>
+#include <ignite/impl/binary/binary_utils.h>
 
 namespace ignite
 {
@@ -36,6 +37,12 @@ namespace ignite
         class BinaryObject
         {
         public:
+            /**
+             * Constructor.
+             *
+             * @param mem Binary object memory.
+             * @param start Object starting position in memory.
+             */
             BinaryObject(impl::interop::InteropMemory& mem, int32_t start) :
                 mem(mem),
                 start(start)
@@ -43,8 +50,14 @@ namespace ignite
                 // No-op.
             }
 
+            /**
+             * Deserialize object.
+             * @throw IgniteError if the object can not be deserialized to specified type.
+             *
+             * @return Deserialized value.
+             */
             template<typename T>
-            T Deserialize()
+            T Deserialize() const
             {
                 impl::interop::InteropInputStream stream(&mem);
 
@@ -54,7 +67,42 @@ namespace ignite
                 return reader.ReadObject<T>();
             }
 
+            /**
+             * Get object data.
+             * @throw IgniteError if the object is not in a valid state.
+             *
+             * @return Pointer to object data.
+             */
+            const int8_t* GetData() const
+            {
+                impl::binary::BinaryUtils::CheckEnoughData(mem, start + impl::binary::IGNITE_OFFSET_DATA, GetLength());
+
+                return mem.Data() + start + impl::binary::IGNITE_OFFSET_DATA;
+            }
+
+            /**
+             * Get object length.
+             * @throw IgniteError if the object is not in a valid state.
+             *
+             * @return Object length.
+             */
+            int32_t GetLength() const
+            {
+                return impl::binary::BinaryUtils::ReadInt32(mem, start + impl::binary::IGNITE_OFFSET_LEN);
+            }
+
         private:
+            /**
+             * Get object type.
+             * @throw IgniteError if the object is not in a valid state.
+             *
+             * @return Object type.
+             */
+            int8_t GetType() const
+            {
+                return impl::binary::BinaryUtils::ReadInt8(mem, start);
+            }
+
             /** Underlying object memory. */
             impl::interop::InteropMemory& mem;
 
