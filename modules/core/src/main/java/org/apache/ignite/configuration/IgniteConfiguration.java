@@ -221,6 +221,9 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
+    /** Default sql query parallelizm level */
+    public static final int DFLT_SQL_QUERY_PARALLELISM_LVL = 1;
+
     /** Optional grid name. */
     private String gridName;
 
@@ -462,6 +465,9 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
+    /** Sql query parallelizm level. */
+    private int sqlQryParallelismLvl = DFLT_SQL_QUERY_PARALLELISM_LVL;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -551,6 +557,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sqlQryParallelismLvl = cfg.getSqlQueryParallelismLevel();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         svcCfgs = cfg.getServiceConfiguration();
@@ -2295,6 +2302,30 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
+
+        return this;
+    }
+
+    /**
+     * Gets Sql query parallelizm level.
+     *
+     * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
+     *
+     * @return Max threads that sql query can be split to.
+     */
+    public int getSqlQueryParallelismLevel() {
+        return sqlQryParallelismLvl;
+    }
+
+    /**
+     * Sets Sql query parallelizm level.
+     *
+     * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
+     *
+     * @param sqlQryParallelismLvl  Max threads that sql query can be split to.
+     */
+    public IgniteConfiguration setSqlQueryParallelismLevel(int sqlQryParallelismLvl) {
+        this.sqlQryParallelismLvl = sqlQryParallelismLvl;
 
         return this;
     }
