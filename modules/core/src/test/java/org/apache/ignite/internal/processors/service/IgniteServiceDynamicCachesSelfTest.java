@@ -134,11 +134,17 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    return svcs.service(svcName) != null;
+                    boolean res = svcs.service(svcName) != null;
+
+                    info("try get service " + svcName + " res: " + res);
+
+                    return res;
                 }
             }, 10 * 1000);
 
             assertTrue("Service was not deployed", res);
+
+            info("stopping cache: " + cacheName);
 
             ig.destroyCache(cacheName);
 
