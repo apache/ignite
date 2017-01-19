@@ -278,6 +278,16 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * Maps affinity key to node.
+     *
+     * @param affinityKey Affinity key to map.
+     * @return Primary node for this key.
+     */
+    public Collection<ClusterNode> affinityNodes(Object affinityKey) {
+        return dataCache.affinity().mapKeyToPrimaryAndBackups(affinityKey);
+    }
+
+    /**
      * Creates new instance of explicit data streamer.
      *
      * @return New instance of data streamer.
@@ -1008,26 +1018,6 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data, int blockSize) throws IgniteCheckedException {
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-
-            if (completionFut == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Missing completion future for file write request (most likely exception occurred " +
-                        "which will be thrown upon stream close) [fileId=" + fileId + ']');
-
-                return;
-            }
-
-            IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
-
-            completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                igfsCtx.kernalContext().localNodeId(), e));
-
-            return;
-        }
 
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
@@ -1045,7 +1035,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // Create non-colocated key.
         IgfsBlockKey key = new IgfsBlockKey(colocatedKey.getFileId(), null,
-            colocatedKey.evictExclude(), colocatedKey.getBlockId());
+            colocatedKey.evictExclude(), colocatedKey.blockId());
 
         try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.
@@ -1222,6 +1212,27 @@ public class IgfsDataManager extends IgfsManager {
             @Nullable IgfsFileWorkerBatch batch
         ) throws IgniteCheckedException {
             IgniteUuid id = fileInfo.id();
+
+            if (dataCachePrj.igfsDataSpaceUsed() + srcLen >= dataCachePrj.igfsDataSpaceMax()) {
+                final WriteCompletionFuture completionFut = pendingWrites.get(id);
+
+                IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
+                    "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
+                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
+
+                if (completionFut == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Missing completion future for file write request (most likely exception occurred " +
+                            "which will be thrown upon stream close) [fileId=" + id + ']');
+                } else {
+                    completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
+                        igfsCtx.kernalContext().localNodeId(), e));
+                }
+
+                throw new IgniteCheckedException("Failed to write data (not enough space on node): " +
+                    igfsCtx.kernalContext().localNodeId(), e);
+            }
+
             int blockSize = fileInfo.blockSize();
 
             int len = remainderLen + srcLen;

@@ -17,24 +17,26 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Extended version of secondary file system with missing methods.
- *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
+ * The base class to block key that is used by the {@link IgfsGroupDataBlocksKeyMapper}
  */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
+public interface IgfsBaseBlockKey {
     /**
-     * Set times for the given path.
-     *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
+     * @return Block ID.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    public long blockId();
+
+    /**
+     * @return Hash based on a file identifier (path, ID, etc).
+     */
+    public int fileHash();
+
+    /**
+     * @return Block affinity key (if any).
+     */
+    @Nullable public IgniteUuid affinityKey();
 }
