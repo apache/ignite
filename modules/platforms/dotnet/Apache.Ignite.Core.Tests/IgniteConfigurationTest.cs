@@ -485,7 +485,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
-                IsDaemon = true,
+                IsDaemon = false,
                 IsLateAffinityAssignment = false,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
                 AtomicConfiguration = new AtomicConfiguration
@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core.Tests
                     MaximumWriteQueueSize = 8,
                     WriteBufferSize = 9,
                     BaseDirectory = Path.GetTempPath(),
-                    MaximumSparsity = 11.22f
+                    MaximumSparsity = 0.123f
                 },
                 BinaryConfiguration = new BinaryConfiguration
                 {
