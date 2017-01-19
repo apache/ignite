@@ -197,8 +197,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
-                for (IgniteCacheProxy cache : ctx.cache().jcaches())
-                    cache.context().queries().evictDetailMetrics();
+                for (GridCacheContext ctxs : ctx.cache().context().cacheContexts())
+                    ctxs.queries().evictDetailMetrics();
             }
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
     }
@@ -434,6 +434,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     if (altTypeId != null)
                         types.put(altTypeId, desc);
+
+                    desc.typeId(typeId.valType != null ? typeId.valType.getName().hashCode() : typeId.valTypeId);
 
                     desc.registered(idx.registerType(ccfg.getName(), desc));
                 }

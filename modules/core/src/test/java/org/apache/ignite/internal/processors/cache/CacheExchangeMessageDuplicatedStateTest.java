@@ -93,25 +93,25 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF1_CACHE1);
-            ccfg.setAffinity(new RendezvousAffinityFunction());
+            ccfg.setAffinity(new RendezvousAffinityFunction(false,512));
             ccfgs.add(ccfg);
         }
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF1_CACHE2);
-            ccfg.setAffinity(new RendezvousAffinityFunction());
+            ccfg.setAffinity(new RendezvousAffinityFunction(false,512));
             ccfgs.add(ccfg);
         }
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF2_CACHE1);
-            ccfg.setAffinity(new FairAffinityFunction());
+            ccfg.setAffinity(new FairAffinityFunction(false,512));
             ccfgs.add(ccfg);
         }
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF2_CACHE2);
-            ccfg.setAffinity(new FairAffinityFunction());
+            ccfg.setAffinity(new FairAffinityFunction(false,512));
             ccfgs.add(ccfg);
         }
         {

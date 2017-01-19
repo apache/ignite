@@ -188,7 +188,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 assertNull(near(cache1).peekEx(i));
                 assertNotNull((dht(cache1).peekEx(i)));
 
-                assertEquals(Integer.toString(i), cache1.localPeek(i, CachePeekMode.ONHEAP));
+                assertEquals(Integer.toString(i), cache1.localPeek(i));
             }
 
             int nodeCnt = 3;
@@ -202,7 +202,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 IgniteCache<Integer, String> c = g.cache(null);
 
                 for (int i = 0; i < keyCnt; i++)
-                    assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                    assertNull(c.localPeek(i));
             }
 
             Collection<Integer> keys = new LinkedList<>();
@@ -226,12 +226,12 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                     IgniteCache<Integer, String> c = gg.cache(null);
 
                     for (int i = 0; i < keyCnt; i++)
-                        assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                        assertNull(c.localPeek(i));
                 }
             }
 
             for (Integer i : keys)
-                assertEquals(i.toString(), cache1.localPeek(i, CachePeekMode.ONHEAP));
+                assertEquals(i.toString(), cache1.localPeek(i));
         }
         catch (Error | Exception e) {
             error("Test failed.", e);
