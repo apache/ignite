@@ -42,6 +42,7 @@
     using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -490,6 +491,7 @@
             Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
+            PluginConfigurations = cfg.PluginConfigurations;
         }
 
         /// <summary>
@@ -858,5 +860,11 @@
         /// Gets or sets the swap space SPI.
         /// </summary>
         public ISwapSpaceSpi SwapSpaceSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configurations for plugins to be started.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
     }
 }

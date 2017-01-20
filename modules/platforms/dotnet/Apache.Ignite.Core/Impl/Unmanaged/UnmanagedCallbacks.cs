@@ -145,6 +145,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             Debug.Assert(log != null);
             Debug.Assert(igniteConfiguration != null);
+
             _log = log;
             _igniteConfiguration = igniteConfiguration;
 
@@ -245,6 +246,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
             AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
             AddHandler(UnmanagedCallbackOp.CachePluginCreate, CachePluginCreate);
             AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
@@ -1142,6 +1145,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        private long PluginProcessorIgniteStop(long val)
+        {
+            _ignite.PluginProcessor.OnIgniteStop(val != 0);
+
+            return 0;
+        }
+
+        private long PluginProcessorStop(long val)
+        {
+            _ignite.PluginProcessor.Stop(val != 0);
+
+            return 0;
+        }
+
         #endregion
 
         #region AffinityFunction
@@ -1240,7 +1257,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var pluginProvider = cachePluginCfg.CreateProvider(pluginCtx);
 
                 if (pluginProvider == null)
-                    throw new IgniteException(string.Format("{0}.CreateProvider should not return null.", 
+                    throw new IgniteException(string.Format("{0}.CreateProvider should not return null.",
                         typeof(ICachePluginProvider).Name));
 
                 pluginProvider.Start();

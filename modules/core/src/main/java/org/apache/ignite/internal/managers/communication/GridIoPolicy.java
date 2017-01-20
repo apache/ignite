@@ -40,14 +40,14 @@ public class GridIoPolicy {
     /** Utility cache execution pool. */
     public static final byte UTILITY_CACHE_POOL = 5;
 
-    /** Marshaller cache execution pool. */
-    public static final byte MARSH_CACHE_POOL = 6;
-
     /** IGFS pool. */
-    public static final byte IGFS_POOL = 7;
+    public static final byte IGFS_POOL = 6;
 
     /** Pool for handling distributed index range requests. */
-    public static final byte IDX_POOL = 8;
+    public static final byte IDX_POOL = 7;
+
+    /** Data streamer execution pool. */
+    public static final byte DATA_STREAMER_POOL = 9;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.
