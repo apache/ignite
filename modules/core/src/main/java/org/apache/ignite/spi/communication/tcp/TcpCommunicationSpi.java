@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
@@ -396,9 +397,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 recoveryDesc.onNodeLeft();
                         }
 
-                        SessionInfo sesInfo = new SessionInfo(ses, state);
-
-                        commWorker.addSessionStateChangeRequest(sesInfo);
+                        if (state == SessionState.CLOSE && ses.remoteAddress() != null || state == SessionState.RECONNECT)
+                            commWorker.addSessionStateChangeRequest(new SessionInfo(ses, state));
                     }
 
                     CommunicationListener<Message> lsnr0 = lsnr;
@@ -642,8 +642,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                     err = new HandshakeTimeoutException("Failed to perform handshake due to timeout " +
                                         "(consider increasing 'connectionTimeout' configuration property).");
 
-                                if (rcvCnt == -1 || err != null)
-                                    commWorker.addSessionStateChangeRequest(new SessionInfo(ses, SessionState.CLOSE, err));
+                                if (rcvCnt == -1 || err != null) {
+                                    if (ses.remoteAddress() != null) {
+                                        SessionInfo sesInfo = new SessionInfo(ses, SessionState.CLOSE, err);
+
+                                        commWorker.addSessionStateChangeRequest(sesInfo);
+                                    }
+                                }
                                 else {
                                     ctx.rcvCnt = rcvCnt;
 
@@ -2182,9 +2187,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                                 }
 
                                                 @Override public void onTimeout() {
-                                                    clientFuts.remove(nodeId, connFut);
+                                                    SessionInfo sesInfo = new SessionInfo(null, SessionState.RETRY,
+                                                        new Runnable() {
+                                                            @Override public void run() {
+                                                                clientFuts.remove(nodeId, connFut);
 
-                                                    onDone(); // TODO IGNITE-4003: is it safe to complete future from timeout thread?
+                                                                onDone();
+                                                            }
+                                                        });
+
+                                                    commWorker.addSessionStateChangeRequest(sesInfo);
                                                 }
                                             });
                                         }
@@ -2623,39 +2635,83 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     @Override public void apply(final IgniteInternalFuture<GridNioSession> fut) {
                         commWorker.addSessionStateChangeRequest(new SessionInfo(null, SessionState.RETRY, new Runnable() {
                             @Override public void run() {
-                                boolean cancelled = connTimeoutObj.cancel();
+                                IgniteCheckedException err = null;
 
-                                if (cancelled)
-                                    removeTimeoutObject(connTimeoutObj);
-                                else {
-                                    // TODO IGNITE-4003: it seems it is not ok release here, more safe is release from nio thread on close.
-                                    recoveryDesc.release();
-
-                                    onError(new SocketTimeoutException("Connect timed out (consider increasing " +
-                                        "'connTimeout' configuration property) [addr=" + currAddr +
-                                        ", connTimeout=" + connTimeout + ']'));
-
-                                    return;
-                                }
+                                GridNioSession ses = null;
 
                                 try {
-                                    fut.get();
-
-                                    int timeoutChunk1 = (int)timeoutHelper.nextTimeoutChunk(connTimeout);
-
-                                    long time = U.currentTimeMillis() + timeoutChunk1 * (attempt0 > 0 ? attempt0 * 2 : 1);
-
-                                    HandshakeTimeoutObject<SocketChannel> handshakeTimeoutObj =
-                                        new HandshakeTimeoutObject<>(ch, TcpClientFuture.this, time);
-
-                                    ctx.handshakeTimeoutObj = handshakeTimeoutObj;
-
-                                    addTimeoutObject(handshakeTimeoutObj);
+                                     ses = fut.get();
                                 }
                                 catch (IgniteCheckedException e) {
+                                    err = e;
+                                }
+
+                                if (err == null) {
+                                    assert ses != null : ses;
+
+                                    boolean cancelled = connTimeoutObj.cancel();
+
+                                    if (cancelled)
+                                        removeTimeoutObject(connTimeoutObj);
+                                    else {
+                                        GridNioFuture<Boolean> fut = nioSrvr.close(ses);
+
+                                        final SocketTimeoutException e = new SocketTimeoutException("Connect timed " +
+                                                " (consider increasing 'connTimeout' configuration property) [addr=" +
+                                                currAddr + ", connTimeout=" + connTimeout + ']');
+
+                                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                                            @Override public void apply(IgniteInternalFuture<Boolean> fut0) {
+                                                Runnable clo = new Runnable() {
+                                                    @Override public void run() {
+                                                        onError(e);
+                                                    }
+                                                };
+
+                                                SessionInfo sesInfo = new SessionInfo(null, SessionState.RETRY, clo);
+
+                                                commWorker.addSessionStateChangeRequest(sesInfo);
+                                            }
+                                        });
+
+                                        return;
+                                    }
+
+                                    try {
+                                        int timeoutChunk1 = (int)timeoutHelper.nextTimeoutChunk(connTimeout);
+
+                                        long time = U.currentTimeMillis() + timeoutChunk1 * (attempt0 > 0 ? attempt0 * 2 : 1);
+
+                                        HandshakeTimeoutObject<SocketChannel> handshakeTimeoutObj =
+                                                new HandshakeTimeoutObject<>(ch, TcpClientFuture.this, time);
+
+                                        ctx.handshakeTimeoutObj = handshakeTimeoutObj;
+
+                                        addTimeoutObject(handshakeTimeoutObj);
+                                    } catch (final IgniteSpiOperationTimeoutException e) {
+                                        GridNioFuture<Boolean> fut = nioSrvr.close(ses);
+
+                                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                                            @Override public void apply(IgniteInternalFuture<Boolean> fut0) {
+                                                Runnable clo = new Runnable() {
+                                                    @Override public void run() {
+                                                        onError(e);
+                                                    }
+                                                };
+
+                                                SessionInfo sesInfo = new SessionInfo(null, SessionState.RETRY, clo);
+
+                                                commWorker.addSessionStateChangeRequest(sesInfo);
+                                            }
+                                        });
+                                    }
+                                }
+                                else {
+                                    connTimeoutObj.cancel();
+
                                     recoveryDesc.release();
 
-                                    onError(e);
+                                    onError(err);
                                 }
                             }
                         }));
@@ -3535,6 +3591,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         case CLOSE:
                             ctx = sesInfo.ses.meta(CONN_CTX_META_KEY);
 
+                            //TODO: ??? wait for future complete or listen
                             nioSrvr.close(sesInfo.ses);
 
                             if (ctx != null && (clientFut = ctx.tcpClientFut) != null) {
