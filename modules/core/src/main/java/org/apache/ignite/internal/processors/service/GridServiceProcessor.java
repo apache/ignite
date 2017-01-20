@@ -350,8 +350,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
-            depExe = null;
-
             Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
             cancelFutures(depFuts, err);
@@ -1418,10 +1416,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 return;
 
             try {
-                // Check if stopping.
-                if (depExe == null)
-                    return;
-
                 depExe.execute(new BusyRunnable() {
                     @Override public void run0() {
                         onSystemCacheUpdated(deps);
@@ -1600,10 +1594,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 return;
 
             try {
-                // Check if stopping.
-                if (depExe == null)
-                    return;
-
                 final AffinityTopologyVersion topVer;
 
                 if (evt instanceof DiscoveryCustomEvent) {

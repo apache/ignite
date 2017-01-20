@@ -761,43 +761,35 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
-        if (!busyLock.enterBusy())
-            return false;
+        if (pendingEntries != null) {
+            GridCacheVersion obsoleteVer = null;
 
-        try {
-            if (pendingEntries != null) {
-                GridCacheVersion obsoleteVer = null;
+            long now = U.currentTimeMillis();
 
-                long now = U.currentTimeMillis();
+            GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
 
-                GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
+            int cleared = 0;
 
-                int cleared = 0;
+            while (cur.next()) {
+                PendingRow row = cur.get();
 
-                while (cur.next()) {
-                    PendingRow row = cur.get();
+                if (amount != -1 && cleared > amount)
+                    return true;
 
-                    if (amount != -1 && cleared > amount)
-                        return true;
+                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                if (pendingEntries.remove(row) != null) {
+                    if (obsoleteVer == null)
+                        obsoleteVer = cctx.versions().next();
 
-                    if (pendingEntries.remove(row) != null) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = cctx.versions().next();
-
-                        c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
-                    }
-
-                    cleared++;
+                    c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
                 }
-            }
 
-            return false;
+                cleared++;
+            }
         }
-        finally {
-            busyLock.leaveBusy();
-        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
