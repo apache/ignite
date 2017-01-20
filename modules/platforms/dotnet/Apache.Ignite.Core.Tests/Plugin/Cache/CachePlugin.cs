@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
     /// <summary>
     /// Test cache plugin.
     /// </summary>
-    public class CachePlugin : ICachePluginProvider
+    public class CachePlugin : ICachePluginProvider<CachePluginConfiguration>
     {
         /** */
         private static readonly ConcurrentDictionary<CachePlugin, object> Instances = 

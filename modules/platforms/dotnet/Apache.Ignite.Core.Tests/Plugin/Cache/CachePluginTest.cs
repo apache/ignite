@@ -180,30 +180,24 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             };
         }
 
+        [CachePluginProviderType(typeof(CachePlugin))]
         private class NonSerializableCachePluginConfig : ICachePluginConfiguration
         {
-            public ICachePluginProvider CreateProvider(ICachePluginContext pluginContext)
-            {
-                return new CachePlugin(pluginContext);
-            }
+            // No-op.
         }
 
         [Serializable]
+        [CachePluginProviderType(null)]
         private class NullCachePluginConfig : ICachePluginConfiguration
         {
-            public ICachePluginProvider CreateProvider(ICachePluginContext pluginContext)
-            {
-                return null;
-            }
+            // No-op.
         }
 
         [Serializable]
+        [CachePluginProviderType(typeof(string))]
         private class ThrowCachePluginConfig : ICachePluginConfiguration
         {
-            public ICachePluginProvider CreateProvider(ICachePluginContext pluginContext)
-            {
-                throw new ApplicationException("hi!");
-            }
+            // No-op.
         }
     }
 }

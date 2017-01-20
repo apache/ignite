@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,30 +18,34 @@
 namespace Apache.Ignite.Core.Plugin.Cache
 {
     using System;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Cache plugin provider.
-    /// <para />
-    /// Implementations will be passed to remote nodes and should be marked with <see cref="SerializableAttribute"/>.
+    /// When applied to <see cref="ICachePluginConfiguration"/>, defines the type of
+    /// <see cref="ICachePluginProvider{T}"/> to instantiate.
     /// </summary>
-    public interface ICachePluginProvider<in TConfig> where TConfig : ICachePluginConfiguration
+    public class CachePluginProviderTypeAttribute : Attribute
     {
-        /// <summary>
-        /// Starts the plugin provider.
-        /// </summary>
-        void Start();
+        /** */
+        private readonly Type _cachePluginProviderType;
 
         /// <summary>
-        /// Stops the plugin provider.
+        /// Initializes new instance of <see cref="CachePluginProviderTypeAttribute"/> class.
         /// </summary>
-        /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
-        void Stop(bool cancel);
+        /// <param name="cachePluginProviderType">Type of the plugin provider.</param>
+        public CachePluginProviderTypeAttribute(Type cachePluginProviderType)
+        {
+            IgniteArgumentCheck.NotNull(cachePluginProviderType, "pluginProviderType");
+
+            _cachePluginProviderType = cachePluginProviderType;
+        }
 
         /// <summary>
-        /// Called when Ignite has been started and is fully functional.
-        /// <para />
-        /// Use <see cref="IIgnite.Stopping"/> and <see cref="IIgnite.Stopped"/> to track shutdown process.
+        /// Gets the plugin provider type.
         /// </summary>
-        void OnIgniteStart();
+        public Type CachePluginProviderType
+        {
+            get { return _cachePluginProviderType; }
+        }
     }
 }

@@ -481,6 +481,7 @@
     <Compile Include="Binary\BinaryObjectException.cs" />
     <Compile Include="Binary\BinaryTypeConfiguration.cs" />
     <Compile Include="Binary\BinaryTypeNames.cs" />
+    <Compile Include="Plugin\Cache\CachePluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\IPluginConfiguration.cs" />
     <Compile Include="Plugin\IPluginContext.cs" />
     <Compile Include="Plugin\IPluginProvider.cs" />

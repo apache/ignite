@@ -24,14 +24,9 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
     /// Cache plugin config.
     /// </summary>
     [Serializable]
+    [CachePluginProviderType(typeof(CachePlugin))]
     public class CachePluginConfiguration : ICachePluginConfiguration
     {
-        /** <inheritdoc /> */
-        public ICachePluginProvider CreateProvider(ICachePluginContext pluginContext)
-        {
-            return new CachePlugin(pluginContext);
-        }
-
         /// <summary>
         /// Gets or sets the test property.
         /// </summary>
