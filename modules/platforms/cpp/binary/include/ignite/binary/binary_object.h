@@ -40,7 +40,7 @@ namespace ignite
          * data without deserialization. Also provides method that allows
          * deserialize object.
          */
-        class BinaryObject
+        class IGNITE_IMPORT_EXPORT BinaryObject
         {
         public:
             /// @cond INTERNAL
