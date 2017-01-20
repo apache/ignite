@@ -93,14 +93,14 @@ public class GridH2IndexRangeRequest implements Message {
     }
 
     /**
-     * @param segment segment idx.
+     * @param segmentId Index segment ID.
      */
-    public void segment(int segment) {
-        this.segmentId = segment;
+    public void segment(int segmentId) {
+        this.segmentId = segmentId;
     }
 
     /**
-     * @return segment idx.
+     * @return Index segment ID.
      */
     public int segment() {
         return segmentId;

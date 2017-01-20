@@ -703,6 +703,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 ignite(0).destroyCache(cache.getName());
         }
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -751,6 +752,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testIndexSegmentation() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setIndexSegmentationEnabled(true);
@@ -777,6 +781,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testIndexSegmentationFailurePartitionedReplicated() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setIndexSegmentationEnabled(true);
@@ -813,6 +820,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testIndexSegmentationFailureSegmentedWithNonSegmented() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setIndexSegmentationEnabled(true);

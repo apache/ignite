@@ -141,7 +141,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * Set source nodes.
      *
      * @param nodes Nodes.
-     * @param segmentsCnt index segments per table
+     * @param segmentsCnt Index segments per table.
      */
     public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
         assert remainingRows == null;
@@ -239,7 +239,7 @@ public abstract class GridMergeIndex extends BaseIndex {
             cnt.state = State.FINISHED;
 
             for (Counter[] cntrs : remainingRows.values()) { // Check all the sources.
-                for(int i = 0; i< cntrs.length; i++) {
+                for(int i = 0; i < cntrs.length; i++) {
                     if (cntrs[i].state != State.FINISHED)
                         return;
                 }

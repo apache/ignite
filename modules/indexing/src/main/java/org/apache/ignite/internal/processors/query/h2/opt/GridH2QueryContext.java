@@ -103,13 +103,13 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
-     * @param segmentIdx Use index segment.
+     * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentIdx, GridH2QueryType type) {
-        assert segmentIdx == 0 || type == MAP;
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+        assert segmentId == 0 || type == MAP;
 
-        key = new Key(locNodeId, nodeId, qryId, segmentIdx, type);
+        key = new Key(locNodeId, nodeId, qryId, segmentId, type);
     }
 
     /**
@@ -241,9 +241,9 @@ public class GridH2QueryContext {
         return nodeIds[p];
     }
 
-    /** @return index segment Id */
+    /** @return index segment ID. */
     public int segment() {
-        return key.segmentIdx;
+        return key.segmentId;
     }
 
     /**
@@ -323,6 +323,7 @@ public class GridH2QueryContext {
 
     /**
      * @param ownerId Owner node ID.
+     * @param segmentId Index segment ID.
      * @param batchLookupId Batch lookup ID.
      * @param src Range source.
      */
@@ -341,6 +342,7 @@ public class GridH2QueryContext {
 
     /**
      * @param ownerId Owner node ID.
+     * @param segmentId Index segment ID.
      * @param batchLookupId Batch lookup ID.
      * @return Range source.
      */
@@ -405,7 +407,7 @@ public class GridH2QueryContext {
 
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentIdx, type), false);
+                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
         }
 
         return res;
@@ -556,7 +558,7 @@ public class GridH2QueryContext {
         private final long qryId;
 
         /** */
-        private final int segmentIdx;
+        private final int segmentId;
 
         /** */
         private final GridH2QueryType type;
@@ -565,10 +567,10 @@ public class GridH2QueryContext {
          * @param locNodeId Local node ID.
          * @param nodeId The node who initiated the query.
          * @param qryId The query ID.
-         * @param segmentIdx Query thread idx.
+         * @param segmentId Index segment ID.
          * @param type Query type.
          */
-        private Key(UUID locNodeId, UUID nodeId, long qryId, int segmentIdx, GridH2QueryType type) {
+        private Key(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
             assert locNodeId != null;
             assert nodeId != null;
             assert type != null;
@@ -576,7 +578,7 @@ public class GridH2QueryContext {
             this.locNodeId = locNodeId;
             this.nodeId = nodeId;
             this.qryId = qryId;
-            this.segmentIdx = segmentIdx;
+            this.segmentId = segmentId;
             this.type = type;
         }
 
@@ -601,7 +603,7 @@ public class GridH2QueryContext {
             res = 31 * res + nodeId.hashCode();
             res = 31 * res + (int)(qryId ^ (qryId >>> 32));
             res = 31 * res + type.hashCode();
-            res = 31 * res + segmentIdx;
+            res = 31 * res + segmentId;
 
             return res;
         }
@@ -627,6 +629,7 @@ public class GridH2QueryContext {
 
         /**
          * @param ownerId Owner node ID.
+         * @param segmentId Index segment ID.
          * @param batchLookupId Batch lookup ID.
          */
         SourceKey(UUID ownerId, int segmentId, int batchLookupId) {

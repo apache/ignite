@@ -545,7 +545,7 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
-            final int indexSegments = h2.isSegmentedIndex(cctx) ? sqlQryParallelismLvl : 1;
+            final int segmentsPerIndex = h2.isSegmentedIndex(cctx) ? sqlQryParallelismLvl : 1;
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
@@ -567,12 +567,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes, indexSegments);
+                idx.setSources(nodes, segmentsPerIndex);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * indexSegments);
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * segmentsPerIndex);
 
             runs.put(qryReqId, r);
 

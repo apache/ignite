@@ -1350,7 +1350,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @throws IllegalStateException if segmented index used with non-segmented index
+     * @throws IllegalStateException if segmented indices used with non-segmented indices.
      */
     private void checkCacheIndexSegmentation(List<Integer> caches) {
         final int parallelismLevel = ctx.config().getSqlQueryParallelismLevel();
@@ -1372,13 +1372,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             assert cctx !=null;
 
             if (isSegmentedIndex(cctx) != expected)
-                throw new IllegalStateException("Using segmented and non-segmented index forbidden.");
+                throw new IllegalStateException("Using segmented and non-segmented index in same query is forbidden.");
         }
     }
 
     /**
      * @param cctx Cache context.
-     * @return {@code True} if index is segmented, otherwise {@code False}.
+     * @return {@code true} if index is segmented, otherwise {@code false}.
      */
     public boolean isSegmentedIndex(GridCacheContext cctx) {
         return !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled();

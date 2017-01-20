@@ -221,7 +221,7 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
-    /** Default sql query parallelizm level */
+    /** Default SQL query parallelism level */
     public static final int DFLT_SQL_QUERY_PARALLELISM_LVL = 1;
 
     /** Optional grid name. */
@@ -471,7 +471,7 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
-    /** Sql query parallelizm level. */
+    /** SQL query parallelism level. */
     private int sqlQryParallelismLvl = DFLT_SQL_QUERY_PARALLELISM_LVL;
 
     /**
@@ -2355,22 +2355,22 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets Sql query parallelizm level.
+     * Gets SQL query parallelism level.
      *
      * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
      *
-     * @return Max threads that sql query can be split to.
+     * @return Threads that SQL query can be split to.
      */
     public int getSqlQueryParallelismLevel() {
         return sqlQryParallelismLvl;
     }
 
     /**
-     * Sets Sql query parallelizm level.
+     * Sets SQL query parallelism level.
      *
      * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
      *
-     * @param sqlQryParallelismLvl  Max threads that sql query can be split to.
+     * @param sqlQryParallelismLvl  Threads that SQL query can be split to.
      */
     public IgniteConfiguration setSqlQueryParallelismLevel(int sqlQryParallelismLvl) {
         this.sqlQryParallelismLvl = sqlQryParallelismLvl;

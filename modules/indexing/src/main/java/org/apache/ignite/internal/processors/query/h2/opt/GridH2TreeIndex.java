@@ -30,7 +30,7 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 
 /**
- * Snapshotable tree indexes.
+ * Snapshotable tree index.
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
