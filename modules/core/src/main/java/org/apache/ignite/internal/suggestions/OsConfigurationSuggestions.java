@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.suggestions;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
@@ -59,21 +58,21 @@ public class OsConfigurationSuggestions {
         if (isRedHat()) {
             List<String> suggestions = new LinkedList<>();
             String sysctlWVM = "sysctl –w vm.";
-            Integer value;
+            String value;
 
-            if ((value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && value != 500)
+            if ((value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals("500"))
                 suggestions.add(sysctlWVM + DIRTY_WRITEBACK_CENTISECS + "=500");
 
-            if ((value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && value != 500)
+            if ((value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals("500"))
                 suggestions.add(sysctlWVM + DIRTY_EXPIRE_CENTISECS + "=500");
 
-            if ((value = readVmParam(SWAPPINESS)) != null && value != 10)
+            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals("10"))
                 suggestions.add(sysctlWVM + SWAPPINESS + "=10");
 
-            if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && value != 0)
+            if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals("0"))
                 suggestions.add(sysctlWVM + ZONE_RECLAIM_MODE + "=0");
 
-            if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && value != 1240000)
+            if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && !value.equals("1240000"))
                 suggestions.add(sysctlWVM + EXTRA_FREE_KBYTES + "=1240000");
 
             if (!suggestions.isEmpty()) {
@@ -86,17 +85,24 @@ public class OsConfigurationSuggestions {
     }
 
     @Nullable
-    private static Integer readVmParam(@NotNull String name) {
-        Path path = Paths.get(VM_PARAMS_BASE_PATH + name);
-
-        if (!Files.exists(path))
-            return null;
+    private static String readVmParam(@NotNull String name) {
         try {
-            byte[] bytes = Files.readAllBytes(path);
-            return ByteBuffer.wrap(bytes).getInt();
+            Path path = Paths.get(VM_PARAMS_BASE_PATH + name);
+
+            if (!Files.exists(path))
+                return null;
+
+            return readLine(path);
         }
-        catch (IOException | InvalidPathException | BufferUnderflowException ignores) {
+        catch (Exception ignore) {
             return null;
+        }
+    }
+
+    @Nullable
+    private static String readLine(@NotNull Path path) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            return reader.readLine();
         }
     }
 
