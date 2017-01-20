@@ -726,6 +726,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 final SqlQuery p = (SqlQuery)qry;
 
+                if (ctx.isReplicated() && qry.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported for replicated caches.");
+
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
                         @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -743,6 +746,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                         "not on replicated.");
 
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
+
+                if (ctx.isReplicated() && qry.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported for replicated caches.");
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);

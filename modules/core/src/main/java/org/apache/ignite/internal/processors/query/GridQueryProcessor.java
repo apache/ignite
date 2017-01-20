@@ -898,7 +898,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             sqlQry,
                             F.asList(params),
                             typeDesc,
-                            idx.backupFilter(requestTopVer.get(), null));
+                            idx.backupFilter(requestTopVer.get(), qry.getPartitions()));
 
                         sendQueryExecutedEvent(
                             sqlQry,
@@ -1015,7 +1015,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final GridQueryCancel cancel = new GridQueryCancel();
 
                     final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
+                        idx.backupFilter(requestTopVer.get(), qry.getPartitions()), qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {

@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -414,6 +415,35 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     /** Tests join query within region. */
     public void testJoinQueryCancel() {
         doTestJoinQuery(grid("client"));
+    }
+
+    /** Tests local query over partitions. */
+    public void testLocalQuery() {
+        Affinity<Object> affinity = grid(0).affinity("cl");
+
+        int[] parts = affinity.primaryPartitions(grid(0).localNode());
+
+        Arrays.sort(parts);
+
+        IgniteCache<ClientKey, Client> cl = grid(0).cache("cl");
+
+        SqlQuery<ClientKey, Client> qry1 = new SqlQuery<>(Client.class, "1=1");
+        qry1.setLocal(true);
+        qry1.setPartitions(parts[0]);
+
+        List<Cache.Entry<ClientKey, Client>> clients = cl.query(qry1).getAll();
+
+        for (Cache.Entry<ClientKey, Client> client : clients)
+            assertEquals("Incorrect partition", parts[0], affinity.partition(client.getKey()));
+
+        SqlFieldsQuery qry2 = new SqlFieldsQuery("select cl._KEY, cl._VAL from \"cl\".Client cl");
+        qry2.setLocal(true);
+        qry2.setPartitions(parts[0]);
+
+        List<List<?>> rows = cl.query(qry2).getAll();
+
+        for (List<?> row : rows)
+            assertEquals("Incorrect partition", parts[0], affinity.partition(row.get(0)));
     }
 
     /** Tests query within region. */
