@@ -203,4 +203,10 @@ class PlatformCallbackOp {
 
     /** */
     public static final int ComputeJobExecuteLocal = 61;
+
+    /** */
+    public static final int PluginProcessorStop = 62;
+
+    /** */
+    public static final int PluginProcessorIgniteStop = 63;
 }

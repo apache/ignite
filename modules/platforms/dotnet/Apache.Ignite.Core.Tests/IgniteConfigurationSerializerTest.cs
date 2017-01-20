@@ -51,6 +51,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
@@ -128,6 +129,9 @@ namespace Apache.Ignite.Core.Tests
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
                             <swapSpaceSpi type='FileSwapSpaceSpi' baseDirectory='abcd' maximumSparsity='0.7' maximumWriteQueueSize='25' readStripesNumber='36' writeBufferSize='47' />
+                            <pluginConfigurations>
+                                <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
+                            </pluginConfigurations>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -234,6 +238,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsInstanceOf<IdMapper>(binType.IdMapper);
             Assert.IsInstanceOf<NameMapper>(binType.NameMapper);
             Assert.IsInstanceOf<TestSerializer>(binType.Serializer);
+
+            var plugins = cfg.PluginConfigurations;
+            Assert.IsNotNull(plugins);
+            Assert.IsNotNull(plugins.Cast<TestIgnitePluginConfiguration>().SingleOrDefault());
         }
 
         /// <summary>
@@ -278,6 +286,9 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var prop in type.GetProperties())
             {
+                if (!prop.CanWrite)
+                    continue;  // Read-only properties are not configured in XML.
+
                 var propType = prop.PropertyType;
 
                 var isCollection = propType.IsGenericType &&
@@ -761,7 +772,8 @@ namespace Apache.Ignite.Core.Tests
                     WriteBufferSize = 66,
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
-                }
+                },
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
             };
         }
 

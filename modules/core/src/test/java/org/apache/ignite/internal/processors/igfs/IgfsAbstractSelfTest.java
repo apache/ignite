@@ -736,7 +736,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if(!propertiesSupported())
             return;
 
-        if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
+        if (mode != PRIMARY && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
             // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
             // an arbitrary named property is just ignored:
             checkRootPropertyUpdate("foo", "moo", null);
@@ -863,13 +863,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only access time.
-            igfs.setTimes(path, info.accessTime() + 1, -1);
+            igfs.setTimes(path, info.accessTime() + 1000, -1);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 1, newInfo.accessTime());
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
             assertEquals(info.modificationTime(), newInfo.modificationTime());
 
             if (dual) {
@@ -880,14 +880,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only modification time.
-            igfs.setTimes(path, -1, info.modificationTime() + 1);
+            igfs.setTimes(path, -1, info.modificationTime() + 1000);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 1, newInfo.accessTime());
-            assertEquals(info.modificationTime() + 1, newInfo.modificationTime());
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 1000, newInfo.modificationTime());
 
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
@@ -897,14 +897,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change both.
-            igfs.setTimes(path, info.accessTime() + 2, info.modificationTime() + 2);
+            igfs.setTimes(path, info.accessTime() + 2000, info.modificationTime() + 2000);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 2, newInfo.accessTime());
-            assertEquals(info.modificationTime() + 2, newInfo.modificationTime());
+            assertEquals(info.accessTime() + 2000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 2000, newInfo.modificationTime());
 
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());

@@ -15,40 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.platform.plugin;
 
-import java.io.Externalizable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 
 /**
- * Abstract fragment of an input data source.
+ * Platform plugin processor
  */
-public abstract class HadoopInputSplit implements Externalizable {
-    /** */
-    protected String[] hosts;
-
+public class PlatformPluginProcessor extends GridProcessorAdapter {
     /**
-     * Array of hosts where this input split resides.
+     * Ctor.
      *
-     * @return Hosts.
+     * @param ctx Kernal context.
      */
-    public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
+    public PlatformPluginProcessor(GridKernalContext ctx) {
+        super(ctx);
     }
 
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @param obj Another object.
-     * @return {@code true} If objects are equal.
-     */
-    @Override public abstract boolean equals(Object obj);
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        ctx.platform().context().gateway().pluginProcessorStop(cancel);
+    }
 
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @return Hash code of the object.
-     */
-    @Override public abstract int hashCode();
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        ctx.platform().context().gateway().pluginProcessorIgniteStop(cancel);
+    }
 }
