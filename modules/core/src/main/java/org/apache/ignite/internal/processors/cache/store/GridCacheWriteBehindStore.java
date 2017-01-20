@@ -908,7 +908,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         private static final long serialVersionUID = 0L;
 
         /** Value. */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Entry<? extends K, ? extends V> val;
 
         /** Store operation. */

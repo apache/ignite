@@ -65,6 +65,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
 
+    /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
+    public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
+
     /**
      * If this system property is set to {@code false} - no checks for new versions will
      * be performed by Ignite. By default, Ignite periodically checks for the new
@@ -131,6 +134,11 @@ public final class IgniteSystemProperties {
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
+
+    /**
+     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     */
+    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -498,6 +506,14 @@ public final class IgniteSystemProperties {
      * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
      */
     public static final String IGNITE_UNALIGNED_MEMORY_ACCESS = "IGNITE_UNALIGNED_MEMORY_ACCESS";
+
+    /**
+     * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
+     * old behavior query processor with IndexingSpi.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
     /**
      * Enforces singleton.

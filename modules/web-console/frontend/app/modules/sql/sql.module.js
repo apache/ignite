@@ -19,7 +19,6 @@ import angular from 'angular';
 
 import NotebookData from './Notebook.data';
 import Notebook from './Notebook.service';
-import ScanFilterInput from './scan-filter-input.service';
 import notebook from './notebook.controller';
 import sql from './sql.controller';
 
@@ -55,6 +54,5 @@ angular.module('ignite-console.sql', [
     )
     .service('IgniteNotebookData', NotebookData)
     .service('IgniteNotebook', Notebook)
-    .service('IgniteScanFilterInput', ScanFilterInput)
     .controller('notebookController', notebook)
     .controller('sqlController', sql);

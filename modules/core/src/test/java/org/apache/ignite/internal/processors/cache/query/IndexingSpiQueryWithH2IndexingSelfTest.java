@@ -15,11 +15,22 @@
  * limitations under the License.
  */
 
-// Optional content generation entry point.
-const $generatorOptional = {};
+package org.apache.ignite.internal.processors.cache.query;
 
-$generatorOptional.optionalContent = function(zip, cluster) { // eslint-disable-line no-unused-vars
-    // No-op.
-};
+import org.apache.ignite.configuration.CacheConfiguration;
 
-export default $generatorOptional;
+/**
+ * Indexing Spi query with configured default indexer test
+ */
+public class IndexingSpiQueryWithH2IndexingSelfTest extends IndexingSpiQuerySelfTest {
+    /** */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
+        CacheConfiguration<K, V> ccfg = super.cacheConfiguration(cacheName);
+
+        ccfg.setIndexedTypes(PersonKey.class, Person.class);
+
+        ccfg.setIndexedTypes(Integer.class, Integer.class);
+
+        return ccfg;
+    }
+}

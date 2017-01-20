@@ -1141,7 +1141,7 @@ public class IgniteTxHandler {
         else
             sendReply(nodeId, req, true, null);
 
-        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) : req;
     }
 
     /**

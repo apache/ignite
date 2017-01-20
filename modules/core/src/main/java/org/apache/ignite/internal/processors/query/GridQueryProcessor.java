@@ -44,7 +44,7 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
@@ -250,9 +250,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (keyCls == null)
                         keyCls = Object.class;
 
-                    String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
+                    String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
                     desc.name(simpleValType);
+
+                    desc.tableName(qryEntity.getTableName());
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -463,7 +465,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
+    private void addTypeByName(CacheConfiguration<?, ?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
@@ -677,12 +679,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         CacheObjectContext coctx = null;
 
-        if (ctx.indexing().enabled()) {
-            coctx = cacheObjectContext(space);
-
-            ctx.indexing().store(space, key.value(coctx, false), val.value(coctx, false), expirationTime);
-        }
-
         if (idx == null)
             return;
 
@@ -780,7 +776,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (type == null || !type.registered())
                         throw new CacheException("Failed to find SQL table for type: " + resType);
 
-                    return idx.queryLocalSql(space, clause, params, type, filters);
+                    return idx.queryLocalSql(space, clause, null, params, type, filters);
                 }
             }, false);
         }
@@ -874,7 +870,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.queryLocalSql(
                             space,
-                            sqlQry,
+                            qry.getSql(),
+                            qry.getAlias(),
                             F.asList(params),
                             typeDesc,
                             idx.backupFilter(requestTopVer.get(), null));
@@ -1022,12 +1019,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
 
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(space);
-
-            ctx.indexing().remove(space, key.value(coctx, false));
-        }
-
         if (idx == null)
             return;
 
@@ -1165,16 +1156,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
 
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(spaceName);
-
-            ctx.indexing().onSwap(
-                spaceName,
-                key.value(
-                    coctx,
-                    false));
-        }
-
         if (idx == null)
             return;
 
@@ -1203,12 +1184,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
-
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(spaceName);
-
-            ctx.indexing().onUnswap(spaceName, key.value(coctx, false), val.value(coctx, false));
-        }
 
         if (idx == null)
             return;
@@ -2090,6 +2065,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private String name;
 
+        /** */
+        private String tblName;
+
         /** Value field names and types with preserved order. */
         @GridToStringInclude
         private final Map<String, Class<?>> fields = new LinkedHashMap<>();
@@ -2146,6 +2124,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         void name(String name) {
             this.name = name;
+        }
+
+        /**
+         * Gets table name for type.
+         * @return Table name.
+         */
+        public String tableName() {
+            return tblName;
+        }
+
+        /**
+         * Sets table name for type.
+         *
+         * @param tblName Table name.
+         */
+        public void tableName(String tblName) {
+            this.tblName = tblName;
         }
 
         /** {@inheritDoc} */

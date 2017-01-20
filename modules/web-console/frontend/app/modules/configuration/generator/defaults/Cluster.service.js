@@ -282,12 +282,8 @@ const DFLT_CLUSTER = {
     }
 };
 
-export default function() {
-    this.append = (dflts) => {
-        _.merge(DFLT_CLUSTER, dflts);
-    };
-
-    this.$get = [() => {
-        return DFLT_CLUSTER;
-    }];
+export default class IgniteClusterDefaults {
+    constructor() {
+        Object.assign(this, DFLT_CLUSTER);
+    }
 }

@@ -35,8 +35,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -623,6 +624,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         return getAllAsync(keys,
+            null,
             opCtx == null || !opCtx.skipStore(),
             /*don't check local tx. */false,
             subjId,
@@ -637,6 +639,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * @param keys Keys to get
+     * @param readerArgs Reader will be added if not null.
      * @param readThrough Read through flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
@@ -647,6 +650,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> getDhtAllAsync(
         Collection<KeyCacheObject> keys,
+        @Nullable final ReaderArguments readerArgs,
         boolean readThrough,
         @Nullable UUID subjId,
         String taskName,
@@ -655,6 +659,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean canRemap
     ) {
         return getAllAsync0(keys,
+            readerArgs,
             readThrough,
             /*don't check local tx. */false,
             subjId,
@@ -694,7 +699,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             reader,
             keys,
             readThrough,
-            /*tx*/null,
             topVer,
             subjId,
             taskNameHash,
@@ -738,7 +742,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             key,
             addRdr,
             readThrough,
-            /*tx*/null,
             topVer,
             subjId,
             taskNameHash,
@@ -1166,7 +1169,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PartitionEntrySet.class, this, "super", super.toString());
+            return S.toString(PartitionEntrySet.class, this, "super", super.toString(), true);
         }
     }
 

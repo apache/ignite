@@ -18,68 +18,90 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_ADDRS;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PORT;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
  * Tests that faulty client will be failed if connection can't be established.
  */
 public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** Predicate. */
+    private static final IgnitePredicate<ClusterNode> PRED = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode node) {
+            return block && node.order() == 3;
+        }
+    };
 
     /** Client mode. */
     private static boolean clientMode;
+
+    /** Block. */
+    private static volatile boolean block;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(3000);
+        cfg.setClockSyncFrequency(300000);
+        cfg.setFailureDetectionTimeout(1000);
         cfg.setClientMode(clientMode);
 
-        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
+        TestCommunicationSpi spi = new TestCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
+        spi.setIdleConnectionTimeout(100);
+        spi.setSharedMemoryPort(-1);
 
-        TcpDiscoverySpi discoSpi;
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
 
-        if (clientMode && gridName.contains("3"))
-            discoSpi = new FaultyClientDiscoverySpi();
-        else
-            discoSpi = clientMode ? new TcpDiscoverySpi() : new TestDiscoverySpi();
+        discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setClientReconnectDisabled(true);
 
-        discoSpi.setIpFinder(ipFinder);
-
+        cfg.setCommunicationSpi(spi);
         cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        block = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /**
@@ -98,6 +120,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
     /**
      * @param srv Server.
+     * @throws Exception If failed.
      */
     private void testFailClient(FakeServer srv) throws Exception {
         IgniteInternalFuture<Long> fut = null;
@@ -108,31 +131,54 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             clientMode = false;
 
-            final Ignite ignite = startGrids(2);
+            startGrids(2);
 
             clientMode = true;
 
             startGrid(2);
+            startGrid(3);
 
-            assertEquals(1, ignite.cluster().forClients().nodes().size());
+            U.sleep(1000); // Wait for write timeout and closing idle connections.
 
-            GridTestUtils.assertThrowsWithCause(new Callable<Ignite>() {
-                @Override public Ignite call() throws Exception {
-                    return startGrid(3);
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override
+                public boolean apply(Event event) {
+                    latch.countDown();
+
+                    return true;
                 }
-            }, IgniteClientDisconnectedCheckedException.class);
+            }, EVT_NODE_FAILED);
 
-            CountDownLatch latch = ((TestDiscoverySpi)ignite.configuration().getDiscoverySpi()).latch;
+            block = true;
+
+            try {
+                grid(0).compute(grid(0).cluster().forClients()).withNoFailover().broadcast(new IgniteRunnable() {
+                    @Override public void run() {
+                        // No-op.
+                    }
+                });
+            }
+            catch (IgniteException e) {
+                // No-op.
+            }
 
             assertTrue(latch.await(3, TimeUnit.SECONDS));
 
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return ignite.cluster().forClients().nodes().size() == 1;
+                    return grid(0).cluster().forClients().nodes().size() == 1;
                 }
-            }, 5000);
+            }, 5000));
 
-            assertEquals(1, ignite.cluster().forClients().nodes().size());
+            for (int i = 0; i < 5; i++) {
+                U.sleep(1000);
+
+                log.info("Check topology (" + (i + 1) + "): " + grid(0).cluster().nodes());
+
+                assertEquals(1, grid(0).cluster().forClients().nodes().size());
+            }
         }
         finally {
             if (srv != null) {
@@ -192,36 +238,30 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     /**
      *
      */
-    private static class TestDiscoverySpi extends TcpDiscoverySpi {
-        /** Latch. */
-        private CountDownLatch latch = new CountDownLatch(1);
-
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeFailedMessage)
-                latch.countDown();
+        @Override protected IgniteInternalFuture<GridCommunicationClient> createTcpClient(ClusterNode node)
+                throws IgniteCheckedException
+        {
+            if (PRED.apply(node)) {
+                Map<String, Object> attrs = new HashMap<>(node.attributes());
 
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-    }
+                attrs.put(createAttributeName(ATTR_ADDRS), Collections.singleton("127.0.0.1"));
+                attrs.put(createAttributeName(ATTR_PORT), 47200);
+                attrs.put(createAttributeName(ATTR_EXT_ADDRS), Collections.emptyList());
+                attrs.put(createAttributeName(ATTR_HOST_NAMES), Collections.emptyList());
 
-    /**
-     *
-     */
-    private static class FaultyClientDiscoverySpi extends TcpDiscoverySpi {
-        @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-            super.setNodeAttributes(attrs, ver);
+                ((TcpDiscoveryNode)node).setAttributes(attrs);
+            }
 
-            attrs.put(createAttributeName(ATTR_ADDRS), Collections.singleton("127.0.0.1"));
-            attrs.put(createAttributeName(ATTR_PORT), 47200);
+            return super.createTcpClient(node);
         }
 
-        private static String createAttributeName(String name) {
-            return TcpCommunicationSpi.class.getSimpleName() + '.' + name;
+        /**
+         * @param name Name.
+         */
+        private String createAttributeName(String name) {
+            return getClass().getSimpleName() + '.' + name;
         }
     }
 }
