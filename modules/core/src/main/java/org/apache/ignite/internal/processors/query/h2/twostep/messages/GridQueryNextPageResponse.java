@@ -76,7 +76,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /**
      * @param qryReqId Query request ID.
-     * @param segmentId index segment ID.
+     * @param segmentId Index segment ID.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
@@ -107,7 +107,7 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @return index segment ID.
+     * @return Index segment ID.
      */
     public int segmentId() {
         return segmentId;

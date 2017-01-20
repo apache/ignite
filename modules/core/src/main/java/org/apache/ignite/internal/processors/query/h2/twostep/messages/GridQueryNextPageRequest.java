@@ -52,7 +52,7 @@ public class GridQueryNextPageRequest implements Message {
     /**
      * @param qryReqId Query request ID.
      * @param qry Query.
-     * @param segmentId index segment ID.
+     * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
     public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize) {
@@ -76,7 +76,7 @@ public class GridQueryNextPageRequest implements Message {
         return qry;
     }
 
-    /** @return index segment ID */
+    /** @return Index segment ID */
     public int segmentId() {
         return segmentId;
     }

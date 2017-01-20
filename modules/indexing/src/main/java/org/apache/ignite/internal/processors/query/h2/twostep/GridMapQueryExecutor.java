@@ -730,7 +730,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param qr Query results.
      * @param qry Query.
-     * @param segmentId index segment ID.
+     * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
     private void sendNextPage(NodeResults nodeRess, ClusterNode node, QueryResults qr, int qry, int segmentId,
@@ -776,7 +776,7 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param reqId Request ID.
-     * @param segmentId index segment ID.
+     * @param segmentId Index segment ID.
      */
     private void sendRetry(ClusterNode node, long reqId, int segmentId) {
         try {
@@ -842,7 +842,7 @@ public class GridMapQueryExecutor {
 
         /**
          * @param reqId Query Request ID.
-         * @param segmentId index segment ID
+         * @param segmentId Index segment ID.
          * @return query partial results.
          */
         public QueryResults get(long reqId, int segmentId) {
@@ -867,7 +867,7 @@ public class GridMapQueryExecutor {
 
         /**
          * @param reqId Query Request ID.
-         * @param segmentId index segment ID.
+         * @param segmentId Index segment ID.
          * @param qr Query Results.
          * @return {@code True} if removed.
          */
@@ -877,7 +877,7 @@ public class GridMapQueryExecutor {
 
         /**
          * @param reqId Query Request ID.
-         * @param segmentId index segment ID
+         * @param segmentId Index segment ID.
          * @param qr Query Results.
          * @return previous value.
          */
