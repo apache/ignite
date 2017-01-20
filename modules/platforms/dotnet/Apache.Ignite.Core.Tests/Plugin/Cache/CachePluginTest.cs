@@ -42,12 +42,17 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /** */
         private IIgnite _grid2;
 
+        /** */
+        private readonly List<CachePlugin> _plugins = new List<CachePlugin>();
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
+            _plugins.Clear();
+
             _grid1 = Ignition.Start(GetConfig("grid1"));
             _grid2 = Ignition.Start(GetConfig("grid2"));
         }
@@ -62,6 +67,12 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             TestUtils.AssertHandleRegistryHasItems(10, 1, _grid1, _grid2);
 
             Ignition.StopAll(true);
+
+            // Check IgniteStop callbacks.
+            foreach (var plugin in _plugins)
+            {
+                Assert.AreEqual(true, plugin.IgniteStopped);
+            }
         }
 
         /// <summary>
@@ -72,7 +83,9 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         {
             foreach (var ignite in new[] {_grid1, _grid2})
             {
-                CheckCachePlugin(ignite, CacheName, "foo");
+                var plugin = CheckCachePlugin(ignite, CacheName, "foo");
+
+                _plugins.Add(plugin);
             }
         }
 

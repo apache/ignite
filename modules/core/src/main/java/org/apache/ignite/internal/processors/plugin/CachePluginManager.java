@@ -86,8 +86,8 @@ public class CachePluginManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        for (ListIterator<CachePluginProvider> iter = providersList.listIterator(); iter.hasPrevious();)
-            iter.previous().onIgniteStop(cancel);
+        for (int i = providersList.size() - 1; i >= 0; i--)
+            providersList.get(i).stop(cancel);
     }
 
     /** {@inheritDoc} */
