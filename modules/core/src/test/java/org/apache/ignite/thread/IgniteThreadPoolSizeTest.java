@@ -95,14 +95,6 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecated")
-    public void testMarshallerCachePoolSize() throws Exception {
-        testWrongPoolSize(configuration().setMarshallerCachePoolSize(WRONG_VALUE));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testConnectorThreadPoolSize() throws Exception {
         final IgniteConfiguration cfg = configuration();
 
