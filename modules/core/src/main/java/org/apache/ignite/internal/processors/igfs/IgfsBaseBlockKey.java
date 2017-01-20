@@ -15,26 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Map-reduce execution planner.
+ * The base class to block key that is used by the {@link IgfsGroupDataBlocksKeyMapper}
  */
-public interface HadoopMapReducePlanner {
+public interface IgfsBaseBlockKey {
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
-     *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
+     * @return Block ID.
      */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    public long blockId();
+
+    /**
+     * @return Hash based on a file identifier (path, ID, etc).
+     */
+    public int fileHash();
+
+    /**
+     * @return Block affinity key (if any).
+     */
+    @Nullable public IgniteUuid affinityKey();
 }

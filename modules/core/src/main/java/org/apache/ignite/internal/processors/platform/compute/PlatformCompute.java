@@ -242,7 +242,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param task Task.
      */
     private PlatformTarget executeNative0(final PlatformAbstractTask task) {
-        IgniteInternalFuture fut = computeForPlatform.executeAsync(task, null);
+        IgniteInternalFuture fut = computeForPlatform.executeAsyncImpl(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             private static final long serialVersionUID = 0L;

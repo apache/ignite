@@ -19,18 +19,24 @@ package org.apache.ignite.lang;
 
 /**
  * Allows to enable asynchronous mode on Ignite APIs.
+ *
+ * @deprecated since 2.0. Please use new specialized async method
+ * e.g. {@code IgniteFuture f = cache.getAsync()}.
  */
+@Deprecated
 public interface IgniteAsyncSupport {
     /**
      * Gets instance of this component with asynchronous mode enabled.
      *
      * @return Instance of this component with asynchronous mode enabled.
      */
+    @Deprecated
     public IgniteAsyncSupport withAsync();
 
     /**
      * @return {@code True} if asynchronous mode is enabled.
      */
+    @Deprecated
     public boolean isAsync();
 
     /**
@@ -38,5 +44,6 @@ public interface IgniteAsyncSupport {
      *
      * @return Future for previous asynchronous operation.
      */
+    @Deprecated
     public <R> IgniteFuture<R> future();
 }

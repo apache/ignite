@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDeploymentException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -72,11 +73,28 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** */
     private UUID subjId;
 
+    private final IgniteComputeImpl asyncComp;
+
     /**
      * Required by {@link Externalizable}.
      */
     public IgniteComputeImpl() {
         // No-op.
+        asyncComp = null;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param prj Projection.
+     * @param subjId Subject ID.
+     */
+    public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId) {
+        super(false);
+
+        this.ctx = ctx;
+        this.prj = prj;
+        this.subjId = subjId;
+        asyncComp = new IgniteComputeImpl(ctx, prj, subjId, true);
     }
 
     /**
@@ -91,6 +109,11 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
+
+        if (async)
+            asyncComp = this;
+        else
+            asyncComp = new IgniteComputeImpl(ctx, prj, subjId, true);
     }
 
     /** {@inheritDoc} */
@@ -131,6 +154,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public ComputeTaskFuture<?> affinityRunAsync(@Nullable String cacheName, Object affKey,
+        IgniteRunnable job) throws IgniteException {
+        asyncComp.affinityRun(cacheName, affKey, job);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
@@ -160,6 +191,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public ComputeTaskFuture<?> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
+        IgniteRunnable job) throws IgniteException {
+        asyncComp.affinityRun(cacheNames, affKey, job);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job) {
         A.ensure(partId >= 0, "partId = " + partId);
         A.notNull(job, "job");
@@ -176,6 +215,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ComputeTaskFuture<?> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
+        IgniteRunnable job) throws IgniteException {
+        asyncComp.affinityRun(cacheNames, partId, job);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -203,6 +250,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey,
+        IgniteCallable<R> job) throws IgniteException {
+        asyncComp.affinityCall(cacheName, affKey, job);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -235,6 +290,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
+        IgniteCallable<R> job) throws IgniteException {
+        asyncComp.affinityCall(cacheNames, affKey, job);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job) {
         A.ensure(partId >= 0, "partId = " + partId);
         A.notNull(job, "job");
@@ -251,6 +314,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
+        IgniteCallable<R> job) throws IgniteException {
+        asyncComp.affinityCall(cacheNames, partId, job);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -275,6 +346,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public <T, R> ComputeTaskFuture<R> executeAsync(String taskName, @Nullable T arg) throws IgniteException {
+        asyncComp.execute(taskName, arg);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         A.notNull(taskCls, "taskCls");
 
@@ -292,6 +370,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> ComputeTaskFuture<R> executeAsync(Class<? extends ComputeTask<T, R>> taskCls,
+        @Nullable T arg) throws IgniteException {
+        asyncComp.execute(taskCls, arg);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -314,12 +400,20 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T, R> ComputeTaskFuture<R> executeAsync(ComputeTask<T, R> task, @Nullable T arg)
+        throws IgniteException {
+        asyncComp.execute(task, arg);
+
+        return asyncComp.future();
+    }
+
     /**
      * @param task Task.
      * @param arg Task argument.
      * @return Task future.
      */
-    public <T, R> ComputeTaskInternalFuture<R> executeAsync(ComputeTask<T, R> task, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> executeAsyncImpl(ComputeTask<T, R> task, @Nullable T arg) {
         A.notNull(task, "task");
 
         guard();
@@ -329,27 +423,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(task, arg);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /**
-     * @param taskName Task name.
-     * @param arg Task argument.
-     * @return Task future.
-     */
-    public <T, R> ComputeTaskInternalFuture<R> executeAsync(String taskName, @Nullable T arg) {
-        A.notNull(taskName, "taskName");
-
-        guard();
-
-        try {
-            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
-            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
-
-            return ctx.task().execute(taskName, arg);
         }
         finally {
             unguard();
@@ -374,6 +447,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public ComputeTaskFuture<?> broadcastAsync(IgniteRunnable job) throws IgniteException {
+        asyncComp.broadcast(job);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R> Collection<R> broadcast(IgniteCallable<R> job) {
         A.notNull(job, "job");
 
@@ -388,6 +468,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<Collection<R>> broadcastAsync(IgniteCallable<R> job) throws IgniteException {
+        asyncComp.broadcast(job);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -408,6 +495,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public <R, T> ComputeTaskFuture<Collection<R>> broadcastAsync(IgniteClosure<T, R> job,
+        @Nullable T arg) throws IgniteException {
+        asyncComp.broadcast(job, arg);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public void run(IgniteRunnable job) {
         A.notNull(job, "job");
 
@@ -422,6 +517,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ComputeTaskFuture<?> runAsync(IgniteRunnable job) throws IgniteException {
+        asyncComp.run(job);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -442,6 +544,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public ComputeTaskFuture<?> runAsync(Collection<? extends IgniteRunnable> jobs) throws IgniteException {
+        asyncComp.run(jobs);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) {
         A.notNull(job, "job");
 
@@ -456,6 +565,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R, T> ComputeTaskFuture<R> applyAsync(IgniteClosure<T, R> job, @Nullable T arg)
+        throws IgniteException {
+        asyncComp.apply(job, arg);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -476,6 +593,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<R> callAsync(IgniteCallable<R> job) throws IgniteException {
+        asyncComp.call(job);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) {
         A.notEmpty(jobs, "jobs");
 
@@ -490,6 +614,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<Collection<R>> callAsync(
+        Collection<? extends IgniteCallable<R>> jobs) throws IgniteException {
+        asyncComp.call(jobs);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -511,6 +643,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override public <T, R> ComputeTaskFuture<Collection<R>> applyAsync(IgniteClosure<T, R> job,
+        Collection<? extends T> args) throws IgniteException {
+        asyncComp.apply(job, args);
+
+        return asyncComp.future();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
         A.notEmpty(jobs, "jobs");
         A.notNull(rdc, "rdc");
@@ -526,6 +666,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R1, R2> ComputeTaskFuture<R2> callAsync(Collection<? extends IgniteCallable<R1>> jobs,
+        IgniteReducer<R1, R2> rdc) throws IgniteException {
+        asyncComp.call(jobs, rdc);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */
@@ -546,6 +694,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R1, R2, T> ComputeTaskFuture<R2> applyAsync(IgniteClosure<T, R1> job, Collection<? extends T> args,
+        IgniteReducer<R1, R2> rdc) throws IgniteException {
+        asyncComp.apply(job, args, rdc);
+
+        return asyncComp.future();
     }
 
     /** {@inheritDoc} */

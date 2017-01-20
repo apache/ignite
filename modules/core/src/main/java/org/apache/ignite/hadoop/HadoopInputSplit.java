@@ -15,26 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.hadoop;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import java.io.Externalizable;
 
 /**
- * Extended version of secondary file system with missing methods.
- *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
+ * Abstract fragment of an input data source.
  */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
+public abstract class HadoopInputSplit implements Externalizable {
+    /** */
+    protected String[] hosts;
+
     /**
-     * Set times for the given path.
+     * Array of hosts where this input split resides.
      *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
+     * @return Hosts.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    public String[] hosts() {
+        assert hosts != null;
+
+        return hosts;
+    }
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @param obj Another object.
+     * @return {@code true} If objects are equal.
+     */
+    @Override public abstract boolean equals(Object obj);
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @return Hash code of the object.
+     */
+    @Override public abstract int hashCode();
 }
