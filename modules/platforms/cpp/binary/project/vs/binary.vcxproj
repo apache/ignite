@@ -204,6 +204,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
+    <ClCompile Include="..\..\src\binary\binary_object.cpp" />
     <ClCompile Include="..\..\src\binary\binary_raw_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />

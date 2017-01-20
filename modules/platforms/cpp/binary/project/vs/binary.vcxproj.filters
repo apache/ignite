@@ -144,5 +144,8 @@
     <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp">
       <Filter>Code\impl\interop</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_object.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

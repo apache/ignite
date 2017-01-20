@@ -43,12 +43,7 @@ namespace ignite
              * @param mem Binary object memory.
              * @param start Object starting position in memory.
              */
-            BinaryObject(impl::interop::InteropMemory& mem, int32_t start) :
-                mem(mem),
-                start(start)
-            {
-                // No-op.
-            }
+            BinaryObject(impl::interop::InteropMemory& mem, int32_t start);
 
             /**
              * Deserialize object.
@@ -73,12 +68,7 @@ namespace ignite
              *
              * @return Pointer to object data.
              */
-            const int8_t* GetData() const
-            {
-                impl::binary::BinaryUtils::CheckEnoughData(mem, start + impl::binary::IGNITE_OFFSET_DATA, GetLength());
-
-                return mem.Data() + start + impl::binary::IGNITE_OFFSET_DATA;
-            }
+            const int8_t* GetData() const;
 
             /**
              * Get object length.
@@ -86,19 +76,7 @@ namespace ignite
              *
              * @return Object length.
              */
-            int32_t GetLength() const
-            {
-                int16_t flags = GetFlags();
-
-                int32_t end = 0;
-
-                if (flags & impl::binary::IGNITE_BINARY_FLAG_HAS_SCHEMA)
-                    end = impl::binary::BinaryUtils::ReadInt32(mem, start + impl::binary::IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-                else
-                    end = impl::binary::BinaryUtils::ReadInt32(mem, start + impl::binary::IGNITE_OFFSET_LEN);
-
-                return end - impl::binary::IGNITE_OFFSET_DATA;
-            }
+            int32_t GetLength() const;
 
         private:
             /**
@@ -107,10 +85,7 @@ namespace ignite
              *
              * @return Object type.
              */
-            int8_t GetType() const
-            {
-                return impl::binary::BinaryUtils::ReadInt8(mem, start);
-            }
+            int8_t GetType() const;
 
             /**
              * Get object flags.
@@ -118,10 +93,13 @@ namespace ignite
              *
              * @return Object flags.
              */
-            int16_t GetFlags() const
-            {
-                return impl::binary::BinaryUtils::ReadInt16(mem, start);
-            }
+            int16_t GetFlags() const;
+
+            /**
+             * Validate object memory.
+             * @throw IgniteError if the object is in invalid state.
+             */
+            void Validate() const;
 
             /** Underlying object memory. */
             impl::interop::InteropMemory& mem;
