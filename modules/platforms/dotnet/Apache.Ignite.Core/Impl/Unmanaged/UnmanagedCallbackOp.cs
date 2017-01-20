@@ -86,6 +86,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         PluginProcessorIgniteStop = 63,
         CachePluginCreate = 64,
         CachePluginDestroy = 65,
-        CachePluginIgniteStart = 66
+        CachePluginIgniteStart = 66,
+        CachePluginIgniteStop = 67
     }
 }

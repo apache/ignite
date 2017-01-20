@@ -218,4 +218,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int CachePluginIgniteStart = 66;
+
+    /** */
+    public static final int CachePluginIgniteStop = 67;
 }

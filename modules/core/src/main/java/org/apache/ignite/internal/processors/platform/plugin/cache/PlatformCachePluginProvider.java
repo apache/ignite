@@ -95,7 +95,9 @@ class PlatformCachePluginProvider implements CachePluginProvider {
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-        // No-op.
+        PlatformContext platformCtx = PlatformUtils.platformContext(ctx.grid());
+
+        platformCtx.gateway().cachePluginIgniteStop(ptr, cancel);
     }
 
     /** {@inheritDoc} */

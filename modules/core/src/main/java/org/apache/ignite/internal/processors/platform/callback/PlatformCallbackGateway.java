@@ -1188,6 +1188,23 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Notify cache plugin on ignite start.
+     *
+     * @param objPtr Object pointer.
+     */
+    public void cachePluginIgniteStop(long objPtr, boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.CachePluginIgniteStop, objPtr,
+                    cancel ? 1 : 0, 0, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Destroy cache plugin.
      *
      * @param objPtr Object pointer.

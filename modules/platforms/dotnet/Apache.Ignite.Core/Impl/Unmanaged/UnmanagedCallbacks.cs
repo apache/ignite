@@ -251,6 +251,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.CachePluginCreate, CachePluginCreate);
             AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
+            AddHandler(UnmanagedCallbackOp.CachePluginIgniteStop, CachePluginIgniteStop);
         }
 
         /// <summary>
@@ -1276,6 +1277,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
 
             pluginProvider.OnIgniteStart();
+
+            return 0;
+        }
+
+        private long CachePluginIgniteStop(long objPtr, long cancel, long unused, void* arg)
+        {
+            var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
+
+            pluginProvider.OnIgniteStop(cancel != 0);
 
             return 0;
         }
