@@ -27,13 +27,19 @@
 
 #include <ignite/impl/interop/interop.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
-#include <ignite/impl/binary/binary_common.h>
-#include <ignite/impl/binary/binary_utils.h>
 
 namespace ignite
 {
     namespace binary
     {
+        /**
+         * Binary object implementation.
+         *
+         * This is a thin wrapper over the memory area that contains serialized
+         * binary object. Provides some methods that allow to access object's
+         * data without deserialization. Also provides method that allows
+         * deserialize object.
+         */
         class BinaryObject
         {
         public:

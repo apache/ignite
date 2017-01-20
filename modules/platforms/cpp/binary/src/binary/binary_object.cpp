@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-#include "ignite/binary/binary_object.h"
+#include <ignite/impl/binary/binary_common.h>
+#include <ignite/impl/binary/binary_utils.h>
+
+#include <ignite/binary/binary_object.h>
 
 namespace ignite
 {
