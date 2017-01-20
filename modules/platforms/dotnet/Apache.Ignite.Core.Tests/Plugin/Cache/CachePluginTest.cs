@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             foreach (var plugin in plugins)
             {
                 Assert.AreEqual(true, plugin.Stopped);
-                Assert.IsNull(plugin.IgniteStopped);
+                Assert.AreEqual(true, plugin.IgniteStopped);  // This is weird, but correct from Java logic POV.
             }
         }
 
