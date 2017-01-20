@@ -95,6 +95,8 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
 
             // Destroy cache to remove plugin from handle registry.
             _grid1.DestroyCache(DynCacheName);
+
+            // TODO: Check stopped
         }
 
         /// <summary>
@@ -156,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             var ctx = plugin.Context;
             Assert.AreEqual(ignite.Name, ctx.IgniteConfiguration.GridName);
             Assert.AreEqual(cacheName, ctx.CacheConfiguration.Name);
-            Assert.AreEqual(propValue, ((CachePluginConfiguration)ctx.CachePluginConfiguration).TestProperty);
+            Assert.AreEqual(propValue, ctx.CachePluginConfiguration.TestProperty);
         }
 
         /// <summary>
