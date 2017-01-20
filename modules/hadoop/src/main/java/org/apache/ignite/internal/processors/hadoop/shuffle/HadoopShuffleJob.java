@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.zip.GZIPInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -65,6 +55,17 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
@@ -177,7 +178,19 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.log = log.getLogger(HadoopShuffleJob.class);
         this.embedded = embedded;
 
-        stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPED_OUTPUT, true);
+        // No stripes for combiner.
+        boolean stripeMappers0 = get(job.info(), SHUFFLE_MAPPER_STRIPED_OUTPUT, true);
+
+        if (stripeMappers0) {
+            if (!embedded) {
+                log.info("Striped mapper output is disabled becuase it cannot be used in external mode [jobId=" +
+                    job.id() + ']');
+
+                stripeMappers0 = false;
+            }
+        }
+
+        stripeMappers = stripeMappers0;
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
         msgGzip = get(job.info(), SHUFFLE_MSG_GZIP, DFLT_SHUFFLE_MSG_GZIP);
