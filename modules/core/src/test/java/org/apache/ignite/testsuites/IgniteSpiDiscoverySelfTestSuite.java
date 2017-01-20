@@ -19,22 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
-import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySnapshotHistoryTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiConfigSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiFailureTimeoutSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
@@ -83,6 +68,9 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpDiscoveryRestartTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));
+
+        //Ring
+        suite.addTest(new TestSuite(RegionNodeComparatorTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
