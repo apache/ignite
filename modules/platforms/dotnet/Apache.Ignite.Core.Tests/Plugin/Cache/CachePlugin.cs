@@ -72,6 +72,12 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             IgniteStarted = true;
         }
 
+        /** <inheritdoc /> */
+        public void OnIgniteStop(bool cancel)
+        {
+            IgniteStopped = true;
+        }
+
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="CachePlugin"/> is started.
         /// </summary>
@@ -86,6 +92,11 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// Gets or sets a value indicating whether this <see cref="CachePlugin"/> is stopped.
         /// </summary>
         public bool? Stopped { get; private set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="CachePlugin"/> is stopped.
+        /// </summary>
+        public bool IgniteStopped { get; private set; }
 
         /// <summary>
         /// Gets the context.

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Plugin.Cache
+namespace Apache.Ignite.Core.Impl.Plugin.Cache
 {
-    using System;
+    using Apache.Ignite.Core.Plugin.Cache;
 
     /// <summary>
-    /// Cache plugin provider.
-    /// <para />
-    /// Implementations will be passed to remote nodes and should be marked with <see cref="SerializableAttribute"/>.
+    /// Wraps user-defined generic <see cref="ICachePluginProvider{TConfig}"/>.
     /// </summary>
-    public interface ICachePluginProvider<in TConfig> where TConfig : ICachePluginConfiguration
+    internal interface ICachePluginProviderProxy
     {
         /// <summary>
         /// Starts the plugin provider.
         /// </summary>
-        void Start(ICachePluginContext<TConfig> cachePluginContext);
+        void Start();
 
         /// <summary>
         /// Stops the plugin provider.
@@ -40,13 +38,8 @@ namespace Apache.Ignite.Core.Plugin.Cache
         /// <summary>
         /// Called when Ignite has been started and is fully functional.
         /// <para />
+        /// Use <see cref="IIgnite.Stopping"/> and <see cref="IIgnite.Stopped"/> to track shutdown process.
         /// </summary>
         void OnIgniteStart();
-
-        /// <summary>
-        /// Callback to notify that Ignite is about to stop.
-        /// </summary>
-        /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
-        void OnIgniteStop(bool cancel);
     }
 }

@@ -420,6 +420,8 @@
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
     <Compile Include="Impl\Binary\TypeResolver.cs" />
+    <Compile Include="Impl\Plugin\Cache\CachePluginProviderProxy.cs" />
+    <Compile Include="Impl\Plugin\Cache\ICachePluginProviderProxy.cs" />
     <Compile Include="Impl\Plugin\IPluginProviderProxy.cs" />
     <Compile Include="Impl\Plugin\PluginContext.cs" />
     <Compile Include="Impl\Plugin\PluginProcessor.cs" />
