@@ -146,7 +146,9 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
      * @param ctx Context.
      */
     private ExecutorService getMarshCtxFileStoreExecutorSrvc(GridKernalContext ctx) {
-        return U.field(U.field(ctx, "marshCtx"), "execSrvc");
+        Object marshCtx = U.field(ctx, "marshCtx");
+
+        return U.field(marshCtx, "execSrvc");
     }
 
 

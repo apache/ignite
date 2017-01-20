@@ -40,6 +40,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
     private InnerLogger innerLog;
 
+    /** */
     private GridTestKernalContext ctx;
 
     /** {@inheritDoc} */

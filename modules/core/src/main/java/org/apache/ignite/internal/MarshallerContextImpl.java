@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -406,7 +408,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param item Item.
      * @param resolvedClsName Resolved class name.
      */
-    public void onMissedMappingResolved(MarshallerMappingItem item, String resolvedClsName) {
+    public void onMissedMappingResolved(final MarshallerMappingItem item, String resolvedClsName) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
         int typeId = item.typeId();
@@ -511,6 +513,35 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public void onMarshallerProcessorStop() {
         transport.markStopping();
+    }
+
+    /**
+     * Method collects current mappings for all platforms.
+     *
+     * @return current mappings.
+     */
+    public Iterator<Map.Entry<Byte, Map<Integer, String>>> currentMappings() {
+        int size = allCaches.size();
+
+        Map<Byte, Map<Integer, String>> res = IgniteUtils.newHashMap(size);
+
+        for (byte i = 0; i < size; i++) {
+            Map<Integer, MappedName> platformMappings = allCaches.get(i);
+
+            if (platformMappings != null) {
+                if (i == JAVA_ID)
+                    platformMappings = ((CombinedMap)platformMappings).userMap;
+
+                Map<Integer, String> nameMappings = IgniteUtils.newHashMap(platformMappings.size());
+
+                for (Map.Entry<Integer, MappedName> e : platformMappings.entrySet())
+                    nameMappings.put(e.getKey(), e.getValue().className());
+
+                res.put(i, nameMappings);
+            }
+        }
+
+        return res.entrySet().iterator();
     }
 
     /**
