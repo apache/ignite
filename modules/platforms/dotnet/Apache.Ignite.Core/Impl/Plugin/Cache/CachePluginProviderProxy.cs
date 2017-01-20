@@ -36,15 +36,15 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CachePluginProviderProxy{T}" /> class.
         /// </summary>
-        /// <param name="pluginProvider">The plugin provider.</param>
         /// <param name="cachePluginConfiguration">The cache plugin configuration.</param>
-        public CachePluginProviderProxy(ICachePluginProvider<T> pluginProvider, T cachePluginConfiguration)
+        /// <param name="pluginProvider">The plugin provider.</param>
+        public CachePluginProviderProxy(T cachePluginConfiguration, ICachePluginProvider<T> pluginProvider)
         {
-            Debug.Assert(pluginProvider != null);
             Debug.Assert(cachePluginConfiguration != null);
+            Debug.Assert(pluginProvider != null);
 
-            _pluginProvider = pluginProvider;
             _cachePluginConfiguration = cachePluginConfiguration;
+            _pluginProvider = pluginProvider;
         }
 
         /** <inheritdoc /> */

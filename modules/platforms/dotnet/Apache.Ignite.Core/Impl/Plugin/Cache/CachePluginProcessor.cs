@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
     /// <summary>
     /// Cache plugin processor.
     /// </summary>
-    internal class CachePluginProcessor
+    internal static class CachePluginProcessor
     {
         /// <summary>
         /// Creates the provider proxy.

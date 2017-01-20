@@ -121,16 +121,8 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         [Ignore("IGNITE-4474 Ignite.createCache hangs on exception in CachePluginConfiguration.createProvider")]
         public void TestErrorInPlugin()
         {
-            // Returns null plugin.
-            var cacheEx = Assert.Throws<CacheException>(() => _grid1.CreateCache<int, int>(new CacheConfiguration
-            {
-                PluginConfigurations = new[] { new NullCachePluginConfig()  }
-            }));
-
-            Assert.AreEqual("ICachePluginConfiguration.CreateProvider should not return null.", cacheEx.Message);
-            
             // Throws exception.
-            cacheEx = Assert.Throws<CacheException>(() => _grid1.CreateCache<int, int>(new CacheConfiguration
+            var cacheEx = Assert.Throws<CacheException>(() => _grid1.CreateCache<int, int>(new CacheConfiguration
             {
                 PluginConfigurations = new[] { new ThrowCachePluginConfig()  }
             }));
@@ -184,13 +176,6 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
 
         [CachePluginProviderType(typeof(CachePlugin))]
         private class NonSerializableCachePluginConfig : ICachePluginConfiguration
-        {
-            // No-op.
-        }
-
-        [Serializable]
-        [CachePluginProviderType(null)]
-        private class NullCachePluginConfig : ICachePluginConfiguration
         {
             // No-op.
         }
