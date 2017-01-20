@@ -43,6 +43,7 @@ namespace ignite
         class BinaryObject
         {
         public:
+            /// @cond INTERNAL
             /**
              * Constructor.
              *
@@ -50,6 +51,7 @@ namespace ignite
              * @param start Object starting position in memory.
              */
             BinaryObject(impl::interop::InteropMemory& mem, int32_t start);
+            /// @endcond
 
             /**
              * Deserialize object.
@@ -85,6 +87,8 @@ namespace ignite
             int32_t GetLength() const;
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(BinaryObject)
+
             /**
              * Get object type.
              * @throw IgniteError if the object is not in a valid state.
