@@ -109,7 +109,8 @@ public class HadoopV1ReduceTask extends HadoopV1Task {
             }
         }
         finally {
-            HadoopMapperUtils.clearMapperIndex();
+            if (!reduce)
+                HadoopMapperUtils.clearMapperIndex();
         }
     }
 }
