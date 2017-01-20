@@ -60,6 +60,9 @@ namespace Apache.Ignite.Examples.Datagrid
                 var organizationCache = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration(
                     OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
 
+                employeeCache.Clear();
+                organizationCache.Clear();
+
                 Insert(organizationCache, employeeCache);
                 Select(employeeCache, "Inserted data");
 
