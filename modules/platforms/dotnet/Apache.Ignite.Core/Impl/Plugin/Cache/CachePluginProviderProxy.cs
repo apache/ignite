@@ -48,11 +48,11 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         }
 
         /** <inheritdoc /> */
-        public void Start(IgniteConfiguration igniteConfiguration, CacheConfiguration cacheConfiguration, 
-            Func<IIgnite> igniteFunc)
+        public void Start(IgniteConfiguration igniteConfiguration, CacheConfiguration cacheConfiguration,
+            IIgnite ignite)
         {
             _pluginProvider.Start(new CachePluginContext<T>(igniteConfiguration, 
-                cacheConfiguration, _cachePluginConfiguration, igniteFunc));
+                cacheConfiguration, _cachePluginConfiguration, ignite));
         }
 
         /** <inheritdoc /> */

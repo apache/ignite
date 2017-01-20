@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Plugin.Cache
 {
     using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Plugin.Cache;
 
@@ -36,14 +37,19 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         private readonly T _cachePluginConfiguration;
 
         /** */
-        private readonly Func<IIgnite> _ignite;
+        private readonly IIgnite _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CachePluginContext{T}"/> class.
         /// </summary>
         public CachePluginContext(IgniteConfiguration igniteConfiguration, CacheConfiguration cacheConfiguration, 
-            T cachePluginConfiguration, Func<IIgnite> ignite)
+            T cachePluginConfiguration, IIgnite ignite)
         {
+            Debug.Assert(igniteConfiguration != null);
+            Debug.Assert(cacheConfiguration != null);
+            Debug.Assert(cachePluginConfiguration != null);
+            Debug.Assert(ignite != null);
+
             _igniteConfiguration = igniteConfiguration;
             _cacheConfiguration = cacheConfiguration;
             _cachePluginConfiguration = cachePluginConfiguration;
@@ -71,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         /** <inheritdoc /> */
         public IIgnite Ignite
         {
-            get { return _ignite(); }
+            get { return _ignite; }
         }
     }
 }

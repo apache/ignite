@@ -1255,7 +1255,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var igniteCfg = new IgniteConfiguration(reader, _igniteConfiguration);
                 var cacheCfg = new CacheConfiguration(reader);
 
-                providerProxy.Start(igniteCfg, cacheCfg, () => _ignite);
+                providerProxy.Start(igniteCfg, cacheCfg, _ignite);
 
                 return _handleRegistry.Allocate(providerProxy);
             }
