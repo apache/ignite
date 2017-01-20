@@ -456,6 +456,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
+            Assert.AreEqual(x.IsKeyField, y.IsKeyField);
         }
 
         /// <summary>
@@ -537,7 +538,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
-                            new QueryField("name", typeof(string)), 
+                            new QueryField("name", typeof(string)) {IsKeyField = true},
                             new QueryField("location", typeof(string)),
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -632,9 +633,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                         ValueTypeName = "java.lang.String",
                         Fields = new[]
                         {
-                            new QueryField("length", typeof(int)),
-                            new QueryField("name", typeof(string)),
-                            new QueryField("location", typeof(string)),
+                            new QueryField("length", typeof(int)), 
+                            new QueryField("name", typeof(string)), 
+                            new QueryField("location", typeof(string)) {IsKeyField = true}
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]

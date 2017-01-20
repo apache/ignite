@@ -26,16 +26,16 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 /**
  *
  */
-public class IgniteCacheAtomicMessageRecoveryNoPairedConnectionsTest extends IgniteCacheAtomicMessageRecoveryTest {
+public class IgniteCacheAtomicMessageRecoveryPairedConnectionsTest extends IgniteCacheAtomicMessageRecoveryTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
-        assertTrue(commSpi.isUsePairedConnections());
+        assertFalse(commSpi.isUsePairedConnections());
 
-        commSpi.setUsePairedConnections(false);
+        commSpi.setUsePairedConnections(true);
 
         return cfg;
     }

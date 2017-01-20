@@ -177,7 +177,7 @@ namespace ignite
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request, const float& expected)
     {
-        SQLFLOAT res = 0;
+        SQLREAL res = 0;
 
         CheckSingleResult0(request, SQL_C_FLOAT, &res, 0, 0);
 
@@ -257,7 +257,7 @@ namespace ignite
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<float>(const char* request)
     {
-        SQLFLOAT res = 0;
+        SQLREAL res = 0;
 
         CheckSingleResult0(request, SQL_C_FLOAT, &res, 0, 0);
     }
@@ -284,5 +284,70 @@ namespace ignite
         SQL_TIMESTAMP_STRUCT res;
 
         CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected)
+    {
+        SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
+        SQLLEN resLen = 0;
+
+        CheckSingleResult0(request, SQL_C_BINARY, res, ODBC_BUFFER_SIZE, &resLen);
+
+        BOOST_REQUIRE_EQUAL(resLen, expected.size());
+
+        if (resLen > 0)
+        {
+            std::vector<int8_t> actual(res, res + resLen);
+            BOOST_REQUIRE_EQUAL_COLLECTIONS(expected.begin(), expected.end(), actual.begin(), actual.end());
+        }
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<ignite::common::Decimal>(const char* request, const ignite::common::Decimal& expected)
+    {
+        SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
+        SQLLEN resLen = 0;
+
+        CheckSingleResult0(request, SQL_C_CHAR, res, ODBC_BUFFER_SIZE, &resLen);
+        ignite::common::Decimal actual(std::string(res, res + resLen));
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request, const Date& expected)
+    {
+        SQL_DATE_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+
+        using ignite::impl::binary::BinaryUtils;
+        Date actual = BinaryUtils::MakeDateGmt(res.year, res.month, res.day);
+        BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<SQL_TIME_STRUCT>(const char* request, const SQL_TIME_STRUCT& expected)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+
+        BOOST_REQUIRE_EQUAL(res.hour, expected.hour);
+        BOOST_REQUIRE_EQUAL(res.minute, expected.minute);
+        BOOST_REQUIRE_EQUAL(res.second, expected.second);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected)
+    {
+        SQL_TIMESTAMP_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+
+        using ignite::impl::binary::BinaryUtils;
+        Timestamp actual = BinaryUtils::MakeTimestampGmt(res.year, res.month, res.day, res.hour, res.minute, res.second, res.fraction);
+
+        BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
+        BOOST_REQUIRE_EQUAL(actual.GetSecondFraction(), expected.GetSecondFraction());
     }
 }

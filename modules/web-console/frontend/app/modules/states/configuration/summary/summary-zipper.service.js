@@ -15,11 +15,23 @@
  * limitations under the License.
  */
 
-// Optional content generation entry point.
-const $generatorOptional = {};
+import Worker from 'worker?inline=true!./summary.worker';
 
-$generatorOptional.optionalContent = function(zip, cluster) { // eslint-disable-line no-unused-vars
-    // No-op.
-};
+export default ['$q', function($q) {
+    return function({ cluster, data }) {
+        const defer = $q.defer();
+        const worker = new Worker();
 
-export default $generatorOptional;
+        worker.postMessage({ cluster, data });
+
+        worker.onmessage = (e) => {
+            defer.resolve(e.data);
+        };
+
+        worker.onerror = (err) => {
+            defer.reject(err);
+        };
+
+        return defer.promise;
+    };
+}];

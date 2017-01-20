@@ -15,37 +15,20 @@
  * limitations under the License.
  */
 
-export default class ScanFilter {
-    static $inject = ['$rootScope', '$q', '$modal'];
+namespace Apache.Ignite.Core.Tests.Cache.Store
+{
+    using NUnit.Framework;
 
-    constructor($root, $q, $modal) {
-        this.deferred = null;
-        this.$q = $q;
-
-        const scope = $root.$new();
-
-        scope.ui = {};
-
-        scope.ok = () => {
-            this.deferred.resolve({filter: scope.ui.filter, caseSensitive: !!scope.ui.caseSensitive});
-
-            this.modal.hide();
-        };
-
-        scope.$hide = () => {
-            this.modal.hide();
-
-            this.deferred.reject();
-        };
-
-        this.modal = $modal({templateUrl: '/scan-filter-input.html', scope, placement: 'center', show: false});
-    }
-
-    open() {
-        this.deferred = this.$q.defer();
-
-        this.modal.$promise.then(this.modal.show);
-
-        return this.deferred.promise;
+    /// <summary>
+    /// Cache store test with named node.
+    /// </summary>
+    [TestFixture]
+    public class NamedNodeCacheStoreTest : CacheStoreTest
+    {
+        /** <inheritDoc /> */
+        protected override string GridName
+        {
+            get { return "name"; }
+        }
     }
 }

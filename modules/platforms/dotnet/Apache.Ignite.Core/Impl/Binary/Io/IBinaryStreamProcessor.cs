@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-// Events groups.
-import GROUPS from 'app/data/event-types.json';
+namespace Apache.Ignite.Core.Impl.Binary.IO
+{
+    using System;
 
-export default ['igniteEventGroups', function() {
-    const groups = GROUPS;
-
-    this.push = (data) => groups.push(data);
-
-    this.$get = [() => {
-        return groups;
-    }];
-}];
-
+    /// <summary>
+    /// Binary stream processor.
+    /// </summary>
+    [CLSCompliant(false)]
+    public unsafe interface IBinaryStreamProcessor<in TArg, out T>
+    {
+        /// <summary>
+        /// Invokes the processor.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        T Invoke(byte* data, TArg arg);
+    }
+}
