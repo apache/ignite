@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin.Cache
 {
+    using System;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Plugin.Cache;
 
     /// <summary>
@@ -27,7 +29,8 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         /// <summary>
         /// Starts the plugin provider.
         /// </summary>
-        void Start();
+        void Start(IgniteConfiguration igniteConfiguration, CacheConfiguration cacheConfiguration, 
+            Func<IIgnite> igniteFunc);
 
         /// <summary>
         /// Stops the plugin provider.
@@ -41,5 +44,11 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         /// Use <see cref="IIgnite.Stopping"/> and <see cref="IIgnite.Stopped"/> to track shutdown process.
         /// </summary>
         void OnIgniteStart();
+
+        /// <summary>
+        /// Callback to notify that Ignite is about to stop.
+        /// </summary>
+        /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
+        void OnIgniteStop(bool cancel);
     }
 }

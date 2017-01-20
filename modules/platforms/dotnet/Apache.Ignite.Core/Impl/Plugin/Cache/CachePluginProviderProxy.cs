@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin.Cache
 {
+    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Plugin.Cache;
@@ -32,38 +33,26 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         /** */
         private readonly ICachePluginProvider<T> _pluginProvider;
 
-        /** */
-        private readonly IgniteConfiguration _igniteConfiguration;
-
-        /** */
-        private readonly CacheConfiguration _cacheConfiguration;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CachePluginProviderProxy{T}" /> class.
         /// </summary>
         /// <param name="pluginProvider">The plugin provider.</param>
-        /// <param name="igniteConfiguration">The ignite configuration.</param>
-        /// <param name="cacheConfiguration">The cache configuration.</param>
         /// <param name="cachePluginConfiguration">The cache plugin configuration.</param>
-        public CachePluginProviderProxy(ICachePluginProvider<T> pluginProvider, 
-            IgniteConfiguration igniteConfiguration, CacheConfiguration cacheConfiguration, T cachePluginConfiguration)
+        public CachePluginProviderProxy(ICachePluginProvider<T> pluginProvider, T cachePluginConfiguration)
         {
             Debug.Assert(pluginProvider != null);
-            Debug.Assert(igniteConfiguration != null);
             Debug.Assert(cachePluginConfiguration != null);
-            Debug.Assert(cacheConfiguration != null);
 
             _pluginProvider = pluginProvider;
-            _igniteConfiguration = igniteConfiguration;
-            _cacheConfiguration = cacheConfiguration;
             _cachePluginConfiguration = cachePluginConfiguration;
         }
 
         /** <inheritdoc /> */
-        public void Start()
+        public void Start(IgniteConfiguration igniteConfiguration, CacheConfiguration cacheConfiguration, 
+            Func<IIgnite> igniteFunc)
         {
-            _pluginProvider.Start(new CachePluginContext<T>(_igniteConfiguration, 
-                _cacheConfiguration, _cachePluginConfiguration, null));
+            _pluginProvider.Start(new CachePluginContext<T>(igniteConfiguration, 
+                cacheConfiguration, _cachePluginConfiguration, igniteFunc));
         }
 
         /** <inheritdoc /> */
@@ -76,6 +65,12 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         public void OnIgniteStart()
         {
             _pluginProvider.OnIgniteStart();
+        }
+
+        /** <inheritdoc /> */
+        public void OnIgniteStop(bool cancel)
+        {
+            _pluginProvider.OnIgniteStop(cancel);
         }
     }
 }
