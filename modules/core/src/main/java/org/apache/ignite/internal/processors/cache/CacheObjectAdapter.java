@@ -90,7 +90,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @param type Object type.
      * @param valBytes Value bytes array.
      * @param valOff Value bytes array offset.
-     * @return
+     * @return Offset shift compared to initial address.
      */
     public static int putValue(long addr, byte type, byte[] valBytes, int valOff) {
         int off = 0;
