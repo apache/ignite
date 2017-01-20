@@ -29,15 +29,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -91,6 +83,9 @@ public class TcpDiscoveryNodesRing {
 
     /** */
     private IgniteProductVersion minNodeVer;
+
+    /** Comparator is used for choice next node in ring. */
+    private final Comparator<TcpDiscoveryNode> nodeComparator = new RegionNodeComparator();
 
     /**
      * @return Minimum node version.
@@ -490,14 +485,34 @@ public class TcpDiscoveryNodesRing {
 
             Iterator<TcpDiscoveryNode> iter = filtered.iterator();
 
+            TcpDiscoveryNode rightNode = null;
+            //Need if local node is last
+            TcpDiscoveryNode firstNode = null;
+            //Find first right node
             while (iter.hasNext()) {
                 TcpDiscoveryNode node = iter.next();
+                if (!locNode.equals(node)) {
+                    if (nodeComparator.compare(locNode, node)<0) {
+                        rightNode = node;
+                        break;
+                    }
+                    if (firstNode == null || nodeComparator.compare(node, firstNode)<0)
+                        firstNode = node;
+                }
+            }
+            //It mean local node is last in ring
+            if (rightNode==null) return firstNode;
 
+            while (iter.hasNext()) {
+                TcpDiscoveryNode node = iter.next();
                 if (locNode.equals(node))
-                    break;
+                    continue;
+                //Does exist node between rightNode and locNode ?
+                if (nodeComparator.compare(locNode, node)<0 && nodeComparator.compare(node, rightNode)<0)
+                        rightNode = node;
             }
 
-            return iter.hasNext() ? iter.next() : F.first(filtered);
+            return rightNode;
         }
         finally {
             rwLock.readLock().unlock();
