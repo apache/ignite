@@ -91,6 +91,25 @@ void GetObjectData(const T& obj, common::FixedSizeArray<int8_t>& data)
     data.Assign(mem.Data(), stream.Position());
 }
 
+template<typename T>
+void CheckData(const T& obj)
+{
+    common::FixedSizeArray<int8_t> objData;
+    GetObjectData<T>(obj, objData);
+
+    InteropUnpooledMemory mem(1024);
+    FillMem<T>(mem, obj);
+
+    BinaryObject binObj(mem, 0);
+
+    BOOST_REQUIRE_EQUAL(binObj.GetLength(), objData.GetSize());
+
+    common::FixedSizeArray<int8_t> binObjData(binObj.GetData(), binObj.GetLength());
+
+    for (int32_t i = 0; i < objData.GetSize(); ++i)
+        BOOST_CHECK_EQUAL(objData[i], binObjData[i]);
+}
+
 BOOST_AUTO_TEST_SUITE(BinaryObjectTestSuite)
 
 #ifdef CHECK_BINARY_OBJECT_WITH_PRIMITIVES
@@ -203,15 +222,15 @@ BOOST_AUTO_TEST_CASE(PrimitiveTimestamp)
 
 BOOST_AUTO_TEST_CASE(UserTestType)
 {
-    CheckSimpleNP<TestType>(TestType());
-    CheckSimpleNP<TestType>(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
+    CheckSimpleNP(TestType());
+    CheckSimpleNP(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
         BinaryUtils::MakeDateGmt(1987, 6, 5),
         BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
 }
 
 BOOST_AUTO_TEST_CASE(UserComplexType)
 {
-    CheckSimpleNP<ComplexType>(ComplexType());
+    CheckSimpleNP(ComplexType());
 
     ComplexType nonDefault;
 
@@ -220,28 +239,44 @@ BOOST_AUTO_TEST_CASE(UserComplexType)
     nonDefault.objField.f1 = 403685016;
     nonDefault.objField.f2 = "Whatever";
 
-    CheckSimpleNP<ComplexType>(nonDefault);
+    CheckSimpleNP(nonDefault);
 }
 
-BOOST_AUTO_TEST_CASE(UserGetLength)
+BOOST_AUTO_TEST_CASE(UserBinaryFields)
 {
-    ComplexType obj;
-    common::FixedSizeArray<int8_t> objData;
+    CheckSimpleNP(BinaryFields());
 
-    GetObjectData(obj, objData);
+    BinaryFields nonDefault(423425, 961851, 18946, 180269165);
 
-    InteropUnpooledMemory mem(1024);
+    CheckSimpleNP(nonDefault);
+}
 
-    FillMem<ComplexType>(mem, obj);
+BOOST_AUTO_TEST_CASE(UserComplexTypeGetData)
+{
+    CheckData(ComplexType());
 
-    BinaryObject binObj(mem, 0);
+    ComplexType nonDefault;
 
-    BOOST_CHECK_EQUAL(binObj.GetLength(), objData.GetSize());
+    nonDefault.i32Field = 589630659;
+    nonDefault.strField = "Some string value";
+    nonDefault.objField.f1 = 403685016;
+    nonDefault.objField.f2 = "Whatever";
 
-    common::FixedSizeArray<int8_t> binObjData(binObj.GetData(), binObj.GetLength());
+    CheckData(nonDefault);
+}
 
-    for (int32_t i = 0; i < objData.GetSize(); ++i)
-        BOOST_CHECK_EQUAL(objData[i], binObjData[i]);
+BOOST_AUTO_TEST_CASE(UserTestTypeGetData)
+{
+    CheckData(TestType());
+    CheckData(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
+        BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
+}
+
+BOOST_AUTO_TEST_CASE(UserBinaryFieldsGetData)
+{
+    CheckData(BinaryFields());
+    CheckData(BinaryFields(423425, 961851, 18946, 180269165));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
