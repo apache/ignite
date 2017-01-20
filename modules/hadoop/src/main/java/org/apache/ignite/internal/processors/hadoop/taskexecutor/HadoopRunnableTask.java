@@ -144,10 +144,11 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
             runTask(perfCntr);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
+                // Switch to combiner.
                 HadoopTaskInfo combineTaskInfo = new HadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(),
                     info.attempt(), null);
 
-                // Mapper index for combiner task == mapper index of map task.
+                // Mapper and combiner share the same index.
                 if (ctx.taskInfo().hasMapperIndex())
                     combineTaskInfo.mapperIndex(ctx.taskInfo().mapperIndex());
 
