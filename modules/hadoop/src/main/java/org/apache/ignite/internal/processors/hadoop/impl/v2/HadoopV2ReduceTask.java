@@ -64,6 +64,7 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
             outputFormat = reduce || !taskCtx.job().info().hasReducer() ? prepareWriter(jobCtx) : null;
 
             Reducer reducer;
+
             if (reduce) reducer = ReflectionUtils.newInstance(jobCtx.getReducerClass(),
                 jobCtx.getConfiguration());
             else reducer = ReflectionUtils.newInstance(jobCtx.getCombinerClass(),
@@ -73,7 +74,7 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
                 reducer.run(new WrappedReducer().getReducerContext(hadoopContext()));
 
                 if (!reduce)
-                    hadoopContext().onMapperFinished();
+                    taskCtx.onMapperFinished();
             }
             finally {
                 closeWriter();

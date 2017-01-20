@@ -81,7 +81,7 @@ public class HadoopV2MapTask extends HadoopV2Task {
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
 
-                hadoopCtx.onMapperFinished();
+                taskCtx.onMapperFinished();
             }
             finally {
                 closeWriter();

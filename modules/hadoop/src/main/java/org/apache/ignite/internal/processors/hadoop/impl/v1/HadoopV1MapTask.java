@@ -108,6 +108,8 @@ public class HadoopV1MapTask extends HadoopV1Task {
 
                             mapper.map(key, val, collector, reporter);
                         }
+
+                        taskCtx.onMapperFinished();
                     }
                     finally {
                         mapper.close();
