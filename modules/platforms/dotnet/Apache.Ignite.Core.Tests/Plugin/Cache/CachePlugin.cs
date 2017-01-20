@@ -51,14 +51,17 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /** <inheritdoc /> */
         public void Start(ICachePluginContext<CachePluginConfiguration> cachePluginContext)
         {
-            Assert.IsNotNull(cachePluginContext);
-            Assert.IsNotNull(cachePluginContext.IgniteConfiguration);
-            Assert.IsNotNull(cachePluginContext.CachePluginConfiguration);
-            Assert.IsNotNull(cachePluginContext.CacheConfiguration);
-            Assert.IsNotNull(cachePluginContext.Ignite);
-
             Context = cachePluginContext;
             Started = true;
+
+            Assert.IsNotNull(Context);
+            Assert.IsNotNull(Context.IgniteConfiguration);
+            Assert.IsNotNull(Context.CachePluginConfiguration);
+            Assert.IsNotNull(Context.CacheConfiguration);
+            Assert.IsNotNull(Context.Ignite);
+
+            // Check that Ignite is operational.
+            Assert.GreaterOrEqual(2, Context.Ignite.GetCluster().GetNodes().Count);
 
             Throw();
         }
@@ -75,10 +78,8 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /** <inheritdoc /> */
         public void OnIgniteStart()
         {
-            // Check that Ignite is operational
-            
-            // TODO
-            //Assert.GreaterOrEqual(1, Context.Ignite.GetCacheNames().Count);
+            // Check that Ignite is operational.
+            Assert.GreaterOrEqual(2, Context.Ignite.GetCluster().GetNodes().Count);
 
             IgniteStarted = true;
         }
