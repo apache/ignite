@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Plugin.Cache
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -88,15 +89,23 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
 
             _grid1.CreateCache<int, int>(cacheConfig);
 
+            var plugins = new List<CachePlugin>();
+
             foreach (var ignite in new[] { _grid1, _grid2 })
             {
-                CheckCachePlugin(ignite, DynCacheName, "bar");
+                var plugin = CheckCachePlugin(ignite, DynCacheName, "bar");
+
+                plugins.Add(plugin);
             }
 
             // Destroy cache to remove plugin from handle registry.
             _grid1.DestroyCache(DynCacheName);
 
-            // TODO: Check stopped
+            foreach (var plugin in plugins)
+            {
+                Assert.AreEqual(true, plugin.Stopped);
+                Assert.IsNull(plugin.IgniteStopped);
+            }
         }
 
         /// <summary>
@@ -133,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// <summary>
         /// Checks the cache plugin.
         /// </summary>
-        private static void CheckCachePlugin(IIgnite ignite, string cacheName, string propValue)
+        private static CachePlugin CheckCachePlugin(IIgnite ignite, string cacheName, string propValue)
         {
             // Check config.
             var plugCfg = ignite.GetCache<int, int>(cacheName).GetConfiguration()
@@ -146,11 +155,14 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             Assert.IsTrue(plugin.Started);
             Assert.IsTrue(plugin.IgniteStarted);
             Assert.IsNull(plugin.Stopped);
+            Assert.IsNull(plugin.IgniteStopped);
 
             var ctx = plugin.Context;
             Assert.AreEqual(ignite.Name, ctx.IgniteConfiguration.GridName);
             Assert.AreEqual(cacheName, ctx.CacheConfiguration.Name);
             Assert.AreEqual(propValue, ctx.CachePluginConfiguration.TestProperty);
+
+            return plugin;
         }
 
         /// <summary>

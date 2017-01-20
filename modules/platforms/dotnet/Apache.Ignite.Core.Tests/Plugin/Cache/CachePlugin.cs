@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /** <inheritdoc /> */
         public void OnIgniteStop(bool cancel)
         {
-            IgniteStopped = true;
+            IgniteStopped = cancel;
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="CachePlugin"/> is stopped.
         /// </summary>
-        public bool IgniteStopped { get; private set; }
+        public bool? IgniteStopped { get; private set; }
 
         /// <summary>
         /// Gets the context.
