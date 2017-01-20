@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Plugin.Cache
         /// <summary>
         /// Starts the plugin provider.
         /// </summary>
-        void Start();
+        void Start(ICachePluginContext<TConfig> cachePluginContext);
 
         /// <summary>
         /// Stops the plugin provider.

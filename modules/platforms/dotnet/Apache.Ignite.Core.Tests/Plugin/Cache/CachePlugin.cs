@@ -43,18 +43,18 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CachePlugin"/> class.
         /// </summary>
-        /// <param name="pluginContext">The plugin context.</param>
-        public CachePlugin(ICachePluginContext pluginContext)
+        public CachePlugin()
         {
-            Context = pluginContext;
-
             Assert.IsTrue(Instances.TryAdd(this, null));
         }
 
         /** <inheritdoc /> */
-        public void Start()
+        public void Start(ICachePluginContext<CachePluginConfiguration> cachePluginContext)
         {
+            Context = cachePluginContext;
             Started = true;
+
+            Throw();
         }
 
         /** <inheritdoc /> */
@@ -90,19 +90,14 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// <summary>
         /// Gets the context.
         /// </summary>
-        public ICachePluginContext Context { get; private set; }
+        public ICachePluginContext<CachePluginConfiguration> Context { get; private set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether error should be thrown from provider methods.
-        /// </summary>
-        public bool ThrowError { get; set; }
-
-        /// <summary>
-        /// Throws an error when <see cref="ThrowError"/> is <c>true</c>.
+        /// Throws an error when configured.
         /// </summary>
         private void Throw()
         {
-            if (ThrowError)
+            if (Context.CachePluginConfiguration.ThrowError)
                 throw new IOException("Failure in cache plugin provider");
         }
     }

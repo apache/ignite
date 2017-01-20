@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Plugin.Cache
     /// <summary>
     /// Cache plugin context.
     /// </summary>
-    public interface ICachePluginContext
+    public interface ICachePluginContext<out T> where T : ICachePluginConfiguration
     {
         /// <summary>
         /// Gets the Ignite configuration.
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Plugin.Cache
         /// <summary>
         /// Gets the cache plugin configuration.
         /// </summary>
-        ICachePluginConfiguration CachePluginConfiguration { get; }
+        T CachePluginConfiguration { get; }
 
         /// <summary>
         /// Gets the Ignite.

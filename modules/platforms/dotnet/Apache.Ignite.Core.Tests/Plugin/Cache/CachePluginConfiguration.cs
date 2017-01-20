@@ -31,5 +31,10 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// Gets or sets the test property.
         /// </summary>
         public string TestProperty { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the plugin should throw an error.
+        /// </summary>
+        public bool ThrowError { get; set; }
     }
 }
