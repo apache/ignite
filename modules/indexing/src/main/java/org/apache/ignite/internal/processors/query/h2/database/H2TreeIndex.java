@@ -136,7 +136,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override public GridH2Row put(GridH2Row row) {
         try {
             return tree.put(row);
@@ -147,9 +146,29 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        try {
+            return tree.putx(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
             return tree.remove(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removex(SearchRow row) {
+        try {
+            tree.removex(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
