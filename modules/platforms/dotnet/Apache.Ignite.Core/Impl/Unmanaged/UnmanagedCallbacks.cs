@@ -1249,26 +1249,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
                 var cachePluginCfg = reader.ReadObject<ICachePluginConfiguration>();
+                var providerProxy = CachePluginProcessor.CreateProviderProxy(cachePluginCfg);
+
                 var igniteCfg = new IgniteConfiguration(reader, _igniteConfiguration);
                 var cacheCfg = new CacheConfiguration(reader);
 
-                var pluginCtx = new CachePluginContext(igniteCfg, cacheCfg, cachePluginCfg, () => _ignite);
+                providerProxy.Start(igniteCfg, cacheCfg, () => _ignite);
 
-                var pluginProvider = cachePluginCfg.CreateProvider(pluginCtx);
-
-                if (pluginProvider == null)
-                    throw new IgniteException(string.Format("{0}.CreateProvider should not return null.",
-                        typeof(ICachePluginProvider).Name));
-
-                pluginProvider.Start();
-
-                return _handleRegistry.Allocate(pluginProvider);
+                return _handleRegistry.Allocate(providerProxy);
             }
         }
 
         private long CachePluginDestroy(long objPtr, long cancel, long unused, void* arg)
         {
-            var pluginProvider = _handleRegistry.Get<ICachePluginProvider>(objPtr, true);
+            var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
 
             pluginProvider.Stop(cancel != 0);
 
@@ -1279,7 +1273,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long CachePluginIgniteStart(long objPtr)
         {
-            var pluginProvider = _handleRegistry.Get<ICachePluginProvider>(objPtr, true);
+            var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
 
             pluginProvider.OnIgniteStart();
 

@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
         /// <summary>
         /// Creates the provider proxy.
         /// </summary>
-        private static ICachePluginProviderProxy CreateProviderProxy(ICachePluginConfiguration pluginConfiguration)
+        public static ICachePluginProviderProxy CreateProviderProxy(ICachePluginConfiguration pluginConfiguration)
         {
             Debug.Assert(pluginConfiguration != null);
 
