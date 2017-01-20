@@ -84,9 +84,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         ComputeJobExecuteLocal = 61,
         PluginProcessorStop = 62,
         PluginProcessorIgniteStop = 63,
-        ComputeJobExecuteLocal = 64,
-        CachePluginCreate = 65,
-        CachePluginDestroy = 66,
-        CachePluginIgniteStart = 67
+        CachePluginCreate = 64,
+        CachePluginDestroy = 65,
+        CachePluginIgniteStart = 66
     }
 }
