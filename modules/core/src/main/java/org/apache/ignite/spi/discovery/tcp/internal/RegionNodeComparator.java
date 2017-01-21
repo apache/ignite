@@ -17,44 +17,46 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * New behavior for node ordering. Sort firstly by region number, and secondly by old order.
  */
 public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
+    /**
+     * @param node
+     * @return
+     */
     private Long getRegionId(TcpDiscoveryNode node) {
         Object id = node.getAttributes().get("CLUSTER_REGION_ID");
-        final Long ans;
-        if (id==null) ans = null;
-        else if (id instanceof Number) ans = ((Number) id).longValue();
-        else if (id instanceof String) ans = Long.valueOf((String)id);
-        else ans = null;
-        return ans;
+        final Long result;
+        if (id == null) result = null;
+        else if (id instanceof Number) result = ((Number) id).longValue();
+        else if (id instanceof String) result = Long.valueOf((String) id);
+        else result = null;
+        return result;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int compare(TcpDiscoveryNode nodeFirst, TcpDiscoveryNode nodeSecond) {
         Long first = getRegionId(nodeFirst);
         Long second = getRegionId(nodeSecond);
 
-        final int ans;
+        final int result;
 
-        if (first==second)
-            ans = nodeFirst.compareTo(nodeSecond);
+        if (first == second)
+            result = nodeFirst.compareTo(nodeSecond);
         else {
-            if (first==null)
-                ans = -1;
-            else if (second==null)
-                ans = 1;
-            else ans = (first>second)?1:-1;
+            if (first == null)
+                result = -1;
+            else if (second == null)
+                result = 1;
+            else result = (first > second) ? 1 : -1;
         }
 
-        return ans;
+        return result;
     }
 }

@@ -491,30 +491,29 @@ public class TcpDiscoveryNodesRing {
             //Find first right node
             while (iter.hasNext()) {
                 TcpDiscoveryNode node = iter.next();
-                if (!locNode.equals(node)) {
-                    if (nodeComparator.compare(locNode, node)<0) {
-                        rightNode = node;
-                        break;
-                    }
-                    if (firstNode == null || nodeComparator.compare(node, firstNode)<0)
-                        firstNode = node;
+                if (locNode.equals(node))
+                    continue;
+                if (nodeComparator.compare(locNode, node) < 0) {
+                    rightNode = node;
+                    break;
                 }
+                if (firstNode == null || nodeComparator.compare(node, firstNode) < 0)
+                    firstNode = node;
             }
             //It mean local node is last in ring
-            if (rightNode==null) return firstNode;
+            if (rightNode == null) return firstNode;
 
             while (iter.hasNext()) {
                 TcpDiscoveryNode node = iter.next();
                 if (locNode.equals(node))
                     continue;
                 //Does exist node between rightNode and locNode ?
-                if (nodeComparator.compare(locNode, node)<0 && nodeComparator.compare(node, rightNode)<0)
-                        rightNode = node;
+                if (nodeComparator.compare(locNode, node) < 0 && nodeComparator.compare(node, rightNode) < 0)
+                    rightNode = node;
             }
 
             return rightNode;
-        }
-        finally {
+        } finally {
             rwLock.readLock().unlock();
         }
     }
