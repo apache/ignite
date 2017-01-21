@@ -33,6 +33,8 @@ import java.util.function.*;
  * supported a {@link UnsupportedOperationException} is thrown. This exception can also be thrown in partial cases
  * where an operation is unsupported only in special cases, e.g. where a given operation cannot be deterministically
  * completed in polynomial time.
+ *
+ * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
 public interface Matrix {
     /**

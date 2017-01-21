@@ -20,11 +20,22 @@ package org.apache.ignite.math;
 import org.apache.ignite.lang.*;
 
 /**
- * TODO: add description.
+ * A vector interface.
+ *
+ * Based on its flavor it can have vastly different implementations tailored for
+ * for different types of data (e.g. dense vs. sparse), different sizes of data or different operation
+ * optimizations.
+ *
+ * Note also that not all operations can be supported by all underlying implementations. If an operation is not
+ * supported a {@link UnsupportedOperationException} is thrown. This exception can also be thrown in partial cases
+ * where an operation is unsupported only in special cases, e.g. where a given operation cannot be deterministically
+ * completed in polynomial time.
+ *
+ * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
 public interface Vector {
     /**
-     * Auto-generated globally unique vectgor ID.
+     * Auto-generated globally unique vector ID.
      *
      * @return Vector GUID.
      */
