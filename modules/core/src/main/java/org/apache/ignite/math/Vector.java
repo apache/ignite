@@ -17,8 +17,16 @@
 
 package org.apache.ignite.math;
 
+import org.apache.ignite.lang.*;
+
 /**
  * TODO: add description.
  */
 public interface Vector {
+    /**
+     * Auto-generated globally unique vectgor ID.
+     *
+     * @return Vector GUID.
+     */
+    IgniteUuid guid();
 }

@@ -207,9 +207,31 @@ public interface Matrix {
      */
     Matrix cloneEmpty(int rows, int cols);
 
-    Matrix minus(Matrix x);
+    /**
+     * Decrements each value in this matrix by corresponding value from the argument matrix.
+     *
+     * @param mtx Argument matrix.
+     * @return This matrix.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Matrix minus(Matrix mtx);
+
+    /**
+     * Adds given value to each element of this matrix.
+     *
+     * @param x Value to add.
+     * @return This matrix.
+     */
     Matrix plus(double x);
-    Matrix plus(Matrix x);
+
+    /**
+     * Increase each element in this matrix by corresponding value from the argument matrix.
+     *
+     * @param mtx Argument matrix.
+     * @return This matrix.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Matrix plus(Matrix mtx);
 
     /**
      * Auto-generated globally unique matrix ID.
