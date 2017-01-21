@@ -203,32 +203,35 @@ public interface Matrix {
      *
      * @param rows Number of rows for new matrix.
      * @param cols Number of columns for new matrix.
-     * @return New matrix.
+     * @return New matrix of the same underlying class and size.
      */
     Matrix cloneEmpty(int rows, int cols);
 
     /**
-     * Decrements each value in this matrix by corresponding value from the argument matrix.
+     * Creates new matrix where each value is a difference between corresponding value of this matrix and
+     * passed in argument matrix.
      *
      * @param mtx Argument matrix.
-     * @return This matrix.
+     * @return New matrix of the same underlying class and size.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Matrix minus(Matrix mtx);
 
     /**
-     * Adds given value to each element of this matrix.
+     * Creates new matrix where each value is a sum of the corresponding value of this matrix and
+     * argument value.
      *
      * @param x Value to add.
-     * @return This matrix.
+     * @return New matrix of the same underlying class and size.
      */
     Matrix plus(double x);
 
     /**
-     * Increase each element in this matrix by corresponding value from the argument matrix.
+     * Creates new matrix where each value is a sum of corresponding values of this matrix and
+     * passed in argument matrix.
      *
      * @param mtx Argument matrix.
-     * @return This matrix.
+     * @return New matrix of the same underlying class and size.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Matrix plus(Matrix mtx);
