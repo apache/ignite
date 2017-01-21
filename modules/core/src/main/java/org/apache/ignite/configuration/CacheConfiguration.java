@@ -40,6 +40,8 @@ import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
@@ -938,9 +940,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets keep binary in store flag.
      *
      * @param storeKeepBinary Keep binary in store flag.
+     * @return {@code this} for chaining.
      */
-    public void setStoreKeepBinary(boolean storeKeepBinary) {
+    public CacheConfiguration<K, V> setStoreKeepBinary(boolean storeKeepBinary) {
         this.storeKeepBinary = storeKeepBinary;
+
+        return this;
     }
 
     /**
@@ -2425,6 +2430,70 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         if (txtAnn != null)
             desc.addFieldToTextIndex(prop.fullName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStatisticsEnabled(boolean enabled) {
+        super.setStatisticsEnabled(enabled);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setManagementEnabled(boolean enabled) {
+        super.setManagementEnabled(enabled);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheLoaderFactory(Factory<? extends CacheLoader<K, V>> factory) {
+        super.setCacheLoaderFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheWriterFactory(
+        Factory<? extends CacheWriter<? super K, ? super V>> factory) {
+        super.setCacheWriterFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setExpiryPolicyFactory(Factory<? extends ExpiryPolicy> factory) {
+        super.setExpiryPolicyFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setTypes(Class<K> keyType, Class<V> valueType) {
+        super.setTypes(keyType, valueType);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setReadThrough(boolean isReadThrough) {
+        super.setReadThrough(isReadThrough);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setWriteThrough(boolean isWriteThrough) {
+        super.setWriteThrough(isWriteThrough);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByValue) {
+        super.setStoreByValue(isStoreByValue);
+
+        return this;
     }
 
     /** {@inheritDoc} */

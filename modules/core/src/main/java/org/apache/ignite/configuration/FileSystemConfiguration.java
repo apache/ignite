@@ -249,9 +249,12 @@ public class FileSystemConfiguration {
      * Sets IGFS instance name.
      *
      * @param name IGFS instance name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public FileSystemConfiguration setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -268,9 +271,12 @@ public class FileSystemConfiguration {
      * Sets cache name to store IGFS meta information.
      *
      * @param metaCacheName Cache name to store IGFS meta information.
+     * @return {@code this} for chaining.
      */
-    public void setMetaCacheName(String metaCacheName) {
+    public FileSystemConfiguration setMetaCacheName(String metaCacheName) {
         this.metaCacheName = metaCacheName;
+
+        return this;
     }
 
     /**
@@ -286,9 +292,12 @@ public class FileSystemConfiguration {
      * Sets cache name to store IGFS data.
      *
      * @param dataCacheName Cache name to store IGFS data.
+     * @return {@code this} for chaining.
      */
-    public void setDataCacheName(String dataCacheName) {
+    public FileSystemConfiguration setDataCacheName(String dataCacheName) {
         this.dataCacheName = dataCacheName;
+
+        return this;
     }
 
     /**
@@ -304,11 +313,14 @@ public class FileSystemConfiguration {
      * Sets file's data block size.
      *
      * @param blockSize File's data block size (bytes) or {@code 0} to reset default value.
+     * @return {@code this} for chaining.
      */
-    public void setBlockSize(int blockSize) {
+    public FileSystemConfiguration setBlockSize(int blockSize) {
         A.ensure(blockSize >= 0, "blockSize >= 0");
 
         this.blockSize = blockSize == 0 ? DFLT_BLOCK_SIZE : blockSize;
+
+        return this;
     }
 
     /**
@@ -324,11 +336,14 @@ public class FileSystemConfiguration {
      * Sets the number of pre-fetched blocks if specific file's chunk is requested.
      *
      * @param prefetchBlocks New number of pre-fetched blocks.
+     * @return {@code this} for chaining.
      */
-    public void setPrefetchBlocks(int prefetchBlocks) {
+    public FileSystemConfiguration setPrefetchBlocks(int prefetchBlocks) {
         A.ensure(prefetchBlocks >= 0, "prefetchBlocks >= 0");
 
         this.prefetchBlocks = prefetchBlocks;
+
+        return this;
     }
 
     /**
@@ -366,11 +381,14 @@ public class FileSystemConfiguration {
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
      *
      * @param seqReadsBeforePrefetch Amount of sequential block reads before prefetch is triggered.
+     * @return {@code this} for chaining.
      */
-    public void setSequentialReadsBeforePrefetch(int seqReadsBeforePrefetch) {
+    public FileSystemConfiguration setSequentialReadsBeforePrefetch(int seqReadsBeforePrefetch) {
         A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
         this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
+
+        return this;
     }
 
     /**
@@ -386,11 +404,14 @@ public class FileSystemConfiguration {
      * Sets read/write buffers size for {@code IGFS} stream operations (bytes).
      *
      * @param bufSize Read/write buffers size for stream operations (bytes) or {@code 0} to reset default value.
+     * @return {@code this} for chaining.
      */
-    public void setStreamBufferSize(int bufSize) {
+    public FileSystemConfiguration setStreamBufferSize(int bufSize) {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         this.bufSize = bufSize == 0 ? DFLT_BUF_SIZE : bufSize;
+
+        return this;
     }
 
     /**
@@ -406,9 +427,12 @@ public class FileSystemConfiguration {
      * Sets number of file blocks collected on local node before sending batch to remote node.
      *
      * @param perNodeBatchSize Per node buffer size.
+     * @return {@code this} for chaining.
      */
-    public void setPerNodeBatchSize(int perNodeBatchSize) {
+    public FileSystemConfiguration setPerNodeBatchSize(int perNodeBatchSize) {
         this.perNodeBatchSize = perNodeBatchSize;
+
+        return this;
     }
 
     /**
@@ -424,9 +448,12 @@ public class FileSystemConfiguration {
      * Sets number of file block batches that can be concurrently sent to remote node.
      *
      * @param perNodeParallelBatchCnt Per node parallel load operations.
+     * @return {@code this} for chaining.
      */
-    public void setPerNodeParallelBatchCount(int perNodeParallelBatchCnt) {
+    public FileSystemConfiguration setPerNodeParallelBatchCount(int perNodeParallelBatchCnt) {
         this.perNodeParallelBatchCnt = perNodeParallelBatchCnt;
+
+        return this;
     }
 
     /**
@@ -448,9 +475,12 @@ public class FileSystemConfiguration {
      * Hadoop Accelerator</b>.
      *
      * @param ipcEndpointCfg IPC endpoint configuration.
+     * @return {@code this} for chaining.
      */
-    public void setIpcEndpointConfiguration(@Nullable IgfsIpcEndpointConfiguration ipcEndpointCfg) {
+    public FileSystemConfiguration setIpcEndpointConfiguration(@Nullable IgfsIpcEndpointConfiguration ipcEndpointCfg) {
         this.ipcEndpointCfg = ipcEndpointCfg;
+
+        return this;
     }
 
     /**
@@ -473,9 +503,12 @@ public class FileSystemConfiguration {
      * Hadoop Accelerator</b>.
      *
      * @param ipcEndpointEnabled IPC endpoint enabled flag.
+     * @return {@code this} for chaining.
      */
-    public void setIpcEndpointEnabled(boolean ipcEndpointEnabled) {
+    public FileSystemConfiguration setIpcEndpointEnabled(boolean ipcEndpointEnabled) {
         this.ipcEndpointEnabled = ipcEndpointEnabled;
+
+        return this;
     }
 
     /**
@@ -494,9 +527,12 @@ public class FileSystemConfiguration {
      * Sets management endpoint port.
      *
      * @param mgmtPort port number or {@code -1} to disable management endpoint.
+     * @return {@code this} for chaining.
      */
-    public void setManagementPort(int mgmtPort) {
+    public FileSystemConfiguration setManagementPort(int mgmtPort) {
         this.mgmtPort = mgmtPort;
+
+        return this;
     }
 
     /**
@@ -519,9 +555,12 @@ public class FileSystemConfiguration {
      * for pass-through, write-through, and read-through purposes.
      *
      * @param dfltMode {@code IGFS} mode.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultMode(IgfsMode dfltMode) {
+    public FileSystemConfiguration setDefaultMode(IgfsMode dfltMode) {
         this.dfltMode = dfltMode;
+
+        return this;
     }
 
     /**
@@ -539,9 +578,12 @@ public class FileSystemConfiguration {
      * and read-through purposes.
      *
      * @param fileSystem Secondary file system.
+     * @return {@code this} for chaining.
      */
-    public void setSecondaryFileSystem(IgfsSecondaryFileSystem fileSystem) {
+    public FileSystemConfiguration setSecondaryFileSystem(IgfsSecondaryFileSystem fileSystem) {
         secondaryFs = fileSystem;
+
+        return this;
     }
 
     /**
@@ -572,9 +614,12 @@ public class FileSystemConfiguration {
      * {@link #getDefaultMode()} is used.
      *
      * @param pathModes Map of paths to {@code IGFS} modes.
+     * @return {@code this} for chaining.
      */
-    public void setPathModes(Map<String, IgfsMode> pathModes) {
+    public FileSystemConfiguration setPathModes(Map<String, IgfsMode> pathModes) {
         this.pathModes = pathModes;
+
+        return this;
     }
 
     /**
@@ -590,15 +635,19 @@ public class FileSystemConfiguration {
      * Sets length of file chunk to transmit before throttling is delayed.
      *
      * @param fragmentizerThrottlingBlockLen Block length in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerThrottlingBlockLength(long fragmentizerThrottlingBlockLen) {
+    public FileSystemConfiguration setFragmentizerThrottlingBlockLength(long fragmentizerThrottlingBlockLen) {
         this.fragmentizerThrottlingBlockLen = fragmentizerThrottlingBlockLen;
+
+        return this;
     }
 
     /**
      * Gets throttle delay for fragmentizer.
      *
      * @return Throttle delay in milliseconds.
+     * @return {@code this} for chaining.
      */
     public long getFragmentizerThrottlingDelay() {
         return fragmentizerThrottlingDelay;
@@ -609,14 +658,17 @@ public class FileSystemConfiguration {
      *
      * @param fragmentizerThrottlingDelay Delay in milliseconds.
      */
-    public void setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
+    public FileSystemConfiguration setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
         this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
+
+        return this;
     }
 
     /**
      * Gets number of files that can be processed by fragmentizer concurrently.
      *
      * @return Number of files to process concurrently.
+     * @return {@code this} for chaining.
      */
     public int getFragmentizerConcurrentFiles() {
         return fragmentizerConcurrentFiles;
@@ -626,9 +678,12 @@ public class FileSystemConfiguration {
      * Sets number of files to process concurrently by fragmentizer.
      *
      * @param fragmentizerConcurrentFiles Number of files to process concurrently.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
+    public FileSystemConfiguration setFragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
         this.fragmentizerConcurrentFiles = fragmentizerConcurrentFiles;
+
+        return this;
     }
 
     /**
@@ -657,10 +712,13 @@ public class FileSystemConfiguration {
      * @see #getFragmentizerLocalWritesRatio()
      *
      * @deprecated Parameter is no longer used.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setFragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
+    public FileSystemConfiguration setFragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
         this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
+
+        return this;
     }
 
     /**
@@ -677,9 +735,12 @@ public class FileSystemConfiguration {
      * Sets property indicating whether fragmentizer is enabled.
      *
      * @param fragmentizerEnabled {@code True} if fragmentizer is enabled.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerEnabled(boolean fragmentizerEnabled) {
+    public FileSystemConfiguration setFragmentizerEnabled(boolean fragmentizerEnabled) {
         this.fragmentizerEnabled = fragmentizerEnabled;
+
+        return this;
     }
 
     /**
@@ -695,9 +756,12 @@ public class FileSystemConfiguration {
      * Set maximum space in bytes available in data cache.
      *
      * @param maxSpace Maximum space available in data cache.
+     * @return {@code this} for chaining.
      */
-    public void setMaxSpaceSize(long maxSpace) {
+    public FileSystemConfiguration setMaxSpaceSize(long maxSpace) {
         this.maxSpace = maxSpace;
+
+        return this;
     }
 
     /**
@@ -716,10 +780,13 @@ public class FileSystemConfiguration {
      *
      * @param trashPurgeTimeout Maximum timeout awaiting for trash purging in case data cache oversize is detected.
      * @deprecated Not used any more.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setTrashPurgeTimeout(long trashPurgeTimeout) {
+    public FileSystemConfiguration setTrashPurgeTimeout(long trashPurgeTimeout) {
         this.trashPurgeTimeout = trashPurgeTimeout;
+
+        return this;
     }
 
     /**
@@ -741,10 +808,13 @@ public class FileSystemConfiguration {
      *
      * @param dualModePutExec Dual mode put operations executor service.
      * @deprecated Not used any more.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setDualModePutExecutorService(ExecutorService dualModePutExec) {
+    public FileSystemConfiguration setDualModePutExecutorService(ExecutorService dualModePutExec) {
         this.dualModePutExec = dualModePutExec;
+
+        return this;
     }
 
     /**
@@ -763,10 +833,13 @@ public class FileSystemConfiguration {
      *
      * @param dualModePutExecShutdown Dual mode put operations executor service shutdown flag.
      * @deprecated Not used any more.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setDualModePutExecutorServiceShutdown(boolean dualModePutExecShutdown) {
+    public FileSystemConfiguration setDualModePutExecutorServiceShutdown(boolean dualModePutExecShutdown) {
         this.dualModePutExecShutdown = dualModePutExecShutdown;
+
+        return this;
     }
 
     /**
@@ -790,10 +863,13 @@ public class FileSystemConfiguration {
      *
      * @param dualModeMaxPendingPutsSize Maximum amount of data in pending put operations.
      * @deprecated Not used any more.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setDualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
+    public FileSystemConfiguration setDualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
         this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
+
+        return this;
     }
 
     /**
@@ -831,9 +907,12 @@ public class FileSystemConfiguration {
      * See {@link #getMaximumTaskRangeLength()} for more details.
      *
      * @param maxTaskRangeLen Set maximum default range size of a file being split during IGFS task execution.
+     * @return {@code this} for chaining.
      */
-    public void setMaximumTaskRangeLength(long maxTaskRangeLen) {
+    public FileSystemConfiguration setMaximumTaskRangeLength(long maxTaskRangeLen) {
         this.maxTaskRangeLen = maxTaskRangeLen;
+
+        return this;
     }
 
     /**
@@ -865,9 +944,12 @@ public class FileSystemConfiguration {
      * See {@link #isInitializeDefaultPathModes()} for more information.
      *
      * @param initDfltPathModes Whether to initialize default path modes.
+     * @return {@code this} for chaining.
      */
-    public void setInitializeDefaultPathModes(boolean initDfltPathModes) {
+    public FileSystemConfiguration setInitializeDefaultPathModes(boolean initDfltPathModes) {
         this.initDfltPathModes = initDfltPathModes;
+
+        return this;
     }
 
     /**
@@ -904,9 +986,12 @@ public class FileSystemConfiguration {
      * See {@link #isColocateMetadata()} for more information.
      *
      * @param colocateMeta Whether metadata co-location is enabled.
+     * @return {@code this} for chaining.
      */
-    public void setColocateMetadata(boolean colocateMeta) {
+    public FileSystemConfiguration setColocateMetadata(boolean colocateMeta) {
         this.colocateMeta = colocateMeta;
+
+        return this;
     }
 
     /**
@@ -941,9 +1026,12 @@ public class FileSystemConfiguration {
      * See {@link #isColocateMetadata()} for more information.
      *
      * @param relaxedConsistency Whether to use relaxed consistency optimization.
+     * @return {@code this} for chaining.
      */
-    public void setRelaxedConsistency(boolean relaxedConsistency) {
+    public FileSystemConfiguration setRelaxedConsistency(boolean relaxedConsistency) {
         this.relaxedConsistency = relaxedConsistency;
+
+        return this;
     }
 
     /**
@@ -967,9 +1055,12 @@ public class FileSystemConfiguration {
      * Set {@link #isUpdateFileLengthOnFlush()} for more information.
      *
      * @param updateFileLenOnFlush Whether to update file length on flush.
+     * @return {@code this} for chaining.
      */
-    public void setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
+    public FileSystemConfiguration setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
         this.updateFileLenOnFlush = updateFileLenOnFlush;
+
+        return this;
     }
 
     /** {@inheritDoc} */

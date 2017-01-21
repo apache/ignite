@@ -17,7 +17,11 @@
 
 package org.apache.ignite.configuration;
 
+import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -105,6 +109,52 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.nearStartSize = nearStartSize;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setTypes(Class<K> keyType, Class<V> valueType) {
+        return (CacheConfiguration<K, V>)super.setTypes(keyType, valueType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheLoaderFactory(Factory<? extends CacheLoader<K, V>> factory) {
+        return (CacheConfiguration<K, V>)super.setCacheLoaderFactory(factory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheWriterFactory(
+        Factory<? extends CacheWriter<? super K, ? super V>> factory) {
+        return (CacheConfiguration<K, V>)super.setCacheWriterFactory(factory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setExpiryPolicyFactory(Factory<? extends ExpiryPolicy> factory) {
+        return (CacheConfiguration<K, V>)super.setExpiryPolicyFactory(factory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setReadThrough(boolean isReadThrough) {
+        return (CacheConfiguration<K, V>)super.setReadThrough(isReadThrough);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setWriteThrough(boolean isWriteThrough) {
+        return (CacheConfiguration<K, V>)super.setWriteThrough(isWriteThrough);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByValue) {
+        return (CacheConfiguration<K, V>)super.setStoreByValue(isStoreByValue);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStatisticsEnabled(boolean enabled) {
+        return (CacheConfiguration<K, V>)super.setStatisticsEnabled(enabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setManagementEnabled(boolean enabled) {
+        return (CacheConfiguration<K, V>)super.setManagementEnabled(enabled);
     }
 
     /** {@inheritDoc} */

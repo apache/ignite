@@ -54,9 +54,12 @@ public class AtomicConfiguration {
 
     /**
      * @param backups Number of backup nodes.
+     * @return {@code this} for chaining.
      */
-    public void setBackups(int backups) {
+    public AtomicConfiguration setBackups(int backups) {
         this.backups = backups;
+
+        return this;
     }
 
     /**
@@ -68,9 +71,12 @@ public class AtomicConfiguration {
 
     /**
      * @param cacheMode Cache mode.
+     * @return {@code this} for chaining.
      */
-    public void setCacheMode(CacheMode cacheMode) {
+    public AtomicConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
+
+        return this;
     }
 
     /**
@@ -93,9 +99,12 @@ public class AtomicConfiguration {
      *
      * @param seqReserveSize Atomic sequence reservation size.
      * @see #getAtomicSequenceReserveSize()
+     * @return {@code this} for chaining.
      */
-    public void setAtomicSequenceReserveSize(int seqReserveSize) {
+    public AtomicConfiguration setAtomicSequenceReserveSize(int seqReserveSize) {
         this.seqReserveSize = seqReserveSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */
