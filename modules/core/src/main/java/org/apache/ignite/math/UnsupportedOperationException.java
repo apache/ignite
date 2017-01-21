@@ -25,6 +25,9 @@ import org.apache.ignite.*;
  * only in certain cases where, for example, it could not be performed in polynomial time.
  */
 public class UnsupportedOperationException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      *
      * @param errMsg Error message.

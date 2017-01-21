@@ -364,6 +364,8 @@ public interface Matrix {
     String flavor();
 
     /**
+     * Gets optional cluster group this matrix is stored on. In case of local JVM storage it may
+     * return an empty option or a cluster group consisting of only the local Ignite node.
      *
      * @return Optional cluster group for this matrix to be stored on.
      */

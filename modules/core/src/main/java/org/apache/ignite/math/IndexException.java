@@ -23,6 +23,9 @@ import org.apache.ignite.*;
  * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.
  */
 public class IndexException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      *
      * @param idx Index value that caused this exception.

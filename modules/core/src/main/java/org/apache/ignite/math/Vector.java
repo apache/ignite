@@ -17,7 +17,10 @@
 
 package org.apache.ignite.math;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import java.util.*;
+import java.util.function.*;
 
 /**
  * A vector interface.
@@ -34,6 +37,72 @@ import org.apache.ignite.lang.*;
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
 public interface Vector {
+    /**
+     * Assigns given value to all elements of this vector.
+     *
+     * @param val Value to assign.
+     * @return This vector.
+     */
+    Vector assign(double val);
+
+    /**
+     * Assigns values from given array to this vector.
+     *
+     * @param vals Values to assign.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @return This vector.
+     */
+    Vector assign(double[] vals);
+
+    /**
+     * Copies values from the argument vector to this one.
+     *
+     * @param vec Argument vector.
+     * @return This vector.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Vector assign(Vector vec);
+
+    /**
+     * Maps all values in this vector through a given function.
+     *
+     * @param fun Mapping function.
+     * @return This vector.
+     */
+    Vector map(DoubleFunction<Double> fun);
+
+    /**
+     * Maps all values in this vector through a given function.
+     *
+     * For this vector <code>A</code>, argument vector <code>B</code> and the
+     * function <code>F</code> this method maps every element <code>x</code> as:
+     * <code>A(x) = fun(A(x), B(x))</code>
+     *
+     * @param vec Argument vector.
+     * @param fun Mapping function.
+     * @return This function.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Vector map(Vector vec, DoubleFunction<Double> fun);
+
+    /**
+     * Maps all elements of this vector by applying given function to each element with a constant
+     * second parameter <code>y</code>.
+     *
+     * @param fun Mapping function.
+     * @param y Second parameter for mapping function.
+     * @return This vector.
+     */
+    Vector map(BiFunction<Double, Double, Double> fun, double y);
+
+    /**
+     * Gets optional cluster group this vector is stored on. In case of local JVM storage it may
+     * return an empty option or a cluster group consisting of only the local Ignite node.
+     *
+     * @return Optional cluster group for this vector to be stored on.
+     */
+    Optional<ClusterGroup> clusterGroup();
+
     /**
      * Auto-generated globally unique vector ID.
      *

@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
-
-import org.apache.ignite.*;
-
 /**
- * Indicates that no provider has been found for a given vector or matrix flavor.
+ * <!-- Package description. -->
+ * Contains main APIs for distributed code algebra.
  */
-public class UnknownProviderException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     *
-     * @param flavor Flavor (a.k.a. operation performance hints) that has no registered provider for.
-     */
-    public UnknownProviderException(String flavor) {
-        super("No provider has been found for the flavor: " + flavor);
-    }
-}
+package org.apache.ignite.math;
