@@ -128,8 +128,9 @@ public interface Matrix {
      * @param mapFun Mapping function that is called on each matrix cell before its passed to the accumulator
      *      (as its second parameter).
      * @return Folded value of this matrix.
+     * @param <T> Type of the folded value.
      */
-    double foldMap(BiFunction<Double, Double, Double> foldFun, DoubleFunction mapFun);
+    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun);
 
     /**
      * Gets number of columns in this matrix.
@@ -244,6 +245,117 @@ public interface Matrix {
      * @return Matrix GUID.
      */
     IgniteUuid guid();
+
+    /**
+     * Sets given value.
+     *
+     * @param row Row index.
+     * @param col Column index.
+     * @param val Value to set.
+     * @return This matrix.
+     * @throws IndexException  Thrown in case of either index is out of bound.
+     */
+    Matrix set(int row, int col, double val);
+
+    /**
+     * Sets values for given row.
+     *
+     * @param row Row index.
+     * @param data Row data to set.
+     * @return This matrix.
+     * @throws IndexException  Thrown in case of index is out of bound.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Matrix setRow(int row, double[] data);
+
+    /**
+     * Sets values for given column.
+     *
+     * @param col Column index.
+     * @param data Column data to set.
+     * @return This matrix.
+     * @throws IndexException  Thrown in case of index is out of bound.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Matrix setColumn(int col, double[] data);
+
+    /**
+     * Sets given value without checking for index bounds. This method is marginally faster
+     * than its {@link #set(int, int, double)} sibling.
+     *
+     * @param row Row index.
+     * @param col Column index.
+     * @param val Value to set.
+     * @return This matrix.
+     */
+    Matrix setX(int row, int col, double val);
+
+    /**
+     * Creates new matrix containing the product of given value and values in this matrix.
+     *
+     * @param x Value to multiply.
+     * @return New matrix.
+     */
+    Matrix times(double x);
+
+    /**
+     * Creates new matrix that is the product of multiplying this matrix and the argument matrix.
+     * 
+     * @param mtx Argument matrix.
+     * @return New matrix.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Matrix times(Matrix mtx);
+
+    /**
+     * Gets sum of all elements in the matrix.
+     *
+     * @return Sum of all elements in this matrix.
+     */
+    double sum();
+
+    /**
+     * Creates new matrix that is transpose of this matrix.
+     *
+     * @return New transposed matrix.
+     */
+    Matrix transpose();
+
+    /**
+     * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
+     *
+     * @param offset View offset as <code>int[x,y]</code>.
+     * @param size View size as <code>int[rows, cols]</code>
+     * @return New view.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws IndexException Thrown in case of offset is out of bound.
+     */
+    Matrix viewPart(int[] offset, int[] size);
+
+    /**
+     * Creates new view into matrix row. Changes to the view will be propagated to this matrix.
+     *
+     * @param row Row index.
+     * @return New view.
+     * @throws IndexException Thrown in case of index is out of bound.
+     */
+    Vector viewRow(int row);
+
+    /**
+     * Creates new view into matrix column . Changes to the view will be propagated to this matrix.
+     *
+     * @param col Column index.
+     * @return New view.
+     * @throws IndexException Thrown in case of index is out of bound.
+     */
+    Vector viewColumn(int col);
+
+    /**
+     * Creates new view into matrix diagonal. Changes to the view will be propagated to this matrix.
+     *
+     * @return New view.
+     */
+    Vector viewDiagonal();
 
     /**
      *
