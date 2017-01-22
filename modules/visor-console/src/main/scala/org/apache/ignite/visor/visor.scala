@@ -2678,7 +2678,7 @@ object visor extends VisorTag {
 
                 var dec = BigDecimal.valueOf(0L)
 
-                for (i <- octets.indices) dec += octets(i).toLong * math.pow(256, octets.length - 1 - i).toLong
+                for (i <- octets.indices) dec += octets(i).toLong * scala.math.pow(256, octets.length - 1 - i).toLong
 
                 dec
             }

@@ -122,7 +122,7 @@ public interface Matrix {
     Vector aggregateColumns(Function<Vector, Double> fun);
 
     /**
-     * Folds matrix into a single value.
+     * Folds this matrix into a single value.
      *
      * @param foldFun Folding function that takes two parameters: accumulator and the current value.
      * @param mapFun Mapping function that is called on each matrix cell before its passed to the accumulator

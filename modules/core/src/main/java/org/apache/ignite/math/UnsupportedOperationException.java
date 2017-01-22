@@ -20,9 +20,9 @@ package org.apache.ignite.math;
 import org.apache.ignite.*;
 
 /**
- * Thrown by matrices and vectors to indicate that a specific operation is not
- * supported by the used implementation. In some cases, an operation may be unsupported
- * only in certain cases where, for example, it could not be performed in polynomial time.
+ * Indicate that a specific operation is not supported by the underlying implementation.
+ * In some cases, an operation may be unsupported only in certain cases where, for example,
+ * it could not be deterministically completed in polynomial time.
  */
 public class UnsupportedOperationException extends IgniteException {
     /** */

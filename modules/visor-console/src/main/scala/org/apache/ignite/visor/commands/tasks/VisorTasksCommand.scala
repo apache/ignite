@@ -222,7 +222,7 @@ private case class VisorTask(
     lazy val avgNodes: Int =
         (0 /: execs)((b, a) => a.nodeIds.size + b) / execs.size
 
-    override def equals(r: Any) =
+    override def equals(r: Any): Boolean =
         if (this eq r.asInstanceOf[AnyRef])
             true
         else if (r == null || !r.isInstanceOf[VisorTask])
@@ -230,7 +230,7 @@ private case class VisorTask(
         else
             r.asInstanceOf[VisorTask].taskName == taskName
 
-    override def hashCode() =
+    override def hashCode(): Int =
         taskName.hashCode()
 }
 
@@ -420,7 +420,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
             else if (hasArgName("n", argLst)) {
                 val n = argValue("n", argLst)
 
-                if (!n.isDefined)
+                if (n.isEmpty)
                     scold("Invalid arguments: " + args)
                 else
                     task(n.get, hasArgFlag("r", argLst), hasArgFlag("a", argLst))
@@ -428,7 +428,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
             else if (hasArgName("e", argLst)) {
                 val s = argValue("e", argLst)
 
-                if (!s.isDefined)
+                if (s.isEmpty)
                     scold("Invalid arguments: " + args)
                 else
                     exec(s.get, hasArgFlag("r", argLst))
@@ -550,8 +550,8 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 s.evts = s.evts :+ te
                 s.nodeIds = s.nodeIds + te.nid()
-                s.startTs = math.min(s.startTs, te.timestamp())
-                s.endTs = math.max(s.endTs, te.timestamp())
+                s.startTs = scala.math.min(s.startTs, te.timestamp())
+                s.endTs = scala.math.max(s.endTs, te.timestamp())
 
                 te.typeId() match {
                     case EVT_TASK_STARTED =>
@@ -585,8 +585,8 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 s.evts = s.evts :+ je
                 s.nodeIds = s.nodeIds + je.nid()
-                s.startTs = math.min(s.startTs, je.timestamp())
-                s.endTs = math.max(s.endTs, je.timestamp())
+                s.startTs = scala.math.min(s.startTs, je.timestamp())
+                s.endTs = scala.math.max(s.endTs, je.timestamp())
 
             case _ =>
         }
@@ -807,8 +807,6 @@ class VisorTasksCommand extends VisorConsoleCommand {
             assert(taskName != null)
 
             try {
-                val prj = ignite.cluster.forRemotes()
-
                 val evts = executeMulti(classOf[VisorNodeEventsCollectorTask],
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null))
 

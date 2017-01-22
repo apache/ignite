@@ -564,8 +564,8 @@ class VisorAlertCommand extends VisorConsoleCommand {
 
             val sum = new VisorTextTable()
 
-            val firstSnd = (-1L /: stats.values)((b, a) => if (b == -1) a.firstSnd else math.min(b, a.firstSnd))
-            val lastSnd = (0L /: stats.values)((b, a) => math.max(b, a.lastSnd))
+            val firstSnd = (-1L /: stats.values)((b, a) => if (b == -1) a.firstSnd else scala.math.min(b, a.firstSnd))
+            val lastSnd = (0L /: stats.values)((b, a) => scala.math.max(b, a.lastSnd))
 
             sum += ("Total alerts", alerts.size)
             sum += ("Total sends", (0 /: stats.values)((b, a) => b + a.cnt))

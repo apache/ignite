@@ -109,7 +109,7 @@ class VisorGcCommand extends VisorConsoleCommand {
 
                         val sign = if (roundHa > roundHb) "+" else ""
 
-                        val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
+                        val deltaPercent = scala.math.round(roundHa * 100d / roundHb - 100)
 
                         t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
                 }

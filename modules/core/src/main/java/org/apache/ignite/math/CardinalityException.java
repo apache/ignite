@@ -23,6 +23,9 @@ import org.apache.ignite.*;
  * Indicates a cardinality mismatch in matrix or vector operations.
  */
 public class CardinalityException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+    
     /**
      * Creates new cardinality violation exception.
      *
