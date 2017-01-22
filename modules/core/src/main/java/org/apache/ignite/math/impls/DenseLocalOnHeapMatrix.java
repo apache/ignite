@@ -25,6 +25,8 @@ import java.util.*;
 import java.util.function.*;
 
 /**
+ * Basic implementation for matrix.
+ * 
  * This is a trivial implementation for matrix assuming dense logic, local on-heap JVM storage
  * based on <code>double[][]</code> array. It is only suitable for data sets where
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
