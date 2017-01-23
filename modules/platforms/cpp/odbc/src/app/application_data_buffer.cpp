@@ -672,7 +672,7 @@ namespace ignite
 
                 tm tmTime;
 
-                BinaryUtils::DateToCTm(value, tmTime);
+                common::DateToCTm(value, tmTime);
 
                 SqlLen* resLenPtr = GetResLen();
                 void* dataPtr = GetData();
@@ -792,7 +792,7 @@ namespace ignite
 
                 tm tmTime;
 
-                BinaryUtils::TimestampToCTm(value, tmTime);
+                common::TimestampToCTm(value, tmTime);
 
                 SqlLen* resLenPtr = GetResLen();
                 void* dataPtr = GetData();
@@ -1265,7 +1265,7 @@ namespace ignite
                         break;
                 }
 
-                return BinaryUtils::CTmToDate(tmTime);
+                return common::CTmToDate(tmTime);
             }
 
             Timestamp ApplicationDataBuffer::GetTimestamp() const
@@ -1328,7 +1328,7 @@ namespace ignite
                         break;
                 }
 
-                return BinaryUtils::CTmToTimestamp(tmTime, nanos);
+                return common::CTmToTimestamp(tmTime, nanos);
             }
 
             void ApplicationDataBuffer::GetDecimal(common::Decimal& val) const

@@ -143,11 +143,6 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CompositeKey)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKey)
 
-            int32_t GetHashCode(const CompositeKey& obj)
-            {
-                return BinaryArrayIdentityResolver::GetHashCode(obj);
-            }
-
             void Write(BinaryWriter& writer, const CompositeKey& obj)
             {
                 writer.WriteString("str", obj.str);
@@ -178,11 +173,6 @@ namespace ignite
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
             IGNITE_BINARY_IS_NULL_FALSE(CompositeKeySimple)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKeySimple)
-
-            int32_t GetHashCode(const CompositeKeySimple& obj)
-            {
-                return BinaryArrayIdentityResolver::GetHashCode(obj);
-            }
 
             void Write(BinaryWriter& writer, const CompositeKeySimple& obj)
             {

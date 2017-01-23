@@ -152,11 +152,11 @@ struct QueriesTestSuiteFixture
 
         SQLRETURN ret;
 
-        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-            BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+            common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
-            BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
+        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
+            common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
 
         cache1.Put(1, in1);
         cache1.Put(2, in2);
@@ -419,11 +419,11 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
-        BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
+        common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     cache1.Put(1, in1);
     cache1.Put(2, in2);
@@ -519,8 +519,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
@@ -585,8 +585,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
@@ -693,11 +693,11 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
-        BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
+        common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     cache1.Put(1, in1);
     cache1.Put(2, in2);
@@ -816,8 +816,8 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     TestType inNull;
 

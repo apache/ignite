@@ -138,5 +138,69 @@ namespace ignite
                 return true;
             }
         }
+
+        Date MakeDateGmt(int year, int month, int day, int hour,
+            int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            return CTmToDate(date);
+        }
+
+        Date MakeDateLocal(int year, int month, int day, int hour,
+            int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            time_t localTime = common::IgniteTimeLocal(date);
+
+            return CTimeToDate(localTime);
+        }
+
+        Timestamp MakeTimestampGmt(int year, int month, int day,
+            int hour, int min, int sec, long ns)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            return CTmToTimestamp(date, ns);
+        }
+
+        Timestamp MakeTimestampLocal(int year, int month, int day,
+            int hour, int min, int sec, long ns)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            time_t localTime = common::IgniteTimeLocal(date);
+
+            return CTimeToTimestamp(localTime, ns);
+        }
     }
 }
