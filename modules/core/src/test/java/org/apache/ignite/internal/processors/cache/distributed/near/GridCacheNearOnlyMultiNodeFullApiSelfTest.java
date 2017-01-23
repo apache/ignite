@@ -517,7 +517,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      * @param async If {@code true} uses async method.
      * @throws Exception If failed.
      */
-    @Override protected void globalClearAll(boolean async) throws Exception {
+    @Override protected void globalClearAll(boolean async, boolean oldAsync) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
@@ -528,11 +528,14 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         if (async) {
-            IgniteCache<String, Integer> asyncCache = jcache(nearIdx).withAsync();
+            if (oldAsync) {
+                IgniteCache<String, Integer> asyncCache = jcache(nearIdx).withAsync();
 
-            asyncCache.clear();
+                asyncCache.clear();
 
-            asyncCache.future().get();
+                asyncCache.future().get();
+            } else
+                jcache(nearIdx).clearAsync().get();
         }
         else
             jcache(nearIdx).clear();
