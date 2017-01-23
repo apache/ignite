@@ -17,38 +17,35 @@
 
 /**
  * @file
- * Declares ignite::binary::BinaryArrayIdentityResolver class template.
+ * Declares ignite::binary::BinaryIdentityResolver class.
  */
 
-#ifndef _IGNITE_BINARY_BINARY_ARRAY_IDENTITY_RESOLVER
-#define _IGNITE_BINARY_BINARY_ARRAY_IDENTITY_RESOLVER
+#ifndef _IGNITE_BINARY_BINARY_IDENTITY_RESOLVER
+#define _IGNITE_BINARY_BINARY_IDENTITY_RESOLVER
 
 #include <stdint.h>
 
 #include <ignite/common/common.h>
-#include <ignite/binary/binary_identity_resolver.h>
+
+#include <ignite/binary/binary_object.h>
 
 namespace ignite
 {
     namespace binary
     {
-        class BinaryObject;
-
         /**
-         * Binary array identity resolver.
+         * Binary identity resolver.
          */
-        class IGNITE_IMPORT_EXPORT BinaryArrayIdentityResolver : public BinaryIdentityResolver
+        class IGNITE_IMPORT_EXPORT BinaryIdentityResolver
         {
         public:
             /**
-             * Default constructor.
-             */
-            BinaryArrayIdentityResolver();
-
-            /**
              * Destructor.
              */
-            virtual ~BinaryArrayIdentityResolver();
+            virtual ~BinaryIdentityResolver()
+            {
+                // No-op.
+            }
 
             /**
              * Get binary object hash code.
@@ -56,9 +53,9 @@ namespace ignite
              * @param obj Binary object.
              * @return Hash code.
              */
-            virtual int32_t GetHashCode(const BinaryObject& obj);
+            virtual int32_t GetHashCode(const BinaryObject& obj) = 0;
         };
     }
 }
 
-#endif //_IGNITE_BINARY_BINARY_ARRAY_IDENTITY_RESOLVER
+#endif //_IGNITE_BINARY_BINARY_IDENTITY_RESOLVER

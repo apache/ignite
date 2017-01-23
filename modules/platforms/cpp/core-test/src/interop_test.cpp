@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
 {
     IgniteConfiguration cfg;
 
-    InitConfig(cfg, "invalid.xml");
+    ignite_test::InitConfig(cfg, "invalid.xml");
 
     BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
 
