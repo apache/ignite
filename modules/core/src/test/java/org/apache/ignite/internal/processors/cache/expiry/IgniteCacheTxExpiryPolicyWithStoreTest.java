@@ -46,6 +46,8 @@ public class IgniteCacheTxExpiryPolicyWithStoreTest extends IgniteCacheExpiryPol
 
     /** {@inheritDoc} */
     @Override public void testGetReadThrough() throws Exception {
+        super.testGetReadThrough();
+
         getReadThrough(false, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
         getReadThrough(true, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
         getReadThrough(false, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);

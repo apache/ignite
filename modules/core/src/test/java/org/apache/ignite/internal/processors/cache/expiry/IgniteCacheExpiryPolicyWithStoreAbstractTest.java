@@ -186,8 +186,8 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testGetReadThrough() throws Exception {
-        getReadThrough(false, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
-        getReadThrough(true, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+        getReadThrough(false, null, null);
+        getReadThrough(true, null, null);
     }
 
     /**
@@ -236,7 +236,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
         IgniteTransactions transactions = grid(0).transactions();
 
-        try (Transaction tx = transactions.txStart(txConcurrency, txIsolation)) {
+        Transaction tx = txConcurrency != null ? transactions.txStart(txConcurrency, txIsolation) : null;
+
+        try {
             Collection<Integer> singleKeys = new HashSet<>();
 
             singleKeys.add(prim);
@@ -258,8 +260,10 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             for (Map.Entry<Integer, Integer> e : res.entrySet())
                 assertEquals(e.getKey(), e.getValue());
-
-            tx.rollback();
+        }
+        finally {
+            if (tx != null)
+                tx.rollback();
         }
 
         for (Integer key : keys)
