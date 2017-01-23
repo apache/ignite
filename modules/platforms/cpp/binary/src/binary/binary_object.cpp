@@ -17,8 +17,11 @@
 
 #include <ignite/impl/binary/binary_common.h>
 #include <ignite/impl/binary/binary_utils.h>
+#include <ignite/impl/binary/binary_object_header.h>
 
 #include <ignite/binary/binary_object.h>
+
+using namespace ignite::impl::binary;
 
 namespace ignite
 {
@@ -33,53 +36,17 @@ namespace ignite
 
         const int8_t* BinaryObject::GetData() const
         {
-            Validate();
+            // Creating header here to validate object header layout.
+            BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
 
             return mem.Data() + start + impl::binary::IGNITE_OFFSET_DATA;
         }
 
         int32_t BinaryObject::GetLength() const
         {
-            Validate();
+            BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
 
-            int16_t flags = GetFlags();
-
-            int32_t end = 0;
-
-            if (flags & impl::binary::IGNITE_BINARY_FLAG_HAS_SCHEMA)
-                end = impl::binary::BinaryUtils::UnsafeReadInt32(mem, start + impl::binary::IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-            else
-                end = impl::binary::BinaryUtils::UnsafeReadInt32(mem, start + impl::binary::IGNITE_OFFSET_LEN);
-
-            return end - impl::binary::IGNITE_OFFSET_DATA;
-        }
-
-        int8_t BinaryObject::GetType() const
-        {
-            return impl::binary::BinaryUtils::UnsafeReadInt8(mem, start);
-        }
-
-        int16_t BinaryObject::GetFlags() const
-        {
-            return impl::binary::BinaryUtils::UnsafeReadInt16(mem, start);
-        }
-
-        void BinaryObject::Validate() const
-        {
-            if (mem.Length() < (impl::binary::IGNITE_OFFSET_DATA))
-            {
-                IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
-                    "Not enough data in the binary object", "memPtr", mem.PointerLong(),
-                    "len", mem.Length(), "headerLen", impl::binary::IGNITE_OFFSET_DATA);
-            }
-
-            int8_t type = GetType();
-            if (type != impl::binary::IGNITE_TYPE_OBJECT)
-            {
-                IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
-                    "Not enough data in the binary object", "memPtr", mem.PointerLong(),
-                    "type", type, "expected", impl::binary::IGNITE_TYPE_OBJECT);
-            }
+            return header.GetDataLength();
         }
     }
 }

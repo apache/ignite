@@ -89,28 +89,6 @@ namespace ignite
         private:
             IGNITE_NO_COPY_ASSIGNMENT(BinaryObject)
 
-            /**
-             * Get object type.
-             * @throw IgniteError if the object is not in a valid state.
-             *
-             * @return Object type.
-             */
-            int8_t GetType() const;
-
-            /**
-             * Get object flags.
-             * @throw IgniteError if the object is not in a valid state.
-             *
-             * @return Object flags.
-             */
-            int16_t GetFlags() const;
-
-            /**
-             * Validate object memory.
-             * @throw IgniteError if the object is in invalid state.
-             */
-            void Validate() const;
-
             /** Underlying object memory. */
             impl::interop::InteropMemory& mem;
 
