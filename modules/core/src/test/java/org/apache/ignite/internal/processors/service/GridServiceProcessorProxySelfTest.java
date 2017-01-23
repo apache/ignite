@@ -242,12 +242,27 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 0; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+            final int idx = i;
+
+            final AtomicReference< MapService<Integer, String>> ref = new AtomicReference<>();
+
+            //wait because after deployNodeSingleton we don't have guarantees what service was deploy.
+            boolean wait = GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    MapService<Integer, String> svc = grid(idx)
+                        .services()
+                        .serviceProxy(name, MapService.class, false);
+
+                    ref.set(svc);
+
+                    return svc instanceof Service;
+                }
+            }, 2000);
 
             // Make sure service is a local instance.
-            assertTrue("Invalid service instance [srv=" + svc + ", node=" + i + ']', svc instanceof Service);
+            assertTrue("Invalid service instance [srv=" + ref.get() + ", node=" + i + ']', wait);
 
-            svc.put(i, Integer.toString(i));
+            ref.get().put(i, Integer.toString(i));
         }
 
         MapService<Integer, String> map = ignite.services().serviceProxy(name, MapService.class, false);
@@ -383,6 +398,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             map.clear();
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return map.size();
         }
