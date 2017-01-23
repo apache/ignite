@@ -17,10 +17,76 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.Vector;
+import java.util.*;
 
 /**
  * Defines distributed core algebra support for dense and sparse data sets.
+ *
+ * List of matrix flavors supported by default:
+ * <ul>
+ * <li>{@code "dense.local.onheap"}</li>
+ * </ul>
+ *
+ * List of vector flavors supported by default:
+ * <ul>
+ * <li>{@code "dense.local.onheap"}</li>
+ * </ul>
  */
 public interface IgniteMath extends IgniteAsyncSupport {
+    /**
+     * Creates new local matrix with given {@code flavor}.
+     *
+     * @param flavor Matrix flavor.
+     * @param args Initialization parameters for the new matrix.
+     * @return Newly created matrix.
+     * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
+     * @throws UnsupportedOperationException Thrown when provider is found but matrix cannot be created
+     *      based on the given arguments.
+     */
+    Matrix matrix(String flavor, Map<String, Object> args);
+
+    /**
+     * Creates new distributed matrix with given {@code flavor}.
+     * 
+     * @param flavor Matrix flavor.
+     * @param args Initialization parameters for the new matrix.
+     * @param grp Cluster group to be used.
+     * @return Newly created matrix.
+     * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
+     * @throws UnsupportedOperationException Thrown when provider is found but matrix cannot be created
+     *      based on the given arguments.
+     */
+    Matrix matrix(String flavor, Map<String, Object> args, ClusterGroup grp);
+
+    /**
+     * Creates new local vector with given {@code flavor}.
+     *
+     * @param flavor Vector flavor.
+     * @param args Initialization parameters for the new vector.
+     * @return Newly created vector.
+     * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
+     * @throws UnsupportedOperationException Thrown when provider is found but vector cannot be created
+     *      based on the given arguments.
+     */
+    Vector vector(String flavor, Map<String, Object> args);
+
+    /**
+     * Creates new distributed vector with given {@code flavor}.
+     *
+     * @param flavor Vector flavor.
+     * @param args Initialization parameters for the new vector.
+     * @param grp Cluster group to be used.
+     * @return Newly created vector.
+     * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
+     * @throws UnsupportedOperationException Thrown if cluster group is not
+     *      applicable for given vector's {@code flavor}.
+     * @throws UnsupportedOperationException Thrown when provider is found but vector cannot be created
+     *      based on the given arguments.
+     */
+    Vector vector(String flavor, Map<String, Object> args, ClusterGroup grp);
 }

@@ -33,6 +33,31 @@ import java.util.function.*;
  * to keep the entire data set.
  */
 public class DenseLocalOnHeapMatrix implements Matrix {
+    /**
+     *
+     */
+    public DenseLocalOnHeapMatrix() {
+        this(100, 100);
+    }
+
+    /**
+     *
+     * @param rows
+     * @param cols
+     */
+    public DenseLocalOnHeapMatrix(int rows, int cols) {
+        // TODO.
+    }
+
+    /**
+     *
+     * @param mtx
+     * @param shallowCopy
+     */
+    public DenseLocalOnHeapMatrix(double[][] mtx, boolean shallowCopy) {
+        // TODO.
+    }
+
     @Override
     public Matrix assign(double val) {
         return null; // TODO

@@ -33,6 +33,38 @@ import java.util.function.*;
  * to keep the entire data set.
  */
 public class DenseLocalOnHeapVector implements Vector {
+    /**
+     *
+     */
+    public DenseLocalOnHeapVector() {
+        this(100);
+    }
+
+    /**
+     *
+     * @param size Vector cardinality.
+     */
+    public DenseLocalOnHeapVector(int size) {
+        // TODO.
+    }
+
+    /**
+     *
+     * @param arr
+     * @param shallowCopy
+     */
+    public DenseLocalOnHeapVector(double[] arr, boolean shallowCopy) {
+       // TODO.
+    }
+
+    /**
+     *
+     * @param arr
+     */
+    public DenseLocalOnHeapVector(double[] arr) {
+        this(arr, false);
+    }
+
     @Override
     public int size() {
         return 0; // TODO

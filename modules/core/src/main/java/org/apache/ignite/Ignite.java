@@ -17,22 +17,17 @@
 
 package org.apache.ignite;
 
-import java.util.Collection;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import javax.cache.CacheException;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.PluginNotFoundException;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
+import javax.cache.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Main entry-point for all Ignite APIs.
@@ -44,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * Ignite provides the following functionality:
  * <ul>
  * <li>{@link IgniteCluster} - clustering functionality.</li>
+ * <li>{@link IgniteMath} - distributed core algebra and ML functionality.</li>
  * <li>{@link IgniteCache} - functionality for in-memory distributed cache, including SQL, TEXT, and Predicate-based queries.</li>
  * <li>{@link IgniteTransactions} - distributed ACID-compliant transactions.</li>
  * <li>{@link IgniteDataStreamer} - functionality for streaming large amounts of data into cache.</li>
@@ -106,6 +102,13 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of {@link IgniteCluster} interface.
      */
     public IgniteCluster cluster();
+
+    /**
+     * Gets an instance of {@link IgniteMath} interface.
+     *
+     * @return Instance of {@link IgniteMath} interface.
+     */
+    public IgniteMath math();
 
     /**
      * Gets {@code compute} facade over all cluster nodes started in server mode.
