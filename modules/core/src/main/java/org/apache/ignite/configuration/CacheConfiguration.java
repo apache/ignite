@@ -2353,12 +2353,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 if (sqlAnn != null || txtAnn != null) {
                     ClassProperty prop = new ClassProperty(field);
-
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
+                    try {
+                        type.addProperty(prop, key, true);
+                    } catch(CacheException dupEx) {
+                        prop.name('(' + c.getSimpleName() + ')' + field.getName());
+                        type.addProperty(prop, key, true);
+                    }
 
-                    type.addProperty(prop, key, true);
+                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
                 }
             }
 
@@ -2580,8 +2584,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         void addProperty(ClassProperty prop, boolean key, boolean failOnDuplicate) {
             String name = prop.fullName();
 
-            if (props.put(name, prop) != null && failOnDuplicate)
-                throw new CacheException("Property with name '" + name + "' already exists.");
+            if (failOnDuplicate) {
+                if (props.putIfAbsent(name, prop) != null)
+                    throw new CacheException("Property with name '" + name + "' already exists.");
+            } else
+                props.put(name, prop);
 
             fields.put(name, prop.type());
 
@@ -2709,7 +2716,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         ClassProperty(Member member) {
             this.member = member;
 
-            name = member.getDeclaringClass().getSimpleName() + '$' + member.getName();
+            name = member.getName();
 
             if (member instanceof Method) {
                 if (member.getName().startsWith("get") && member.getName().length() > 3)
@@ -2735,6 +2742,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         String alias() {
             return F.isEmpty(alias) ? name : alias;
         }
+
+        /**
+         * @param name Name.
+         */
+        public void name(String name) { this.name = name; }
 
         /**
          * @return Type.

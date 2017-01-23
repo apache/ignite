@@ -67,8 +67,8 @@ public class BinaryDuplicateFieldsWithAliasQuerySelfTest extends GridCommonAbstr
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-        //cfg.setMarshaller(new OptimizedMarshaller() {{setRequireSerializable(false);}});
+        //cfg.setMarshaller(new BinaryMarshaller());
+        cfg.setMarshaller(new OptimizedMarshaller() {{setRequireSerializable(false);}});
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
