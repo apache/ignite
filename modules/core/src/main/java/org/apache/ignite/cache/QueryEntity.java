@@ -164,6 +164,9 @@ public class QueryEntity implements Serializable {
                 if (idx.getName() == null)
                     idx.setName(defaultIndexName(idx));
 
+                if(idx.getIndexType() == null)
+                    throw new IllegalArgumentException("Index type is not set.");
+
                 if (!this.idxs.containsKey(idx.getName()))
                     this.idxs.put(idx.getName(), idx);
                 else
@@ -171,7 +174,6 @@ public class QueryEntity implements Serializable {
             }
         }
     }
-
 
     /**
      * Gets table name for this query entity.
@@ -210,13 +212,12 @@ public class QueryEntity implements Serializable {
      * @param idxType Index type.
      */
     public void ensureIndex(String idxName, QueryIndexType idxType) {
+        assert idxType != null;
+
         QueryIndex idx = idxs.get(idxName);
 
         if (idx == null) {
-            idx = new QueryIndex();
-
-            idx.setName(idxName);
-            idx.setIndexType(idxType);
+            idx = new QueryIndex(idxName, idxType);
 
             idxs.put(idxName, idx);
         }

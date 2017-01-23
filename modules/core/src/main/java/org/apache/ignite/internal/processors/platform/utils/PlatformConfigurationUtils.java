@@ -432,10 +432,11 @@ public class PlatformConfigurationUtils {
      * @return Query index.
      */
     private static QueryIndex readQueryIndex(BinaryRawReader in) {
-        QueryIndex res = new QueryIndex();
+        String indexName = in.readString();
 
-        res.setName(in.readString());
-        res.setIndexType(QueryIndexType.values()[in.readByte()]);
+        QueryIndexType indexType = QueryIndexType.values()[in.readByte()];
+
+        QueryIndex res = new QueryIndex(indexName, indexType);
 
         int cnt = in.readInt();
 
