@@ -2556,10 +2556,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             ", err=" + err +
                             ", connectErrs=" + Arrays.toString(err.getSuppressed()) + ']');
 
+/*
                     getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                             "rmtNode=" + node +
                             ", errs=" + err +
                             ", connectErrs=" + Arrays.toString(err.getSuppressed()) + ']');
+*/
                 }
 
                 onDone(err0);
