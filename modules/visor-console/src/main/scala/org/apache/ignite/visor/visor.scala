@@ -330,43 +330,6 @@ object visor extends VisorTag {
     )
 
     addHelp(
-        name = "mclear",
-        shortInfo = "Clears Visor console memory variables.",
-        spec = Seq(
-            "mclear",
-            "mclear <name>|-ev|-al|-ca|-no|-tn|-ex"
-        ),
-        args = Seq(
-            "<name>" -> Seq(
-                "Variable name to clear.",
-                "Note that name doesn't include '@' symbol used to reference variable."
-            ),
-            "-ev" ->
-                "Clears all 'event' variables.",
-            "-al" ->
-                "Clears all 'alert' variables.",
-            "-ca" ->
-                "Clears all 'cache' variables.",
-            "-no" ->
-                "Clears all 'node' variables.",
-            "-tn" ->
-                "Clears all 'task name' variables.",
-            "-ex" ->
-                "Clears all 'task execution' variables."
-        ),
-        examples = Seq(
-            "mclear" ->
-                "Clears all Visor console variables.",
-            "mclear -ca" ->
-                "Clears all Visor console cache variables.",
-            "mclear n2" ->
-                "Clears 'n2' Visor console variable."
-        ),
-        emptyArgs = mclear,
-        withArgs = mclear
-    )
-
-    addHelp(
         name = "mget",
         shortInfo = "Gets Visor console memory variable.",
         longInfo = Seq(
@@ -641,24 +604,16 @@ object visor extends VisorTag {
       * Fills gap in Visor console memory variable.
       */
     def mcompact() {
-        if (ignite == null)
-            NA
-        else {
-            clearNamespace("n")
+        var elements = Array("e", "a", "c", "n", "t", "s")
+        for (element <- elements){
+            val r = mem.filter { case (k, _) => (element.contains(k.charAt(0)) && k != "nl" && k != "nr") }
 
-            ignite.cluster.nodes().foreach(n => {
-                setVar(nid8(n), "n")
-
-                val ip = sortAddresses(n.addresses()).headOption
-
-                if (ip.isDefined)
-                    setVar(ip.get, "h")
-            })
-
-            val onHost = ignite.cluster.forHost(ignite.localNode())
-
-            Option(onHost.forServers().forOldest().node()).foreach(n => msetOpt("nl", nid8(n)))
-            Option(ignite.cluster.forOthers(onHost).forServers.forOldest().node()).foreach(n => msetOpt("nr", nid8(n)))
+            if (r.isEmpty)
+                NA
+            else {
+                clearNamespace(element)
+                r.toSeq.sortBy(_._1).foreach { case (k, v) => setVar(v, element) }
+            }
         }
     }
 
