@@ -91,7 +91,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1888,31 +1887,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
-     */
-    @SuppressWarnings("unchecked")
-    public <K1, V1> void addResult(Map<K1, V1> map,
-        KeyCacheObject key,
-        CacheObject val,
-        boolean skipVals,
-        boolean keepCacheObjects,
-        boolean deserializeBinary,
-        boolean cpy,
-        final GridCacheVersion ver) {
-        assert key != null;
-        assert val != null || skipVals;
-
-        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, ver, 0, 0, false);
-    }
-
-    /**
-     * @param map Map.
-     * @param key Key.
-     * @param val Value.
-     * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializeBinary Deserialize binary flag.
-     * @param cpy Copy flag.
-     * @param ver GridCacheVersion.
      * @param expireTime Entry expire time.
      * @param ttl Entry time to live.
      */
@@ -1930,41 +1904,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert key != null;
         assert val != null || skipVals;
 
-        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, ver, expireTime, ttl, true);
-    }
-
-    /**
-     * @param map Map.
-     * @param key Key.
-     * @param val Value.
-     * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializeBinary Deserialize binary flag.
-     * @param cpy Copy flag.
-     * @param ver GridCacheVersion.
-     * @param expireTime Entry expire time.
-     * @param ttl Entry time to live.
-     * @param expire If <tt>true</tt> T3 will be created with {@link GridCacheExpiration}.
-     */
-    @SuppressWarnings("unchecked")
-    private <K1, V1> void addResult(Map<K1, V1> map,
-        KeyCacheObject key,
-        CacheObject val,
-        boolean skipVals,
-        boolean keepCacheObjects,
-        boolean deserializeBinary,
-        boolean cpy,
-        final GridCacheVersion ver,
-        final long expireTime,
-        final long ttl,
-        final boolean expire) {
-        assert key != null;
-        assert val != null || skipVals;
-
-        GridCacheExpiration expiration = expireTime > 0 && ttl > 0
-            ? new GridCacheExpiration(expireTime, ttl)
-            : null;
-
         if (!keepCacheObjects) {
             Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy);
 
@@ -1973,39 +1912,30 @@ public class GridCacheContext<K, V> implements Externalizable {
             assert key0 != null : key;
             assert val0 != null : val;
 
-            V1 v = createValue(ver, expire, expiration, val0);
+            V1 v = createValue(ver, expireTime, ttl, val0);
 
             map.put((K1)key0, v);
         }
         else {
             Object val0 = skipVals ? true : val;
 
-            V1 v = createValue(ver, expire, expiration, val0);
+            V1 v = createValue(ver, expireTime, ttl, val0);
 
             map.put((K1)key, v);
         }
     }
 
-    /**
-     * @param ver Version.
-     * @param expire If <tt>true</tt> T3 will be created with {@link GridCacheExpiration}.
-     * @param expiration Expiration.
-     * @param val Value.
-     * @return Value, T2 or T3.
-     */
     @SuppressWarnings("unchecked")
     private <V1> V1 createValue(final GridCacheVersion ver,
-        final boolean expire,
-        final GridCacheExpiration expiration,
+        final long expireTime,
+        final long ttl,
         final Object val) {
         final V1 v;
 
         if (ver == null)
             v = (V1) val;
-        else if (expire)
-            v = (V1)new T3<>(val, ver, expiration);
         else
-            v = (V1)new T2<>(val, ver);
+            v = (V1)new GridCacheGetResult(ver, expireTime, ttl, val);
 
         return v;
     }
@@ -2026,7 +1956,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean keepCacheObjects,
         boolean deserializeBinary,
         boolean cpy) {
-        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null);
+        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null, 0, 0);
     }
 
     /**

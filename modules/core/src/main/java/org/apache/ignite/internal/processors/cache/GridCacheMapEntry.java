@@ -975,7 +975,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert !deferred;
 
                 // If return value is consistent, then done.
-                res = retVer ? new EntryGetResult(ret, resVer, false) : ret;
+                res = retVer ? new EntryGetResult(ret, resVer, false, rawExpireTime(), rawTtl()) : ret;
             }
             else if (reserveForLoad && !obsolete) {
                 assert !readThrough;
@@ -986,7 +986,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (reserve)
                     flags |= IS_EVICT_DISABLED;
 
-                res = new EntryGetResult(null, resVer, reserve);
+                res = new EntryGetResult(null, resVer, reserve, rawExpireTime(), rawTtl());
             }
         }
 
@@ -3621,7 +3621,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
+    @Override public synchronized EntryGetResult versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable ReaderArguments readerArgs)
@@ -3636,7 +3636,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 GridCacheMvcc mvcc = mvccExtras();
 
                 if (mvcc != null && !mvcc.isEmpty())
-                    return new T2<>(this.val, ver);
+                    return new EntryGetResult(this.val, ver, false, rawExpireTime(), rawTtl());
 
                 if (newVer == null)
                     newVer = cctx.versions().next();
@@ -3660,13 +3660,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // Version does not change for load ops.
                 update(val, expTime, ttl, newVer, true);
 
-                return new T2<>(val, newVer);
+                return new EntryGetResult(val, newVer, false, rawExpireTime(), rawTtl());
             }
 
             assert !evictionDisabled() : this;
         }
 
-        return new T2<>(this.val, ver);
+        return new EntryGetResult(this.val, ver, false, rawExpireTime(), rawTtl());
     }
 
     /**

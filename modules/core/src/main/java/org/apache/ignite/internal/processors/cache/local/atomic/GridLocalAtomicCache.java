@@ -542,7 +542,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     false,
                                     deserializeBinary,
                                     true,
-                                    ver);
+                                    ver,
+                                    res.expireTime(),
+                                    res.ttl());
                             }
                             else
                                 success = false;

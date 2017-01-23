@@ -448,6 +448,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                     CacheObject v = null;
                     GridCacheVersion ver = null;
+                    long expireTime = 0;
+                    long ttl = 0;
 
                     if (needVer) {
                         EntryGetResult res = entry.innerGetVersioned(
@@ -467,6 +469,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         if (res != null) {
                             v = res.value();
                             ver = res.version();
+                            expireTime = res.expireTime();
+                            ttl = res.ttl();
                         }
                     }
                     else {
@@ -500,7 +504,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             keepCacheObjects,
                             deserializeBinary,
                             true,
-                            ver);
+                            ver,
+                            expireTime,
+                            ttl);
 
                         return true;
                     }
@@ -559,7 +565,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     keepCacheObjects,
                     deserializeBinary,
                     false,
-                    needVer ? info.version() : null);
+                    needVer ? info.version() : null,
+                    info.expireTime(),
+                    info.ttl());
             }
 
             return map;

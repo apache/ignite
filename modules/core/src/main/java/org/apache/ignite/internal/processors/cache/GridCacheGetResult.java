@@ -17,23 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
 /**
  * Entry expiration time holder.
  */
-public class GridCacheExpiration {
+public class GridCacheGetResult {
+    /** Entry version. */
+    private final GridCacheVersion ver;
+
     /** Entry expire time. */
     private final long expireTime;
 
     /** Entry time to live. */
     private final long ttl;
 
+    /** Entry value. */
+    private final Object val;
+
     /**
+     * @param ver Entry version.
      * @param expireTime Entry expire time.
      * @param ttl Entry time to live.
+     * @param val Value.
      */
-    public GridCacheExpiration(final long expireTime, final long ttl) {
+    public GridCacheGetResult(final GridCacheVersion ver, final long expireTime, final long ttl, final Object val) {
+        this.ver = ver;
         this.expireTime = expireTime;
         this.ttl = ttl;
+        this.val = val;
     }
 
     /**
@@ -48,5 +60,20 @@ public class GridCacheExpiration {
      */
     public long ttl() {
         return ttl;
+    }
+
+    /**
+     * @return Entry version.
+     */
+    public GridCacheVersion version() {
+        return ver;
+    }
+
+    /**
+     *
+     * @return Value.
+     */
+    public Object value() {
+        return val;
     }
 }

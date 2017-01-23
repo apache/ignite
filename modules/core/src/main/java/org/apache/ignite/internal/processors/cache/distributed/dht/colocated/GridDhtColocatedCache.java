@@ -483,6 +483,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                             CacheObject v = null;
                             GridCacheVersion ver = null;
+                            long expireTime = 0;
+                            long ttl = 0;
 
                             if (needVer) {
                                 EntryGetResult res = entry.innerGetVersioned(
@@ -502,6 +504,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 if (res != null) {
                                     v = res.value();
                                     ver = res.version();
+                                    expireTime = res.expireTime();
+                                    ttl = res.ttl();
                                 }
                             }
                             else {
@@ -540,7 +544,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     keepCacheObj,
                                     deserializeBinary,
                                     true,
-                                    ver);
+                                    ver,
+                                    expireTime,
+                                    ttl);
                             }
                         }
                         else

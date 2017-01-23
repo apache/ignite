@@ -32,14 +32,24 @@ public class EntryGetResult {
     /** */
     private final boolean reserved;
 
+    /** */
+    private final long expireTime;
+
+    /** */
+    private final long ttl;
+
     /**
      * @param val Value.
      * @param ver Version.
+     * @param expireTime Entry expire time.
+     * @param ttl Entry time to live.
      */
-    EntryGetResult(CacheObject val, GridCacheVersion ver, boolean reserved) {
+    EntryGetResult(CacheObject val, GridCacheVersion ver, boolean reserved, long expireTime, long ttl) {
         this.val = val;
         this.ver = ver;
         this.reserved = reserved;
+        this.expireTime = expireTime;
+        this.ttl = ttl;
     }
 
     /**
@@ -57,9 +67,23 @@ public class EntryGetResult {
     }
 
     /**
-     * @return Reserved flag,
+     * @return Reserved flag.
      */
     public boolean reserved() {
         return reserved;
+    }
+
+    /**
+     * @return Entry expire time.
+     */
+    public long expireTime() {
+        return expireTime;
+    }
+
+    /**
+     * @return Entry time to live.
+     */
+    public long ttl() {
+        return ttl;
     }
 }

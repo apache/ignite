@@ -1492,6 +1492,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             CacheObject v = null;
                             GridCacheVersion ver = null;
+                            long expireTime = 0;
+                            long ttl = 0;
 
                             if (needVer) {
                                 EntryGetResult res = entry.innerGetVersioned(
@@ -1511,6 +1513,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 if (res != null) {
                                     v = res.value();
                                     ver = res.version();
+                                    expireTime = res.expireTime();
+                                    ttl = res.ttl();
                                 }
                             }
                             else {
@@ -1538,7 +1542,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 success = false;
                             }
                             else
-                                ctx.addResult(locVals, key, v, skipVals, false, deserializeBinary, true, ver);
+                                ctx.addResult(locVals, key, v, skipVals, false, deserializeBinary, true,
+                                    ver, expireTime, ttl);
                         }
                         else
                             success = false;
