@@ -17,50 +17,20 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.IgniteAtomicLong;
-import org.apache.ignite.IgniteAtomicReference;
-import org.apache.ignite.IgniteAtomicSequence;
-import org.apache.ignite.IgniteAtomicStamped;
-import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteCountDownLatch;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.IgniteLock;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteScheduler;
-import org.apache.ignite.IgniteSemaphore;
-import org.apache.ignite.IgniteServices;
-import org.apache.ignite.IgniteSet;
-import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.PluginNotFoundException;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.ExecutorService;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Mocked Ignite implementation for IGFS tests.
@@ -201,6 +171,13 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMath math() {
         throwUnsupported();
 
         return null;
