@@ -103,6 +103,7 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param qry Query.
+     * @param alias Table alias used in Query.
      * @param params Query parameters.
      * @param type Query return type.
      * @param filter Space name and key filter.
@@ -110,7 +111,8 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String alias, Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter)
+        throws IgniteCheckedException;
 
     /**
      * Executes text query.
