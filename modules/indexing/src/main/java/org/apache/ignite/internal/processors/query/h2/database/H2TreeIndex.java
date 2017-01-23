@@ -217,7 +217,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public void destroy() {
         try {
-            if (!cctx.kernalContext().clientNode()) {
+            if (cctx.affinityNode()) {
                 tree.destroy();
 
                 cctx.offheap().dropRootPageForIndex(tree.getName());

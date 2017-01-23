@@ -452,23 +452,15 @@ public class GridDhtPartitionDemander {
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
             final ClusterNode node = e.getKey();
 
-            GridDhtPartitionDemandMessage d = e.getValue();
+            final GridDhtPartitionDemandMessage d = e.getValue();
 
-            fut.appendPartitions(node.id(), d.partitions()); //Future preparation.
-        }
+            final Collection<Integer> parts = d.partitions();
 
-        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            final ClusterNode node = e.getKey();
-
-            final CacheConfiguration cfg = cctx.config();
-
-            final Collection<Integer> parts = fut.remaining.get(node.id()).get2();
-
-            GridDhtPartitionDemandMessage d = e.getValue();
+            fut.appendPartitions(node.id(), parts);
 
             //Check remote node rebalancing API version.
             if (node.version().compareTo(GridDhtPreloader.REBALANCING_VER_2_SINCE) >= 0) {
-                U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
+                U.log(log, "Starting rebalancing [mode=" + cctx.config().getRebalanceMode() +
                     ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
                     ", topology=" + fut.topologyVersion() + ", updateSeq=" + fut.updateSeq + "]");
 
@@ -513,7 +505,7 @@ public class GridDhtPartitionDemander {
             }
             else {
                 U.log(log, "Starting rebalancing (old api) [cache=" + cctx.name() +
-                    ", mode=" + cfg.getRebalanceMode() +
+                    ", mode=" + cctx.config().getRebalanceMode() +
                     ", fromNode=" + node.id() +
                     ", partitionsCount=" + parts.size() +
                     ", topology=" + fut.topologyVersion() +
