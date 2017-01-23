@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -30,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
     internal class JavaCacheEntryEventFilter<TK, TV> : PlatformJavaObjectFactoryProxy, ICacheEntryEventFilter<TK, TV>
     {
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public bool Evaluate(ICacheEntryEvent<TK, TV> evt)
         {
             throw new InvalidOperationException(GetType() + " cannot be invoked directly.");

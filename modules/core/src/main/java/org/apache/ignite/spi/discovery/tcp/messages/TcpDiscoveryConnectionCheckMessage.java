@@ -50,6 +50,11 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
     }
 
     /** {@inheritDoc} */
+    @Override public boolean traceLogLevel() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // This method has been left empty intentionally to keep message size at min.
     }
