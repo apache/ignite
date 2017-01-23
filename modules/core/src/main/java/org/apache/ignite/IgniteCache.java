@@ -226,19 +226,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
-     * Delegates to {@link CacheStore#loadCache(IgniteBiInClosure,Object...)} method
-     * to load state from the underlying persistent storage. The loaded values
-     * will then be given to the optionally passed in predicate, and, if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all loaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
+     * Asynchronous version of the {@link #localLoadCache(IgniteBiPredicate, Object...)} method.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
@@ -281,23 +269,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
-     * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
-     * previously contained value for the given key, then this value is returned.
-     * In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} caches,
-     * the value will be loaded from the primary node, which in its turn may load the value
-     * from the swap storage, and consecutively, if it's not in swap,
-     * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Object)} method will be used.
-     * <p>
-     * If the returned value is not needed, method {@link #putIfAbsent(Object, Object)} should
-     * always be used instead of this one to avoid the overhead associated with returning of the
-     * previous value.
-     * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
+     * Asynchronous version of the {@link #getAndPutIfAbsent(Object, Object)} method.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -427,6 +399,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method does not participate in any transactions.
      *
      * @param key Entry key.
+     * @param peekModes Peek modes.
      * @return Peeked value, or {@code null} if not found.
      * @throws NullPointerException If key is {@code null}.
      */
@@ -457,9 +430,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't defined,
-     * only size of primary copies across all nodes will be returned. This behavior is identical to calling
-     * this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * Gets asynchronously the number of all entries cached across all nodes. By default,
+     * if {@code peekModes} value isn't defined, only size of primary copies across all nodes will be returned.
+     * This behavior is identical to calling this method with {@link CachePeekMode#PRIMARY} peek mode.
      * <p>
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
@@ -483,7 +456,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public long sizeLong(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached across all nodes as a long value. By default, if {@code peekModes} value
+     * Gets asynchronously the number of all entries cached across all nodes as a long value. By default, if {@code peekModes} value
      * isn't defined, only size of primary copies across all nodes will be returned. This behavior is identical to
      * calling this method with {@link CachePeekMode#PRIMARY} peek mode.
      * <p>
@@ -510,7 +483,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached in a partition as a long value. By default, if {@code peekModes} value
+     * Gets asynchronously the number of all entries cached in a partition as a long value. By default, if {@code peekModes} value
      * isn't defined, only size of primary copies across all nodes will be returned. This behavior is identical to
      * calling this method with {@link CachePeekMode#PRIMARY} peek mode.
      * <p>
@@ -569,6 +542,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         Object... args);
 
     /**
+     * Asynchronous version of the {@link #invokeAll(Set, EntryProcessor, Object...)} method.
+     *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
      * @return a Future representing pending completion of the operation. See more about future result
@@ -618,11 +593,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public CacheEntry<K, V> getEntry(K key);
 
     /**
-     * Gets an entry from the cache.
+     * Gets an entry from the cache asynchronously.
      * <p>
-     * If the cache is configured to use read-through, and get would return null
-     * because the entry is missing from the cache, the Cache's {@link CacheLoader}
-     * is called in an attempt to load the entry.
      *
      * @param key The key whose associated value is to be returned.
      * @return a Future representing pending completion of the operation.
@@ -682,13 +654,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys);
 
     /**
-     * Gets a collection of entries from the {@link Cache}.
+     * Gets a collection of entries from the {@link Cache} asynchronously.
      * <p>
-     * If the cache is configured read-through, and a get for a key would
-     * return null because an entry is missing from the cache, the Cache's
-     * {@link CacheLoader} is called in an attempt to load the entry. If an
-     * entry cannot be loaded for a given key, the key will not be present in
-     * the returned Collection.
      *
      * @param keys The keys whose associated values are to be returned.
      * @return a Future representing pending completion of the operation.
@@ -714,7 +681,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public Map<K, V> getAllOutTx(Set<? extends K> keys);
 
     /**
-     * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
+     * Gets values from cache asynchronously. Will bypass started transaction, if any, i.e. will not enlist entries
      * and will not lock any keys if pessimistic transaction is started by thread.
      *
      * @param keys The keys whose associated values are to be returned.
@@ -753,7 +720,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean containsKeys(Set<? extends K> keys);
 
     /**
-     * Determines if the {@link Cache} contains entries for the specified keys.
+     * Determines asynchronously if the {@link Cache} contains entries for the specified keys.
      *
      * @param keys Key whose presence in this cache is to be tested.
      * @return a Future representing pending completion of the operation.
@@ -1061,9 +1028,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void clearAll(Set<? extends K> keys);
 
     /**
-     * Clear entries from the cache and swap storage, without notifying listeners or
-     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
-     * and is not participating in a transaction.
+     * Asynchronous version of the {@link #clearAll(Set)}.
      *
      * @param keys Keys to clear.
      * @return a Future representing pending completion of the operation.
@@ -1151,7 +1116,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
+     * Invokes an {@link CacheEntryProcessor} asynchronously against the {@link javax.cache.Cache.Entry} specified by
      * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
      * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
@@ -1251,7 +1216,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Invokes an {@link CacheEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
+     * Invokes an {@link CacheEntryProcessor} asynchronously against the set of {@link javax.cache.Cache.Entry}s
      * specified by the set of keys.
      * <p>
      * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
