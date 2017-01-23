@@ -2969,7 +2969,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         cctx.cacheId(),
                         key,
                         val,
-                        GridCacheOperation.CREATE,
+                        val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
                         null,
                         ver,
                         expireTime,
