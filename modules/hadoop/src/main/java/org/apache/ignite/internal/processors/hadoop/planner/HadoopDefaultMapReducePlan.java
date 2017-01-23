@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.planner;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
