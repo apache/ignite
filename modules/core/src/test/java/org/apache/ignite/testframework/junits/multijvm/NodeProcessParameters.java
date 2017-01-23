@@ -16,8 +16,8 @@ public class NodeProcessParameters {
     public final Map<String, String> processEnv;
     public final List<String> jvmArguments;
 
-    public NodeProcessParameters(boolean uniqueWorkDir, boolean uniqueProcessDir, @Nullable Map<String, String> processEnv,
-        @Nullable List<String> jvmArguments) {
+    public NodeProcessParameters(boolean uniqueWorkDir, boolean uniqueProcessDir,
+        @Nullable Map<String, String> processEnv, @Nullable List<String> jvmArguments) {
         this.uniqueWorkDir = uniqueWorkDir;
         this.uniqueProcessDir = uniqueProcessDir;
         this.processEnv = processEnv;

@@ -993,7 +993,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(String name) {
-        if (!isRemoteJvm(name))
+        if (name.contains("secondary") || !isRemoteJvm(name))
             return (IgniteEx)G.ignite(name);
         else {
             if (isRemoteJvm())

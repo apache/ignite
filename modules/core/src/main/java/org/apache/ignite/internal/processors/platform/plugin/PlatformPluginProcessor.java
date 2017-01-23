@@ -36,11 +36,13 @@ public class PlatformPluginProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        ctx.platform().context().gateway().pluginProcessorStop(cancel);
+        // TODO
+        //ctx.platform().context().gateway().pluginProcessorStop(cancel);
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        ctx.platform().context().gateway().pluginProcessorIgniteStop(cancel);
+        // TODO
+        //ctx.platform().context().gateway().pluginProcessorIgniteStop(cancel);
     }
 }

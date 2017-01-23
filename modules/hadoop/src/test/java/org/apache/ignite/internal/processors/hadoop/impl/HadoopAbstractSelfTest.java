@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.File;
+import java.util.Collections;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,6 +30,7 @@ import org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -242,9 +244,9 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     protected boolean isRemoteJvm(String gridName) {
-        // Secondary Fs node should always be run in the test JVM:
-        if (gridName.toLowerCase().contains("secondary"))
-            return false;
+//        // Secondary Fs node should always be run in the test JVM:
+//        if (gridName.toLowerCase().contains("secondary"))
+//            return false;
 
         return super.isRemoteJvm(gridName);
     }
@@ -258,9 +260,13 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         if (cfg == null)
             cfg = optimize(getConfiguration(gridName));
 
+        System.out.println("############## Starting remote grid [" +gridName + "]");
+
         int gridIdx = getTestGridIndex(gridName);
 
-        new IgniteNodeProxyBase(cfg, log, grid(0), getRemoteNodeParameters(gridIdx));
+        IgniteEx node0 = grid(0);
+
+        new IgniteNodeProxyBase(cfg, log, node0, getRemoteNodeParameters(gridIdx));
 
         return null;
     }
@@ -274,7 +280,9 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     NodeProcessParameters getRemoteNodeParameters(int nodeIdx) {
         assert nodeIdx > 0;
 
-        return NodeProcessParameters.DEFAULT;
+        //return NodeProcessParameters.DEFAULT;
+        return new NodeProcessParameters(false, false, null,
+            Collections.singletonList("-DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true"));
     }
 
     /** {@inheritDoc} */

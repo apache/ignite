@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Test shared memory native loader.
  */
 public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
-
     /**
      * Test {@link IpcSharedMemoryNativeLoader#load()} in case, when native library path was
      * already loaded, but corrupted.
