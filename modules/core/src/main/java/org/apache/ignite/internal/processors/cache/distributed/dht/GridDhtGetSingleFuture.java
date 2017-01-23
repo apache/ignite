@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheExpiration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -345,7 +348,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
         }
 
-        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut;
+        IgniteInternalFuture<Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>>> fut;
 
         if (rdrFut == null || rdrFut.isDone()) {
             if (tx == null) {
@@ -381,7 +384,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                             return;
                         }
 
-                        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut0;
+                        IgniteInternalFuture<Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>>> fut0;
 
                         if (tx == null) {
                             fut0 = cache().getDhtAllAsync(
@@ -422,11 +425,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      * @return Listener for get future.
      */
-    @NotNull private IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>>>
+    @NotNull private IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>>>>
     createGetFutureListener() {
-        return new IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>>>() {
+        return new IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>>>>() {
             @Override public void apply(
-                IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut
+                IgniteInternalFuture<Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>>> fut
             ) {
                 onResult(fut);
             }
@@ -436,7 +439,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      * @param fut Completed future to finish this process with.
      */
-    private void onResult(IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut) {
+    private void onResult(IgniteInternalFuture<Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>>> fut) {
         assert fut.isDone();
 
         if (fut.error() != null)
@@ -455,11 +458,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param map Map to convert.
      * @return List of infos.
      */
-    private GridCacheEntryInfo toEntryInfo(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+    private GridCacheEntryInfo toEntryInfo(Map<KeyCacheObject, T3<CacheObject, GridCacheVersion, GridCacheExpiration>> map) {
         if (map.isEmpty())
             return null;
 
-        T2<CacheObject, GridCacheVersion> val = map.get(key);
+        T3<CacheObject, GridCacheVersion, GridCacheExpiration> val = map.get(key);
 
         assert val != null;
 
@@ -469,6 +472,13 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         info.key(key);
         info.value(skipVals ? null : val.get1());
         info.version(val.get2());
+
+        final GridCacheExpiration expiration = val.get3();
+
+        if (expiration != null) {
+            info.expireTime(expiration.expireTime());
+            info.ttl(expiration.ttl());
+        }
 
         return info;
     }

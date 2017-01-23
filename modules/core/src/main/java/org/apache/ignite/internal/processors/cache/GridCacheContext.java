@@ -91,6 +91,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -1899,21 +1901,113 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert key != null;
         assert val != null || skipVals;
 
-        if (!keepCacheObjects) {
-            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
+        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, ver, 0, 0, false);
+    }
 
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
+    /**
+     * @param map Map.
+     * @param key Key.
+     * @param val Value.
+     * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param cpy Copy flag.
+     * @param ver GridCacheVersion.
+     * @param expireTime Entry expire time.
+     * @param ttl Entry time to live.
+     */
+    @SuppressWarnings("unchecked")
+    public <K1, V1> void addResult(Map<K1, V1> map,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean skipVals,
+        boolean keepCacheObjects,
+        boolean deserializeBinary,
+        boolean cpy,
+        final GridCacheVersion ver,
+        final long expireTime,
+        final long ttl) {
+        assert key != null;
+        assert val != null || skipVals;
+
+        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, ver, expireTime, ttl, true);
+    }
+
+    /**
+     * @param map Map.
+     * @param key Key.
+     * @param val Value.
+     * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param cpy Copy flag.
+     * @param ver GridCacheVersion.
+     * @param expireTime Entry expire time.
+     * @param ttl Entry time to live.
+     * @param expire If <tt>true</tt> T3 will be created with {@link GridCacheExpiration}.
+     */
+    @SuppressWarnings("unchecked")
+    private <K1, V1> void addResult(Map<K1, V1> map,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean skipVals,
+        boolean keepCacheObjects,
+        boolean deserializeBinary,
+        boolean cpy,
+        final GridCacheVersion ver,
+        final long expireTime,
+        final long ttl,
+        final boolean expire) {
+        assert key != null;
+        assert val != null || skipVals;
+
+        GridCacheExpiration expiration = expireTime > 0 && ttl > 0
+            ? new GridCacheExpiration(expireTime, ttl)
+            : null;
+
+        if (!keepCacheObjects) {
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy);
+
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy);
 
             assert key0 != null : key;
             assert val0 != null : val;
 
-            map.put((K1)key0, ver != null ? (V1)new T2<>(val0, ver) : (V1)val0);
+            V1 v = createValue(ver, expire, expiration, val0);
+
+            map.put((K1)key0, v);
         }
+        else {
+            Object val0 = skipVals ? true : val;
+
+            V1 v = createValue(ver, expire, expiration, val0);
+
+            map.put((K1)key, v);
+        }
+    }
+
+    /**
+     * @param ver Version.
+     * @param expire If <tt>true</tt> T3 will be created with {@link GridCacheExpiration}.
+     * @param expiration Expiration.
+     * @param val Value.
+     * @return Value, T2 or T3.
+     */
+    @SuppressWarnings("unchecked")
+    private <V1> V1 createValue(final GridCacheVersion ver,
+        final boolean expire,
+        final GridCacheExpiration expiration,
+        final Object val) {
+        final V1 v;
+
+        if (ver == null)
+            v = (V1) val;
+        else if (expire)
+            v = (V1)new T3<>(val, ver, expiration);
         else
-            map.put((K1)key,
-                (V1)(ver != null ?
-                    (V1)new T2<>(skipVals ? true : val, ver) :
-                    skipVals ? true : val));
+            v = (V1)new T2<>(val, ver);
+
+        return v;
     }
 
     /**

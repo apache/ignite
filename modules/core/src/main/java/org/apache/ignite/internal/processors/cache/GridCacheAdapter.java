@@ -1944,7 +1944,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     keepCacheObjects,
                                     deserializeBinary,
                                     true,
-                                    needVer ? res.get2() : null);
+                                    needVer ? res.get2() : null,
+                                    entry.expireTime(),
+                                    entry.ttl());
 
                                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
                                     ctx.evicts().touch(entry, topVer);
@@ -2016,7 +2018,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         keepCacheObjects,
                                                         deserializeBinary,
                                                         false,
-                                                        needVer ? set ? verSet : ver : null);
+                                                        needVer ? set ? verSet : ver : null,
+                                                        entry.expireTime(),
+                                                        entry.ttl());
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&

@@ -3322,7 +3322,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * TODO: GG-4009: do we need to generate event and invalidate value?
+     * TODO: IGNITE-3500: do we need to generate event and invalidate value?
      *
      * @return {@code true} if expired.
      * @throws IgniteCheckedException In case of failure.
