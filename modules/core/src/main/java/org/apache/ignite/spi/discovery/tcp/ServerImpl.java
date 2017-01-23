@@ -100,6 +100,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState;
@@ -964,7 +965,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode,
-            spi.collectExchangeData(getLocalNodeId()));
+            spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId())));
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -1933,7 +1934,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 // Do not need this data for client reconnect.
-                addedMsg.oldNodesDiscoveryData(null);
+                if (addedMsg.gridDiscoveryData() != null)
+                    addedMsg.clearDiscoveryData();
             }
             else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
@@ -1943,44 +1945,25 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     msg = addFinishMsg;
 
-                    Map<UUID, Map<Integer, byte[]>> discoData = addFinishMsg.clientDiscoData();
+                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
 
-                    Set<UUID> replaced = null;
+                    Set<Integer> mrgdCmnData = new HashSet<>();
+                    Set<UUID> mrgdSpecData = new HashSet<>();
+
+                    boolean allMerged = false;
 
                     for (TcpDiscoveryAbstractMessage msg0 : msgs) {
+
                         if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                            Map<UUID, Map<Integer, byte[]>> existingDiscoData =
+                            DiscoveryDataPacket existingDiscoData =
                                 ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
 
-                            // Check if already stored message contains the same data to do not store copies multiple times.
-                            if (existingDiscoData != null) {
-                                for (Map.Entry<UUID, Map<Integer, byte[]>> e : discoData.entrySet()) {
-                                    UUID nodeId = e.getKey();
-
-                                    if (F.contains(replaced, nodeId))
-                                        continue;
-
-                                    Map<Integer, byte[]> existingData = existingDiscoData.get(e.getKey());
-
-                                    if (existingData != null && mapsEqual(e.getValue(), existingData)) {
-                                        e.setValue(existingData);
-
-                                        if (replaced == null)
-                                            replaced = new HashSet<>();
-
-                                        boolean add = replaced.add(nodeId);
-
-                                        assert add;
-
-                                        if (replaced.size() == discoData.size())
-                                            break;
-                                    }
-                                }
-
-                                if (replaced != null && replaced.size() == discoData.size())
-                                    break;
-                            }
+                            if (existingDiscoData != null)
+                                allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
                         }
+
+                        if (allMerged)
+                            break;
                     }
                 }
             }
@@ -2008,29 +1991,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
-        }
-
-        /**
-         * @param m1 Map 1.
-         * @param m2 Map 2.
-         * @return {@code True} if maps contain the same data.
-         */
-        private boolean mapsEqual(Map<Integer, byte[]> m1, Map<Integer, byte[]> m2) {
-            if (m1 == m2)
-                return true;
-
-            if (m1.size() == m2.size()) {
-                for (Map.Entry<Integer, byte[]> e : m1.entrySet()) {
-                    byte[] data = m2.get(e.getKey());
-
-                    if (!Arrays.equals(e.getValue(), data))
-                        return false;
-                }
-
-                return true;
-            }
-
-            return false;
         }
 
         /**
@@ -3748,8 +3708,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Internal order has been assigned to node: " + node);
 
+                DiscoveryDataPacket data = msg.gridDiscoveryData();
+
                 TcpDiscoveryNodeAddedMessage nodeAddedMsg = new TcpDiscoveryNodeAddedMessage(locNodeId,
-                    node, msg.discoveryData(), spi.gridStartTime);
+                    node, data, spi.gridStartTime);
 
                 nodeAddedMsg.client(msg.client());
 
@@ -3970,7 +3932,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         node.id());
 
                     if (node.isClient()) {
-                        addFinishMsg.clientDiscoData(msg.oldNodesDiscoveryData());
+                        addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
                     }
@@ -4100,12 +4062,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
+                    DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                    if (data != null)
-                        spi.onExchange(node.id(), node.id(), data, U.resolveClassLoader(spi.ignite().configuration()));
+                    if (dataPacket.hasJoiningNodeData())
+                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    msg.addDiscoveryData(locNodeId, spi.collectExchangeData(node.id()));
+                    spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
@@ -4116,8 +4078,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && locNodeId.equals(node.id())) {
-                // Discovery data.
-                Map<UUID, Map<Integer, byte[]>> dataMap;
+                DiscoveryDataPacket dataPacket;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -4194,7 +4155,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            dataMap = msg.oldNodesDiscoveryData();
+                            dataPacket = msg.gridDiscoveryData();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -4227,11 +4188,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 // Notify outside of synchronized block.
-                if (dataMap != null) {
-                    for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                        spi.onExchange(node.id(), entry.getKey(), entry.getValue(),
-                            U.resolveClassLoader(spi.ignite().configuration()));
-                }
+                if (dataPacket != null)
+                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
                 processMessageFailedNodes(msg);
             }

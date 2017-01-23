@@ -45,11 +45,13 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
@@ -72,6 +74,14 @@ namespace Apache.Ignite.Core.Tests
                                 <types>
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
+                                <typeConfigurations>
+                                    <binaryTypeConfiguration affinityKeyFieldName='affKeyFieldName' isEnum='true' keepDeserialized='True' typeName='typeName'>
+                                        <equalityComparer type='BinaryArrayEqualityComparer' />
+                                        <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper, Apache.Ignite.Core.Tests' />
+                                        <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' />
+                                        <serializer type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestSerializer, Apache.Ignite.Core.Tests' />
+                                    </binaryTypeConfiguration>
+                                </typeConfigurations>
                             </binaryConfiguration>
                             <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0' localAddress='192.168.1.1' localPort='6655'>
                                 <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
@@ -86,7 +96,7 @@ namespace Apache.Ignite.Core.Tests
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String'>    
                                             <fields>
-                                                <queryField name='length' fieldType='System.Int32' />
+                                                <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
                                             <aliases>
                                                 <queryAlias fullName='somefield.field' alias='shortField' />
@@ -119,6 +129,9 @@ namespace Apache.Ignite.Core.Tests
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
                             <swapSpaceSpi type='FileSwapSpaceSpi' baseDirectory='abcd' maximumSparsity='0.7' maximumWriteQueueSize='25' readStripesNumber='36' writeBufferSize='47' />
+                            <pluginConfigurations>
+                                <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
+                            </pluginConfigurations>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -159,6 +172,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(string), queryEntity.ValueType);
             Assert.AreEqual("length", queryEntity.Fields.Single().Name);
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
+            Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
             Assert.AreEqual(QueryIndexType.Geospatial, queryEntity.Indexes.Single().IndexType);
@@ -214,6 +228,20 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(25, swap.MaximumWriteQueueSize);
             Assert.AreEqual(36, swap.ReadStripesNumber);
             Assert.AreEqual(47, swap.WriteBufferSize);
+
+            var binType = cfg.BinaryConfiguration.TypeConfigurations.Single();
+            Assert.AreEqual("typeName", binType.TypeName);
+            Assert.AreEqual("affKeyFieldName", binType.AffinityKeyFieldName);
+            Assert.IsTrue(binType.IsEnum);
+            Assert.AreEqual(true, binType.KeepDeserialized);
+            Assert.IsInstanceOf<BinaryArrayEqualityComparer>(binType.EqualityComparer);
+            Assert.IsInstanceOf<IdMapper>(binType.IdMapper);
+            Assert.IsInstanceOf<NameMapper>(binType.NameMapper);
+            Assert.IsInstanceOf<TestSerializer>(binType.Serializer);
+
+            var plugins = cfg.PluginConfigurations;
+            Assert.IsNotNull(plugins);
+            Assert.IsNotNull(plugins.Cast<TestIgnitePluginConfiguration>().SingleOrDefault());
         }
 
         /// <summary>
@@ -258,6 +286,9 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var prop in type.GetProperties())
             {
+                if (!prop.CanWrite)
+                    continue;  // Read-only properties are not configured in XML.
+
                 var propType = prop.PropertyType;
 
                 var isCollection = propType.IsGenericType &&
@@ -334,12 +365,12 @@ namespace Apache.Ignite.Core.Tests
             };
 
             Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<igniteConfiguration gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+<igniteConfiguration clientMode=""true"" gridName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
   <cacheConfiguration>
-    <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+    <cacheConfiguration cacheMode=""Replicated"" name=""myCache"">
       <queryEntities>
-        <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
-        <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+        <queryEntity valueType=""System.Int32"" valueTypeName=""java.lang.Integer"" />
+        <queryEntity keyType=""System.Int32"" keyTypeName=""java.lang.Integer"" valueType=""System.String"" valueTypeName=""java.lang.String"" />
       </queryEntities>
     </cacheConfiguration>
   </cacheConfiguration>
@@ -364,12 +395,12 @@ namespace Apache.Ignite.Core.Tests
             }
 
             Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<igCfg gridName=""myGrid"" clientMode=""true"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+<igCfg clientMode=""true"" gridName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
  <cacheConfiguration>
-  <cacheConfiguration name=""myCache"" cacheMode=""Replicated"">
+  <cacheConfiguration cacheMode=""Replicated"" name=""myCache"">
    <queryEntities>
-    <queryEntity valueTypeName=""java.lang.Integer"" valueType=""System.Int32"" />
-    <queryEntity keyTypeName=""java.lang.Integer"" keyType=""System.Int32"" valueTypeName=""java.lang.String"" valueType=""System.String"" />
+    <queryEntity valueType=""System.Int32"" valueTypeName=""java.lang.Integer"" />
+    <queryEntity keyType=""System.Int32"" keyTypeName=""java.lang.Integer"" valueType=""System.String"" valueTypeName=""java.lang.String"" />
    </queryEntities>
   </cacheConfiguration>
  </cacheConfiguration>
@@ -547,7 +578,8 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "typeName",
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
-                            Serializer = new TestSerializer()
+                            Serializer = new TestSerializer(),
+                            EqualityComparer = new BinaryArrayEqualityComparer()
                         },
                         new BinaryTypeConfiguration
                         {
@@ -555,7 +587,8 @@ namespace Apache.Ignite.Core.Tests
                             KeepDeserialized = false,
                             AffinityKeyFieldName = "affKeyFieldName",
                             TypeName = "typeName2",
-                            Serializer = new BinaryReflectiveSerializer()
+                            Serializer = new BinaryReflectiveSerializer(),
+                            EqualityComparer = new BinaryFieldEqualityComparer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
@@ -595,7 +628,7 @@ namespace Apache.Ignite.Core.Tests
                             {
                                 Fields = new[]
                                 {
-                                    new QueryField("field", typeof (int))
+                                    new QueryField("field", typeof (int)) { IsKeyField = true }
                                 },
                                 Indexes = new[]
                                 {
@@ -739,7 +772,8 @@ namespace Apache.Ignite.Core.Tests
                     WriteBufferSize = 66,
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
-                }
+                },
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
             };
         }
 

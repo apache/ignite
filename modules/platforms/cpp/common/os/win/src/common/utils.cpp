@@ -115,7 +115,7 @@ namespace ignite
 
                 return std::string(res0);
             }
-            else 
+            else
             {
                 found = false;
 
@@ -137,6 +137,18 @@ namespace ignite
 
                 return true;
             }
+        }
+
+        uint32_t ToBigEndian(uint32_t value)
+        {
+            // The answer is 42
+            static const int num = 42;
+            static const bool isLittleEndian = (*reinterpret_cast<const char*>(&num) == num);
+
+            if (isLittleEndian)
+                return ((value & 0xFF) << 24) | (((value >> 8) & 0xFF) << 16) | (((value >> 16) & 0xFF) << 8) | ((value >> 24) & 0xFF);
+
+            return value;
         }
     }
 }

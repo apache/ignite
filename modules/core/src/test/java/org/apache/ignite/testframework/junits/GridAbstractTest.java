@@ -79,6 +79,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -460,7 +461,17 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Test kernal context.
      */
     protected GridTestKernalContext newContext() throws IgniteCheckedException {
-        return new GridTestKernalContext(log());
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setClientMode(false);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                //No-op
+            }
+        });
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log(), cfg);
+        return ctx;
     }
 
     /**

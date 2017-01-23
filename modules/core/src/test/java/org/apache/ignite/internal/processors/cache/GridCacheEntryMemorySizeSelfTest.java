@@ -137,11 +137,15 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         Marshaller marsh = new OptimizedMarshaller();
 
         marsh.setContext(new MarshallerContext() {
-            @Override public boolean registerClass(int id, Class cls) {
+            @Override public boolean registerClassName(byte platformId, int typeId, String clsName) {
                 return true;
             }
 
-            @Override public Class getClass(int id, ClassLoader ldr) {
+            @Override public Class getClass(int typeId, ClassLoader ldr) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public String getClassName(byte platformId, int typeId) {
                 throw new UnsupportedOperationException();
             }
 
