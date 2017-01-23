@@ -36,12 +36,14 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -846,8 +849,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearCreateUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -971,8 +972,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearAccess() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -1012,6 +1011,44 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals(1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
+    }
+
+    /**
+     * Put entry to server node and check how its expires in client NearCache
+     * @throws Exception If failed.
+     */
+    public void testNearExpiresOnClient() throws Exception {
+        if(cacheMode() != PARTITIONED)
+            return;
+
+        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
+
+        nearCache = true;
+
+        startGrids();
+
+        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+
+        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
+
+        Ignite client = startGrid("client", clientCfg);
+
+        IgniteCache<Object, Object> cache = client.cache(null);
+
+        Integer key = 1;
+
+        //Put on server node
+        jcache(0).put(key, 1);
+
+        //Make entry cached in client NearCache
+        assertEquals(1, cache.get(key));
+
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
+
+        waitExpired(key);
+
+        //Check client NearCache.
+        assertNull(cache.localPeek(key,CachePeekMode.NEAR));
     }
 
     /**
