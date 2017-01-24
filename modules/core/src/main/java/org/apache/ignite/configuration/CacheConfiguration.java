@@ -2346,6 +2346,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
         }
 
+        //This map is needed to find duplicate fields that hide others in superclass
+        Map<String, Integer> ambiguityCheckMap = new HashMap<String, Integer>();
+        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            for (Field field : c.getDeclaredFields()) {
+                String fieldName = field.getName();
+                Integer counter = ambiguityCheckMap.get(fieldName);
+                if (counter == null)
+                    ambiguityCheckMap.put(fieldName, 1);
+                else
+                    ambiguityCheckMap.put(fieldName, counter + 1);
+            }
+        }
+
         for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             for (Field field : c.getDeclaredFields()) {
                 QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
@@ -2355,12 +2368,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     ClassProperty prop = new ClassProperty(field);
                     prop.parent(parent);
 
-                    try {
-                        type.addProperty(prop, key, true);
-                    } catch(CacheException dupEx) {
-                        prop.name('(' + c.getSimpleName() + ')' + field.getName());
-                        type.addProperty(prop, key, true);
-                    }
+                    //check if this name needs disambiguation
+                    if (ambiguityCheckMap.get(field.getName()) > 1)
+                        prop.longname();
+
+                    type.addProperty(prop, key, true);
 
                     processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
                 }
@@ -2584,11 +2596,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         void addProperty(ClassProperty prop, boolean key, boolean failOnDuplicate) {
             String name = prop.fullName();
 
-            if (failOnDuplicate) {
-                if (props.putIfAbsent(name, prop) != null)
-                    throw new CacheException("Property with name '" + name + "' already exists.");
-            } else
-                props.put(name, prop);
+            if (props.put(name, prop) != null && failOnDuplicate)
+                throw new CacheException("Property with name '" + name + "' already exists.");
 
             fields.put(name, prop.type());
 
@@ -2744,9 +2753,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         }
 
         /**
-         * @param name Name.
+         * Makes this property use unambiguous name
          */
-        public void name(String name) { this.name = name; }
+        public void longname() {
+            name = "${" + member.getDeclaringClass().getName() + '.' + member.getName() + "}";
+        }
 
         /**
          * @return Type.

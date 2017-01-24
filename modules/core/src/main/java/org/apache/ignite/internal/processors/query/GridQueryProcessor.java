@@ -40,6 +40,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -163,6 +165,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Default is @{true} */
     private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
+
+    /** Pattern used to split field path into field names */
+    private static final Pattern FIELD_PATH_PATTERN = Pattern.compile("(\\$\\{\\S+\\})|([^.]+)");
 
     /**
      * @param ctx Kernal context.
@@ -1645,7 +1650,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String, String> aliases,
         @Nullable Boolean isKeyField) throws IgniteCheckedException {
-        String[] path = pathStr.split("\\.");
+        String[] path = splitFieldPath(pathStr);
 
         BinaryProperty res = null;
 
@@ -1658,9 +1663,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             fullName.append(prop);
 
             String alias = aliases.get(fullName.toString());
+            String propName = prop.charAt(0)=='$' ? prop.substring(2, prop.length()-1): prop;
 
             // The key flag that we've found out is valid for the whole path.
-            res = new BinaryProperty(prop, res, resType, isKeyField, alias);
+            res = new BinaryProperty(propName, res, resType, isKeyField, alias);
         }
 
         return res;
@@ -1706,7 +1712,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
         Map<String,String> aliases, CacheObjectContext coCtx) {
-        String[] path = pathStr.split("\\.");
+        String[] path = splitFieldPath(pathStr);
 
         ClassProperty res = null;
 
@@ -1904,16 +1910,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cls0 = cls0.getSuperclass();
             }
 
-        if (prop.charAt(0) == '(') {
-            int sepPos = prop.indexOf(')', 1);
+        if (prop.charAt(0) == '$') {
+            String propName = prop.substring(2, prop.length()-1);
+            int sepPos = propName.lastIndexOf('.');
             if (sepPos > 0) {
-                String exactClsName = prop.substring(1, sepPos);
-                String fldName = prop.substring(sepPos + 1);
+                String exactClsName = propName.substring(0, sepPos);
+                String fldName = propName.substring(sepPos + 1);
 
                 try {
                     cls0 = cls;
                     while (cls0 != null) {
-                        if (cls0.getSimpleName().equals(exactClsName))
+                        if (cls0.getName().equals(exactClsName))
                             return new FieldAccessor(cls0.getDeclaredField(fldName));
                         cls0 = cls0.getSuperclass();
                     }
@@ -1960,6 +1967,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * Split field path into field names
+     * @param path Path to field
+     * @return Result
+     */
+    private static String[] splitFieldPath(String path) {
+        ArrayList<String> list = new ArrayList<>();
+        Matcher m = FIELD_PATH_PATTERN.matcher(path);
+        while (m.find())
+            if (m.group(1) == null)
+                list.add(m.group(2));
+            else
+                list.add(m.group(1));
+
+        String[] result = new String[list.size()];
+        return list.toArray(result);
     }
 
     /**
