@@ -340,6 +340,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     cctx.deploymentEnabled());
