@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -82,6 +84,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final String clsName;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private final String clause;
 
     /** */
@@ -430,7 +433,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET) && !GridQueryProcessor.isEnabled(cctx.config()))
+        if ((type != SCAN && type != SET && type != SPI) && !GridQueryProcessor.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
@@ -663,6 +666,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             this.part = part;
 
             nodes = fallbacks(cctx.discovery().topologyVersionEx());
+
+            if (F.isEmpty(nodes))
+                throw new ClusterTopologyException("Failed to execute the query " +
+                    "(all affinity nodes left the grid) [cache=" + cctx.name() +
+                    ", qry=" + qry +
+                    ", startTopVer=" + cctx.versions().last().topologyVersion() +
+                    ", curTopVer=" + qryMgr.queryTopologyVersion().topologyVersion() + ']');
 
             init();
         }

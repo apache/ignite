@@ -51,10 +51,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * is {@link #getConnectionsPerNode()} * 2.
      * <p>
      * Returns {@code false} if each connection of {@link #getConnectionsPerNode()}
-     * should be used for outgoing and incoming messages. In this case load NIO selectors load
-     * balancing of {@link GridNioServer} will be disabled.
+     * should be used for outgoing and incoming messages.
      * <p>
-     * Default is {@code true}.
+     * Default is {@code false}.
      *
      * @return {@code true} to use paired connections and {@code false} otherwise.
      * @see #getConnectionsPerNode()

@@ -53,6 +53,9 @@ include /app/helpers/jade/mixins.jade
                     +number('Long query timeout:', model + '.longQueryWarningTimeout', '"longQueryWarningTimeout"', 'true', '3000', '0',
                         'Timeout in milliseconds after which long query warning will be printed')
                 .settings-row
+                    +number('History size:', model + '.queryDetailMetricsSize', '"queryDetailMetricsSize"', 'true', '0', '0',
+                        'Size of queries detail metrics that will be stored in memory for monitoring purposes')
+                .settings-row
                     -var form = 'querySqlFunctionClasses';
                     -var sqlFunctionClasses = model + '.sqlFunctionClasses';
 

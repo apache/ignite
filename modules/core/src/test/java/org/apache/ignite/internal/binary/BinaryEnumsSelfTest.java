@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.marshaller.Marshaller;
@@ -386,6 +387,23 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         cacheBinary1.put(1, new BinaryObject[] { binaryOne, binaryTwo });
 
         validateSimpleArray(registered);
+    }
+
+    /**
+     * Check ability to resolve typeId from class name.
+     *
+     * @throws Exception If failed.
+     */
+    public void testZeroTypeId() throws Exception {
+        startUp(true);
+
+        final BinaryContext ctx =
+            ((CacheObjectBinaryProcessorImpl)((IgniteEx)node1).context().cacheObjects()).binaryContext();
+
+        final BinaryObject enumObj =
+            new BinaryEnumObjectImpl(ctx, 0, EnumType.class.getName(), EnumType.ONE.ordinal());
+
+        assert enumObj.type().isEnum();
     }
 
     /**
