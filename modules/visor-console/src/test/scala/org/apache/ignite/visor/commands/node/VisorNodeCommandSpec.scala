@@ -38,5 +38,15 @@ class VisorNodeCommandSpec extends VisorRuntimeBaseSpec(1) {
 
             visor.node("") // Arguments are ignored.
         }
+
+        visor.mclear()
+
+        it("should properly execute with valid node ID value post mclear") {
+            visor.node("-id8=@n1")
+        }
+
+        it("should list all variables") {
+            visor.mlist()
+        }
     }
 }
