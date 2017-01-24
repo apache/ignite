@@ -147,12 +147,15 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;
+        assert pageSize % 8 == 0;
 
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
+
+        assert sysPageSize % 8 == 0 : sysPageSize;
 
         // TODO configure concurrency level.
         rwLock = new OffheapReadWriteLock(128);
@@ -277,11 +280,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         Segment seg = segment(pageIdx);
 
         return seg.acquirePage(pageIdx, pageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -537,12 +535,15 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         /**
+         * @param pageIdx Page index.
          * @param pageId Page ID to pin.
          * @return Pinned page impl.
          */
         @SuppressWarnings("TypeMayBeWeakened")
         private PageNoStoreImpl acquirePage(int pageIdx, long pageId) {
             long absPtr = absolute(pageIdx);
+
+            assert absPtr % 8 == 0 : absPtr;
 
             if (trackAcquiredPages)
                 acquiredPages.incrementAndGet();
@@ -642,7 +643,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         /**
          * @return Relative pointer of the allocated page.
-         * @throws GridOffHeapOutOfMemoryException
+         * @throws GridOffHeapOutOfMemoryException If failed to allocate.
          * @param tag Tag to initialize RW lock.
          */
         private long allocateFreePage(int tag) throws GridOffHeapOutOfMemoryException {
