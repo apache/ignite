@@ -41,7 +41,7 @@ public class DefaultMathProvider implements MathProvider {
             case "dense.local.onheap":
                 if (grp != null)
                     throw new UnsupportedOperationException(
-                        String.format("Matrix flavor '%s' does not support clustering.", flavorNorm)
+                        String.format("Matrix flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
                     );
 
                 // TODO: ignoring arguments for now.
@@ -60,7 +60,7 @@ public class DefaultMathProvider implements MathProvider {
             case "dense.local.onheap":
                 if (grp != null)
                     throw new UnsupportedOperationException(
-                        String.format("Vector flavor '%s' does not support clustering.", flavorNorm)
+                        String.format("Vector flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
                     );
 
                 // TODO: ignoring arguments for now.
