@@ -240,9 +240,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * Execute task.
      *
      * @param task Task.
+     * @return Target.
      */
     private PlatformTarget executeNative0(final PlatformAbstractTask task) {
-        IgniteInternalFuture fut = computeForPlatform.executeAsync(task, null);
+        IgniteInternalFuture fut = computeForPlatform.executeAsync0(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             private static final long serialVersionUID = 0L;
@@ -266,7 +267,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * Execute task taking arguments from the given reader.
      *
      * @param reader Reader.
+     * @param async Execute asynchronously flag.
      * @return Task result.
+     * @throws IgniteCheckedException On error.
      */
     protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) throws IgniteCheckedException {
         String taskName = reader.readString();
