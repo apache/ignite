@@ -41,6 +41,7 @@ nobase_include_HEADERS = \
     ignite/impl/binary/binary_utils.h \
     ignite/impl/binary/binary_object_header.h \
     ignite/impl/binary/binary_object_impl.h \
+    ignite/impl/binary/binary_type_impl.h \
     ignite/impl/interop/interop_memory.h \
     ignite/impl/interop/interop.h \
     ignite/impl/interop/interop_stream_position_guard.h \

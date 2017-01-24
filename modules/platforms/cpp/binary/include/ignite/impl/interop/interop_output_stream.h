@@ -205,6 +205,14 @@ namespace ignite
                  * Synchronize data with underlying memory.
                  */
                 void Synchronize();
+
+                /**
+                 * Get underlying memory.
+                 *
+                 * @return Underlying memory.
+                 */
+                InteropMemory* GetMemory();
+
             private:
                 /** Memory. */
                 InteropMemory* mem; 
