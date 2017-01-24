@@ -432,6 +432,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             try {
                 CacheObject v = null;
                 GridCacheVersion ver = null;
+                long expireTime = 0;
+                long ttl = 0;
 
                 boolean isNear = entry != null;
 
@@ -455,6 +457,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         if (res != null) {
                             v = res.value();
                             ver = res.version();
+                            expireTime = res.expireTime();
+                            ttl = res.ttl();
                         }
                     }
                     else {
@@ -530,7 +534,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     old.put(key, addRdr);
                 }
                 else
-                    addResult(key, v, ver);
+                    addResult(key, v, ver, expireTime, ttl);
 
                 break;
             }
@@ -573,6 +577,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
 
                 CacheObject v = null;
+                long expireTime = 0;
+                long ttl = 0;
 
                 // If near cache does not have value, then we peek DHT cache.
                 if (dhtEntry != null) {
@@ -596,6 +602,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         if (res != null) {
                             v = res.value();
                             ver = res.version();
+                            expireTime = res.expireTime();
+                            ttl = res.ttl();
                         }
                     }
                     else {
@@ -623,7 +631,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                         cache().metrics0().onRead(true);
 
-                    addResult(key, v, ver);
+                    addResult(key, v, ver, expireTime, ttl);
 
                     return true;
                 }
@@ -660,11 +668,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param ver Version.
      */
     @SuppressWarnings("unchecked")
-    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
+    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver, long expireTime, long ttl) {
         if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
-                (V)new GridCacheGetResult(ver, 0, 0, skipVals ? true : v) :
+                (V)new GridCacheGetResult(ver, expireTime, ttl, skipVals ? true : v) :
                 (V)(skipVals ? true : v);
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
@@ -672,7 +680,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         else {
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
             V val0 = needVer ?
-                (V)new GridCacheGetResult(ver, 0, 0, !skipVals ?
+                (V)new GridCacheGetResult(ver, expireTime, ttl, !skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
                     (V)Boolean.TRUE) :
                 !skipVals ?

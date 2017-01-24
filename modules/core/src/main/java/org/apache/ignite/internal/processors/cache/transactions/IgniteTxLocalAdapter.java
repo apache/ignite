@@ -1674,6 +1674,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                 CacheObject val = null;
                                 GridCacheVersion readVer = null;
+                                long expireTime = 0;
+                                long ttl = 0;
 
                                 try {
                                     Object transformClo =
@@ -1699,6 +1701,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (res != null) {
                                             val = res.value();
                                             readVer = res.version();
+                                            expireTime = res.expireTime();
+                                            ttl = res.ttl();
                                         }
                                     }
                                     else{
@@ -1734,8 +1738,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             deserializeBinary,
                                             false,
                                             readVer,
-                                            cached.rawExpireTime(),
-                                            cached.rawTtl());
+                                            expireTime,
+                                            ttl);
 
                                         if (readVer != null)
                                             txEntry.entryReadVersion(readVer);
