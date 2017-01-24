@@ -120,11 +120,21 @@ namespace ignite
                 using namespace common;
 
                 typedef typename Conditional<
+                    // Checking if the BinaryType<T>::GetIdentityResolver declared
                     IsDeclaredBinaryTypeGetIdentityResolver<T>::value,
+
+                    // True case. Using user-provided resolver.
                     HashCodeGetterResolver<T>,
+
+                    // False case. Adding condition.
                     typename Conditional<
+                        // Checking if the BinaryType<T>::GetHashCode declared
                         IsDeclaredBinaryTypeGetHashCode<T>::value,
+
+                        // True case - using BinaryType<T>::GetHashCode().
                         HashCodeGetterHashCode<T>,
+
+                        // False case. Using default getter.
                         HashCodeGetterDefault<T> 
                     >::type
                 >::type HashCodeGetter;
