@@ -17,30 +17,173 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
+import java.util.List;
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.direct.HadoopDirectDataOutput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOutStream;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
 public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
+    private static final int BUFF_SIZE = 4 * 1024;
 
+    /**
+     * @throws IOException If failed.
+     */
     public void testStreams() throws IOException {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
         HadoopDataOutStream out = new HadoopDataOutStream(mem);
 
-        int size = 4 * 1024;
+        final long ptr = mem.allocate(BUFF_SIZE);
 
-        final long ptr = mem.allocate(size);
+        out.buffer().set(ptr, BUFF_SIZE);
 
-        out.buffer().set(ptr, size);
+        write(out);
 
+        HadoopDataInStream in = new HadoopDataInStream(mem);
+
+        in.buffer().set(ptr, out.buffer().pointer() - ptr);
+
+        checkRead(in);
+    }
+
+    /**
+     * @throws IOException If failed.
+     */
+    public void testDirectStreams() throws IOException {
+        HadoopDirectDataOutput out = new HadoopDirectDataOutput(BUFF_SIZE);
+
+        write(out);
+
+        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+
+        HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
+
+        checkRead(in);
+    }
+
+    /**
+     * @throws IOException If failed.
+     */
+    public void testReadline() throws IOException {
+        checkReadLine("String1\rString2\r\nString3\nString4");
+        checkReadLine("String1\rString2\r\nString3\nString4\r\n");
+        checkReadLine("String1\rString2\r\nString3\nString4\r");
+        checkReadLine("\nA\rB\r\nC\nD\n");
+        checkReadLine("\rA\rB\r\nC\nD\n");
+        checkReadLine("\r\nA\rB\r\nC\nD\n");
+        checkReadLine("\r\r\nA\r\r\nC\nD\n");
+        checkReadLine("\r\r\r\n\n\n");
+        checkReadLine("\r\n");
+        checkReadLine("\r");
+        checkReadLine("\n");
+    }
+
+    /**
+     * @param val String value.
+     * @throws IOException On error.
+     */
+    private void checkReadLine(String val) throws IOException {
+        List<String> expected = readLineByDataInputStream(val);
+        List<String> dataInp = readLineByHadoopDataInStream(val);
+        List<String> directDataInp = readLineByHadoopDirectDataInput(val);
+
+        assertEquals(expected, dataInp);
+        assertEquals(expected, directDataInp);
+    }
+
+    /**
+     * @param val String value.
+     * @return List of strings are returned by readLine().
+     * @throws IOException On error.
+     */
+    List<String> readLineByDataInputStream(String val) throws IOException {
+        ByteArrayOutputStream byteArrayOs = new ByteArrayOutputStream();
+
+        byteArrayOs.write(val.getBytes());
+
+        byteArrayOs.close();
+
+        try (DataInputStream in =  new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
+            return readLineStrings(in);
+        }
+    }
+
+    /**
+     * @param val String value.
+     * @return List of strings are returned by readLine().
+     * @throws IOException On error.
+     */
+    List<String> readLineByHadoopDataInStream(String val) throws IOException {
+        GridUnsafeMemory mem = new GridUnsafeMemory(0);
+
+        HadoopDataOutStream out = new HadoopDataOutStream(mem);
+
+        final long ptr = mem.allocate(BUFF_SIZE);
+
+        out.buffer().set(ptr, BUFF_SIZE);
+
+        out.write(val.getBytes());
+
+        HadoopDataInStream in = new HadoopDataInStream(mem);
+
+        in.buffer().set(ptr, out.buffer().pointer() - ptr);
+
+        return readLineStrings(in);
+    }
+
+    /**
+     * @param val String value.
+     * @return List of strings are returned by readLine().
+     * @throws IOException On error.
+     */
+    List<String> readLineByHadoopDirectDataInput(String val) throws IOException {
+
+        HadoopDirectDataOutput out = new HadoopDirectDataOutput(BUFF_SIZE);
+
+        out.write(val.getBytes());
+
+        byte [] inBuf = Arrays.copyOf(out.buffer(), out.position());
+
+        HadoopDirectDataInput in = new HadoopDirectDataInput(inBuf);
+
+        return readLineStrings(in);
+    }
+
+    /**
+     * @param in Data input.
+     * @return List of strings are returned by readLine().
+     * @throws IOException On error.
+     */
+    @NotNull private List<String> readLineStrings(DataInput in) throws IOException {
+        List<String> strs = new ArrayList<>();
+
+        for (String str = in.readLine(); str != null; str = in.readLine())
+            strs.add(str);
+
+        return strs;
+    }
+
+    /**
+     * @param out Data output.
+     * @throws IOException On error.
+     */
+    private void write(DataOutput out) throws IOException {
         out.writeBoolean(false);
         out.writeBoolean(true);
         out.writeBoolean(false);
@@ -84,20 +227,22 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
         out.writeLong(Long.MIN_VALUE);
         out.writeLong(0);
         out.writeLong(-1L);
-        out.write(new byte[]{1,2,3});
-        out.write(new byte[]{0,1,2,3}, 1, 2);
+        out.write(new byte[] {1, 2, 3});
+        out.write(new byte[] {0, 1, 2, 3}, 1, 2);
         out.writeUTF("mom washes rum");
+    }
 
-        HadoopDataInStream in = new HadoopDataInStream(mem);
-
-        in.buffer().set(ptr, out.buffer().pointer());
-
+    /**
+     * @param in Data input.
+     * @throws IOException On error.
+     */
+    private void checkRead(DataInput in) throws IOException {
         assertEquals(false, in.readBoolean());
         assertEquals(true, in.readBoolean());
         assertEquals(false, in.readBoolean());
-        assertEquals(17, in.read());
-        assertEquals(121, in.read());
-        assertEquals(0xfa, in.read());
+        assertEquals(17, in.readUnsignedByte());
+        assertEquals(121, in.readUnsignedByte());
+        assertEquals(0xfa, in.readUnsignedByte());
         assertEquals(17, in.readByte());
         assertEquals(121, in.readByte());
         assertEquals((byte)0xfa, in.readByte());
@@ -138,15 +283,15 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         byte[] b = new byte[3];
 
-        in.read(b);
+        in.readFully(b);
 
-        assertTrue(Arrays.equals(new byte[]{1,2,3}, b));
+        assertTrue(Arrays.equals(new byte[] {1, 2, 3}, b));
 
         b = new byte[4];
 
-        in.read(b, 1, 2);
+        in.readFully(b, 1, 2);
 
-        assertTrue(Arrays.equals(new byte[]{0, 1, 2, 0}, b));
+        assertTrue(Arrays.equals(new byte[] {0, 1, 2, 0}, b));
 
         assertEquals("mom washes rum", in.readUTF());
     }

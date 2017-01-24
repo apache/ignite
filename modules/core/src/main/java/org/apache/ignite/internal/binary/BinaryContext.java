@@ -118,6 +118,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+
 /**
  * Binary context.
  */
@@ -764,7 +766,7 @@ public class BinaryContext {
         final int typeId = mapper.typeId(clsName);
 
         try {
-            registered = marshCtx.registerClass(typeId, cls);
+            registered = marshCtx.registerClassName(JAVA_ID, typeId, cls.getName());
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to register class.", e);
@@ -807,7 +809,7 @@ public class BinaryContext {
         boolean registered;
 
         try {
-            registered = marshCtx.registerClass(desc.typeId(), desc.describedClass());
+            registered = marshCtx.registerClassName(JAVA_ID, desc.typeId(), desc.describedClass().getName());
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to register class.", e);
@@ -844,7 +846,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Serializer for class or {@code null} if none exists.
      */
-    private @Nullable BinarySerializer serializerForClass(Class cls) {
+    @Nullable private BinarySerializer serializerForClass(Class cls) {
         BinarySerializer serializer = defaultSerializer();
 
         if (serializer == null && canUseReflectiveSerializer(cls))

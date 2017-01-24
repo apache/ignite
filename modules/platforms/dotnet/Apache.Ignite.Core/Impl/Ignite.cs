@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -97,6 +98,9 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
+        /** Plugin processor. */
+        private readonly PluginProcessor _pluginProcessor;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -142,6 +146,8 @@ namespace Apache.Ignite.Core.Impl
             _clientReconnectTaskCompletionSource.SetResult(false);
 
             SetCompactFooter();
+
+            _pluginProcessor = new PluginProcessor(this);
         }
 
         /// <summary>
@@ -165,6 +171,8 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
+            PluginProcessor.OnIgniteStart();
+
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
         }
@@ -698,6 +706,14 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
+        /** <inheritdoc /> */
+        public T GetPlugin<T>(string name) where T : class
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return PluginProcessor.GetProvider(name).GetPlugin<T>();
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
@@ -817,6 +833,14 @@ namespace Apache.Ignite.Core.Impl
             var handler = ClientReconnected;
             if (handler != null)
                 handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
+        }
+
+        /// <summary>
+        /// Gets the plugin processor.
+        /// </summary>
+        internal PluginProcessor PluginProcessor
+        {
+            get { return _pluginProcessor; }
         }
     }
 }
