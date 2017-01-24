@@ -36,7 +36,7 @@ public class HadoopIgfs20FileSystemShmemPrimarySelfTest extends HadoopIgfs20File
 
     /** {@inheritDoc} */
     @Override protected String primaryFileSystemUriPath() {
-        return "igfs://igfs:" + getTestGridName(0) + "@/";
+        return "igfs://igfs@/";
     }
 
     /** {@inheritDoc} */

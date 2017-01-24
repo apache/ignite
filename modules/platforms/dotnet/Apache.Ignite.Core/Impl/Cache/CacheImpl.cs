@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Writes the load cache data to the writer.
         /// </summary>
-        private void WriteLoadCacheData(IBinaryRawWriter writer, ICacheEntryFilter<TK, TV> p, object[] args)
+        private void WriteLoadCacheData(BinaryWriter writer, ICacheEntryFilter<TK, TV> p, object[] args)
         {
             if (p != null)
             {
@@ -237,7 +237,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             else
                 writer.WriteObject<CacheEntryFilterHolder>(null);
 
-            writer.WriteArray(args);
+            if (args != null && args.Length > 0)
+            {
+                writer.WriteInt(args.Length);
+
+                foreach (var o in args)
+                    writer.WriteObject(o);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /** <inheritDoc /> */

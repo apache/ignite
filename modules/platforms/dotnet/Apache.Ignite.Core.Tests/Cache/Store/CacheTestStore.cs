@@ -66,6 +66,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Debug.Assert(_grid != null);
 
+            if (args == null || args.Length == 0)
+                return;
+
+            if (args.Length == 3 && args[0] == null)
+            {
+                // Testing arguments passing.
+                var key = args[1];
+                var val = args[2];
+
+                act(key, val);
+
+                return;
+            }
+
             if (LoadMultithreaded)
             {
                 int cnt = 0;
