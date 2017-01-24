@@ -187,6 +187,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
+    @IgniteAsyncSupported
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
@@ -223,6 +224,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
+    @IgniteAsyncSupported
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
@@ -266,6 +268,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
@@ -427,6 +430,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size across all nodes.
      * @throws CacheException On error.
      */
+    @IgniteAsyncSupported
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -453,6 +457,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size across all nodes.
      * @throws CacheException On error.
      */
+    @IgniteAsyncSupported
     public long sizeLong(CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -480,6 +485,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Partition cache size across all nodes.
      * @throws CacheException On error.
      */
+    @IgniteAsyncSupported
     public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -538,6 +544,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
 
@@ -561,6 +568,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public V get(K key);
 
     /**
@@ -590,6 +598,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     public CacheEntry<K, V> getEntry(K key);
 
     /**
@@ -616,6 +625,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
 
     /**
@@ -651,6 +661,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys);
 
     /**
@@ -678,6 +689,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The keys whose associated values are to be returned.
      * @return A map of entries that were found for the given keys.
      */
+    @IgniteAsyncSupported
     public Map<K, V> getAllOutTx(Set<? extends K> keys);
 
     /**
@@ -695,6 +707,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
     /**
@@ -717,6 +730,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     public boolean containsKeys(Set<? extends K> keys);
 
     /**
@@ -736,6 +750,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public void put(K key, V val);
 
     /**
@@ -756,6 +771,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public V getAndPut(K key, V val);
 
     /**
@@ -776,6 +792,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public void putAll(Map<? extends K, ? extends V> map);
 
     /**
@@ -795,6 +812,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public boolean putIfAbsent(K key, V val);
 
     /**
@@ -815,6 +833,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public boolean remove(K key);
 
     /**
@@ -834,6 +853,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public boolean remove(K key, V oldVal);
 
     /**
@@ -854,6 +874,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public V getAndRemove(K key);
 
     /**
@@ -873,6 +894,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public boolean replace(K key, V oldVal, V newVal);
 
     /**
@@ -894,6 +916,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public boolean replace(K key, V val);
 
     /**
@@ -914,6 +937,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public V getAndReplace(K key, V val);
 
     /**
@@ -934,6 +958,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public void removeAll(Set<? extends K> keys);
 
     /**
@@ -970,6 +995,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see #clear()
      * @see CacheWriter#deleteAll
      */
+    @IgniteAsyncSupported
     @Override public void removeAll();
 
     /**
@@ -984,6 +1010,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<Void> removeAllAsync();
 
     /** {@inheritDoc} */
+    @IgniteAsyncSupported
     @Override public void clear();
 
     /**
@@ -1002,6 +1029,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws IllegalStateException if the cache is {@link #isClosed()}
      * @throws CacheException        if there is a problem during the clear
      */
+    @IgniteAsyncSupported
     public void clear(K key);
 
     /**
@@ -1025,6 +1053,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws IllegalStateException if the cache is {@link #isClosed()}
      * @throws CacheException        if there is a problem during the clear
      */
+    @IgniteAsyncSupported
     public void clearAll(Set<? extends K> keys);
 
     /**
@@ -1069,6 +1098,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
@@ -1113,6 +1143,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      * @see CacheEntryProcessor
      */
+    @IgniteAsyncSupported
     public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
@@ -1152,6 +1183,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      */
+    @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
@@ -1212,6 +1244,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      * @see CacheEntryProcessor
      */
+    @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
