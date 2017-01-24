@@ -887,8 +887,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 else
                 {
-                    // Unregistered enum, write as serializable
-                    Write(new SerializableObjectHolder(val));
+                    // Unregistered enum, write with object type id.
+                    _stream.WriteByte(BinaryUtils.TypeEnum);
+                    _stream.WriteInt(BinaryUtils.ObjTypeId);
+                    _stream.WriteInt(TypeCaster<int>.Cast(val));
                 }
             }
         }
