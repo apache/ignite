@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -526,6 +527,15 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
+    /** Returns true for system properties only avoiding sending sensitive information. */
+    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
+        @Override public boolean apply(final Map.Entry<String, String> entry) {
+            final String key = entry.getKey();
+
+            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
+        }
+    };
+
     /**
      * Enforces singleton.
      */
@@ -698,5 +708,27 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
+    }
+
+    /**
+     * Does the same as {@link #snapshot()} but filters out
+     * possible sensitive user data.
+     *
+     * @return Snapshot of system properties.
+     */
+    @SuppressWarnings("unchecked")
+    public static Properties safeSnapshot() {
+        final Properties props = snapshot();
+
+        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            final Map.Entry entry = iter.next();
+
+            if (!PROPS_FILTER.apply(entry))
+                iter.remove();
+        }
+
+        return props;
     }
 }
