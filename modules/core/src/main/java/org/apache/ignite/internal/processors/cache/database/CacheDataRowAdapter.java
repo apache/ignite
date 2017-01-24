@@ -76,10 +76,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * Read row from data pages.
      *
      * @param cctx Cache context.
-     * @param keyOnly {@code true} If need to read only key object.
+     * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
+    public final void initFromLink(GridCacheContext<?, ?> cctx, RowData rowData) throws IgniteCheckedException {
         assert cctx != null : "cctx";
         assert link != 0 : "link";
         assert key == null : "key";
@@ -110,7 +110,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     if (first) {
                         if (nextLink == 0) {
                             // Fast path for a single page row.
-                            readFullRow(coctx, pageAddr + data.offset(), keyOnly);
+                            readFullRow(coctx, pageAddr + data.offset(), rowData);
 
                             return;
                         }
@@ -122,6 +122,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     buf.position(data.offset());
                     buf.limit(data.offset() + data.payloadSize());
+
+                    boolean keyOnly = rowData == RowData.KEY_ONLY;
 
                     incomplete = readFragment(coctx, buf, keyOnly, incomplete);
 
@@ -191,36 +193,37 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /**
      * @param coctx Cache object context.
      * @param addr Address.
-     * @param keyOnly {@code true} If need to read only key object.
+     * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    private void readFullRow(CacheObjectContext coctx, long addr, boolean keyOnly) throws IgniteCheckedException {
+    private void readFullRow(CacheObjectContext coctx, long addr, RowData rowData) throws IgniteCheckedException {
         int off = 0;
 
         int len = PageUtils.getInt(addr, off);
+        off += 4;
+
+        if (rowData != RowData.NO_KEY) {
+            byte type = PageUtils.getByte(addr, off);
+            off++;
+
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
+            off += len;
+
+            key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
+
+            if (rowData == RowData.KEY_ONLY)
+                return;
+        }
+        else
+            off += len + 1;
+
+        len = PageUtils.getInt(addr, off);
         off += 4;
 
         byte type = PageUtils.getByte(addr, off);
         off++;
 
         byte[] bytes = PageUtils.getBytes(addr, off, len);
-        off += len;
-
-        key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
-
-        if (keyOnly) {
-            assert key != null: "key";
-
-            return;
-        }
-
-        len = PageUtils.getInt(addr, off);
-        off += 4;
-
-        type = PageUtils.getByte(addr, off);
-        off++;
-
-        bytes = PageUtils.getBytes(addr, off, len);
         off += len;
 
         val = coctx.processor().toCacheObject(coctx, type, bytes);
@@ -230,8 +233,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         off += CacheVersionIO.size(ver, false);
 
         expireTime = PageUtils.getLong(addr, off);
-
-        assert isReady(): "ready";
     }
 
     /**
@@ -391,6 +392,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
         return key;
     }
 
+    /**
+     * @param key Key.
+     */
+    public void key(KeyCacheObject key) {
+        assert key != null;
+
+        this.key = key;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject value() {
         assert val != null : "Value is not ready: " + this;
@@ -430,11 +440,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(CacheDataRowAdapter.class, this, "link", U.hexLong(link));
-    }
-
     /**
      * @param pageId Page ID.
      * @param cctx Cache context.
@@ -443,5 +448,24 @@ public class CacheDataRowAdapter implements CacheDataRow {
      */
     private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
         return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
+    }
+
+    /**
+     *
+     */
+    public enum RowData {
+        /** */
+        FULL,
+
+        /** */
+        KEY_ONLY,
+
+        /** */
+        NO_KEY
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheDataRowAdapter.class, this, "link", U.hexLong(link));
     }
 }

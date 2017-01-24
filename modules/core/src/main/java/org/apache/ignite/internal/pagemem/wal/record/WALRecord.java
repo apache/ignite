@@ -154,7 +154,10 @@ public abstract class WALRecord {
         PAGE_LIST_META_RESET_COUNT_RECORD,
 
         /** Switch segment record. */
-        SWITCH_SEGMENT_RECORD
+        SWITCH_SEGMENT_RECORD,
+
+        /** */
+        DATA_PAGE_UPDATE_RECORD
         ;
 
         /** */

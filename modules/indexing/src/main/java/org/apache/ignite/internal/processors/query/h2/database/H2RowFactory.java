@@ -59,7 +59,7 @@ public class H2RowFactory {
 
         final CacheDataRowAdapter rowBuilder = new CacheDataRowAdapter(link);
 
-        rowBuilder.initFromLink(cctx, false);
+        rowBuilder.initFromLink(cctx, CacheDataRowAdapter.RowData.FULL);
 
         GridH2Row row;
 

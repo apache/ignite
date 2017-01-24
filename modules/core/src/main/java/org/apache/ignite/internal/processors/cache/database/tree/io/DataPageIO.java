@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Data pages IO.
@@ -599,6 +600,39 @@ public class DataPageIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @param itemId Item ID.
+     * @param pageSize Page size.
+     * @param payload Row data.
+     * @param row Row.
+     * @param rowSize Row size.
+     * @return {@code True} if entry is not fragmented.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean updateRow(
+        final long pageAddr,
+        int itemId,
+        int pageSize,
+        @Nullable byte[] payload,
+        @Nullable CacheDataRow row,
+        final int rowSize) throws IgniteCheckedException {
+        assert checkIndex(itemId) : itemId;
+        assert row != null ^ payload != null;
+
+        final int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        if (isFragmented(pageAddr, dataOff))
+            return false;
+
+        if (row != null)
+            writeRowData(pageAddr, dataOff, rowSize, row, false);
+        else
+            writeRowData(pageAddr, dataOff, payload);
+
+        return true;
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
      * @param pageSize Page size.
      * @return Next link for fragmented entries or {@code 0} if none.
@@ -727,7 +761,7 @@ public class DataPageIO extends PageIO {
 
         int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
 
-        writeRowData(pageAddr, dataOff, rowSize, row);
+        writeRowData(pageAddr, dataOff, rowSize, row, true);
 
         int itemId = addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
 
@@ -948,11 +982,11 @@ public class DataPageIO extends PageIO {
 
     /**
      * @param row Row to set link to.
-     * @param buf Page buffer.
+     * @param pageAddr Page address.
      * @param itemId Item ID.
      */
-    private void setLink(CacheDataRow row, long buf, int itemId) {
-        row.link(PageIdUtils.link(getPageId(buf), itemId));
+    private void setLink(CacheDataRow row, long pageAddr, int itemId) {
+        row.link(PageIdUtils.link(getPageId(pageAddr), itemId));
     }
 
     /**
@@ -1252,20 +1286,27 @@ public class DataPageIO extends PageIO {
      * @param dataOff Data offset.
      * @param payloadSize Payload size.
      * @param row Data row.
+     * @param newRow {@code False} if existing cache entry is updated, in this case skip key data write.
      * @throws IgniteCheckedException If failed.
      */
     private void writeRowData(
         long pageAddr,
         int dataOff,
         int payloadSize,
-        CacheDataRow row
+        CacheDataRow row,
+        boolean newRow
     ) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
 
-        PageUtils.putShort(addr, 0, (short)payloadSize);
-        addr += 2;
+        if (newRow) {
+            PageUtils.putShort(addr, 0, (short)payloadSize);
+            addr += 2;
 
-        addr += row.key().putValue(addr);
+            addr += row.key().putValue(addr);
+        }
+        else
+            addr += (2 + row.key().valueBytesLength(null));
+
         addr += row.value().putValue(addr);
 
         CacheVersionIO.write(addr, row.version(), false);

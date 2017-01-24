@@ -349,7 +349,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Nullable @Override public final CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return unswap(needVal, true);
+        CacheDataRow row = unswap(needVal, true);
+
+        return row != null ? row.value() : null;
     }
 
     /**
@@ -361,7 +363,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable protected CacheObject unswap(boolean needVal, boolean checkExpire)
+    @Nullable protected CacheDataRow unswap(boolean needVal, boolean checkExpire)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean obsolete = false;
         boolean deferred = false;
@@ -385,7 +387,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         : 0;
 
                     if (delta >= 0)
-                        return val;
+                        return read;
                     else {
                         if (onExpired(this.val, null)) {
                             if (cctx.deferredDelete()) {
@@ -542,8 +544,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = this.val;
 
                 if (val == null) {
-                    if (isStartVersion())
-                        val = unswap(true, false);
+                    if (isStartVersion()) {
+                        unswap(true, false);
+
+                        val = this.val;
+                    }
                 }
 
                 if (val != null) {
@@ -668,7 +673,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     long expTime = CU.toExpireTime(ttl);
 
                     // Update indexes before actual write to entry.
-                    storeValue(ret, expTime, nextVer);
+                    storeValue(ret, expTime, nextVer, null);
 
                     update(ret, expTime, ttl, nextVer, true);
 
@@ -751,7 +756,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     // Update indexes.
                     if (ret != null) {
-                        storeValue(ret, expTime, nextVer);
+                        storeValue(ret, expTime, nextVer, null);
 
                         if (cctx.deferredDelete() && !isInternal() && !detached() && deletedUnlocked())
                             deletedUnlocked(false);
@@ -906,7 +911,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert val != null;
 
-            storeValue(val, expireTime, newVer);
+            storeValue(val, expireTime, newVer, null);
 
             if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
                 deletedUnlocked(false);
@@ -1025,7 +1030,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheLazyEntry entry0 = null;
 
-        Long updateCntr0;
+        long updateCntr0;
 
         boolean deferred;
 
@@ -1248,9 +1253,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             checkObsolete();
 
+            CacheDataRow oldRow = null;
+
             // Load and remove from swap if it is new.
             if (isNew())
-                unswap(retval, false);
+                oldRow = unswap(retval, false);
 
             old = val;
 
@@ -1284,7 +1291,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 old = cctx.kernalContext().cacheObjects().prepareForCache(old, cctx);
 
                 if (old != null)
-                    storeValue(old, expireTime, ver);
+                    storeValue(old, expireTime, ver, oldRow);
                 else
                     removeValue();
 
@@ -1429,7 +1436,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().put(null, key, updated, ver);
 
-                storeValue(updated, expireTime, ver);
+                storeValue(updated, expireTime, ver, oldRow);
 
                 assert ttl != CU.TTL_ZERO;
 
@@ -1593,9 +1600,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             checkObsolete();
 
+            CacheDataRow oldRow = null;
+
             // Load and remove from swap if it is new.
             if (isStartVersion())
-                unswap(retval, false);
+                oldRow = unswap(retval, false);
 
             // Prepare old value.
             oldVal = val;
@@ -1632,7 +1641,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (oldVal != null)
-                    storeValue(oldVal, initExpireTime, ver);
+                    storeValue(oldVal, initExpireTime, ver, oldRow);
                 // else nothing to do, real old value was null.
 
                 update(oldVal, initExpireTime, initTtl, ver, true);
@@ -2061,7 +2070,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
-                storeValue(updated, newExpireTime, newVer);
+                storeValue(updated, newExpireTime, newVer, oldRow);
 
                 update(updated, newExpireTime, newTtl, newVer, true);
 
@@ -2715,7 +2724,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        storeValue(val, expireTime, ver);
+        storeValue(val, expireTime, ver, null);
     }
 
     /**
@@ -2944,7 +2953,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                 if (val != null)
-                    storeValue(val, expTime, ver);
+                    storeValue(val, expTime, ver, null);
 
                 update(val, expTime, ttl, ver, true);
 
@@ -3013,7 +3022,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param cntr Updated partition counter.
      */
-    protected void onUpdateFinished(Long cntr) {
+    protected void onUpdateFinished(long cntr) {
         // No-op.
     }
 
@@ -3068,7 +3077,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean isNew = isStartVersion();
 
-        CacheObject val = isNew ? unswap(true, false) : this.val;
+        if (isNew)
+            unswap(true, false);
+
+        CacheObject val = this.val;
 
         return new GridCacheLazyPlainVersionedEntry<>(cctx,
             key,
@@ -3117,7 +3129,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                 if (val != null) {
-                    storeValue(val, expTime, newVer);
+                    storeValue(val, expTime, newVer, null);
 
                     if (deletedUnlocked())
                         deletedUnlocked(false);
@@ -3544,15 +3556,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param val Value.
      * @param expireTime Expire time.
      * @param ver New entry version.
+     * @param oldRow Old row if available.
      * @throws IgniteCheckedException If update failed.
      */
     protected void storeValue(@Nullable CacheObject val,
         long expireTime,
-        GridCacheVersion ver) throws IgniteCheckedException {
+        GridCacheVersion ver,
+        @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().update(key, val, ver, expireTime, partition(), localPartition());
+        cctx.offheap().update(key,
+            val,
+            ver,
+            expireTime,
+            partition(),
+            localPartition(),
+            oldRow);
     }
 
     /**
