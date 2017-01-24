@@ -27,6 +27,9 @@ public final class IOVersions<V extends PageIO> {
     /** */
     private final int type;
 
+    /** */
+    private final V latest;
+
     /**
      * @param vers Versions.
      */
@@ -37,6 +40,8 @@ public final class IOVersions<V extends PageIO> {
 
         this.vers = vers;
         this.type = vers[0].getType();
+
+        latest = vers[vers.length - 1];
 
         assert checkVersions();
     }
@@ -66,7 +71,7 @@ public final class IOVersions<V extends PageIO> {
      * @return Latest IO version.
      */
     public V latest() {
-        return forVersion(vers.length);
+        return latest;
     }
 
     /**
