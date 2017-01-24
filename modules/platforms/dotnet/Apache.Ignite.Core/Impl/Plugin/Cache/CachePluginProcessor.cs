@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Plugin.Cache
             if (iface == null)
             {
                 throw new IgniteException(string.Format("{0} does not implement {1}",
-                    providerType, typeof(IPluginProvider<>).MakeGenericType(cfgType)));
+                    providerType, typeof(ICachePluginProvider<>).MakeGenericType(cfgType)));
             }
 
             var pluginProvider = Activator.CreateInstance(providerType);

@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
-    using Apache.Ignite.Core.Plugin.Cache;
     using Apache.Ignite.Core.Tests.Plugin.Cache;
     using NUnit.Framework;
 
@@ -747,16 +746,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 return new ExpiryPolicy(null, null, null);
             }
-        }
-
-        /// <summary>
-        /// Test plugin config.
-        /// </summary>
-        [Serializable]
-        [CachePluginProviderType(typeof(CachePlugin))]
-        private class CachePluginConfiguration : ICachePluginConfiguration
-        {
-            // No-op.
         }
     }
 }
