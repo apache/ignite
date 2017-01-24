@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Plugin
     /// <see cref="IPluginProvider{T}"/> to instantiate.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public class PluginProviderTypeAttribute : Attribute
+    public sealed class PluginProviderTypeAttribute : Attribute
     {
         /** */
         private readonly Type _pluginProviderType;
