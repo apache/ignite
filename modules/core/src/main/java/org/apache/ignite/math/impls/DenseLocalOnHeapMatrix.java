@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import java.util.*;
 import java.util.function.*;
@@ -33,6 +34,9 @@ import java.util.function.*;
  * to keep the entire data set.
  */
 public class DenseLocalOnHeapMatrix implements Matrix {
+    /** */
+    private double[][] data;
+
     /**
      *
      */
@@ -45,8 +49,26 @@ public class DenseLocalOnHeapMatrix implements Matrix {
      * @param rows
      * @param cols
      */
+    private void init(int rows, int cols) {
+        data = new double[rows][cols];
+    }
+
+    /**
+     *
+     * @param mtx
+     * @param shallowCopy
+     */
+    private void init(double[][] mtx, boolean shallowCopy) {
+        data = shallowCopy ? mtx : mtx.clone();
+    }
+
+    /**
+     *
+     * @param rows
+     * @param cols
+     */
     public DenseLocalOnHeapMatrix(int rows, int cols) {
-        // TODO.
+        init(rows, cols);
     }
 
     /**
@@ -55,7 +77,21 @@ public class DenseLocalOnHeapMatrix implements Matrix {
      * @param shallowCopy
      */
     public DenseLocalOnHeapMatrix(double[][] mtx, boolean shallowCopy) {
-        // TODO.
+        init(mtx, shallowCopy);
+    }
+
+    /**
+     *
+     * @param args
+     */
+    public DenseLocalOnHeapMatrix(Map<String, Object> args) {
+        if (args.containsKey("rows") && args.containsKey("cols"))
+            init((int)args.get("rows"), (int)args.get("cols"));
+        else if (args.containsKey("mtx") && args.containsKey("shallowCopy")) {
+            init((double[][])args.get("mtx"), (boolean)args.get("shallowCopy"));
+        }
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     @Override

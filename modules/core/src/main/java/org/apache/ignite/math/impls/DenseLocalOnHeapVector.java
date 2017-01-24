@@ -20,7 +20,9 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import java.io.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -32,7 +34,40 @@ import java.util.function.*;
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
  * to keep the entire data set.
  */
-public class DenseLocalOnHeapVector implements Vector {
+public class DenseLocalOnHeapVector implements Vector, Externalizable {
+    private double[] data;
+
+    /**
+     *
+     * @param size Vector cardinality.
+     */
+    private void init(int size) {
+        data = new double[size];
+    }
+
+    /**
+     *
+     * @param arr
+     * @param shallowCopy
+     */
+    private void init(double[] arr, boolean shallowCopy) {
+        data = shallowCopy ? arr : arr.clone();
+    }
+
+    /**
+     * 
+     * @param args
+     */
+    public DenseLocalOnHeapVector(Map<String, Object> args) {
+        if (args.containsKey("size"))
+            init((int)args.get("size"));
+        else if (args.containsKey("arr") && args.containsKey("shallowCopy")) {
+            init((double[])args.get("arr"), (boolean)args.get("shallowCopy"));
+        }
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    }
+
     /**
      *
      */
@@ -45,7 +80,7 @@ public class DenseLocalOnHeapVector implements Vector {
      * @param size Vector cardinality.
      */
     public DenseLocalOnHeapVector(int size) {
-        // TODO.
+        init(size);
     }
 
     /**
@@ -54,7 +89,7 @@ public class DenseLocalOnHeapVector implements Vector {
      * @param shallowCopy
      */
     public DenseLocalOnHeapVector(double[] arr, boolean shallowCopy) {
-       // TODO.
+       init(arr, shallowCopy);
     }
 
     /**
@@ -288,5 +323,15 @@ public class DenseLocalOnHeapVector implements Vector {
     @Override
     public IgniteUuid guid() {
         return null; // TODO
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        // TODO
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // TODO
     }
 }
