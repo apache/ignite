@@ -108,9 +108,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Log. */
         private readonly ILogger _log;
 
-        /** Config. */
-        private IgniteConfiguration _igniteConfiguration;
-
         /** Error type: generic. */
         private const int ErrGeneric = 1;
 
@@ -140,14 +137,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Constructor.
         /// </summary>
         /// <param name="log">Logger.</param>
-        /// <param name="igniteConfiguration">Ignite configuration.</param>
-        public UnmanagedCallbacks(ILogger log, IgniteConfiguration igniteConfiguration)
+        public UnmanagedCallbacks(ILogger log)
         {
             Debug.Assert(log != null);
-            Debug.Assert(igniteConfiguration != null);
 
             _log = log;
-            _igniteConfiguration = igniteConfiguration;
 
             var cbs = new UnmanagedCallbackHandlers
             {
@@ -1252,7 +1246,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var cachePluginCfg = reader.ReadObject<ICachePluginConfiguration>();
                 var providerProxy = CachePluginProcessor.CreateProviderProxy(cachePluginCfg);
 
-                var igniteCfg = new IgniteConfiguration(reader, _igniteConfiguration);
+                var igniteCfg = new IgniteConfiguration(reader, _ignite.Configuration);
                 var cacheCfg = new CacheConfiguration(reader);
 
                 providerProxy.Start(igniteCfg, cacheCfg, _ignite);
