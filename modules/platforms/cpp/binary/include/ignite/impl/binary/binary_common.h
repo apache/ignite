@@ -59,9 +59,6 @@ namespace ignite
             /** Header offset: Schema or Raw Offset. */
             const int32_t IGNITE_OFFSET_SCHEMA_OR_RAW_OFF = 20;
 
-            /** Header offset: Object data. */
-            const int32_t IGNITE_OFFSET_DATA = 24;
-
             /** Full header length. */
             const int32_t IGNITE_DFLT_HDR_LEN = 24;
 

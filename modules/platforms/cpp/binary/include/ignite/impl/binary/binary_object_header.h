@@ -65,6 +65,9 @@ namespace ignite
             class IGNITE_IMPORT_EXPORT BinaryObjectHeader
             {
             public:
+                // Header size in bytes.
+                enum { SIZE = sizeof(BinaryObjectHeaderLayout) };
+
                 /**
                  * Create from InteropMemory instance.
                  * @throw IgniteError if the memory at the specified offset
@@ -233,7 +236,7 @@ namespace ignite
                  */
                 int32_t GetDataLength() const
                 {
-                    return GetFooterOffset() - sizeof(BinaryObjectHeaderLayout);
+                    return GetFooterOffset() - SIZE;
                 }
 
             private:

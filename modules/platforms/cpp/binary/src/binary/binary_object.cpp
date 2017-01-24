@@ -39,7 +39,7 @@ namespace ignite
             // Creating header here to validate object header layout.
             BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
 
-            return mem.Data() + start + impl::binary::IGNITE_OFFSET_DATA;
+            return mem.Data() + start + BinaryObjectHeader::SIZE;
         }
 
         int32_t BinaryObject::GetLength() const

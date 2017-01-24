@@ -27,11 +27,11 @@ namespace ignite
         {
             BinaryObjectHeader BinaryObjectHeader::FromMemory(interop::InteropMemory& mem, int32_t offset)
             {
-                if ((mem.Length() - offset) < IGNITE_OFFSET_DATA)
+                if ((mem.Length() - offset) < SIZE)
                 {
                     IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
                         "Not enough data in the binary object", "memPtr", mem.PointerLong(),
-                        "len", mem.Length(), "headerLen", IGNITE_OFFSET_DATA);
+                        "len", mem.Length(), "headerLen", SIZE);
                 }
 
                 BinaryObjectHeader hdr(mem.Data() + offset);
