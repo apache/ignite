@@ -20,11 +20,7 @@
 
 #include <stdint.h>
 
-//#include "ignite/common/utils.h"
-
-//#include "ignite/guid.h"
-//#include "ignite/date.h"
-//#include "ignite/timestamp.h"
+#include <ignite/common/utils.h>
 
 #include <ignite/binary/binary_type.h>
 #include <ignite/binary/binary_object.h>
@@ -64,6 +60,10 @@ namespace ignite
             IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetHashCode, void(*)(const T&));
             IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetIdentityResolver, ignite::Reference<ignite::binary::BinaryIdentityResolver>(*)());
 
+            /**
+             * This type is used to get hash code for binary types which have not
+             * GetHashCode nor GetIdentityResolver methods defined.
+             */
             template<typename T>
             struct HashCodeGetterDefault
             {
@@ -75,6 +75,10 @@ namespace ignite
                 }
             };
 
+            /**
+             * This type is used to get hash code for binary types which have not
+             * GetIdentityResolver method defined but have GetHashCode.
+             */
             template<typename T>
             struct HashCodeGetterHashCode
             {
@@ -86,6 +90,10 @@ namespace ignite
                 }
             };
 
+            /**
+             * This type is used to get hash code for binary types which have
+             * GetIdentityResolver method defined.
+             */
             template<typename T>
             struct HashCodeGetterResolver
             {
@@ -98,21 +106,19 @@ namespace ignite
                 }
             };
 
-            template<bool, typename T1, typename T2>
-            struct Conditional
-            {
-                typedef T1 type;
-            };
-
-            template<typename T1, typename T2>
-            struct Conditional<false, T1, T2>
-            {
-                typedef T2 type;
-            };
-
+            /**
+             * Get hash code for the specified object.
+             * Determines the best method to use based on user-defined methods.
+             *
+             * @param obj Object reference.
+             * @param binObj Binary representation reference.
+             * @return Hash code for the object.
+             */
             template<typename T>
             int32_t GetHashCode(const T& obj, const ignite::binary::BinaryObject& binObj)
             {
+                using namespace common;
+
                 typedef typename Conditional<
                     IsDeclaredBinaryTypeGetIdentityResolver<T>::value,
                     HashCodeGetterResolver<T>,

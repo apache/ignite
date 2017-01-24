@@ -374,6 +374,25 @@ namespace ignite
         Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
+        /**
+         * Meta-programming class.
+         * Defines T1 as ::type if the condition is true, otherwise
+         * defines T2 as ::type.
+         */
+        template<bool, typename T1, typename T2>
+        struct Conditional
+        {
+            typedef T1 type;
+        };
+
+        /**
+         * Specialization for the false case.
+         */
+        template<typename T1, typename T2>
+        struct Conditional<false, T1, T2>
+        {
+            typedef T2 type;
+        };
     }
 }
 
