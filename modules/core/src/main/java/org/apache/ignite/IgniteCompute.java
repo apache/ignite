@@ -28,6 +28,7 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -146,7 +147,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity run.
      * @throws IgniteException If job failed.
      */
-    public ComputeTaskFuture<Void> affinityRunAsync(@Nullable String cacheName, Object affKey, IgniteRunnable job)
+    public IgniteFuture<Void> affinityRunAsync(@Nullable String cacheName, Object affKey, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -176,7 +177,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity run.
      * @throws IgniteException If job failed.
      */
-    public ComputeTaskFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
+    public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
         IgniteRunnable job) throws IgniteException;
 
     /**
@@ -206,7 +207,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity run.
      * @throws IgniteException If job failed.
      */
-    public ComputeTaskFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
+    public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
         IgniteRunnable job) throws IgniteException;
 
     /**
@@ -234,7 +235,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
-    public <R> ComputeTaskFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey, IgniteCallable<R> job)
+    public <R> IgniteFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey, IgniteCallable<R> job)
         throws IgniteException;
 
     /**
@@ -265,7 +266,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
-    public <R> ComputeTaskFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
+    public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
         IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -296,7 +297,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
-    public <R> ComputeTaskFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
+    public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
         IgniteCallable<R> job) throws IgniteException;
 
     /**
@@ -401,7 +402,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the broadcast execution of the job.
      * @throws IgniteException If job failed.
      */
-    public ComputeTaskFuture<Void> broadcastAsync(IgniteRunnable job) throws IgniteException;
+    public IgniteFuture<Void> broadcastAsync(IgniteRunnable job) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in cluster group. Every participating node will return a
@@ -422,7 +423,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the broadcast execution of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R> ComputeTaskFuture<Collection<R>> broadcastAsync(IgniteCallable<R> job) throws IgniteException;
+    public <R> IgniteFuture<Collection<R>> broadcastAsync(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Broadcasts given closure job with passed in argument to all nodes in the cluster group.
@@ -447,7 +448,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the broadcast execution of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R, T> ComputeTaskFuture<Collection<R>> broadcastAsync(IgniteClosure<T, R> job, @Nullable T arg)
+    public <R, T> IgniteFuture<Collection<R>> broadcastAsync(IgniteClosure<T, R> job, @Nullable T arg)
         throws IgniteException;
 
     /**
@@ -466,7 +467,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public ComputeTaskFuture<Void> runAsync(IgniteRunnable job) throws IgniteException;
+    public IgniteFuture<Void> runAsync(IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes collection of jobs on grid nodes within the underlying cluster group.
@@ -485,7 +486,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public ComputeTaskFuture<Void> runAsync(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
+    public IgniteFuture<Void> runAsync(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
 
     /**
      * Executes provided job on a node within the underlying cluster group. The result of the
@@ -506,7 +507,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R> ComputeTaskFuture<R> callAsync(IgniteCallable<R> job) throws IgniteException;
+    public <R> IgniteFuture<R> callAsync(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within the underlying cluster group.
@@ -527,7 +528,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R> ComputeTaskFuture<Collection<R>> callAsync(Collection<? extends IgniteCallable<R>> jobs)
+    public <R> IgniteFuture<Collection<R>> callAsync(Collection<? extends IgniteCallable<R>> jobs)
         throws IgniteException;
 
     /**
@@ -552,7 +553,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future with reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
-    public <R1, R2> ComputeTaskFuture<R2> callAsync(Collection<? extends IgniteCallable<R1>> jobs,
+    public <R1, R2> IgniteFuture<R2> callAsync(Collection<? extends IgniteCallable<R1>> jobs,
         IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
@@ -578,7 +579,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public <R, T> ComputeTaskFuture<R> applyAsync(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
+    public <R, T> IgniteFuture<R> applyAsync(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
      * Executes provided closure job on nodes within the underlying cluster group. A new job is executed for
@@ -603,7 +604,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
-    public <T, R> ComputeTaskFuture<Collection<R>> applyAsync(IgniteClosure<T, R> job, Collection<? extends T> args)
+    public <T, R> IgniteFuture<Collection<R>> applyAsync(IgniteClosure<T, R> job, Collection<? extends T> args)
         throws IgniteException;
 
     /**
@@ -634,7 +635,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future with reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
-    public <R1, R2, T> ComputeTaskFuture<R2> applyAsync(IgniteClosure<T, R1> job, Collection<? extends T> args,
+    public <R1, R2, T> IgniteFuture<R2> applyAsync(IgniteClosure<T, R1> job, Collection<? extends T> args,
         IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**

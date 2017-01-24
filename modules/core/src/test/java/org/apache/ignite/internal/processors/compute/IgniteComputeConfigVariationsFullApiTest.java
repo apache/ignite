@@ -44,6 +44,7 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
@@ -305,7 +306,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 for (Object o : resultsAllNull)
                     assertNull("All results must be null", o);
 
-                ComputeTaskFuture<Collection<Object>> fut = ignite.compute()
+                IgniteFuture<Collection<Object>> fut = ignite.compute()
                     .broadcastAsync((IgniteClosure<Object, Object>)factory.create(), value(0));
 
                 checkResultsClassCount(gridCount() - clientsCount(), fut.get(), value(0).getClass());
@@ -351,7 +352,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 EchoCallable job = (EchoCallable)factory.create();
                 job.setArg(null);
 
-                final ComputeTaskFuture<Collection<Object>> futAllNull = ignite.compute()
+                final IgniteFuture<Collection<Object>> futAllNull = ignite.compute()
                     .broadcastAsync(job);
 
                 assertEquals("Result's size mismatch: job must be run on all server nodes",
@@ -361,7 +362,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     assertNull("All results must be null", o);
 
                 job.setArg(value(0));
-                ComputeTaskFuture<Collection<Object>> futNotNull = ignite.compute()
+                IgniteFuture<Collection<Object>> futNotNull = ignite.compute()
                     .broadcastAsync(job);
 
                 checkResultsClassCount(gridCount() - clientsCount(), futNotNull.get(), value(0).getClass());
@@ -393,7 +394,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 IgniteRunnable job = (IgniteRunnable)factory.create();
 
-                ComputeTaskFuture<?> fut = ignite.compute().broadcastAsync(job);
+                IgniteFuture<Void> fut = ignite.compute().broadcastAsync(job);
 
                 fut.get();
                 // All checks are inside the run() method of the job.
@@ -431,7 +432,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 IgniteRunnable job = (IgniteRunnable)factory.create();
 
-                ComputeTaskFuture<?> fut0 = ignite.compute().runAsync(job);
+                IgniteFuture<Void> fut0 = ignite.compute().runAsync(job);
 
                 fut0.get();
                 // All checks are inside the run() method of the job.
@@ -441,7 +442,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 for (int i = 0; i < MAX_JOB_COUNT; ++i)
                     jobs.add((IgniteRunnable)factory.create());
 
-                ComputeTaskFuture<?> fut1 = ignite.compute().runAsync(jobs);
+                IgniteFuture<Void> fut1 = ignite.compute().runAsync(jobs);
 
                 fut1.get();
                 // All checks are inside the run() method of the job.
@@ -457,7 +458,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 final IgniteCompute comp = ignite.compute();
 
-                Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+                Collection<IgniteFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     // value(i - 1): use negative argument of the value method to generate nullong value.
@@ -467,7 +468,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
 
-                for (ComputeTaskFuture<Object> future : futures)
+                for (IgniteFuture<Object> future : futures)
                     results.add(future.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
@@ -536,7 +537,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 IgniteClosure c = (IgniteClosure)factory.create();
 
                 // Use type casting to avoid ambiguous for apply(Callable, Object) vs apply(Callable, Collection<Object>).
-                ComputeTaskFuture<Collection<Object>> fut = ignite.compute().applyAsync(
+                IgniteFuture<Collection<Object>> fut = ignite.compute().applyAsync(
                     (IgniteClosure<TestObject, Object>)c,
                     (Collection<TestObject>)params);
 
@@ -594,7 +595,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     params.add(value(i - 1));
                 }
 
-                ComputeTaskFuture<Boolean> fut = ignite.compute()
+                IgniteFuture<Boolean> fut = ignite.compute()
                     .applyAsync((IgniteClosure<Object, Object>)factory.create(), params, new IgniteReducer<Object, Boolean>() {
 
                         private Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
@@ -624,7 +625,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 final IgniteCompute comp = ignite.compute();
 
-                Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+                Collection<IgniteFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
@@ -635,7 +636,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
-                for (ComputeTaskFuture<Object> future : futures)
+                for (IgniteFuture<Object> future : futures)
                     results.add(future.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
@@ -700,7 +701,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     jobs.add(job);
                 }
 
-                ComputeTaskFuture<Collection<Object>> fut = ignite.compute().callAsync(jobs);
+                IgniteFuture<Collection<Object>> fut = ignite.compute().callAsync(jobs);
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, fut.get(), value(0).getClass());
                 assertCollectionsEquals("Results value mismatch", createGoldenResults(), fut.get());
@@ -756,7 +757,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     jobs.add(job);
                 }
 
-                ComputeTaskFuture<Boolean> fut = ignite.compute().callAsync(jobs, new IgniteReducer<Object, Boolean>() {
+                IgniteFuture<Boolean> fut = ignite.compute().callAsync(jobs, new IgniteReducer<Object, Boolean>() {
                     private Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
 
                     @Override public boolean collect(@Nullable Object o) {
@@ -819,7 +820,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                     job.setArg(value(i - 1));
 
-                    ComputeTaskFuture<Object> fut = comp.affinityCallAsync("test", key(0), job);
+                    IgniteFuture<Object> fut = comp.affinityCallAsync("test", key(0), job);
 
                     results.add(fut.get());
                 }
@@ -875,7 +876,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                     job.setArg(value(i - 1));
 
-                    ComputeTaskFuture<Object> fut = comp.affinityCallAsync(Arrays.asList("test0", "test1"), key(0), job);
+                    IgniteFuture<Object> fut = comp.affinityCallAsync(Arrays.asList("test0", "test1"), key(0), job);
 
                     results.add(fut.get());
                 }
@@ -931,7 +932,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                     job.setArg(value(i - 1));
 
-                    ComputeTaskFuture fut = comp.affinityCallAsync(Arrays.asList("test0", "test1"), 0, job);
+                    IgniteFuture fut = comp.affinityCallAsync(Arrays.asList("test0", "test1"), 0, job);
 
                     results.add(fut.get());
                 }
@@ -974,7 +975,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     IgniteRunnable job = (IgniteRunnable)factory.create();
 
-                    ComputeTaskFuture<?> fut = comp.affinityRunAsync("test", key(0), job);
+                    IgniteFuture<Void> fut = comp.affinityRunAsync("test", key(0), job);
 
                     fut.get();
                 }
@@ -1016,7 +1017,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     IgniteRunnable job = (IgniteRunnable)factory.create();
 
-                    ComputeTaskFuture<?> fut = comp.affinityRunAsync(Arrays.asList("test0", "test1"), key(0), job);
+                    IgniteFuture<Void> fut = comp.affinityRunAsync(Arrays.asList("test0", "test1"), key(0), job);
 
                     fut.get();
                 }
@@ -1058,7 +1059,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     IgniteRunnable job = (IgniteRunnable)factory.create();
 
-                    ComputeTaskFuture<?> fut = comp.affinityRunAsync(Arrays.asList("test0", "test1"), 0, job);
+                    IgniteFuture<Void> fut = comp.affinityRunAsync(Arrays.asList("test0", "test1"), 0, job);
 
                     fut.get();
                 }
