@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Plugin.Cache
     /// When applied to <see cref="ICachePluginConfiguration"/>, defines the type of
     /// <see cref="ICachePluginProvider{T}"/> to instantiate.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
     public class CachePluginProviderTypeAttribute : Attribute
     {
         /** */

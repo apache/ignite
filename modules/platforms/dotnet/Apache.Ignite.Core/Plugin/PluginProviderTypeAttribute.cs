@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Plugin
     /// When applied to <see cref="IPluginConfiguration"/>, defines the type of
     /// <see cref="IPluginProvider{T}"/> to instantiate.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
     public class PluginProviderTypeAttribute : Attribute
     {
         /** */
