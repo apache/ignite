@@ -368,18 +368,18 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                     if (clsName == null)
                         throw new ClassNotFoundException(
-                                "Requesting mapping from grid failed for [platformId="
+                                "Requesting mapping from grid failed for [platformId: "
                                         + platformId
-                                        + ", typeId="
+                                        + ", typeId: "
                                         + typeId + "]");
 
                     return clsName;
                 }
                 else
                     throw new ClassNotFoundException(
-                            "Unknown pair [platformId= "
+                            "Unknown pair [platformId: "
                                     + platformId
-                                    + ", typeId="
+                                    + ", typeId: "
                                     + typeId + "]");
         }
 
