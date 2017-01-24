@@ -27,20 +27,19 @@
 
 #include <ignite/impl/interop/interop.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
+#include <ignite/impl/binary/binary_object_impl.h>
 
 namespace ignite
 {
     namespace binary
     {
         /**
-         * Binary object implementation.
+         * Binary object.
          *
          * This is a thin wrapper over the memory area that contains serialized
-         * binary object. Provides some methods that allow to access object's
-         * data without deserialization. Also provides method that allows
-         * deserialize object.
+         * binary object. Provides method that allows deserialize object.
          */
-        class IGNITE_IMPORT_EXPORT BinaryObject
+        class IGNITE_IMPORT_EXPORT BinaryObject : private impl::binary::BinaryObjectImpl
         {
         public:
             /// @cond INTERNAL
@@ -50,7 +49,11 @@ namespace ignite
              * @param mem Binary object memory.
              * @param start Object starting position in memory.
              */
-            BinaryObject(impl::interop::InteropMemory& mem, int32_t start);
+            BinaryObject(impl::interop::InteropMemory& mem, int32_t start) : 
+                BinaryObjectImpl(mem, start)
+            {
+                // No-op.
+            };
             /// @endcond
 
             /**
@@ -62,38 +65,11 @@ namespace ignite
             template<typename T>
             T Deserialize() const
             {
-                impl::interop::InteropInputStream stream(&mem);
-
-                stream.Position(start);
-                impl::binary::BinaryReaderImpl reader(&stream);
-
-                return reader.ReadObject<T>();
+                return impl::binary::BinaryObjectImpl::Deserialize<T>();
             }
-
-            /**
-             * Get object data.
-             * @throw IgniteError if the object is not in a valid state.
-             *
-             * @return Pointer to object data.
-             */
-            const int8_t* GetData() const;
-
-            /**
-             * Get object length.
-             * @throw IgniteError if the object is not in a valid state.
-             *
-             * @return Object length.
-             */
-            int32_t GetLength() const;
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(BinaryObject)
-
-            /** Underlying object memory. */
-            impl::interop::InteropMemory& mem;
-
-            /** Object starting position in memory. */
-            int32_t start;
         };
     }
 }

@@ -52,7 +52,6 @@ libignite_binary_la_SOURCES = \
     src/binary/binary_reader.cpp \
     src/binary/binary_type.cpp \
     src/binary/binary_raw_reader.cpp \
-    src/binary/binary_object.cpp \
     src/impl/binary/binary_type_manager.cpp \
     src/impl/binary/binary_utils.cpp \
     src/impl/binary/binary_reader_impl.cpp \
@@ -62,6 +61,7 @@ libignite_binary_la_SOURCES = \
     src/impl/binary/binary_schema.cpp \
     src/impl/binary/binary_type_snapshot.cpp \
     src/impl/binary/binary_object_header.cpp \
+    src/impl/binary/binary_object_impl.cpp \
     src/impl/interop/interop_memory.cpp \
     src/impl/interop/interop_output_stream.cpp \
     src/impl/interop/interop_input_stream.cpp

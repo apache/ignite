@@ -100,7 +100,7 @@ void CheckData(const T& obj)
     InteropUnpooledMemory mem(1024);
     FillMem<T>(mem, obj);
 
-    BinaryObject binObj(mem, 0);
+    BinaryObjectImpl binObj(mem, 0);
 
     BOOST_REQUIRE_EQUAL(binObj.GetLength(), objData.GetSize());
 

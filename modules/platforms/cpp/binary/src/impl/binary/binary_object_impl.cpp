@@ -15,38 +15,38 @@
  * limitations under the License.
  */
 
-#include <ignite/impl/binary/binary_common.h>
-#include <ignite/impl/binary/binary_utils.h>
 #include <ignite/impl/binary/binary_object_header.h>
-
-#include <ignite/binary/binary_object.h>
+#include <ignite/impl/binary/binary_object_impl.h>
 
 using namespace ignite::impl::binary;
 
 namespace ignite
 {
-    namespace binary
+    namespace impl
     {
-        BinaryObject::BinaryObject(impl::interop::InteropMemory& mem, int32_t start) :
-            mem(mem),
-            start(start)
+        namespace binary
         {
-            // No-op.
-        }
+            BinaryObjectImpl::BinaryObjectImpl(impl::interop::InteropMemory& mem, int32_t start) :
+                mem(mem),
+                start(start)
+            {
+                // No-op.
+            }
 
-        const int8_t* BinaryObject::GetData() const
-        {
-            // Creating header here to validate object header layout.
-            BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+            const int8_t* BinaryObjectImpl::GetData() const
+            {
+                // Creating header here to validate object header layout.
+                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
 
-            return mem.Data() + start + BinaryObjectHeader::SIZE;
-        }
+                return mem.Data() + start + BinaryObjectHeader::SIZE;
+            }
 
-        int32_t BinaryObject::GetLength() const
-        {
-            BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+            int32_t BinaryObjectImpl::GetLength() const
+            {
+                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
 
-            return header.GetDataLength();
+                return header.GetDataLength();
+            }
         }
     }
 }

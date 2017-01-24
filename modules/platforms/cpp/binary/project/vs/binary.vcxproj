@@ -189,6 +189,7 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_header.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_reader_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_schema.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h" />
@@ -205,13 +206,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_object.cpp" />
     <ClCompile Include="..\..\src\binary\binary_raw_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_type.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_object_header.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_object_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp" />
