@@ -18,10 +18,7 @@
 package org.apache.ignite.lang;
 
 /**
- * Allows to enable asynchronous mode on Ignite APIs.
- *
- * @deprecated since 2.0. Please use new specialized async method
- * e.g.
+ * Allows to enable asynchronous mode on Ignite APIs, e.g.
  * <pre>
  *     IgniteFuture f = cache.getAsync();
  * </pre>
@@ -31,6 +28,7 @@ package org.apache.ignite.lang;
  *     asyncCache.get(key);
  *     IgniteFuture fut = asyncCache.future();
  * </pre>
+ * @deprecated since 2.0. Please use specialized asynchronous methods.
  */
 @Deprecated
 public interface IgniteAsyncSupport {

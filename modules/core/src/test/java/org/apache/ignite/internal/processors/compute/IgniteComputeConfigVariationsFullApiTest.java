@@ -200,7 +200,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
-    public void testExecuteTaskClassAsunc() throws Exception {
+    public void testExecuteTaskClassAsync() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 // Begin with negative to check 'null' value in the test.
