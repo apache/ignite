@@ -15,38 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Plugin
+namespace Apache.Ignite.Core.Tests.Plugin.Cache
 {
     using System;
-    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Plugin.Cache;
 
     /// <summary>
-    /// When applied to <see cref="IPluginConfiguration"/>, defines the type of
-    /// <see cref="IPluginProvider{T}"/> to instantiate.
+    /// Cache plugin config.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public sealed class PluginProviderTypeAttribute : Attribute
+    [Serializable]
+    [CachePluginProviderType(typeof(CachePlugin))]
+    public class CachePluginConfiguration : ICachePluginConfiguration
     {
-        /** */
-        private readonly Type _pluginProviderType;
+        /// <summary>
+        /// Gets or sets the test property.
+        /// </summary>
+        public string TestProperty { get; set; }
 
         /// <summary>
-        /// Initializes new instance of <see cref="PluginProviderTypeAttribute"/> class.
+        /// Gets or sets a value indicating whether the plugin should throw an error.
         /// </summary>
-        /// <param name="pluginProviderType">Type of the plugin provider.</param>
-        public PluginProviderTypeAttribute(Type pluginProviderType)
-        {
-            IgniteArgumentCheck.NotNull(pluginProviderType, "pluginProviderType");
-
-            _pluginProviderType = pluginProviderType;
-        }
-
-        /// <summary>
-        /// Gets the plugin provider type.
-        /// </summary>
-        public Type PluginProviderType
-        {
-            get { return _pluginProviderType; }
-        }
+        public bool ThrowError { get; set; }
     }
 }

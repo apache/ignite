@@ -15,38 +15,38 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Plugin
+namespace Apache.Ignite.Core.Plugin.Cache
 {
     using System;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// When applied to <see cref="IPluginConfiguration"/>, defines the type of
-    /// <see cref="IPluginProvider{T}"/> to instantiate.
+    /// When applied to <see cref="ICachePluginConfiguration"/>, defines the type of
+    /// <see cref="ICachePluginProvider{T}"/> to instantiate.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public sealed class PluginProviderTypeAttribute : Attribute
+    public sealed class CachePluginProviderTypeAttribute : Attribute
     {
         /** */
-        private readonly Type _pluginProviderType;
+        private readonly Type _cachePluginProviderType;
 
         /// <summary>
-        /// Initializes new instance of <see cref="PluginProviderTypeAttribute"/> class.
+        /// Initializes new instance of <see cref="CachePluginProviderTypeAttribute"/> class.
         /// </summary>
-        /// <param name="pluginProviderType">Type of the plugin provider.</param>
-        public PluginProviderTypeAttribute(Type pluginProviderType)
+        /// <param name="cachePluginProviderType">Type of the plugin provider.</param>
+        public CachePluginProviderTypeAttribute(Type cachePluginProviderType)
         {
-            IgniteArgumentCheck.NotNull(pluginProviderType, "pluginProviderType");
+            IgniteArgumentCheck.NotNull(cachePluginProviderType, "pluginProviderType");
 
-            _pluginProviderType = pluginProviderType;
+            _cachePluginProviderType = cachePluginProviderType;
         }
 
         /// <summary>
         /// Gets the plugin provider type.
         /// </summary>
-        public Type PluginProviderType
+        public Type CachePluginProviderType
         {
-            get { return _pluginProviderType; }
+            get { return _cachePluginProviderType; }
         }
     }
 }

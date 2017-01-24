@@ -915,7 +915,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             // Start platform plugins.
-            startProcessor(new PlatformPluginProcessor(ctx));
+            if (ctx.config().getPlatformConfiguration() != null)
+                startProcessor(new PlatformPluginProcessor(ctx));
 
             fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
