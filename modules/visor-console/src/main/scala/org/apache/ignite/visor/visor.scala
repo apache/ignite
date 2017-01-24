@@ -352,16 +352,16 @@ object visor extends VisorTag {
 
     addHelp(
         name = "mcompact",
-        shortInfo = "Fills gap in Visor console memory variable.",
+        shortInfo = "Fills gap in Visor console memory variables.",
         longInfo = Seq(
-            "Finds and fills gap in Visor console memory variable."
+            "Finds and fills gap in Visor console memory variables."
         ),
         spec = Seq(
             "mcompact"
         ),
         examples = Seq(
             "mcompact" ->
-                "Fills gap in Visor console memory variable."
+                "Fills gap in Visor console memory variables."
         ),
         emptyArgs = mcompact,
         withArgs = _ => wrongArgs("mcompact")
@@ -597,22 +597,22 @@ object visor extends VisorTag {
 
     /**
       * ==Command==
-      * Fills gap in Visor console memory variable.
+      * Fills gap in Visor console memory variables.
       *
       * ==Examples==
       * <ex>mcompact</ex>
-      * Fills gap in Visor console memory variable.
+      * Fills gap in Visor console memory variables.
       */
     def mcompact() {
-        var elements = Array("e", "a", "c", "n", "t", "s")
-        for (element <- elements){
-            val r = mem.filter { case (k, _) => (element.contains(k.charAt(0)) && k != "nl" && k != "nr") }
+        val namespaces = Array("a", "c", "e", "n", "s", "t")
+        
+        for (namespace <- namespaces) {
+            val vars = mem.filter { case (k, _) => k.matches(s"$namespace\\d+") }
 
-            if (r.isEmpty)
-                NA
-            else {
-                clearNamespace(element)
-                r.toSeq.sortBy(_._1).foreach { case (k, v) => setVar(v, element) }
+            if (vars.nonEmpty) {
+                clearNamespace(namespace)
+                
+                vars.toSeq.sortBy(_._1).foreach { case (_, v) => setVar(v, namespace) }
             }
         }
     }
@@ -645,15 +645,8 @@ object visor extends VisorTag {
         assert(namespace != null)
 
         mem.keySet.foreach(k => {
-            if (k.startsWith(namespace))
-                try {
-                    k.substring(1).toInt
-
-                    mem.remove(k)
-                }
-                catch {
-                    case ignored: Throwable => // No-op.
-                }
+            if (k.matches(s"$namespace\\d+"))
+                mem.remove(k)
         })
     }
 
