@@ -3195,6 +3195,37 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveLoadAsync() throws Exception {
+        int cnt = 10;
+
+        Set<String> keys = new HashSet<>();
+
+        for (int i = 0; i < cnt; i++)
+            keys.add(String.valueOf(i));
+
+        jcache().removeAllAsync(keys).get();
+
+        for (String key : keys)
+            storeStgy.putToStore(key, Integer.parseInt(key));
+
+        for (int g = 0; g < gridCount(); g++)
+            grid(g).cache(null).localLoadCacheAsync(null).get();
+
+        for (int g = 0; g < gridCount(); g++) {
+            for (int i = 0; i < cnt; i++) {
+                String key = String.valueOf(i);
+
+                if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
+                    assertEquals((Integer)i, peek(jcache(g), key));
+                else
+                    assertNull(peek(jcache(g), key));
+            }
+        }
+    }
+
+    /**
      * @throws Exception In case of error.
      */
     public void testRemoveAsyncOld() throws Exception {
