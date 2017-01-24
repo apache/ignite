@@ -154,16 +154,6 @@ public class HadoopV2Context extends JobContextImpl implements MapContext, Reduc
         }
     }
 
-    /**
-     * Callback invoked from mapper thread when map is finished.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onMapperFinished() throws IgniteCheckedException {
-        if (output instanceof HadoopMapperAwareTaskOutput)
-            ((HadoopMapperAwareTaskOutput)output).onMapperFinished();
-    }
-
     /** {@inheritDoc} */
     @Override public OutputCommitter getOutputCommitter() {
         throw new UnsupportedOperationException();
