@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IGNITE_RPC
-#define _IGNITE_IGNITE_RPC
+#ifndef _IGNITE_IGNITE_BINDING
+#define _IGNITE_IGNITE_BINDING
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
 
-#include <ignite/impl/ignite_rpc_impl.h>
+#include <ignite/impl/ignite_binding_impl.h>
 
 namespace ignite
 {
     template<typename T>
-    int64_t GetRpcId();
+    int64_t GetBindingId();
 
     /**
-     * %Ignite RPC.
+     * %Ignite Binding.
      * Used to register callable classes.
      */
-    class IGNITE_IMPORT_EXPORT IgniteRpc
+    class IGNITE_IMPORT_EXPORT IgniteBinding
     {
     public:
         /**
          * Default constructor.
          */
-        IgniteRpc() :
+        IgniteBinding() :
             impl()
         {
             // No-op.
@@ -49,7 +49,7 @@ namespace ignite
          *
          * @param impl Implementation.
          */
-        IgniteRpc(common::concurrent::SharedPointer<impl::IgniteRpcImpl> impl) :
+        IgniteBinding(common::concurrent::SharedPointer<impl::IgniteBindingImpl> impl) :
             impl(impl)
         {
             // No-op.
@@ -86,10 +86,10 @@ namespace ignite
         template<typename P>
         void RegisterCacheEntryProcessor(IgniteError& err)
         {
-            impl::IgniteRpcImpl *im = impl.Get();
+            impl::IgniteBindingImpl *im = impl.Get();
 
             if (im)
-                im->RegisterCallback(GetRpcId<P>(), &P::CacheEntryProcessor::InternalProcess, err);
+                im->RegisterCallback(GetBindingId<P>(), &P::CacheEntryProcessor::InternalProcess, err);
             else
             {
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
@@ -114,8 +114,8 @@ namespace ignite
 
     private:
         /** Registered cache entry processors. */
-        common::concurrent::SharedPointer<impl::IgniteRpcImpl> impl;
+        common::concurrent::SharedPointer<impl::IgniteBindingImpl> impl;
     };
 }
 
-#endif //_IGNITE_IGNITE_RPC
+#endif //_IGNITE_IGNITE_BINDING

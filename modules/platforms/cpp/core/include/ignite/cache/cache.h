@@ -1355,19 +1355,19 @@ namespace ignite
              * BinaryType template should be specialized for custom every class.
              *
              * Processor class should be registered as a cache entry processor using
-             * IgniteRpc::RegisterCacheEntryProcessor() method. You can declare
+             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
              * #IgniteModuleInit() function to register your cache processors upon
              * module loading. There should be at most one instance of such function
              * per module.
              *
              * See the example below for details:
              * @code{.cpp}
-             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
              * {
-             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor1>();
-             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
              *     // ...
-             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessorN>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessorN>();
              * }
              * @endcode
              *
@@ -1378,7 +1378,7 @@ namespace ignite
              * namespace ignite
              * {
              *     template<>
-             *     int64_t GetRpcId<MyProcessor1>()
+             *     int64_t GetBindingId<MyProcessor1>()
              *     {
              *         // Returned value should be unique among all registered callables
              *         return 123;
@@ -1417,19 +1417,19 @@ namespace ignite
              * BinaryType template should be specialized for custom every class.
              *
              * Processor class should be registered as a cache entry processor using
-             * IgniteRpc::RegisterCacheEntryProcessor() method. You can declare
+             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
              * #IgniteModuleInit() function to register your cache processors upon
              * module loading. There should be at most one instance of such function
              * per module.
              *
              * See the example below for details:
              * @code{.cpp}
-             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
              * {
-             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor1>();
-             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
              *     // ...
-             *     igniteRpc.RegisterCacheEntryProcessor<MyProcessorN>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessorN>();
              * }
              * @endcode
              *
@@ -1440,7 +1440,7 @@ namespace ignite
              * namespace ignite
              * {
              *     template<>
-             *     int64_t GetRpcId<MyProcessor1>()
+             *     int64_t GetBindingId<MyProcessor1>()
              *     {
              *         // Returned value should be unique among all registered callables
              *         return 123;
@@ -1465,7 +1465,7 @@ namespace ignite
 
                 // We need to store job here because In3Operation class stores
                 // references.
-                int64_t jobId = GetRpcId<P>();
+                int64_t jobId = GetBindingId<P>();
 
                 impl::In3Operation<int64_t, K, ProcessorHolder> inOp(jobId, key, procHolder);
                 impl::Out1Operation<R> outOp;

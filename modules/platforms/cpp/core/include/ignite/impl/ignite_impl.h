@@ -143,11 +143,11 @@ namespace ignite
             }
 
             /**
-             * Get ignite RPC.
+             * Get ignite binding.
              *
-             * @return IgniteRpc class instance.
+             * @return IgniteBinding class instance.
              */
-            IgniteRpc GetRpc();
+            IgniteBinding GetBinding();
 
             /**
              * Get instance of the implementation from the proxy class.

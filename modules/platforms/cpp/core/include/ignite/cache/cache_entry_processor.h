@@ -30,7 +30,7 @@
 
 namespace ignite
 {
-    class IgniteRpc;
+    class IgniteBinding;
 
     namespace cache
     {
@@ -43,7 +43,7 @@ namespace ignite
         template<typename P, typename K, typename V, typename R, typename A>
         class CacheEntryProcessor
         {
-            friend class ignite::IgniteRpc;
+            friend class ignite::IgniteBinding;
 
         public:
             /**

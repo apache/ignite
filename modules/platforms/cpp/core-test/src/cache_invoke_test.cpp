@@ -28,7 +28,7 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
-#include "ignite/ignite_rpc.h"
+#include "ignite/ignite_binding.h"
 #include "ignite/cache/cache_entry_processor.h"
 
 using namespace boost::unit_test;
@@ -377,34 +377,34 @@ namespace ignite
 }
 
 /*
- * Specializing RPC IDs for the classes. It's needed for all the remotely
+ * Specializing Binding IDs for the classes. It's needed for all the remotely
  * callable classes.
  */
 namespace ignite
 {
     template<>
-    int64_t GetRpcId<CacheEntryModifier>()
+    int64_t GetBindingId<CacheEntryModifier>()
     {
         return 100500;
     }
 
     template<>
-    int64_t GetRpcId<Divisor>()
+    int64_t GetBindingId<Divisor>()
     {
         return 42;
     }
 
     template<>
-    int64_t GetRpcId<CharRemover>()
+    int64_t GetBindingId<CharRemover>()
     {
         return 1337;
     }
 }
 
-IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteRpc& igniteRpc)
+IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
 {
-    igniteRpc.RegisterCacheEntryProcessor<CacheEntryModifier>();
-    igniteRpc.RegisterCacheEntryProcessor<Divisor>();
+    binding.RegisterCacheEntryProcessor<CacheEntryModifier>();
+    binding.RegisterCacheEntryProcessor<Divisor>();
 }
 
 /**
@@ -538,9 +538,9 @@ BOOST_AUTO_TEST_CASE(TestSeveral)
  */
 BOOST_AUTO_TEST_CASE(TestStrings)
 {
-    IgniteRpc rpc = grid.GetRpc();
+    IgniteBinding binding = grid.GetBinding();
 
-    rpc.RegisterCacheEntryProcessor<CharRemover>();
+    binding.RegisterCacheEntryProcessor<CharRemover>();
 
     Cache<std::string, std::string> cache = grid.GetOrCreateCache<std::string, std::string>("TestCache");
 

@@ -180,13 +180,13 @@ namespace ignite
         transactions::Transactions GetTransactions();
 
         /**
-         * Get ignite RPC.
+         * Get ignite binding.
          *
          * This method should only be used on the valid instance.
          *
-         * @return IgniteRpc class instance.
+         * @return IgniteBinding class instance.
          */
-        IgniteRpc GetRpc();
+        IgniteBinding GetBinding();
 
         /**
          * Check if the instance is valid.

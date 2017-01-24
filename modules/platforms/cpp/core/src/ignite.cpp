@@ -50,9 +50,9 @@ namespace ignite
         return transactions::Transactions(txImpl);
     }
 
-    IgniteRpc Ignite::GetRpc()
+    IgniteBinding Ignite::GetBinding()
     {
-        return impl.Get()->GetRpc();
+        return impl.Get()->GetBinding();
     }
 }
 

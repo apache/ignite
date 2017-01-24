@@ -54,9 +54,9 @@ namespace ignite
             return env.Get()->Context();
         }
 
-        IgniteRpc IgniteImpl::GetRpc()
+        IgniteBinding IgniteImpl::GetBinding()
         {
-            return env.Get()->GetRpc();
+            return env.Get()->GetBinding();
         }
 
         IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)

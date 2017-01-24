@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_IGNITE_RPC_IMPL
-#define _IGNITE_IMPL_IGNITE_RPC_IMPL
+#ifndef _IGNITE_IMPL_IGNITE_BINDING_IMPL
+#define _IGNITE_IMPL_IGNITE_BINDING_IMPL
 
 #include <map>
 
@@ -30,11 +30,11 @@ namespace ignite
     namespace impl
     {
         /**
-         * Ignite RPC implementation.
+         * Ignite binding implementation.
          *
          * Used to register and invoke callbacks.
          */
-        class IgniteRpcImpl
+        class IgniteBindingImpl
         {
             typedef void (Callback)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
 
@@ -42,7 +42,7 @@ namespace ignite
             /**
              * Default constructor.
              */
-            IgniteRpcImpl() : callbacks()
+            IgniteBindingImpl() : callbacks()
             {
                 // No-op.
             }
@@ -100,7 +100,7 @@ namespace ignite
             }
 
         private:
-            IGNITE_NO_COPY_ASSIGNMENT(IgniteRpcImpl);
+            IGNITE_NO_COPY_ASSIGNMENT(IgniteBindingImpl);
 
             /** Registered callbacks. */
             std::map<int64_t, Callback*> callbacks;
@@ -111,4 +111,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_IMPL_IGNITE_RPC_IMPL
+#endif //_IGNITE_IMPL_IGNITE_BINDING_IMPL

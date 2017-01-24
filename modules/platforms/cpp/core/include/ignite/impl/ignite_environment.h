@@ -26,7 +26,7 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/handle_registry.h"
 #include "ignite/impl/module_manager.h"
-#include "ignite/impl/ignite_rpc_impl.h"
+#include "ignite/impl/ignite_binding_impl.h"
 
 namespace ignite
 {
@@ -176,11 +176,11 @@ namespace ignite
             HandleRegistry& GetHandleRegistry();
 
             /**
-             * Get invoke manager.
+             * Get binding.
              *
-             * @return IgniteRpc instance.
+             * @return IgniteBinding instance.
              */
-            IgniteRpc GetRpc();
+            IgniteBinding GetBinding();
 
             /**
              * Acquire ownership for the object.
@@ -211,8 +211,8 @@ namespace ignite
             /** Type updater. */
             binary::BinaryTypeUpdater* metaUpdater;
 
-            /** Ignite RPC */
-            common::concurrent::SharedPointer<IgniteRpcImpl> rpc;
+            /** Ignite binding */
+            common::concurrent::SharedPointer<IgniteBindingImpl> binding;
 
             /** Module manager. */
             common::concurrent::SharedPointer<ModuleManager> moduleMgr;

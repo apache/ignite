@@ -22,7 +22,7 @@
 #include "ignite/binary/binary.h"
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/impl/module_manager.h"
-#include "ignite/ignite_rpc.h"
+#include "ignite/ignite_binding.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -151,8 +151,8 @@ namespace ignite
             registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP),
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
-            rpc(new IgniteRpcImpl()),
-            moduleMgr(new ModuleManager(ignite::IgniteRpc(rpc)))
+            binding(new IgniteBindingImpl()),
+            moduleMgr(new ModuleManager(ignite::IgniteBinding(binding)))
         {
             // No-op.
         }
@@ -270,9 +270,9 @@ namespace ignite
             return registry;
         }
 
-        IgniteRpc IgniteEnvironment::GetRpc()
+        IgniteBinding IgniteEnvironment::GetBinding()
         {
-            return IgniteRpc(rpc);
+            return IgniteBinding(binding);
         }
 
         void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
@@ -314,8 +314,8 @@ namespace ignite
 
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
         {
-            if (!rpc.Get())
-                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteRpc is not initialized.");
+            if (!binding.Get())
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteBinding is not initialized.");
 
             InteropInputStream inStream(mem.Get());
             BinaryReaderImpl reader(&inStream);
@@ -328,7 +328,7 @@ namespace ignite
             if (!reader.TryReadObject<int64_t>(procId))
                 throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
 
-            bool invoked = rpc.Get()->InvokeCallbackById(procId, reader, writer);
+            bool invoked = binding.Get()->InvokeCallbackById(procId, reader, writer);
 
             if (!invoked)
                 throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
