@@ -1119,7 +1119,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Client socket writer interrupted.");
 

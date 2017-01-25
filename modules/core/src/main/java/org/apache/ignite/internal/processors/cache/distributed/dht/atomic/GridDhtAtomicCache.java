@@ -1709,7 +1709,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (forceFut != null)
                     forceFut.get();
             }
-            catch (NodeStoppingException e) {
+            catch (NodeStoppingException ignored) {
                 return;
             }
             catch (IgniteCheckedException e) {
@@ -1726,7 +1726,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     try {
                         fut.get();
                     }
-                    catch (NodeStoppingException e) {
+                    catch (NodeStoppingException ignored) {
                         return;
                     }
                     catch (IgniteCheckedException e) {

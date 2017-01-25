@@ -1895,7 +1895,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())
@@ -1935,7 +1935,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())

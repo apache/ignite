@@ -1072,7 +1072,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     req.getSession().invalidate();
                     res.getWriter().println("invalidated");
                 }
-                catch (Exception e) {
+                catch (Exception ignored) {
                     res.getWriter().println("failed");
                 }
 

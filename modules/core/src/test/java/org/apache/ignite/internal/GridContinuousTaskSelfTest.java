@@ -223,7 +223,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
             try {
                 jobCtx.holdcc();
             }
-            catch (IllegalStateException e) {
+            catch (IllegalStateException ignored) {
                 success = true;
                 log.info("Second holdcc() threw IllegalStateException as expected.");
             }

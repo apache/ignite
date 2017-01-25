@@ -595,7 +595,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                     ", ver=" + backup.version() + ']'));
                             }
                         }
-                        catch (ClusterTopologyCheckedException e) {
+                        catch (ClusterTopologyCheckedException ignored) {
                             mini.onNodeLeft(backupId, false);
                         }
                         catch (IgniteCheckedException e) {
@@ -766,7 +766,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (!wait)
                     fut.onDone();
             }
-            catch (ClusterTopologyCheckedException e) {
+            catch (ClusterTopologyCheckedException ignored) {
                 // Remove previous mapping.
                 mappings.remove(m.node().id());
 
@@ -963,7 +963,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                         try {
                                             cctx.io().send(backup, req, tx.ioPolicy());
                                         }
-                                        catch (ClusterTopologyCheckedException e) {
+                                        catch (ClusterTopologyCheckedException ignored) {
                                             mini.onNodeLeft(backupId, discoThread);
                                         }
                                         catch (IgniteCheckedException e) {

@@ -252,7 +252,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             fail();
         }
-        catch (CacheException e) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }

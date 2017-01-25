@@ -481,7 +481,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
             fail("Exception must be thrown");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             checkPartitionsReservations(grid(1), orgId, 0);
         }
 
@@ -507,7 +507,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
             fail("Exception must be thrown");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             checkPartitionsReservations(grid(1), orgId, 0);
         }
     }
@@ -540,7 +540,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
             fail("Error must be thrown");
         }
-        catch (Throwable e) {
+        catch (Throwable ignored) {
             checkPartitionsReservations(grid(1), orgId, 0);
         }
 
@@ -566,7 +566,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
             fail("Error must be thrown");
         }
-        catch (Throwable e) {
+        catch (Throwable ignored) {
             checkPartitionsReservations(grid(1), orgId, 0);
         }
     }
@@ -584,7 +584,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                 new JobFailUnmarshaling());
             fail("Unmarshaling exception must be thrown");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             checkPartitionsReservations(grid(1), orgId, 0);
         }
     }
@@ -615,7 +615,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                         try {
                             Thread.sleep(1000);
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             // No-op.
                         }
                     }
@@ -656,7 +656,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                         try {
                             Thread.sleep(1000);
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             // No-op.
                         }
                         return null;
@@ -708,7 +708,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
                         try {
                             Thread.sleep(1000);
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             // No-op.
                         }
                     }

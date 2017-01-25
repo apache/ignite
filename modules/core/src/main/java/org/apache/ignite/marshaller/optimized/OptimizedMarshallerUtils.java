@@ -159,7 +159,7 @@ class OptimizedMarshallerUtils {
         try {
             mapOff = GridUnsafe.objectFieldOffset(HashSet.class.getDeclaredField("map"));
         }
-        catch (NoSuchFieldException e) {
+        catch (NoSuchFieldException ignored) {
             try {
                 // Workaround for legacy IBM JRE.
                 mapOff = GridUnsafe.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
@@ -307,7 +307,7 @@ class OptimizedMarshallerUtils {
                     }
                 }
             }
-            catch (NoSuchFieldException e) {
+            catch (NoSuchFieldException ignored) {
                 // No-op.
             }
             catch (IllegalAccessException e) {
