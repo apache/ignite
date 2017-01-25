@@ -447,13 +447,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
+                    EntryGetResult getRes = null;
                     CacheObject v = null;
                     GridCacheVersion ver = null;
-                    long expireTime = 0;
-                    long ttl = 0;
 
                     if (needVer) {
-                        EntryGetResult res = entry.innerGetVersioned(
+                        getRes = entry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -467,11 +466,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             !deserializeBinary,
                             null);
 
-                        if (res != null) {
-                            v = res.value();
-                            ver = res.version();
-                            expireTime = res.expireTime();
-                            ttl = res.ttl();
+                        if (getRes != null) {
+                            v = getRes.value();
+                            ver = getRes.version();
                         }
                     }
                     else {
@@ -505,9 +502,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             keepCacheObjects,
                             deserializeBinary,
                             true,
+                            getRes,
                             ver,
-                            expireTime,
-                            ttl);
+                            0,
+                            0,
+                            needVer);
 
                         return true;
                     }
@@ -567,8 +566,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     deserializeBinary,
                     false,
                     needVer ? info.version() : null,
-                    info.expireTime(),
-                    info.ttl());
+                    0,
+                    0);
             }
 
             return map;

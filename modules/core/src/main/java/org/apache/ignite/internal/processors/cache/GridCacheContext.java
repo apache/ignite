@@ -1941,7 +1941,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param needVer Need version flag.
      */
     @SuppressWarnings("unchecked")
-    private <K1, V1> void addResult(Map<K1, V1> map,
+    public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
         boolean skipVals,

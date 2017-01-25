@@ -759,8 +759,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         deserializeBinary,
                         false,
                         needVer ? info.version() : null,
-                        info.expireTime(),
-                        info.ttl());
+                        0,
+                        0);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
