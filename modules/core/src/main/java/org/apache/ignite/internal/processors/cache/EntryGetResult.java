@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class EntryGetResult {
     /** */
-    private final CacheObject val;
+    private Object val;
 
     /** */
     private final GridCacheVersion ver;
@@ -32,31 +32,37 @@ public class EntryGetResult {
     /** */
     private final boolean reserved;
 
-    /** */
-    private final long expireTime;
-
-    /** */
-    private final long ttl;
+    /**
+     * @param val Value.
+     * @param ver Version.
+     * @param reserved Reserved flag.
+     */
+    public EntryGetResult(Object val, GridCacheVersion ver, boolean reserved) {
+        this.val = val;
+        this.ver = ver;
+        this.reserved = reserved;
+    }
 
     /**
      * @param val Value.
      * @param ver Version.
-     * @param expireTime Entry expire time.
-     * @param ttl Entry time to live.
      */
-    EntryGetResult(CacheObject val, GridCacheVersion ver, boolean reserved, long expireTime, long ttl) {
-        this.val = val;
-        this.ver = ver;
-        this.reserved = reserved;
-        this.expireTime = expireTime;
-        this.ttl = ttl;
+    public EntryGetResult(Object val, GridCacheVersion ver) {
+        this(val, ver, false);
     }
 
     /**
      * @return Value.
      */
-    public CacheObject value() {
-        return val;
+    public <T> T value() {
+        return (T)val;
+    }
+
+    /**
+     * @param val Value.
+     */
+    public void value(Object val) {
+        this.val = val;
     }
 
     /**
@@ -77,13 +83,13 @@ public class EntryGetResult {
      * @return Entry expire time.
      */
     public long expireTime() {
-        return expireTime;
+        return 0L;
     }
 
     /**
      * @return Entry time to live.
      */
     public long ttl() {
-        return ttl;
+        return 0L;
     }
 }

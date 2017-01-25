@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePeekModes;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
@@ -648,7 +648,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param canRemap Can remap flag.
      * @return Get future.
      */
-    IgniteInternalFuture<Map<KeyCacheObject, GridCacheGetResult>> getDhtAllAsync(
+    IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> getDhtAllAsync(
         Collection<KeyCacheObject> keys,
         @Nullable final ReaderArguments readerArgs,
         boolean readThrough,
