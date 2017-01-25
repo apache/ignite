@@ -1092,8 +1092,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Creates EntryGetResult or EntryGetWithTtlResult, depending on current
-     * expire policy.
+     * Creates EntryGetResult or EntryGetWithTtlResult if expire time information exists.
      *
      * @param val Value.
      * @param ver Version.
@@ -1101,7 +1100,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return EntryGetResult.
      */
     private EntryGetResult entryGetResult(CacheObject val, GridCacheVersion ver, boolean reserve) {
-        return extras == null
+        return extras == null || extras.expireTime() == 0
             ? new EntryGetResult(val, ver, reserve)
             : new EntryGetWithTtlResult(val, ver, reserve, rawExpireTime(), rawTtl());
     }

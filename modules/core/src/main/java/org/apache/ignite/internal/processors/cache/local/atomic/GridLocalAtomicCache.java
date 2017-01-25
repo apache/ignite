@@ -573,7 +573,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     deserializeBinary,
                                     true,
                                     null,
-                                    0, 0);
+                                    0,
+                                    0);
                             }
                             else
                                 success = false;

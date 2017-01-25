@@ -1018,7 +1018,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
-     * Put entry to server node and check how its expires in client NearCache
+     * Put entry to server node and check how its expires in client NearCache.
+     *
      * @throws Exception If failed.
      */
     public void testNearExpiresOnClient() throws Exception {
@@ -1041,18 +1042,18 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Integer key = 1;
 
-        //Put on server node
+        // Put on server node.
         jcache(0).put(key, 1);
 
-        //Make entry cached in client NearCache
+        // Make entry cached in client NearCache.
         assertEquals(1, cache.get(key));
 
         assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
 
         waitExpired(key);
 
-        //Check client NearCache.
-        assertNull(cache.localPeek(key,CachePeekMode.NEAR));
+        // Check client NearCache.
+        assertNull(cache.localPeek(key, CachePeekMode.NEAR));
     }
 
     /**
