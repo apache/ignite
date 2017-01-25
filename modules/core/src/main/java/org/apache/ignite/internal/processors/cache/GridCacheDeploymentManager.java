@@ -343,8 +343,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         catch (GridCacheEntryRemovedException ignore) {
             return false;
         }
-        catch (BinaryInvalidTypeException ignore) {
-            log.error("An attempt to undeploy cache with binary objects.", ignore);
+        catch (BinaryInvalidTypeException e1) {
+            log.error("An attempt to undeploy cache with binary objects.", e1);
 
             return false;
         }
