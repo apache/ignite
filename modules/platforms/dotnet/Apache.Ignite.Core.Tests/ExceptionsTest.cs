@@ -26,9 +26,11 @@ namespace Apache.Ignite.Core.Tests
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -78,6 +80,29 @@ namespace Apache.Ignite.Core.Tests
             var comp = grid.GetCompute();
 
             CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<ArgumentException>(comp, "IllegalArgumentException");
+            CheckException<InvalidOperationException>(comp, "IllegalStateException");
+            CheckException<NotSupportedException>(comp, "UnsupportedOperationException");
+            CheckException<IgniteException>(comp, "IgniteException");
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<ClusterGroupEmptyException>(comp, "ClusterGroupEmptyException");
+            CheckException<ClusterTopologyException>(comp, "ClusterTopologyException");
+            CheckException<ComputeExecutionRejectedException>(comp, "ComputeExecutionRejectedException");
+            CheckException<ComputeJobFailoverException>(comp, "ComputeJobFailoverException");
+            CheckException<ComputeTaskCancelledException>(comp, "ComputeTaskCancelledException");
+            CheckException<ComputeTaskTimeoutException>(comp, "ComputeTaskTimeoutException");
+            CheckException<ComputeUserUndeclaredException>(comp, "ComputeUserUndeclaredException");
+            CheckException<CacheException>(comp, "CacheException");
+            CheckException<CacheStoreException>(comp, "CacheLoaderException");
+            CheckException<CacheStoreException>(comp, "CacheWriterException");
+            CheckException<CacheEntryProcessorException>(comp, "EntryProcessorException");
+            CheckException<CacheAtomicUpdateTimeoutException>(comp, "CacheAtomicUpdateTimeoutException");
+            CheckException<TransactionOptimisticException>(comp, "TransactionOptimisticException");
+            CheckException<TransactionTimeoutException>(comp, "TransactionTimeoutException");
+            CheckException<TransactionRollbackException>(comp, "TransactionRollbackException");
+            CheckException<TransactionHeuristicException>(comp, "TransactionHeuristicException");
+            CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
+            CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
 
             // Check stopped grid.
             grid.Dispose();

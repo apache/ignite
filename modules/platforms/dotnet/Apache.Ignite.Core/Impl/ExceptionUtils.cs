@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl
             // Common Java exceptions mapped to common .NET exceptions.
             Exs["java.lang.IllegalArgumentException"] = (i, m, e) => new ArgumentException(m, e);
             Exs["java.lang.IllegalStateException"] = (i, m, e) => new InvalidOperationException(m, e);
-            Exs["java.lang.UnsupportedOperationException"] = (i, m, e) => new NotImplementedException(m, e);
+            Exs["java.lang.UnsupportedOperationException"] = (i, m, e) => new NotSupportedException(m, e);
             Exs["java.lang.InterruptedException"] = (i, m, e) => new ThreadInterruptedException(m, e);
 
             // Generic Ignite exceptions.
