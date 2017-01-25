@@ -80,23 +80,14 @@ namespace Apache.Ignite.Core.Tests
             var comp = grid.GetCompute();
 
             CheckException<BinaryObjectException>(comp, "BinaryObjectException");
-            CheckException<ArgumentException>(comp, "IllegalArgumentException");
-            CheckException<InvalidOperationException>(comp, "IllegalStateException");
-            CheckException<NotSupportedException>(comp, "UnsupportedOperationException");
             CheckException<IgniteException>(comp, "IgniteException");
             CheckException<BinaryObjectException>(comp, "BinaryObjectException");
-            CheckException<ClusterGroupEmptyException>(comp, "ClusterGroupEmptyException");
             CheckException<ClusterTopologyException>(comp, "ClusterTopologyException");
             CheckException<ComputeExecutionRejectedException>(comp, "ComputeExecutionRejectedException");
             CheckException<ComputeJobFailoverException>(comp, "ComputeJobFailoverException");
             CheckException<ComputeTaskCancelledException>(comp, "ComputeTaskCancelledException");
             CheckException<ComputeTaskTimeoutException>(comp, "ComputeTaskTimeoutException");
             CheckException<ComputeUserUndeclaredException>(comp, "ComputeUserUndeclaredException");
-            CheckException<CacheException>(comp, "CacheException");
-            CheckException<CacheStoreException>(comp, "CacheLoaderException");
-            CheckException<CacheStoreException>(comp, "CacheWriterException");
-            CheckException<CacheEntryProcessorException>(comp, "EntryProcessorException");
-            CheckException<CacheAtomicUpdateTimeoutException>(comp, "CacheAtomicUpdateTimeoutException");
             CheckException<TransactionOptimisticException>(comp, "TransactionOptimisticException");
             CheckException<TransactionTimeoutException>(comp, "TransactionTimeoutException");
             CheckException<TransactionRollbackException>(comp, "TransactionRollbackException");
@@ -116,8 +107,6 @@ namespace Apache.Ignite.Core.Tests
         private static void CheckException<T>(ICompute comp, string name) where T : Exception
         {
             var ex = Assert.Throws<T>(() => comp.ExecuteJavaTask<string>(ExceptionTask, name));
-
-            Assert.AreEqual(name, ex.Message);
 
             var javaEx = ex.InnerException as JavaException;
 
