@@ -96,6 +96,9 @@ public class GridCacheSharedContext<K, V> {
     /** Ttl cleanup manager. */
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
+    /** Delete history cleanup manager. */
+    private GridCacheSharedDelHistManager delHistMgr;
+
     /** Cache contexts map. */
     private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -139,6 +142,7 @@ public class GridCacheSharedContext<K, V> {
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
      * @param ttlMgr Ttl cleanup manager.
+     * @param delHistMgr Delete history manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
      */
@@ -152,12 +156,13 @@ public class GridCacheSharedContext<K, V> {
         CacheAffinitySharedManager<K, V> affMgr,
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
+        GridCacheSharedDelHistManager delHistMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr, delHistMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -254,7 +259,8 @@ public class GridCacheSharedContext<K, V> {
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
             ioMgr,
-            ttlMgr);
+            ttlMgr,
+            delHistMgr);
 
         this.mgrs = mgrs;
 
@@ -286,6 +292,7 @@ public class GridCacheSharedContext<K, V> {
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
      * @param ttlMgr Ttl cleanup manager.
+     * @param delHistMgr Delete history cleanup manager.
      */
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
@@ -296,7 +303,8 @@ public class GridCacheSharedContext<K, V> {
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
-        GridCacheSharedTtlCleanupManager ttlMgr) {
+        GridCacheSharedTtlCleanupManager ttlMgr,
+        GridCacheSharedDelHistManager delHistMgr) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -306,6 +314,7 @@ public class GridCacheSharedContext<K, V> {
         this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
         this.ttlMgr = add(mgrs, ttlMgr);
+        this.delHistMgr = add(mgrs, delHistMgr);
     }
 
     /**
@@ -506,6 +515,13 @@ public class GridCacheSharedContext<K, V> {
      * */
     public GridCacheSharedTtlCleanupManager ttl() {
         return ttlMgr;
+    }
+
+    /**
+     * @return Delete history cleanup manager.
+     * */
+    public GridCacheSharedDelHistManager delHist() {
+        return delHistMgr;
     }
 
     /**
