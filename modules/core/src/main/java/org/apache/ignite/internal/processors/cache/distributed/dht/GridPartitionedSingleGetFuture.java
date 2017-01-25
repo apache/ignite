@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -372,8 +371,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
                     CacheObject v = null;
                     GridCacheVersion ver = null;
-                    long expireTime = 0;
-                    long ttl = 0;
 
                     if (needVer) {
                         EntryGetResult res = entry.innerGetVersioned(
@@ -393,8 +390,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         if (res != null) {
                             v = res.value();
                             ver = res.version();
-                            expireTime = res.expireTime();
-                            ttl = res.ttl();
                         }
                     }
                     else {
@@ -425,9 +420,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                             cctx.cache().metrics0().onRead(true);
 
                         if (!skipVals)
-                            setResult(v, ver, expireTime, ttl);
+                            setResult(v, ver);
                         else
-                            setSkipValueResult(true, ver, expireTime, ttl);
+                            setSkipValueResult(true, ver);
 
                         return true;
                     }
@@ -441,9 +436,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         colocated.metrics0().onRead(false);
 
                     if (skipVals)
-                        setSkipValueResult(false, null, 0, 0);
+                        setSkipValueResult(false, null);
                     else
-                        setResult(null, null, 0, 0);
+                        setResult(null, null);
 
                     return true;
                 }
@@ -480,22 +475,22 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
             if (verVal != null) {
                 if (skipVals)
-                    setSkipValueResult(true, verVal.version(), 0, 0);
+                    setSkipValueResult(true, verVal.version());
                 else
-                    setResult(verVal.value() , verVal.version(),0 ,0);
+                    setResult(verVal.value() , verVal.version());
             }
             else {
                 if (skipVals)
-                    setSkipValueResult(false, null, 0, 0);
+                    setSkipValueResult(false, null);
                 else
-                    setResult(null , null, 0, 0);
+                    setResult(null , null);
             }
         }
         else {
             if (skipVals)
-                setSkipValueResult(res.containsValue(), null, 0,0);
+                setSkipValueResult(res.containsValue(), null);
             else
-                setResult((CacheObject)res0, null, 0, 0);
+                setResult((CacheObject)res0, null);
         }
     }
 
@@ -595,15 +590,15 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
         if (skipVals) {
             if (info != null)
-                setSkipValueResult(true, info.version(), info.expireTime(), info.ttl());
+                setSkipValueResult(true, info.version());
             else
-                setSkipValueResult(false, null, 0, 0);
+                setSkipValueResult(false, null);
         }
         else {
             if (info != null)
-                setResult(info.value(), info.version(), info.expireTime(), info.ttl());
+                setResult(info.value(), info.version());
             else
-                setResult(null, null, 0, 0);
+                setResult(null, null);
         }
     }
 
@@ -611,13 +606,13 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param res Result.
      * @param ver Version.
      */
-    private void setSkipValueResult(boolean res, @Nullable GridCacheVersion ver, long expireTime, long ttl) {
+    private void setSkipValueResult(boolean res, @Nullable GridCacheVersion ver) {
         assert skipVals;
 
         if (needVer) {
             assert ver != null || !res;
 
-            onDone(new GridCacheGetResult(ver, expireTime, ttl, res));
+            onDone(new EntryGetResult(res, ver));
         }
         else
             onDone(res);
@@ -627,7 +622,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param val Value.
      * @param ver Version.
      */
-    private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver, long expireTime, long ttl) {
+    private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
         try {
             assert !skipVals;
 
@@ -635,10 +630,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
-                    onDone(needVer ? new GridCacheGetResult(ver, expireTime, ttl, res) : res);
+                    onDone(needVer ? new EntryGetResult(res, ver) : res);
                 }
                 else
-                    onDone(needVer ? new GridCacheGetResult(ver, expireTime, ttl, val) : val);
+                    onDone(needVer ? new EntryGetResult(val, ver) : val);
             }
             else
                 onDone(null);

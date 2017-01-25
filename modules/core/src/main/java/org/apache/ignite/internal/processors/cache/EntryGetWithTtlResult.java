@@ -20,60 +20,39 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Entry expiration time holder.
+ *
  */
-public class GridCacheGetResult {
-    /** Entry version. */
-    private final GridCacheVersion ver;
-
-    /** Entry expire time. */
+public class EntryGetWithTtlResult extends EntryGetResult {
+    /** */
     private final long expireTime;
 
-    /** Entry time to live. */
+    /** */
     private final long ttl;
 
-    /** Entry value. */
-    private final Object val;
-
     /**
-     * @param ver Entry version.
+     * @param val Value.
+     * @param ver Version.
+     * @param reserved Reserved flag.
      * @param expireTime Entry expire time.
      * @param ttl Entry time to live.
-     * @param val Value.
      */
-    public GridCacheGetResult(final GridCacheVersion ver, final long expireTime, final long ttl, final Object val) {
-        this.ver = ver;
+    public EntryGetWithTtlResult(Object val, GridCacheVersion ver, boolean reserved, long expireTime, long ttl) {
+        super(val, ver, reserved);
         this.expireTime = expireTime;
         this.ttl = ttl;
-        this.val = val;
     }
 
     /**
      * @return Entry expire time.
      */
-    public long expireTime() {
+    @Override public long expireTime() {
         return expireTime;
     }
 
     /**
      * @return Entry time to live.
      */
-    public long ttl() {
+    @Override public long ttl() {
         return ttl;
-    }
-
-    /**
-     * @return Entry version.
-     */
-    public GridCacheVersion version() {
-        return ver;
-    }
-
-    /**
-     *
-     * @return Value.
-     */
-    public Object value() {
-        return val;
     }
 }

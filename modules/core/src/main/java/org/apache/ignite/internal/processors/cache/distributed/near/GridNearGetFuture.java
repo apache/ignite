@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -432,8 +431,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             try {
                 CacheObject v = null;
                 GridCacheVersion ver = null;
-                long expireTime = 0;
-                long ttl = 0;
 
                 boolean isNear = entry != null;
 
@@ -457,8 +454,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         if (res != null) {
                             v = res.value();
                             ver = res.version();
-                            expireTime = res.expireTime();
-                            ttl = res.ttl();
                         }
                     }
                     else {
@@ -534,7 +529,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     old.put(key, addRdr);
                 }
                 else
-                    addResult(key, v, ver, expireTime, ttl);
+                    addResult(key, v, ver);
 
                 break;
             }
@@ -577,8 +572,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
 
                 CacheObject v = null;
-                long expireTime = 0;
-                long ttl = 0;
 
                 // If near cache does not have value, then we peek DHT cache.
                 if (dhtEntry != null) {
@@ -602,8 +595,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         if (res != null) {
                             v = res.value();
                             ver = res.version();
-                            expireTime = res.expireTime();
-                            ttl = res.ttl();
                         }
                     }
                     else {
@@ -631,7 +622,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                         cache().metrics0().onRead(true);
 
-                    addResult(key, v, ver, expireTime, ttl);
+                    addResult(key, v, ver);
 
                     return true;
                 }
@@ -668,11 +659,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param ver Version.
      */
     @SuppressWarnings("unchecked")
-    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver, long expireTime, long ttl) {
+    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
         if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
-                (V)new GridCacheGetResult(ver, expireTime, ttl, skipVals ? true : v) :
+                (V)new EntryGetResult(skipVals ? true : v, ver) :
                 (V)(skipVals ? true : v);
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
@@ -680,9 +671,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         else {
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
             V val0 = needVer ?
-                (V)new GridCacheGetResult(ver, expireTime, ttl, !skipVals ?
+                (V)new EntryGetResult(!skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
-                    (V)Boolean.TRUE) :
+                    (V)Boolean.TRUE, ver) :
                 !skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
                     (V)Boolean.TRUE;

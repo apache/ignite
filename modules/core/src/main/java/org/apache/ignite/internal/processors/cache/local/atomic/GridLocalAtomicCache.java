@@ -571,7 +571,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     skipVals,
                                     false,
                                     deserializeBinary,
-                                    true);
+                                    true,
+                                    null,
+                                    0, 0);
                             }
                             else
                                 success = false;

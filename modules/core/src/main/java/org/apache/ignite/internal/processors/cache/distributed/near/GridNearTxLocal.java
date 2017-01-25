@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheGetResult;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -470,7 +470,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             GridCacheVersion ver;
 
             if (needVer) {
-                GridCacheGetResult getRes = (GridCacheGetResult)val;
+                EntryGetResult getRes = (EntryGetResult)val;
 
                 v = getRes.value();
                 ver = getRes.version();
