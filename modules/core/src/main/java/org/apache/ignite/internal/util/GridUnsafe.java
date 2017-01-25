@@ -67,6 +67,9 @@ public abstract class GridUnsafe {
     public static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
+    public static final int BYTE_ARR_INT_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
     public static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
 
     /** */
