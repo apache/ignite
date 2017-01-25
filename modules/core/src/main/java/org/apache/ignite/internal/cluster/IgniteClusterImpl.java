@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
 import org.apache.ignite.internal.util.nodestart.StartNodeCallable;
@@ -222,11 +223,17 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         throws IgniteException
     {
         try {
-            return startNodesAsync(file, restart, timeout, maxConn).get();
+            return startNodesAsync0(file, restart, timeout, maxConn).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart,
+        int timeout, int maxConn) throws IgniteException {
+        return new IgniteFutureImpl<>(startNodesAsync0(file, restart, timeout, maxConn));
     }
 
     /** {@inheritDoc} */
@@ -238,11 +245,18 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         throws IgniteException
     {
         try {
-            return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
+            return startNodesAsync0(hosts, dflts, restart, timeout, maxConn).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
+        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts,
+        boolean restart, int timeout, int maxConn) throws IgniteException {
+        return new IgniteFutureImpl<>(startNodesAsync0(hosts, dflts, restart, timeout, maxConn));
     }
 
     /** {@inheritDoc} */
@@ -330,7 +344,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @return Future with results.
      * @see IgniteCluster#startNodes(java.io.File, boolean, int, int)
      */
-    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file,
+    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync0(File file,
       boolean restart,
       int timeout,
       int maxConn)
@@ -342,7 +356,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         try {
             IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
-            return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
+            return startNodesAsync0(t.get1(), t.get2(), restart, timeout, maxConn);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -358,7 +372,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @return Future with results.
      * @see IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)
      */
-    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
+    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync0(
         Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts,
         boolean restart,
