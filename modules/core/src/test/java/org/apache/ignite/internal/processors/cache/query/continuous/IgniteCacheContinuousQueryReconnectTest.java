@@ -141,11 +141,11 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         putAndCheck(clCache, 0); // 0 remote listeners.
 
-        QueryCursor<Cache.Entry<Object, Object>> cur = (clientQuery ? clCache : cache1).query(qry);
+        (clientQuery ? clCache : cache1).query(qry);
 
         putAndCheck(clCache, 1); // 1 remote listener.
 
-        final Ignite srv2 = startGrid(2);
+        startGrid(2);
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 
@@ -169,7 +169,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         putAndCheck(clCache, 1); // 1 remote listener.
 
-        Ignite srv3 = startGrid(3);
+        startGrid(3);
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 
@@ -185,7 +185,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 
-        Ignite srv4 = startGrid(5);
+        startGrid(5);
 
         putAndCheck(clCache, 3); // 3 remote listeners.
     }

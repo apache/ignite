@@ -538,7 +538,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = false;
 
-        IgniteEx ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block.");
 
@@ -671,7 +671,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block2.");
 
@@ -1098,7 +1098,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        ignite3 = startGrid(3);
+        startGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -1208,7 +1208,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = false;
 
-        IgniteEx ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block.");
 

@@ -325,7 +325,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             col = Arrays.asList(this, this, this);
 
-            GridTestKernalContext ctx = newContext();
+            newContext();
 
             subGrid = ignite.cluster().forNodes(Collections.singleton(node));
         }

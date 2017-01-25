@@ -734,7 +734,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                     final AtomicBoolean done = new AtomicBoolean(false);
 
-                    IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                    GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
                             try{
                                 l.lock();

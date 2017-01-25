@@ -234,8 +234,6 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     public void testLoadCache() throws Exception {
         Connection conn = store.openConnection(false);
 
-        Random rnd = new Random();
-
         PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
         for (int i = 0; i < ORGANIZATION_CNT; i++) {

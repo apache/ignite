@@ -1327,7 +1327,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 nodeSpi.set(new TestCustomEventRaceSpi());
 
-                Ignite ignite2 = startGrid(2);
+                startGrid(2);
 
                 return null;
             }
