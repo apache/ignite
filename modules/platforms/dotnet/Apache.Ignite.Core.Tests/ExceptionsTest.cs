@@ -35,6 +35,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ExceptionsTest
     {
+        /** */
+        private const string ExceptionTask = "org.apache.ignite.platform.PlatformExceptionTask";
+
         /// <summary>
         /// Before test.
         /// </summary>
@@ -70,6 +73,12 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(e.InnerException.Message.StartsWith(
                 "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
+            // Check all exceptions mapping.
+            var comp = grid.GetCompute();
+            Assert.Throws<BinaryObjectException>(() => comp.ExecuteJavaTask<string>(ExceptionTask, 
+                "BinaryObjectException"));
+
+            // Check stopped grid.
             grid.Dispose();
 
             Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
