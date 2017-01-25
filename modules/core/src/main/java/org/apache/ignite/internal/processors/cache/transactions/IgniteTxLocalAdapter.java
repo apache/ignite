@@ -1179,8 +1179,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                     if (val != null) {
                         GridCacheVersion ver = null;
-                        long expireTime = 0;
-                        long ttl = 0;
 
                         if (needVer) {
                             if (txEntry.op() != READ)
@@ -1195,9 +1193,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                             ver = cached.isNear() ?
                                                 ((GridNearCacheEntry)cached).dhtVersion() : cached.version();
-
-                                            expireTime = cached.rawExpireTime();
-                                            ttl = cached.rawTtl();
 
                                             break;
                                         }
@@ -1218,7 +1213,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         }
 
                         cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false,
-                            ver, expireTime, ttl);
+                            ver, 0, 0);
                     }
                 }
                 else {
