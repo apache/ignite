@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallabl
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1424,12 +1425,17 @@ public final class IgfsImpl implements IgfsEx {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
+        return (IgniteFuture<Void>)createFuture(formatAsync0());
+    }
+
     /**
      * Formats the file system removing all existing entries from it.
      *
      * @return Future.
      */
-    IgniteInternalFuture<?> formatAsync() {
+    IgniteInternalFuture<?> formatAsync0() {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
         Thread t = new Thread(new FormatRunnable(fut), "igfs-format-" + cfg.getName() + "-" +
@@ -1446,18 +1452,24 @@ public final class IgfsImpl implements IgfsEx {
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return executeAsync(task, rslvr, paths, arg).get();
+            return executeAsync0(task, rslvr, paths, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+        Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(task, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
-            return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
+            return executeAsync0(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
@@ -1465,14 +1477,27 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen,
+        @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+    }
+
+    /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return executeAsync(taskCls, rslvr, paths, arg).get();
+            return executeAsync0(taskCls, rslvr, paths, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(taskCls, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
@@ -1480,11 +1505,18 @@ public final class IgfsImpl implements IgfsEx {
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeSize, @Nullable T arg) {
         try {
-            return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
+            return executeAsync0(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen,
+        @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /**
@@ -1496,9 +1528,9 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync0(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
-        return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+        return executeAsync0(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
     /**
@@ -1515,7 +1547,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync0(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return igfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
@@ -1530,9 +1562,9 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+    <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
-        return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+        return executeAsync0(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
     /**
@@ -1549,7 +1581,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Execution future.
      */
     @SuppressWarnings("unchecked")
-    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+    <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         return igfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
@@ -1772,6 +1804,15 @@ public final class IgfsImpl implements IgfsEx {
     private int bufferSize(int bufSize) {
         return bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
     }
+
+    /**
+     * @param fut Internal future.
+     * @return Public API future.
+     */
+    private <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
+        return new IgniteFutureImpl<>(fut);
+    }
+
 
     /**
      * IGFS thread factory.
