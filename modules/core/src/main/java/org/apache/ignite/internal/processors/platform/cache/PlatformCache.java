@@ -1133,11 +1133,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
     }
 
-//    /** <inheritDoc /> */
-//    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-//        return ((IgniteFutureImpl) cacheAsync.future()).internalFuture();
-//    }
-
     /** <inheritDoc /> */
     @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
         if (opId == OP_GET_ALL)
