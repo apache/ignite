@@ -62,7 +62,7 @@ public class TcpDiscoveryNodesRing {
 
     /** All nodes in topology. */
     @GridToStringInclude
-    private NavigableSet<TcpDiscoveryNode> nodes = new TreeSet<>();
+    private NavigableSet<TcpDiscoveryNode> nodes;
 
     /** All started nodes. */
     @GridToStringExclude
@@ -77,6 +77,9 @@ public class TcpDiscoveryNodesRing {
     /** */
     private long maxInternalOrder;
 
+    /** Node with maximum  topology version. */
+    private TcpDiscoveryNode maxNode = null;
+
     /** Lock. */
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -86,6 +89,10 @@ public class TcpDiscoveryNodesRing {
 
     /** Comparator is used for choice next node in ring. */
     private final Comparator<TcpDiscoveryNode> nodeComparator = new RegionNodeComparator();
+
+    public TcpDiscoveryNodesRing() {
+        nodes = new TreeSet<>(nodeComparator);
+    }
 
     /**
      * @return Minimum node version.
@@ -234,6 +241,7 @@ public class TcpDiscoveryNodesRing {
             node.lastUpdateTime(U.currentTimeMillis());
 
             nodes.add(node);
+            if (maxNode == null || node.compareTo(maxNode)>0) maxNode = node;
 
             nodeOrder = node.internalOrder();
 
@@ -256,9 +264,9 @@ public class TcpDiscoveryNodesRing {
 
         try {
             if (maxInternalOrder == 0) {
-                TcpDiscoveryNode last = nodes.last();
+                //TcpDiscoveryNode last = nodes.last();
 
-                return last != null ? maxInternalOrder = last.internalOrder() : -1;
+                return maxNode != null ? maxInternalOrder = maxNode.internalOrder() : -1;
             }
 
             return maxInternalOrder;
@@ -307,6 +315,7 @@ public class TcpDiscoveryNodesRing {
                 node.lastUpdateTime(U.currentTimeMillis());
 
                 this.nodes.add(node);
+                if (node!=null && (maxNode == null || node.compareTo(maxNode)>0)) maxNode = node;
             }
 
             nodeOrder = topVer;
@@ -354,8 +363,18 @@ public class TcpDiscoveryNodesRing {
 
             if (rmv != null) {
                 nodes = new TreeSet<>(nodes);
-
                 nodes.remove(rmv);
+
+                if (rmv.equals(maxNode)) {
+                    TcpDiscoveryNode newMaxNode = null;
+                    for (TcpDiscoveryNode node: nodes) {
+                        if (newMaxNode==null || (node!=null && newMaxNode.compareTo(node)<0)) {
+                            newMaxNode = node;
+                        }
+                    }
+                    maxNode =  newMaxNode;
+                }
+
             }
 
             initializeMinimumVersion();
@@ -377,10 +396,12 @@ public class TcpDiscoveryNodesRing {
         rwLock.writeLock().lock();
 
         try {
-            nodes = new TreeSet<>();
+            nodes = new TreeSet<>(nodeComparator);
 
-            if (locNode != null)
+            if (locNode != null) {
                 nodes.add(locNode);
+                maxNode = locNode;
+            }
 
             nodesMap = new HashMap<>();
 
@@ -478,41 +499,21 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
-
-            if (filtered.size() < 2)
-                return null;
-
-            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
-
-            TcpDiscoveryNode rightNode = null;
-            //Need if local node is last
-            TcpDiscoveryNode firstNode = null;
-            //Find first right node
-            while (iter.hasNext()) {
-                TcpDiscoveryNode node = iter.next();
-                if (locNode.equals(node))
-                    continue;
-                if (nodeComparator.compare(locNode, node) < 0) {
-                    rightNode = node;
-                    break;
-                }
-                if (firstNode == null || nodeComparator.compare(node, firstNode) < 0)
-                    firstNode = node;
+            Iterator<TcpDiscoveryNode> filtered = serverNodes(excluded, locNode).iterator();
+            if (filtered.hasNext()) {
+                return filtered.next();
+            } else {
+                filtered = serverNodes(excluded).iterator();
+                if (filtered.hasNext()) {
+                    TcpDiscoveryNode firstNode = filtered.next();
+                    //When locNode is first and last.
+                    if (firstNode.equals(locNode))
+                        return null;
+                    else
+                        return firstNode;
+                } else
+                    return null;
             }
-            //It mean local node is last in ring
-            if (rightNode == null) return firstNode;
-
-            while (iter.hasNext()) {
-                TcpDiscoveryNode node = iter.next();
-                if (locNode.equals(node))
-                    continue;
-                //Does exist node between rightNode and locNode ?
-                if (nodeComparator.compare(locNode, node) < 0 && nodeComparator.compare(node, rightNode) < 0)
-                    rightNode = node;
-            }
-
-            return rightNode;
         } finally {
             rwLock.readLock().unlock();
         }
@@ -619,6 +620,24 @@ public class TcpDiscoveryNodesRing {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
+            @Override public boolean apply(TcpDiscoveryNode node) {
+                return !node.isClient() && (excludedEmpty || !excluded.contains(node));
+            }
+        });
+    }
+
+    /**
+     * Gets server nodes from topology in part of ring is started from specific node.
+     *
+     * @param excluded Nodes to exclude from the search (optional).
+     * @param from Start position in ring (exclude)
+     * @return Collection of server nodes.
+     */
+    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded,
+                                                     TcpDiscoveryNode from) {
+        final boolean excludedEmpty = F.isEmpty(excluded);
+
+        return F.view(nodes.tailSet(from, false), new P1<TcpDiscoveryNode>() {
             @Override public boolean apply(TcpDiscoveryNode node) {
                 return !node.isClient() && (excludedEmpty || !excluded.contains(node));
             }
