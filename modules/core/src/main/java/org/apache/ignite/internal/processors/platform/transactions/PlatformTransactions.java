@@ -187,17 +187,16 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         long txId = reader.readLong();
 
-        final Transaction asyncTx = (Transaction)tx(txId).withAsync();
-
+        IgniteFuture fut0;
         switch (type) {
             case OP_COMMIT_ASYNC:
-                asyncTx.commit();
+                fut0 = tx(txId).commitAsync();
 
                 break;
 
 
             case OP_ROLLBACK_ASYNC:
-                asyncTx.rollback();
+                fut0 = tx(txId).rollbackAsync();
 
                 break;
 
@@ -206,7 +205,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         }
 
         // Future result is the tx itself, we do not want to return it to the platform.
-        IgniteFuture fut = asyncTx.future().chain(new C1<IgniteFuture, Object>() {
+        IgniteFuture fut = fut0.chain(new C1<IgniteFuture, Object>() {
             private static final long serialVersionUID = 0L;
 
             @Override public Object apply(IgniteFuture fut) {

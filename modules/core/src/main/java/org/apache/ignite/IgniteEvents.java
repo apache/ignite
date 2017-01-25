@@ -25,6 +25,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,6 +91,20 @@ public interface IgniteEvents extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
+     * Asynchronously queries nodes in this cluster group for events using passed in predicate filter for event
+     * selection.
+     *
+     * @param p Predicate filter used to query events on remote nodes.
+     * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
+     * @param types Event types to be queried.
+     * @return a Future representing pending completion of the query. The completed future contains
+     *      collection of grid events returned from specified nodes.
+     * @throws IgniteException If query failed.
+     */
+    public <T extends Event> IgniteFuture<List<T>> remoteQueryAsync(IgnitePredicate<T> p, long timeout, @Nullable int... types)
+        throws IgniteException;
+
+    /**
      * Adds event listener for specified events to all nodes in the cluster group (possibly including
      * local node if it belongs to the cluster group as well). This means that all events occurring on
      * any node within this cluster group that pass remote filter will be sent to local node for
@@ -113,6 +128,34 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
+        @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types)
+        throws IgniteException;
+
+    /**
+     * Asynchronously adds event listener for specified events to all nodes in the cluster group (possibly including
+     * local node if it belongs to the cluster group as well). This means that all events occurring on
+     * any node within this cluster group that pass remote filter will be sent to local node for
+     * local listener notifications.
+     * <p>
+     * The listener can be unsubscribed automatically if local node stops, if {@code locLsnr} callback
+     * returns {@code false} or if {@link #stopRemoteListen(UUID)} is called.
+     *
+     * @param <T> Type of the event.
+     * @param locLsnr Listener callback that is called on local node. If {@code null}, this events will be handled
+     *      on remote nodes by passed in {@code rmtFilter}.
+     * @param rmtFilter Filter callback that is called on remote node. Only events that pass the remote filter
+     *      will be sent to local node. If {@code null}, all events of specified types will
+     *      be sent to local node. This remote filter can be used to pre-handle events remotely,
+     *      before they are passed in to local callback. It will be auto-unsubsribed on the node
+     *      where event occurred in case if it returns {@code false}.
+     * @param types Types of events to listen for. If not provided, all events that pass the
+     *      provided remote filter will be sent to local node.
+     * @return a Future representing pending completion of the operation. The completed future contains
+     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @throws IgniteException If failed to add listener.
+     */
+    public <T extends Event> IgniteFuture<UUID> remoteListenAsync(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types)
         throws IgniteException;
@@ -162,6 +205,48 @@ public interface IgniteEvents extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
+     * Asynchronously adds event listener for specified events to all nodes in the cluster group (possibly including
+     * local node if it belongs to the cluster group as well). This means that all events occurring on
+     * any node within this cluster group that pass remote filter will be sent to local node for
+     * local listener notification.
+     *
+     * @param <T> Type of the event.
+     * @param bufSize Remote events buffer size. Events from remote nodes won't be sent until buffer
+     *      is full or time interval is exceeded.
+     * @param interval Maximum time interval after which events from remote node will be sent. Events
+     *      from remote nodes won't be sent until buffer is full or time interval is exceeded.
+     * @param autoUnsubscribe Flag indicating that event listeners on remote nodes should be
+     *      automatically unregistered if master node (node that initiated event listening) leaves
+     *      topology. If this flag is {@code false}, listeners will be unregistered only when
+     *      {@link #stopRemoteListen(UUID)} method is called, or the {@code 'callback (locLsnr)'}
+     *      passed in returns {@code false}.
+     * @param locLsnr Callback that is called on local node. If this predicate returns {@code true},
+     *      the implementation will continue listening to events. Otherwise, events
+     *      listening will be stopped and listeners will be unregistered on all nodes
+     *      in the cluster group. If {@code null}, this events will be handled on remote nodes by
+     *      passed in {@code rmtFilter} until local node stops (if {@code 'autoUnsubscribe'} is {@code true})
+     *      or until {@link #stopRemoteListen(UUID)} is called.
+     * @param rmtFilter Filter callback that is called on remote node. Only events that pass the remote filter
+     *      will be sent to local node. If {@code null}, all events of specified types will
+     *      be sent to local node. This remote filter can be used to pre-handle events remotely,
+     *      before they are passed in to local callback. It will be auto-unsubsribed on the node
+     *      where event occurred in case if it returns {@code false}.
+     * @param types Types of events to listen for. If not provided, all events that pass the
+     *      provided remote filter will be sent to local node.
+     * @return a Future representing pending completion of the operation. The completed future contains
+     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @see #stopRemoteListen(UUID)
+     * @throws IgniteException If failed to add listener.
+     */
+    public <T extends Event> IgniteFuture<UUID> remoteListenAsync(int bufSize,
+        long interval,
+        boolean autoUnsubscribe,
+        @Nullable IgniteBiPredicate<UUID, T> locLsnr,
+        @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types)
+        throws IgniteException;
+
+    /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
      * operation ID on all nodes defined by {@link #clusterGroup()}.
      * <p>
@@ -176,6 +261,18 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /**
+     * Asynchronously stops listening to remote events. This will unregister all listeners identified with provided
+     * operation ID on all nodes defined by {@link #clusterGroup()}.
+     *
+     * @param opId Operation ID that was returned from
+     *      {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)} method.
+     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
+     * @return a Future representing pending completion of the operation.
+     * @throws IgniteException If failed to stop listeners.
+     */
+    public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException;
+
+    /**
      * Waits for the specified events.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -188,6 +285,18 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
+        throws IgniteException;
+
+    /**
+     * Create future to wait for the specified events.
+     *
+     * @param filter Optional filtering predicate. Only if predicates evaluates to {@code true} will the event
+     *      end the wait.
+     * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
+     * @return a Future representing pending completion of the operation. The completed future contains grid event.
+     * @throws IgniteException If wait was interrupted.
+     */
+    public <T extends Event> IgniteFuture<T> waitForLocalAsync(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
         throws IgniteException;
 
     /**

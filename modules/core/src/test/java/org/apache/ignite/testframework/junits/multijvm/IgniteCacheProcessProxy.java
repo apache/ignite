@@ -143,14 +143,31 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p,
+        @Nullable Object... args) throws CacheException {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws CacheException {
         compute.call(new LocalLoadCacheTask<>(cacheName, isAsync, p, args));
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p,
+        @Nullable Object... args) throws CacheException {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
         return compute.call(new GetAndPutIfAbsentTask<>(cacheName, isAsync, key, val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException {
+        return compute.callAsync(new GetAndPutIfAbsentTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -224,13 +241,26 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws CacheException {
+        return compute.callAsync(new SizeTask(cacheName, isAsync, peekModes, false));
+    }
+
+    /** {@inheritDoc} */
     @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
         return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, false));
+    }
+
+    @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
+        return compute.callAsync(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException {
         return compute.call(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
+    }
+
+    @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
+        return compute.callAsync(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }
 
     /** {@inheritDoc} */
@@ -257,8 +287,19 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public V get(K key) {
         return compute.call(new GetTask<K, V>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAsync(K key) {
+        return compute.callAsync(new GetTask<K, V>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -267,8 +308,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) {
+        return compute.callAsync(new GetEntryTask<K, V>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         return compute.call(new GetAllTask<K, V>(cacheName, isAsync, keys));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) {
+        return compute.callAsync(new GetAllTask<K, V>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -277,13 +328,28 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) {
+        return compute.callAsync(new GetEntriesTask<K, V>(cacheName, isAsync, keys));
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
         return compute.call(new GetAllOutTxTask<K, V>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
+        return compute.callAsync(new GetAllOutTxTask<K, V>(cacheName, isAsync, keys));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         return compute.call(new ContainsKeyTask<>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
+        return compute.callAsync(new ContainsKeyTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -297,8 +363,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeysAsync(Set<? extends K> keys) {
+        return compute.callAsync(new ContainsKeysTask<>(cacheName, isAsync, keys));
+    }
+
+    /** {@inheritDoc} */
     @Override public void put(K key, V val) {
         compute.call(new PutTask<>(cacheName, isAsync, expiryPlc, key, val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> putAsync(K key, V val) {
+        return compute.callAsync(new PutTask<>(cacheName, isAsync, expiryPlc, key, val));
     }
 
     /** {@inheritDoc} */
@@ -307,8 +383,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndPutAsync(K key, V val) {
+        return compute.callAsync(new GetAndPutTask<>(cacheName, isAsync, key, val));
+    }
+
+    /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) {
         compute.call(new PutAllTask<>(cacheName, isAsync, map));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
+        return compute.callAsync(new PutAllTask<>(cacheName, isAsync, map));
     }
 
     /** {@inheritDoc} */
@@ -317,8 +403,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> putIfAbsentAsync(K key, V val) {
+        return compute.callAsync(new PutIfAbsentTask<>(cacheName, isAsync, key, val));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean remove(K key) {
         return compute.call(new RemoveTask<>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> removeAsync(K key) {
+        return compute.callAsync(new RemoveTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -327,8 +423,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> removeAsync(K key, V oldVal) {
+        return compute.callAsync(new RemoveIfExistsTask<>(cacheName, isAsync, key, oldVal));
+    }
+
+    /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
         return compute.call(new GetAndRemoveTask<K, V>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndRemoveAsync(K key) {
+        return compute.callAsync(new GetAndRemoveTask<K, V>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -337,8 +443,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+        return compute.callAsync(new ReplaceIfExistsTask<>(cacheName, isAsync, key, oldVal, newVal));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) {
         return compute.call(new ReplaceTask<>(cacheName, isAsync, key, val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> replaceAsync(K key, V val) {
+        return compute.callAsync(new ReplaceTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -347,8 +463,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndReplaceAsync(K key, V val) {
+        return compute.callAsync(new GetAndReplaceTask<>(cacheName, isAsync, key, val));
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
         compute.call(new RemoveAllKeysTask<>(cacheName, isAsync, keys));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> removeAllAsync(Set<? extends K> keys) {
+        return compute.callAsync(new RemoveAllKeysTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -357,8 +483,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> removeAllAsync() {
+        return compute.callAsync(new RemoveAllTask<K, V>(cacheName, isAsync));
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() {
         compute.call(new ClearTask(cacheName, isAsync));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAsync() {
+        return compute.callAsync(new ClearTask(cacheName, isAsync));
     }
 
     /** {@inheritDoc} */
@@ -367,8 +503,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAsync(K key) {
+        return compute.callAsync(new ClearKeyTask<>(cacheName, isAsync, false, key));
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) {
         compute.call(new ClearAllKeys<>(cacheName, isAsync, false, keys));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
+        return compute.callAsync(new ClearAllKeys<>(cacheName, isAsync, false, keys));
     }
 
     /** {@inheritDoc} */
@@ -387,8 +533,20 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> invokeAsync(
+        K key, EntryProcessor<K, V, T> processor, Object... args) {
+        return compute.callAsync(new InvokeTask<>(cacheName, isAsync, key, processor, args));
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> processor, Object... args) {
         return compute.call(new InvokeTask<>(cacheName, isAsync, key, processor, args));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> processor,
+        Object... args) {
+        return compute.callAsync(new InvokeTask<>(cacheName, isAsync, key, processor, args));
     }
 
     /** {@inheritDoc} */
@@ -398,6 +556,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         Object... args)
     {
         return compute.call(new InvokeAllTask<>(cacheName, isAsync, keys, processor, args));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+        EntryProcessor<K, V, T> processor, Object... args) {
+        return compute.callAsync(new InvokeAllTask<>(cacheName, isAsync, keys, processor, args));
     }
 
     /** {@inheritDoc} */
@@ -457,6 +621,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        CacheEntryProcessor<K, V, T> entryProcessor, Object... args) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -1335,6 +1505,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /**
          * @param cacheName Cache name.
          * @param async Async.
+         * @param loc Local flag.
          * @param key Key.
          */
         public ClearKeyTask(String cacheName, boolean async, boolean loc, K key) {
@@ -1367,6 +1538,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /**
          * @param cacheName Cache name.
          * @param async Async.
+         * @param loc Local flag.
          * @param keys Keys.
          */
         public ClearAllKeys(String cacheName, boolean async, boolean loc, Set<? extends K> keys) {

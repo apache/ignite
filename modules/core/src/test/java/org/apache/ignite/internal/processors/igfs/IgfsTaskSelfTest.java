@@ -181,7 +181,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTaskAsync() throws Exception {
+    public void testTaskAsyncOld() throws Exception {
         U.sleep(3000);
 
         assertFalse(igfs.isAsync());
@@ -212,6 +212,40 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         igfsAsync.format();
 
         IgniteFuture<?> fut = igfsAsync.future();
+
+        assertNotNull(fut);
+
+        fut.get();
+    }
+
+    /**
+     * Test task async.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTaskAsync() throws Exception {
+        U.sleep(3000);
+
+        assertFalse(igfs.isAsync());
+
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
+
+            generateFile(TOTAL_WORDS);
+            Long genLen = igfs.info(FILE).length();
+
+            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = igfs.executeAsync(
+                new Task(), new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
+
+            assertNotNull(fut);
+
+            IgniteBiTuple<Long, Integer> taskRes = fut.get();
+
+            assert F.eq(genLen, taskRes.getKey());
+            assert F.eq(TOTAL_WORDS, taskRes.getValue());
+        }
+
+        IgniteFuture<?> fut = igfs.formatAsync();
 
         assertNotNull(fut);
 
