@@ -16,6 +16,7 @@
  */
 
 #include <sstream>
+#include <memory>
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
