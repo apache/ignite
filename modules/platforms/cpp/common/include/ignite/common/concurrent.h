@@ -401,7 +401,7 @@ namespace ignite
                  * @param lock Lockable object.
                  */
                 LockGuard(T& lock) :
-                    lock(lock)
+                    lock(&lock)
                 {
                     lock.Enter();
                 }
@@ -411,11 +411,34 @@ namespace ignite
                  */
                 ~LockGuard()
                 {
-                    lock.Leave();
+                    if (lock)
+                        lock->Leave();
+                }
+
+                /**
+                 * Releases control over lock without unlocking it.
+                 */
+                void Release()
+                {
+                    lock = 0;
+                }
+
+                /**
+                 * Releases control over lock and unlocks it as if it would
+                 * go out of scope.
+                 */
+                void Reset()
+                {
+                    if (lock)
+                    {
+                        lock->Leave();
+
+                        Release();
+                    }
                 }
 
             private:
-                T& lock;
+                T* lock;
             };
 
             typedef LockGuard<CriticalSection> CsLockGuard;
