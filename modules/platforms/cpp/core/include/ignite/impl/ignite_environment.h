@@ -21,6 +21,7 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 #include <ignite/jni/utils.h>
+#include <ignite/ignite_binding_context.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
@@ -180,7 +181,14 @@ namespace ignite
              *
              * @return IgniteBinding instance.
              */
-            IgniteBinding GetBinding();
+            IgniteBinding GetBinding() const;
+
+            /**
+             * Get binding context.
+             *
+             * @return Binding context.
+             */
+            IgniteBindingContext GetBindingContext() const;
 
             /**
              * Acquire ownership for the object.

@@ -1362,8 +1362,10 @@ namespace ignite
              *
              * See the example below for details:
              * @code{.cpp}
-             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
              * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
              *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
              *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
              *     // ...
@@ -1424,8 +1426,10 @@ namespace ignite
              *
              * See the example below for details:
              * @code{.cpp}
-             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
              * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
              *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
              *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
              *     // ...

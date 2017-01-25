@@ -152,7 +152,7 @@ namespace ignite
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
             binding(new IgniteBindingImpl()),
-            moduleMgr(new ModuleManager(ignite::IgniteBinding(binding)))
+            moduleMgr(new ModuleManager(GetBindingContext()))
         {
             // No-op.
         }
@@ -254,6 +254,16 @@ namespace ignite
             return metaUpdater;
         }
 
+        IgniteBinding IgniteEnvironment::GetBinding() const
+        {
+            return IgniteBinding(binding);
+        }
+
+        IgniteBindingContext IgniteEnvironment::GetBindingContext() const
+        {
+            return IgniteBindingContext(GetBinding());
+        }
+
         void* IgniteEnvironment::Acquire(void *obj)
         {
             return reinterpret_cast<void*>(ctx.Get()->Acquire(reinterpret_cast<jobject>(obj)));
@@ -268,11 +278,6 @@ namespace ignite
         HandleRegistry& IgniteEnvironment::GetHandleRegistry()
         {
             return registry;
-        }
-
-        IgniteBinding IgniteEnvironment::GetBinding()
-        {
-            return IgniteBinding(binding);
         }
 
         void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)

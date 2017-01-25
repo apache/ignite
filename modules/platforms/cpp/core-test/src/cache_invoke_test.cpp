@@ -28,7 +28,7 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
-#include "ignite/ignite_binding.h"
+#include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
 
 using namespace boost::unit_test;
@@ -401,8 +401,10 @@ namespace ignite
     }
 }
 
-IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
+IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
 {
+    IgniteBinding binding = context.GetBingding();
+
     binding.RegisterCacheEntryProcessor<CacheEntryModifier>();
     binding.RegisterCacheEntryProcessor<Divisor>();
 }

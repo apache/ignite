@@ -22,7 +22,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/dynamic_load_os.h>
-#include "ignite/ignite_binding.h"
+#include <ignite/ignite_binding_context.h>
 
 /**
  * @def IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME
@@ -44,17 +44,17 @@ namespace ignite
         class ModuleManager
         {
             typedef common::dynamic::Module Module;
-            typedef void (ModuleInitCallback)(IgniteBinding&);
+            typedef void (ModuleInitCallback)(IgniteBindingContext&);
 
         public:
             /**
              * Constructor.
              *
-             * @param binding Ignite Binding to use.
+             * @param context Ignite binding context.
              */
-            ModuleManager(ignite::IgniteBinding binding) :
+            ModuleManager(const IgniteBindingContext& context) :
                 loadedModules(),
-                binding(binding)
+                bindingContext(context)
             {
                 // No-op.
             }
@@ -98,12 +98,10 @@ namespace ignite
             {
                 loadedModules.push_back(module);
 
-                assert(binding.IsValid());
-
                 ModuleInitCallback* callback = GetModuleInitCallback(module);
 
                 if (callback)
-                    callback(binding);
+                    callback(bindingContext);
             }
 
         private:
@@ -124,8 +122,8 @@ namespace ignite
             /** Collection of loaded modules. */
             std::vector<Module> loadedModules;
 
-            /** Ignite binding reference. */
-            IgniteBinding binding;
+            /** Ignite environment. */
+            IgniteBindingContext bindingContext;
         };
     }
 }
