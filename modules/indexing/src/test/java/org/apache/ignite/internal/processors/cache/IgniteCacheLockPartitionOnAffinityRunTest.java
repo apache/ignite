@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.IgniteEx;
