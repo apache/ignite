@@ -234,8 +234,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             generateFile(TOTAL_WORDS);
             Long genLen = igfs.info(FILE).length();
 
-
-
             IgniteFuture<IgniteBiTuple<Long, Integer>> fut = igfs.executeAsync(
                 new Task(), new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
