@@ -1141,7 +1141,7 @@ public class IgniteTxHandler {
         else
             sendReply(nodeId, req, true, null);
 
-        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) : req;
     }
 
     /**
@@ -1507,7 +1507,7 @@ public class IgniteTxHandler {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                    entry.cached(null);
+                                    entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                 }
                             }
                         }
