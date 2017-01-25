@@ -150,6 +150,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private transient boolean daemon;
 
+    /** cluster region id*/
+    private Long regionId;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -251,6 +254,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
+        Object id = this.attrs.get("CLUSTER_REGION_ID");
+        if (id == null)
+            regionId = null;
+        else if (id instanceof Number)
+            regionId = ((Number) id).longValue();
+        else if (id instanceof String)
+            regionId = Long.valueOf((String) id);
+        else
+            regionId = null;
     }
 
     /**
@@ -629,6 +641,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
+    }
+
+    /**
+     * Return cluster region id.
+     *
+     * @return Cluster region id.
+     */
+    public Long getClusterRegionId() {
+        return regionId;
     }
 
     /** {@inheritDoc} */

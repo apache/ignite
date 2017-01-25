@@ -24,26 +24,12 @@ import java.util.Comparator;
  */
 public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
     /**
-     * @param node
-     * @return
-     */
-    private Long getRegionId(TcpDiscoveryNode node) {
-        Object id = node.getAttributes().get("CLUSTER_REGION_ID");
-        final Long result;
-        if (id == null) result = null;
-        else if (id instanceof Number) result = ((Number) id).longValue();
-        else if (id instanceof String) result = Long.valueOf((String) id);
-        else result = null;
-        return result;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
     public int compare(TcpDiscoveryNode nodeFirst, TcpDiscoveryNode nodeSecond) {
-        Long first = getRegionId(nodeFirst);
-        Long second = getRegionId(nodeSecond);
+        Long first = nodeFirst.getClusterRegionId();
+        Long second = nodeSecond.getClusterRegionId();
 
         final int result;
 
