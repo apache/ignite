@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -75,13 +76,28 @@ namespace Apache.Ignite.Core.Tests
 
             // Check all exceptions mapping.
             var comp = grid.GetCompute();
-            Assert.Throws<BinaryObjectException>(() => comp.ExecuteJavaTask<string>(ExceptionTask, 
-                "BinaryObjectException"));
+
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
 
             // Check stopped grid.
             grid.Dispose();
 
             Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
+        }
+
+        /// <summary>
+        /// Checks the exception.
+        /// </summary>
+        private static void CheckException<T>(ICompute comp, string name) where T : Exception
+        {
+            var ex = Assert.Throws<T>(() => comp.ExecuteJavaTask<string>(ExceptionTask, name));
+
+            Assert.AreEqual(name, ex.Message);
+
+            var javaEx = ex.InnerException as JavaException;
+
+            Assert.IsNotNull(javaEx);
+            Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
         }
 
         /// <summary>
