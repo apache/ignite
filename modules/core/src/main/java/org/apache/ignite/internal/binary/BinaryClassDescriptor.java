@@ -888,10 +888,10 @@ public class BinaryClassDescriptor {
         else if (obj instanceof BinaryObjectEx) {
             boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
 
-            writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
+            writer.postWrite(userType, registered, 0, !flagSet);
         }
         else
-            writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
+            writer.postWrite(userType, registered, 0, overridesHashCode);
     }
 
     /**
