@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -354,6 +355,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** Extensions. */
     private final PlatformCacheExtension[] exts;
 
+    /** Current future. */
+    private final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
+
     /**
      * Constructor.
      *
@@ -550,65 +554,64 @@ public class PlatformCache extends PlatformAbstractTarget {
 
 
                 case OP_PUT_ASYNC: {
-                    readAndListenFuture(reader,
-                        cache.putAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                    setCurrentFuture(cache.putAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_CLEAR_CACHE_ASYNC: {
-                    readAndListenFuture(reader, cache.clearAsync());
+                    setCurrentFuture(cache.clearAsync());
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_CLEAR_ALL_ASYNC: {
-                    readAndListenFuture(reader, cache.clearAllAsync(PlatformUtils.readSet(reader)));
+                    setCurrentFuture(cache.clearAllAsync(PlatformUtils.readSet(reader)));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_REMOVE_ALL2_ASYNC: {
-                    readAndListenFuture(reader, cache.removeAllAsync());
+                    setCurrentFuture(cache.removeAllAsync());
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_SIZE_ASYNC: {
                     CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
 
-                    readAndListenFuture(reader, cache.sizeAsync(modes));
+                    setCurrentFuture(cache.sizeAsync(modes));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_CLEAR_ASYNC: {
-                    readAndListenFuture(reader, cache.clearAsync(reader.readObjectDetached()));
+                    setCurrentFuture(cache.clearAsync(reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_LOAD_CACHE_ASYNC: {
-                    readAndListenFuture(reader, loadCache0(reader, false, cache));
+                    setCurrentFuture(loadCache0(reader, false, cache));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_LOC_LOAD_CACHE_ASYNC: {
-                    readAndListenFuture(reader, loadCache0(reader, true, cache));
+                    setCurrentFuture(loadCache0(reader, true, cache));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
                 }
 
                 case OP_PUT_ALL_ASYNC:
-                    readAndListenFuture(reader, cache.putAllAsync(PlatformUtils.readMap(reader)));
+                    setCurrentFuture(cache.putAllAsync(PlatformUtils.readMap(reader)));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_REMOVE_ALL_ASYNC:
-                    readAndListenFuture(reader, cache.removeAllAsync(PlatformUtils.readSet(reader)));
+                    setCurrentFuture(cache.removeAllAsync(PlatformUtils.readSet(reader)));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_REBALANCE:
                     readAndListenFuture(reader, cache.rebalance());
@@ -616,81 +619,80 @@ public class PlatformCache extends PlatformAbstractTarget {
                     return TRUE;
 
                 case OP_GET_ASYNC:
-                    readAndListenFuture(reader, cache.getAsync(reader.readObjectDetached()));
+                    setCurrentFuture(cache.getAsync(reader.readObjectDetached()));
 
-                    return TRUE;
+                    return  readAndListenFuture(reader);
 
                 case OP_CONTAINS_KEY_ASYNC:
-                    readAndListenFuture(reader, cache.containsKeyAsync(reader.readObjectDetached()));
+                    setCurrentFuture(cache.containsKeyAsync(reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_CONTAINS_KEYS_ASYNC:
-                    readAndListenFuture(reader, cache.containsKeysAsync(PlatformUtils.readSet(reader)));
+                    setCurrentFuture(cache.containsKeysAsync(PlatformUtils.readSet(reader)));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_REMOVE_OBJ_ASYNC:
-                    readAndListenFuture(reader, cache.removeAsync(reader.readObjectDetached()));
+                    setCurrentFuture(cache.removeAsync(reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_REMOVE_BOOL_ASYNC:
-                    readAndListenFuture(reader,
-                        cache.removeAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                    setCurrentFuture(cache.removeAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_GET_ALL_ASYNC: {
                     Set keys = PlatformUtils.readSet(reader);
 
-                    readAndListenFuture(reader, cache.getAllAsync(keys), WRITER_GET_ALL);
+                    setCurrentFuture(cache.getAllAsync(keys));
+
+                    readAndListenFuture(reader, currentFuture(), WRITER_GET_ALL);
 
                     return TRUE;
                 }
 
                 case OP_GET_AND_PUT_ASYNC:
-                    readAndListenFuture(reader,
-                        cache.getAndPutAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                    setCurrentFuture(cache.getAndPutAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_GET_AND_PUT_IF_ABSENT_ASYNC:
-                    readAndListenFuture(reader,
+                    setCurrentFuture(
                         cache.getAndPutIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_GET_AND_REMOVE_ASYNC:
-                    readAndListenFuture(reader, cache.getAndRemoveAsync(reader.readObjectDetached()));
+                    setCurrentFuture(cache.getAndRemoveAsync(reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_GET_AND_REPLACE_ASYNC:
-                    readAndListenFuture(reader,
-                        cache.getAndReplaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                    setCurrentFuture(cache.getAndReplaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_REPLACE_2_ASYNC:
-                    readAndListenFuture(reader,
-                        cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                    setCurrentFuture(cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_REPLACE_3_ASYNC:
-                    readAndListenFuture(reader,
-                        cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached(),
-                            reader.readObjectDetached()));
+                    setCurrentFuture(cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached(),
+                        reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_INVOKE_ASYNC: {
                     Object key = reader.readObjectDetached();
 
                     CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
 
-                    readAndListenFuture(reader, cache.invokeAsync(key, proc), WRITER_INVOKE);
+                    setCurrentFuture(cache.invokeAsync(key, proc));
+
+                    readAndListenFuture(reader, currentFuture(), WRITER_INVOKE);
 
                     return TRUE;
                 }
@@ -700,16 +702,17 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
 
-                    readAndListenFuture(reader, cache.invokeAllAsync(keys, proc), WRITER_INVOKE_ALL);
+                    setCurrentFuture(cache.invokeAllAsync(keys, proc));
+
+                    readAndListenFuture(reader, currentFuture(), WRITER_INVOKE_ALL);
 
                     return TRUE;
                 }
 
                 case OP_PUT_IF_ABSENT_ASYNC:
-                    readAndListenFuture(reader,
-                        cache.putIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                    setCurrentFuture(cache.putIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return TRUE;
+                    return readAndListenFuture(reader);
 
                 case OP_INVOKE: {
                     Object key = reader.readObjectDetached();
@@ -1356,6 +1359,13 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
 
         throw new IgniteException("Platform cache extension is not registered [id=" + id + ']');
+    }
+
+    /**
+     * @param fut Future to set.
+     */
+    private void setCurrentFuture(IgniteFuture<?> fut) {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
     }
 
     /**
