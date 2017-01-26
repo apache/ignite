@@ -280,18 +280,14 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         IgniteCompute compute0 = computeForTask(nodeIds);
 
-        if (async)
-            compute0 = compute0.withAsync();
-
         if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
-        Object res = compute0.execute(taskName, arg);
 
         if (async)
-            return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.future()));
+            return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.executeAsync(taskName, arg)));
         else
-            return toBinary(res);
+            return toBinary(compute0.execute(taskName, arg));
     }
 
     /**
