@@ -22,7 +22,6 @@ import java.io.ObjectOutput;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -403,20 +402,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
-            BigInteger intVal = val.unscaledValue();
-
-            if (intVal.signum() == -1) {
-                intVal = intVal.negate();
-
-                out.unsafeWriteInt(val.scale() | 0x80000000);
-            }
-            else
-                out.unsafeWriteInt(val.scale());
-
-            byte[] vals = intVal.toByteArray();
+            char[] vals = val.toString().toCharArray();
 
             out.unsafeWriteInt(vals.length);
-            out.writeByteArray(vals);
+
+            out.writeCharArray(vals);
         }
     }
 

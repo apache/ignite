@@ -27,7 +27,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,8 +64,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 
 /**
  * Binary utils.
@@ -1190,18 +1189,9 @@ public class BinaryUtils {
      * @return Value.
      */
     public static BigDecimal doReadDecimal(BinaryInputStream in) {
-        int scale = in.readInt();
-        byte[] mag = doReadByteArray(in);
+        char[] mag = doReadCharArray(in);
 
-        BigInteger intVal = new BigInteger(mag);
-
-        if (scale < 0) {
-            scale &= 0x7FFFFFFF;
-
-            intVal = intVal.negate();
-        }
-
-        return new BigDecimal(intVal, scale);
+        return new BigDecimal(mag);
     }
 
     /**

@@ -29,6 +29,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.util.AbstractQueue;
@@ -177,6 +178,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals((val = new BigDecimal(new BigInteger("-79228162514264337593543950336"))), marshalUnmarshal(val));
     }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeScaleDecimal() throws Exception {
+        BigDecimal val;
+
+        assertEquals((val = BigDecimal.ZERO.setScale(-1, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 0).setScale(-3, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 0).setScale(-5, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 8).setScale(-8, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 8).setScale(-10, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+    }
+
 
     /**
      * @throws Exception If failed.
