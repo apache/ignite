@@ -17,22 +17,24 @@
 
 package org.apache.ignite.hadoop.io;
 
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
 import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
-import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
- * Partial raw comparator for {@link Text} data type.
+ * Partial raw comparator for {@link BytesWritable} data type.
  * <p>
  * Implementation is borrowed from {@code org.apache.hadoop.io.FastByteComparisons} and adopted to Ignite
  * infrastructure.
  */
-public class TextPartiallyRawComparator implements PartiallyRawComparator<Text>, PartiallyOffheapRawComparatorEx<Text> {
+public class BytesWritablePartiallyRawComparator implements PartiallyRawComparator<BytesWritable>,
+    PartiallyOffheapRawComparatorEx<BytesWritable> {
+    /** Length bytes. */
+    private static final int LEN_BYTES = 4;
+
     /** {@inheritDoc} */
-    @Override public int compare(Text val1, RawMemory val2Buf) {
+    @Override public int compare(BytesWritable val1, RawMemory val2Buf) {
         if (val2Buf instanceof OffheapRawMemory) {
             OffheapRawMemory val2Buf0 = (OffheapRawMemory)val2Buf;
 
@@ -43,9 +45,7 @@ public class TextPartiallyRawComparator implements PartiallyRawComparator<Text>,
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(Text val1, long val2Ptr, int val2Len) {
-        int len2 = WritableUtils.decodeVIntSize(GridUnsafe.getByte(val2Ptr));
-
-        return HadoopUtils.compareBytes(val1.getBytes(), val1.getLength(), val2Ptr + len2, val2Len - len2);
+    @Override public int compare(BytesWritable val1, long val2Ptr, int val2Len) {
+        return HadoopUtils.compareBytes(val1.getBytes(), val1.getLength(), val2Ptr + LEN_BYTES, val2Len - LEN_BYTES);
     }
 }
