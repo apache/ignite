@@ -168,7 +168,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
         for (Map.Entry<Integer, MappedName> e : marshallerMapping.entrySet())
-            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
+            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), e.getValue().accepted()));
     }
 
     /**
