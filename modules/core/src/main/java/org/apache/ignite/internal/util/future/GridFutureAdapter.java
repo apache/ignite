@@ -62,7 +62,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private byte resFlag;
 
     /** Result. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object res;
 
     /** Future start time. */

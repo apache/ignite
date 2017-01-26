@@ -114,7 +114,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -1472,14 +1471,14 @@ public class IgnitionEx {
         /** IGFS executor service. */
         private ThreadPoolExecutor igfsExecSvc;
 
+        /** Data streamer executor service. */
+        private ThreadPoolExecutor dataStreamerExecSvc;
+
         /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
 
         /** Utility cache executor service. */
         private ThreadPoolExecutor utilityCacheExecSvc;
-
-        /** Marshaller cache executor service. */
-        private ThreadPoolExecutor marshCacheExecSvc;
 
         /** Affinity executor service. */
         private ThreadPoolExecutor affExecSvc;
@@ -1702,6 +1701,17 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
+            // Note that we do not pre-start threads here as this pool may not be needed.
+            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
+                "data-streamer",
+                cfg.getGridName(),
+                cfg.getDataStreamerThreadPoolSize(),
+                cfg.getDataStreamerThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            dataStreamerExecSvc.allowCoreThreadTimeOut(true);
+
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
 
@@ -1750,18 +1760,6 @@ public class IgnitionEx {
 
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
-            validateThreadPoolSize(myCfg.getMarshallerCacheThreadPoolSize(), "marshaller cache");
-
-            marshCacheExecSvc = new IgniteThreadPoolExecutor(
-                "marshaller-cache",
-                cfg.getGridName(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>());
-
-            marshCacheExecSvc.allowCoreThreadTimeOut(true);
-
             affExecSvc = new IgniteThreadPoolExecutor(
                 "aff",
                 cfg.getGridName(),
@@ -1799,13 +1797,13 @@ public class IgnitionEx {
                 grid0.start(
                     myCfg,
                     utilityCacheExecSvc,
-                    marshCacheExecSvc,
                     execSvc,
                     sysExecSvc,
                     stripedExecSvc,
                     p2pExecSvc,
                     mgmtExecSvc,
                     igfsExecSvc,
+                    dataStreamerExecSvc,
                     restExecSvc,
                     affExecSvc,
                     idxExecSvc,
@@ -2053,8 +2051,6 @@ public class IgnitionEx {
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            cacheCfgs.add(marshallerSystemCache());
-
             cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())
@@ -2081,10 +2077,6 @@ public class IgnitionEx {
 
                     if (CU.isUtilityCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isMarshallerCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
                     cacheCfgs.add(ccfg);
@@ -2262,29 +2254,6 @@ public class IgnitionEx {
         }
 
         /**
-         * Creates marshaller system cache configuration.
-         *
-         * @return Marshaller system cache configuration.
-         */
-        private static CacheConfiguration marshallerSystemCache() {
-            CacheConfiguration cache = new CacheConfiguration();
-
-            cache.setName(CU.MARSH_CACHE_NAME);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(ATOMIC);
-            cache.setSwapEnabled(false);
-            cache.setRebalanceMode(SYNC);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-            cache.setStartSize(300);
-            cache.setRebalanceOrder(-2);//Prior to other system caches.
-            cache.setCopyOnRead(false);
-
-            return cache;
-        }
-
-        /**
          * Creates utility system cache configuration.
          *
          * @return Utility system cache configuration.
@@ -2445,6 +2414,10 @@ public class IgnitionEx {
 
             p2pExecSvc = null;
 
+            U.shutdownNow(getClass(), dataStreamerExecSvc, log);
+
+            dataStreamerExecSvc = null;
+
             U.shutdownNow(getClass(), igfsExecSvc, log);
 
             igfsExecSvc = null;
@@ -2457,10 +2430,6 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
             utilityCacheExecSvc = null;
-
-            U.shutdownNow(getClass(), marshCacheExecSvc, log);
-
-            marshCacheExecSvc = null;
 
             U.shutdownNow(getClass(), affExecSvc, log);
 

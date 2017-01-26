@@ -220,13 +220,13 @@ namespace ignite
                 int64_t milliseconds = stream->ReadInt64();
                 int32_t nanoseconds = stream->ReadInt32();
 
-                return Timestamp(milliseconds / 1000, nanoseconds);
+                return Timestamp(milliseconds / 1000, (milliseconds % 1000) * 1000000 + nanoseconds);
             }
 
             void BinaryUtils::WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val)
             {
-                stream->WriteInt64(val.GetSeconds() * 1000);
-                stream->WriteInt32(val.GetSecondFraction());
+                stream->WriteInt64(val.GetSeconds() * 1000 + val.GetSecondFraction() / 1000000);
+                stream->WriteInt32(val.GetSecondFraction() % 1000000);
             }
 
             void BinaryUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)

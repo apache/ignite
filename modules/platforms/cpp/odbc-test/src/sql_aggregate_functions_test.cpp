@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloat)
     {
         testCache.Put(i, in[i]);
 
-        avg += in[i].i32Field;
+        avg += in[i].floatField;
     }
 
     avg /= in.size();
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloatDistinct)
     {
         testCache.Put(i, in[i]);
 
-        avg += in[i].i32Field;
+        avg += in[i].floatField;
     }
 
     avg /= in.size();

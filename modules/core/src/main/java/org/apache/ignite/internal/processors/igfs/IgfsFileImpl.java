@@ -27,7 +27,6 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -219,7 +218,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         out.writeInt(blockSize);
         out.writeLong(grpBlockSize);
         out.writeLong(len);
-        U.writeStringMap(out, props);
+        IgfsUtils.writeStringMap(out, props);
         out.writeLong(accessTime);
         out.writeLong(modificationTime);
         out.writeByte(flags);
@@ -235,7 +234,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         blockSize = in.readInt();
         grpBlockSize = in.readLong();
         len = in.readLong();
-        props = U.readStringMap(in);
+        props = IgfsUtils.readStringMap(in);
         accessTime = in.readLong();
         modificationTime = in.readLong();
         flags = in.readByte();

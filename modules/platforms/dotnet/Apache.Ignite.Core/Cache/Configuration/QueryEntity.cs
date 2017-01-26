@@ -178,8 +178,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ValueTypeName = reader.ReadString();
 
             var count = reader.ReadInt();
-            Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
-                    new QueryField(reader.ReadString(), reader.ReadString())).ToList();
+            Fields = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x =>
+                    new QueryField(reader.ReadString(), reader.ReadString()) {IsKeyField = reader.ReadBoolean()})
+                    .ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -205,6 +208,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     writer.WriteString(field.Name);
                     writer.WriteString(field.FieldTypeName);
+                    writer.WriteBoolean(field.IsKeyField);
                 }
             }
             else
@@ -264,16 +268,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Rescans the attributes in <see cref="KeyType"/> and <see cref="ValueType"/>.
         /// </summary>
-        private void RescanAttributes(params Type[] types)
+        private void RescanAttributes(Type keyType, Type valType)
         {
-            if (types.Length == 0 || types.All(t => t == null))
+            if (keyType == null && valType == null)
                 return;
 
             var fields = new List<QueryField>();
             var indexes = new List<QueryIndexEx>();
 
-            foreach (var type in types.Where(t => t != null))
-                ScanAttributes(type, fields, indexes, null, new HashSet<Type>());
+            if (keyType != null)
+                ScanAttributes(keyType, fields, indexes, null, new HashSet<Type>(), true);
+
+            if (valType != null)
+                ScanAttributes(valType, fields, indexes, null, new HashSet<Type>(), false);
 
             if (fields.Any())
                 Fields = fields;
@@ -308,15 +315,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Scans specified type for occurences of <see cref="QuerySqlFieldAttribute"/>.
+        /// Scans specified type for occurences of <see cref="QuerySqlFieldAttribute" />.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="fields">The fields.</param>
         /// <param name="indexes">The indexes.</param>
         /// <param name="parentPropName">Name of the parent property.</param>
         /// <param name="visitedTypes">The visited types.</param>
+        /// <param name="isKey">Whether this is a key type.</param>
+        /// <exception cref="System.InvalidOperationException">Recursive Query Field definition detected:  + type</exception>
         private static void ScanAttributes(Type type, List<QueryField> fields, List<QueryIndexEx> indexes, 
-            string parentPropName, ISet<Type> visitedTypes)
+            string parentPropName, ISet<Type> visitedTypes, bool isKey)
         {
             Debug.Assert(type != null);
             Debug.Assert(fields != null);
@@ -344,9 +353,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
-                    fields.Add(new QueryField(columnName, memberInfo.Value));
+                    fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
 
-                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
+                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
                 }
 
                 foreach (var attr in customAttributes.OfType<QueryTextFieldAttribute>())
@@ -359,9 +368,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
-                    fields.Add(new QueryField(columnName, memberInfo.Value));
+                    fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
 
-                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
+                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
                 }
             }
 

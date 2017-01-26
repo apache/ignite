@@ -164,6 +164,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Sets flag defining if this query is collocated.
      *
+     * Collocation flag is used for optimization purposes of queries with GROUP BY statements.
+     * Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+     * If you know in advance that the elements of your query selection are collocated together on the same node and
+     * you group by collocated key (primary or affinity key), then Ignite can make significant performance and network
+     * optimizations by grouping data on remote nodes.
+     *
      * @param collocated Flag value.
      * @return {@code this} For chaining.
      */
