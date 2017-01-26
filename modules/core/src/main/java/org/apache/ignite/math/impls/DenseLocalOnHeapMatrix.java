@@ -37,11 +37,14 @@ public class DenseLocalOnHeapMatrix implements Matrix {
     /** */
     private double[][] data;
 
+    /** */
+    private final int DFLT_SIZE = 100;
+
     /**
      *
      */
     public DenseLocalOnHeapMatrix() {
-        this(100, 100);
+        init(DFLT_SIZE, DFLT_SIZE);
     }
 
     /**
@@ -85,11 +88,12 @@ public class DenseLocalOnHeapMatrix implements Matrix {
      * @param args
      */
     public DenseLocalOnHeapMatrix(Map<String, Object> args) {
-        if (args.containsKey("rows") && args.containsKey("cols"))
+        if (args == null)
+            init(DFLT_SIZE, DFLT_SIZE);
+        else if (args.containsKey("rows") && args.containsKey("cols"))
             init((int)args.get("rows"), (int)args.get("cols"));
-        else if (args.containsKey("mtx") && args.containsKey("shallowCopy")) {
+        else if (args.containsKey("mtx") && args.containsKey("shallowCopy"))
             init((double[][])args.get("mtx"), (boolean)args.get("shallowCopy"));
-        }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }

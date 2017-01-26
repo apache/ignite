@@ -42,7 +42,7 @@ public interface IgniteMath extends IgniteAsyncSupport {
      * Creates new local matrix with given {@code flavor}.
      *
      * @param flavor Matrix flavor.
-     * @param args Initialization parameters for the new matrix.
+     * @param args Optional initialization parameters for the new matrix.
      * @return Newly created matrix.
      * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
      * @throws UnsupportedOperationException Thrown when provider is found but matrix cannot be created
@@ -54,7 +54,7 @@ public interface IgniteMath extends IgniteAsyncSupport {
      * Creates new distributed matrix with given {@code flavor}.
      * 
      * @param flavor Matrix flavor.
-     * @param args Initialization parameters for the new matrix.
+     * @param args Optional initialization parameters for the new matrix.
      * @param grp Cluster group to be used.
      * @return Newly created matrix.
      * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
@@ -67,7 +67,7 @@ public interface IgniteMath extends IgniteAsyncSupport {
      * Creates new local vector with given {@code flavor}.
      *
      * @param flavor Vector flavor.
-     * @param args Initialization parameters for the new vector.
+     * @param args Optional initialization parameters for the new vector.
      * @return Newly created vector.
      * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
      * @throws UnsupportedOperationException Thrown when provider is found but vector cannot be created
@@ -79,7 +79,7 @@ public interface IgniteMath extends IgniteAsyncSupport {
      * Creates new distributed vector with given {@code flavor}.
      *
      * @param flavor Vector flavor.
-     * @param args Initialization parameters for the new vector.
+     * @param args Optional initialization parameters for the new vector.
      * @param grp Cluster group to be used.
      * @return Newly created vector.
      * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.

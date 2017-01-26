@@ -35,7 +35,11 @@ import java.util.function.*;
  * to keep the entire data set.
  */
 public class DenseLocalOnHeapVector implements Vector, Externalizable {
+    /** */
     private double[] data;
+
+    /** */
+    private final int DFLT_SIZE = 100;
 
     /**
      *
@@ -59,11 +63,12 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
      * @param args
      */
     public DenseLocalOnHeapVector(Map<String, Object> args) {
-        if (args.containsKey("size"))
+        if (args == null)
+            init(DFLT_SIZE);
+        else if (args.containsKey("size"))
             init((int)args.get("size"));
-        else if (args.containsKey("arr") && args.containsKey("shallowCopy")) {
+        else if (args.containsKey("arr") && args.containsKey("shallowCopy"))
             init((double[])args.get("arr"), (boolean)args.get("shallowCopy"));
-        }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
@@ -72,7 +77,7 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
      *
      */
     public DenseLocalOnHeapVector() {
-        this(100);
+        init(DFLT_SIZE);
     }
 
     /**
