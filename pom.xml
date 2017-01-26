@@ -88,6 +88,7 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
+        <module>modules/rocketmq</module>
     </modules>
 
     <profiles>

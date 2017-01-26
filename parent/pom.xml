@@ -94,6 +94,7 @@
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
+        <rocketmq.version>4.0.0-SNAPSHOT</rocketmq.version>
         <scala210.jline.version>2.10.4</scala210.jline.version>
         <scala210.library.version>2.10.4</scala210.library.version>
         <scala211.library.version>2.11.7</scala211.library.version>
@@ -446,6 +447,10 @@
                             <group>
                                 <title>Flink integration</title>
                                 <packages>org.apache.ignite.sink.flink*</packages>
+                            </group>
+                            <group>
+                                <title>RocketMQ integration</title>
+                                <packages>org.apache.ignite.rocketmq*</packages>
                             </group>
                         </groups>
                         <header>
