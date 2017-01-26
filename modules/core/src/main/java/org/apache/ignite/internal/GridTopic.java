@@ -100,6 +100,9 @@ public enum GridTopic {
     TOPIC_IO_TEST,
 
     /** */
+    TOPIC_MAPPING_MARSH,
+
+    /** */
     TOPIC_HADOOP_MSG;
 
     /** Enum values. */
