@@ -214,7 +214,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean exchangeOnChangeGlobalState;
 
     /** */
-    private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
+
+    private final Map<UUID, Map<Integer, Long>> partHistSuppliers = new HashMap<>();
 
     /** Forced Rebalance future. */
     private GridFutureAdapter<Boolean> forcedRebFut;
@@ -505,7 +507,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
-                if (msg instanceof DynamicCacheChangeBatch){
+                if (msg instanceof DynamicCacheChangeBatch) {
                     assert !F.isEmpty(reqs);
 
                     exchange = onCacheChangeRequest(crdNode);
@@ -1042,7 +1044,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(
-            node, exchangeId(), clientOnlyExchange, true);
+            node, exchangeId(), clientOnlyExchange, true,
+            discoEvt.type() == EVT_NODE_JOINED);
 
         if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
             m.setException(changeGlobalStateE);
@@ -1070,6 +1073,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             nodes,
             exchangeId(),
             last != null ? last : cctx.versions().last(),
+            partHistSuppliers,
             compress);
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
@@ -1438,8 +1442,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
+        Map<Integer, Long> minCntrs = new HashMap<>();
 
-        for (Map.Entry<UUID, GridDhtPartitionsAbstractMessage> e : msgs.entrySet()) {
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
             assert e.getValue().partitionUpdateCounters(top.cacheId()) != null;
 
             for (Map.Entry<Integer, T2<Long, Long>> e0 : e.getValue().partitionUpdateCounters(top.cacheId()).entrySet()) {
@@ -1449,12 +1454,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 GridDhtPartitionState state = top.partitionState(uuid, p);
 
-                if (state != GridDhtPartitionState.OWNING)
+                if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
                     continue;
 
                 Long cntr = e0.getValue().get1();
 
                 if (cntr == null)
+                    continue;
+
+                Long minCntr = minCntrs.get(p);
+
+                if (minCntr == null || minCntr > cntr)
+                    minCntrs.put(p, cntr);
+
+                if (state != GridDhtPartitionState.OWNING)
                     continue;
 
                 CounterWithNodes maxCntr = maxCntrs.get(p);
@@ -1487,12 +1500,40 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             int p = e.getKey();
             long maxCntr = e.getValue().cnt;
 
-            entryLeft --;
+            entryLeft--;
 
             if (entryLeft != 0 && maxCntr == 0)
                 continue;
 
             top.setOwners(p, e.getValue().nodes, entryLeft == 0);
+        }
+
+        partHistSuppliers.clear();
+
+        for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
+            int p = e.getKey();
+            long minCntr = e.getValue();
+
+            if (minCntr == maxCntrs.get(p).cnt)
+                continue;
+
+            for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
+                Long histCntr = e0.getValue().partitionHistoryCounters(top.cacheId()).get(p);
+
+                if (histCntr != null && histCntr <= minCntr) {
+                    Map<Integer, Long> nodeMap = partHistSuppliers.get(e0.getKey());
+
+                    if (nodeMap == null) {
+                        nodeMap = new HashMap<>();
+
+                        partHistSuppliers.put(e0.getKey(), nodeMap);
+                    }
+
+                    nodeMap.put(p, minCntr);
+
+                    break;
+                }
+            }
         }
     }
 
@@ -1924,7 +1965,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         if (crd0.isLocal()) {
-                            if (exchangeOnChangeGlobalState && changeGlobalStateE !=null)
+                            if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
                                 changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
 
                             if (allReceived) {

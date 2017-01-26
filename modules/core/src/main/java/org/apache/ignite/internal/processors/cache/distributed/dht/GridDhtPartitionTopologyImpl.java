@@ -1556,7 +1556,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
-
             GridDhtLocalPartition locPart = locParts.get(p);
 
             if (locPart != null) {

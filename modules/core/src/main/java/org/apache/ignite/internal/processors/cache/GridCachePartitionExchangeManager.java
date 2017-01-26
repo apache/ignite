@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -826,7 +827,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if message was sent, {@code false} if node left grid.
      */
     private boolean sendAllPartitions(Collection<ClusterNode> nodes) {
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, true);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, null, true);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -858,12 +859,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Message.
      */
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(Collection<ClusterNode> nodes,
-        final @Nullable GridDhtPartitionExchangeId exchId,
+        @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
+        @Nullable Map<UUID, Map<Integer, Long>> partHistSuppliers,
         final boolean compress) {
         final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
             lastVer,
-            exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
+            exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE,
+            partHistSuppliers
+            );
 
         m.compress(compress);
 
@@ -965,6 +969,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(node,
             id,
             cctx.kernalContext().clientNode(),
+            false,
             false);
 
         if (log.isDebugEnabled())
@@ -993,7 +998,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsSingleMessage createPartitionsSingleMessage(ClusterNode targetNode,
         @Nullable GridDhtPartitionExchangeId exchangeId,
         boolean clientOnlyExchange,
-        boolean sndCounters)
+        boolean sndCounters,
+        boolean reserveHistory)
     {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
@@ -1015,6 +1021,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (sndCounters)
                     m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
+
+                if (reserveHistory) {
+                    try {
+                        m.partitionHistoryCounters(cacheCtx.cacheId(), cacheCtx.shared().database().reserveHistory(cacheCtx));
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
             }
         }
 

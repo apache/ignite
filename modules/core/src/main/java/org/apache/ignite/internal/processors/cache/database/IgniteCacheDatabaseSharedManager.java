@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -218,6 +220,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return null;
+    }
+
+    /**
+     * Reserve update history.
+     *
+     * @param cacheCtx Cache context.
+     * @return Reserved update counters per partition.
+     */
+    public Map<Integer, Long> reserveHistory(GridCacheContext cacheCtx) throws IgniteCheckedException {
+        return Collections.emptyMap();
     }
 
     /**
