@@ -28,7 +28,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -157,6 +156,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /** Pending locks. */
     private final Collection<KeyCacheObject> pendingLocks;
 
+    /** TTL for create operation. */
+    private long createTtl;
+
     /** TTL for read operation. */
     private long accessTtl;
 
@@ -195,6 +197,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         long timeout,
         GridDhtTxLocalAdapter tx,
         long threadId,
+        long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -215,6 +218,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
@@ -1062,22 +1066,16 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                             try {
                                 CacheObject val0 = cctx.toCacheObject(val);
 
-                                long ttl = CU.TTL_ETERNAL;
-                                long expireTime = CU.EXPIRE_TIME_ETERNAL;
+                                long ttl = createTtl;
+                                long expireTime;
 
-                                ExpiryPolicy expiry = cctx.expiry();
+                                if (ttl == CU.TTL_ZERO)
+                                    expireTime = CU.expireTimeInPast();
+                                else {
+                                    if (ttl == CU.TTL_NOT_CHANGED)
+                                        ttl = CU.TTL_ETERNAL;
 
-                                if (expiry != null) {
-                                    ttl = CU.toTtl(expiry.getExpiryForCreation());
-
-                                    if (ttl == CU.TTL_ZERO)
-                                        expireTime = CU.expireTimeInPast();
-                                    else {
-                                        if (ttl == CU.TTL_NOT_CHANGED)
-                                            ttl = CU.TTL_ETERNAL;
-
-                                        expireTime = CU.toExpireTime(ttl);
-                                    }
+                                    expireTime = CU.toExpireTime(ttl);
                                 }
 
                                 entry0.initialValue(val0,

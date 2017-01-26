@@ -204,6 +204,14 @@ namespace ignite
 
             return i == end;
         }
+
+        /**
+        * Converts 32-bit integer to big endian format
+        *
+        * @param value Input value
+        * @return Resulting value
+        */
+        IGNITE_IMPORT_EXPORT uint32_t ToBigEndian(uint32_t value);
     }
 }
 

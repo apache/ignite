@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.serializer.Deserializer;
@@ -40,9 +41,9 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.io.BytesWritablePartiallyRawComparator;
 import org.apache.ignite.hadoop.io.PartiallyRawComparator;
 import org.apache.ignite.hadoop.io.TextPartiallyRawComparator;
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopExternalSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
@@ -155,6 +156,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
 
         COMBINE_KEY_GROUPING_SUPPORTED = ok;
 
+        PARTIAL_COMPARATORS.put(ByteWritable.class.getName(), BytesWritablePartiallyRawComparator.class.getName());
         PARTIAL_COMPARATORS.put(Text.class.getName(), TextPartiallyRawComparator.class.getName());
     }
 
@@ -508,12 +510,6 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         FileSystem fs;
 
         try {
-            // This assertion uses .startsWith() instead of .equals() because task class loaders may
-            // be reused between tasks of the same job.
-            assert ((HadoopClassLoader)getClass().getClassLoader()).name()
-                .startsWith(HadoopClassLoader.nameForTask(taskInfo(), true));
-
-            // We also cache Fs there, all them will be cleared explicitly upon the Job end.
             fs = fileSystemForMrUserWithCaching(jobDir.toUri(), jobConf(), fsMap);
         }
         catch (IOException e) {
@@ -601,11 +597,16 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         if (clsName == null) {
             Class keyCls = conf.getMapOutputKeyClass();
 
-            if (keyCls != null) {
+            while (keyCls != null) {
                 clsName = PARTIAL_COMPARATORS.get(keyCls.getName());
 
-                if (clsName != null)
+                if (clsName != null) {
                     conf.set(HadoopJobProperty.JOB_PARTIALLY_RAW_COMPARATOR.propertyName(), clsName);
+
+                    break;
+                }
+
+                keyCls = keyCls.getSuperclass();
             }
         }
     }

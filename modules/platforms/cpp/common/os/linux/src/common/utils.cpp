@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include <time.h>
 
 #include <sys/stat.h>
@@ -121,10 +121,22 @@ namespace ignite
         bool FileExists(const std::string& path)
         {
             struct stat s;
-            
+
             int res = stat(path.c_str(), &s);
 
             return res != -1;
+        }
+
+        uint32_t ToBigEndian(uint32_t value)
+        {
+            // The answer is 42
+            static const int num = 42;
+            static const bool isLittleEndian = (*reinterpret_cast<const char*>(&num) == num);
+
+            if (isLittleEndian)
+                return ((value & 0xFF) << 24) | (((value >> 8) & 0xFF) << 16) | (((value >> 16) & 0xFF) << 8) | ((value >> 24) & 0xFF);
+
+            return value;
         }
     }
 }
