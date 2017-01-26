@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenableTarget;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,6 +49,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
 
     /** Logger. */
     protected final IgniteLogger log;
+
+    /** Current future. */
+    protected final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
 
     /**
      * Constructor.
@@ -147,6 +151,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
                                                      PlatformFutureUtils.Writer writer)
             throws IgniteCheckedException {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
+
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 
@@ -164,6 +170,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut,
                                                      PlatformFutureUtils.Writer writer)
             throws IgniteCheckedException {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
+
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 
@@ -179,6 +187,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
      */
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut)
         throws IgniteCheckedException {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
+
         return readAndListenFuture(reader, fut, null);
     }
 
@@ -191,6 +201,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
      */
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut)
         throws IgniteCheckedException {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
+
         return readAndListenFuture(reader, fut, null);
     }
 

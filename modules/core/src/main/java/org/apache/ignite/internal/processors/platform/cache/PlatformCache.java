@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -1131,6 +1130,11 @@ public class PlatformCache extends PlatformAbstractTarget {
             writer.writeObjectDetached(ex.getMessage());
             writer.writeObjectDetached(X.getFullStackTrace(ex));
         }
+    }
+
+    /** <inheritDoc /> */
+    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return curFut.get();
     }
 
     /** <inheritDoc /> */
