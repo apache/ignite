@@ -481,7 +481,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    T2<CacheObject, GridCacheVersion> verVal = entry.versionedValue(cacheVal,
+                                    EntryGetResult verVal = entry.versionedValue(cacheVal,
                                         ver,
                                         null,
                                         null,
@@ -490,11 +490,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (log.isDebugEnabled()) {
                                         log.debug("Set value loaded from store into entry [" +
                                             "oldVer=" + ver +
-                                            ", newVer=" + verVal.get2() +
+                                            ", newVer=" + verVal.version() +
                                             ", entry=" + entry + ']');
                                     }
 
-                                    ver = verVal.get2();
+                                    ver = verVal.version();
 
                                     break;
                                 }
@@ -1212,7 +1212,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             assert ver != null;
                         }
 
-                        cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false, ver);
+                        cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false,
+                            ver, 0, 0);
                     }
                 }
                 else {
@@ -1221,6 +1222,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     while (true) {
                         try {
                             GridCacheVersion readVer = null;
+                            EntryGetResult getRes = null;
 
                             Object transformClo =
                                 (txEntry.op() == TRANSFORM &&
@@ -1228,7 +1230,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     F.first(txEntry.entryProcessors()) : null;
 
                             if (needVer) {
-                                EntryGetResult res = txEntry.cached().innerGetVersioned(
+                                getRes = txEntry.cached().innerGetVersioned(
                                     null,
                                     this,
                                     /*swap*/true,
@@ -1242,9 +1244,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     txEntry.keepBinary(),
                                     null);
 
-                                if (res != null) {
-                                    val = res.value();
-                                    readVer = res.version();
+                                if (getRes != null) {
+                                    val = getRes.value();
+                                    readVer = getRes.version();
                                 }
                             }
                             else {
@@ -1277,7 +1279,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     keepCacheObjects,
                                     deserializeBinary,
                                     false,
-                                    readVer);
+                                    getRes,
+                                    readVer,
+                                    0,
+                                    0,
+                                    needVer);
                             }
                             else
                                 missed.put(key, txEntry.cached().version());
@@ -1306,13 +1312,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         CacheObject val = null;
                         GridCacheVersion readVer = null;
+                        EntryGetResult getRes = null;
 
                         if (!pessimistic() || readCommitted() && !skipVals) {
                             IgniteCacheExpiryPolicy accessPlc =
                                 optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
                             if (needReadVer) {
-                                EntryGetResult res = primaryLocal(entry) ?
+                                getRes = primaryLocal(entry) ?
                                     entry.innerGetVersioned(
                                         null,
                                         this,
@@ -1327,9 +1334,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         !deserializeBinary,
                                         null) : null;
 
-                                if (res != null) {
-                                    val = res.value();
-                                    readVer = res.version();
+                                if (getRes != null) {
+                                    val = getRes.value();
+                                    readVer = getRes.version();
                                 }
                             }
                             else {
@@ -1356,7 +1363,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     keepCacheObjects,
                                     deserializeBinary,
                                     false,
-                                    needVer ? readVer : null);
+                                    getRes,
+                                    readVer,
+                                    0,
+                                    0,
+                                    needVer);
                             }
                             else
                                 missed.put(key, ver);
@@ -1534,7 +1545,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     keepCacheObjects,
                                     deserializeBinary,
                                     false,
-                                    needVer ? loadVer : null);
+                                    needVer ? loadVer : null,
+                                    0,
+                                    0);
                             }
                         }
                         else {
@@ -1556,7 +1569,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     keepCacheObjects,
                                     deserializeBinary,
                                     false,
-                                    needVer ? loadVer : null);
+                                    needVer ? loadVer : null,
+                                    0,
+                                    0);
                             }
                         }
                     }
@@ -1663,6 +1678,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                 CacheObject val = null;
                                 GridCacheVersion readVer = null;
+                                EntryGetResult getRes = null;
 
                                 try {
                                     Object transformClo =
@@ -1671,7 +1687,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             F.first(txEntry.entryProcessors()) : null;
 
                                     if (needVer) {
-                                        EntryGetResult res = cached.innerGetVersioned(
+                                        getRes = cached.innerGetVersioned(
                                             null,
                                             IgniteTxLocalAdapter.this,
                                             /*swap*/cacheCtx.isSwapOrOffheapEnabled(),
@@ -1685,9 +1701,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.keepBinary(),
                                             null);
 
-                                        if (res != null) {
-                                            val = res.value();
-                                            readVer = res.version();
+                                        if (getRes != null) {
+                                            val = getRes.value();
+                                            readVer = getRes.version();
                                         }
                                     }
                                     else{
@@ -1722,7 +1738,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             keepCacheObjects,
                                             deserializeBinary,
                                             false,
-                                            readVer);
+                                            getRes,
+                                            readVer,
+                                            0,
+                                            0,
+                                            needVer);
 
                                         if (readVer != null)
                                             txEntry.entryReadVersion(readVer);

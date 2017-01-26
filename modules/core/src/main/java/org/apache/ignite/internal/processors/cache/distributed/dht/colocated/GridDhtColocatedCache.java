@@ -481,11 +481,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
+                            EntryGetResult getRes = null;
                             CacheObject v = null;
                             GridCacheVersion ver = null;
 
                             if (needVer) {
-                                EntryGetResult res = entry.innerGetVersioned(
+                                getRes = entry.innerGetVersioned(
                                     null,
                                     null,
                                     /*swap*/true,
@@ -499,9 +500,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     !deserializeBinary,
                                     null);
 
-                                if (res != null) {
-                                    v = res.value();
-                                    ver = res.version();
+                                if (getRes != null) {
+                                    v = getRes.value();
+                                    ver = getRes.version();
                                 }
                             }
                             else {
@@ -540,7 +541,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     keepCacheObj,
                                     deserializeBinary,
                                     true,
-                                    ver);
+                                    getRes,
+                                    ver,
+                                    0,
+                                    0,
+                                    needVer);
                             }
                         }
                         else

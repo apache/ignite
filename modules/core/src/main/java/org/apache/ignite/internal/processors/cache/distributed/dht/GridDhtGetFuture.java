@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -46,7 +47,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -390,7 +390,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 txFut.markInitialized();
         }
 
-        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut;
+        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut;
 
         if (txFut == null || txFut.isDone()) {
             fut = cache().getDhtAllAsync(
@@ -411,8 +411,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             // transactions to complete.
             fut = new GridEmbeddedFuture<>(
                 txFut,
-                new C2<Boolean, Exception, IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>>>() {
-                    @Override public IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> apply(Boolean b, Exception e) {
+                new C2<Boolean, Exception, IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>() {
+                    @Override public IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> apply(Boolean b, Exception e) {
                         if (e != null)
                             throw new GridClosureException(e);
 
@@ -438,9 +438,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         return new GridEmbeddedFuture<>(
-            new C2<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>, Exception, Collection<GridCacheEntryInfo>>() {
+            new C2<Map<KeyCacheObject, EntryGetResult>, Exception, Collection<GridCacheEntryInfo>>() {
                 @Override public Collection<GridCacheEntryInfo> apply(
-                    Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map, Exception e
+                    Map<KeyCacheObject, EntryGetResult> map, Exception e
                 ) {
                     if (e != null) {
                         onDone(e);
@@ -458,14 +458,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param map Map to convert.
      * @return List of infos.
      */
-    private Collection<GridCacheEntryInfo> toEntryInfos(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+    private Collection<GridCacheEntryInfo> toEntryInfos(Map<KeyCacheObject, EntryGetResult> map) {
         if (map.isEmpty())
             return Collections.emptyList();
 
         Collection<GridCacheEntryInfo> infos = new ArrayList<>(map.size());
 
-        for (Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> entry : map.entrySet()) {
-            T2<CacheObject, GridCacheVersion> val = entry.getValue();
+        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : map.entrySet()) {
+            EntryGetResult val = entry.getValue();
 
             assert val != null;
 
@@ -473,8 +473,10 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
             info.cacheId(cctx.cacheId());
             info.key(entry.getKey());
-            info.value(skipVals ? null : val.get1());
-            info.version(val.get2());
+            info.value(skipVals ? null : (CacheObject)val.value());
+            info.version(val.version());
+            info.expireTime(val.expireTime());
+            info.ttl(val.ttl());
 
             infos.add(info);
         }
