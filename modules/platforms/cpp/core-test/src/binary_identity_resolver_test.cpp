@@ -223,6 +223,30 @@ struct BinaryIdentityResolverTestSuiteFixture
 
 BOOST_FIXTURE_TEST_SUITE(BinaryIdentityResolverTestSuite, BinaryIdentityResolverTestSuiteFixture)
 
+BOOST_AUTO_TEST_CASE(TestGetDataHashCode)
+{
+    int8_t data1[] = { 0 };
+    int8_t data2[] = { 0, 0, 0, 0 };
+    int8_t data3[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    int8_t data4[] = { 1 };
+    int8_t data5[] = { -1 };
+    int8_t data6[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    int8_t data7[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+    uint8_t data8[] = { 0xFF };
+    uint8_t data9[] = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data1, sizeof(data1)), 0x0000001F);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data2, sizeof(data2)), 0x000e1781);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data3, sizeof(data3)), 0x94E4B2C1);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data4, sizeof(data4)), 0x00000020);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data5, sizeof(data5)), 0x0000001E);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data6, sizeof(data6)), 0x9EBADAC6);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data7, sizeof(data7)), 0xC5D38B5C);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data8, sizeof(data8)), 0x0000001E);
+    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data9, sizeof(data9)), 0x000D9F41);
+}
+
+
 BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithGuid)
 {
     CompositeKey key("Key String", Timestamp(123851, 562304134), Guid(0x4A950C6206FE4502, 0xAC06145097E56F02));
