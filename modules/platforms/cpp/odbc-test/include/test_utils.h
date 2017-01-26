@@ -29,11 +29,11 @@
 
 #include "ignite/ignition.h"
 
-#define ODBC_FAIL_ON_ERROR(ret, type, handle)           \
-    if (!SQL_SUCCEEDED(ret))                            \
-    {                                                   \
-        Ignition::StopAll(true);                        \
-        BOOST_FAIL(GetOdbcErrorMessage(type, handle));  \
+#define ODBC_FAIL_ON_ERROR(ret, type, handle)                       \
+    if (!SQL_SUCCEEDED(ret))                                        \
+    {                                                               \
+        Ignition::StopAll(true);                                    \
+        BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle)); \
     }
 
 

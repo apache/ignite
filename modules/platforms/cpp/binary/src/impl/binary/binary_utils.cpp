@@ -303,7 +303,7 @@ namespace ignite
                 int64_t milliseconds = stream->ReadInt64();
                 int32_t nanoseconds = stream->ReadInt32();
 
-                return Timestamp(milliseconds / 1000, nanoseconds + ((milliseconds % 1000) * 1000000));
+                return Timestamp(milliseconds / 1000, (milliseconds % 1000) * 1000000 + nanoseconds);
             }
 
             void BinaryUtils::WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val)

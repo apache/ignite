@@ -107,6 +107,9 @@
     <Filter Include="Code\Types">
       <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Types">
+      <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\cache-test.xml">

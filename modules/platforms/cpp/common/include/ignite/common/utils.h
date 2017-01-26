@@ -209,6 +209,14 @@ namespace ignite
         }
 
         /**
+         * Converts 32-bit integer to big endian format
+         *
+         * @param value Input value
+         * @return Resulting value
+         */
+        IGNITE_IMPORT_EXPORT uint32_t ToBigEndian(uint32_t value);
+
+        /**
          * Convert Date type to standard C type time_t.
          *
          * @param date Date type value.
