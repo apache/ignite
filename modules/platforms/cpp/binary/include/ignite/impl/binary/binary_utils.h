@@ -36,6 +36,7 @@ namespace ignite
         {
             class InteropInputStream;
             class InteropOutputStream;
+            class InteropMemory;
         }
 
         namespace binary
@@ -53,6 +54,26 @@ namespace ignite
                  * @return Value.
                  */
                 static int8_t ReadInt8(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to read signed 8-bit integer from memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int8_t ReadInt8(interop::InteropMemory& mem, int32_t pos);
+
+                /**
+                 * Utility method to read signed 8-bit integer from memory.
+                 * @warning Does not check if there is enough data in memory to read.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int8_t UnsafeReadInt8(interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 8-bit integer to stream.
@@ -123,6 +144,26 @@ namespace ignite
                 static int16_t ReadInt16(interop::InteropInputStream* stream);
 
                 /**
+                 * Utility method to read signed 16-bit integer from memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int16_t ReadInt16(interop::InteropMemory& mem, int32_t pos);
+
+                /**
+                 * Utility method to read signed 16-bit integer from memory.
+                 * @warning Does not check if there is enough data in memory to read.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int16_t UnsafeReadInt16(interop::InteropMemory& mem, int32_t pos);
+
+                /**
                  * Utility method to write signed 16-bit integer to stream.
                  *
                  * @param stream Stream.
@@ -189,6 +230,26 @@ namespace ignite
                  * @return Value.
                  */
                 static int32_t ReadInt32(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to read signed 32-bit integer from memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int32_t ReadInt32(interop::InteropMemory& mem, int32_t pos);
+
+                /**
+                 * Utility method to read signed 32-bit integer from memory.
+                 * @warning Does not check if there is enough data in memory to read.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int32_t UnsafeReadInt32(interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 32-bit integer to stream.
