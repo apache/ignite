@@ -911,7 +911,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return Collection of cached values.
      */
-    public Collection<V> values();
+    public Iterable<V> values();
 
     /**
      * Gets set of all entries cached on this node. You can remove
@@ -1454,6 +1454,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition.
+     * @param peekModes Peek modes.
+     * @return Local cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Global cache size.
      * @throws IgniteCheckedException If failed.
@@ -1468,6 +1476,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long sizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition
+     * @param peekModes Peek modes.
+     * @return Global cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long sizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Future.
      */
@@ -1478,6 +1494,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      */
     public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes);
+
+    /**
+     * @param partition partiton
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Long> sizeLongAsync(int partition, CachePeekMode[] peekModes);
 
     /**
      * Gets size of near cache key set. This method will return count of all entries in near
@@ -1773,6 +1796,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteInternalCache<K, V> withNoRetries();
+
+    /**
      * @param key Key.
      * @param entryProcessor Entry processor.
      * @param args Arguments.
@@ -1895,7 +1923,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public V getTopologySafe(K key) throws IgniteCheckedException;
 
     /**
-     * Tries to put value in cache. Will fail with {@link GridCacheTryPutFailedException}
+     * Tries to get and put value in cache. Will fail with {@link GridCacheTryPutFailedException}
      * if topology exchange is in progress.
      *
      * @param key Key.
@@ -1903,7 +1931,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Old value.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException;
+    @Nullable public V tryGetAndPut(K key, V val) throws IgniteCheckedException;
 
     /**
      * @param topVer Locked topology version.

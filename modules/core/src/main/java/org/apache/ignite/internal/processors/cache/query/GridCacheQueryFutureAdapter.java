@@ -155,14 +155,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);
 
-        qry.query().onCompleted(res, err, startTime(), duration());
-
         return super.onDone(res, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int available() {
-        return cnt.get();
     }
 
     /** {@inheritDoc} */
@@ -568,6 +561,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         catch (IgniteCheckedException e) {
             onDone(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cancel();
     }
 
     /** {@inheritDoc} */

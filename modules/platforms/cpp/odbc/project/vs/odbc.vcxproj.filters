@@ -1,0 +1,270 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx;h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{3f714d15-6347-46a7-bc59-d87c1aea900c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\query">
+      <UniqueIdentifier>{b09a6b2e-c30c-4727-8e85-4b315e757706}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\meta">
+      <UniqueIdentifier>{71d6243f-e8c9-4f21-a5a3-3dc89641af28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\config">
+      <UniqueIdentifier>{71117941-fa47-4768-afe8-901c94d431c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\app">
+      <UniqueIdentifier>{dbe40149-df23-4b89-92e4-16817775cd0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\system">
+      <UniqueIdentifier>{7ab279dc-6586-4b32-aca7-0add0c0ab68a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\diagnostic">
+      <UniqueIdentifier>{df33e506-b5d8-423f-bcc5-1825242a3e28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\system\ui">
+      <UniqueIdentifier>{ff144e89-0a10-42c3-97dd-d22bfdbc7abb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\odbc.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\connection.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\environment.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\statement.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\type_traits.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common_types.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utility.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\log.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cursor.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\result_page.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\row.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\data_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\column_metadata_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\table_metadata_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\meta\column_meta.cpp">
+      <Filter>Code\meta</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\meta\table_meta.cpp">
+      <Filter>Code\meta</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\configuration.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\connection_info.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\app\application_data_buffer.cpp">
+      <Filter>Code\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\app\parameter.cpp">
+      <Filter>Code\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\foreign_keys_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\primary_keys_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp">
+      <Filter>Code\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\diagnostic\diagnostic_record_storage.cpp">
+      <Filter>Code\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp">
+      <Filter>Code\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
+      <Filter>Code\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\type_info_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\column.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\special_columns_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\entry_points.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system_dsn.cpp">
+      <Filter>Code\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsn_config.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\protocol_version.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="module.def">
+      <Filter>Misc</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\odbc\common_types.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\connection.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\cursor.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\environment.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\message.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\parser.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\result_page.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\row.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\statement.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\type_traits.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\utility.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\log.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h">
+      <Filter>Code\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h">
+      <Filter>Code\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h">
+      <Filter>Code\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h">
+      <Filter>Code\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h">
+      <Filter>Code\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h">
+      <Filter>Code\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h">
+      <Filter>Code\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable.h">
+      <Filter>Code\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable_adapter.h">
+      <Filter>Code\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h">
+      <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
+      <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\column.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\special_columns_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

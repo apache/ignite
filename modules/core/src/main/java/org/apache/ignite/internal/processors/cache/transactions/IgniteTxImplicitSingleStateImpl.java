@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -36,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 
 /**
  *
@@ -69,6 +70,19 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return cacheCtx != null ? cacheCtx.cacheId() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        if (entry == null || entry.isEmpty())
+            return;
+
+        assert entry.size() == 1;
+
+        GridCacheContext ctx = cctx.cacheContext(entry.get(0).cacheId());
+
+        if (ctx != null)
+            CU.unwindEvicts(ctx);
     }
 
     /** {@inheritDoc} */
@@ -105,8 +119,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sync(GridCacheSharedContext cctx) {
-        return cacheCtx != null && cacheCtx.config().getWriteSynchronizationMode() == FULL_SYNC;
+    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+        return cacheCtx != null ? cacheCtx.config().getWriteSynchronizationMode() : FULL_ASYNC;
     }
 
     /** {@inheritDoc} */
@@ -163,13 +177,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         CacheStoreManager store = cacheCtx.store();
 
-        if (store.configured()) {
-            HashSet<CacheStoreManager> set = new HashSet<>(3, 0.75f);
-
-            set.add(store);
-
-            return set;
-        }
+        if (store.configured())
+            return Collections.singleton(store);
 
         return null;
     }

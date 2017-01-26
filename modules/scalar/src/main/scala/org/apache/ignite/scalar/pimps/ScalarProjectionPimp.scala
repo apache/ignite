@@ -579,7 +579,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * All default SPI implementations configured for this grid instance will be
      * used (i.e. failover, load balancing, collision resolution, etc.).
      * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement `GridComputeTask` which will provide you with full control over the execution.
+     * you should implement `ComputeTask` which will provide you with full control over the execution.
      *
      * Notice that `Runnable` and `Callable` implementations must support serialization as required
      * by the configured marshaller. For example, JDK marshaller will require that implementations would
@@ -616,7 +616,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * not block and returns immediately with future. All default SPI implementations
      * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
      * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement `GridComputeTask` which will provide you with full control over the execution.
+     * you should implement `ComputeTask` which will provide you with full control over the execution.
      *
      * Note that class `GridAbsClosure` implements `Runnable` and class `GridOutClosure`
      * implements `Callable` interface. Note also that class `GridFunc` and typedefs provide rich

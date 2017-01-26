@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Runtime.Serialization;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Resource;
@@ -32,11 +33,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     {
         public static readonly IDictionary Map = new ConcurrentDictionary<object, object>();
 
-        public static bool ExpCommit;
-        
         public static bool LoadMultithreaded;
 
         public static bool LoadObjects;
+
+        public static bool ThrowError;
 
         [InstanceResource]
         private IIgnite _grid = null;
@@ -54,14 +55,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             Map.Clear();
 
-            ExpCommit = false;
             LoadMultithreaded = false;
             LoadObjects = false;
+            ThrowError = false;
         }
 
         public void LoadCache(Action<object, object> act, params object[] args)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
+
+            if (args == null || args.Length == 0)
+                return;
+
+            if (args.Length == 3 && args[0] == null)
+            {
+                // Testing arguments passing.
+                var key = args[1];
+                var val = args[2];
+
+                act(key, val);
+
+                return;
+            }
 
             if (LoadMultithreaded)
             {
@@ -91,6 +108,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public object Load(object key)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             return Map[key];
@@ -98,6 +117,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public IDictionary LoadAll(ICollection keys)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             return keys.OfType<object>().ToDictionary(key => key, key => "val_" + key);
@@ -105,6 +126,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void Write(object key, object val)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             Map[key] = val;
@@ -112,6 +135,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void WriteAll(IDictionary map)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             foreach (DictionaryEntry e in map)
@@ -120,6 +145,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void Delete(object key)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             Map.Remove(key);
@@ -127,6 +154,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void DeleteAll(ICollection keys)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             foreach (object key in keys)
@@ -150,6 +179,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             get { return stringProperty; }
             set { stringProperty = value; }
+        }
+
+        private static void ThrowIfNeeded()
+        {
+            if (ThrowError)
+                throw new CustomStoreException("Exception in cache store");
+        }
+
+        [Serializable]
+        public class CustomStoreException : Exception, ISerializable
+        {
+            public string Details { get; private set; }
+
+            public CustomStoreException(string message) : base(message)
+            {
+                Details = message;
+            }
+
+            protected CustomStoreException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
+            {
+                Details = info.GetString("details");
+            }
+
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("details", Details);
+
+                base.GetObjectData(info, context);
+            }
         }
     }
 }

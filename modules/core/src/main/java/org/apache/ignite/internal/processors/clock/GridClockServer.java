@@ -64,7 +64,8 @@ public class GridClockServer {
 
         try {
             int startPort = ctx.config().getTimeServerPortBase();
-            int endPort = startPort + ctx.config().getTimeServerPortRange() - 1;
+            int portRange = ctx.config().getTimeServerPortRange();
+            int endPort = portRange == 0 ? startPort : startPort + portRange - 1;
 
             InetAddress locHost;
 

@@ -11,6 +11,7 @@
     <AssemblyName>Apache.Ignite.ExamplesDll</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <NoWarn>649</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -32,6 +33,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <HintPath Condition="Exists('..\..\Apache.Ignite')">..\..\Apache.Ignite\bin\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
@@ -45,10 +49,16 @@
     <Compile Include="Compute\AverageSalaryTask.cs" />
     <Compile Include="Compute\CharacterCountClosure.cs" />
     <Compile Include="Compute\CharacterCountReducer.cs" />
+    <Compile Include="Datagrid\CacheIncrementEntryProcessor.cs" />
+    <Compile Include="Datagrid\CachePutEntryProcessor.cs" />
     <Compile Include="Datagrid\EmployeeStoreFactory.cs" />
     <Compile Include="Datagrid\EmployeeStorePredicate.cs" />
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStore.cs" />
+    <Compile Include="Datagrid\ScanQueryFilter.cs" />
+    <Compile Include="DataStructures\AtomicReferenceModifyAction.cs" />
+    <Compile Include="DataStructures\AtomicSequenceIncrementAction.cs" />
+    <Compile Include="DataStructures\AtomicLongIncrementAction.cs" />
     <Compile Include="Events\LocalListener.cs" />
     <Compile Include="Messaging\LocalListener.cs" />
     <Compile Include="Messaging\RemoteOrderedListener.cs" />
@@ -57,7 +67,6 @@
     <Compile Include="Binary\Account.cs" />
     <Compile Include="Binary\Address.cs" />
     <Compile Include="Binary\Employee.cs" />
-    <Compile Include="Binary\EmployeeKey.cs" />
     <Compile Include="Binary\Organization.cs" />
     <Compile Include="Binary\OrganizationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

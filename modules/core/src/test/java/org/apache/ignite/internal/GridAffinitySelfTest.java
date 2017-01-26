@@ -51,7 +51,6 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
 
         cfg.setDiscoverySpi(disco);
 
@@ -73,7 +72,9 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(1, 2);
+        startGrid(2);
+
+        startGrid(1);
     }
 
     /** {@inheritDoc} */

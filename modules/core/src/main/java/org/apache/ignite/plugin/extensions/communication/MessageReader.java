@@ -85,6 +85,15 @@ public interface MessageReader {
     public int readInt(String name);
 
     /**
+     * Reads {@code int} value.
+     *
+     * @param name Field name.
+     * @param dflt Default value if field not found.
+     * @return {@code int} value.
+     */
+    public int readInt(String name, int dflt);
+
+    /**
      * Reads {@code long} value.
      *
      * @param name Field name.

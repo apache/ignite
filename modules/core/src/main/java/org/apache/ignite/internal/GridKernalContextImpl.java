@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
@@ -81,6 +83,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -89,6 +92,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
@@ -237,6 +241,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
+    private HadoopHelper hadoopHelper;
+
+    /** */
+    @GridToStringInclude
     private GridSegmentationProcessor segProc;
 
     /** */
@@ -250,6 +258,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private HadoopProcessorAdapter hadoopProc;
+
+    /** */
+    @GridToStringExclude
+    private PoolProcessor poolProc;
 
     /** */
     @GridToStringExclude
@@ -289,6 +301,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected StripedExecutor stripedExecSvc;
+
+    /** */
+    @GridToStringExclude
     private ExecutorService p2pExecSvc;
 
     /** */
@@ -302,6 +318,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     protected ExecutorService restExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService affExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService idxExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected IgniteStripedThreadPoolExecutor callbackExecSvc;
 
     /** */
     @GridToStringExclude
@@ -358,10 +386,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param marshCachePool Marshaller cache pool.
      * @param execSvc Public executor service.
      * @param sysExecSvc System executor service.
+     * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -375,11 +406,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService marshCachePool,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
+        StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
-        List<PluginProvider> plugins) throws IgniteCheckedException {
+        ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
+        IgniteStripedThreadPoolExecutor callbackExecSvc,
+        List<PluginProvider> plugins
+    ) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -391,12 +427,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
+        this.stripedExecSvc = stripedExecSvc;
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+        this.affExecSvc = affExecSvc;
+        this.idxExecSvc = idxExecSvc;
+        this.callbackExecSvc = callbackExecSvc;
 
-        marshCtx = new MarshallerContextImpl(plugins);
+        String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+
+        marshCtx = new MarshallerContextImpl(workDir, plugins);
 
         try {
             spring = SPRING.create(false);
@@ -519,6 +561,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             cluster = (ClusterProcessor)comp;
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
+        else if (comp instanceof PoolProcessor)
+            poolProc = (PoolProcessor) comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -534,6 +578,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (helper instanceof IgfsHelper)
             igfsHelper = (IgfsHelper)helper;
+        else if (helper instanceof HadoopHelper)
+            hadoopHelper = (HadoopHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -726,6 +772,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public HadoopHelper hadoopHelper() {
+        return hadoopHelper;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return contProc;
     }
@@ -736,6 +787,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public PoolProcessor pools() {
+        return poolProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
         return utilityCachePool;
     }
@@ -743,6 +799,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService marshallerCachePool() {
         return marshCachePool;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
+        return callbackExecSvc;
     }
 
     /** {@inheritDoc} */
@@ -864,7 +925,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set(U.readString(in));
+        U.readString(in); // Read for compatibility only. See #readResolve().
     }
 
     /**
@@ -875,7 +936,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return IgnitionEx.gridx(stash.get()).context();
+            return IgnitionEx.localIgnite().context();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -896,6 +957,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public StripedExecutor getStripedExecutorService() {
+        return stripedExecSvc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService getManagementExecutorService() {
         return mgmtExecSvc;
     }
@@ -913,6 +979,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return restExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getAffinityExecutorService() {
+        return affExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public ExecutorService getIndexingExecutorService() {
+        return idxExecSvc;
     }
 
     /** {@inheritDoc} */

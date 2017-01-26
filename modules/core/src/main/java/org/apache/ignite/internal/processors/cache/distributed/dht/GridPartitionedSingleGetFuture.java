@@ -280,6 +280,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     /**add reader*/false,
@@ -299,6 +300,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     cctx.deploymentEnabled());
@@ -375,6 +377,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
+                            null,
                             /*swap*/true,
                             /*unmarshal*/true,
                             /**update-metrics*/false,
@@ -391,11 +394,11 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         }
                     }
                     else {
-                        v = entry.innerGet(null,
+                        v = entry.innerGet(
+                            null,
+                            null,
                             /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             /*temporary*/false,
@@ -411,7 +414,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
                         if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeIfObsolete(key);
+                            colocated.removeEntry(entry);
                     }
                     else {
                         if (!skipVals && cctx.config().isStatisticsEnabled())
@@ -555,12 +558,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             }
 
             if (canRemap) {
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
-                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
-                    @Override public void applyx(IgniteInternalFuture<Long> fut) {
+                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            AffinityTopologyVersion topVer = new AffinityTopologyVersion(fut.get());
+                            AffinityTopologyVersion topVer = fut.get();
 
                             remap(topVer);
                         }

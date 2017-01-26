@@ -33,24 +33,12 @@
  */
 #define IGNITE_NO_COPY_ASSIGNMENT(cls) \
     cls(const cls& src); \
-    cls& operator= (const cls& other); 
+    cls& operator= (const cls& other);
 
-namespace ignite
-{
-    namespace common
-    {
-        /**
-         * Helper class to manage attached threads.
-         */
-        class AttachHelper 
-        {
-        public:                       
-            /**
-             * Callback invoked on successful thread attach ot JVM.
-             */
-            static void OnThreadAttach();
-        };   
-    }
-}
-
+#if (__cplusplus >= 201103L)
+#   define IGNITE_NO_THROW noexcept
+#else
+#   define IGNITE_NO_THROW throw()
 #endif
+
+#endif //_IGNITE_COMMON_COMMON

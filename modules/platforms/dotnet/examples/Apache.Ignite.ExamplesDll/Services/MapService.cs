@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Resource;
-using Apache.Ignite.Core.Services;
-
 namespace Apache.Ignite.ExamplesDll.Services
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Services;
+
     /// <summary>
     /// Service implementation.
     /// </summary>
@@ -30,9 +30,7 @@ namespace Apache.Ignite.ExamplesDll.Services
     public class MapService<TK, TV> : IService
     {
         /** Injected Ignite instance. */
-#pragma warning disable 649
         [InstanceResource] private readonly IIgnite _ignite;
-#pragma warning restore 649
 
         /** Cache. */
         private ICache<TK, TV> _cache;

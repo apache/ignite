@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,15 +36,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -53,6 +57,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -73,12 +78,12 @@ import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicat
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -133,11 +138,37 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
-    /** */
-    public static int MAX_ITERATORS = 1000;
+    /** Maximum number of query detail metrics to evict at once. */
+    private static final int QRY_DETAIL_METRICS_EVICTION_LIMIT = 10_000;
+
+    /** Comparator for priority queue with query detail metrics with priority to new metrics. */
+    private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_NEW_CMP =
+        new Comparator<GridCacheQueryDetailMetricsAdapter>() {
+            @Override public int compare(GridCacheQueryDetailMetricsAdapter m1, GridCacheQueryDetailMetricsAdapter m2) {
+                return Long.compare(m1.lastStartTime(), m2.lastStartTime());
+            }
+        };
+
+    /** Comparator for priority queue with query detail metrics with priority to old metrics. */
+    private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_OLD_CMP =
+        new Comparator<GridCacheQueryDetailMetricsAdapter>() {
+            @Override public int compare(GridCacheQueryDetailMetricsAdapter m1, GridCacheQueryDetailMetricsAdapter m2) {
+                return Long.compare(m2.lastStartTime(), m1.lastStartTime());
+            }
+        };
+
+    /** Function to merge query detail metrics. */
+    private static final ConcurrentHashMap8.BiFun QRY_DETAIL_METRICS_MERGE_FX =
+        new ConcurrentHashMap8.BiFun<GridCacheQueryDetailMetricsAdapter,
+            GridCacheQueryDetailMetricsAdapter, GridCacheQueryDetailMetricsAdapter>() {
+            @Override public GridCacheQueryDetailMetricsAdapter apply(GridCacheQueryDetailMetricsAdapter oldVal,
+                GridCacheQueryDetailMetricsAdapter newVal) {
+                return oldVal.aggregate(newVal);
+            }
+        };
 
     /** */
-    protected GridQueryProcessor qryProc;
+    private GridQueryProcessor qryProc;
 
     /** */
     private String space;
@@ -149,8 +180,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<QueryResult<K, V>>>> qryIters =
-        new ConcurrentHashMap8<>();
+    private int detailMetricsSz;
+
+    /** */
+    private ConcurrentHashMap8<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> detailMetrics;
+
+    /** */
+    private final ConcurrentMap<UUID, RequestFutureMap> qryIters = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<FieldsResult>>> fieldsQryRes =
@@ -173,9 +209,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
+        CacheConfiguration ccfg = cctx.config();
+
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
-        maxIterCnt = MAX_ITERATORS;
+
+        maxIterCnt = ccfg.getMaxQueryIteratorsCount();
+
+        detailMetricsSz = ccfg.getQueryDetailMetricsSize();
+
+        if (detailMetricsSz > 0)
+            detailMetrics = new ConcurrentHashMap8<>(detailMetricsSz);
 
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -215,7 +259,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        enabled = GridQueryProcessor.isEnabled(cctx.config());
+        enabled = GridQueryProcessor.isEnabled(ccfg);
 
         qryTopVer = cctx.startTopologyVersion();
 
@@ -265,25 +309,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public final void stop0(boolean cancel) {
         if (log.isDebugEnabled())
             log.debug("Stopped cache query manager.");
-    }
-
-    /**
-     * Gets number of objects of given type in index.
-     *
-     * @param valType Value type.
-     * @return Number of objects or -1 if type was not indexed at all.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long size(Class<?> valType) throws IgniteCheckedException {
-        if (!enterBusy())
-            throw new IllegalStateException("Failed to get size (grid is stopping).");
-
-        try {
-            return qryProc.size(space, valType);
-        }
-        finally {
-            leaveBusy();
-        }
     }
 
     /**
@@ -466,7 +491,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Query future.
      */
-    public abstract CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry);
+    @SuppressWarnings("unchecked")
+    public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
+        assert qry.query().type() != GridCacheQueryType.SCAN : qry;
+
+        if (log.isDebugEnabled())
+            log.debug("Executing query on local node: " + qry);
+
+        GridCacheLocalQueryFuture fut = new GridCacheLocalQueryFuture<>(cctx, qry);
+
+        try {
+            qry.query().validate();
+
+            fut.execute();
+        }
+        catch (IgniteCheckedException e) {
+            if (fut != null)
+                fut.onDone(e);
+        }
+
+        return fut;
+    }
 
     /**
      * Executes distributed query.
@@ -476,6 +521,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Query future.
      */
     public abstract CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
+
+    /**
+     * Executes distributed SCAN query.
+     *
+     * @param qry Query.
+     * @param nodes Nodes.
+     * @return Iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract GridCloseableIterator scanQueryDistributed(GridCacheQueryAdapter qry,
+        Collection<ClusterNode> nodes) throws IgniteCheckedException;
 
     /**
      * Loads page.
@@ -525,7 +581,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
-                "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
         QueryResult<K, V> res;
@@ -553,26 +609,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         try {
             switch (qry.type()) {
                 case SQL:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                            cctx.localNode(),
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            cctx.namex(),
-                            qry.queryClassName(),
-                            qry.clause(),
-                            null,
-                            null,
-                            args,
-                            subjId,
-                            taskName));
-                    }
-
-                    iter = qryProc.query(space, qry.clause(), F.asList(args),
-                        qry.queryClassName(), filter(qry));
-
-                    break;
+                    throw new IllegalStateException("Should never be called.");
 
                 case SCAN:
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -591,7 +628,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = scanIterator(qry);
+                    iter = scanIterator(qry, false);
 
                     break;
 
@@ -661,12 +698,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        if (qry.clause() == null) {
+        if (qry.clause() == null && qry.type() != SPI) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
-                "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
         if (qry.type() == SQL_FIELDS) {
@@ -731,11 +768,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 assert qry.type() == SQL_FIELDS;
 
-                GridQueryFieldsResult qryRes = qryProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
-
-                res.metaData(qryRes.metaData());
-
-                res.onDone(qryRes.iterator());
+                throw new IllegalStateException("Should never be called.");
             }
         }
         catch (Exception e) {
@@ -800,18 +833,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param qry Query.
+     * @param locNode Local node.
      * @return Full-scan row iterator.
      * @throws IgniteCheckedException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
+    private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode)
         throws IgniteCheckedException {
-        IgniteInternalCache<K, V> prj0 = cctx.cache();
-
-        prj0 = prj0.keepBinary();
-
-        final IgniteInternalCache prj = prj0;
-
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
         try {
@@ -819,60 +847,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final ExpiryPolicy plc = cctx.expiry();
 
-            final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = GridQueryProcessor.getRequestAffinityTopologyVersion();
+
+            if (topVer == null)
+                topVer = cctx.affinity().affinityTopologyVersion();
 
             final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
-            Iterator<K> keyIter;
-
-            GridDhtLocalPartition locPart = null;
-
-            Integer part = qry.partition();
-
-            if (part == null || cctx.isLocal())
-                keyIter = backups ? prj.keySetx().iterator() : prj.primaryKeySet().iterator();
-            else if (part < 0 || part >= cctx.affinity().partitions())
-                keyIter = new GridEmptyIterator<>();
-            else {
-                final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
-
-                locPart = dht.topology().localPartition(part, topVer, false);
-
-                // double check for owning state
-                if (locPart == null || locPart.state() != OWNING || !locPart.reserve() || locPart.state() != OWNING)
-                    throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
-                        "Partition can not be reserved");
-
-                final GridDhtLocalPartition locPart0 = locPart;
-
-                keyIter = new Iterator<K>() {
-                    private Iterator<KeyCacheObject> iter0 = locPart0.keySet().iterator();
-
-                    @Override public boolean hasNext() {
-                        return iter0.hasNext();
-                    }
-
-                    @Override public K next() {
-                        return (K)iter0.next();
-                    }
-
-                    @Override public void remove() {
-                        iter0.remove();
-                    }
-                };
-            }
-
-            final GridDhtLocalPartition locPart0 = locPart;
-
-            final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt =
-                new PeekValueExpiryAwareIterator(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), true) {
-                    @Override protected void onClose() {
-                        super.onClose();
-
-                        if (locPart0 != null)
-                            locPart0.release();
-                    }
-                };
+            final GridIterator<IgniteBiTuple<K, V>> heapIt = onheapIterator(qry,
+                topVer,
+                keyValFilter,
+                backups,
+                plc,
+                locNode);
 
             final GridIterator<IgniteBiTuple<K, V>> it;
 
@@ -882,10 +869,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 iters.add(heapIt);
 
                 if (cctx.isOffHeapEnabled())
-                    iters.add(offheapIterator(qry, topVer, backups, plc));
+                    iters.add(offheapIterator(qry, topVer, backups, plc, locNode));
 
                 if (cctx.swap().swapEnabled())
-                    iters.add(swapIterator(qry, topVer, backups, plc));
+                    iters.add(swapIterator(qry, topVer, backups, plc, locNode));
 
                 it = new CompoundIterator<>(iters);
             }
@@ -907,7 +894,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 @Override protected void onClose() throws IgniteCheckedException {
                     try {
-                        heapIt.close();
+                        if (heapIt instanceof IgniteSpiCloseableIterator)
+                            ((IgniteSpiCloseableIterator)heapIt).close();
                     }
                     finally {
                         closeScanFilter(keyValFilter);
@@ -915,8 +903,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
         }
-        catch (IgniteCheckedException | RuntimeException e)
-        {
+        catch (IgniteCheckedException | RuntimeException e) {
             closeScanFilter(keyValFilter);
 
             throw e;
@@ -935,7 +922,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param qry Query.
+     * @param topVer Topology version.
      * @param backups Include backups.
+     * @param expPlc Expiry policy.
+     * @param locNode Local node.
      * @return Swap iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -943,13 +933,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridCacheQueryAdapter<?> qry,
         AffinityTopologyVersion topVer,
         boolean backups,
-        ExpiryPolicy expPlc
-    ) throws IgniteCheckedException {
+        ExpiryPolicy expPlc,
+        boolean locNode) throws IgniteCheckedException {
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
         Integer part = qry.partition();
 
-        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups) :
+        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups, topVer) :
             cctx.swap().rawSwapIterator(part);
 
         if (expPlc != null)
@@ -958,22 +948,147 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 topVer,
                 filter,
                 expPlc,
-                qry.keepBinary());
+                qry.keepBinary(), locNode);
 
-        return scanIterator(it, filter, qry.keepBinary());
+        return scanIterator(it, filter, qry.keepBinary(), locNode);
+    }
+
+    /**
+     * @param qry Query.
+     * @param topVer Topology version.
+     * @param keyValFilter Filter.
+     * @param backups Include backups.
+     * @param plc Expiry policy.
+     * @param locNode Local node.
+     * @return Offheap iterator.
+     * @throws GridDhtUnreservedPartitionException If failed to reserve partition.
+     */
+    private GridIterator<IgniteBiTuple<K, V>> onheapIterator(
+        GridCacheQueryAdapter<?> qry,
+        AffinityTopologyVersion topVer,
+        final IgniteBiPredicate<K, V> keyValFilter,
+        boolean backups,
+        final ExpiryPolicy plc,
+        final boolean locNode) throws GridDhtUnreservedPartitionException {
+        Iterator<K> keyIter;
+
+        GridDhtLocalPartition locPart = null;
+
+        Integer part = qry.partition();
+
+        if (part == null || cctx.isLocal()) {
+            // Performance optimization.
+            if (locNode && plc == null && !cctx.isLocal()) {
+                GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+                final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true,
+                    backups, cache.context().keepBinary(), topVer);
+
+                return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
+                    /** */
+                    private IgniteBiTuple<K, V> next;
+
+                    {
+                        advance();
+                    }
+
+                    @Override public boolean hasNextX() throws IgniteCheckedException {
+                        return next != null;
+                    }
+
+                    @Override public IgniteBiTuple<K, V> nextX() throws IgniteCheckedException {
+                        if (next == null)
+                            throw new NoSuchElementException();
+
+                        IgniteBiTuple<K, V> next0 = next;
+
+                        advance();
+
+                        return next0;
+                    }
+
+                    @Override public void removeX() throws IgniteCheckedException {
+                        // No-op.
+                    }
+
+                    private void advance() {
+                        IgniteBiTuple<K, V> next0 = null;
+
+                        while (iter.hasNext()) {
+                            Cache.Entry<K, V> cacheEntry = iter.next();
+
+                            if (keyValFilter != null && !keyValFilter.apply(cacheEntry.getKey(), cacheEntry.getValue()))
+                                continue;
+
+                            next0 = new IgniteBiTuple<>(cacheEntry.getKey(), cacheEntry.getValue());
+
+                            break;
+                        }
+
+                        next = next0;
+                    }
+                };
+            }
+
+            IgniteInternalCache<K, V> keepBinaryCache = cctx.cache().keepBinary();
+
+            keyIter = backups ? keepBinaryCache.keySetx().iterator() : keepBinaryCache.primaryKeySet().iterator();
+        }
+        else if (part < 0 || part >= cctx.affinity().partitions())
+            keyIter = new GridEmptyIterator<>();
+        else {
+            final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+            locPart = dht.topology().localPartition(part, topVer, false);
+
+            // Double check for owning state.
+            if (locPart == null || locPart.state() != OWNING || !locPart.reserve() || locPart.state() != OWNING)
+                throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
+                    "Partition can not be reserved.");
+
+            final GridDhtLocalPartition locPart0 = locPart;
+
+            keyIter = new Iterator<K>() {
+                private Iterator<KeyCacheObject> iter0 = locPart0.keySet().iterator();
+
+                @Override public boolean hasNext() {
+                    return iter0.hasNext();
+                }
+
+                @Override public K next() {
+                    return (K)iter0.next();
+                }
+
+                @Override public void remove() {
+                    iter0.remove();
+                }
+            };
+        }
+
+        final GridDhtLocalPartition locPart0 = locPart;
+
+        return new PeekValueExpiryAwareIterator(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), locNode, true) {
+            @Override protected void onClose() {
+                super.onClose();
+
+                if (locPart0 != null)
+                    locPart0.release();
+            }
+        };
     }
 
     /**
      * @param qry Query.
      * @param backups Include backups.
+     * @param locNode Local node.
      * @return Offheap iterator.
      */
     private GridIterator<IgniteBiTuple<K, V>> offheapIterator(
         GridCacheQueryAdapter<?> qry,
         AffinityTopologyVersion topVer,
         boolean backups,
-        ExpiryPolicy expPlc
-    ) {
+        ExpiryPolicy expPlc,
+        boolean locNode) {
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
         if (expPlc != null) {
@@ -982,18 +1097,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 topVer,
                 filter,
                 expPlc,
-                qry.keepBinary());
+                qry.keepBinary(), locNode);
         }
 
         if (cctx.offheapTiered() && filter != null) {
-            OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary());
+            OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary(), locNode);
 
             return cctx.swap().rawOffHeapIterator(c, qry.partition(), true, backups);
         }
         else {
             Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawOffHeapIterator(qry.partition(), true, backups);
 
-            return scanIterator(it, filter, qry.keepBinary());
+            return scanIterator(it, filter, qry.keepBinary(), locNode);
         }
     }
 
@@ -1001,12 +1116,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param it Lazy swap or offheap iterator.
      * @param filter Scan filter.
      * @param keepBinary Keep binary flag.
+     * @param locNode Local node.
      * @return Iterator.
      */
     private GridIteratorAdapter<IgniteBiTuple<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
         @Nullable final IgniteBiPredicate<K, V> filter,
-        final boolean keepBinary) {
+        final boolean keepBinary,
+        final boolean locNode) {
         if (it == null)
             return new GridEmptyCloseableIterator<>();
 
@@ -1042,15 +1159,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 while (it.hasNext()) {
                     final LazySwapEntry e = new LazySwapEntry(it.next());
 
-                    if (filter != null) {
-                        K key = (K)cctx.unwrapBinaryIfNeeded(e.key(), keepBinary);
-                        V val = (V)cctx.unwrapBinaryIfNeeded(e.value(), keepBinary);
+                    K key = e.key();
+                    V val = e.value();
 
-                        if (!filter.apply(key, val))
-                            continue;
-                    }
+                    key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
 
-                    next = new IgniteBiTuple<>(e.key(), e.value());
+                    if (filter != null || locNode)
+                        val = (V)cctx.unwrapBinaryIfNeeded(val, keepBinary);
+
+                    if (filter != null && !filter.apply(key, val))
+                        continue;
+
+                    next = new IgniteBiTuple<>(key, val);
 
                     break;
                 }
@@ -1064,16 +1184,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param filter Filter.
      * @param expPlc Expiry policy.
      * @param keepBinary Keep binary flag.
+     * @param locNode Local node.
      * @return Final key-value iterator.
      */
-    private GridIterator<IgniteBiTuple<K,V>> scanExpiryIterator(
+    private GridIterator<IgniteBiTuple<K, V>> scanExpiryIterator(
         final Iterator<Map.Entry<byte[], byte[]>> it,
         AffinityTopologyVersion topVer,
         @Nullable final IgniteBiPredicate<K, V> filter,
         ExpiryPolicy expPlc,
-        final boolean keepBinary
-    ) {
-        Iterator <K> keyIter = new Iterator<K>() {
+        final boolean keepBinary,
+        boolean locNode) {
+        Iterator<K> keyIter = new Iterator<K>() {
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 return it.hasNext();
@@ -1097,7 +1218,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         };
 
-        return new PeekValueExpiryAwareIterator(keyIter, expPlc, topVer, filter, keepBinary, false);
+        return new PeekValueExpiryAwareIterator(keyIter, expPlc, topVer, filter, keepBinary, locNode, false);
     }
 
     /**
@@ -1146,10 +1267,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgniteClosure<Object, Object> trans = (IgniteClosure<Object, Object>)qryInfo.transformer();
                 IgniteReducer<Object, Object> rdc = (IgniteReducer<Object, Object>)qryInfo.reducer();
 
-                injectResources(trans);
                 injectResources(rdc);
 
                 GridCacheQueryAdapter<?> qry = qryInfo.query();
@@ -1168,7 +1287,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 res = qryInfo.local() ?
                     executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), qry.subjectId(), taskName,
-                    recipient(qryInfo.senderId(), qryInfo.requestId())) :
+                        recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     fieldsQueryResult(qryInfo, taskName);
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
@@ -1318,6 +1437,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings("unchecked")
     protected void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
+        assert qryInfo.query().type() != SCAN || !qryInfo.local() : qryInfo;
 
         if (!enterBusy()) {
             if (cctx.localNodeId().equals(qryInfo.senderId()))
@@ -1338,10 +1458,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgniteClosure<Map.Entry<K, V>, Object> trans =
-                    (IgniteClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
+                IgniteClosure<Cache.Entry<K, V>, Object> trans =
+                    (IgniteClosure<Cache.Entry<K, V>, Object>)qryInfo.transformer();
 
-                IgniteReducer<Map.Entry<K, V>, Object> rdc = (IgniteReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
+                IgniteReducer<Cache.Entry<K, V>, Object> rdc = (IgniteReducer<Cache.Entry<K, V>, Object>)qryInfo.reducer();
 
                 injectResources(trans);
                 injectResources(rdc);
@@ -1359,13 +1479,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 res = loc ?
                     executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName,
-                    recipient(qryInfo.senderId(), qryInfo.requestId())) :
+                        recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     queryResult(qryInfo, taskName);
+
+                if (res == null)
+                    return;
 
                 iter = res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId()));
                 type = res.type();
 
-                GridCacheAdapter<K, V> cache = cctx.cache();
+                final GridCacheAdapter<K, V> cache = cctx.cache();
 
                 if (log.isDebugEnabled())
                     log.debug("Received index iterator [iterHasNext=" + iter.hasNext() +
@@ -1396,7 +1519,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         break;
                     }
 
-                    K key = row.getKey();
+                    final K key = row.getKey();
 
                     // Filter backups for SCAN queries, if it isn't partition scan.
                     // Other types are filtered in indexing manager.
@@ -1416,16 +1539,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (log.isDebugEnabled()) {
                         ClusterNode primaryNode = CU.primaryNode(cctx, key);
 
-                        log.debug("Record [key=" + key +
-                            ", val=" + val +
-                            ", incBackups=" + incBackups +
-                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
-                            ", node=" + U.id8(cctx.localNode().id()) + ']');
+                        log.debug(S.toString("Record",
+                            "key", key, true,
+                            "val", val, true,
+                            "incBackups", incBackups, false,
+                            "priNode", primaryNode != null ? U.id8(primaryNode.id()) : null, false,
+                            "node", U.id8(cctx.localNode().id()), false));
                     }
 
                     if (val == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Unsuitable record value: " + val);
+                            log.debug(S.toString("Unsuitable record value", "val", val, true));
 
                         continue;
                     }
@@ -1438,7 +1562,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
+                    K key0 = null;
+                    V val0 = null;
+
                     if (readEvt) {
+                        key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
+
                         switch (type) {
                             case SQL:
                                 cctx.gridEvents().record(new CacheQueryReadEvent<>(
@@ -1454,8 +1584,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     qryInfo.arguments(),
                                     qry.subjectId(),
                                     taskName,
-                                    key,
-                                    val,
+                                    key0,
+                                    val0,
                                     null,
                                     null));
 
@@ -1475,8 +1605,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     qry.subjectId(),
                                     taskName,
-                                    key,
-                                    val,
+                                    key0,
+                                    val0,
                                     null,
                                     null));
 
@@ -1496,8 +1626,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     qry.subjectId(),
                                     taskName,
-                                    key,
-                                    val,
+                                    key0,
+                                    val0,
                                     null,
                                     null));
 
@@ -1505,27 +1635,32 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         }
                     }
 
-                    Map.Entry<K, V> entry = F.t(key, val);
+                    if (rdc != null || trans != null) {
+                        if (key0 == null)
+                            key0 = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        if (val0 == null)
+                            val0 = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
 
-                    // Unwrap entry for reducer or transformer only.
-                    if (rdc != null || trans != null)
-                        entry = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(entry, qry.keepBinary());
+                        Cache.Entry<K, V> entry = new CacheEntryImpl(key0, val0);
 
-                    // Reduce.
-                    if (rdc != null) {
-                        if (!rdc.collect(entry) || !iter.hasNext()) {
-                            onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
+                        // Reduce.
+                        if (rdc != null) {
+                            if (!rdc.collect(entry) || !iter.hasNext()) {
+                                onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
 
-                            pageSent = true;
+                                pageSent = true;
 
-                            break;
+                                break;
+                            }
+                            else
+                                continue;
                         }
-                        else
-                            continue;
-                    }
 
-                    data.add(trans != null ? trans.apply(entry) :
-                        !loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
+                        data.add(trans != null ? trans.apply(entry) :
+                            !loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
+                    }
+                    else
+                        data.add(!loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
 
                     if (!loc) {
                         if (++cnt == pageSize || !iter.hasNext()) {
@@ -1589,21 +1724,147 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Process local scan query.
+     *
+     * @param qry Query.
+     * @param updStatisticsIfNeeded Update statistics flag.
+     */
+    @SuppressWarnings({"unchecked", "serial"})
+    protected GridCloseableIterator scanQueryLocal(final GridCacheQueryAdapter qry,
+        final boolean updStatisticsIfNeeded) throws IgniteCheckedException {
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to process query request (grid is stopping).");
+
+        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        boolean needUpdStatistics = updStatisticsIfNeeded && statsEnabled;
+
+        long startTime = U.currentTimeMillis();
+
+        final String namex = cctx.namex();
+
+        try {
+            assert qry.type() == SCAN;
+
+            if (log.isDebugEnabled())
+                log.debug("Running local SCAN query: " + qry);
+
+            final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
+            final IgniteBiPredicate filter = qry.scanFilter();
+            final ClusterNode locNode = cctx.localNode();
+            final UUID subjId = qry.subjectId();
+
+            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+                    locNode,
+                    "Scan query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    CacheQueryType.SCAN.name(),
+                    namex,
+                    null,
+                    null,
+                    filter,
+                    null,
+                    null,
+                    subjId,
+                    taskName));
+            }
+
+            final GridCloseableIterator<IgniteBiTuple<K, V>> iter = scanIterator(qry, true);
+
+            if (updStatisticsIfNeeded)
+                needUpdStatistics = false;
+
+            final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
+            return new GridCloseableIteratorAdapter<Object>() {
+                @Override protected Object onNext() throws IgniteCheckedException {
+                    long start = statsEnabled ? System.nanoTime() : 0L;
+
+                    IgniteBiTuple<K, V> next = iter.nextX();
+
+                    if (statsEnabled) {
+                        CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                        metrics.onRead(true);
+
+                        metrics.addGetTimeNanos(System.nanoTime() - start);
+                    }
+
+                    if (readEvt) {
+                        cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                            cctx.localNode(),
+                            "Scan query entry read.",
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            CacheQueryType.SCAN.name(),
+                            namex,
+                            null,
+                            null,
+                            filter,
+                            null,
+                            null,
+                            subjId,
+                            taskName,
+                            next.getKey(),
+                            next.getValue(),
+                            null,
+                            null));
+                    }
+
+                    IgniteClosure transform = qry.transform();
+
+                    if (transform == null)
+                        return next;
+
+                    Cache.Entry<K, V> entry;
+
+                    if (qry.keepBinary())
+                        entry = cctx.cache().keepBinary().getEntry(next.getKey());
+                    else
+                        entry = cctx.cache().getEntry(next.getKey());
+
+                    return transform.apply(entry);
+                }
+
+                @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    return iter.hasNextX();
+                }
+
+                @Override protected void onClose() throws IgniteCheckedException {
+                    iter.close();
+                }
+            };
+        }
+        catch (Exception e) {
+            if (needUpdStatistics)
+                cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
+                    U.currentTimeMillis() - startTime, true);
+
+            throw e;
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
      * @param qryInfo Info.
      * @param taskName Task name.
      * @return Iterator.
      * @throws IgniteCheckedException In case of error.
      */
-    private QueryResult<K, V> queryResult(GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
+    @Nullable private QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo,
+        String taskName) throws IgniteCheckedException {
+        assert qryInfo != null;
+
         final UUID sndId = qryInfo.senderId();
 
         assert sndId != null;
 
-        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>>(
-                16, 0.75f, true) {
+            futs = new RequestFutureMap() {
                 @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
@@ -1620,34 +1881,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
 
-            Map<Long, GridFutureAdapter<QueryResult<K, V>>> old = qryIters.putIfAbsent(sndId, futs);
+            RequestFutureMap old = qryIters.putIfAbsent(sndId, futs);
 
             if (old != null)
                 futs = old;
         }
 
-        return queryResult(futs, qryInfo, taskName);
-    }
-
-    /**
-     * @param futs Futures map.
-     * @param qryInfo Info.
-     * @return Iterator.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @SuppressWarnings({
-        "SynchronizationOnLocalVariableOrMethodParameter",
-        "NonPrivateFieldAccessedInSynchronizedContext"})
-    private QueryResult<K, V> queryResult(Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs,
-        GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert futs != null;
-        assert qryInfo != null;
 
         GridFutureAdapter<QueryResult<K, V>> fut;
 
         boolean exec = false;
 
         synchronized (futs) {
+            if (futs.isCanceled(qryInfo.requestId()))
+                return null;
+
             fut = futs.get(qryInfo.requestId());
 
             if (fut == null) {
@@ -1682,7 +1931,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (sndId == null)
             return;
 
-        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs != null) {
             IgniteInternalFuture<QueryResult<K, V>> fut;
@@ -1871,6 +2120,52 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Gets cache queries detailed metrics.
+     * Detail metrics could be enabled by setting non-zero value via {@link CacheConfiguration#setQueryDetailMetricsSize(int)}
+     *
+     * @return Cache queries metrics aggregated by query type and query text.
+     */
+    public Collection<GridCacheQueryDetailMetricsAdapter> detailMetrics() {
+        if (detailMetricsSz > 0) {
+            // Return no more than latest detailMetricsSz items.
+            if (detailMetrics.size() > detailMetricsSz) {
+                GridBoundedPriorityQueue<GridCacheQueryDetailMetricsAdapter> latestMetrics =
+                    new GridBoundedPriorityQueue<>(detailMetricsSz, QRY_DETAIL_METRICS_PRIORITY_NEW_CMP);
+
+                latestMetrics.addAll(detailMetrics.values());
+
+                return latestMetrics;
+            }
+
+            return new ArrayList<>(detailMetrics.values());
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Evict detail metrics.
+     */
+    public void evictDetailMetrics() {
+        if (detailMetricsSz > 0) {
+            int sz = detailMetrics.size();
+
+            if (sz > detailMetricsSz) {
+                // Limit number of metrics to evict in order make eviction time predictable.
+                int evictCnt = Math.min(QRY_DETAIL_METRICS_EVICTION_LIMIT, sz - detailMetricsSz);
+
+                Queue<GridCacheQueryDetailMetricsAdapter> metricsToEvict =
+                    new GridBoundedPriorityQueue<>(evictCnt, QRY_DETAIL_METRICS_PRIORITY_OLD_CMP);
+
+                metricsToEvict.addAll(detailMetrics.values());
+
+                for (GridCacheQueryDetailMetricsAdapter m : metricsToEvict)
+                    detailMetrics.remove(m.key());
+            }
+        }
+    }
+
+    /**
      * Resets metrics.
      */
     public void resetMetrics() {
@@ -1878,18 +2173,43 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * @param fail {@code true} if execution failed.
+     * Resets detail metrics.
      */
-    public void onExecuted(boolean fail) {
-        metrics.onQueryExecute(fail);
+    public void resetDetailMetrics() {
+        if (detailMetrics != null)
+            detailMetrics.clear();
     }
 
     /**
+     * @param qryType Query type.
+     * @param qry Query description.
+     * @param startTime Query start size.
      * @param duration Execution duration.
-     * @param fail {@code true} if execution failed.
+     * @param failed {@code True} if query execution failed.
      */
-    public void onCompleted(long duration, boolean fail) {
-        metrics.onQueryCompleted(duration, fail);
+    public void collectMetrics(GridCacheQueryType qryType, String qry, long startTime, long duration, boolean failed) {
+        metrics.update(duration, failed);
+
+        if (detailMetricsSz > 0) {
+            // Do not collect metrics for EXPLAIN queries.
+            if (qryType == SQL_FIELDS && !F.isEmpty(qry)) {
+                int off = 0;
+                int len = qry.length();
+
+                while (off < len && Character.isWhitespace(qry.charAt(off)))
+                    off++;
+
+                if (qry.regionMatches(true, off, "EXPLAIN", 0, 7))
+                    return;
+            }
+
+            GridCacheQueryDetailMetricsAdapter m = new GridCacheQueryDetailMetricsAdapter(qryType, qry,
+                cctx.name(), startTime, duration, failed);
+
+            GridCacheQueryDetailMetricsKey key = m.key();
+
+            detailMetrics.merge(key, m, QRY_DETAIL_METRICS_MERGE_FX);
+        }
     }
 
     /**
@@ -1918,7 +2238,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty())
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true);
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
@@ -1983,6 +2303,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         return cache.context().affinity().primary(ctx.discovery().localNode(), k, NONE);
                     }
                 };
+            }
+
+            @Override public boolean isValueRequired() {
+                return false;
             }
         };
     }
@@ -2450,7 +2774,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (key != null)
                     return key;
 
-                key = cctx.toCacheKeyObject(keyBytes()).value(cctx.cacheObjectContext(), false);
+                key = (K)cctx.toCacheKeyObject(keyBytes());
 
                 return key;
             }
@@ -2485,11 +2809,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @return Expire time.
          */
         abstract long expireTime();
-
-        /**
-         * @return Version.
-         */
-        abstract GridCacheVersion version();
     }
 
     /**
@@ -2527,11 +2846,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override long expireTime() {
             return GridCacheSwapEntryImpl.expireTime(e.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheSwapEntryImpl.version(e.getValue());
         }
     }
 
@@ -2578,11 +2892,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override long expireTime() {
             return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
         }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheOffheapSwapEntry.version(valPtr.get1());
-        }
     }
 
     /**
@@ -2599,17 +2908,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private boolean keepBinary;
 
+        /** */
+        private boolean locNode;
+
         /**
          * @param filter Filter.
          * @param keepBinary Keep binary flag.
+         * @param locNode Local node.
          */
         private OffheapIteratorClosure(
             @Nullable IgniteBiPredicate<K, V> filter,
-            boolean keepBinary) {
+            boolean keepBinary,
+            boolean locNode) {
             assert filter != null;
 
             this.filter = filter;
             this.keepBinary = keepBinary;
+            this.locNode = locNode;
         }
 
         /** {@inheritDoc} */
@@ -2624,15 +2939,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (!filter.apply(key, val))
                 return null;
 
-            if (key instanceof CacheObject)
-                ((CacheObject)key).prepareMarshal(cctx.cacheObjectContext());
+            if (locNode)
+                return new IgniteBiTuple<>(key, val);
+            else {
+                if (key instanceof CacheObject)
+                    ((CacheObject)key).prepareMarshal(cctx.cacheObjectContext());
 
-            val = (V)cctx.unwrapTemporary(e.value());
+                val = (V)cctx.unwrapTemporary(e.value());
 
-            if (val instanceof CacheObject)
-                ((CacheObject)val).prepareMarshal(cctx.cacheObjectContext());
+                if (val instanceof CacheObject)
+                    ((CacheObject)val).prepareMarshal(cctx.cacheObjectContext());
 
-            return new IgniteBiTuple<>(e.key(), val);
+                return new IgniteBiTuple<>(key, val);
+            }
         }
     }
 
@@ -3033,16 +3352,28 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param keepBinary Keep binary flag.
      * @return Created query.
      */
-    public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
+    public <R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
+        @Nullable Integer part, boolean keepBinary) {
+        return createScanQuery(filter, null, part, keepBinary);
+    }
+
+    /**
+     * Creates user's predicate based scan query.
+     *
+     * @param filter Scan filter.
+     * @param part Partition.
+     * @param keepBinary Keep binary flag.
+     * @return Created query.
+     */
+    public <T, R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
+        @Nullable IgniteClosure<T, R> trans,
         @Nullable Integer part, boolean keepBinary) {
 
-        return new GridCacheQueryAdapter<>(cctx,
+        return new GridCacheQueryAdapter(cctx,
             SCAN,
-            null,
-            null,
-            (IgniteBiPredicate<Object, Object>)filter,
+            filter,
+            trans,
             part,
-            false,
             keepBinary);
     }
 
@@ -3113,6 +3444,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final IgniteBiPredicate<K, V> keyValFilter;
 
+        /** */
+        private boolean locNode;
+
         /** Heap only flag. */
         private boolean heapOnly;
 
@@ -3134,6 +3468,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param topVer Topology version.
          * @param keyValFilter Key-value filter.
          * @param keepBinary Keep binary flag from the query.
+         * @param locNode Local node.
+         * @param heapOnly Heap only.
          */
         private PeekValueExpiryAwareIterator(
             Iterator<K> keyIt,
@@ -3141,12 +3477,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             AffinityTopologyVersion topVer,
             IgniteBiPredicate<K, V> keyValFilter,
             boolean keepBinary,
+            boolean locNode,
             boolean heapOnly
         ) {
             this.keyIt = keyIt;
             this.plc = plc;
             this.topVer = topVer;
             this.keyValFilter = keyValFilter;
+            this.locNode = locNode;
             this.heapOnly = heapOnly;
 
             dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
@@ -3210,11 +3548,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    next0 = F.t(
-                        (K)cctx.unwrapBinaryIfNeeded(key, true),
-                        (V)cctx.unwrapBinaryIfNeeded(val, true));
+                    boolean keepBinary0 = !locNode || keepBinary;
 
-                    if (checkPredicate(next0))
+                    next0 = F.t(
+                        (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
+                        (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
+
+                    boolean passPred = true;
+
+                    if (keyValFilter != null) {
+                        Object key0 = next0.getKey();
+                        Object val0 = next0.getValue();
+
+                        if (keepBinary0 && !keepBinary) {
+                            key0 = (K)cctx.unwrapBinaryIfNeeded(key0, keepBinary);
+                            val0 = (V)cctx.unwrapBinaryIfNeeded(val0, keepBinary);
+                        }
+
+                        passPred = keyValFilter.apply((K)key0, (V)val0);
+                    }
+
+                    if (passPred)
                         break;
                     else
                         next0 = null;
@@ -3261,21 +3615,49 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
         }
+    }
+
+    /**
+     * The map prevents put to the map in case the specified request has been removed previously.
+     */
+    private class RequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Count of canceled keys */
+        private static final int CANCELED_COUNT = 128;
 
         /**
-         * Check key-value predicate.
-         *
-         * @param e Entry to check.
-         * @return Filter evaluation result.
+         * The ID of the canceled request is stored to the set in case
+         * remove(reqId) is called before put(reqId, future).
          */
-        private boolean checkPredicate(Map.Entry<K, V> e) {
-            if (keyValFilter != null) {
-                Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(e, keepBinary);
+        private Set<Long> canceled;
 
-                return keyValFilter.apply(e0.getKey(), e0.getValue());
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter<QueryResult<K, V>> remove(Object key) {
+            if (containsKey(key))
+                return super.remove(key);
+            else {
+                if (canceled == null) {
+                    canceled = Collections.newSetFromMap(
+                        new LinkedHashMap<Long, Boolean>() {
+                            @Override protected boolean removeEldestEntry(Map.Entry<Long, Boolean> eldest) {
+                                return size() > CANCELED_COUNT;
+                            }
+                        });
+                }
+
+                canceled.add((Long)key);
+
+                return null;
             }
+        }
 
-            return true;
+        /**
+         * @return true if the key is canceled
+         */
+        boolean isCanceled(Long key) {
+            return canceled != null && canceled.contains(key);
         }
     }
 }

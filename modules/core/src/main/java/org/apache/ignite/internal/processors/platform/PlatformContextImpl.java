@@ -118,9 +118,6 @@ public class PlatformContextImpl implements PlatformContext {
     /** Platform name. */
     private final String platform;
 
-    /**
-     * Static initializer.
-     */
     static {
         Set<Integer> evtTyps0 = new HashSet<>();
 
@@ -192,6 +189,7 @@ public class PlatformContextImpl implements PlatformContext {
             in,
             ctx.config().getClassLoader(),
             null,
+            true,
             true);
     }
 
@@ -363,7 +361,7 @@ public class PlatformContextImpl implements PlatformContext {
                     String typeName = reader.readString();
                     String affKey = reader.readString();
 
-                    Map<String, Integer> fields = PlatformUtils.readMap(reader,
+                    Map<String, Integer> fields = PlatformUtils.readLinkedMap(reader,
                         new PlatformReaderBiClosure<String, Integer>() {
                             @Override public IgniteBiTuple<String, Integer> read(BinaryRawReaderEx reader) {
                                 return F.t(reader.readString(), reader.readInt());
@@ -513,7 +511,6 @@ public class PlatformContextImpl implements PlatformContext {
             writeNode(writer, event0.eventNode());
             writer.writeObject(event0.key());
             PlatformUtils.writeIgniteUuid(writer, event0.xid());
-            writer.writeObject(event0.lockId());
             writer.writeObject(event0.newValue());
             writer.writeObject(event0.oldValue());
             writer.writeBoolean(event0.hasOldValue());

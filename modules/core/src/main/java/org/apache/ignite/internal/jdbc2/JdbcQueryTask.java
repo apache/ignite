@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -34,6 +35,7 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -47,7 +49,10 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Not closed cursors will be removed after {@link #RMV_DELAY} milliseconds.
  * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
  * system property.
+ *
+ * Deprecated due to introduction of DML features - see {@link JdbcQueryTaskV2}.
  */
+@Deprecated
 class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -90,6 +95,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Collocated query flag. */
     private final boolean collocatedQry;
 
+    /** Distributed joins flag. */
+    private final boolean distributedJoins;
+
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -100,9 +108,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param uuid UUID.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
+     * @param distributedJoins Distributed joins flag.
      */
     public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
-        boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry) {
+        boolean loc, Object[] args, int fetchSize, UUID uuid,
+        boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
@@ -112,6 +122,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         this.loc = loc;
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
+        this.distributedJoins = distributedJoins;
     }
 
     /** {@inheritDoc} */
@@ -127,11 +138,25 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         if (first = (cursor == null)) {
             IgniteCache<?, ?> cache = ignite.cache(cacheName);
 
+            // Don't create caches on server nodes in order to avoid of data rebalancing.
+            boolean start = ignite.configuration().isClientMode();
+
+            if (cache == null && cacheName == null)
+                cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
+
+            if (cache == null) {
+                if (cacheName == null)
+                    throw new SQLException("Failed to execute query. No suitable caches found.");
+                else
+                    throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+            }
+
             SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(args);
 
             qry.setPageSize(fetchSize);
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
+            qry.setDistributedJoins(distributedJoins);
 
             QueryCursor<List<?>> qryCursor = cache.query(qry);
 
@@ -156,7 +181,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             List<Object> row0 = new ArrayList<>(row.size());
 
             for (Object val : row)
-                row0.add(JdbcUtils.sqlType(val) ? val : val.toString());
+                row0.add(val == null || JdbcUtils.isSqlType(val.getClass()) ? val : val.toString());
 
             rows.add(row0);
 

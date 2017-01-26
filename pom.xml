@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -84,7 +84,9 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
-        <module>modules/web/ignite-weblogic-test</module>
+        <module>modules/web/ignite-appserver-test</module>
+        <module>modules/web/ignite-websphere-test</module>
+        <module>modules/cassandra</module>
         <module>modules/flink</module>
     </modules>
 
@@ -166,11 +168,30 @@
         <profile>
             <id>release</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
+                <property>
+                    <name>!skipDefault</name><!--activeByDefault-->
+                </property>
             </activation>
             <build>
                 <plugins>
+                    <plugin><!-- skipping generation of dependencies licenses
+                     to keep clean /maven-shared-archive-resources/META-INF
+                     to prevent license.txt moving to sources.zip -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ignite-dependencies</id>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                   <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -185,7 +206,7 @@
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -324,6 +345,14 @@
 
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
+                                        <!--
+                                        Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
+                                        end-of-line characters for Linux shell scripts
+                                        -->
+                                        <fixcrlf srcdir="${basedir}/target/release-package" eol="lf" eof="remove">
+                                            <include name="**/*.sh" />
+                                        </fixcrlf>
+
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
                                                 <include name="**/*.sh" />
@@ -429,10 +458,103 @@
         </profile>
 
         <profile>
+            <id>yardstick</id>
+            <modules>
+                <module>modules/yardstick</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>release-yardstick</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/">
+                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
+                                        </copy>
+
+                                        <!--todo: only required jars should be exported to /benchmarks/libs during compilation-->
+                                        <delete>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/libs/">
+                                                <include name="junit-*.jar" />
+                                                <include name="ignite-apache-license-gen-*.jar" />
+                                                <include name="hamcrest-core-*.jar" />
+                                                <include name="tools-*.jar" />
+                                            </fileset>
+                                        </delete>
+
+                                        <!--todo: config structure should be refactored to be the same at "sources" and "released sources"-->
+                                        <delete>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/config/">
+                                                <include name="*.*" />
+                                                <exclude name="benchmark.properties"/>
+                                                <exclude name="benchmark-multicast.properties"/>
+                                                <exclude name="ignite-base-config.xml"/>
+                                                <exclude name="ignite-localhost-config.xml"/>
+                                                <exclude name="ignite-multicast-config.xml"/>
+                                            </fileset>
+                                        </delete>
+
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/src" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/src/">
+                                            <fileset dir="${basedir}/modules/yardstick/src"/>
+                                        </copy>
+
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/config" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/config/">
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
+                                        </copy>
+
+                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
+                                            <substitution expression="${project.version}"/>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
+                                                <include name="pom.xml"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <copy file="${basedir}/modules/yardstick/README.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
+                                        </copy>
+
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
-                <module>modules/yardstick</module>
             </modules>
         </profile>
 
@@ -463,6 +585,13 @@
                 <module>modules/spark-2.10</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>ignored-tests</id>
+            <modules>
+                <module>modules/ignored-tests</module>
             </modules>
         </profile>
 
@@ -661,6 +790,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -717,6 +847,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -762,6 +893,15 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>web-console</id>
+            <modules>
+                <module>modules/web-console</module>
+                <module>modules/web-console/web-agent</module>
+                <module>modules/schema-import-db</module>
+            </modules>
         </profile>
 
         <profile>
@@ -841,6 +981,15 @@
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
+                                                <include name="**/configure.acrel" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(Version=.+)\d+\.\d+\.\d+\.\d+(.+)" />
+                                            <substitution expression="\1${new.client.version}\2" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/*.wxs" />
                                             </fileset>
                                         </replaceregexp>
 

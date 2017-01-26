@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -31,9 +34,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
     /**
-     * @return Owner.
+     * Gets indexing.
+     *
+     * @return indexing.
      */
-    public IgniteH2Indexing owner();
+    public IgniteH2Indexing indexing();
+
+    /**
+     * Gets type descriptor.
+     *
+     * @return Type descriptor.
+     */
+    public GridQueryTypeDescriptor type();
+
+    /**
+     * Gets cache context for this row descriptor.
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext<?, ?> context();
+
+    /**
+     * @return Cache configuration.
+     */
+    public CacheConfiguration configuration();
 
     /**
      * Creates new row.
@@ -83,6 +107,24 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public Object columnValue(Object key, Object val, int col);
 
     /**
+     * Gets column value by column index.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param colVal Value to set to column.
+     * @param col Column index.
+     */
+    public void setColumnValue(Object key, Object val, Object colVal, int col);
+
+    /**
+     * Determine whether a column corresponds to a property of key or to one of value.
+     *
+     * @param col Column index.
+     * @return {@code true} if given column corresponds to a key property, {@code false} otherwise
+     */
+    public boolean isColumnKeyProperty(int col);
+
+    /**
      * @return Unsafe memory.
      */
     public GridUnsafeMemory memory();
@@ -121,4 +163,9 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code True} if index should support snapshots.
      */
     public boolean snapshotableIndex();
+
+    /**
+     * @return Escape all identifiers.
+     */
+    public boolean quoteAllIdentifiers();
 }

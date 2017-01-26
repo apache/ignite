@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.Map;
 import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -47,11 +49,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     @Nullable public Throwable commitError();
 
     /**
-     * @param e Commit error.
-     */
-    public void commitError(Throwable e);
-
-    /**
      * @throws IgniteCheckedException If commit failed.
      */
     public void userCommit() throws IgniteCheckedException;
@@ -72,6 +69,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Collection<KeyCacheObject> keys,
         boolean deserializeBinary,
         boolean skipVals,
@@ -87,6 +85,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Map<? extends K, ? extends V> map,
         boolean retval);
 
@@ -100,6 +99,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         K key,
         V val,
         boolean retval,
@@ -114,6 +114,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         K key,
         EntryProcessor<K, V, Object> entryProcessor,
         Object... invokeArgs);
@@ -126,6 +127,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
 
@@ -139,6 +141,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Collection<? extends K> keys,
         boolean retval,
         CacheEntryPredicate filter,
@@ -163,11 +166,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         Map<KeyCacheObject, GridCacheVersion> drMap);
 
     /**
-     * @return Return value for
-     */
-    public GridCacheReturn implicitSingleResult();
-
-    /**
      * Finishes transaction (either commit or rollback).
      *
      * @param commit {@code True} if commit, {@code false} if rollback.
@@ -184,15 +182,18 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} version is required for loaded values.
      * @param c Closure to be applied for loaded values.
+     * @param expiryPlc Expiry policy.
      * @return Future with {@code True} value if loading took place.
      */
     public IgniteInternalFuture<Void> loadMissing(
         GridCacheContext cacheCtx,
+        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean async,
         Collection<KeyCacheObject> keys,
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
+        final ExpiryPolicy expiryPlc,
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c);
 }

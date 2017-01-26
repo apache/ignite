@@ -77,7 +77,7 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to deploy affinity object with class: " + cls.getName());
 
         return new GridAffinityMessage(
-            ctx.config().getMarshaller().marshal(o),
+            U.marshal(ctx, o),
             cls.getName(),
             dep.classLoaderId(),
             dep.deployMode(),
@@ -110,7 +110,7 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +
                 msg);
 
-        Object src = ctx.config().getMarshaller().unmarshal(msg.source(),
+        Object src = U.unmarshal(ctx, msg.source(),
             U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.
@@ -150,6 +150,7 @@ class GridAffinityUtils {
 
         /**
          * @param cacheName Cache name.
+         * @param topVer Topology version.
          */
         private AffinityJob(@Nullable String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
@@ -179,10 +180,16 @@ class GridAffinityUtils {
 
             cctx.affinity().affinityReadyFuture(topVer).get();
 
+            AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
+
+            GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
+                (GridAffinityAssignment)assign0 :
+                new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
+
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
+                assign);
         }
 
         /** {@inheritDoc} */

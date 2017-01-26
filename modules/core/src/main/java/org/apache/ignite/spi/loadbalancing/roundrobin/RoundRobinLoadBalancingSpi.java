@@ -51,15 +51,13 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * This SPI iterates through nodes in round-robin fashion and pick the next
  * sequential node. Two modes of operation are supported: per-task and global
- * (see {@link #setPerTask(boolean)} configuration).
+ * (see {@link #setPerTask(boolean)} configuration). Global mode is used be default.
  * <p>
- * When configured in per-task mode, implementation will pick a random starting
- * node at the beginning of every task execution and then sequentially iterate through all
- * nodes in topology starting from the picked node. This is the default configuration
- * and should fit most of the use cases as it provides a fairly well-distributed
- * split and also ensures that jobs within a single task are spread out across
- * nodes to the maximum. For cases when split size is equal to the number of nodes,
- * this mode guarantees that all nodes will participate in the split.
+ * When configured in per-task mode, implementation will pick a random node at the
+ * beginning of every task execution and then sequentially iterate through all
+ * nodes in topology starting from the picked node. For cases when split size
+ * is equal to the number of nodes, this mode guarantees that all nodes will
+ * participate in the split.
  * <p>
  * When configured in global mode, a single sequential queue of nodes is maintained for
  * all tasks and the next node in the queue is picked every time. In this mode (unlike in
@@ -71,7 +69,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
@@ -99,8 +97,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
- *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
- *        Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
+ *    public Map&lt;? extends ComputeJob, ClusterNode&gt; map(List&lt;ClusterNode&gt; subgrid, String arg) throws IgniteCheckedException {
+ *        Map&lt;MyFooBarJob, ClusterNode&gt; jobs = new HashMap&lt;MyFooBarJob, ClusterNode&gt;(subgrid.size());
  *
  *        // In more complex cases, you can actually do
  *        // more complicated assignments of jobs to nodes.

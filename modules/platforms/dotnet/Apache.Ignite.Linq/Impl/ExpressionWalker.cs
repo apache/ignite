@@ -38,26 +38,6 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(QuerySourceReferenceExpression expression)
-        {
-            Debug.Assert(expression != null);
-
-            var fromSource = expression.ReferencedQuerySource as IFromClause; 
-
-            if (fromSource != null)
-                return GetCacheQueryable(fromSource);
-
-            var joinSource = expression.ReferencedQuerySource as JoinClause;
-
-            if (joinSource != null)
-                return GetCacheQueryable(joinSource);
-
-            throw new NotSupportedException("Unexpected query source: " + expression.ReferencedQuerySource);
-        }
-
-        /// <summary>
-        /// Gets the cache queryable.
-        /// </summary>
         public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause)
         {
             return GetCacheQueryable(fromClause.FromExpression);
@@ -84,7 +64,19 @@ namespace Apache.Ignite.Linq.Impl
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
             if (srcRefExp != null)
-                return GetCacheQueryable(srcRefExp);
+            {
+                var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
+
+                if (fromSource != null)
+                    return GetCacheQueryable(fromSource);
+
+                var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
+
+                if (joinSource != null)
+                    return GetCacheQueryable(joinSource);
+
+                throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
+            }
 
             var memberExpr = expression as MemberExpression;
 
@@ -107,6 +99,14 @@ namespace Apache.Ignite.Linq.Impl
                     return queryable;
             }
 
+            var callExpr = expression as MethodCallExpression;
+
+            if (callExpr != null)
+            {
+                // This is usually a nested query with a call to AsCacheQueryable().
+                return (ICacheQueryableInternal) Expression.Lambda(callExpr).Compile().DynamicInvoke();
+            }
+
             if (throwWhenNotFound)
                 throw new NotSupportedException("Unexpected query source: " + expression);
 
@@ -118,6 +118,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public static T EvaluateExpression<T>(Expression expr)
         {
+            var constExpr = expr as ConstantExpression;
+
+            if (constExpr != null)
+                return (T)constExpr.Value;
+
             var memberExpr = expr as MemberExpression;
 
             if (memberExpr != null)
@@ -136,6 +141,11 @@ namespace Apache.Ignite.Linq.Impl
                     return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => CompileMemberReader(memberExpr))(target);
                 }
             }
+
+            // Case for compiled queries: return unchanged.
+            // ReSharper disable once CanBeReplacedWithTryCastAndCheckForNull
+            if (expr is ParameterExpression)
+                return (T) (object) expr;
 
             throw new NotSupportedException("Expression not supported: " + expr);
         }

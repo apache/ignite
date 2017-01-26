@@ -19,6 +19,7 @@ package org.apache.ignite.internal.websession;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -32,50 +33,20 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Web Sessions Test Suite");
+        TestSuite suite = new IgniteTestSuite("Ignite Web Sessions Test Suite");
 
         suite.addTestSuite(WebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
 
+        // Old implementation tests.
+        suite.addTestSuite(WebSessionV1SelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalV1SelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedV1SelfTest.class);
+
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteWebSessionSelfTestSuite.class));
 
         return suite;
-    }
-
-    /**
-     * Tests web sessions with TRANSACTIONAL cache.
-     */
-    public static class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
-        /** {@inheritDoc} */
-        @Override protected String getCacheName() {
-            return "partitioned_tx";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testRestarts() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-810");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testInvalidatedSession() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-810");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testClientReconnectRequest() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-810");
-        }
-    }
-
-    /**
-     * Tests web sessions with REPLICATED cache.
-     */
-    public static class WebSessionReplicatedSelfTest extends WebSessionSelfTest {
-        /** {@inheritDoc} */
-        @Override protected String getCacheName() {
-            return "replicated";
-        }
     }
 }

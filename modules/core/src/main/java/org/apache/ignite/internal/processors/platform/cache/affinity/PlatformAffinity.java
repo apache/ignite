@@ -82,6 +82,9 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     public static final int OP_PRIMARY_PARTITIONS = 14;
 
     /** */
+    public static final int OP_PARTITIONS = 15;
+
+    /** */
     private static final C1<ClusterNode, UUID> TO_NODE_ID = new C1<ClusterNode, UUID>() {
         @Nullable @Override public UUID apply(ClusterNode node) {
             return node != null ? node.id() : null;
@@ -114,7 +117,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PARTITION:
                 return aff.partition(reader.readObjectDetached());
@@ -165,7 +168,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_PRIMARY_PARTITIONS: {
@@ -288,10 +291,11 @@ public class PlatformAffinity extends PlatformAbstractTarget {
         }
     }
 
-    /**
-     * @return Gets number of partitions in cache.
-     */
-    public int partitions() {
-        return aff.partitions();
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        if (type == OP_PARTITIONS)
+            return aff.partitions();
+
+        return super.processInLongOutLong(type, val);
     }
 }

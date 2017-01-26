@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,6 +43,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -143,31 +146,40 @@ public class IgniteConfiguration {
     public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
+    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT);
 
     /** Default keep alive time for public thread pool. */
+    @Deprecated
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
 
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
 
     /** Default max queue capacity of public thread pool. */
+    @Deprecated
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of system thread pool. */
+    @Deprecated
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
+    @Deprecated
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
 
     /** Default keep alive time for utility thread pool. */
+    @Deprecated
     public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
 
     /** Default max queue capacity of system thread pool. */
+    @Deprecated
     public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+
+    /** Default Ignite thread keep alive time. */
+    public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
 
     /** Default size of peer class loading thread pool. */
     public static final int DFLT_P2P_THREAD_CNT = 2;
@@ -202,6 +214,9 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
+    /** Default value for late affinity assignment flag. */
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
+
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
@@ -218,6 +233,15 @@ public class IgniteConfiguration {
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
+    /** Async Callback pool size. */
+    private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /**
+     * Use striped pool for internal requests processing when possible
+     * (e.g. cache requests per-partition striping).
+     */
+    private int stripedPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
     /** System pool size. */
     private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
@@ -231,22 +255,22 @@ public class IgniteConfiguration {
     private int utilityCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
     /** Utility cache pool keep alive time. */
-    private long utilityCacheKeepAliveTime = DFLT_UTILITY_KEEP_ALIVE_TIME;
+    private long utilityCacheKeepAliveTime = DFLT_THREAD_KEEP_ALIVE_TIME;
 
     /** Marshaller pool size. */
     private int marshCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
     /** Marshaller pool keep alive time. */
-    private long marshCacheKeepAliveTime = DFLT_UTILITY_KEEP_ALIVE_TIME;
+    private long marshCacheKeepAliveTime = DFLT_THREAD_KEEP_ALIVE_TIME;
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
     /** Ignite installation folder. */
-    private String ggHome;
+    private String igniteHome;
 
     /** Ignite work folder. */
-    private String ggWork;
+    private String igniteWorkDir;
 
     /** MBean server. */
     private MBeanServer mbeanSrv;
@@ -441,6 +465,9 @@ public class IgniteConfiguration {
     /** */
     private BinaryConfiguration binaryCfg;
 
+    /** */
+    private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -480,6 +507,7 @@ public class IgniteConfiguration {
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
+        callbackPoolSize = cfg.getAsyncCallbackPoolSize();
         connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
@@ -489,14 +517,15 @@ public class IgniteConfiguration {
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        ggHome = cfg.getIgniteHome();
-        ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
+        hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
-        hadoopCfg = cfg.getHadoopConfiguration();
+        igniteHome = cfg.getIgniteHome();
+        igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
+        lateAffAssignment = cfg.isLateAffinityAssignment();
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
@@ -530,6 +559,7 @@ public class IgniteConfiguration {
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
+        stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -689,6 +719,47 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Returns striped pool size that should be used for cache requests
+     * processing.
+     * <p>
+     * If set to non-positive value then requests get processed in system pool.
+     * <p>
+     * Striped pool is better for typical cache operations.
+     *
+     * @return Positive value if striped pool should be initialized
+     *      with configured number of threads (stripes) and used for requests processing
+     *      or non-positive value to process requests in system pool.
+     *
+     * @see #getPublicThreadPoolSize()
+     * @see #getSystemThreadPoolSize()
+     */
+    public int getStripedPoolSize() {
+        return stripedPoolSize;
+    }
+
+    /**
+     * Sets striped pool size that should be used for cache requests
+     * processing.
+     * <p>
+     * If set to non-positive value then requests get processed in system pool.
+     * <p>
+     * Striped pool is better for typical cache operations.
+     *
+     * @param stripedPoolSize Positive value if striped pool should be initialized
+     *      with passed in number of threads (stripes) and used for requests processing
+     *      or non-positive value to process requests in system pool.
+     * @return {@code this} for chaining.
+     *
+     * @see #getPublicThreadPoolSize()
+     * @see #getSystemThreadPoolSize()
+     */
+    public IgniteConfiguration setStripedPoolSize(int stripedPoolSize) {
+        this.stripedPoolSize = stripedPoolSize;
+
+        return this;
+    }
+
+    /**
      * Should return a thread pool size to be used in grid.
      * This executor service will be in charge of processing {@link ComputeJob GridJobs}
      * and user messages sent to node.
@@ -711,6 +782,20 @@ public class IgniteConfiguration {
      */
     public int getSystemThreadPoolSize() {
         return sysPoolSize;
+    }
+
+    /**
+     * Size of thread pool that is in charge of processing asynchronous callbacks.
+     * <p>
+     * This pool is used for callbacks annotated with {@link IgniteAsyncCallback}.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used.
+     * @see IgniteAsyncCallback
+     */
+    public int getAsyncCallbackPoolSize() {
+        return callbackPoolSize;
     }
 
     /**
@@ -765,7 +850,7 @@ public class IgniteConfiguration {
     /**
      * Keep alive time of thread pool that is in charge of processing utility cache messages.
      * <p>
-     * If not provided, executor service will have keep alive time {@link #DFLT_UTILITY_KEEP_ALIVE_TIME}.
+     * If not provided, executor service will have keep alive time {@link #DFLT_THREAD_KEEP_ALIVE_TIME}.
      *
      * @return Thread pool keep alive time (in milliseconds) to be used in grid for utility cache messages.
      */
@@ -787,7 +872,7 @@ public class IgniteConfiguration {
     /**
      * Keep alive time of thread pool that is in charge of processing marshaller messages.
      * <p>
-     * If not provided, executor service will have keep alive time {@link #DFLT_UTILITY_KEEP_ALIVE_TIME}.
+     * If not provided, executor service will have keep alive time {@link #DFLT_THREAD_KEEP_ALIVE_TIME}.
      *
      * @return Thread pool keep alive time (in milliseconds) to be used in grid for marshaller messages.
      */
@@ -817,6 +902,20 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSystemThreadPoolSize(int poolSize) {
         sysPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets async callback thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     * @see IgniteAsyncCallback
+     */
+    public IgniteConfiguration setAsyncCallbackPoolSize(int poolSize) {
+        this.callbackPoolSize = poolSize;
 
         return this;
     }
@@ -941,47 +1040,47 @@ public class IgniteConfiguration {
      * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getIgniteHome() {
-        return ggHome;
+        return igniteHome;
     }
 
     /**
      * Sets Ignite installation folder.
      *
-     * @param ggHome {@code Ignition} installation folder.
+     * @param igniteHome {@code Ignition} installation folder.
      * @see IgniteConfiguration#getIgniteHome()
      * @see IgniteSystemProperties#IGNITE_HOME
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setIgniteHome(String ggHome) {
-        this.ggHome = ggHome;
+    public IgniteConfiguration setIgniteHome(String igniteHome) {
+        this.igniteHome = igniteHome;
 
         return this;
     }
 
     /**
-     * Gets Ignite work folder. If not provided, the method will use work folder under
+     * Gets Ignite work directory. If not provided, the method will use work directory under
      * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setIgniteHome(String)} or
      * {@code IGNITE_HOME} environment variable or system property.
      * <p>
-     * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
+     * If {@code IGNITE_HOME} is not provided, then system temp directory is used.
      *
-     * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
+     * @return Ignite work directory or {@code null} to make the system attempt to infer it automatically.
      * @see IgniteConfiguration#getIgniteHome()
      * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getWorkDirectory() {
-        return ggWork;
+        return igniteWorkDir;
     }
 
     /**
      * Sets Ignite work folder.
      *
-     * @param ggWork {@code Ignite} work folder.
+     * @param igniteWorkDir {@code Ignite} work directory.
      * @see IgniteConfiguration#getWorkDirectory()
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setWorkDirectory(String ggWork) {
-        this.ggWork = ggWork;
+    public IgniteConfiguration setWorkDirectory(String igniteWorkDir) {
+        this.igniteWorkDir = igniteWorkDir;
 
         return this;
     }
@@ -1780,9 +1879,12 @@ public class IgniteConfiguration {
      * considering a remote connection failed.
      *
      * @param failureDetectionTimeout Failure detection timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setFailureDetectionTimeout(long failureDetectionTimeout) {
+    public IgniteConfiguration setFailureDetectionTimeout(long failureDetectionTimeout) {
         this.failureDetectionTimeout = failureDetectionTimeout;
+
+        return this;
     }
 
     /**
@@ -2169,6 +2271,9 @@ public class IgniteConfiguration {
     /**
      * Defines port range to try for time server start.
      *
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setTimeServerPortBase(int)} method and fail if binding to this port did not succeed.
+     *
      * @return Number of ports to try before server initialization fails.
      */
     public int getTimeServerPortRange() {
@@ -2514,9 +2619,53 @@ public class IgniteConfiguration {
      * Sets platform configuration.
      *
      * @param platformCfg Platform configuration.
+     * @return  {@code this} for chaining.
      */
-    public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
+    public IgniteConfiguration setPlatformConfiguration(PlatformConfiguration platformCfg) {
         this.platformCfg = platformCfg;
+
+        return this;
+    }
+
+    /**
+     * Whether or not late affinity assignment mode should be used.
+     * <p>
+     * On each topology change, for each started cache partition-to-node mapping is
+     * calculated using {@link AffinityFunction} configured for cache. When late
+     * affinity assignment mode is disabled then new affinity mapping is applied immediately.
+     * <p>
+     * With late affinity assignment mode if primary node was changed for some partition, but data for this
+     * partition is not rebalanced yet on this node, then current primary is not changed and new primary is temporary
+     * assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary partitions is
+     * finished. This mode can show better performance for cache operations, since when cache primary node
+     * executes some operation and data is not rebalanced yet, then it sends additional message to force rebalancing
+     * from other nodes.
+     * <p>
+     * Note, that {@link Affinity} interface provides assignment information taking into account late assignment,
+     * so while rebalancing for new primary nodes is not finished it can return assignment which differs
+     * from assignment calculated by {@link AffinityFunction#assignPartitions}.
+     * <p>
+     * This property should have the same value for all nodes in cluster.
+     * <p>
+     * If not provided, default value is {@link #DFLT_LATE_AFF_ASSIGNMENT}.
+     *
+     * @return Late affinity assignment flag.
+     * @see AffinityFunction
+     */
+    public boolean isLateAffinityAssignment() {
+        return lateAffAssignment;
+    }
+
+    /**
+     * Sets late affinity assignment flag.
+     *
+     * @param lateAffAssignment Late affinity assignment flag.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setLateAffinityAssignment(boolean lateAffAssignment) {
+        this.lateAffAssignment = lateAffAssignment;
+
+        return this;
     }
 
     /** {@inheritDoc} */

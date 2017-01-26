@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
@@ -122,8 +121,7 @@ public class HadoopContext {
      * @return Hadoop-enabled nodes.
      */
     public Collection<ClusterNode> nodes() {
-        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR,
-            new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
+        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR, ctx.discovery().topologyVersionEx());
     }
 
     /**

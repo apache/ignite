@@ -124,7 +124,7 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
 
         it("should print error messages on incorrect alerts") {
             try {
-                matchOut(visor.alert("-r -t=5"), "Alert.+registered.")
+                checkOut(visor.alert("-r -t=5"), "No predicates have been provided in args")
 
                 checkOut(visor.alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
 

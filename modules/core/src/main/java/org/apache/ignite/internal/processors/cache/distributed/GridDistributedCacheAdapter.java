@@ -102,11 +102,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         TransactionIsolation isolation,
         boolean isInvalidate,
+        long createTtl,
         long accessTtl
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, accessTtl);
+        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, createTtl, accessTtl);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +122,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             false,
             /*retval*/true,
             null,
+            -1L,
             -1L);
     }
 
@@ -132,6 +134,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param isRead Indicates whether value is read or written.
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Future for locks.
      */
@@ -142,6 +145,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
+        long createTtl,
         long accessTtl);
 
     /**
@@ -299,7 +303,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
-            Map<ComputeJob, ClusterNode> jobs = new HashMap();
+            Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
             for (ClusterNode node : subgrid)
                 jobs.put(new GlobalRemoveAllJob(cacheName, topVer, skipStore, keepBinary), node);
@@ -405,7 +409,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                         try {
                             if (!locPart.isEmpty()) {
-                                for (GridDhtCacheEntry o : locPart.entries()) {
+                                for (GridCacheEntryEx o : locPart.allEntries()) {
                                     if (!o.obsoleteOrDeleted())
                                         dataLdr.removeDataInternal(o.key());
                                 }
@@ -428,7 +432,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 if (near != null) {
                     GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                    for (GridCacheEntryEx e : near.map().allEntries0()) {
+                    for (GridCacheEntryEx e : near.allEntries()) {
                         if (!e.valid(topVer) && e.markObsolete(obsoleteVer))
                             near.removeEntry(e);
                     }

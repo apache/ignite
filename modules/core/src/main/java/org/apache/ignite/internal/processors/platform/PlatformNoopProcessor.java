@@ -45,7 +45,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
-        return null;
+        throw new IgniteException("Platforms are not available [nodeId=" + ctx.grid().localNode().id() + "] " +
+            "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes; " +
+            "ignite::Ignition::Start() or ignite.exe to start Ignite C++ nodes).");
     }
 
     /** {@inheritDoc} */
@@ -59,27 +61,27 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy cache(@Nullable String name) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy createCache(@Nullable String name) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy createCacheFromConfig(long memPtr) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
         return null;
     }
 
@@ -89,47 +91,48 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy affinity(@Nullable String name) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy dataStreamer(@Nullable String cacheName, boolean keepBinary)
+        throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget transactions() {
+    @Override public PlatformTargetProxy transactions() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget projection() throws IgniteCheckedException {
+    @Override public PlatformTargetProxy projection() throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget compute(PlatformTarget grp) {
+    @Override public PlatformTargetProxy compute(PlatformTargetProxy grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget message(PlatformTarget grp) {
+    @Override public PlatformTargetProxy message(PlatformTargetProxy grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget events(PlatformTarget grp) {
+    @Override public PlatformTargetProxy events(PlatformTargetProxy grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget services(PlatformTarget grp) {
+    @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget extensions() {
+    @Override public PlatformTargetProxy extensions() {
         return null;
     }
 
@@ -140,7 +143,7 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
+    @Override public PlatformTargetProxy atomicLong(String name, long initVal, boolean create) throws IgniteException {
         return null;
     }
 
@@ -150,12 +153,42 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
+    @Override public void getCacheNames(long memPtr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTargetProxy atomicSequence(String name, long initVal, boolean create) throws IgniteException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+    @Override public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTargetProxy createNearCache(@Nullable String cacheName, long memPtr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTargetProxy getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean loggerIsLevelEnabled(int level) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTargetProxy binaryProcessor() {
         return null;
     }
 }

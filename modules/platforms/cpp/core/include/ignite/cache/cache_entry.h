@@ -20,8 +20,8 @@
  * Declares ignite::cache::CacheEntry class.
  */
 
-#ifndef _IGNITE_CACHE_ENTRY
-#define _IGNITE_CACHE_ENTRY
+#ifndef _IGNITE_CACHE_CACHE_ENTRY
+#define _IGNITE_CACHE_CACHE_ENTRY
 
 #include <ignite/common/common.h>
 
@@ -30,16 +30,24 @@ namespace ignite
     namespace cache
     {
         /**
-         * Cache entry.
+         * %Cache entry class template.
+         *
+         * Both key and value types should be default-constructable,
+         * copy-constructable and assignable.
          */
         template<typename K, typename V>
-        class IGNITE_IMPORT_EXPORT CacheEntry
+        class CacheEntry
         {
         public:
             /**
              * Default constructor.
+             *
+             * Creates instance with both key and value default-constructed.
              */
-            CacheEntry() : key(K()), val(V())
+            CacheEntry() :
+                key(),
+                val(),
+                hasValue(false)
             {
                 // No-op.
             }
@@ -50,7 +58,10 @@ namespace ignite
              * @param key Key.
              * @param val Value.
              */
-            CacheEntry(const K& key, const V& val) : key(key), val(val)
+            CacheEntry(const K& key, const V& val) :
+                key(key),
+                val(val),
+                hasValue(true)
             {
                 // No-op.
             }
@@ -60,10 +71,20 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            CacheEntry(const CacheEntry& other)
+            CacheEntry(const CacheEntry& other) :
+                key(other.key),
+                val(other.val),
+                hasValue(other.hasValue)
             {
-                key = other.key;
-                val = other.val;
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            virtual ~CacheEntry()
+            {
+                // No-op.
             }
 
             /**
@@ -75,16 +96,9 @@ namespace ignite
             {
                 if (this != &other)
                 {
-                    CacheEntry tmp(other);
-
-                    K& key0 = key;
-                    V& val0 = val;
-
-                    key = tmp.key;
-                    val = tmp.val;
-
-                    tmp.key = key0;
-                    tmp.val = val0;
+                    key = other.key;
+                    val = other.val;
+                    hasValue = other.hasValue;
                 }
 
                 return *this;
@@ -92,10 +106,10 @@ namespace ignite
 
             /**
              * Get key.
-             * 
+             *
              * @return Key.
              */
-            K GetKey() const
+            const K& GetKey() const
             {
                 return key;
             }
@@ -105,19 +119,32 @@ namespace ignite
              *
              * @return Value.
              */
-            V GetValue() const
+            const V& GetValue() const
             {
                 return val;
             }
 
-        private:
+            /**
+             * Check if the value exists.
+             *
+             * @return True, if the value exists.
+             */
+            bool HasValue() const
+            {
+                return hasValue;
+            }
+
+        protected:
             /** Key. */
-            K key; 
+            K key;
 
             /** Value. */
-            V val; 
+            V val;
+
+            /** Indicates whether value exists */
+            bool hasValue;
         };
     }
 }
 
-#endif
+#endif //_IGNITE_CACHE_CACHE_ENTRY

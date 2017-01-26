@@ -152,7 +152,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
             val all = hasArgFlag("a", argLst)
 
-            var f: NodeFilter = (GridNode) => true
+            var f: NodeFilter = (ClusterNode) => true
 
             try {
                 argLst foreach (arg => {

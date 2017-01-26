@@ -102,7 +102,7 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2CacheObject.class);
     }
 
     /** {@inheritDoc} */
@@ -145,5 +145,10 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(obj);
     }
 }

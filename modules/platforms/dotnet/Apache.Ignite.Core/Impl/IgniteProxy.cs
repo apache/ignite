@@ -30,7 +30,8 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -39,11 +40,12 @@ namespace Apache.Ignite.Core.Impl
     /// Grid proxy with fake serialization.
     /// </summary>
     [Serializable]
-    internal class IgniteProxy : IIgnite, IClusterGroupEx, IBinaryWriteAware, ICluster
+    [ExcludeFromCodeCoverage]
+    internal class IgniteProxy : IIgnite, IBinaryWriteAware, ICluster
     {
         /** */
         [NonSerialized]
-        private readonly IIgnite _ignite;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Default ctor for marshalling.
@@ -57,7 +59,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Grid.</param>
-        public IgniteProxy(IIgnite ignite)
+        public IgniteProxy(Ignite ignite)
         {
             _ignite = ignite;
         }
@@ -160,6 +162,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _ignite.GetCluster().ForDaemons();
+        }
+
+        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             return _ignite.GetCluster().ForHost(node);
@@ -187,6 +195,12 @@ namespace Apache.Ignite.Core.Impl
         public IClusterGroup ForDotNet()
         {
             return _ignite.GetCluster().ForDotNet();
+        }
+
+        /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _ignite.GetCluster().ForServers();
         }
 
         /** <inheritdoc /> */
@@ -240,6 +254,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.GetOrCreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return _ignite.CreateCache<TK, TV>(name);
@@ -250,6 +270,14 @@ namespace Apache.Ignite.Core.Impl
         {
             return _ignite.CreateCache<TK, TV>(configuration);
         }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.CreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public void DestroyCache(string name)
         {
             _ignite.DestroyCache(name);
@@ -347,6 +375,58 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.CreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            return _ignite.GetCacheNames();
+        }
+
+        /** <inheritdoc /> */
+        public ILogger Logger
+        {
+            get { return _ignite.Logger; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopping
+        {
+            add { _ignite.Stopping += value; }
+            remove { _ignite.Stopping -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopped
+        {
+            add { _ignite.Stopped += value; }
+            remove { _ignite.Stopped -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler ClientDisconnected
+        {
+            add { _ignite.ClientDisconnected += value; }
+            remove { _ignite.ClientDisconnected -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler<ClientReconnectEventArgs> ClientReconnected
+        {
+            add { _ignite.ClientReconnected += value; }
+            remove { _ignite.ClientReconnected -= value; }
+        }
+
+        /** <inheritdoc /> */
         public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
         {
             return _ignite.GetAtomicSequence(name, initialValue, create);
@@ -367,18 +447,12 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Target grid.
         /// </summary>
-        internal IIgnite Target
+        internal Ignite Target
         {
             get
             {
                 return _ignite;
             }
-        }
-
-        /** <inheritdoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return ((IClusterGroupEx)_ignite).GetBinaryType(typeId);
         }
     }
 }

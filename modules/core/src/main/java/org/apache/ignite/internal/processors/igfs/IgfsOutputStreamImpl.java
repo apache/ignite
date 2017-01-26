@@ -21,9 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -41,50 +38,30 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  * Output stream to store data into grid cache with separate blocks.
  */
-class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
+class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
     /** Maximum number of blocks in buffer. */
     private static final int MAX_BLOCKS_CNT = 16;
-
-    /** IGFS context. */
-    private IgfsContext igfsCtx;
-
-    /** Meta info manager. */
-    private final IgfsMetaManager meta;
-
-    /** Data manager. */
-    private final IgfsDataManager data;
-
-    /** File descriptor. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private IgfsEntryInfo fileInfo;
-
-    /** Space in file to write data. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private long space;
-
-    /** Intermediate remainder to keep data. */
-    private byte[] remainder;
-
-    /** Data length in remainder. */
-    private int remainderDataLen;
-
-    /** Write completion future. */
-    private final IgniteInternalFuture<Boolean> writeCompletionFut;
 
     /** IGFS mode. */
     private final IgfsMode mode;
 
-    /** File worker batch. */
-    private final IgfsFileWorkerBatch batch;
+    /** Write completion future. */
+    private final IgniteInternalFuture<Boolean> writeFut;
 
-    /** Ensures that onClose)_ routine is called no more than once. */
-    private final AtomicBoolean onCloseGuard = new AtomicBoolean();
-
-    /** Local IGFS metrics. */
-    private final IgfsLocalMetrics metrics;
+    /** File descriptor. */
+    private IgfsEntryInfo fileInfo;
 
     /** Affinity written by this output stream. */
     private IgfsFileAffinityRange streamRange;
+
+    /** Data length in remainder. */
+    protected int remainderDataLen;
+
+    /** Intermediate remainder to keep data. */
+    private byte[] remainder;
+
+    /** Space in file to write data. */
+    protected long space;
 
     /**
      * Constructs file output stream.
@@ -95,47 +72,37 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param bufSize The size of the buffer to be used.
      * @param mode Grid IGFS mode.
      * @param batch Optional secondary file system batch.
-     * @param metrics Local IGFS metrics.
      */
     IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
-        @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
-        super(path, optimizeBufferSize(bufSize, fileInfo));
+        @Nullable IgfsFileWorkerBatch batch) {
+        super(igfsCtx, path, bufSize, batch);
 
-        assert fileInfo != null;
-        assert fileInfo.isFile() : "Unexpected file info: " + fileInfo;
-        assert mode != null && mode != PROXY;
-        assert mode == PRIMARY && batch == null || batch != null;
-        assert metrics != null;
+        assert fileInfo != null && fileInfo.isFile() : "Unexpected file info: " + fileInfo;
+        assert mode != null && mode != PROXY && (mode == PRIMARY && batch == null || batch != null);
 
         // File hasn't been locked.
         if (fileInfo.lockId() == null)
             throw new IgfsException("Failed to acquire file lock (concurrently modified?): " + path);
 
-        assert !IgfsUtils.DELETE_LOCK_ID.equals(fileInfo.lockId());
+        synchronized (mux) {
+            this.fileInfo = fileInfo;
+            this.mode = mode;
 
-        this.igfsCtx = igfsCtx;
-        meta = igfsCtx.meta();
-        data = igfsCtx.data();
+            streamRange = initialStreamRange(fileInfo);
 
-        this.fileInfo = fileInfo;
-        this.mode = mode;
-        this.batch = batch;
-        this.metrics = metrics;
-
-        streamRange = initialStreamRange(fileInfo);
-
-        writeCompletionFut = data.writeStart(fileInfo);
+            writeFut = igfsCtx.data().writeStart(fileInfo.id());
+        }
     }
 
     /**
-     * Optimize buffer size.
-     *
-     * @param bufSize Requested buffer size.
-     * @param fileInfo File info.
-     * @return Optimized buffer size.
+     * @return Length of file.
      */
-    @SuppressWarnings("IfMayBeConditional")
-    private static int optimizeBufferSize(int bufSize, IgfsEntryInfo fileInfo) {
+    private long length() {
+        return fileInfo.length();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int optimizeBufferSize(int bufSize) {
         assert bufSize > 0;
 
         if (fileInfo == null)
@@ -163,191 +130,96 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         return bufSize;
     }
 
-    /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlock(ByteBuffer block) throws IgniteCheckedException, IOException {
-        int writeLen = block.remaining();
-
-        preStoreDataBlocks(null, writeLen);
-
-        int blockSize = fileInfo.blockSize();
-
-        // If data length is not enough to fill full block, fill the remainder and return.
-        if (remainderDataLen + writeLen < blockSize) {
-            if (remainder == null)
-                remainder = new byte[blockSize];
-            else if (remainder.length != blockSize) {
-                assert remainderDataLen == remainder.length;
-
-                byte[] allocated = new byte[blockSize];
-
-                U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
-
-                remainder = allocated;
-            }
-
-            block.get(remainder, remainderDataLen, writeLen);
-
-            remainderDataLen += writeLen;
-        }
-        else {
-            remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, block,
-                false, streamRange, batch);
-
-            remainderDataLen = remainder == null ? 0 : remainder.length;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException {
-        preStoreDataBlocks(in, len);
-
-        int blockSize = fileInfo.blockSize();
-
-        // If data length is not enough to fill full block, fill the remainder and return.
-        if (remainderDataLen + len < blockSize) {
-            if (remainder == null)
-                remainder = new byte[blockSize];
-            else if (remainder.length != blockSize) {
-                assert remainderDataLen == remainder.length;
-
-                byte[] allocated = new byte[blockSize];
-
-                U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
-
-                remainder = allocated;
-            }
-
-            in.readFully(remainder, remainderDataLen, len);
-
-            remainderDataLen += len;
-        }
-        else {
-            remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, in, len,
-                false, streamRange, batch);
-
-            remainderDataLen = remainder == null ? 0 : remainder.length;
-        }
-    }
-
-    /**
-     * Initializes data loader if it was not initialized yet and updates written space.
-     *
-     * @param len Data length to be written.
-     */
-    private void preStoreDataBlocks(@Nullable DataInput in, int len) throws IgniteCheckedException, IOException {
-        // Check if any exception happened while writing data.
-        if (writeCompletionFut.isDone()) {
-            assert ((GridFutureAdapter)writeCompletionFut).isFailed();
-
-            if (in != null)
-                in.skipBytes(len);
-
-            writeCompletionFut.get();
-        }
-
-        bytes += len;
-        space += len;
-    }
-
     /**
      * Flushes this output stream and forces any buffered output bytes to be written out.
      *
-     * @exception IOException  if an I/O error occurs.
+     * @throws IOException if an I/O error occurs.
      */
-    @Override public synchronized void flush() throws IOException {
-        boolean exists;
+    @Override public void flush() throws IOException {
+        synchronized (mux) {
+            checkClosed(null, 0);
 
-        try {
-            exists = meta.exists(fileInfo.id());
-        }
-        catch (IgniteCheckedException e) {
-            throw new IOException("File to read file metadata: " + path, e);
-        }
+            sendBufferIfNotEmpty();
 
-        if (!exists) {
-            onClose(true);
+            flushRemainder();
 
-            throw new IOException("File was concurrently deleted: " + path);
-        }
+            awaitAcks();
 
-        super.flush();
+            // Update file length if needed.
+            if (igfsCtx.configuration().isUpdateFileLengthOnFlush() && space > 0) {
+                try {
+                    IgfsEntryInfo fileInfo0 = igfsCtx.meta().reserveSpace(fileInfo.id(), space, streamRange);
 
-        try {
-            if (remainder != null) {
-                data.storeDataBlocks(fileInfo, fileInfo.length() + space, null, 0,
-                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+                    if (fileInfo0 == null)
+                        throw new IOException("File was concurrently deleted: " + path);
+                    else
+                        fileInfo = fileInfo0;
 
-                remainder = null;
-                remainderDataLen = 0;
+                    streamRange = initialStreamRange(fileInfo);
+
+                    space = 0;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IOException("Failed to update file length data [path=" + path +
+                        ", space=" + space + ']', e);
+                }
             }
-
-            if (space > 0) {
-                data.awaitAllAcksReceived(fileInfo.id());
-
-                IgfsEntryInfo fileInfo0 = meta.reserveSpace(path, fileInfo.id(), space, streamRange);
-
-                if (fileInfo0 == null)
-                    throw new IOException("File was concurrently deleted: " + path);
-                else
-                    fileInfo = fileInfo0;
-
-                streamRange = initialStreamRange(fileInfo);
-
-                space = 0;
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IOException("Failed to flush data [path=" + path + ", space=" + space + ']', e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void onClose() throws IOException {
-        onClose(false);
-    }
+    @Override public final void close() throws IOException {
+        synchronized (mux) {
+            // Do nothing if stream is already closed.
+            if (closed)
+                return;
 
-    /**
-     * Close callback. It will be called only once in synchronized section.
-     *
-     * @param deleted Whether we already know that the file was deleted.
-     * @throws IOException If failed.
-     */
-    private void onClose(boolean deleted) throws IOException {
-        assert Thread.holdsLock(this);
+            // Set closed flag immediately.
+            closed = true;
 
-        if (onCloseGuard.compareAndSet(false, true)) {
-            // Notify backing secondary file system batch to finish.
-            if (mode != PRIMARY) {
-                assert batch != null;
+            // Flush data.
+            IOException err = null;
 
-                batch.finish();
-            }
-
-            // Ensure file existence.
-            boolean exists;
+            boolean flushSuccess = false;
 
             try {
-                exists = !deleted && meta.exists(fileInfo.id());
+                sendBufferIfNotEmpty();
+
+                flushRemainder();
+
+                igfsCtx.data().writeClose(fileInfo.id());
+
+                writeFut.get();
+
+                flushSuccess = true;
             }
-            catch (IgniteCheckedException e) {
-                throw new IOException("File to read file metadata: " + path, e);
+            catch (Exception e) {
+                err = new IOException("Failed to flush data during stream close [path=" + path +
+                    ", fileInfo=" + fileInfo + ']', e);
             }
 
-            if (exists) {
-                IOException err = null;
+            // Finish batch before file unlocking to support the assertion that unlocked file batch,
+            // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
+            if (batch != null)
+                batch.finish();
 
-                try {
-                    data.writeClose(fileInfo);
+            // Unlock the file after data is flushed.
+            try {
+                if (flushSuccess && space > 0)
+                    igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis(), true,
+                        space, streamRange);
+                else
+                    igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis());
+            }
+            catch (Exception e) {
+                if (err == null)
+                    err = new IOException("File to release file lock: " + path, e);
+                else
+                    err.addSuppressed(e);
+            }
 
-                    writeCompletionFut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    err = new IOException("Failed to close stream [path=" + path + ", fileInfo=" + fileInfo + ']', e);
-                }
-
-                metrics.addWrittenBytesTime(bytes, time);
-
-                // Await secondary file system processing to finish.
+            // Finally, await secondary file system flush.
+            if (batch != null) {
                 if (mode == DUAL_SYNC) {
                     try {
                         batch.await();
@@ -356,39 +228,103 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                         if (err == null)
                             err = new IOException("Failed to close secondary file system stream [path=" + path +
                                 ", fileInfo=" + fileInfo + ']', e);
+                        else
+                            err.addSuppressed(e);
                     }
                 }
+            }
 
-                long modificationTime = System.currentTimeMillis();
+            // Throw error, if any.
+            if (err != null)
+                throw err;
 
-                try {
-                    meta.unlock(fileInfo, modificationTime);
+            updateMetricsOnClose();
+        }
+    }
+
+    /**
+     * Flush remainder.
+     *
+     * @throws IOException If failed.
+     */
+    private void flushRemainder() throws IOException {
+        try {
+            if (remainder != null) {
+
+                remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, null,
+                    0, ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+
+                remainder = null;
+                remainderDataLen = 0;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to flush data (remainder) [path=" + path + ", space=" + space + ']', e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void send(Object data, int writeLen) throws IOException {
+        assert Thread.holdsLock(mux);
+        assert data instanceof ByteBuffer || data instanceof DataInput;
+
+        try {
+            // Increment metrics.
+            bytes += writeLen;
+            space += writeLen;
+
+            int blockSize = fileInfo.blockSize();
+
+            // If data length is not enough to fill full block, fill the remainder and return.
+            if (remainderDataLen + writeLen < blockSize) {
+                if (remainder == null)
+                    remainder = new byte[blockSize];
+                else if (remainder.length != blockSize) {
+                    assert remainderDataLen == remainder.length;
+
+                    byte[] allocated = new byte[blockSize];
+
+                    U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
+
+                    remainder = allocated;
                 }
-                catch (IgfsPathNotFoundException ignore) {
-                    data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
 
-                    throw new IOException("File was concurrently deleted: " + path);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("File to read file metadata: " + path, e);
-                }
+                if (data instanceof ByteBuffer)
+                    ((ByteBuffer)data).get(remainder, remainderDataLen, writeLen);
+                else
+                    ((DataInput)data).readFully(remainder, remainderDataLen, writeLen);
 
-                if (err != null)
-                    throw err;
+                remainderDataLen += writeLen;
             }
             else {
-                try {
-                    if (mode == DUAL_SYNC)
-                        batch.await();
+                if (data instanceof ByteBuffer) {
+                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, remainder,
+                        remainderDataLen, (ByteBuffer)data, false, streamRange, batch);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to close secondary file system stream [path=" + path +
-                        ", fileInfo=" + fileInfo + ']', e);
+                else {
+                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, remainder,
+                        remainderDataLen, (DataInput)data, writeLen, false, streamRange, batch);
                 }
-                finally {
-                    data.delete(fileInfo);
-                }
+
+                remainderDataLen = remainder == null ? 0 : remainder.length;
             }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to store data into file: " + path, e);
+        }
+    }
+
+    /**
+     * Await acknowledgments.
+     *
+     * @throws IOException If failed.
+     */
+    private void awaitAcks() throws IOException {
+        try {
+            igfsCtx.data().awaitAllAcksReceived(fileInfo.id());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to wait for flush acknowledge: " + fileInfo.id, e);
         }
     }
 
@@ -421,7 +357,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
         IgniteUuid prevAffKey = map == null ? null : map.affinityKey(lastBlockOff, false);
 
-        IgniteUuid affKey = data.nextAffinityKey(prevAffKey);
+        IgniteUuid affKey = igfsCtx.data().nextAffinityKey(prevAffKey);
 
         return affKey == null ? null : new IgfsFileAffinityRange(off, off, affKey);
     }

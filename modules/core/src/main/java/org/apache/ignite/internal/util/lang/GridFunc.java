@@ -287,7 +287,6 @@ public class GridFunc {
         }
     };
 
-
     /** */
     private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
@@ -568,7 +567,7 @@ public class GridFunc {
      * Here's the typical example of how this method is used in {@code reduce()} method
      * implementation (this example sums up all the values of {@code Integer} type):
      * <pre name="code" class="java">
-     * public Integer reduce(List&lt;GridComputeJobResult&gt; res) throws IgniteCheckedException {
+     * public Integer reduce(List&lt;ComputeJobResult&gt; res) throws IgniteCheckedException {
      *     return F.sum(F.&lt;Integer&gt;jobResults(res));
      * }
      * </pre>
@@ -2314,6 +2313,26 @@ public class GridFunc {
     }
 
     /**
+     * Converts collection of numbers to primitive {@code int[]} array.
+     *
+     * @param col Collection of numbers.
+     * @return Array of integers.
+     */
+    public static int[] toIntArray(Collection<? extends Number> col) {
+        if (col == null)
+            return null;
+
+        int[] res = new int[col.size()];
+
+        Iterator<? extends Number> iter = col.iterator();
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = iter.next().intValue();
+
+        return res;
+    }
+
+    /**
      * Utility map getter. This method analogous to {@link #addIfAbsent(Map, Object, Callable)}
      * method but this one doesn't put the default value into the map when key is not found.
      *
@@ -3014,7 +3033,7 @@ public class GridFunc {
                 }
             }
 
-            // T must be <T extends GridNode>.
+            // T must be <T extends ClusterNode>.
             return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {

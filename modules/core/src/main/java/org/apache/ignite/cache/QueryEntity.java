@@ -20,8 +20,10 @@ package org.apache.ignite.cache;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -42,11 +44,32 @@ public class QueryEntity implements Serializable {
     /** Fields available for query. A map from field name to type name. */
     private LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
+    /** Set of field names that belong to the key. */
+    private Set<String> keyFields;
+
     /** Aliases. */
     private Map<String, String> aliases = new HashMap<>();
 
     /** Collection of query indexes. */
     private Map<String, QueryIndex> idxs = new HashMap<>();
+
+    /**
+     * Creates an empty query entity.
+     */
+    public QueryEntity() {
+        // No-op constructor.
+    }
+
+    /**
+     * Creates a query entity with the given key and value types.
+     *
+     * @param keyType Key type.
+     * @param valType Value type.
+     */
+    public QueryEntity(String keyType, String valType) {
+        this.keyType = keyType;
+        this.valType = valType;
+    }
 
     /**
      * Gets key type for this query pair.
@@ -102,6 +125,28 @@ public class QueryEntity implements Serializable {
      */
     public void setFields(LinkedHashMap<String, String> fields) {
         this.fields = fields;
+    }
+
+    /**
+     * Gets query fields for this query pair that belongs to the key. We need this for the cases when no key-value classes
+     * are present on cluster nodes, and we need to build/modify keys and values during SQL DML operations.
+     * Thus, setting this parameter in XML is not mandatory and should be based on particular use case.
+     *
+     * @return Set of names of key fields.
+     */
+    public Set<String> getKeyFields() {
+        return keyFields;
+    }
+
+    /**
+     * Gets query fields for this query pair that belongs to the key. We need this for the cases when no key-value classes
+     * are present on cluster nodes, and we need to build/modify keys and values during SQL DML operations.
+     * Thus, setting this parameter in XML is not mandatory and should be based on particular use case.
+     *
+     * @param keyFields Set of names of key fields.
+     */
+    public void setKeyFields(Set<String> keyFields) {
+        this.keyFields = keyFields;
     }
 
     /**

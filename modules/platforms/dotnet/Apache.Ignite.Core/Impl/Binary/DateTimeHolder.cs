@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Wraps DateTime item in a binarizable.
     /// </summary>
-    internal class DateTimeHolder : IBinaryWriteAware
+    internal struct DateTimeHolder : IBinaryWriteAware
     {
         /** */
         private readonly DateTime _item;
@@ -42,11 +42,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Constructor.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public DateTimeHolder(IBinaryReader reader)
+        public DateTimeHolder(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
-            _item = DateTime.FromBinary(reader.GetRawReader().ReadLong());
+            _item = DateTime.FromBinary(reader.ReadLong());
         }
 
         /// <summary>
@@ -63,6 +63,39 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(writer != null);
 
             writer.GetRawWriter().WriteLong(_item.ToBinary());
+        }
+
+        /** <inheritDoc /> */
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is DateTimeHolder && Equals((DateTimeHolder) obj);
+        }
+
+        /** <inheritDoc /> */
+        public override int GetHashCode()
+        {
+            return _item.GetHashCode();
+        }
+
+        /** <inheritDoc /> */
+        public static bool operator ==(DateTimeHolder left, DateTimeHolder right)
+        {
+            return left.Equals(right);
+        }
+
+        /** <inheritDoc /> */
+        public static bool operator !=(DateTimeHolder left, DateTimeHolder right)
+        {
+            return !left.Equals(right);
+        }
+
+        /// <summary>
+        /// Checks equality.
+        /// </summary>
+        private bool Equals(DateTimeHolder other)
+        {
+            return _item.Equals(other._item);
         }
     }
 }

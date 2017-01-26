@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Committed transaction information. Contains recovery writes that will be used to set commit values
  * in case if originating node crashes.
  */
+@Deprecated
 public class GridCacheCommittedTxInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

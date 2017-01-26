@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.Serializable;
+import java.sql.Date;
 
 /**
  * Person definition.
@@ -34,11 +35,17 @@ public class Person implements Serializable {
     /** Value for orgId. */
     private Integer orgId;
 
+    /** Value for birthday. */
+    private Date birthday;
+
     /** Value for name. */
     private String name;
 
     /** Value for salary. */
     private Integer salary;
+
+    /** Value of person gender. */
+    private Gender gender;
 
     /**
      * Empty constructor.
@@ -53,13 +60,17 @@ public class Person implements Serializable {
     public Person(
         Integer id,
         Integer orgId,
+        Date birthday,
         String name,
-        Integer salary
+        Integer salary,
+        Gender gender
     ) {
         this.id = id;
         this.orgId = orgId;
+        this.birthday = birthday;
         this.name = name;
         this.salary = salary;
+        this.gender = gender;
     }
 
     /**
@@ -99,6 +110,24 @@ public class Person implements Serializable {
     }
 
     /**
+     * Gets birthday.
+     *
+     * @return Value for birthday.
+     */
+    public Date getBirthday() {
+        return birthday;
+    }
+
+    /**
+     * Sets birthday.
+     *
+     * @param birthday New value for birthday.
+     */
+    public void setBirthday(Date birthday) {
+        this.birthday = birthday;
+    }
+
+    /**
      * Gets name.
      *
      * @return Value for name.
@@ -135,6 +164,24 @@ public class Person implements Serializable {
         this.salary = salary;
     }
 
+    /**
+     * Gets gender.
+     *
+     * @return Gender.
+     */
+    public Gender getGender() {
+        return gender;
+    }
+
+    /**
+     * Sets gender.
+     *
+     * @param gender New value for gender.
+     */
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -154,6 +201,9 @@ public class Person implements Serializable {
         if (name != null ? !name.equals(that.name) : that.name != null)
             return false;
 
+        if (gender != null ? !gender.equals(that.gender) : that.gender != null)
+            return false;
+
         return true;
     }
 
@@ -165,6 +215,8 @@ public class Person implements Serializable {
 
         res = 31 * res + (name != null ? name.hashCode() : 0);
 
+        res = 31 * res + (gender != null ? gender.hashCode() : 0);
+
         return res;
     }
 
@@ -172,7 +224,9 @@ public class Person implements Serializable {
     @Override public String toString() {
         return "Person [id=" + id +
             ", orgId=" + orgId +
+            ", birthday=" + (birthday == null ? null : birthday.getTime()) +
             ", name=" + name +
+            ", gender=" + gender +
             "]";
     }
 }

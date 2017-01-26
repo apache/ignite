@@ -140,6 +140,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
         topologyVersion(topVer);
     }
 
@@ -187,9 +189,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             commitVer,
             sys,
             plc,
-            concurrency, 
-            isolation, 
-            invalidate, 
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
             subjId,
@@ -206,6 +208,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         txState = new IgniteTxRemoteStateImpl(
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
     }
@@ -240,11 +244,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** {@inheritDoc} */
     @Override public UUID otherNodeId() {
         return nearNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enforceSerializable() {
-        return false; // Serializable will be enforced on primary mode.
     }
 
     /** {@inheritDoc} */

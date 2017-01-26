@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
 
             fixed (byte* data0 = _data)
             {
-                written = WriteString0(chars, charCnt, byteCnt, encoding, data0 + pos0);
+                written = BinaryUtils.StringToUtf8Bytes(chars, charCnt, byteCnt, encoding, data0 + pos0);
             }
 
             return written;
@@ -417,6 +417,15 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         public override bool IsSameArray(byte[] arr)
         {
             return _data == arr;
+        }
+
+        /** <inheritdoc /> */
+        public override T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg)
+        {
+            fixed (byte* data0 = _data)
+            {
+                return proc.Invoke(data0, arg);
+            }
         }
 
         /** <inheritdoc /> */

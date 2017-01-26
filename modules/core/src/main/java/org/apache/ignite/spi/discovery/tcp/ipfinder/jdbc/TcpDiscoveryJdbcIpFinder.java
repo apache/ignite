@@ -59,28 +59,6 @@ import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
  * The database will contain 1 table which will hold IP addresses.
  */
 public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
-    /** Name of the address table, in upper case.  Mostly table names are not case-sensitive
-     * but databases such as Oracle require table names in upper-case when looking them up in the metadata. */
-    public static final String ADDRS_TABLE_NAME = "TBL_ADDRS";
-    
-    /** Query to get addresses. */
-    public static final String GET_ADDRS_QRY = "select hostname, port from tbl_addrs";
-
-    /** Query to register address. */
-    public static final String REG_ADDR_QRY = "insert into tbl_addrs values (?, ?)";
-
-    /** Query to unregister address. */
-    public static final String UNREG_ADDR_QRY = "delete from tbl_addrs where hostname = ? and port = ?";
-
-    /** Query to create addresses table. */
-    public static final String CREATE_ADDRS_TABLE_QRY =
-        "create table tbl_addrs (" +
-        "hostname VARCHAR(1024), " +
-        "port INT)";
-
-    /** Query to check database validity. */
-    public static final String CHK_QRY = "select count(*) from tbl_addrs";
-
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -99,12 +77,41 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
+    /** Table name. */
+    private final String addrTableName;
+
+    /** Query to get addresses. */
+    private final String getAddrsQry;
+
+    /** Query to register address. */
+    private final String regAddrQry;
+
+    /** Query to unregister address. */
+    private final String unregAddrQry;
+
+    /** Query to create addresses table. */
+    private final String createAddrsTableQry;
+
+    /** Query to check database validity. */
+    private final String chkQry;
+
     /**
      * Constructor.
      */
     public TcpDiscoveryJdbcIpFinder() {
-        setShared(true);
+		this(new BasicJdbcIpFinderDialect());
     }
+
+	public TcpDiscoveryJdbcIpFinder(JdbcIpFinderDialect jdbcDialect) {
+		setShared(true);
+
+        this.addrTableName = jdbcDialect.tableName();
+        this.getAddrsQry = "select hostname, port from " + addrTableName;
+        this.regAddrQry = "insert into " + addrTableName + " values (?, ?)";
+        this.unregAddrQry = "delete from " + addrTableName + " where hostname = ? and port = ?";
+        this.createAddrsTableQry = "create table " + addrTableName + " (hostname VARCHAR(1024), port INT)";
+        this.chkQry = "select count(*) from " + addrTableName;
+	}
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
@@ -121,7 +128,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-            stmt = conn.prepareStatement(GET_ADDRS_QRY);
+            stmt = conn.prepareStatement(getAddrsQry);
 
             rs = stmt.executeQuery();
 
@@ -163,8 +170,8 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-            stmtUnreg = conn.prepareStatement(UNREG_ADDR_QRY);
-            stmtReg = conn.prepareStatement(REG_ADDR_QRY);
+            stmtUnreg = conn.prepareStatement(unregAddrQry);
+            stmtReg = conn.prepareStatement(regAddrQry);
 
             for (InetSocketAddress addr : addrs) {
                 stmtUnreg.setString(1, addr.getAddress().getHostAddress());
@@ -222,7 +229,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-            stmt = conn.prepareStatement(UNREG_ADDR_QRY);
+            stmt = conn.prepareStatement(unregAddrQry);
 
             for (InetSocketAddress addr : addrs) {
                 stmt.setString(1, addr.getAddress().getHostAddress());
@@ -310,12 +317,12 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
                 // in the create statement which will check and create atomically.
                 // However not all databases support it, for example Oracle,
                 // so we do not use it.
-                try (ResultSet tables = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
+                try (ResultSet tables = dbm.getTables(null, null, addrTableName, null)) {
                     if (!tables.next()) {
                         // Table does not exist
                         // Create tbl_addrs.
                         try (Statement stmt = conn.createStatement()) {
-                            stmt.executeUpdate(CREATE_ADDRS_TABLE_QRY);
+                            stmt.executeUpdate(createAddrsTableQry);
 
                             conn.commit();
                         }
@@ -329,7 +336,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
                             // exception, so the safest way to determine if this
                             // exception is to be ignored is to test again to
                             // see if the table has been created.
-                            try (ResultSet tablesAgain = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
+                            try (ResultSet tablesAgain = dbm.getTables(null, null, addrTableName, null)) {
                                 if (!tablesAgain.next())
                                     throw e;
                             }
@@ -385,7 +392,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
             // Check if tbl_addrs exists and database initialized properly.
             stmt = conn.createStatement();
 
-            stmt.execute(CHK_QRY);
+            stmt.execute(chkQry);
         }
         catch (SQLException e) {
             throw new IgniteSpiException("IP finder has not been properly initialized.", e);

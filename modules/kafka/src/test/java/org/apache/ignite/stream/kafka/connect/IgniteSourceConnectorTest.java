@@ -25,19 +25,23 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -63,7 +67,10 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** Test topics created by connector. */
-    private static final String[] TOPICS = {"test1", "test2"};
+    private static final String[] TOPICS = {"src-test1", "src-test2"};
+
+    /** Worker id. */
+    private static final String WORKER_ID = "workerId";
 
     /** Test Kafka broker. */
     private TestKafkaBroker kafkaBroker;
@@ -96,12 +103,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
-        WorkerConfig workerConfig = new StandaloneConfig(makeWorkerProps());
+        WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
 
-        MemoryOffsetBackingStore offsetBackingStore = new MemoryOffsetBackingStore();
-        offsetBackingStore.configure(workerConfig.originals());
+        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
+        offBackingStore.configure(workerCfg);
 
-        worker = new Worker(workerConfig, offsetBackingStore);
+        worker = new Worker(WORKER_ID, new SystemTime(), workerCfg, offBackingStore);
         worker.start();
 
         herder = new StandaloneHerder(worker);
@@ -203,13 +210,18 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
 
         // Checks the events are transferred to Kafka broker.
-        checkDataDelivered(conditioned);
+        if (conditioned)
+            checkDataDelivered(EVENT_CNT * TOPICS.length / 2);
+        else
+            checkDataDelivered(EVENT_CNT * TOPICS.length);
+
     }
 
     /**
      * Sends messages to the grid.
      *
      * @return Map of key value messages.
+     * @throws IOException If failed.
      */
     private Map<String, String> sendData() throws IOException {
         Map<String, String> keyValMap = new HashMap<>();
@@ -234,9 +246,10 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     /**
      * Checks if events were delivered to Kafka server.
      *
-     * @param conditioned Flag indicating whether filtering is enabled.
+     * @param expectedEventsCnt Expected events count.
+     * @throws Exception If failed.
      */
-    private void checkDataDelivered(boolean conditioned) {
+    private void checkDataDelivered(final int expectedEventsCnt) throws Exception {
         Properties props = new Properties();
 
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker.getBrokerAddress());
@@ -249,23 +262,39 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
             "org.apache.ignite.stream.kafka.connect.serialization.CacheEventDeserializer");
 
-        KafkaConsumer<String, CacheEvent> consumer = new KafkaConsumer<>(props);
+        final KafkaConsumer<String, CacheEvent> consumer = new KafkaConsumer<>(props);
 
         consumer.subscribe(Arrays.asList(TOPICS));
 
-        int evtCnt = 0;
-        long start = System.currentTimeMillis();
+        final AtomicInteger evtCnt = new AtomicInteger();
 
         try {
-            while (false || (System.currentTimeMillis() - start) < 10000) {
-                ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
-                for (ConsumerRecord<String, CacheEvent> record : records) {
-                    System.out.println("Event: offset = " + record.offset() + ", key = " + record.key()
-                        + ", value = " + record.value().toString());
+            // Wait for expected events count.
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
+                    for (ConsumerRecord<String, CacheEvent> record : records) {
+                        info("Record: " + record);
 
-                    evtCnt++;
+                        evtCnt.getAndIncrement();
+                    }
+                    return evtCnt.get() >= expectedEventsCnt;
                 }
-            }
+            }, 20_000);
+
+            info("Waiting for unexpected records for 5 secs.");
+
+            assertFalse(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
+                    for (ConsumerRecord<String, CacheEvent> record : records) {
+                        error("Unexpected record: " + record);
+
+                        evtCnt.getAndIncrement();
+                    }
+                    return evtCnt.get() > expectedEventsCnt;
+                }
+            }, 5_000));
         }
         catch (WakeupException e) {
             // ignore for shutdown.
@@ -273,10 +302,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         finally {
             consumer.close();
 
-            if (conditioned)
-                assertTrue(evtCnt == (EVENT_CNT * TOPICS.length) / 2);
-            else
-                assertTrue(evtCnt == EVENT_CNT * TOPICS.length);
+            assertEquals(expectedEventsCnt, evtCnt.get());
         }
     }
 
@@ -306,6 +332,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * Creates properties for Kafka Connect workers.
      *
      * @return Worker configurations.
+     * @throws IOException If failed.
      */
     private Map<String, String> makeWorkerProps() throws IOException {
         Map<String, String> props = new HashMap<>();
@@ -319,6 +346,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         props.put("key.converter.schemas.enable", "false");
         props.put("value.converter.schemas.enable", "false");
         props.put(WorkerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker.getBrokerAddress());
+        props.put("offset.storage.file.filename", "/tmp/connect.offsets");
         // fast flushing for testing.
         props.put(WorkerConfig.OFFSET_COMMIT_INTERVAL_MS_CONFIG, "10");
 

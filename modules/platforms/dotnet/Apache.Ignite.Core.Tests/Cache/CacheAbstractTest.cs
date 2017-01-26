@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable MissingSerializationAttribute
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
@@ -29,8 +30,8 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -40,14 +41,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     class CacheTestKey
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public CacheTestKey()
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -316,6 +309,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Ignition.Start(cfg);
             }
+
+            Assert.AreEqual(GridCount(), GetIgnite(0).GetCluster().GetNodes().Count);
         }
 
         /// <summary>
@@ -873,6 +868,32 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestWithExpiryPolicy()
         {
+            TestWithExpiryPolicy((cache, policy) => cache.WithExpiryPolicy(policy), true);
+        }
+
+        /// <summary>
+        /// Expiry policy tests.
+        /// </summary>
+        [Test]
+        public void TestCacheConfigurationExpiryPolicy()
+        {
+            TestWithExpiryPolicy((cache, policy) =>
+            {
+                var cfg = cache.GetConfiguration();
+
+                cfg.Name = string.Format("expiryPolicyCache_{0}_{1}", GetType().Name, policy.GetHashCode());
+                cfg.ExpiryPolicyFactory = new ExpiryPolicyFactory(policy);
+
+                return cache.Ignite.CreateCache<int, int>(cfg);
+            }, false);
+        }
+
+        /// <summary>
+        /// Expiry policy tests.
+        /// </summary>
+        public void TestWithExpiryPolicy(Func<ICache<int, int>, IExpiryPolicy, ICache<int, int>> withPolicyFunc, 
+            bool origCache)
+        {
             ICache<int, int> cache0 = Cache(0);
             
             int key0;
@@ -890,7 +911,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             
             // Test unchanged expiration.
-            ICache<int, int> cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
+            ICache<int, int> cache = withPolicyFunc(cache0, new ExpiryPolicy(null, null, null));
+            cache0 = origCache ? cache0 : cache;
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -913,7 +935,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache0.RemoveAll(new List<int> { key0, key1 });
 
             // Test eternal expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.MaxValue, TimeSpan.MaxValue, TimeSpan.MaxValue));
+            cache = withPolicyFunc(cache0, new ExpiryPolicy(TimeSpan.MaxValue, TimeSpan.MaxValue, TimeSpan.MaxValue));
+            cache0 = origCache ? cache0 : cache;
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -936,8 +959,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache0.RemoveAll(new List<int> { key0, key1 });
 
             // Test regular expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
+            cache = withPolicyFunc(cache0, new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
                 TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
+            cache0 = origCache ? cache0 : cache;
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -957,10 +981,17 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key0));
             Assert.IsFalse(cache0.ContainsKey(key1));
 
+            // Test sliding expiration
             cache0.Put(key0, key0);
             cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
+            for (var i = 0; i < 3; i++)
+            {
+                Thread.Sleep(50);
+
+                // Prolong expiration by touching the entry
+                cache.Get(key0);
+                cache.Get(key1);
+            }
             Assert.IsTrue(cache0.ContainsKey(key0));
             Assert.IsTrue(cache0.ContainsKey(key1));
             Thread.Sleep(200);
@@ -991,10 +1022,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 key1 = PrimaryKeyForCache(Cache(1));
             }
 
-            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
-
             // Test zero expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -1889,530 +1918,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
-        [Test]
-        [Ignore("IGNITE-835")]
-        public void TestLock()
-        {
-            if (!LockingEnabled())
-                return;
-
-            var cache = Cache();
-
-            const int key = 7;
-
-            // Lock
-            CheckLock(cache, key, () => cache.Lock(key));
-
-            // LockAll
-            CheckLock(cache, key, () => cache.LockAll(new[] { key, 2, 3, 4, 5 }));
-        }
-
-        /// <summary>
-        /// Internal lock test routine.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        /// <param name="key">Key.</param>
-        /// <param name="getLock">Function to get the lock.</param>
-        private static void CheckLock(ICache<int, int> cache, int key, Func<ICacheLock> getLock)
-        {
-            var sharedLock = getLock();
-            
-            using (sharedLock)
-            {
-                Assert.Throws<InvalidOperationException>(() => sharedLock.Exit());  // can't exit if not entered
-
-                sharedLock.Enter();
-
-                try
-                {
-                    Assert.IsTrue(cache.IsLocalLocked(key, true));
-                    Assert.IsTrue(cache.IsLocalLocked(key, false));
-
-                    EnsureCannotLock(getLock, sharedLock);
-
-                    sharedLock.Enter();
-
-                    try
-                    {
-                        Assert.IsTrue(cache.IsLocalLocked(key, true));
-                        Assert.IsTrue(cache.IsLocalLocked(key, false));
-
-                        EnsureCannotLock(getLock, sharedLock);
-                    }
-                    finally
-                    {
-                        sharedLock.Exit();
-                    }
-
-                    Assert.IsTrue(cache.IsLocalLocked(key, true));
-                    Assert.IsTrue(cache.IsLocalLocked(key, false));
-
-                    EnsureCannotLock(getLock, sharedLock);
-
-                    Assert.Throws<SynchronizationLockException>(() => sharedLock.Dispose()); // can't dispose while locked
-                }
-                finally
-                {
-                    sharedLock.Exit();
-                }
-
-                Assert.IsFalse(cache.IsLocalLocked(key, true));
-                Assert.IsFalse(cache.IsLocalLocked(key, false));
-
-                var innerTask = new Task(() =>
-                {
-                    Assert.IsTrue(sharedLock.TryEnter());
-                    sharedLock.Exit();
-
-                    using (var otherLock = getLock())
-                    {
-                        Assert.IsTrue(otherLock.TryEnter());
-                        otherLock.Exit();
-                    }
-                });
-
-                innerTask.Start();
-                innerTask.Wait();
-            }
-            
-            Assert.IsFalse(cache.IsLocalLocked(key, true));
-            Assert.IsFalse(cache.IsLocalLocked(key, false));
-            
-            var outerTask = new Task(() =>
-            {
-                using (var otherLock = getLock())
-                {
-                    Assert.IsTrue(otherLock.TryEnter());
-                    otherLock.Exit();
-                }
-            });
-
-            outerTask.Start();
-            outerTask.Wait();
-
-            Assert.Throws<ObjectDisposedException>(() => sharedLock.Enter());  // Can't enter disposed lock
-        }
-
-        /// <summary>
-        /// ENsure taht lock cannot be obtained by other threads.
-        /// </summary>
-        /// <param name="getLock">Get lock function.</param>
-        /// <param name="sharedLock">Shared lock.</param>
-        private static void EnsureCannotLock(Func<ICacheLock> getLock, ICacheLock sharedLock)
-        {
-            var task = new Task(() =>
-            {
-                Assert.IsFalse(sharedLock.TryEnter());
-                Assert.IsFalse(sharedLock.TryEnter(TimeSpan.FromMilliseconds(100)));
-
-                using (var otherLock = getLock())
-                {
-                    Assert.IsFalse(otherLock.TryEnter());
-                    Assert.IsFalse(otherLock.TryEnter(TimeSpan.FromMilliseconds(100)));
-                }
-            });
-
-            task.Start();
-            task.Wait();
-        }
-
-        [Test]
-        public void TestTxCommit()
-        {
-            TestTxCommit(false);
-        }
-
-        [Test]
-        public void TestTxCommitAsync()
-        {
-            TestTxCommit(true);
-        }
-
-        private void TestTxCommit(bool async)
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-
-            ITransaction tx = Transactions.Tx;
-
-            Assert.IsNull(tx);
-
-            tx = Transactions.TxStart();
-
-            try
-            {
-                cache.Put(1, 1);
-
-                cache.Put(2, 2);
-
-                if (async)
-                {
-                    var task = tx.CommitAsync();
-
-                    task.Wait();
-
-                    Assert.IsTrue(task.IsCompleted);
-                }
-                else
-                    tx.Commit();
-            }
-            finally
-            {
-                tx.Dispose();
-            }
-
-            Assert.AreEqual(1, cache.Get(1));
-
-            Assert.AreEqual(2, cache.Get(2));
-
-            tx = Transactions.Tx;
-
-            Assert.IsNull(tx);
-        }
-
-        [Test]
-        public void TestTxRollback()
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-
-            cache.Put(1, 1);
-
-            cache.Put(2, 2);
-
-            ITransaction tx = Transactions.Tx;
-
-            Assert.IsNull(tx);
-
-            tx = Transactions.TxStart();
-
-            try {
-                cache.Put(1, 10);
-
-                cache.Put(2, 20);
-            }
-            finally {
-                tx.Rollback();
-            }
-
-            Assert.AreEqual(1, cache.Get(1));
-
-            Assert.AreEqual(2, cache.Get(2));
-
-            Assert.IsNull(Transactions.Tx);
-        }
-
-        [Test]
-        public void TestTxClose()
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-
-            cache.Put(1, 1);
-
-            cache.Put(2, 2);
-
-            ITransaction tx = Transactions.Tx;
-
-            Assert.IsNull(tx);
-
-            tx = Transactions.TxStart();
-
-            try
-            {
-                cache.Put(1, 10);
-
-                cache.Put(2, 20);
-            }
-            finally
-            {
-                tx.Dispose();
-            }
-
-            Assert.AreEqual(1, cache.Get(1));
-
-            Assert.AreEqual(2, cache.Get(2));
-
-            tx = Transactions.Tx;
-
-            Assert.IsNull(tx);
-        }
-        
-        [Test]
-        public void TestTxAllModes()
-        {
-            TestTxAllModes(false);
-
-            TestTxAllModes(true);
-
-            Console.WriteLine("Done");
-        }
-
-        protected void TestTxAllModes(bool withTimeout)
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-
-            int cntr = 0;
-
-            foreach (TransactionConcurrency concurrency in Enum.GetValues(typeof(TransactionConcurrency))) {
-                foreach (TransactionIsolation isolation in Enum.GetValues(typeof(TransactionIsolation))) {
-                    Console.WriteLine("Test tx [concurrency=" + concurrency + ", isolation=" + isolation + "]");
-
-                    ITransaction tx = Transactions.Tx;
-
-                    Assert.IsNull(tx);
-
-                    tx = withTimeout 
-                        ? Transactions.TxStart(concurrency, isolation, TimeSpan.FromMilliseconds(1100), 10)
-                        : Transactions.TxStart(concurrency, isolation);
-
-                    Assert.AreEqual(concurrency, tx.Concurrency);
-                    Assert.AreEqual(isolation, tx.Isolation);
-
-                    if (withTimeout)
-                        Assert.AreEqual(1100, tx.Timeout.TotalMilliseconds);
-
-                    try {
-                        cache.Put(1, cntr);
-
-                        tx.Commit();
-                    }
-                    finally {
-                        tx.Dispose();
-                    }
-
-                    tx = Transactions.Tx;
-
-                    Assert.IsNull(tx);
-
-                    Assert.AreEqual(cntr, cache.Get(1));
-
-                    cntr++;
-                }
-            }
-        }
-
-        [Test]
-        public void TestTxAttributes()
-        {
-            if (!TxEnabled())
-                return;
-
-            ITransaction tx = Transactions.TxStart(TransactionConcurrency.Optimistic,
-                TransactionIsolation.RepeatableRead, TimeSpan.FromMilliseconds(2500), 100);
-
-            Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
-            Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(TransactionState.Active, tx.State);
-            Assert.IsTrue(tx.StartTime.Ticks > 0);
-            Assert.AreEqual(tx.NodeId, GetIgnite(0).GetCluster().GetLocalNode().Id);
-
-            DateTime startTime1 = tx.StartTime;
-
-            tx.Commit();
-
-            Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionState.Committed, tx.State);
-            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
-            Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(startTime1, tx.StartTime);
-
-            Thread.Sleep(100);
-
-            tx = Transactions.TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.ReadCommitted,
-                TimeSpan.FromMilliseconds(3500), 200);
-
-            Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionConcurrency.Pessimistic, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.ReadCommitted, tx.Isolation);
-            Assert.AreEqual(3500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(TransactionState.Active, tx.State);
-            Assert.IsTrue(tx.StartTime.Ticks > 0);
-            Assert.IsTrue(tx.StartTime > startTime1);
-
-            DateTime startTime2 = tx.StartTime;
-
-            tx.Rollback();
-
-            Assert.AreEqual(TransactionState.RolledBack, tx.State);
-            Assert.AreEqual(TransactionConcurrency.Pessimistic, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.ReadCommitted, tx.Isolation);
-            Assert.AreEqual(3500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(startTime2, tx.StartTime);
-
-            Thread.Sleep(100);
-
-            tx = Transactions.TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.RepeatableRead,
-                TimeSpan.FromMilliseconds(2500), 100);
-
-            Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
-            Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(TransactionState.Active, tx.State);
-            Assert.IsTrue(tx.StartTime > startTime2);
-
-            DateTime startTime3 = tx.StartTime;
-
-            tx.Commit();
-
-            Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionState.Committed, tx.State);
-            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
-            Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(startTime3, tx.StartTime);
-        }
-
-        [Test]
-        public void TestTxRollbackOnly()
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-
-            cache.Put(1, 1);
-
-            cache.Put(2, 2);
-
-            ITransaction tx = Transactions.TxStart();
-
-            cache.Put(1, 10);
-
-            cache.Put(2, 20);
-
-            Assert.IsFalse(tx.IsRollbackOnly);
-
-            tx.SetRollbackonly();
-
-            Assert.IsTrue(tx.IsRollbackOnly);
-
-            Assert.AreEqual(TransactionState.MarkedRollback, tx.State);
-
-            try
-            {
-                tx.Commit();
-
-                Assert.Fail("Commit must fail.");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
-
-            tx.Dispose();
-
-            Assert.AreEqual(TransactionState.RolledBack, tx.State);
-
-            Assert.IsTrue(tx.IsRollbackOnly);
-
-            Assert.AreEqual(1, cache.Get(1));
-
-            Assert.AreEqual(2, cache.Get(2));
-
-            tx = Transactions.Tx;
-
-            Assert.IsNull(tx);
-        }
-
-        [Test]
-        public void TestTxMetrics()
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-            
-            var startTime = DateTime.UtcNow.AddSeconds(-1);
-
-            Transactions.ResetMetrics();
-
-            var metrics = Transactions.GetMetrics();
-            
-            Assert.AreEqual(0, metrics.TxCommits);
-            Assert.AreEqual(0, metrics.TxRollbacks);
-
-            using (Transactions.TxStart())
-            {
-                cache.Put(1, 1);
-            }
-            
-            using (var tx = Transactions.TxStart())
-            {
-                cache.Put(1, 1);
-                tx.Commit();
-            }
-
-            metrics = Transactions.GetMetrics();
-
-            Assert.AreEqual(1, metrics.TxCommits);
-            Assert.AreEqual(1, metrics.TxRollbacks);
-
-            Assert.LessOrEqual(startTime, metrics.CommitTime);
-            Assert.LessOrEqual(startTime, metrics.RollbackTime);
-
-            Assert.GreaterOrEqual(DateTime.UtcNow, metrics.CommitTime);
-            Assert.GreaterOrEqual(DateTime.UtcNow, metrics.RollbackTime);
-        }
-
-        [Test]
-        public void TestTxStateAndExceptions()
-        {
-            if (!TxEnabled())
-                return;
-
-            var tx = Transactions.TxStart();
-            
-            Assert.AreEqual(TransactionState.Active, tx.State);
-
-            tx.Rollback();
-
-            Assert.AreEqual(TransactionState.RolledBack, tx.State);
-
-            try
-            {
-                tx.Commit();
-                Assert.Fail();
-            }
-            catch (InvalidOperationException)
-            {
-                // Expected
-            }
-
-            tx = Transactions.TxStart();
-
-            Assert.AreEqual(TransactionState.Active, tx.State);
-
-            tx.CommitAsync().Wait();
-
-            Assert.AreEqual(TransactionState.Committed, tx.State);
-
-            var task = tx.RollbackAsync();  // Illegal, but should not fail here; will fail in task
-
-            try
-            {
-                task.Wait();
-                Assert.Fail();
-            }
-            catch (AggregateException)
-            {
-                // Expected
-            }
-        }
-        
         /// <summary>
         /// Test thraed-locals leak.
         /// </summary>
@@ -2906,7 +2411,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
 
                 if (string.IsNullOrEmpty(containsText))
-                    Assert.AreEqual(ex.InnerException.Message, AddArgCacheEntryProcessor.ExceptionText);
+                {
+                    Assert.IsNotNull(ex.InnerException);
+                    Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
+                }
                 else
                     Assert.IsTrue(ex.ToString().Contains(containsText));
             }
@@ -3031,27 +2539,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestCacheMetrics()
-        {
-            var cache = Cache();
-
-            cache.Put(1, 1);
-
-            var m = cache.GetMetrics();
-
-            Assert.AreEqual(cache.Name, m.CacheName);
-
-            Assert.AreEqual(cache.GetSize(), m.Size);
-        }
-
-        [Test]
         public void TestRebalance()
         {
             var cache = Cache();
 
-            var fut = cache.Rebalance();
+            var task = cache.Rebalance();
 
-            
+            task.Wait();
         }
 
         [Test]
@@ -3062,8 +2556,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Can't get non-existent cache with Cache method
             Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             var cache = GetIgnite(0).CreateCache<int, int>(randomName);
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             cache.Put(1, 10);
 
@@ -3111,14 +2607,30 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache = ignite.CreateCache<int, int>(cacheName);
 
             Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(cacheName));
 
             ignite.DestroyCache(cache.Name);
+
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(cacheName));
 
             var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
 
             Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
 
             Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+        }
+
+        [Test]
+        public void TestCacheNames()
+        {
+            var cacheNames = GetIgnite(0).GetCacheNames();
+            var expectedNames = new[]
+            {
+                "local", "local_atomic", "partitioned", "partitioned_atomic",
+                "partitioned_near", "partitioned_atomic_near", "replicated", "replicated_atomic"
+            };
+
+            Assert.AreEqual(0, expectedNames.Except(cacheNames).Count());
         }
 
 
@@ -3277,16 +2789,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         protected virtual bool NearEnabled()
         {
             return false;
-        }
-
-        protected virtual bool TxEnabled()
-        {
-            return true;
-        }
-
-        protected virtual bool LockingEnabled()
-        {
-            return TxEnabled();
         }
 
         protected virtual bool LocalCache()

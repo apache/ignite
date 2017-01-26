@@ -83,7 +83,6 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         }
 
         if (getTestGridName(10).equals(gridName)) {
-
             CacheConfiguration cc = cfg.getCacheConfiguration()[0];
             cc.setRebalanceDelay(-1);
         }
@@ -149,7 +148,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
      * @throws Exception If failed.
      */
     public void testResponseMessageOnUnmarshallingFailed() throws Exception {
-        // GridNearAtomicUpdateRequest unmarshalling failed test.
+        // GridNearAtomicFullUpdateRequest unmarshalling failed test.
         readCnt.set(1);
 
         failAtomicPut(++key);

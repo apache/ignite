@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -77,6 +78,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Key bytes for keys to lock. */
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
+
+    /** Partition IDs of keys to lock. */
+    @GridDirectCollection(int.class)
+    protected List<Integer> partIds;
 
     /** Array indicating whether value should be returned for a key. */
     @GridToStringInclude
@@ -232,7 +237,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @param skipStore Skip store flag.
      */
-    private void skipStore(boolean skipStore){
+    private void skipStore(boolean skipStore) {
         flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
     }
 
@@ -284,10 +289,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         boolean retVal,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
-        if (keys == null)
+        if (keys == null) {
             keys = new ArrayList<>(keysCount());
+            partIds = new ArrayList<>(keysCount());
+        }
 
         keys.add(key);
+
+        partIds.add(key.partition());
 
         retVals[idx] = retVal;
 
@@ -301,11 +310,21 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return keys;
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+    }
+
     /**
      * @return Max lock wait time.
      */
     public long timeout() {
         return timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc}
@@ -325,6 +344,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
+
+        if (partIds != null && !partIds.isEmpty()) {
+            assert partIds.size() == keys.size();
+
+            for (int i = 0; i < keys.size(); i++)
+                keys.get(i).partition(partIds.get(i));
+        }
     }
 
     /** {@inheritDoc} */

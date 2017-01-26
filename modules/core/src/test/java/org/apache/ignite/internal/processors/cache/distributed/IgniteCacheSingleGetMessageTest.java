@@ -248,12 +248,12 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @param primarySpi Primary node SPI.
      */
     private void checkMessages(TestRecordingCommunicationSpi spi, TestRecordingCommunicationSpi primarySpi) {
-        List<Object> msgs = spi.recordedMessages();
+        List<Object> msgs = spi.recordedMessages(false);
 
         assertEquals(1, msgs.size());
         assertTrue(msgs.get(0) instanceof GridNearSingleGetRequest);
 
-        msgs = primarySpi.recordedMessages();
+        msgs = primarySpi.recordedMessages(false);
 
         assertEquals(1, msgs.size());
         assertTrue(msgs.get(0) instanceof GridNearSingleGetResponse);
@@ -264,10 +264,10 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @param primarySpi Primary node SPI.
      */
     private void checkNoMessages(TestRecordingCommunicationSpi spi, TestRecordingCommunicationSpi primarySpi) {
-        List<Object> msgs = spi.recordedMessages();
+        List<Object> msgs = spi.recordedMessages(false);
         assertEquals(0, msgs.size());
 
-        msgs = primarySpi.recordedMessages();
+        msgs = primarySpi.recordedMessages(false);
         assertEquals(0, msgs.size());
     }
 

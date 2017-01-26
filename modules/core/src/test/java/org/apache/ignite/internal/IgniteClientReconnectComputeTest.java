@@ -56,7 +56,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 
@@ -105,7 +105,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         Ignite srv = clientRouter(client);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 
@@ -154,7 +154,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
 
         Ignite srv = clientRouter(client);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 

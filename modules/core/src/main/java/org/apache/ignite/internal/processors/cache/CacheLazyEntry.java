@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheInterceptorEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
+public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     /** Cache context. */
     protected GridCacheContext cctx;
 
@@ -36,15 +36,18 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     protected CacheObject valObj;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     protected K key;
 
     /** Value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     protected V val;
 
     /** Keep binary flag. */
     private boolean keepBinary;
+
+    /** Update counter. */
+    private Long updateCntr;
 
     /**
      * @param cctx Cache context.
@@ -70,6 +73,32 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
         this.keyObj = keyObj;
         this.val = val;
         this.keepBinary = keepBinary;
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param keyObj Key cache object.
+     * @param key Key value.
+     * @param valObj Cache object
+     * @param keepBinary Keep binary flag.
+     * @param updateCntr Partition update counter.
+     * @param val Cache value.
+     */
+    public CacheLazyEntry(GridCacheContext ctx,
+        KeyCacheObject keyObj,
+        K key,
+        CacheObject valObj,
+        V val,
+        boolean keepBinary,
+        Long updateCntr
+    ) {
+        this.cctx = ctx;
+        this.keyObj = keyObj;
+        this.key = key;
+        this.valObj = valObj;
+        this.val = val;
+        this.keepBinary = keepBinary;
+        this.updateCntr = updateCntr;
     }
 
     /**
@@ -144,10 +173,26 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public long getPartitionUpdateCounter() {
+        return updateCntr == null ? 0L : updateCntr;
+    }
+
+    /**
+     * Sets update counter.
+     *
+     * @param updateCntr Update counter.
+     */
+    public void updateCounter(Long updateCntr) {
+        this.updateCntr = updateCntr;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
         if (cls.isAssignableFrom(Ignite.class))
             return (T)cctx.kernalContext().grid();
+        else if (cls.isAssignableFrom(GridCacheContext.class))
+            return (T)cctx;
         else if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
 

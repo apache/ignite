@@ -194,11 +194,11 @@ public class CodeGenerator {
      *
      * @param src Source code.
      * @param pkg Package name.
-     * @param imports Optional imports.
      * @param desc Class description.
      * @param cls Class declaration.
+     * @param imports Optional imports.
      */
-    private static void header(Collection<String> src, String pkg, String imports, String desc, String cls) {
+    private static void header(Collection<String> src, String pkg, String desc, String cls, String... imports) {
         // License.
         add0(src, "/*");
         add0(src, " * Licensed to the Apache Software Foundation (ASF) under one or more");
@@ -223,12 +223,9 @@ public class CodeGenerator {
         add0(src, "");
 
         // Imports.
-        if (!imports.isEmpty()) {
-            for (String imp : imports.split(";"))
-                if (imp.isEmpty())
-                    add0(src, "");
-                else
-                    add0(src, "import " + imp + ";");
+        if (imports != null && imports.length > 0) {
+            for (String imp : imports)
+                add0(src, imp.isEmpty() ? "" : "import " + imp + ";");
 
             add0(src, "");
         }
@@ -259,6 +256,17 @@ public class CodeGenerator {
     }
 
     /**
+     * Ensure that all folders for packages exist.
+     *
+     * @param pkg Packages.
+     * @throws IOException If failed to ensure.
+     */
+    private static void ensurePackages(File pkg) throws IOException {
+        if (!pkg.exists() && !pkg.mkdirs())
+            throw new IOException("Failed to create folders for package: " + pkg);
+    }
+
+    /**
      * Generate java class code.
      *
      * @param pojo POJO descriptor.
@@ -278,8 +286,7 @@ public class CodeGenerator {
 
         checkValidJavaIdentifier(type, false, "Type", type);
 
-        if (!pkgFolder.exists() && !pkgFolder.mkdirs())
-            throw new IOException("Failed to create folders for package: " + pkg);
+        ensurePackages(pkgFolder);
 
         File out = new File(pkgFolder, type + ".java");
 
@@ -295,7 +302,7 @@ public class CodeGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
-        header(src, pkg, "java.io.*", type, type + " implements Serializable");
+        header(src, pkg, type, type + " implements Serializable", "java.io.*");
 
         add1(src, "/** */");
         add1(src, "private static final long serialVersionUID = 0L;");
@@ -556,33 +563,21 @@ public class CodeGenerator {
     }
 
     /**
-     * Find field by name.
-     *
-     * @param pojo POJO descriptor.
-     * @param name Field name to find.
-     * @return Field descriptor or {@code null} if not found.
-     */
-    private static PojoField findFieldByName(PojoDescriptor pojo, String name) {
-        for (PojoField field: pojo.valueFields(true))
-            if (field.dbName().equals(name))
-                return field;
-
-        return null;
-    }
-
-    /**
      * Generate java snippet for cache configuration with JDBC store and types metadata.
      *
      * @param pojos POJO descriptors.
      * @param pkg Types package.
      * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param outFolder Output folder.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If generation failed.
      */
     public static void snippet(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
-        String outFolder, ConfirmCallable askOverwrite) throws IOException {
+        boolean generateAliases, String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
+
+        ensurePackages(pkgFolder);
 
         File cacheCfg = new File(pkgFolder, "CacheConfig.java");
 
@@ -598,15 +593,14 @@ public class CodeGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
-        header(src, pkg, "java.sql.*;java.util.*;" +
-            "org.apache.ignite.cache.*;org.apache.ignite.cache.store.jdbc.*;" +
-            "org.apache.ignite.configuration.*",
-            "CacheConfig", "CacheConfig");
+        header(src, pkg, "CacheConfig", "CacheConfig", "java.sql.*", "java.util.*", "", "org.apache.ignite.cache.*",
+            "org.apache.ignite.cache.store.jdbc.*", "org.apache.ignite.configuration.*");
 
         // Generate methods for each type in order to avoid compiler error "java: code too large".
         for (PojoDescriptor pojo : pojos) {
             String tbl = pojo.table();
             String valClsName = pojo.valueClassName();
+            Collection<PojoField> fields = pojo.valueFields(true);
 
             add1(src, "/**");
             add1(src, " * Create JDBC type for " + tbl + ".");
@@ -670,12 +664,36 @@ public class CodeGenerator {
             add2(src, "LinkedHashMap<String, String> fields = new LinkedHashMap<>();");
             add0(src, "");
 
-            for (PojoField field : pojo.fields())
-                add2(src, "fields.put(\"" + field.javaName() + "\", \"" + javaTypeName(field) + "\");");
+            for (PojoField field : fields)
+                add2(src, "fields.put(\"" + field.javaName() + "\", \"" +
+                    GeneratorUtils.boxPrimitiveType(field.javaTypeName()) + "\");");
 
             add0(src, "");
             add2(src, "qryEntity.setFields(fields);");
             add0(src, "");
+
+            // Aliases.
+            if (generateAliases) {
+                Collection<PojoField> aliases = new ArrayList<>();
+
+                for (PojoField field : fields) {
+                    if (!field.javaName().equalsIgnoreCase(field.dbName()))
+                        aliases.add(field);
+                }
+
+                if (!aliases.isEmpty()) {
+                    add2(src, "// Aliases for fields.");
+                    add2(src, "Map<String, String> aliases = new HashMap<>();");
+                    add0(src, "");
+
+                    for (PojoField alias : aliases)
+                        add2(src, "aliases.put(\"" + alias.javaName() + "\", \"" + alias.dbName() + "\");");
+
+                    add0(src, "");
+                    add2(src, "qryEntity.setAliases(aliases);");
+                    add0(src, "");
+                }
+            }
 
             // Indexes.
             Collection<QueryIndex> idxs = pojo.indexes();
@@ -692,7 +710,7 @@ public class CodeGenerator {
                     List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
 
                     for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
-                        PojoField field = findFieldByName(pojo, idxFld.getKey());
+                        PojoField field = GeneratorUtils.findFieldByName(fields, idxFld.getKey());
 
                         if (field != null)
                             idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));
@@ -720,6 +738,9 @@ public class CodeGenerator {
                             add0(src, "");
 
                             add2(src, "idx.setName(\"" + idx.getName() + "\");");
+                            add0(src, "");
+
+                            add2(src, "idx.setIndexType(QueryIndexType." + idx.getIndexType() + ");");
                             add0(src, "");
 
                             add2(src, (firstIdx ? "LinkedHashMap<String, Boolean> " : "") +
@@ -775,7 +796,7 @@ public class CodeGenerator {
         add2(src, "ccfg.setWriteThrough(true);");
         add0(src, "");
 
-        add2(src, "// Configure JDBC types. ");
+        add2(src, "// Configure JDBC types.");
         add2(src, "Collection<JdbcType> jdbcTypes = new ArrayList<>();");
         add0(src, "");
 
@@ -788,7 +809,7 @@ public class CodeGenerator {
         add0(src, "");
 
 
-        add2(src, "// Configure query entities. ");
+        add2(src, "// Configure query entities.");
         add2(src, "Collection<QueryEntity> qryEntities = new ArrayList<>();");
         add0(src, "");
 

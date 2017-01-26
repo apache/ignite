@@ -99,6 +99,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
+     * @return {@code True} if need use trace logging for this message (to reduce amount of logging with debug level).
+     */
+    public boolean traceLogLevel() {
+        return false;
+    }
+
+    /**
      * Gets creator node.
      *
      * @return Creator node ID.
@@ -274,7 +281,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
         else if (obj instanceof TcpDiscoveryAbstractMessage)

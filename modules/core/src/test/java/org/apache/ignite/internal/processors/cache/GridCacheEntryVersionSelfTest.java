@@ -37,7 +37,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
 
 /**
- * Tests that entry version is
+ *
  */
 public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */

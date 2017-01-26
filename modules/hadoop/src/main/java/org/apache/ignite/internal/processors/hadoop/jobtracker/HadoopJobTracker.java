@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
@@ -58,14 +59,12 @@ import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 import org.apache.ignite.internal.util.GridMutex;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -76,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -153,18 +153,16 @@ public class HadoopJobTracker extends HadoopComponent {
 
         evtProcSvc = Executors.newFixedThreadPool(1);
 
-        UUID nodeId = ctx.localNodeId();
-
         assert jobCls == null;
 
-        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId));
+        HadoopClassLoader ldr = ctx.kernalContext().hadoopHelper().commonClassLoader();
 
         try {
-            jobCls = (Class<HadoopV2Job>)ldr.loadClass(HadoopV2Job.class.getName());
+            jobCls = (Class<HadoopJob>)ldr.loadClass(HadoopCommonUtils.JOB_CLS_NAME);
         }
         catch (Exception ioe) {
-            throw new IgniteCheckedException("Failed to load job class [class="
-                + HadoopV2Job.class.getName() + ']', ioe);
+            throw new IgniteCheckedException("Failed to load job class [class=" +
+                HadoopCommonUtils.JOB_CLS_NAME + ']', ioe);
         }
     }
 
@@ -242,7 +240,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                     try {
                         // Must process query callback in a separate thread to avoid deadlocks.
-                        evtProcSvc.submit(new EventHandler() {
+                        evtProcSvc.execute(new EventHandler() {
                             @Override protected void body() throws IgniteCheckedException {
                                 processJobMetadataUpdates(evts);
                             }
@@ -266,7 +264,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 try {
                     // Must process discovery callback in a separate thread to avoid deadlock.
-                    evtProcSvc.submit(new EventHandler() {
+                    evtProcSvc.execute(new EventHandler() {
                         @Override protected void body() {
                             processNodeLeft((DiscoveryEvent)evt);
                         }
@@ -316,6 +314,8 @@ public class HadoopJobTracker extends HadoopComponent {
 
             HadoopMapReducePlan mrPlan = mrPlanner.preparePlan(job, ctx.nodes(), null);
 
+            logPlan(info, mrPlan);
+
             HadoopJobMetadata meta = new HadoopJobMetadata(ctx.localNodeId(), jobId, info);
 
             meta.mapReducePlan(mrPlan);
@@ -353,6 +353,64 @@ public class HadoopJobTracker extends HadoopComponent {
         }
         finally {
             busyLock.readUnlock();
+        }
+    }
+
+    /**
+     * Log map-reduce plan if needed.
+     *
+     * @param info Job info.
+     * @param plan Plan.
+     */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+    private void logPlan(HadoopJobInfo info, HadoopMapReducePlan plan) {
+        if (log.isDebugEnabled()) {
+            Map<UUID, IgniteBiTuple<Collection<HadoopInputSplit>, int[]>> map = new HashMap<>();
+
+            for (UUID nodeId : plan.mapperNodeIds())
+                map.put(nodeId, new IgniteBiTuple<Collection<HadoopInputSplit>, int[]>(plan.mappers(nodeId), null));
+
+            for (UUID nodeId : plan.reducerNodeIds()) {
+                int[] reducers = plan.reducers(nodeId);
+
+                IgniteBiTuple<Collection<HadoopInputSplit>, int[]> entry = map.get(nodeId);
+
+                if (entry == null)
+                    map.put(nodeId, new IgniteBiTuple<Collection<HadoopInputSplit>, int[]>(null, reducers));
+                else
+                    entry.set2(reducers);
+            }
+
+            StringBuilder details = new StringBuilder("[");
+
+            boolean first = true;
+
+            for (Map.Entry<UUID, IgniteBiTuple<Collection<HadoopInputSplit>, int[]>> entry : map.entrySet()) {
+                if (first)
+                    first = false;
+                else
+                    details.append(", ");
+
+                UUID nodeId = entry.getKey();
+
+                Collection<HadoopInputSplit> mappers = entry.getValue().get1();
+
+                if (mappers == null)
+                    mappers = Collections.emptyList();
+
+                int[] reducers = entry.getValue().get2();
+
+                if (reducers == null)
+                    reducers = new int[0];
+
+                details.append("[nodeId=" + nodeId + ", mappers=" + mappers.size() + ", reducers=" + reducers.length +
+                    ", mapperDetails=" + mappers + ", reducerDetails=" + Arrays.toString(reducers) + ']');
+            }
+
+            details.append(']');
+
+            log.debug("Prepared map-reduce plan [jobName=" + info.jobName() + ", mappers=" + plan.mappers() +
+                ", reducers=" + plan.reducers() + ", details=" + details + ']');
         }
     }
 
@@ -727,6 +785,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param jobId  Job ID.
      * @param plan Map-reduce plan.
      */
+    @SuppressWarnings({"unused", "ConstantConditions" })
     private void printPlan(HadoopJobId jobId, HadoopMapReducePlan plan) {
         log.info("Plan for " + jobId);
 
@@ -886,6 +945,8 @@ public class HadoopJobTracker extends HadoopComponent {
                     finishFut.onDone(jobId, meta.failCause());
                 }
 
+                assert job != null;
+
                 if (ctx.jobUpdateLeader())
                     job.cleanupStagingDirectory();
 
@@ -895,7 +956,7 @@ public class HadoopJobTracker extends HadoopComponent {
                     ClassLoader ldr = job.getClass().getClassLoader();
 
                     try {
-                        String statWriterClsName = job.info().property(HadoopUtils.JOB_COUNTER_WRITER_PROPERTY);
+                        String statWriterClsName = job.info().property(HadoopCommonUtils.JOB_COUNTER_WRITER_PROPERTY);
 
                         if (statWriterClsName != null) {
                             Class<?> cls = ldr.loadClass(statWriterClsName);
@@ -957,6 +1018,8 @@ public class HadoopJobTracker extends HadoopComponent {
             if (state == null)
                 state = initState(jobId);
 
+            int mapperIdx = 0;
+
             for (HadoopInputSplit split : mappers) {
                 if (state.addMapper(split)) {
                     if (log.isDebugEnabled())
@@ -964,6 +1027,8 @@ public class HadoopJobTracker extends HadoopComponent {
                             ", split=" + split + ']');
 
                     HadoopTaskInfo taskInfo = new HadoopTaskInfo(MAP, jobId, meta.taskNumber(split), 0, split);
+
+                    taskInfo.mapperIndex(mapperIdx++);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();
@@ -1052,7 +1117,8 @@ public class HadoopJobTracker extends HadoopComponent {
                 jobInfo = meta.jobInfo();
             }
 
-            job = jobInfo.createJob(jobCls, jobId, log);
+            job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames(),
+                ctx.kernalContext().hadoopHelper());
 
             job.initialize(false, ctx.localNodeId());
 
@@ -1581,7 +1647,10 @@ public class HadoopJobTracker extends HadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(HadoopJobMetadata meta, HadoopJobMetadata cp) {
-            assert meta.phase() == PHASE_CANCELLING || err != null: "Invalid phase for cancel: " + meta;
+            final HadoopJobPhase currPhase = meta.phase();
+
+            assert currPhase == PHASE_CANCELLING || currPhase == PHASE_COMPLETE
+                    || err != null: "Invalid phase for cancel: " + currPhase;
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 
@@ -1599,7 +1668,8 @@ public class HadoopJobTracker extends HadoopComponent {
 
             cp.pendingSplits(splitsCp);
 
-            cp.phase(PHASE_CANCELLING);
+            if (currPhase != PHASE_COMPLETE && currPhase != PHASE_CANCELLING)
+                cp.phase(PHASE_CANCELLING);
 
             if (err != null)
                 cp.failCause(err);
@@ -1663,7 +1733,7 @@ public class HadoopJobTracker extends HadoopComponent {
             if (val != null)
                 e.setValue(val);
             else
-                e.remove();;
+                e.remove();
 
             return null;
         }

@@ -44,11 +44,11 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -167,9 +167,41 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * Initializes future.
      */
     void init() {
-        map(keys);
+        GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
 
-        markInitialized();
+        if (fut != null) {
+            if (!F.isEmpty(fut.invalidPartitions())) {
+                if (retries == null)
+                    retries = new HashSet<>();
+
+                retries.addAll(fut.invalidPartitions());
+            }
+
+        fut.listen(new CI1<IgniteInternalFuture<Object>>() {
+            @Override public void apply(IgniteInternalFuture<Object> fut) {
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
+
+                        onDone(e);
+
+                        return;
+                    }
+
+                    map0(keys);
+
+                    markInitialized();
+                }
+            });
+        }
+        else {
+            map0(keys);
+
+            markInitialized();
+        }
     }
 
     /** {@inheritDoc} */
@@ -202,42 +234,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         return false;
-    }
-
-    /**
-     * @param keys Keys.
-     */
-    private void map(final Map<KeyCacheObject, Boolean> keys) {
-        GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
-
-        if (fut != null) {
-            if (!F.isEmpty(fut.invalidPartitions())) {
-                if (retries == null)
-                    retries = new HashSet<>();
-
-                retries.addAll(fut.invalidPartitions());
-            }
-
-            add(new GridEmbeddedFuture<>(
-                new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo>>() {
-                    @Override public Collection<GridCacheEntryInfo> apply(Object o, Exception e) {
-                        if (e != null) { // Check error first.
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
-
-                            onDone(e);
-                        }
-                        else
-                            map0(keys);
-
-                        // Finish this one.
-                        return Collections.emptyList();
-                    }
-                },
-                fut));
-        }
-        else
-            map0(keys);
     }
 
     /**
@@ -279,7 +275,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         // Optimization to avoid going through compound future,
         // if getAsync() has been completed and no other futures added to this
         // compound future.
-        if (fut.isDone() && futuresSize() == 0) {
+        if (fut.isDone() && !hasFutures()) {
             if (fut.error() != null)
                 onDone(fut.error());
             else
@@ -406,6 +402,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             }
             else {
                 fut = tx.getAllAsync(cctx,
+                    null,
                     keys.keySet(),
                     /*deserialize binary*/false,
                     skipVals,
@@ -437,6 +434,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         }
                         else {
                             return tx.getAllAsync(cctx,
+                                null,
                                 keys.keySet(),
                                 /*deserialize binary*/false,
                                 skipVals,

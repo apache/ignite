@@ -70,7 +70,33 @@ abstract class TcpDiscoveryImpl {
 
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    protected ConcurrentLinkedDeque<String> debugLog;
+    protected ConcurrentLinkedDeque<String> debugLogQ;
+
+    /** */
+    protected final ServerImpl.DebugLogger debugLog = new DebugLogger() {
+        /** {@inheritDoc} */
+        @Override public boolean isDebugEnabled() {
+            return log.isDebugEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void debug(String msg) {
+            log.debug(msg);
+        }
+    };
+
+    /** */
+    protected final ServerImpl.DebugLogger traceLog = new DebugLogger() {
+        /** {@inheritDoc} */
+        @Override public boolean isDebugEnabled() {
+            return log.isTraceEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void debug(String msg) {
+            log.trace(msg);
+        }
+    };
 
     /**
      * @param spi Adapter.
@@ -111,12 +137,12 @@ abstract class TcpDiscoveryImpl {
             "-" + locNode.internalOrder() + "] " +
             msg;
 
-        debugLog.add(msg0);
+        debugLogQ.add(msg0);
 
-        int delta = debugLog.size() - debugMsgHist;
+        int delta = debugLogQ.size() - debugMsgHist;
 
-        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
-            debugLog.poll();
+        for (int i = 0; i < delta && debugLogQ.size() > debugMsgHist; i++)
+            debugLogQ.poll();
     }
 
     /**
@@ -260,9 +286,13 @@ abstract class TcpDiscoveryImpl {
     @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
+        // ... but limit it if join timeout is configured.
+        long start = spi.getJoinTimeout() > 0 ? U.currentTimeMillis() : 0;
+
         while (true) {
             try {
-                spi.ipFinder.initializeLocalAddresses(locNode.socketAddresses());
+                spi.ipFinder.initializeLocalAddresses(
+                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
 
                 // Success.
                 break;
@@ -275,6 +305,13 @@ abstract class TcpDiscoveryImpl {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
                     "(retrying every 2000 ms).");
             }
+
+            if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
+                throw new IgniteSpiException(
+                    "Failed to register local addresses with IP finder within join timeout " +
+                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
+                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
+                        "[joinTimeout=" + spi.getJoinTimeout() + ']');
 
             try {
                 U.sleep(2000);
@@ -292,7 +329,7 @@ abstract class TcpDiscoveryImpl {
      */
     protected boolean checkAckTimeout(long ackTimeout) {
         if (ackTimeout > spi.getMaxAckTimeout()) {
-            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
+            LT.warn(log, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
                 "(consider increasing 'maxAckTimeout' configuration property) " +
                 "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.getMaxAckTimeout() + ']');
 
@@ -314,5 +351,28 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Message logger.
+     */
+    protected final DebugLogger messageLogger(TcpDiscoveryAbstractMessage msg) {
+        return msg.traceLogLevel() ? traceLog : debugLog;
+    }
+
+    /**
+     *
+     */
+    interface DebugLogger {
+        /**
+         * @return {@code True} if debug logging is enabled.
+         */
+        boolean isDebugEnabled();
+
+        /**
+         * @param msg Message to log.
+         */
+        void debug(String msg);
     }
 }

@@ -89,6 +89,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Ignite g2 = startGrid("g2");
 
+        awaitPartitionMapExchange();
+
         Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 

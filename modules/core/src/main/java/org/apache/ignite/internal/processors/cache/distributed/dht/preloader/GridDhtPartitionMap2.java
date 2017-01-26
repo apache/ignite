@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -59,27 +61,24 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     private volatile int moving;
 
     /**
-     * @param nodeId Node ID.
-     * @param updateSeq Update sequence number.
+     * Empty constructor required for {@link Externalizable}.
      */
-    public GridDhtPartitionMap2(UUID nodeId, long updateSeq) {
-        assert nodeId != null;
-        assert updateSeq > 0;
-
-        this.nodeId = nodeId;
-        this.updateSeq = updateSeq;
-
-        map = new HashMap<>();
+    public GridDhtPartitionMap2() {
+        // No-op.
     }
 
     /**
      * @param nodeId Node ID.
      * @param updateSeq Update sequence number.
+     * @param top Topology version.
      * @param m Map to copy.
      * @param onlyActive If {@code true}, then only active states will be included.
      */
-    public GridDhtPartitionMap2(UUID nodeId, long updateSeq, AffinityTopologyVersion top,
-        Map<Integer, GridDhtPartitionState> m, boolean onlyActive) {
+    public GridDhtPartitionMap2(UUID nodeId,
+        long updateSeq,
+        AffinityTopologyVersion top,
+        Map<Integer, GridDhtPartitionState> m,
+        boolean onlyActive) {
         assert nodeId != null;
         assert updateSeq > 0;
 
@@ -98,10 +97,33 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     }
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * @param nodeId Node ID.
+     * @param updateSeq Update sequence number.
+     * @param top Topology version.
+     * @param map Map.
+     * @param moving Number of moving partitions.
      */
-    public GridDhtPartitionMap2() {
-        // No-op.
+    private GridDhtPartitionMap2(UUID nodeId,
+        long updateSeq,
+        AffinityTopologyVersion top,
+        Map<Integer, GridDhtPartitionState> map,
+        int moving) {
+        this.nodeId = nodeId;
+        this.updateSeq = updateSeq;
+        this.top = top;
+        this.map = map;
+        this.moving = moving;
+    }
+
+    /**
+     * @return Copy with empty partition state map.
+     */
+    public GridDhtPartitionMap2 emptyCopy() {
+        return new GridDhtPartitionMap2(nodeId,
+            updateSeq,
+            top,
+            U.<Integer, GridDhtPartitionState>newHashMap(0),
+            0);
     }
 
     /**
@@ -187,14 +209,17 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
 
     /**
      * @param updateSeq New update sequence value.
+     * @param topVer Current topology version.
      * @return Old update sequence value.
      */
-    public long updateSequence(long updateSeq) {
+    public long updateSequence(long updateSeq, AffinityTopologyVersion topVer) {
         long old = this.updateSeq;
 
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
+
+        top = topVer;
 
         return old;
     }
@@ -229,7 +254,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
             int ordinal = entry.getValue().ordinal();
 
             assert ordinal == (ordinal & 0x3);
-            assert entry.getKey() == (entry.getKey() & 0x3FFF);
+            assert entry.getKey() < CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
 
             int coded = (ordinal << 14) | entry.getKey();
 
@@ -272,9 +297,8 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         long ver = in.readLong();
         int minorVer = in.readInt();
 
-        if (ver != 0) {
+        if (ver != 0)
             top = new AffinityTopologyVersion(ver, minorVer);
-        }
     }
 
     /** {@inheritDoc} */

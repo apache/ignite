@@ -32,7 +32,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -93,7 +93,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     private volatile boolean concurrentStartFinished3;
 
     /** */
-    private volatile boolean record = false;
+    private volatile boolean record;
 
     /** */
     private final ConcurrentHashMap<Class, AtomicInteger> map = new ConcurrentHashMap<>();
@@ -209,9 +209,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
                     ", iteration=" + iter + ", cache=" + name + "]");
 
-            assertTrue(i + " value " + (i + name.hashCode() + iter) + " does not match (" + ignite.cache(name).get(i) + ")",
-                ignite.cache(name).get(i) != null && ignite.cache(name).get(i).equals(i + name.hashCode() + iter));
-
+            assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
+                ignite.cache(name).get(i), i + name.hashCode() + iter);
         }
     }
 
@@ -236,10 +235,12 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        waitForRebalancing(0, 2);
-        waitForRebalancing(1, 2);
+        int waitMinorVer = ignite.configuration().isLateAffinityAssignment() ? 1 : 0;
 
-        awaitPartitionMapExchange(true, true);
+        waitForRebalancing(0, new AffinityTopologyVersion(2, waitMinorVer));
+        waitForRebalancing(1, new AffinityTopologyVersion(2, waitMinorVer));
+
+        awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
@@ -249,7 +250,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 3);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
@@ -257,10 +258,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        waitForRebalancing(1, 4);
-        waitForRebalancing(2, 4);
+        waitForRebalancing(1, new AffinityTopologyVersion(4, waitMinorVer));
+        waitForRebalancing(2, new AffinityTopologyVersion(4, waitMinorVer));
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
@@ -270,7 +271,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 5);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
@@ -338,7 +339,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         concurrentStartFinished = true;
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -377,20 +378,63 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     protected void waitForRebalancing(int id, AffinityTopologyVersion top) throws IgniteCheckedException {
         boolean finished = false;
 
-        while (!finished) {
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        while (!finished && (System.currentTimeMillis() < stopTime)) {
             finished = true;
 
             for (GridCacheAdapter c : grid(id).context().cache().internalCaches()) {
                 GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
-                if (fut.topologyVersion() == null || !fut.topologyVersion().equals(top)) {
+                if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
                     finished = false;
+
+                    log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
+                        ", expVer=" + top + ']');
+
+                    U.sleep(1000);
 
                     break;
                 }
-                else if (!fut.get()) {
-                    finished = false;
+                else {
+                    finished = fut.get();
 
-                    log.warning("Rebalancing finished with missed partitions.");
+                    if (!finished) {
+                        log.warning("Rebalancing finished with missed partitions: " + fut.topologyVersion());
+
+                        U.sleep(100);
+                    }
+                    else
+                        break;
+                }
+            }
+        }
+
+        assertTrue(finished);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    protected void checkSupplyContextMapIsEmpty() throws Exception {
+        for (Ignite g : G.allGrids()) {
+            for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {
+                Object supplier = U.field(c.preloader(), "supplier");
+
+                final Map map = U.field(supplier, "scMap");
+
+                GridTestUtils.waitForCondition(new PA() {
+                    @Override public boolean apply() {
+                        synchronized (map) {
+                            return map.isEmpty();
+                        }
+                    }
+                }, 15_000);
+
+                synchronized (map) {
+                    assertTrue("Map is not empty [cache=" + c.name() +
+                        ", node=" + g.name() +
+                        ", map=" + map + ']', map.isEmpty());
                 }
             }
         }
@@ -399,22 +443,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void checkSupplyContextMapIsEmpty() {
-        for (Ignite g : G.allGrids()) {
-            for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {
-
-                Object supplier = U.field(c.preloader(), "supplier");
-
-                Map map = U.field(supplier, "scMap");
-
-                synchronized (map) {
-                    assertTrue(map.isEmpty());
-                }
-            }
-        }
-    }
-
     protected void checkPartitionMapExchangeFinished() {
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
@@ -457,19 +485,23 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                                 entry.getValue() == GridDhtPartitionState.OWNING);
                         }
 
-                        for (GridDhtLocalPartition loc : locs) {
+                        for (GridDhtLocalPartition loc : locs)
                             assertTrue(pMap.containsKey(loc.id()));
-                        }
                     }
                 }
             }
         }
     }
 
-    protected void checkPartitionMapMessagesAbsent() throws IgniteInterruptedCheckedException {
+    /**
+     * @throws Exception If failed.
+     */
+    protected void checkPartitionMapMessagesAbsent() throws Exception {
         map.clear();
 
         record = true;
+
+        log.info("Checking GridDhtPartitions*Message absent (it will take 30 SECONDS) ... ");
 
         U.sleep(30_000);
 
@@ -478,8 +510,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         AtomicInteger iF = map.get(GridDhtPartitionsFullMessage.class);
         AtomicInteger iS = map.get(GridDhtPartitionsSingleMessage.class);
 
-        assertTrue(iF == null || iF.get() == 1); // 1 message can be sent right after all checks passed.
-        assertTrue(iS == null);
+        Integer fullMap = iF != null ? iF.get() : null;
+        Integer singleMap = iS != null ? iS.get() : null;
+
+        assertTrue("Unexpected full map messages: " + fullMap, fullMap == null || fullMap.equals(1)); // 1 message can be sent right after all checks passed.
+        assertNull("Unexpected single map messages", singleMap);
     }
 
     /** {@inheritDoc} */
@@ -574,7 +609,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(3, 5, 1);
         waitForRebalancing(4, 5, 1);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -598,7 +633,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(3, 6);
         waitForRebalancing(4, 6);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -608,7 +643,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(3, 7);
         waitForRebalancing(4, 7);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -617,7 +652,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(3, 8);
         waitForRebalancing(4, 8);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
@@ -662,7 +697,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @param msg
+         * @param msg Message.
          */
         private void recordMessage(Object msg) {
             if (record) {

@@ -621,6 +621,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
+            dep != null && dep.internalTask(task, taskCls),
             subjId);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
@@ -719,14 +720,14 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /**
      * Gets task name for a task class. It firstly checks
-     * {@link @GridComputeTaskName} annotation, then thread context
+     * {@link @ComputeTaskName} annotation, then thread context
      * map. If both are empty, class name is returned.
      *
      * @param dep Deployment.
      * @param cls Class.
      * @param map Thread context map.
      * @return Task name.
-     * @throws IgniteCheckedException If {@link @GridComputeTaskName} annotation is found, but has empty value.
+     * @throws IgniteCheckedException If {@link @ComputeTaskName} annotation is found, but has empty value.
      */
     private String taskName(GridDeployment dep, Class<?> cls,
         Map<GridTaskThreadContextKey, Object> map) throws IgniteCheckedException {
@@ -742,7 +743,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             taskName = ann.value();
 
             if (F.isEmpty(taskName))
-                throw new IgniteCheckedException("Task name specified by @GridComputeTaskName annotation" +
+                throw new IgniteCheckedException("Task name specified by @ComputeTaskName annotation" +
                     " cannot be empty for class: " + cls);
         }
         else
@@ -913,7 +914,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     GridTaskSessionRequest req = new GridTaskSessionRequest(
                         ses.getId(),
                         null,
-                        loc ? null : marsh.marshal(attrs),
+                        loc ? null : U.marshal(marsh, attrs),
                         attrs);
 
                     // Make sure to go through IO manager always, since order
@@ -1029,7 +1030,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
             Map<?, ?> attrs = loc ? msg.getAttributes() :
-                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(),
+                U.<Map<?, ?>>unmarshal(marsh, msg.getAttributesBytes(),
                     U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
@@ -1305,7 +1306,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     if (topic == null) {
                         assert req.topicBytes() != null;
 
-                        topic = marsh.unmarshal(req.topicBytes(), U.resolveClassLoader(ctx.config()));
+                        topic = U.unmarshal(marsh, req.topicBytes(), U.resolveClassLoader(ctx.config()));
                     }
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
@@ -1313,7 +1314,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     ctx.io().send(nodeId, topic,
                         new GridJobSiblingsResponse(
                             loc ? siblings : null,
-                            loc ? null : marsh.marshal(siblings)),
+                            loc ? null : U.marshal(marsh, siblings)),
                         SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {

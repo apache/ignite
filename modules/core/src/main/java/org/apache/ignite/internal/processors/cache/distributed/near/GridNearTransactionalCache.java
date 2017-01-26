@@ -141,8 +141,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
+                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
                     return tx.getAllAsync(ctx,
+                        readyTopVer,
                         ctx.cacheKeysView(keys),
                         deserializeBinary,
                         skipVals,
@@ -179,6 +180,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return Future.
      */
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
+        AffinityTopologyVersion topVer,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean deserializeBinary,
@@ -190,7 +192,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
-            /*force primary*/needVer,
+            /*force primary*/needVer || !ctx.config().isReadFromBackup(),
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
@@ -202,7 +204,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             /*keepCacheObjects*/true);
 
         // init() will register future for responses if it has remote mappings.
-        fut.init();
+        fut.init(topVer);
 
         return fut;
     }
@@ -314,6 +316,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 if (tx == null) {
                                     tx = new GridNearTxRemote(
                                         ctx.shared(),
+                                        req.topologyVersion(),
                                         nodeId,
                                         req.nearNodeId(),
                                         req.nearXidVersion(),
@@ -353,7 +356,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 nodeId,
                                 req.threadId(),
                                 req.version(),
-                                req.timeout(),
                                 tx != null,
                                 tx != null && tx.implicitSingle(),
                                 req.owned(entry.key())
@@ -443,6 +445,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
+        long createTtl,
         long accessTtl
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -453,6 +456,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             isRead,
             retval,
             timeout,
+            createTtl,
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
@@ -574,9 +578,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     if (!primary.isLocal()) {
                                         assert req != null;
 
-                                        req.addKey(
-                                            entry.key(),
-                                            ctx);
+                                        req.addKey(entry.key(), ctx);
                                     }
                                     else
                                         locKeys.add(cacheKey);

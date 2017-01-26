@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ENVIRONMENT
-#define _IGNITE_ENVIRONMENT
+#ifndef _IGNITE_IMPL_IGNITE_ENVIRONMENT
+#define _IGNITE_IMPL_IGNITE_ENVIRONMENT
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
 
 #include "ignite/impl/interop/interop_memory.h"
-#include "binary/binary_type_manager.h"
+#include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/impl/handle_registry.h"
 
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /**
          * Defines environment in which Ignite operates.
@@ -38,6 +40,16 @@ namespace ignite
              * Default memory block allocation size.
              */
             enum { DEFAULT_ALLOCATION_SIZE = 1024 };
+
+            /**
+             * Default fast path handle registry containers capasity.
+             */
+            enum { DEFAULT_FAST_PATH_CONTAINERS_CAP = 1024 };
+
+            /**
+            * Default slow path handle registry containers capasity.
+            */
+            enum { DEFAULT_SLOW_PATH_CONTAINERS_CAP = 16 };
 
             /**
              * Default constructor.
@@ -52,24 +64,36 @@ namespace ignite
             /**
              * Populate callback handlers.
              *
-             * @param Target (current env wrapped into a shared pointer).
+             * @param target (current env wrapped into a shared pointer).
              * @return JNI handlers.
              */
-            ignite::common::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
+            jni::java::JniHandlers GetJniHandlers(common::concurrent::SharedPointer<IgniteEnvironment>* target);
 
             /**
-             * Perform initialization on successful start.
+             * Set context.
              *
              * @param ctx Context.
              */
-            void Initialize(ignite::common::concurrent::SharedPointer<ignite::common::java::JniContext> ctx);
+            void SetContext(common::concurrent::SharedPointer<jni::java::JniContext> ctx);
+
+            /**
+             * Perform initialization on successful start.
+             */
+            void Initialize();
 
             /**
              * Start callback.
              *
              * @param memPtr Memory pointer.
              */
-            void OnStartCallback(long long memPtr);
+            void OnStartCallback(long long memPtr, jobject proc);
+
+            /**
+             * Continuous query listener apply callback.
+             *
+             * @param mem Memory with data.
+             */
+            void OnContinuousQueryListenerApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Get name of Ignite instance.
@@ -83,14 +107,14 @@ namespace ignite
              *
              * @return Context.
              */
-            ignite::common::java::JniContext* Context();
+            jni::java::JniContext* Context();
 
             /**
              * Get memory for interop operations.
              *
              * @return Memory.
              */
-            ignite::common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory();
+            common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory();
 
             /**
              * Get memory chunk for interop operations with desired capacity.
@@ -98,7 +122,7 @@ namespace ignite
              * @param cap Capacity.
              * @return Memory.
              */
-            ignite::common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory(int32_t cap);
+            common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory(int32_t cap);
 
             /**
              * Get memory chunk located at the given pointer.
@@ -106,30 +130,59 @@ namespace ignite
              * @param memPtr Memory pointer.
              * @retrun Memory.
              */
-            ignite::common::concurrent::SharedPointer<interop::InteropMemory> GetMemory(int64_t memPtr);
+            common::concurrent::SharedPointer<interop::InteropMemory> GetMemory(int64_t memPtr);
 
             /**
              * Get type manager.
              *
-             * @param Type manager.
+             * @return Type manager.
              */
             binary::BinaryTypeManager* GetTypeManager();
+
+            /**
+             * Get type updater.
+             *
+             * @return Type updater.
+             */
+            binary::BinaryTypeUpdater* GetTypeUpdater();
+
+            /**
+             * Notify processor that Ignite instance has started.
+             */
+            void ProcessorReleaseStart();
+
+            /**
+             * Get handle registry.
+             *
+             * @return Handle registry.
+             */
+            HandleRegistry& GetHandleRegistry();
+
         private:
             /** Context to access Java. */
-            ignite::common::concurrent::SharedPointer<ignite::common::java::JniContext> ctx;
+            common::concurrent::SharedPointer<jni::java::JniContext> ctx;
 
             /** Startup latch. */
-            ignite::common::concurrent::SingleLatch* latch;
+            common::concurrent::SingleLatch* latch;
 
             /** Ignite name. */
             char* name;
 
+            /** Processor instance. */
+            jni::JavaGlobalRef proc;
+
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;
+
+            /** Type updater. */
+            binary::BinaryTypeUpdater* metaUpdater;
+
+            /** Handle registry. */
+            HandleRegistry registry;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_IGNITE_ENVIRONMENT

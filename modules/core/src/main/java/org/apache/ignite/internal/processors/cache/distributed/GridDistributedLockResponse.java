@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -156,14 +157,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param committedVers Committed versions relative to lock version.
-     * @param rolledbackVers Rolled back versions relative to lock version.
-     */
-    public void setCandidates(Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
-        completedVersions(committedVers, rolledbackVers);
-    }
-
-    /**
      * @param val Value.
      */
     public void addValue(CacheObject val) {
@@ -188,6 +181,11 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txLockMessageLogger();
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -196,7 +194,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         prepareMarshalCacheObjects(vals, ctx.cacheContext(cacheId));
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = U.marshal(ctx.marshaller(), err);
     }
 
     /** {@inheritDoc} */
@@ -206,7 +204,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);
 
         if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

@@ -28,6 +28,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test that validates {@link Ignite#cacheNames()} implementation.
  */
 public class CacheNamesSelfTest extends GridCommonAbstractTest {
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -43,7 +46,10 @@ public class CacheNamesSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg3 = new CacheConfiguration();
         cacheCfg3.setCacheMode(CacheMode.LOCAL);
 
-        cfg.setCacheConfiguration(cacheCfg1, cacheCfg2, cacheCfg3);
+        if (client)
+            cfg.setClientMode(true);
+        else
+            cfg.setCacheConfiguration(cacheCfg1, cacheCfg2, cacheCfg3);
 
         return cfg;
     }
@@ -61,6 +67,14 @@ public class CacheNamesSelfTest extends GridCommonAbstractTest {
 
             for (String name : names)
                 assertTrue(name == null || name.equals("replicated") || name.equals("partitioned"));
+
+            client = true;
+
+            Ignite client = startGrid(2);
+
+            names = client.cacheNames();
+
+            assertEquals(3, names.size());
         }
         finally {
             stopAllGrids();

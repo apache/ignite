@@ -56,6 +56,8 @@ namespace Apache.Ignite.Core.Tests
             _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
             _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
             _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+
+            Assert.AreEqual(3, _grid1.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
@@ -384,7 +386,7 @@ namespace Apache.Ignite.Core.Tests
                 // Check that listen/stop work concurrently
                 messaging.StopRemoteListen(messaging.RemoteListen(sharedListener));
 
-            }, threadCnt, runSeconds);
+            }, threadCnt, runSeconds / 2);
 
             MessagingTestHelper.ListenResult = false;
 
@@ -396,15 +398,21 @@ namespace Apache.Ignite.Core.Tests
 
             senders.Wait(); // wait for senders to stop
 
-            var sharedResult = MessagingTestHelper.ReceivedMessages.Count;
+            MessagingTestHelper.ClearReceived(int.MaxValue);
 
-            messaging.Send(NextMessage());
+            var lastMsg = NextMessage();
+            messaging.Send(lastMsg);
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
             // Check that unsubscription worked properly
-            Assert.AreEqual(sharedResult, MessagingTestHelper.ReceivedMessages.Count);
-            
+            var sharedResult = MessagingTestHelper.ReceivedMessages.ToArray();
+
+            if (sharedResult.Length != 0)
+            {
+                Assert.Fail("Unexpected messages ({0}): {1}; last sent message: {2}", sharedResult.Length, 
+                    string.Join(",", sharedResult), lastMsg);
+            }
         }
 
         /// <summary>
@@ -550,7 +558,9 @@ namespace Apache.Ignite.Core.Tests
             Func<IEnumerable<string>, IEnumerable<string>> resultFunc, int expectedRepeat)
         {
             // check if expected message count has been received; Wait returns false if there were none.
-            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout));
+            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout),
+                string.Format("expectedMessages: {0}, expectedRepeat: {1}, remaining: {2}",
+                    expectedMessages, expectedRepeat, ReceivedEvent.CurrentCount));
 
             expectedMessages = expectedMessages.SelectMany(x => Enumerable.Repeat(x, expectedRepeat));
 

@@ -18,13 +18,16 @@
 #ifndef _IGNITE_CACHE_IMPL
 #define _IGNITE_CACHE_IMPL
 
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/cache/query/query_impl.h"
-#include "ignite/impl/operations.h"
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/impl/cache/query/query_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
+
+#include <ignite/impl/interop/interop_target.h>
 
 namespace ignite
 {    
@@ -35,7 +38,7 @@ namespace ignite
             /**
              * Cache implementation.
              */
-            class IGNITE_IMPORT_EXPORT CacheImpl
+            class IGNITE_IMPORT_EXPORT CacheImpl : private interop::InteropTarget
             {
             public:
                 /**
@@ -58,14 +61,6 @@ namespace ignite
                  * @return Cache name.
                  */
                 const char* GetName() const;
-
-                /**
-                 * Perform IsEmpty.
-                 *
-                 * @param err Error.
-                 * @return Result.
-                 */
-                bool IsEmpty(IgniteError* err);
 
                 /**
                  * Perform ContainsKey.
@@ -274,22 +269,13 @@ namespace ignite
                 void RemoveAll(IgniteError* err);
 
                 /**
-                 * Perform Size.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t Size(const int32_t peekModes, IgniteError* err);
-
-                /**
-                 * Perform LocalSize.
-                 * 
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t LocalSize(const int32_t peekModes, IgniteError* err);
+                * Perform Size.
+                *
+                * @param peekModes Peek modes.
+                * @param local Local flag.
+                * @param err Error.
+                */
+                int32_t Size(int32_t peekModes, bool local, IgniteError* err);
 
                 /**
                  * Invoke query.
@@ -326,67 +312,59 @@ namespace ignite
                  * @return Query cursor.
                  */
                 query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError* err);
-                
-            private:
-                /** Name. */
-                char* name; 
-                
-                /** Environment. */
-                ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-                
-                /** Handle to Java object. */
-                jobject javaRef;                     
 
+                /**
+                 * Start continuous query execution.
+                 *
+                 * @param qry Continuous query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    IgniteError& err);
+
+                /**
+                 * Start continuous query execution with initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const ignite::cache::query::SqlQuery& initialQry, IgniteError& err);
+
+                /**
+                 * Start continuous query execution with initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const ignite::cache::query::TextQuery& initialQry, IgniteError& err);
+
+                /**
+                 * Start continuous query execution with initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const ignite::cache::query::ScanQuery& initialQry, IgniteError& err);
+
+            private:
                 IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
 
-                /**
-                 * Write data to memory.
-                 *
-                 * @param mem Memory.
-                 * @param inOp Input opeartion.
-                 * @param err Error.
-                 * @return Memory pointer.
-                 */
-                int64_t WriteTo(interop::InteropMemory* mem, InputOperation& inOp, IgniteError* err);
-
-                /**
-                 * Read data from memory.
-                 *
-                 * @param mem Memory.
-                 * @param outOp Output operation.
-                 */
-                void ReadFrom(interop::InteropMemory* mem, OutputOperation& outOp);
-
-                /**
-                 * Internal cache size routine.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param loc Local flag.
-                 * @param err Error.
-                 * @return Size.
-                 */
-                int SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err);
-
-                /**
-                 * Internal out operation.
-                 *
-                 * @param opType Operation type.
-                 * @param inOp Input.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                bool OutOpInternal(const int32_t opType, InputOperation& inOp, IgniteError* err);
-
-                /**
-                 * Internal out-in operation.
-                 *
-                 * @param opType Operation type.
-                 * @param inOp Input.
-                 * @param outOp Output.
-                 * @param err Error.
-                 */
-                void OutInOpInternal(const int32_t opType, InputOperation& inOp, OutputOperation& outOp, 
-                    IgniteError* err);
+                /** Name. */
+                char* name; 
 
                 /**
                  * Internal query execution routine.
@@ -398,27 +376,83 @@ namespace ignite
                 template<typename T>
                 query::QueryCursorImpl* QueryInternal(const T& qry, int32_t typ, IgniteError* err)
                 {
-                    ignite::common::java::JniErrorInfo jniErr;
+                    ignite::jni::java::JniErrorInfo jniErr;
 
-                    ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
+                    ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
                     interop::InteropOutputStream out(mem0);
-                    binary::BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
                     ignite::binary::BinaryRawWriter rawWriter(&writer);
 
                     qry.Write(rawWriter);
 
                     out.Synchronize();
 
-                    jobject qryJavaRef = env.Get()->Context()->CacheOutOpQueryCursor(javaRef, typ, mem.Get()->PointerLong(), 
-                        &jniErr);
+                    jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpQueryCursor(GetTarget(),
+                        typ, mem.Get()->PointerLong(), &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == ignite::common::java::IGNITE_JNI_ERR_SUCCESS)
-                        return new query::QueryCursorImpl(env, qryJavaRef);
+                    if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
+                        return new query::QueryCursorImpl(GetEnvironmentPointer(), qryJavaRef);
                     else
-                        return NULL;
+                        return 0;
+                }
+
+                /**
+                 * Start continuous query execution with the initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query to be executed.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                template<typename T>
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
+                {
+                    jni::java::JniErrorInfo jniErr;
+
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropMemory* mem0 = mem.Get();
+                    interop::InteropOutputStream out(mem0);
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                    ignite::binary::BinaryRawWriter rawWriter(&writer);
+
+                    const query::continuous::ContinuousQueryImplBase& qry0 = *qry.Get();
+
+                    int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
+
+                    rawWriter.WriteInt64(handle);
+                    rawWriter.WriteBool(qry0.GetLocal());
+
+                    // Filters are not supported for now.
+                    rawWriter.WriteBool(false);
+                    rawWriter.WriteNull();
+
+                    rawWriter.WriteInt32(qry0.GetBufferSize());
+                    rawWriter.WriteInt64(qry0.GetTimeInterval());
+
+                    // Autounsubscribe is a filter feature.
+                    rawWriter.WriteBool(false);
+
+                    // Writing initial query. When there is not initial query writing -1.
+                    rawWriter.WriteInt32(typ);
+                    if (typ != -1)
+                        initialQry.Write(rawWriter);
+
+                    out.Synchronize();
+
+                    jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpContinuousQuery(GetTarget(),
+                        cmd, mem.Get()->PointerLong(), &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                    if (jniErr.code == java::IGNITE_JNI_ERR_SUCCESS)
+                        return new query::continuous::ContinuousQueryHandleImpl(GetEnvironmentPointer(), handle, qryJavaRef);
+
+                    return 0;
                 }
             };
         }
