@@ -70,7 +70,9 @@ import org.junit.Assert;
 public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-    private static final int KEYS_COUNT = 100_000;
+
+    /** */
+    private static final int KEYS_COUNT = 20_000;
 
     /**
      * @return Node count.
@@ -176,7 +178,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
 
-        long seed = 1464583813940L; // System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
 
         info("Seed: " + seed + "L");
 
@@ -345,7 +347,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         Random rnd = new GridRandom(seed);
 
-        for (int i = 0; i < 500_000; i++) {
+        for (int i = 0; i < 50_000; i++) {
             int k = rnd.nextInt(cnt);
 
             DbValue v0 = new DbValue(k, "test-value " + k, i);

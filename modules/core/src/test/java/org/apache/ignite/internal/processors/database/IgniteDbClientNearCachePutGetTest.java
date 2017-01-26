@@ -18,8 +18,10 @@
 
 package org.apache.ignite.internal.processors.database;
 
+/**
+ *
+ */
 public class IgniteDbClientNearCachePutGetTest extends IgniteDbPutGetAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
