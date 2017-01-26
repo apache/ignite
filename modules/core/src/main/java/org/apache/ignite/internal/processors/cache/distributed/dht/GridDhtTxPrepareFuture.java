@@ -1313,7 +1313,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 ", node=" + n.id() + ']');
                         }
                     }
-                    catch (ClusterTopologyCheckedException e) {
+                    catch (ClusterTopologyCheckedException ignored) {
                         fut.onNodeLeft();
                     }
                     catch (IgniteCheckedException e) {
@@ -1396,7 +1396,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                     ", node=" + nearMapping.node().id() + ']');
                             }
                         }
-                        catch (ClusterTopologyCheckedException e) {
+                        catch (ClusterTopologyCheckedException ignored) {
                             fut.onNodeLeft();
                         }
                         catch (IgniteCheckedException e) {
