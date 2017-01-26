@@ -57,20 +57,19 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     private static int getPersonsCountFromPartitionMapCheckBothCaches(final IgniteEx ignite, IgniteLogger log,
         int orgId) throws Exception {
 
-        assertEquals(1, getOrganizationCountFromPartitionMap(ignite, log, orgId));
+        assertEquals(1, getOrganizationCountFromPartitionMap(ignite, orgId));
 
-        return getPersonsCountFromPartitionMap(ignite, log, orgId);
+        return getPersonsCountFromPartitionMap(ignite, orgId);
     }
 
     /**
      * @param ignite Ignite.
-     * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      * @throws Exception If failed.
      */
-    private static int getOrganizationCountFromPartitionMap(final IgniteEx ignite, IgniteLogger log,
-        int orgId) throws Exception {
+    private static int getOrganizationCountFromPartitionMap(final IgniteEx ignite,
+                                                            int orgId) throws Exception {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
         GridCacheAdapter<?, ?> cacheAdapterOrg = ignite.context().cache()
@@ -94,12 +93,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
     /**
      * @param ignite Ignite.
-     * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      * @throws Exception If failed.
      */
-    private static int getPersonsCountFromPartitionMap(final IgniteEx ignite, IgniteLogger log, int orgId)
+    private static int getPersonsCountFromPartitionMap(final IgniteEx ignite, int orgId)
         throws Exception {
         int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
 
@@ -124,11 +122,10 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
     /**
      * @param ignite Ignite.
-     * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      */
-    private static int getPersonsCountBySqlFieldLocalQuery(final IgniteEx ignite, IgniteLogger log, int orgId) {
+    private static int getPersonsCountBySqlFieldLocalQuery(final IgniteEx ignite, int orgId) {
         List res = ignite.cache(Person.class.getSimpleName())
             .query(new SqlFieldsQuery(
                 String.format("SELECT p.id FROM \"%s\".Person as p " +
@@ -141,12 +138,11 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
     /**
      * @param ignite Ignite.
-     * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      */
-    private static int getPersonsCountBySqlFieledLocalQueryJoinOrgs(final IgniteEx ignite, IgniteLogger log,
-        int orgId) {
+    private static int getPersonsCountBySqlFieledLocalQueryJoinOrgs(final IgniteEx ignite,
+                                                                    int orgId) {
         List res = ignite.cache(Person.class.getSimpleName())
             .query(new SqlFieldsQuery(
                 String.format("SELECT p.id FROM \"%s\".Person as p, \"%s\".Organization as o " +
@@ -161,11 +157,10 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
     /**
      * @param ignite Ignite.
-     * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      */
-    private static int getPersonsCountBySqlLocalQuery(final IgniteEx ignite, IgniteLogger log, int orgId) {
+    private static int getPersonsCountBySqlLocalQuery(final IgniteEx ignite, int orgId) {
         List res = ignite.cache(Person.class.getSimpleName())
             .query(new SqlQuery<Person.Key, Person>(Person.class, "orgId = ?").setArgs(orgId).setLocal(true))
             .getAll();
@@ -175,11 +170,10 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
     /**
      * @param ignite Ignite.
-     * @param log Logger.
      * @param orgId Organization id.
      * @return Count of found Person object with specified orgId
      */
-    private static int getPersonsCountByScanLocalQuery(final IgniteEx ignite, IgniteLogger log, final int orgId) {
+    private static int getPersonsCountByScanLocalQuery(final IgniteEx ignite, final int orgId) {
         List res = ignite.cache(Person.class.getSimpleName())
             .query(new ScanQuery<>(new IgniteBiPredicate<Person.Key, Person>() {
                 @Override public boolean apply(Person.Key key, Person person) {
@@ -199,10 +193,10 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     private static int getPersonsCountSingleCache(final IgniteEx ignite, IgniteLogger log, final int orgId)
         throws Exception {
-        int sqlCnt = getPersonsCountBySqlLocalQuery(ignite, log, orgId);
-        int sqlFieldCnt = getPersonsCountBySqlFieldLocalQuery(ignite, log, orgId);
-        int scanCnt = getPersonsCountByScanLocalQuery(ignite, log, orgId);
-        int partCnt = getPersonsCountFromPartitionMap(ignite, log, orgId);
+        int sqlCnt = getPersonsCountBySqlLocalQuery(ignite, orgId);
+        int sqlFieldCnt = getPersonsCountBySqlFieldLocalQuery(ignite, orgId);
+        int scanCnt = getPersonsCountByScanLocalQuery(ignite, orgId);
+        int partCnt = getPersonsCountFromPartitionMap(ignite, orgId);
 
         assertEquals(PERS_AT_ORG_CNT, partCnt);
         assertEquals(partCnt, sqlCnt);
@@ -221,7 +215,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      */
     private static int getPersonsCountMultipleCache(final IgniteEx ignite, IgniteLogger log, final int orgId)
         throws Exception {
-        int sqlFieldCnt = getPersonsCountBySqlFieledLocalQueryJoinOrgs(ignite, log, orgId);
+        int sqlFieldCnt = getPersonsCountBySqlFieledLocalQueryJoinOrgs(ignite, orgId);
         int partCnt = getPersonsCountFromPartitionMapCheckBothCaches(ignite, log, orgId);
 
         assertEquals(partCnt, sqlFieldCnt);

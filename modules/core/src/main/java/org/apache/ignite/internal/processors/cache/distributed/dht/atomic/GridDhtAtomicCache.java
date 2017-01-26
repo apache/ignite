@@ -549,8 +549,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
-            true,
-            null,
+                null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             false,
@@ -573,8 +572,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         return getAllAsyncInternal(keys,
             forcePrimary,
-            skipTx,
-            subjId,
+                subjId,
             taskName,
             deserializeBinary,
             skipVals,
@@ -586,7 +584,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
-     * @param skipTx Skip tx flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -597,16 +594,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Future.
      */
     private IgniteInternalFuture<Map<K, V>> getAllAsyncInternal(
-        @Nullable final Collection<? extends K> keys,
-        final boolean forcePrimary,
-        boolean skipTx,
-        @Nullable UUID subjId,
-        final String taskName,
-        final boolean deserializeBinary,
-        final boolean skipVals,
-        final boolean canRemap,
-        final boolean needVer,
-        boolean asyncOp
+            @Nullable final Collection<? extends K> keys,
+            final boolean forcePrimary,
+            @Nullable UUID subjId,
+            final String taskName,
+            final boolean deserializeBinary,
+            final boolean skipVals,
+            final boolean canRemap,
+            final boolean needVer,
+            boolean asyncOp
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 

@@ -749,7 +749,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
-                onAllReceived(false);
+                onAllReceived();
         }
         else
             sendPartitions(crd);
@@ -1213,7 +1213,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (allReceived) {
             awaitSingleMapUpdates();
 
-            onAllReceived(false);
+            onAllReceived();
         }
     }
 
@@ -1256,9 +1256,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param discoThread If {@code true} completes future from another thread (to do not block discovery thread).
      */
-    private void onAllReceived(boolean discoThread) {
+    private void onAllReceived() {
         try {
             assert crd.isLocal();
 
@@ -1617,7 +1616,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (allReceived) {
                                 awaitSingleMapUpdates();
 
-                                onAllReceived(true);
+                                onAllReceived();
 
                                 return;
                             }

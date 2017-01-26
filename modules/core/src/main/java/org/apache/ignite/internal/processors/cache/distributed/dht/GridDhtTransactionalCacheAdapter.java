@@ -1654,7 +1654,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 if (keyBytes != null)
                     for (KeyCacheObject key : keyBytes)
-                        req.addNearKey(key, ctx.shared());
+                        req.addNearKey(key);
 
                 req.completedVersions(committed, rolledback);
 
@@ -1683,7 +1683,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 try {
                     for (KeyCacheObject key : keyBytes)
-                        req.addNearKey(key, ctx.shared());
+                        req.addNearKey(key);
 
                     req.completedVersions(committed, rolledback);
 

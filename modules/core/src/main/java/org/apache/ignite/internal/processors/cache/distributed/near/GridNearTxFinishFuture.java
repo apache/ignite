@@ -1092,7 +1092,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         /** {@inheritDoc} */
         @Override boolean onNodeLeft(UUID nodeId, boolean discoThread) {
-            return onResponse(nodeId, discoThread);
+            return onResponse(nodeId);
         }
 
         /**
@@ -1100,15 +1100,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param discoThread {@code True} if executed from discovery thread.
          */
         void onDhtFinishResponse(UUID nodeId, boolean discoThread) {
-            onResponse(nodeId, discoThread);
+            onResponse(nodeId);
         }
 
         /**
          * @param nodeId Node ID.
-         * @param discoThread {@code True} if executed from discovery thread.
          * @return {@code True} if processed node response.
          */
-        private boolean onResponse(UUID nodeId, boolean discoThread) {
+        private boolean onResponse(UUID nodeId) {
             boolean done;
 
             boolean ret;
