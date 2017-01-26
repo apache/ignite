@@ -1012,7 +1012,6 @@ public final class IgfsImpl implements IgfsEx {
 
                         long len = info.length();
 
-                        // Use underlying Fs block size, or use config value if there is no block size:
                         int blockSize = info.blockSize() > 0 ? info.blockSize() : cfg.getBlockSize();
 
                         long blockCnt = len / blockSize;
