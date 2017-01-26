@@ -49,14 +49,14 @@ public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEvent<K, V> {
     /**
      * Flag indicating if cache is being updated on backup node.
      *
-     * @retrun True if cache is being updated on backup node
+     * @retrun {@code True} if cache is being updated on backup node
      */
     public abstract boolean isBackup();
 
     /**
      * Flag indicating if cache is being updated on primary node.
      *
-     * @retrun True if cache is being updated on primary node
+     * @retrun {@code True} if cache is being updated on primary node
      */
     public abstract boolean isPrimary();
 }
