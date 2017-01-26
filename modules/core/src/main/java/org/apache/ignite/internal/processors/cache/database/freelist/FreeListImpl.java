@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
@@ -71,6 +72,38 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
+    private final PageHandler<CacheDataRow, Boolean> updateRow =
+        new PageHandler<CacheDataRow, Boolean>() {
+            @Override public Boolean run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int itemId)
+                throws IgniteCheckedException {
+                DataPageIO io = (DataPageIO)iox;
+
+                int rowSize = getRowSize(row);
+
+                boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, getRowSize(row));
+
+                if (updated && isWalDeltaRecordNeeded(wal, page)) {
+                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                    byte[] payload = new byte[rowSize];
+
+                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
+
+                    assert data.payloadSize() == rowSize;
+
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+
+                    wal.log(new DataPageUpdateRecord(
+                        cacheId,
+                        page.id(),
+                        itemId,
+                        payload));
+                }
+
+                return updated;
+            }
+        };
+
+    /** */
     private final PageHandler<CacheDataRow, Integer> writeRow =
         new PageHandler<CacheDataRow, Integer>() {
             @Override public Integer run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int written)
@@ -101,7 +134,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             /**
              * @param page Page.
-             * @param buf Buffer.
+             * @param pageAddr Page address.
              * @param io IO.
              * @param row Row.
              * @param rowSize Row size.
@@ -110,22 +143,22 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
              */
             private int addRow(
                 Page page,
-                long buf,
+                long pageAddr,
                 DataPageIO io,
                 CacheDataRow row,
                 int rowSize
             ) throws IgniteCheckedException {
-                io.addRow(buf, row, rowSize, pageSize());
+                io.addRow(pageAddr, row, rowSize, pageSize());
 
                 if (isWalDeltaRecordNeeded(wal, page)) {
                     // TODO This record must contain only a reference to a logical WAL record with the actual data.
                     byte[] payload = new byte[rowSize];
 
-                    DataPagePayload data = io.readPayload(buf, PageIdUtils.itemId(row.link()), pageSize());
+                    DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
 
                     assert data.payloadSize() == rowSize;
 
-                    PageUtils.getBytes(buf, data.offset(), payload, 0, rowSize);
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
                     wal.log(new DataPageInsertRecord(
                         cacheId,
@@ -138,7 +171,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             /**
              * @param page Page.
-             * @param buf Buffer.
+             * @param pageAddr Page address.
              * @param io IO.
              * @param row Row.
              * @param written Written size.
@@ -148,7 +181,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
              */
             private int addRowFragment(
                 Page page,
-                long buf,
+                long pageAddr,
                 DataPageIO io,
                 CacheDataRow row,
                 int written,
@@ -157,7 +190,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 // Read last link before the fragment write, because it will be updated there.
                 long lastLink = row.link();
 
-                int payloadSize = io.addRowFragment(pageMem, buf, row, written, rowSize, pageSize());
+                int payloadSize = io.addRowFragment(pageMem, pageAddr, row, written, rowSize, pageSize());
 
                 assert payloadSize > 0 : payloadSize;
 
@@ -165,9 +198,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     // TODO This record must contain only a reference to a logical WAL record with the actual data.
                     byte[] payload = new byte[payloadSize];
 
-                    DataPagePayload data = io.readPayload(buf, PageIdUtils.itemId(row.link()), pageSize());
+                    DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
 
-                    PageUtils.getBytes(buf, data.offset(), payload, 0, payloadSize);
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
                     wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
                 }
@@ -331,6 +364,22 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             }
         }
         while (written != COMPLETE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean updateDataRow(long link, CacheDataRow row) throws IgniteCheckedException {
+        assert link != 0;
+
+        long pageId = PageIdUtils.pageId(link);
+        int itemId = PageIdUtils.itemId(link);
+
+        try (Page page = pageMem.page(cacheId, pageId)) {
+            Boolean updated = writePage(pageMem, page, this, updateRow, row, itemId, null);
+
+            assert updated != null; // Can't fail here.
+
+            return updated != null ? updated : false;
+        }
     }
 
     /** {@inheritDoc} */

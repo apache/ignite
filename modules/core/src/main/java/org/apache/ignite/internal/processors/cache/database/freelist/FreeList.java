@@ -31,6 +31,14 @@ public interface FreeList {
 
     /**
      * @param link Row link.
+     * @param row New row data.
+     * @return {@code True} if was able to update row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean updateDataRow(long link, CacheDataRow row) throws IgniteCheckedException;
+
+    /**
+     * @param link Row link.
      * @throws IgniteCheckedException If failed.
      */
     public void removeDataRowByLink(long link) throws IgniteCheckedException;

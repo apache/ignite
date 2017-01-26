@@ -182,7 +182,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      *
      * @param updateCntr Update counter.
      */
-    public void updateCounter(Long updateCntr) {
+    public void updateCounter(long updateCntr) {
         this.updateCntr = updateCntr;
     }
 

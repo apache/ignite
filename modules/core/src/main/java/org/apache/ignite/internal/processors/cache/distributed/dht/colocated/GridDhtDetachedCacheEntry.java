@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -58,7 +59,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject unswap(boolean needVal, boolean checkExpire) throws IgniteCheckedException {
+    @Nullable @Override public CacheDataRow unswap(boolean needVal, boolean checkExpire) throws IgniteCheckedException {
         return null;
     }
 
@@ -68,8 +69,10 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void storeValue(CacheObject val, long expireTime,
-        GridCacheVersion ver) throws IgniteCheckedException {
+    @Override protected void storeValue(CacheObject val,
+        long expireTime,
+        GridCacheVersion ver,
+        CacheDataRow oldRow) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary nodes.
     }
 

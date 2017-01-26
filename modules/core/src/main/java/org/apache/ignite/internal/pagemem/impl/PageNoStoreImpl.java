@@ -42,6 +42,8 @@ public class PageNoStoreImpl implements Page {
      * @param pageId Page ID.
      */
     PageNoStoreImpl(PageMemoryNoStoreImpl pageMem, long absPtr, long pageId) {
+        assert absPtr % 8 == 0 : absPtr;
+
         this.pageMem = pageMem;
         this.absPtr = absPtr;
 

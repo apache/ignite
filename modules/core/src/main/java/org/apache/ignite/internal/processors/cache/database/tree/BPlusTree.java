@@ -120,6 +120,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** */
     private volatile TreeMetaData treeMeta;
 
+    /**
+     *
+     */
+    public static interface RowClosure<L, R> {
+        /**
+         * @param io IO.
+         * @param pageAddr Page address.
+         * @param idx Index.
+         * @return Result.
+         * @throws IgniteCheckedException If failed.
+         */
+        public R row(BPlusIO<L> io, long pageAddr, int idx) throws IgniteCheckedException;
+    }
+
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
         /** */
@@ -815,19 +829,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param row Lookup row for exact match.
-     * @return Found row.
+     * @param c Found row closure.
+     * @return Found result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Override public final T findOne(L row) throws IgniteCheckedException {
+    public final <R> R findOne(L row, RowClosure<L, R> c) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
-            GetOne g = new GetOne(row);
+            GetOne g = new GetOne(row, c);
 
             doFind(g);
 
-            return (T)g.row;
+            return (R)g.row;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on lookup row: " + row, e);
@@ -838,6 +852,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on lookup row: " + row, e);
         }
+    }
+
+    /**
+     * @param row Lookup row for exact match.
+     * @return Found row.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Override public final T findOne(L row) throws IgniteCheckedException {
+        return findOne(row, null);
     }
 
     /**
@@ -2052,11 +2076,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * Get a single entry.
      */
     private final class GetOne extends Get {
+        /** */
+        private final RowClosure<L, ?> c;
+
         /**
          * @param row Row.
+         * @param c Row closure.
          */
-        private GetOne(L row) {
+        private GetOne(L row, RowClosure<L, ?> c) {
             super(row);
+
+            this.c = c;
         }
 
         /** {@inheritDoc} */
@@ -2065,7 +2095,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (lvl != 0 && !canGetRowFromInner)
                 return false;
 
-            row = getRow(io, pageAddr, idx);
+            row = c != null ? (L)c.row(io, pageAddr, idx) : getRow(io, pageAddr, idx);
 
             return true;
         }

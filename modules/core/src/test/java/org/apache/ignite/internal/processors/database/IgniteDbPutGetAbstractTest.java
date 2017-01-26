@@ -186,6 +186,9 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         return false;
     };
 
+    /**
+     *
+     */
     public void testGradualRandomPutAllRemoveAll() {
         IgniteEx ig = grid(0);
 
@@ -388,6 +391,39 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         assertNull(cache.get(0));
         assertNull(cache1.get(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutGetLargeKeys() throws Exception {
+        IgniteCache<LargeDbKey, Integer> cache = ignite(0).cache(null);
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        Map<Integer, LargeDbKey> keys = new HashMap<>();
+
+        for (int i = 0; i < 100; i++) {
+            LargeDbKey key = new LargeDbKey(i, 512 + rnd.nextInt(1024));
+
+            assertNull(cache.get(key));
+
+            cache.put(key, i);
+
+            keys.put(i, key);
+        }
+
+        Map<LargeDbKey, Integer> res = cache.getAll(new HashSet<>(keys.values()));
+
+        assertEquals(keys.size(), res.size());
+
+        for (Map.Entry<Integer, LargeDbKey> e : keys.entrySet())
+            assertEquals(e.getKey(), res.get(e.getValue()));
+
+        cache.removeAll(new HashSet<>(keys.values()));
+
+        for (LargeDbKey key : keys.values())
+            assertNull(cache.get(key));
     }
 
     /**
@@ -1344,6 +1380,47 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LargeDbKey implements Serializable {
+        /** */
+        private int val;
+
+        /** */
+        private byte[] data;
+
+        /**
+         * @param val Value.
+         * @param size Key payload size.
+         */
+        private LargeDbKey(int val, int size) {
+            this.val = val;
+
+            data = new byte[size];
+
+            Arrays.fill(data, (byte)val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || !(o instanceof LargeDbKey))
+                return false;
+
+            LargeDbKey key = (LargeDbKey)o;
+
+            return val == key.val && Arrays.equals(data, key.data);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val + Arrays.hashCode(data);
         }
     }
 
