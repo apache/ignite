@@ -669,9 +669,8 @@ public class IgfsMetaManager extends IgfsManager {
         throws IgniteCheckedException {
 
         if(client) {
-            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), fileId, lockId, modificationTime,
-                updateSpace, space, affRange));
+            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), IgfsUserContext.currentUser(), fileId,
+                lockId, modificationTime, updateSpace, space, affRange));
 
             return;
         }

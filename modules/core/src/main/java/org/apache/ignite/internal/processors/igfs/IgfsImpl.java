@@ -571,8 +571,8 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientSummaryCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), path));
+            return meta.runClientTask(new IgfsClientSummaryCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path));
 
         return safeOp(new Callable<IgfsPathSummary>() {
             @Override public IgfsPathSummary call() throws Exception {
@@ -591,8 +591,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientUpdateCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), path, props));
+            return meta.runClientTask(new IgfsClientUpdateCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path, props));
 
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
@@ -655,8 +655,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(dest, "dest");
 
         if (meta.isClient()) {
-            meta.runClientTask(new IgfsClientRenameCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), src, dest));
+            meta.runClientTask(new IgfsClientRenameCallable(cfg.getName(), IgfsUserContext.currentUser(), src, dest));
 
             return;
         }
@@ -716,8 +715,8 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientDeleteCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), path, recursive));
+            return meta.runClientTask(new IgfsClientDeleteCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path, recursive));
 
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -759,8 +758,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient()) {
-            meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), path, props));
+            meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), IgfsUserContext.currentUser(), path, props));
 
             return ;
         }
@@ -1229,8 +1227,8 @@ public final class IgfsImpl implements IgfsEx {
             return;
 
         if (meta.isClient()) {
-            meta.runClientTask(new IgfsClientSetTimesCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), path, accessTime, modificationTime));
+            meta.runClientTask(new IgfsClientSetTimesCallable(cfg.getName(), IgfsUserContext.currentUser(), path,
+                accessTime, modificationTime));
 
             return;
         }
@@ -1264,8 +1262,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(len >= 0, "len >= 0");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(),
-                IgfsUserContext.currentUser(), path, start, len, maxLen));
+            return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path, start, len, maxLen));
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
             @Override public Collection<IgfsBlockLocation> call() throws Exception {

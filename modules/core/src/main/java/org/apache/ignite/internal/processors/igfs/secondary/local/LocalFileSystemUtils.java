@@ -127,7 +127,7 @@ public class LocalFileSystemUtils {
                 attrs = view.readAttributes();
         }
         catch (IOException e) {
-            throw new IgfsException("Failed to read Basic file attributes: " + file.getAbsolutePath(), e);
+            throw new IgfsException("Failed to read basic file attributes: " + file.getAbsolutePath(), e);
         }
 
         return attrs;
