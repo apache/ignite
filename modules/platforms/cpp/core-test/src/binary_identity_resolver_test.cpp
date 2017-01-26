@@ -41,8 +41,9 @@ using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common;
-
-using ignite::impl::binary::BinaryUtils;
+using namespace ignite::binary;
+using namespace ignite::impl::interop;
+using namespace ignite::impl::binary;
 
 /**
  * Composite key class.
@@ -125,7 +126,6 @@ struct CompositeKeySimple
     /** Integer 64-bit. */
     int64_t i64;
 };
-
 
 namespace ignite
 {
@@ -221,6 +221,31 @@ struct BinaryIdentityResolverTestSuiteFixture
     Ignite grid;
 };
 
+template<typename T>
+void FillMem(InteropMemory& mem, const T& value)
+{
+    InteropOutputStream stream(&mem);
+    BinaryWriterImpl writer(&stream, 0);
+
+    writer.WriteObject<T>(value);
+
+    stream.Synchronize();
+}
+
+template<typename R, typename T>
+int32_t CalculateHashCode(const T& value)
+{
+    InteropUnpooledMemory mem(1024);
+
+    FillMem<T>(mem, value);
+
+    BinaryObject obj(mem, 0);
+
+    R resolver;
+
+    return resolver.GetHashCode(obj);
+}
+
 BOOST_FIXTURE_TEST_SUITE(BinaryIdentityResolverTestSuite, BinaryIdentityResolverTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestGetDataHashCode)
@@ -246,6 +271,18 @@ BOOST_AUTO_TEST_CASE(TestGetDataHashCode)
     BOOST_CHECK_EQUAL(binary::GetDataHashCode(data9, sizeof(data9)), 0x000D9F41);
 }
 
+BOOST_AUTO_TEST_CASE(TestArrayIdentityResolver)
+{
+    using namespace binary;
+
+    CompositeKey key1("Some test garbage, one-two-three...",
+        Timestamp(109917, 130347199), Guid(0xACC064DF54EE9670, 0x065CF938F56E5E3B));
+
+    CompositeKeySimple key2("!!!!!!!!!!!!!!!!", Timestamp(324140, 334685375), 89563963);
+
+    BOOST_CHECK_EQUAL(CalculateHashCode<BinaryArrayIdentityResolver>(key1), 0xC298792B);
+    BOOST_CHECK_EQUAL(CalculateHashCode<BinaryArrayIdentityResolver>(key2), 0x53207175);
+}
 
 BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithGuid)
 {
