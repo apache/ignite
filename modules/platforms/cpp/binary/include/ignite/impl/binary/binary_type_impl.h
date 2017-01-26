@@ -43,7 +43,7 @@
                                                                                         \
         template<class U, U> struct test;                                               \
                                                                                         \
-        template<typename C> static one& helper(test<sign, &C::##method>*);             \
+        template<typename C> static one& helper(test<sign, &C::method>*);               \
         template<typename C> static two& helper(...);                                   \
                                                                                         \
     public:                                                                             \
@@ -57,8 +57,9 @@ namespace ignite
     {
         namespace binary
         {
-            IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetHashCode, void(*)(const T&));
-            IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetIdentityResolver, ignite::Reference<ignite::binary::BinaryIdentityResolver>(*)());
+            IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetHashCode, int32_t(ignite::binary::BinaryType<T>::*)(const T&));
+            IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetIdentityResolver,
+                ignite::Reference<ignite::binary::BinaryIdentityResolver>(ignite::binary::BinaryType<T>::*)());
 
             /**
              * This type is used to get hash code for binary types which have not
@@ -67,7 +68,7 @@ namespace ignite
             template<typename T>
             struct HashCodeGetterDefault
             {
-                static int32_t get(const T&, const ignite::binary::BinaryObject& obj)
+                static int32_t Get(const T&, const ignite::binary::BinaryObject& obj)
                 {
                     ignite::binary::BinaryArrayIdentityResolver arrayResolver;
 
@@ -82,11 +83,11 @@ namespace ignite
             template<typename T>
             struct HashCodeGetterHashCode
             {
-                static int32_t get(const T& obj, const ignite::binary::BinaryObject&)
+                static int32_t Get(const T& obj, const ignite::binary::BinaryObject&)
                 {
                     ignite::binary::BinaryType<T> bt;
 
-                    return bt.GetHashCode();
+                    return bt.GetHashCode(obj);
                 }
             };
 
@@ -97,7 +98,7 @@ namespace ignite
             template<typename T>
             struct HashCodeGetterResolver
             {
-                static int32_t get(const T&, const ignite::binary::BinaryObject& obj)
+                static int32_t Get(const T&, const ignite::binary::BinaryObject& obj)
                 {
                     ignite::binary::BinaryType<T> bt;
                     ignite::Reference<ignite::binary::BinaryIdentityResolver> resolver = bt.GetIdentityResolver();
@@ -139,7 +140,7 @@ namespace ignite
                     >::type
                 >::type HashCodeGetter;
 
-                return HashCodeGetter::get(obj, binObj);
+                return HashCodeGetter::Get(obj, binObj);
             }
         }
     }

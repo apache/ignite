@@ -127,10 +127,159 @@ struct CompositeKeySimple
     int64_t i64;
 };
 
+struct TestUserClassBase
+{
+    int32_t field;
+};
+
+struct DefaultHashing : TestUserClassBase {};
+struct GetHashDefined : TestUserClassBase {};
+struct ResolverDefined : TestUserClassBase {};
+struct BothDefined : TestUserClassBase {};
+
+struct CustomIdResolver : binary::BinaryIdentityResolver
+{
+    int32_t GetHashCode(const BinaryObject& obj)
+    {
+        int32_t field;
+        try
+        {
+            ResolverDefined res = obj.Deserialize<ResolverDefined>();
+
+            field =  res.field;
+        }
+        catch (const IgniteError&)
+        {
+            BothDefined res = obj.Deserialize<BothDefined>();
+
+            field = res.field;
+        }
+
+        return field * 42;
+    }
+};
+
 namespace ignite
 {
     namespace binary
     {
+        template<>
+        struct BinaryType<DefaultHashing>
+        {
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(DefaultHashing)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(DefaultHashing)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(DefaultHashing)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(DefaultHashing)
+
+            void Write(BinaryWriter& writer, const DefaultHashing& obj)
+            {
+                writer.WriteInt32("field", obj.field);
+            }
+
+            DefaultHashing Read(BinaryReader& reader)
+            {
+                DefaultHashing val;
+
+                val.field = reader.ReadInt32("field");
+
+                return val;
+            }
+        };
+
+        template<>
+        struct BinaryType<GetHashDefined>
+        {
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(GetHashDefined)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(GetHashDefined)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(GetHashDefined)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(GetHashDefined)
+
+            int32_t GetHashCode(const GetHashDefined& obj)
+            {
+                return obj.field * 10;
+            }
+
+            void Write(BinaryWriter& writer, const GetHashDefined& obj)
+            {
+                writer.WriteInt32("field", obj.field);
+            }
+
+            GetHashDefined Read(BinaryReader& reader)
+            {
+                GetHashDefined val;
+
+                val.field = reader.ReadInt32("field");
+
+                return val;
+            }
+        };
+
+        template<>
+        struct BinaryType<ResolverDefined>
+        {
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(ResolverDefined)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(ResolverDefined)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(ResolverDefined)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ResolverDefined)
+
+            ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
+            {
+                return ignite::MakeReferenceFromCopy(CustomIdResolver());
+            }
+
+            void Write(BinaryWriter& writer, const ResolverDefined& obj)
+            {
+                writer.WriteInt32("field", obj.field);
+            }
+
+            ResolverDefined Read(BinaryReader& reader)
+            {
+                ResolverDefined val;
+
+                val.field = reader.ReadInt32("field");
+
+                return val;
+            }
+        };
+
+        template<>
+        struct BinaryType<BothDefined>
+        {
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(BothDefined)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(BothDefined)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(BothDefined)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(BothDefined)
+
+            int32_t GetHashCode(const GetHashDefined& obj)
+            {
+                return obj.field * 10;
+            }
+
+            ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
+            {
+                return ignite::MakeReferenceFromCopy(CustomIdResolver());
+            }
+
+            void Write(BinaryWriter& writer, const BothDefined& obj)
+            {
+                writer.WriteInt32("field", obj.field);
+            }
+
+            BothDefined Read(BinaryReader& reader)
+            {
+                BothDefined val;
+
+                val.field = reader.ReadInt32("field");
+
+                return val;
+            }
+        };
+
+
         /**
          * Binary type definition for CompositeKey.
          */
@@ -203,8 +352,7 @@ struct BinaryIdentityResolverTestSuiteFixture
     /**
      * Constructor.
      */
-    BinaryIdentityResolverTestSuiteFixture() :
-        grid(ignite_test::StartNode("cache-identity.xml"))
+    BinaryIdentityResolverTestSuiteFixture()
     {
         // No-op.
     }
@@ -216,9 +364,6 @@ struct BinaryIdentityResolverTestSuiteFixture
     {
         Ignition::StopAll(true);
     }
-
-    /** Node started during the test. */
-    Ignite grid;
 };
 
 template<typename T>
@@ -246,9 +391,21 @@ int32_t CalculateHashCode(const T& value)
     return resolver.GetHashCode(obj);
 }
 
+template<typename T>
+int32_t RetrieveHashCode(const T& value)
+{
+    InteropUnpooledMemory mem(1024);
+
+    FillMem<T>(mem, value);
+
+    BinaryObjectImpl obj(mem, 0);
+
+    return obj.GetHashCode();
+}
+
 BOOST_FIXTURE_TEST_SUITE(BinaryIdentityResolverTestSuite, BinaryIdentityResolverTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestGetDataHashCode)
+BOOST_AUTO_TEST_CASE(GetDataHashCode)
 {
     int8_t data1[] = { 0 };
     int8_t data2[] = { 0, 0, 0, 0 };
@@ -271,7 +428,7 @@ BOOST_AUTO_TEST_CASE(TestGetDataHashCode)
     BOOST_CHECK_EQUAL(binary::GetDataHashCode(data9, sizeof(data9)), 0x000D9F41);
 }
 
-BOOST_AUTO_TEST_CASE(TestArrayIdentityResolver)
+BOOST_AUTO_TEST_CASE(ArrayIdentityResolver)
 {
     using namespace binary;
 
@@ -284,8 +441,10 @@ BOOST_AUTO_TEST_CASE(TestArrayIdentityResolver)
     BOOST_CHECK_EQUAL(CalculateHashCode<BinaryArrayIdentityResolver>(key2), 0x53207175);
 }
 
-BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithGuid)
+BOOST_AUTO_TEST_CASE(IdentityEquilityWithGuid)
 {
+    Ignite grid = ignite_test::StartNode("cache-identity.xml");
+
     CompositeKey key("Key String", Timestamp(123851, 562304134), Guid(0x4A950C6206FE4502, 0xAC06145097E56F02));
     int32_t value = 12321;
 
@@ -305,8 +464,10 @@ BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithGuid)
     BOOST_CHECK_EQUAL(value, realValue);
 }
 
-BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithoutGuid)
+BOOST_AUTO_TEST_CASE(IdentityEquilityWithoutGuid)
 {
+    Ignite grid = ignite_test::StartNode("cache-identity.xml");
+
     CompositeKeySimple key("Lorem ipsum", Timestamp(112460, 163002155), 1337);
     int32_t value = 42;
 
@@ -324,6 +485,38 @@ BOOST_AUTO_TEST_CASE(TestIdentityEquilityWithoutGuid)
     int32_t realValue = cache.Get(key);
 
     BOOST_CHECK_EQUAL(value, realValue);
+}
+
+BOOST_AUTO_TEST_CASE(TestDefaultHashing)
+{
+    DefaultHashing val;
+    val.field = 1337;
+
+    BOOST_CHECK_EQUAL(RetrieveHashCode(val), 0x01F91B0E);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetHashDefined)
+{
+    GetHashDefined val;
+    val.field = 1337;
+
+    BOOST_CHECK_EQUAL(RetrieveHashCode(val), val.field * 10);
+}
+
+BOOST_AUTO_TEST_CASE(TestResolverDefined)
+{
+    ResolverDefined val;
+    val.field = 1337;
+
+    BOOST_CHECK_EQUAL(RetrieveHashCode(val), val.field * 42);
+}
+
+BOOST_AUTO_TEST_CASE(TestBothDefined)
+{
+    BothDefined val;
+    val.field = 1337;
+
+    BOOST_CHECK_EQUAL(RetrieveHashCode(val), val.field * 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
