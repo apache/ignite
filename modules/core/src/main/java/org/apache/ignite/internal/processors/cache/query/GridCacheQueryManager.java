@@ -3576,7 +3576,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
                 }
                 catch (RuntimeException ex) {
-                    throw S.INCLUDE_SENSITIVE ? new IgniteException("Failed to get a value with key: " + key, ex) : ex;
+                    throw S.INCLUDE_SENSITIVE ? new IgniteException("Failed to peek a value with key: " + key, ex) : ex;
                 }
             }
 

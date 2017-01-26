@@ -4878,10 +4878,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         KeyCacheObject key = entry.key();
 
-        Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true);
-        Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true);
+        try {
+            Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true);
+            Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true);
 
-        return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
+            return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
+        }
+        catch (RuntimeException ex) {
+            throw S.INCLUDE_SENSITIVE ? new IgniteException("Failed to peak a value with key: " + key, ex) : ex;
+        }
     }
 
     /**
