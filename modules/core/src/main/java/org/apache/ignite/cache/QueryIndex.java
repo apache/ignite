@@ -41,13 +41,6 @@ public class QueryIndex implements Serializable {
     private QueryIndexType type;
 
     /**
-     * Creates an empty index. Should be populated via setters.
-     */
-    public QueryIndex() {
-        // Empty constructor.
-    }
-
-    /**
      * Creates single-field sorted ascending index.
      *
      * @param field Field name.

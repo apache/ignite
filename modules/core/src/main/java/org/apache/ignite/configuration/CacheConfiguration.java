@@ -2221,12 +2221,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (idx.type() == FULLTEXT) {
                 assert txtIdx == null;
 
-                txtIdx = new QueryIndex();
-
-                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+                txtIdx = new QueryIndex(idxEntry.getKey(), QueryIndexType.FULLTEXT);
 
                 txtIdx.setFieldNames(idx.fields(), true);
-                txtIdx.setName(idxEntry.getKey());
             }
             else {
                 Collection<String> grp = new ArrayList<>();
@@ -2234,7 +2231,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 for (String fieldName : idx.fields())
                     grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                QueryIndex sortedIdx = new QueryIndex();
+                QueryIndex sortedIdx = new QueryIndex(idxEntry.getKey());
 
                 sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
 
@@ -2245,19 +2242,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 sortedIdx.setFields(fields);
 
-                sortedIdx.setName(idxEntry.getKey());
-
                 idxs.add(sortedIdx);
             }
         }
 
         if (desc.valueTextIndex()) {
             if (txtIdx == null) {
-                txtIdx = new QueryIndex();
+                LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>(1);
 
-                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+                fields.put(_VAL, true);
 
-                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
+                txtIdx = new QueryIndex(fields, QueryIndexType.FULLTEXT);
             }
             else
                 txtIdx.getFields().put(_VAL, true);

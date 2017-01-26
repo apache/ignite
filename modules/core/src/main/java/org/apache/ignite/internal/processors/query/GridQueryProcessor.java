@@ -1616,9 +1616,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.addFieldToIndex(idxName, field, i++, !asc);
                     }
                 }
-                else {
-                    assert idx.getIndexType() == QueryIndexType.FULLTEXT;
-
+                else if(idx.getIndexType() == QueryIndexType.FULLTEXT){
                     for (String field : idx.getFields().keySet()) {
                         String alias = aliases.get(field);
 
@@ -1628,6 +1626,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.addFieldToTextIndex(field);
                     }
                 }
+                else
+                    throw new IllegalArgumentException("Index type is not set for index: " + idx.getName());
             }
         }
     }
