@@ -105,7 +105,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 public class GridReduceQueryExecutor {
     /** Thread pool to process query messages. */
-    public static final byte QUERY_POOL = GridIoPolicy.SYSTEM_POOL;
+    public static final byte QUERY_POOL = GridIoPolicy.SQL_QUERY_POOL;
 
     /** */
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");

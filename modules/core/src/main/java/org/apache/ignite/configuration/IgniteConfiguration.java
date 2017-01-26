@@ -169,6 +169,9 @@ public class IgniteConfiguration {
     @Deprecated
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
+    /** Default size of SQL query thread pool. */
+    public static final int DFLT_SQL_QUERY_THREAD_POOL_SIZE = DFLT_SYSTEM_CORE_THREAD_CNT;
+
     /** Default keep alive time for system thread pool. */
     @Deprecated
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
@@ -267,7 +270,7 @@ public class IgniteConfiguration {
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
     /** SQL query pool size. */
-    private int sqlQryPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
+    private int sqlQryPoolSize = DFLT_SQL_QUERY_THREAD_POOL_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -875,7 +878,7 @@ public class IgniteConfiguration {
     /**
      * Size of thread pool that is in charge of processing SQL query messages.
      * <p>
-     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
+     * If not provided, executor service will have size {@link #DFLT_SQL_QUERY_THREAD_POOL_SIZE}.
      *
      * @return Thread pool size to be used in grid for SQL query messages.
      */
