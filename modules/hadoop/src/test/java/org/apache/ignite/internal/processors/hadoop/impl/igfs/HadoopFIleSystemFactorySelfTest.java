@@ -125,7 +125,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         assert secondary.exists(IGFS_PATH_DUAL);
 
         // Create remote instance.
-        FileSystem fs = FileSystem.get(URI.create("igfs://primary:primary@127.0.0.1:10500/"), baseConfiguration());
+        FileSystem fs = FileSystem.get(URI.create("igfs://primary@127.0.0.1:10500/"), baseConfiguration());
 
         // Ensure lifecycle callback was invoked.
         assert START_CNT.get() == 2;
@@ -181,14 +181,14 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         // Prepare configuration.
         Configuration conf = baseConfiguration();
 
-        conf.set("fs.defaultFS", "igfs://secondary:secondary@127.0.0.1:11500/");
+        conf.set("fs.defaultFS", "igfs://secondary@127.0.0.1:11500/");
 
         writeConfigurationToFile(conf);
 
         // Get file system instance to be used.
         CachingHadoopFileSystemFactory delegate = new CachingHadoopFileSystemFactory();
 
-        delegate.setUri("igfs://secondary:secondary@127.0.0.1:11500/");
+        delegate.setUri("igfs://secondary@127.0.0.1:11500/");
         delegate.setConfigPaths(SECONDARY_CFG_PATH);
 
         // Configure factory.

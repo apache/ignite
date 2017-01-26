@@ -30,6 +30,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 import org.apache.hadoop.mapreduce.split.SplitMetaInfoReader;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
@@ -37,8 +38,8 @@ import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopExternalSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
@@ -85,7 +86,7 @@ import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSys
 /**
  * Hadoop job implementation for v2 API.
  */
-public class HadoopV2Job implements HadoopJob {
+public class HadoopV2Job extends HadoopJobEx {
     /** */
     private final JobConf jobConf;
 
@@ -139,6 +140,7 @@ public class HadoopV2Job implements HadoopJob {
      * @param jobInfo Job info.
      * @param log Logger.
      * @param libNames Optional additional native library names.
+     * @param helper Hadoop helper.
      */
     public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log,
         @Nullable String[] libNames, HadoopHelper helper) {
@@ -182,7 +184,7 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
+    @Override public Collection<HadoopInputSplit> input() {
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(jobConf.getClassLoader());
 
         try {
@@ -239,6 +241,9 @@ public class HadoopV2Job implements HadoopJob {
                     throw transformException(e);
             }
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
@@ -274,7 +279,7 @@ public class HadoopV2Job implements HadoopJob {
                 fullCtxClsQueue.add(cls);
             }
 
-            Constructor<?> ctr = cls.getConstructor(HadoopTaskInfo.class, HadoopJob.class,
+            Constructor<?> ctr = cls.getConstructor(HadoopTaskInfo.class, HadoopJobEx.class,
                 HadoopJobId.class, UUID.class, DataInput.class);
 
             if (jobConfData == null)

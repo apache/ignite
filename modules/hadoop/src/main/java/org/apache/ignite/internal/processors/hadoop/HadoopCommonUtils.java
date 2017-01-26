@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
