@@ -37,8 +37,16 @@ namespace ignite
         /**
          * %Cache entry processor class template.
          *
+         * Any cache processor should inherit from this class.
+         *
          * All templated types should be default-constructable,
          * copy-constructable and assignable.
+         *
+         * @tparam P The processor itself which inherits from CacheEntryProcessor.
+         * @tparam K Key type.
+         * @tparam V Value type.
+         * @tparam R Process method return type.
+         * @tparam A Process method argument type.
          */
         template<typename P, typename K, typename V, typename R, typename A>
         class CacheEntryProcessor

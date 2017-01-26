@@ -376,31 +376,6 @@ namespace ignite
     }
 }
 
-/*
- * Specializing Binding IDs for the classes. It's needed for all the remotely
- * callable classes.
- */
-namespace ignite
-{
-    template<>
-    int64_t GetBindingId<CacheEntryModifier>()
-    {
-        return 100500;
-    }
-
-    template<>
-    int64_t GetBindingId<Divisor>()
-    {
-        return 42;
-    }
-
-    template<>
-    int64_t GetBindingId<CharRemover>()
-    {
-        return 1337;
-    }
-}
-
 IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
 {
     IgniteBinding binding = context.GetBingding();
