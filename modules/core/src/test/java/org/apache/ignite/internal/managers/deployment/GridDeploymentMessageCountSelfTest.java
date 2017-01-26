@@ -134,8 +134,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheValueDeploymentOnPut() throws Exception {
-        //TODO GG-11141
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
 
         ClassLoader ldr = getExternalClassLoader();
 
