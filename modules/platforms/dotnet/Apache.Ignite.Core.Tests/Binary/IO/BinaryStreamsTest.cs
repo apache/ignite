@@ -94,6 +94,12 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
 
             stream.Write(bytes, 2);
             Assert.AreEqual(2, stream.Position);
+
+            var proc = new SumStreamProcessor();
+            Assert.AreEqual(0, stream.Apply(proc, 0));
+            Assert.AreEqual(1, stream.Apply(proc, 1));
+            Assert.AreEqual(3, stream.Apply(proc, 2));
+
             flush();
 
             seek();
@@ -146,6 +152,19 @@ namespace Apache.Ignite.Core.Tests.Binary.IO
 
             check(() => stream.WriteShort(4), () => stream.ReadShort(), (short)4);
             check(() => stream.WriteShortArray(new short[] {4}), () => stream.ReadShortArray(1), new short[] {4});
+        }
+
+        private class SumStreamProcessor : IBinaryStreamProcessor<int, int>
+        {
+            public unsafe int Invoke(byte* data, int arg)
+            {
+                int res = 0;
+
+                for (var i = 0; i < arg; i++)
+                    res += *(data + i);
+
+                return res;
+            }
         }
     }
 }

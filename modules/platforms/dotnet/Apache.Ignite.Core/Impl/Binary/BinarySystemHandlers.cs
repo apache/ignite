@@ -527,15 +527,19 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteGuidArray((Guid?[])obj, ctx.Stream);
         }
-        
-        /**
-         * <summary>Write enum array.</summary>
-         */
+
+        /// <summary>
+        /// Writes the enum array.
+        /// </summary>
         private static void WriteEnumArray(BinaryWriter ctx, object obj)
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayEnum);
 
-            BinaryUtils.WriteArray((Array)obj, ctx);
+            var desc = ctx.Marshaller.GetDescriptor(obj.GetType());
+
+            int typeId = desc == null ? BinaryUtils.ObjTypeId : desc.TypeId;
+
+            BinaryUtils.WriteArray((Array)obj, ctx, typeId);
         }
 
         /**
@@ -614,7 +618,9 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         private static object ReadEnumArray(BinaryReader ctx, Type type)
         {
-            return BinaryUtils.ReadTypedArray(ctx, true, type.GetElementType());
+            var elemType = type.GetElementType() ?? typeof(object);
+
+            return BinaryUtils.ReadTypedArray(ctx, true, elemType);
         }
 
         /**
@@ -622,7 +628,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         private static object ReadArray(BinaryReader ctx, Type type)
         {
-            var elemType = type.IsArray ? type.GetElementType() : typeof(object);
+            var elemType = type.GetElementType() ?? typeof(object);
 
             return BinaryUtils.ReadTypedArray(ctx, true, elemType);
         }

@@ -15,26 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+namespace Apache.Ignite.Core.Tests.Cache.Store
+{
+    using NUnit.Framework;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
-
-/**
- * Map-reduce execution planner.
- */
-public interface HadoopMapReducePlanner {
-    /**
-     * Prepares map-reduce execution plan for the given job and topology.
-     *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
-     */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    /// <summary>
+    /// Cache store test with named node.
+    /// </summary>
+    [TestFixture]
+    public class NamedNodeCacheStoreTest : CacheStoreTest
+    {
+        /** <inheritDoc /> */
+        protected override string GridName
+        {
+            get { return "name"; }
+        }
+    }
 }
