@@ -113,14 +113,27 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param cfg Configuration.
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
+     * @throws Exception On error.
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid)
+        throws Exception {
+        this(cfg, log, locJvmGrid, true);
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local JVM grid.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @throws Exception On error.
+     */
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id));
+        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
 
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
@@ -138,7 +151,8 @@ public class IgniteProcessProxy implements IgniteEx {
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
-        locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
+        if (locJvmGrid != null)
+            locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),
@@ -156,7 +170,8 @@ public class IgniteProcessProxy implements IgniteEx {
             System.getProperty("surefire.test.class.path")
         );
 
-        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
+        if (locJvmGrid != null)
+            assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
 
         IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getGridName(), this);
 
@@ -611,27 +626,29 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
+        if (locJvmGrid != null) {
+            final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
 
-        locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
-            @Override public boolean applyx(Event e) {
-                if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
-                    rmtNodeStoppedLatch.countDown();
+            locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+                @Override public boolean applyx(Event e) {
+                    if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
+                        rmtNodeStoppedLatch.countDown();
 
-                    return false;
+                        return false;
+                    }
+
+                    return true;
                 }
+            }, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
 
-                return true;
+            compute().run(new StopGridTask(localJvmGrid().name(), true));
+
+            try {
+                assert U.await(rmtNodeStoppedLatch, 15, TimeUnit.SECONDS) : "NodeId=" + id;
             }
-        }, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
-
-        compute().run(new StopGridTask(localJvmGrid().name(), true));
-
-        try {
-            assert U.await(rmtNodeStoppedLatch, 15, TimeUnit.SECONDS) : "NodeId=" + id;
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteException(e);
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         try {
@@ -658,6 +675,9 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return {@link IgniteCompute} instance to communicate with remote node.
      */
     public IgniteCompute remoteCompute() {
+        if (locJvmGrid == null)
+            return null;
+
         ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
         if (grp.nodes().isEmpty())

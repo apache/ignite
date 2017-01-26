@@ -167,7 +167,7 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
 
         startGrid(ALIVE_NODE_IDX);
 
-        awaitPartitionMapExchange();
+        Thread.sleep(500);
     }
 
     /**

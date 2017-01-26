@@ -48,7 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HadoopIgfsInProc implements HadoopIgfsEx {
     /** Target IGFS. */
-    private final IgfsEx igfs;
+    protected final IgfsEx igfs;
 
     /** Buffer size. */
     private final int bufSize;
@@ -68,6 +68,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
      *
      * @param igfs Target IGFS.
      * @param log Log.
+     * @param userName User name.
+     * @throws IgniteCheckedException On error.
      */
     public HadoopIgfsInProc(IgfsEx igfs, Log log, String userName) throws IgniteCheckedException {
         this.user = IgfsUtils.fixUserName(userName);
@@ -123,7 +125,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFile update(final IgfsPath path, final Map<String, String> props) throws IgniteCheckedException {
+    @Override public IgfsFile update(final IgfsPath path, final Map<String, String> props) throws
+        IgniteCheckedException {
         try {
             return IgfsUserContext.doAs(user, new IgniteOutClosure<IgfsFile>() {
                 @Override public IgfsFile apply() {
@@ -140,7 +143,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean setTimes(final IgfsPath path, final long accessTime, final long modificationTime) throws IgniteCheckedException {
+    @Override public Boolean setTimes(final IgfsPath path, final long accessTime, final long modificationTime)
+        throws IgniteCheckedException {
         try {
             IgfsUserContext.doAs(user, new IgniteOutClosure<Void>() {
                 @Override public Void apply() {
@@ -255,7 +259,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean mkdirs(final IgfsPath path, final Map<String, String> props) throws IgniteCheckedException {
+    @Override public Boolean mkdirs(final IgfsPath path, final Map<String, String> props)
+        throws IgniteCheckedException {
         try {
             IgfsUserContext.doAs(user, new IgniteOutClosure<Void>() {
                 @Override public Void apply() {
@@ -352,8 +357,9 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopIgfsStreamDelegate create(final IgfsPath path, final boolean overwrite, final boolean colocate,
-        final int replication, final long blockSize, final @Nullable Map<String, String> props) throws IgniteCheckedException {
+    @Override public HadoopIgfsStreamDelegate create(final IgfsPath path, final boolean overwrite,
+        final boolean colocate, final int replication, final long blockSize, final @Nullable Map<String, String> props)
+        throws IgniteCheckedException {
         try {
             return IgfsUserContext.doAs(user, new IgniteOutClosure<HadoopIgfsStreamDelegate>() {
                 @Override public HadoopIgfsStreamDelegate apply() {

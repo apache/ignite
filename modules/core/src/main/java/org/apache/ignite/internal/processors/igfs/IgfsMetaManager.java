@@ -2798,7 +2798,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public void updateTimes(IgfsPath path, long accessTime, long modificationTime,
-        IgfsSecondaryFileSystemV2 secondaryFs) throws IgniteCheckedException {
+        IgfsSecondaryFileSystem secondaryFs) throws IgniteCheckedException {
         while (true) {
             if (busyLock.enterBusy()) {
                 try {

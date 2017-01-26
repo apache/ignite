@@ -122,7 +122,7 @@
 
                             <property name="fileSystemFactory">
                                 <bean class="org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory">
-                                    <property name="uri" value="igfs://igfs_secondary:grid_secondary@127.0.0.1:11500/"/>
+                                    <property name="uri" value="igfs://igfs_secondary@127.0.0.1:11500/"/>
                                     <property name="configPaths" value="/work/core-site-test.xml"/>
                                 </bean>
                             </property>
