@@ -143,7 +143,8 @@ namespace ignite
             return 0;
         }
 
-        IgniteEnvironment::IgniteEnvironment() :
+        IgniteEnvironment::IgniteEnvironment(const IgniteConfiguration& cfg) :
+            cfg(new IgniteConfiguration(cfg)),
             ctx(SharedPointer<JniContext>()),
             latch(),
             name(0),
@@ -163,6 +164,12 @@ namespace ignite
 
             delete metaUpdater;
             delete metaMgr;
+            delete cfg;
+        }
+
+        const IgniteConfiguration& IgniteEnvironment::GetConfiguration() const
+        {
+            return *cfg;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -261,7 +268,7 @@ namespace ignite
 
         IgniteBindingContext IgniteEnvironment::GetBindingContext() const
         {
-            return IgniteBindingContext(GetBinding());
+            return IgniteBindingContext(*cfg, GetBinding());
         }
 
         void* IgniteEnvironment::Acquire(void *obj)

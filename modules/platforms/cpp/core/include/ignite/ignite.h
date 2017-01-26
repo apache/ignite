@@ -60,6 +60,15 @@ namespace ignite
         const char* GetName() const;
 
         /**
+         * Get node configuration.
+         *
+         * This method should only be used on the valid instance.
+         *
+         * @return Node configuration.
+         */
+        const IgniteConfiguration& GetConfiguration() const;
+
+        /**
          * Get cache.
          *
          * This method should only be used on the valid instance.

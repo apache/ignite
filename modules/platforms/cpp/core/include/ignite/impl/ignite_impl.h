@@ -56,9 +56,16 @@ namespace ignite
             /**
              * Get name of the Ignite.
              *
-             * @param Name.
+             * @return Name.
              */
             const char* GetName() const;
+
+            /**
+             * Get node configuration.
+             *
+             * @return Node configuration.
+             */
+            const IgniteConfiguration& GetConfiguration() const;
 
             /**
              * Get JNI context associated with this instance.

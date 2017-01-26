@@ -202,11 +202,11 @@ namespace ignite
     {
         CsLockGuard guard(factoryLock);
 
+        std::string jvmLib = FindJvmLibrary(cfg.jvmLibPath);
+
         // 1. Load JVM library if needed.
         if (!JVM_LIB_LOADED)
         {
-            std::string jvmLib = FindJvmLibrary(cfg.jvmLibPath);
-
             if (jvmLib.empty())
             {
                 *err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_NOT_FOUND,
@@ -245,10 +245,25 @@ namespace ignite
             return Ignite();
         }
 
-        // 4. Start JVM if needed.
+        // 4. Resolving spring config path
+        std::string springCfgPath0;
+
+        if (!cfg.springCfgPath.empty())
+            springCfgPath0 = cfg.springCfgPath;
+        else
+            springCfgPath0 = DFLT_CFG;
+
+        // 5. Start JVM if needed.
+        IgniteConfiguration cfg0(cfg);
+
+        cfg0.jvmLibPath = jvmLib;
+        cfg0.igniteHome = home;
+        cfg0.jvmClassPath = cp;
+        cfg0.springCfgPath = springCfgPath0;
+
         JniErrorInfo jniErr;
 
-        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment);
+        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment(cfg0));
 
         JvmOptions opts;
         opts.FromConfiguration(cfg, home, cp);
@@ -267,13 +282,7 @@ namespace ignite
 
         env.Get()->SetContext(ctx);
 
-        // 5. Start Ignite.
-        std::string springCfgPath0;
-
-        if (!cfg.springCfgPath.empty())
-            springCfgPath0 = cfg.springCfgPath;
-        else
-            springCfgPath0 = DFLT_CFG;
+        // 6. Start Ignite.
 
         // Workaround for nullable strings as we can't use unique_ptr nor
         // can we construct std::string from the null-pointer.
@@ -305,7 +314,7 @@ namespace ignite
             return Ignite();
         }
 
-        // 6. Ignite is started at this point.
+        // 7. Ignite is started at this point.
         env.Get()->Initialize();
 
         started = true;

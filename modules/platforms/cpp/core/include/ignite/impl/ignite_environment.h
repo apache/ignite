@@ -22,6 +22,7 @@
 #include <ignite/jni/java.h>
 #include <ignite/jni/utils.h>
 #include <ignite/ignite_binding_context.h>
+#include <ignite/ignite_configuration.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
@@ -55,14 +56,23 @@ namespace ignite
             enum { DEFAULT_SLOW_PATH_CONTAINERS_CAP = 16 };
 
             /**
-             * Default constructor.
+             * Constructor.
+             *
+             * @param cfg Node configuration.
              */
-            IgniteEnvironment();
+            IgniteEnvironment(const IgniteConfiguration& cfg);
 
             /**
              * Destructor.
              */
             ~IgniteEnvironment();
+
+            /**
+             * Get node configuration.
+             *
+             * @return Node configuration.
+             */
+            const IgniteConfiguration& GetConfiguration() const;
 
             /**
              * Populate callback handlers.
@@ -198,6 +208,9 @@ namespace ignite
             void* Acquire(void* obj);
 
         private:
+            /** Node configuration. */
+            IgniteConfiguration* cfg;
+
             /** Context to access Java. */
             common::concurrent::SharedPointer<jni::java::JniContext> ctx;
 

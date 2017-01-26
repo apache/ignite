@@ -24,6 +24,7 @@
 #define _IGNITE_IGNITE_BINDING_CONTEXT
 
 #include <ignite/ignite_binding.h>
+#include <ignite/ignite_configuration.h>
 
 namespace ignite
 {
@@ -52,15 +53,32 @@ namespace ignite
             return binding;
         }
 
+        /**
+         * Get configuration for current node.
+         *
+         * @return Configuration.
+         */
+        const IgniteConfiguration& GetConfiguration() const
+        {
+            return cfg;
+        }
+
     private:
         /**
          * Constructor.
+         *
+         * @param cfg Configuration.
+         * @param binding Binding.
          */
-        IgniteBindingContext(IgniteBinding binding) :
+        IgniteBindingContext(const IgniteConfiguration& cfg, IgniteBinding binding) :
+            cfg(cfg),
             binding(binding)
         {
             // No-op.
         }
+
+        /** Configuration */
+        const IgniteConfiguration& cfg;
 
         /** Binding. */
         IgniteBinding binding;
