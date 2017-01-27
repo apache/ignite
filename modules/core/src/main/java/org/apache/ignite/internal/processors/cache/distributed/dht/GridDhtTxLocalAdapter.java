@@ -148,7 +148,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             storeEnabled,
             onePhaseCommit,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 
@@ -533,6 +533,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param entries Entries to lock.
      * @param msgId Message ID.
      * @param read Read flag.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param needRetVal Return value flag.
      * @param skipStore Skip store flag.
@@ -545,6 +546,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long msgId,
         final boolean read,
         final boolean needRetVal,
+        long createTtl,
         long accessTtl,
         boolean skipStore,
         boolean keepBinary
@@ -651,6 +653,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 passedKeys,
                 read,
                 needRetVal,
+                createTtl,
                 accessTtl,
                 null,
                 skipStore,
@@ -669,6 +672,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param passedKeys Passed keys.
      * @param read {@code True} if read.
      * @param needRetVal Return value flag.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter Entry write filter.
      * @param skipStore Skip store flag.
@@ -680,6 +684,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final Collection<KeyCacheObject> passedKeys,
         final boolean read,
         final boolean needRetVal,
+        final long createTtl,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -705,6 +710,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             read,
             needRetVal,
             isolation,
+            createTtl,
             accessTtl,
             CU.empty0(),
             skipStore,
