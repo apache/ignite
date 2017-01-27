@@ -24,7 +24,10 @@ import java.util.Iterator;
 import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -54,6 +57,11 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setCopyOnRead(true);
         cfg.setCacheConfiguration(ccfg);
+
+        BinaryConfiguration bcfg = new BinaryConfiguration();
+        BinaryNameMapper bnm = new BinaryBasicNameMapper(false);
+        bcfg.setNameMapper(bnm);
+        cfg.setBinaryConfiguration(bcfg);
 
         return cfg;
     }
