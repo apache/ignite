@@ -17,11 +17,64 @@
 
 #include <time.h>
 
+#include "ignite/ignite_error.h"
+
 #include "ignite/impl/interop/interop.h"
 #include "ignite/impl/binary/binary_utils.h"
 
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
+
+namespace
+{
+    /**
+     * Check if there is enough data in memory.
+     * @throw IgniteError if there is not enough memory.
+     *
+     * @param mem Memory.
+     * @param pos Position.
+     * @param len Data to read.
+     */
+    inline void CheckEnoughData(InteropMemory& mem, int32_t pos, int32_t len)
+    {
+        if (mem.Length() < (pos + len))
+        {
+            IGNITE_ERROR_FORMATTED_4(ignite::IgniteError::IGNITE_ERR_MEMORY, "Not enough data in "
+                "the binary object", "memPtr", mem.PointerLong(), "len", mem.Length(), "pos", pos,
+                "requested", len);
+        }
+    }
+
+    /**
+     * Read primitive int type from the specific place in memory.
+     * @throw IgniteError if there is not enough memory.
+     *
+     * @param mem Memory.
+     * @param pos Position.
+     * @return Primitive.
+     */
+    template<typename T>
+    inline T ReadPrimitive(InteropMemory& mem, int32_t pos)
+    {
+        CheckEnoughData(mem, pos, sizeof(T));
+
+        return *reinterpret_cast<T*>(mem.Data() + pos);
+    }
+
+    /**
+     * Read primitive int type from the specific place in memory.
+     * @warning Does not check if there is enough data in memory to read.
+     *
+     * @param mem Memory.
+     * @param pos Position.
+     * @return Primitive.
+     */
+    template<typename T>
+    inline T UnsafeReadPrimitive(InteropMemory& mem, int32_t pos)
+    {
+        return *reinterpret_cast<T*>(mem.Data() + pos);
+    }
+}
 
 namespace ignite
 {
@@ -32,6 +85,16 @@ namespace ignite
             int8_t BinaryUtils::ReadInt8(InteropInputStream* stream)
             {
                 return stream->ReadInt8();
+            }
+
+            int8_t BinaryUtils::ReadInt8(InteropMemory& mem, int32_t pos)
+            {
+                return ReadPrimitive<int8_t>(mem, pos);
+            }
+
+            int8_t BinaryUtils::UnsafeReadInt8(interop::InteropMemory& mem, int32_t pos)
+            {
+                return UnsafeReadPrimitive<int8_t>(mem, pos);
             }
 
             void BinaryUtils::WriteInt8(InteropOutputStream* stream, int8_t val)
@@ -74,6 +137,16 @@ namespace ignite
                 return stream->ReadInt16();
             }
 
+            int16_t BinaryUtils::ReadInt16(interop::InteropMemory& mem, int32_t pos)
+            {
+                return ReadPrimitive<int16_t>(mem, pos);
+            }
+
+            int16_t BinaryUtils::UnsafeReadInt16(interop::InteropMemory& mem, int32_t pos)
+            {
+                return UnsafeReadPrimitive<int16_t>(mem, pos);
+            }
+
             void BinaryUtils::WriteInt16(InteropOutputStream* stream, int16_t val)
             {
                 stream->WriteInt16(val);
@@ -112,6 +185,16 @@ namespace ignite
             int32_t BinaryUtils::ReadInt32(InteropInputStream* stream)
             {
                 return stream->ReadInt32();
+            }
+
+            int32_t BinaryUtils::ReadInt32(interop::InteropMemory& mem, int32_t pos)
+            {
+                return ReadPrimitive<int32_t>(mem, pos);
+            }
+
+            int32_t BinaryUtils::UnsafeReadInt32(interop::InteropMemory& mem, int32_t pos)
+            {
+                return UnsafeReadPrimitive<int32_t>(mem, pos);
             }
 
             void BinaryUtils::WriteInt32(InteropOutputStream* stream, int32_t val)
