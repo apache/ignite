@@ -25,6 +25,7 @@
 #include <algorithm>
 
 #include <ignite/common/common.h>
+#include <ignite/common/platform_utils.h>
 
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
@@ -94,40 +95,6 @@ namespace ignite
         }
 
         /**
-         * Convert struct tm to time_t (UTC).
-         *
-         * @param time Standard C type struct tm value.
-         * @return Standard C type time_t value.
-         */
-        IGNITE_IMPORT_EXPORT time_t IgniteTimeGm(const tm& time);
-
-        /**
-         * Convert struct tm to time_t (Local time).
-         *
-         * @param time Standard C type struct tm value.
-         * @return Standard C type time_t value.
-         */
-        IGNITE_IMPORT_EXPORT time_t IgniteTimeLocal(const tm& time);
-
-        /**
-         * Convert time_t to struct tm (UTC).
-         *
-         * @param in Standard C type time_t value.
-         * @param out Standard C type struct tm value.
-         * @return True on success.
-         */
-        IGNITE_IMPORT_EXPORT bool IgniteGmTime(time_t in, tm& out);
-
-        /**
-         * Convert time_t to struct tm (Local time).
-         *
-         * @param in Standard C type time_t value.
-         * @param out Standard C type struct tm value.
-         * @return True on success.
-         */
-        IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
-
-        /**
          * Copy characters.
          *
          * @param val Value.
@@ -141,23 +108,6 @@ namespace ignite
          * @param val Value.
          */
         IGNITE_IMPORT_EXPORT void ReleaseChars(char* val);
-
-        /**
-         * Read system environment variable taking thread-safety in count.
-         *
-         * @param name Environment variable name.
-         * @param found Whether environment variable with such name was found.
-         * @return Environment variable value.
-         */
-        IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, bool& found);
-
-        /**
-         * Ensure that file on the given path exists in the system.
-         *
-         * @param path Path.
-         * @return True if file exists, false otherwise.
-         */
-        IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
 
         /**
          * Casts value of one type to another type, using stringstream.

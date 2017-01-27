@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#include <time.h>
-
-#include <windows.h>
-
 #include <ignite/common/utils.h>
 
 namespace ignite
@@ -60,30 +56,6 @@ namespace ignite
             str.assign(str, newBegin, (newEnd - newBegin) + 1);
         }
 
-        time_t IgniteTimeGm(const tm& time)
-        {
-            tm tmc = time;
-
-            return _mkgmtime(&tmc);
-        }
-
-        time_t IgniteTimeLocal(const tm& time)
-        {
-            tm tmc = time;
-
-            return mktime(&tmc);
-        }
-
-        bool IgniteGmTime(time_t in, tm& out)
-        {
-            return gmtime_s(&out, &in) == 0;
-        }
-
-        bool IgniteLocalTime(time_t in, tm& out)
-        {
-            return localtime_s(&out, &in) == 0;
-        }
-
         char* CopyChars(const char* val)
         {
             if (val) {
@@ -93,50 +65,13 @@ namespace ignite
                 *(dest + len) = 0;
                 return dest;
             }
-            else
-                return NULL;
+
+            return NULL;
         }
 
         void ReleaseChars(char* val)
         {
-            if (val)
-                delete[] val;
-        }
-
-        std::string GetEnv(const std::string& name, bool& found)
-        {
-            char res0[32767];
-
-            DWORD envRes = GetEnvironmentVariableA(name.c_str(), res0, 32767);
-
-            if (envRes != 0)
-            {
-                found = true;
-
-                return std::string(res0);
-            }
-            else
-            {
-                found = false;
-
-                return std::string();
-            }
-        }
-
-        bool FileExists(const std::string& path)
-        {
-            WIN32_FIND_DATAA findres;
-
-            HANDLE hnd = FindFirstFileA(path.c_str(), &findres);
-
-            if (hnd == INVALID_HANDLE_VALUE)
-                return false;
-            else
-            {
-                FindClose(hnd);
-
-                return true;
-            }
+            delete[] val;
         }
 
         uint32_t ToBigEndian(uint32_t value)
