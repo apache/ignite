@@ -22,13 +22,14 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
 
 /**
  * Basic implementation for vector.
- *
+ * <p>
  * This is a trivial implementation for vector assuming dense logic, local on-heap JVM storage
  * based on <code>double[]</code> array. It is only suitable for data sets where
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
@@ -36,307 +37,299 @@ import java.util.function.*;
  */
 public class DenseLocalOnHeapVector implements Vector, Externalizable {
     /** */
-    private double[] data;
+    private final double[] data;
 
     /** */
     private final int DFLT_SIZE = 100;
 
     /**
-     *
      * @param size Vector cardinality.
      */
-    private void init(int size) {
-        data = new double[size];
+    private double[] init(int size) {
+        return new double[size];
     }
 
     /**
-     *
      * @param arr
-     * @param shallowCopy
+     * @param shallowCp
      */
-    private void init(double[] arr, boolean shallowCopy) {
-        data = shallowCopy ? arr : arr.clone();
+    private double[] init(double[] arr, boolean shallowCp) {
+        return shallowCp ? arr : arr.clone();
     }
 
     /**
-     * 
      * @param args
      */
     public DenseLocalOnHeapVector(Map<String, Object> args) {
         if (args == null)
-            init(DFLT_SIZE);
+            data = init(DFLT_SIZE);
         else if (args.containsKey("size"))
-            init((int)args.get("size"));
+            data = init((int) args.get("size"));
         else if (args.containsKey("arr") && args.containsKey("shallowCopy"))
-            init((double[])args.get("arr"), (boolean)args.get("shallowCopy"));
+            data = init((double[]) args.get("arr"), (boolean) args.get("shallowCopy"));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
-    /**
-     *
-     */
+    /** */
     public DenseLocalOnHeapVector() {
-        init(DFLT_SIZE);
+        data = init(DFLT_SIZE);
     }
 
     /**
-     *
      * @param size Vector cardinality.
      */
     public DenseLocalOnHeapVector(int size) {
-        init(size);
+        data = init(size);
     }
 
     /**
-     *
      * @param arr
-     * @param shallowCopy
+     * @param shallowCp
      */
-    public DenseLocalOnHeapVector(double[] arr, boolean shallowCopy) {
-       init(arr, shallowCopy);
+    public DenseLocalOnHeapVector(double[] arr, boolean shallowCp) {
+        data = init(arr, shallowCp);
     }
 
     /**
-     *
      * @param arr
      */
     public DenseLocalOnHeapVector(double[] arr) {
         this(arr, false);
     }
 
-    @Override
-    public int size() {
-        return 0; // TODO
+    /** {@inheritDoc */
+    @Override public int size() {
+        return data == null ? 0 : data.length;
     }
 
-    @Override
-    public boolean isDense() {
+    /** {@inheritDoc */
+    @Override public boolean isDense() {
         return false; // TODO
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    /** {@inheritDoc */
+    @Override public boolean isSequentialAccess() {
         return false; // TODO
     }
 
-    @Override
-    public Vector clone() {
+    /** {@inheritDoc */
+    @Override public Vector clone() {
         return null; // TODO
     }
 
-    @Override
-    public Iterable<Element> all() {
+    /** {@inheritDoc */
+    @Override public Iterable<Element> all() {
         return null; // TODO
     }
 
-    @Override
-    public Iterable<Element> nonZeroes() {
+    /** {@inheritDoc */
+    @Override public Iterable<Element> nonZeroes() {
         return null; // TODO
     }
 
-    @Override
-    public Element getElement(int idx) {
+    /** {@inheritDoc */
+    @Override public Element getElement(int idx) {
         return null; // TODO
     }
 
-    @Override
-    public Vector assign(double val) {
+    /** {@inheritDoc */
+    @Override public Vector assign(double val) {
         return null; // TODO
     }
 
-    @Override
-    public Vector assign(double[] vals) {
+    /** {@inheritDoc */
+    @Override public Vector assign(double[] vals) {
         return null; // TODO
     }
 
-    @Override
-    public Vector assign(Vector vec) {
+    /** {@inheritDoc */
+    @Override public Vector assign(Vector vec) {
         return null; // TODO
     }
 
-    @Override
-    public Vector map(DoubleFunction<Double> fun) {
+    /** {@inheritDoc */
+    @Override public Vector map(DoubleFunction<Double> fun) {
         return null; // TODO
     }
 
-    @Override
-    public Vector map(Vector vec, DoubleFunction<Double> fun) {
+    /** {@inheritDoc */
+    @Override public Vector map(Vector vec, DoubleFunction<Double> fun) {
         return null; // TODO
     }
 
-    @Override
-    public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    /** {@inheritDoc */
+    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
         return null; // TODO
     }
 
-    @Override
-    public Vector divide(double x) {
+    /** {@inheritDoc */
+    @Override public Vector divide(double x) {
         return null; // TODO
     }
 
-    @Override
-    public double dot(Vector vec) {
+    /** {@inheritDoc */
+    @Override public double dot(Vector vec) {
         return 0; // TODO
     }
 
-    @Override
-    public double get(int idx) {
+    /** {@inheritDoc */
+    @Override public double get(int idx) {
         return 0; // TODO
     }
 
-    @Override
-    public double getX(int idx) {
+    /** {@inheritDoc */
+    @Override public double getX(int idx) {
         return 0; // TODO
     }
 
-    @Override
-    public Vector like(int crd) {
+    /** {@inheritDoc */
+    @Override public Vector like(int crd) {
         return null; // TODO
     }
 
-    @Override
-    public Vector minus(Vector vec) {
+    /** {@inheritDoc */
+    @Override public Vector minus(Vector vec) {
         return null; // TODO
     }
 
-    @Override
-    public Vector normalize() {
+    /** {@inheritDoc */
+    @Override public Vector normalize() {
         return null; // TODO
     }
 
-    @Override
-    public Vector normalize(double power) {
+    /** {@inheritDoc */
+    @Override public Vector normalize(double power) {
         return null; // TODO
     }
 
-    @Override
-    public Vector logNormalize() {
+    /** {@inheritDoc */
+    @Override public Vector logNormalize() {
         return null; // TODO
     }
 
-    @Override
-    public Vector logNormalize(double power) {
+    /** {@inheritDoc */
+    @Override public Vector logNormalize(double power) {
         return null; // TODO
     }
 
-    @Override
-    public double norm(double power) {
+    /** {@inheritDoc */
+    @Override public double norm(double power) {
         return 0; // TODO
     }
 
-    @Override
-    public Element minValue() {
+    /** {@inheritDoc */
+    @Override public Element minValue() {
         return null; // TODO
     }
 
-    @Override
-    public double maxValue() {
+    /** {@inheritDoc */
+    @Override public double maxValue() {
         return 0; // TODO
     }
 
-    @Override
-    public Vector plus(double x) {
+    /** {@inheritDoc */
+    @Override public Vector plus(double x) {
         return null; // TODO
     }
 
-    @Override
-    public Vector plus(Vector vec) {
+    /** {@inheritDoc */
+    @Override public Vector plus(Vector vec) {
         return null; // TODO
     }
 
-    @Override
-    public Vector set(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public Vector set(int idx, double val) {
         return null; // TODO
     }
 
-    @Override
-    public Vector setX(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public Vector setX(int idx, double val) {
         return null; // TODO
     }
 
-    @Override
-    public void incrementX(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public void incrementX(int idx, double val) {
         // TODO
     }
 
-    @Override
-    public int nonDefaultElements() {
+    /** {@inheritDoc */
+    @Override public int nonDefaultElements() {
         return 0; // TODO
     }
 
-    @Override
-    public int nonZeroElements() {
+    /** {@inheritDoc */
+    @Override public int nonZeroElements() {
         return 0; // TODO
     }
 
-    @Override
-    public Vector times(double x) {
+    /** {@inheritDoc */
+    @Override public Vector times(double x) {
         return null; // TODO
     }
 
-    @Override
-    public Vector times(Vector x) {
+    /** {@inheritDoc */
+    @Override public Vector times(Vector x) {
         return null; // TODO
     }
 
-    @Override
-    public Vector viewPart(int offset, int length) {
+    /** {@inheritDoc */
+    @Override public Vector viewPart(int offset, int length) {
         return null; // TODO
     }
 
-    @Override
-    public double sum() {
+    /** {@inheritDoc */
+    @Override public double sum() {
         return 0; // TODO
     }
 
-    @Override
-    public Matrix cross(Vector vec) {
+    /** {@inheritDoc */
+    @Override public Matrix cross(Vector vec) {
         return null; // TODO
     }
 
-    @Override
-    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun) {
+    /** {@inheritDoc */
+    @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun) {
         return null; // TODO
     }
 
-    @Override
-    public double getLengthSquared() {
+    /** {@inheritDoc */
+    @Override public double getLengthSquared() {
         return 0; // TODO
     }
 
-    @Override
-    public double getDistanceSquared(Vector vec) {
+    /** {@inheritDoc */
+    @Override public double getDistanceSquared(Vector vec) {
         return 0; // TODO
     }
 
-    @Override
-    public double getLookupCost() {
+    /** {@inheritDoc */
+    @Override public double getLookupCost() {
         return 0; // TODO
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    /** {@inheritDoc */
+    @Override public boolean isAddConstantTime() {
         return false; // TODO
     }
 
-    @Override
-    public Optional<ClusterGroup> clusterGroup() {
+    /** {@inheritDoc */
+    @Override public Optional<ClusterGroup> clusterGroup() {
         return null; // TODO
     }
 
-    @Override
-    public IgniteUuid guid() {
+    /** {@inheritDoc */
+    @Override public IgniteUuid guid() {
         return null; // TODO
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         // TODO
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // TODO
     }
 }
