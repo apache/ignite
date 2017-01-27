@@ -660,12 +660,12 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         public static HadoopIgfsInProcWithIgniteRefsCount create(String igfsName, Log log, String userName)
             throws IgniteCheckedException {
 
-            synchronized (refCnts){
-                for (Ignite ignite : Ignition.allGrids()) {
-                    if (Ignition.state(ignite.name()) == STARTED) {
-                        try {
-                            for (IgniteFileSystem fs : ignite.fileSystems()) {
-                                if (F.eq(fs.name(), igfsName)) {
+            for (Ignite ignite : Ignition.allGrids()) {
+                if (Ignition.state(ignite.name()) == STARTED) {
+                    try {
+                        for (IgniteFileSystem fs : ignite.fileSystems()) {
+                            if (F.eq(fs.name(), igfsName)) {
+                                synchronized (refCnts) {
                                     Integer cnt = refCnts.get(ignite.name());
 
                                     if (cnt != null)
@@ -675,9 +675,9 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                                 }
                             }
                         }
-                        catch (IgniteIllegalStateException ignore) {
-                            // May happen if the grid state has changed:
-                        }
+                    }
+                    catch (IgniteIllegalStateException ignore) {
+                        // May happen if the grid state has changed:
                     }
                 }
             }

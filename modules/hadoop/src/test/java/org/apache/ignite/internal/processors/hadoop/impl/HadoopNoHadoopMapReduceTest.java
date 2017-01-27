@@ -34,9 +34,9 @@ public class HadoopNoHadoopMapReduceTest extends HadoopMapReduceTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void _testWholeMapReduceExecution() throws Exception {
+    @Override public void testWholeMapReduceExecution() throws Exception {
         try {
-            super._testWholeMapReduceExecution();
+            super.testWholeMapReduceExecution();
 
             fail("IllegalStateException expected.");
         }
