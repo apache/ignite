@@ -1075,9 +1075,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         s.setJoinBatchEnabled(distributedJoins);
     }
 
-    @Override public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx,
-        SqlFieldsQuery qry,
-        IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public <K, V> QueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry, final IndexingQueryFilter filter) throws IgniteCheckedException {
         final GridQueryCancel cancel = new GridQueryCancel();
 
         if (queryParallelismLevel > 1 && cctx != null
@@ -1115,8 +1114,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 
     /** {@inheritDoc} */
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
-        IndexingQueryFilter filter) throws IgniteCheckedException {
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(final GridCacheContext<?, ?> cctx,
+        final SqlQuery qry, final IndexingQueryFilter filter) throws IgniteCheckedException {
         if (queryParallelismLevel > 1 && cctx != null
             && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled()) {
             qry.setLocal(true);
