@@ -395,10 +395,6 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
                 if (hadoop != null)
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                else {
-                    System.out.println("+++ 0000000000");
-                    hadoop = HadoopIgfsInProcWithIgniteRefsCount.create(endpoint.igfs(), log, userName);
-                }
             }
             catch (IOException | IgniteCheckedException e) {
                 if (e instanceof HadoopIgfsCommunicationException)
@@ -424,10 +420,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 String nodeName = cfg.getGridName();
 
                 synchronized (refCnts) {
+                    Ignite ignite = null;
                     if (needNewClient(nodeName)) {
                         cfg.setClientMode(true);
 
-                        Ignite ignite = Ignition.getOrStart(cfg);
+                        ignite = Ignition.getOrStart(cfg);
 
                         if (ignite == null)
                             throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
@@ -438,7 +435,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     HadoopIgfsEx hadoop = null;
 
                     try {
-                        hadoop = HadoopIgfsInProcWithIgniteRefsCount.create(endpoint.igfs(), log, userName);
+                        hadoop = HadoopIgfsInProcWithIgniteRefsCount.create(ignite, endpoint.igfs(), log, userName);
 
                         if (hadoop != null)
                             curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
@@ -661,24 +658,44 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             throws IgniteCheckedException {
 
             for (Ignite ignite : Ignition.allGrids()) {
-                if (Ignition.state(ignite.name()) == STARTED) {
-                    try {
-                        for (IgniteFileSystem fs : ignite.fileSystems()) {
-                            if (F.eq(fs.name(), igfsName)) {
-                                synchronized (refCnts) {
-                                    Integer cnt = refCnts.get(ignite.name());
+                HadoopIgfsInProcWithIgniteRefsCount delegate = create(ignite, igfsName, log, userName);
 
-                                    if (cnt != null)
-                                        refCnts.put(ignite.name(), cnt + 1);
+                if (delegate != null)
+                    return delegate;
+            }
 
-                                    return new HadoopIgfsInProcWithIgniteRefsCount((IgfsEx)fs, log, userName);
-                                }
+            return null;
+        }
+
+        /**
+         * Creates instance of the HadoopIgfsInProcWithIgniteRefsCount by IGFS name.
+         *
+         * @param ignite Ignite instance.
+         * @param igfsName Target IGFS name.
+         * @param log Log.
+         * @param userName User name.
+         * @throws IgniteCheckedException On error.
+         * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not fount in the current VM.
+         */
+        public static HadoopIgfsInProcWithIgniteRefsCount create(Ignite ignite, String igfsName, Log log, String userName)
+            throws IgniteCheckedException {
+            if (Ignition.state(ignite.name()) == STARTED) {
+                try {
+                    for (IgniteFileSystem fs : ignite.fileSystems()) {
+                        if (F.eq(fs.name(), igfsName)) {
+                            synchronized (refCnts) {
+                                Integer cnt = refCnts.get(ignite.name());
+
+                                if (cnt != null)
+                                    refCnts.put(ignite.name(), cnt + 1);
+
+                                return new HadoopIgfsInProcWithIgniteRefsCount((IgfsEx)fs, log, userName);
                             }
                         }
                     }
-                    catch (IgniteIllegalStateException ignore) {
-                        // May happen if the grid state has changed:
-                    }
+                }
+                catch (IgniteIllegalStateException ignore) {
+                    // May happen if the grid state has changed:
                 }
             }
 
