@@ -316,10 +316,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
     }
 
-    /**
-     * @return Total number of loaded pages in memory.
-     */
-    public long loadedPages() {
+    /** {@inheritDoc} */
+    @Override public long loadedPages() {
         long total = 0;
 
         for (Segment seg : segments) {

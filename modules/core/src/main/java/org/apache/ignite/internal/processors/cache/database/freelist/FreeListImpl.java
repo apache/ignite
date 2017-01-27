@@ -80,7 +80,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 int rowSize = getRowSize(row);
 
-                boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, getRowSize(row));
+                boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
                 if (updated && isWalDeltaRecordNeeded(wal, page)) {
                     // TODO This record must contain only a reference to a logical WAL record with the actual data.

@@ -60,4 +60,9 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return Page byte buffer.
      */
     public ByteBuffer pageBuffer(long pageAddr);
+
+    /**
+     * @return Total number of loaded pages in memory.
+     */
+    public long loadedPages();
 }
