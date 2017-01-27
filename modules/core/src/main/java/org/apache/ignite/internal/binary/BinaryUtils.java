@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1189,9 +1190,12 @@ public class BinaryUtils {
      * @return Value.
      */
     public static BigDecimal doReadDecimal(BinaryInputStream in) {
-        char[] mag = doReadCharArray(in);
+        int scale = in.readInt();
+        byte[] mag = doReadByteArray(in);
 
-        return new BigDecimal(mag);
+        BigInteger intVal = new BigInteger(mag);
+
+        return new BigDecimal(intVal, scale);
     }
 
     /**
