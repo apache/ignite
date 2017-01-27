@@ -1208,7 +1208,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
         Byte oldPlc = CUR_PLC.get();
 
-        boolean change = F.eq(oldPlc, plc);
+        boolean change = !F.eq(oldPlc, plc);
 
         if (change)
             CUR_PLC.set(plc);

@@ -24,6 +24,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -78,10 +80,9 @@ public class IgniteSqlQueryDedicatedPoolTest extends GridCommonAbstractTest {
      */
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
-
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
-            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select current_thread()"));
+            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy()"));
 
             List<List<?>> result = cursor.getAll();
 
@@ -89,17 +90,18 @@ public class IgniteSqlQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
             assertEquals(1, result.size());
 
-            List<?> row = result.get(0);
+            Byte plc = (Byte)result.get(0).get(0);
 
-            assert ((String)row.get(0)).startsWith("sql-query");
+            assert plc != null;
+            assert plc == GridIoPolicy.QUERY_POOL;
         }
     }
 
     /**
      * Custom SQL function to return current thread name from inside query executor
      */
-    @QuerySqlFunction(alias = "current_thread")
-    public static String curThread() {
-         return Thread.currentThread().getName();
+    @QuerySqlFunction(alias = "currentPolicy")
+    public static Byte currentPolicy() {
+         return GridIoManager.currentPolicy();
     }
 }
