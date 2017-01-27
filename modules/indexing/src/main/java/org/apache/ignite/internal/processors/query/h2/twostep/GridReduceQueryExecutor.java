@@ -514,29 +514,33 @@ public class GridReduceQueryExecutor {
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
 
-            if (isPreloadingActive(cctx, extraSpaces)) {
-                if (cctx.isReplicated())
-                    nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
-                else {
-                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
+            if (qry.isLocal())
+                nodes = Collections.singleton(ctx.discovery().localNode());
+            else {
+                if (isPreloadingActive(cctx, extraSpaces)) {
+                    if (cctx.isReplicated())
+                        nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
+                    else {
+                        partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
 
-                    nodes = partsMap == null ? null : partsMap.keySet();
+                        nodes = partsMap == null ? null : partsMap.keySet();
+                    }
                 }
-            }
-            else
-                nodes = stableDataNodes(topVer, cctx, extraSpaces);
+                else
+                    nodes = stableDataNodes(topVer, cctx, extraSpaces);
 
-            if (nodes == null)
-                continue; // Retry.
+                if (nodes == null)
+                    continue; // Retry.
 
-            assert !nodes.isEmpty();
+                assert !nodes.isEmpty();
 
-            if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
-                    "We must be on a client node.";
+                if (cctx.isReplicated() || qry.explain()) {
+                    assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
+                        "We must be on a client node.";
 
-                // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-                nodes = Collections.singleton(F.rand(nodes));
+                    // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
+                    nodes = Collections.singleton(F.rand(nodes));
+                }
             }
 
             final Collection<ClusterNode> finalNodes = nodes;

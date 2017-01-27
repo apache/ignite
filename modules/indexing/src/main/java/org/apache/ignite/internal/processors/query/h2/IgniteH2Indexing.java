@@ -57,6 +57,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -82,12 +83,14 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -793,7 +796,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
+    public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
@@ -1072,29 +1075,115 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         s.setJoinBatchEnabled(distributedJoins);
     }
 
+    @Override public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx,
+        SqlFieldsQuery qry,
+        IndexingQueryFilter filter) throws IgniteCheckedException {
+        final GridQueryCancel cancel = new GridQueryCancel();
+
+        if (queryParallelismLevel > 1 && cctx != null
+            && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled()) {
+            qry.setLocal(true);
+
+            return queryTwoStep(cctx, qry, cancel);
+        }
+        else {
+            final boolean keepBinary = cctx.keepBinary();
+
+            final String space = cctx.name();
+            final String sql = qry.getSql();
+            final Object[] args = qry.getArgs();
+
+            final GridQueryFieldsResult res = queryLocalSqlFields(space, sql, F.asList(args), filter,
+                qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
+
+            QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    try {
+                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }, cancel);
+
+            cursor.fieldsMeta(res.metaData());
+
+            return cursor;
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
+        IndexingQueryFilter filter) throws IgniteCheckedException {
+        if (queryParallelismLevel > 1 && cctx != null
+            && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled()) {
+            qry.setLocal(true);
+
+            return queryTwoStep(cctx, qry);
+        }
+        else {
+            final boolean keepBinary = cctx.keepBinary();
+
+            String space = cctx.name();
+            String type = qry.getType();
+            String sqlQry = qry.getSql();
+            Object[] params = qry.getArgs();
+
+            final GridCloseableIterator<Cache.Entry<K, V>> i = queryLocalSql(space, sqlQry, F.asList(params), type, filter);
+
+            return new QueryCursorImpl<Cache.Entry<K, V>>(new Iterable<Cache.Entry<K, V>>() {
+                @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                    return new ClIter<Cache.Entry<K, V>>() {
+                        @Override public void close() throws Exception {
+                            i.close();
+                        }
+
+                        @Override public boolean hasNext() {
+                            return i.hasNext();
+                        }
+
+                        @Override public Cache.Entry<K, V> next() {
+                            Cache.Entry<K, V> t = i.next();
+
+                            return new CacheEntryImpl<>(
+                                (K)cctx.unwrapBinaryIfNeeded(t.getKey(), keepBinary, false),
+                                (V)cctx.unwrapBinaryIfNeeded(t.getValue(), keepBinary, false));
+                        }
+
+                        @Override public void remove() {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
+                }
+            }, new GridQueryCancel());
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
-        final String qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
+    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> queryLocalSql(@Nullable String spaceName,
+        final String qry, @Nullable final Collection<Object> params, String type,
         final IndexingQueryFilter filter) throws IgniteCheckedException {
-        final TableDescriptor tbl = tableDescriptor(spaceName, type);
+            final TableDescriptor tbl = tableDescriptor(type, spaceName);
 
         if (tbl == null)
-            throw new IgniteSQLException("Failed to find SQL table for type: " + type.name(),
+            throw new IgniteSQLException("Failed to find SQL table for type: " + type,
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        String sql = generateQuery(qry, tbl);
+            String sql = generateQuery(qry, tbl);
 
-        Connection conn = connectionForThread(tbl.schemaName());
+            Connection conn = connectionForThread(tbl.schemaName());
 
-        setupConnection(conn, false, false);
+            setupConnection(conn, false, false);
 
         GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
 
         try {
             ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, null);
 
-            return new KeyValIterator(rs);
+            return new CacheEntryIterator(rs);
         }
         finally {
             GridH2QueryContext.clearThreadLocal();
@@ -2688,7 +2777,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Special key/value iterator based on database result set.
      */
-    private static class KeyValIterator<K, V> extends GridH2ResultSetIterator<IgniteBiTuple<K, V>> {
+    private static class CacheEntryIterator<K, V> extends GridH2ResultSetIterator<Cache.Entry<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2696,18 +2785,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param data Data array.
          * @throws IgniteCheckedException If failed.
          */
-        protected KeyValIterator(ResultSet data) throws IgniteCheckedException {
+        protected CacheEntryIterator(ResultSet data) throws IgniteCheckedException {
             super(data, false, true);
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected IgniteBiTuple<K, V> createRow() {
+        @Override protected Cache.Entry<K, V> createRow() {
             K key = (K)row[0];
             V val = (V)row[1];
 
-            return new IgniteBiTuple<>(key, val);
+            return new CacheEntryImpl<K, V>(key, val);
         }
+    }
+
+    /**
+     * Closeable iterator.
+     */
+    private interface ClIter<X> extends AutoCloseable, Iterator<X> {
+        // No-op.
     }
 
     /**

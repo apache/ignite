@@ -84,33 +84,24 @@ public interface GridQueryIndexing {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
-     * @param spaceName Space name.
+     * @param cctx Cache context.
      * @param qry Query.
-     * @param params Query parameters.
      * @param filter Space name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
-     * @param timeout Query timeout in milliseconds.
-     * @param cancel Query cancel.
-     * @return Query result.
-     * @throws IgniteCheckedException If failed.
+     * @return Cursor.
      */
-    public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout,
-        GridQueryCancel cancel) throws IgniteCheckedException;
+    public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
      *
-     * @param spaceName Space name.
+     * @param cctx Cache context.
      * @param qry Query.
-     * @param params Query parameters.
-     * @param type Query return type.
      * @param filter Space name and key filter.
-     * @return Queried rows.
-     * @throws IgniteCheckedException If failed.
+     * @return Cursor.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
+        IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Executes text query.

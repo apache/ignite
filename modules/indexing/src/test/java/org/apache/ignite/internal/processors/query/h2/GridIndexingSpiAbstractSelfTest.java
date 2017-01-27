@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -171,6 +172,15 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @return Value.
      * @throws IgniteSpiException If failed.
      */
+    private Map<String, Object> value(Cache.Entry<Integer, Map<String, Object>> row) throws IgniteSpiException {
+        return row.getValue();
+    }
+
+    /**
+     * @param row Row
+     * @return Value.
+     * @throws IgniteSpiException If failed.
+     */
     private Map<String, Object> value(IgniteBiTuple<Integer, Map<String, Object>> row) throws IgniteSpiException {
         return row.get2();
     }
@@ -223,16 +233,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(0, spi.size(typeAB.space(), typeAB));
         assertEquals(0, spi.size(typeBA.space(), typeBA));
 
-        assertFalse(spi.queryLocalSql(typeAA.space(), "select * from A.A", Collections.emptySet(), typeAA, null).hasNext());
-        assertFalse(spi.queryLocalSql(typeAB.space(), "select * from A.B", Collections.emptySet(), typeAB, null).hasNext());
-        assertFalse(spi.queryLocalSql(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
+        assertFalse(spi.queryLocalSql(typeAA.space(), "select * from A.A", Collections.emptySet(), typeAA.name(), null).hasNext());
+        assertFalse(spi.queryLocalSql(typeAB.space(), "select * from A.B", Collections.emptySet(), typeAB.name(), null).hasNext());
+        assertFalse(spi.queryLocalSql(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA.name(), null).hasNext());
 
         assertFalse(spi.queryLocalSql(typeBA.space(), "select * from B.A, A.B, A.A",
-            Collections.emptySet(), typeBA, null).hasNext());
+            Collections.emptySet(), typeBA.name(), null).hasNext());
 
         try {
             spi.queryLocalSql(typeBA.space(), "select aa.*, ab.*, ba.* from A.A aa, A.B ab, B.A ba",
-                Collections.emptySet(), typeBA, null).hasNext();
+                Collections.emptySet(), typeBA.name(), null).hasNext();
 
             fail("Enumerations of aliases in select block must be prohibited");
         }
@@ -241,10 +251,10 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         assertFalse(spi.queryLocalSql(typeAB.space(), "select ab.* from A.B ab",
-            Collections.emptySet(), typeAB, null).hasNext());
+            Collections.emptySet(), typeAB.name(), null).hasNext());
 
         assertFalse(spi.queryLocalSql(typeBA.space(), "select   ba.*   from B.A  as ba",
-            Collections.emptySet(), typeBA, null).hasNext());
+            Collections.emptySet(), typeBA.name(), null).hasNext());
 
         // Nothing to remove.
         spi.remove("A", key(1), aa(1, "", 10));
@@ -297,8 +307,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(1, spi.size(typeBA.space(), typeBA));
 
         // Query data.
-        Iterator<IgniteBiTuple<Integer, Map<String, Object>>> res =
-            spi.queryLocalSql(typeAA.space(), "from a order by age", Collections.emptySet(), typeAA, null);
+        Iterator<Cache.Entry<Integer, Map<String, Object>>> res =
+            spi.queryLocalSql(typeAA.space(), "from a order by age", Collections.emptySet(), typeAA.name(), null);
 
         assertTrue(res.hasNext());
         assertEquals(aa(3, "Borya", 18).value(null, false), value(res.next()));
@@ -307,7 +317,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(res.hasNext());
 
         res = spi.queryLocalSql(typeAA.space(), "select aa.* from a aa order by aa.age",
-            Collections.emptySet(), typeAA, null);
+            Collections.emptySet(), typeAA.name(), null);
 
         assertTrue(res.hasNext());
         assertEquals(aa(3, "Borya", 18).value(null, false), value(res.next()));
@@ -315,7 +325,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(aa(2, "Valera", 19).value(null, false), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.queryLocalSql(typeAB.space(), "from b order by name", Collections.emptySet(), typeAB, null);
+        res = spi.queryLocalSql(typeAB.space(), "from b order by name", Collections.emptySet(), typeAB.name(), null);
 
         assertTrue(res.hasNext());
         assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").value(null, false), value(res.next()));
@@ -324,7 +334,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(res.hasNext());
 
         res = spi.queryLocalSql(typeAB.space(), "select bb.* from b as bb order by bb.name",
-            Collections.emptySet(), typeAB, null);
+            Collections.emptySet(), typeAB.name(), null);
 
         assertTrue(res.hasNext());
         assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").value(null, false), value(res.next()));
@@ -333,7 +343,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(res.hasNext());
 
 
-        res = spi.queryLocalSql(typeBA.space(), "from a", Collections.emptySet(), typeBA, null);
+        res = spi.queryLocalSql(typeBA.space(), "from a", Collections.emptySet(), typeBA.name(), null);
 
         assertTrue(res.hasNext());
         assertEquals(ba(2, "Kolya", 25, true).value(null, false), value(res.next()));
