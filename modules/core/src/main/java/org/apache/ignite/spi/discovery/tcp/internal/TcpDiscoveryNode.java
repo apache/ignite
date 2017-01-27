@@ -260,7 +260,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         else if (id instanceof Number)
             regionId = ((Number) id).longValue();
         else if (id instanceof String)
-            regionId = Long.valueOf((String) id);
+            try {
+                regionId = Long.valueOf((String) id);
+            } catch (NumberFormatException e) {
+                regionId = null;
+            }
         else
             regionId = null;
     }
