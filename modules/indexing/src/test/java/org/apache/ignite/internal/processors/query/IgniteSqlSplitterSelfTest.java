@@ -773,7 +773,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
-            checkQueryPlan(c1,true, 1, select0);
+            checkQueryPlan(c1,true, 1, new SqlFieldsQuery(select0));
+
+            checkQueryPlan(c1,true, 1, new SqlFieldsQuery(select0).setLocal(true));
         }
         finally {
             c1.destroy();
@@ -812,7 +814,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, CacheException.class, "Using segmented and non-segmented index forbidden.");
+            }, CacheException.class, "Using segmented and non-segmented index in same query is forbidden.");
         }
         finally {
             c1.destroy();

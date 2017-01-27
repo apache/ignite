@@ -66,6 +66,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private List<Integer> extraCaches;
 
+    /** */
+    private boolean local;
+
     /**
      * @param schemas Schema names in query.
      * @param tbls Tables in query.
@@ -217,6 +220,20 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return {@code True} if is local query.
+     */
+    public boolean isLocal() {
+        return local;
+    }
+
+    /**
+     * @param local Local query flag.
+     */
+    public void local(boolean local) {
+        this.local = local;
+    }
+
+    /**
      * @param args New arguments to copy with.
      * @return Copy.
      */
@@ -250,4 +267,5 @@ public class GridCacheTwoStepQuery {
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
     }
+
 }
