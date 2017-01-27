@@ -28,7 +28,7 @@ public class HadoopMapReduceTest extends HadoopAbstractMapReduceTest {
      * Tests whole job execution with all phases in all combination of new and old versions of API.
      * @throws Exception If fails.
      */
-    public void testWholeMapReduceExecution() throws Exception {
+    public void _testWholeMapReduceExecution() throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
         igfs.mkdirs(inDir);
