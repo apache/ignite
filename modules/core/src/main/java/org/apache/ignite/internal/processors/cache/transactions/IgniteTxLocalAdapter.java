@@ -3738,6 +3738,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             // so it is safe to get acquired locks.
             GridCacheMvccCandidate explicitCand = entry.localOwner();
 
+            if (explicitCand == null)
+                explicitCand = cctx.mvcc().explicitLock(threadId(), entry.txKey());
+
             if (explicitCand != null) {
                 GridCacheVersion explicitVer = explicitCand.version();
 
