@@ -20,29 +20,26 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 import java.util.Comparator;
 
 /**
- * New behavior for node ordering. Sort firstly by region number, and secondly by old order.
+ * New behavior for node ordering. Sort firstly by region ID, and secondly by topology version.
+ * Node without region ID is less the node with the region ID.
  */
 public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
     /**
      * {@inheritDoc}
      */
     @Override
-    public int compare(TcpDiscoveryNode nodeFirst, TcpDiscoveryNode nodeSecond) {
-        Long first = nodeFirst.getClusterRegionId();
-        Long second = nodeSecond.getClusterRegionId();
+    public int compare(TcpDiscoveryNode firstNode, TcpDiscoveryNode secondNode) {
+        Long firstId = firstNode.getClusterRegionId();
+        Long secondId = secondNode.getClusterRegionId();
 
-        final int result;
-
-        if (first == second)
-            result = nodeFirst.compareTo(nodeSecond);
+        if ((firstId == secondId) || firstId.equals(secondId))
+            return firstNode.compareTo(secondNode);
         else {
-            if (first == null)
-                result = -1;
-            else if (second == null)
-                result = 1;
-            else result = (first > second) ? 1 : -1;
+            if (firstId == null)
+                return -1;
+            else if (secondId == null)
+                return 1;
+            else return (firstId > secondId) ? 1 : -1;
         }
-
-        return result;
     }
 }
