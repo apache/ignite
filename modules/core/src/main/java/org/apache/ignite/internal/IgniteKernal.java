@@ -912,7 +912,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
 
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
-            }catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 // Stop discovery spi to close tcp socket.
                 ctx.discovery().stop(true);
 
