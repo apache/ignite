@@ -443,12 +443,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var marsh = grid.Marshaller;
 
-            var procId = marsh.Unmarshal<object>(inOutStream);
-
-            if (procId != null)
-                throw new IgniteException(string.Format("Unexpected non-null processor ID. " +
-                    "Expected: null, But was: {0}", procId));
-
             var key = marsh.Unmarshal<object>(inOutStream);
             var val = marsh.Unmarshal<object>(inOutStream);
             var isLocal = inOutStream.ReadBool();

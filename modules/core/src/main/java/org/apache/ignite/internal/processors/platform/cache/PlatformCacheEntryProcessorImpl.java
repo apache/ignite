@@ -59,9 +59,6 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /** Indicates error in processor that is written as string.  */
     private static final byte ENTRY_STATE_ERR_STRING = 4;
 
-    /** Processor identifier. Used by the CPP platform to identify and properly unmarshall processor. */
-    private Long procId;
-
     /** Native binary processor */
     private Object proc;
 
@@ -78,12 +75,10 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /**
      * Constructor.
      *
-     * @param procId Processor ID.
      * @param proc Native binary processor
      * @param ptr Pointer to processor in the native platform.
      */
-    public PlatformCacheEntryProcessorImpl(Long procId, Object proc, long ptr) {
-        this.procId = procId;
+    public PlatformCacheEntryProcessorImpl(Object proc, long ptr) {
         this.proc = proc;
         this.ptr = ptr;
     }
@@ -148,8 +143,6 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @param writer Writer.
      */
     private void writeEntryAndProcessor(MutableEntry entry, BinaryRawWriter writer) {
-        writer.writeObject(procId);
-
         writer.writeObject(entry.getKey());
         writer.writeObject(entry.getValue());
 

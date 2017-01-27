@@ -1443,12 +1443,7 @@ namespace ignite
 
                 ProcessorHolder procHolder(processor, arg);
 
-                // We need to store job here because In3Operation class stores
-                // references.
-                binary::BinaryType<P> bt;
-                int64_t jobId = bt.GetTypeId();
-
-                impl::In3Operation<int64_t, K, ProcessorHolder> inOp(jobId, key, procHolder);
+                impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
                 impl::Out1Operation<R> outOp;
 
                 impl.Get()->Invoke(inOp, outOp, err);

@@ -47,6 +47,13 @@ namespace ignite
 
                 return header.GetDataLength();
             }
+
+            int32_t BinaryObjectImpl::GetTypeId() const
+            {
+                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+
+                return header.GetTypeId();
+            }
         }
     }
 }

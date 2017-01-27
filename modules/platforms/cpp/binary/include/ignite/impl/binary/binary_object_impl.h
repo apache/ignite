@@ -86,6 +86,14 @@ namespace ignite
                  */
                 int32_t GetLength() const;
 
+                /**
+                 * Get type ID.
+                 * @throw IgniteError if the object is not in a valid state.
+                 *
+                 * @return Type ID.
+                 */
+                int32_t GetTypeId() const;
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryObjectImpl)
 

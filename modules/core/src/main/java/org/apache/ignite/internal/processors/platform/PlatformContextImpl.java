@@ -660,8 +660,8 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformCacheEntryProcessor createCacheEntryProcessor(Long procId, Object proc, long ptr) {
-        return new PlatformCacheEntryProcessorImpl(procId, proc, ptr);
+    @Override public PlatformCacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr) {
+        return new PlatformCacheEntryProcessorImpl(proc, ptr);
     }
 
     /** {@inheritDoc} */

@@ -335,16 +335,18 @@ namespace ignite
             InteropOutputStream outStream(mem.Get());
             BinaryWriterImpl writer(&outStream, GetTypeManager());
 
-            int64_t procId;
+            BinaryObjectImpl binProc(*mem.Get(), 0);
 
-            if (!reader.TryReadObject<int64_t>(procId))
-                throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
+            int64_t procId = binProc.GetTypeId();
 
             bool invoked = binding.Get()->InvokeCallbackById(procId, reader, writer);
 
             if (!invoked)
-                throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
-                    "C++ entry processor is not registered on the node (did you compile your program without -rdynamic?).");
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ entry processor is not registered on the node (did you compile your program without -rdynamic?).",
+                    "procId", procId);
+            }
 
             outStream.Synchronize();
         }

@@ -253,7 +253,7 @@ public interface PlatformContext {
      * @param ptr Pointer.
      * @return Entry processor.
      */
-    public PlatformCacheEntryProcessor createCacheEntryProcessor(Long procId, Object proc, long ptr);
+    public PlatformCacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
 
     /**
      * Create cache entry filter.
