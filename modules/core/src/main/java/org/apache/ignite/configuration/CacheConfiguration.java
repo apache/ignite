@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2223,7 +2222,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx = new QueryIndex(idxEntry.getKey(), QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(idx.fields(), true);
+                txtIdx.setField(idx.fields(), true);
             }
             else {
                 Collection<String> grp = new ArrayList<>();
@@ -2231,9 +2230,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 for (String fieldName : idx.fields())
                     grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                QueryIndex sortedIdx = new QueryIndex(idxEntry.getKey());
-
-                sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+                QueryIndex sortedIdx = new QueryIndex(idxEntry.getKey(),
+                    idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
 
                 LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
 

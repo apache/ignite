@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -98,9 +99,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
         List<QueryIndex> indexes = new ArrayList<>();
 
-        indexes.add(new QueryIndex("CLIENTID"));
-        indexes.add(new QueryIndex("ID"));
-        indexes.add(new QueryIndex("PARENTID"));
+        indexes.add(new QueryIndex("CLIENTID", QueryIndexType.SORTED, true));
+        indexes.add(new QueryIndex("ID", QueryIndexType.SORTED, true));
+        indexes.add(new QueryIndex("PARENTID", QueryIndexType.SORTED, true));
 
         entity.setIndexes(indexes);
 
