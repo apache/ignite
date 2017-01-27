@@ -60,6 +60,8 @@ libignite_binary_la_SOURCES = \
     src/impl/binary/binary_type_updater.cpp \
     src/impl/binary/binary_schema.cpp \
     src/impl/binary/binary_type_snapshot.cpp \
+    src/impl/binary/binary_object_header.cpp \
+    src/impl/binary/binary_object_impl.cpp \
     src/impl/interop/interop_memory.cpp \
     src/impl/interop/interop_output_stream.cpp \
     src/impl/interop/interop_input_stream.cpp
