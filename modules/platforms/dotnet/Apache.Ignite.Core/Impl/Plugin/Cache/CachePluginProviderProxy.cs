@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin.Cache
 {
-    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Plugin.Cache;
