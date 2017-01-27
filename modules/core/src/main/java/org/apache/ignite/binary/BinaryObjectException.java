@@ -18,7 +18,6 @@
 package org.apache.ignite.binary;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
