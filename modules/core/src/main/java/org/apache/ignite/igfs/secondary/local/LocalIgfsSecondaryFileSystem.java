@@ -364,15 +364,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         PosixFileAttributes attrs = LocalFileSystemUtils.posixAttributes(file);
 
+        long aTime = attrs == null ? 0L : attrs.lastAccessTime().toMillis();
+        long mTime = attrs == null ? 0L : attrs.lastModifiedTime().toMillis();
+
         Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
 
         if (isDir) {
             return new LocalFileSystemIgfsFile(path, false, true, 0,
-                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), 0, props);
+                aTime, mTime, 0, props);
         }
         else {
             return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0,
-                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), file.length(), props);
+                aTime, mTime, file.length(), props);
         }
     }
 
