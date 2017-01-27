@@ -112,6 +112,8 @@ The following Ignite benchmark properties can be defined in the benchmark config
 * `-ot` or `--offheapTiered` - Flag indicating whether tiered off-heap mode is on
 * `-ov` or `--offheapValuesOnly` - Flag indicating whether off-heap mode is on and only cache values are stored off-heap
 * `-r <num>` or `--range` - Range of keys that are randomly generated for cache operations
+* `-rd or --restartdelay` - Restart delay in seconds
+* `-rs or --restartsleep` - Restart sleep in seconds
 * `-rth <host>` or `--restHost <host>` - REST TCP host
 * `-rtp <num>` or `--restPort <num>` - REST TCP port, indicates that a Ignite node is ready to process Ignite Clients
 * `-ss` or `--syncSend` - Flag indicating whether synchronous send is used in `TcpCommunicationSpi`
