@@ -186,11 +186,25 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testNegativeScaleDecimal() throws Exception {
         BigDecimal val;
 
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -1)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -2)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -3)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -4)), marshalUnmarshal(val));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeScaleRoundingModeDecimal() throws Exception {
+        BigDecimal val;
+
         assertEquals((val = BigDecimal.ZERO.setScale(-1, RoundingMode.HALF_UP)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 0).setScale(-3, RoundingMode.HALF_UP)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 0).setScale(-5, RoundingMode.HALF_UP)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, 8).setScale(-8, RoundingMode.HALF_UP)), marshalUnmarshal(val));
-        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, 8).setScale(-10, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE).setScale(-3, RoundingMode.HALF_DOWN)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE).setScale(-5, RoundingMode.HALF_EVEN)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Integer.MAX_VALUE).setScale(-8, RoundingMode.UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Integer.MIN_VALUE).setScale(-10, RoundingMode.DOWN)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Double.MAX_VALUE).setScale(-12, RoundingMode.CEILING)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Double.MIN_VALUE).setScale(-15, RoundingMode.FLOOR)), marshalUnmarshal(val));
     }
 
 
