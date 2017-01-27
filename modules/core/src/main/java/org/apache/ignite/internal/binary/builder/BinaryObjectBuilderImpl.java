@@ -363,7 +363,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             }
 
             // Update hash code after schema is written.
-            writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
+            if (!isHashCodeSet)
+                writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
         }
         finally {
             writer.popSchema();

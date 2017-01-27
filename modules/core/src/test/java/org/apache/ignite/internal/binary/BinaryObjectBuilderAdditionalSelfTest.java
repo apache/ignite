@@ -896,8 +896,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutableObj = wrap(obj);
 
-        assertEquals(obj.hashCode(), mutableObj.build().hashCode());
-
         mutableObj.hashCode(25);
 
         assertEquals(25, mutableObj.build().hashCode());
