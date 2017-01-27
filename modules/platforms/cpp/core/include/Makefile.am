@@ -53,6 +53,7 @@ nobase_include_HEADERS = \
     ignite/cache/mutable_cache_entry.h \
     ignite/ignition.h \
     ignite/ignite_binding.h \
+    ignite/ignite_binding_context.h \
     ignite/transactions/transaction.h \
     ignite/transactions/transaction_consts.h \
     ignite/transactions/transactions.h \

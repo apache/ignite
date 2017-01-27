@@ -25,9 +25,6 @@
 
 namespace ignite
 {
-    template<typename T>
-    int64_t GetBindingId();
-
     /**
      * %Ignite Binding.
      * Used to register callable classes.
@@ -86,10 +83,11 @@ namespace ignite
         template<typename P>
         void RegisterCacheEntryProcessor(IgniteError& err)
         {
+            binary::BinaryType<P> bt;
             impl::IgniteBindingImpl *im = impl.Get();
 
             if (im)
-                im->RegisterCallback(GetBindingId<P>(), &P::CacheEntryProcessor::InternalProcess, err);
+                im->RegisterCallback(bt.GetTypeId(), &P::CacheEntryProcessor::InternalProcess, err);
             else
             {
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,

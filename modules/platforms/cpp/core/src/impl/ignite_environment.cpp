@@ -143,7 +143,8 @@ namespace ignite
             return 0;
         }
 
-        IgniteEnvironment::IgniteEnvironment() :
+        IgniteEnvironment::IgniteEnvironment(const IgniteConfiguration& cfg) :
+            cfg(new IgniteConfiguration(cfg)),
             ctx(SharedPointer<JniContext>()),
             latch(),
             name(0),
@@ -152,7 +153,7 @@ namespace ignite
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
             binding(new IgniteBindingImpl()),
-            moduleMgr(new ModuleManager(ignite::IgniteBinding(binding)))
+            moduleMgr(new ModuleManager(GetBindingContext()))
         {
             // No-op.
         }
@@ -163,6 +164,12 @@ namespace ignite
 
             delete metaUpdater;
             delete metaMgr;
+            delete cfg;
+        }
+
+        const IgniteConfiguration& IgniteEnvironment::GetConfiguration() const
+        {
+            return *cfg;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -254,6 +261,16 @@ namespace ignite
             return metaUpdater;
         }
 
+        IgniteBinding IgniteEnvironment::GetBinding() const
+        {
+            return IgniteBinding(binding);
+        }
+
+        IgniteBindingContext IgniteEnvironment::GetBindingContext() const
+        {
+            return IgniteBindingContext(*cfg, GetBinding());
+        }
+
         void* IgniteEnvironment::Acquire(void *obj)
         {
             return reinterpret_cast<void*>(ctx.Get()->Acquire(reinterpret_cast<jobject>(obj)));
@@ -268,11 +285,6 @@ namespace ignite
         HandleRegistry& IgniteEnvironment::GetHandleRegistry()
         {
             return registry;
-        }
-
-        IgniteBinding IgniteEnvironment::GetBinding()
-        {
-            return IgniteBinding(binding);
         }
 
         void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)

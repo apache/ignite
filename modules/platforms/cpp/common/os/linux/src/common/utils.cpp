@@ -106,22 +106,16 @@ namespace ignite
                 delete[] val;
         }
 
-        std::string GetEnv(const std::string& name, bool& found)
+        bool GetEnv(const std::string& name, std::string& val)
         {
-            char* val = std::getenv(name.c_str());
+            char* val0 = std::getenv(name.c_str());
+            
+            if (!val0)
+                return false;
 
-            if (val)
-            {
-                found = true;
+            val = val0;
 
-                return std::string(val);
-            }
-            else
-            {
-                found = false;
-
-                return std::string();
-            }
+            return true;
         }
 
         bool FileExists(const std::string& path)

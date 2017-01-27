@@ -40,6 +40,11 @@ namespace ignite
         return impl.Get()->GetName();
     }
 
+    const IgniteConfiguration& Ignite::GetConfiguration() const
+    {
+        return impl.Get()->GetConfiguration();
+    }
+
     transactions::Transactions Ignite::GetTransactions()
     {
         using ignite::common::concurrent::SharedPointer;

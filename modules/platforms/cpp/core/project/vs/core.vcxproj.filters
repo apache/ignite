@@ -189,6 +189,9 @@
     <ClInclude Include="..\..\include\ignite\impl\ignite_binding_impl.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_binding_context.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

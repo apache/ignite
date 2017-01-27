@@ -137,10 +137,9 @@ namespace ignite
          * Then JRE_HOME is evaluated. Last, JAVA_HOME is evaluated.
          *
          * @param Explicitly defined path (optional).
-         * @param found Whether library was found.
-         * @return Path to the file.
+         * @return Path to the file. Empty string if the library was not found.
          */
-        IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string* path, bool* found);
+        IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string& path);
 
         /**
          * Load JVM library into the process.
@@ -151,23 +150,21 @@ namespace ignite
         IGNITE_IMPORT_EXPORT bool LoadJvmLibrary(const std::string& path);
 
         /**
-         * Create Ignite classpath based on user input and home directory.
+         * Create Ignite classpath based on user input directory.
          *
          * @param usrCp User's classpath.
-         * @param home Ignite home directory.
          * @return Classpath.
          */
-        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home);
+        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string& usrCp);
 
         /**
          * Create Ignite classpath based on user input and home directory.
          *
          * @param usrCp User's classpath.
          * @param home Ignite home directory.
-         * @param test Whether test classpath must be used.
          * @return Classpath.
          */
-        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool test);
+        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string& usrCp, const std::string& home);
 
         /**
          * Resolve IGNITE_HOME directory. Resolution is performed in several
@@ -180,10 +177,10 @@ namespace ignite
          * IGNITE_HOME is considered resolved.
          *
          * @param path Optional path to evaluate.
-         * @param found Whether IGNITE_HOME home was found.
-         * @return Resolved GG home.
+         * @param home Resolved GG home.
+         * @return True if IGNITE_HOME home was found.
          */
-        IGNITE_IMPORT_EXPORT std::string ResolveIgniteHome(const std::string* path, bool* found);
+        IGNITE_IMPORT_EXPORT bool ResolveIgniteHome(const std::string& path, std::string& home);
     }
 }
 

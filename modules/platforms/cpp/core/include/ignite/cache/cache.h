@@ -1362,8 +1362,10 @@ namespace ignite
              *
              * See the example below for details:
              * @code{.cpp}
-             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
              * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
              *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
              *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
              *     // ...
@@ -1372,19 +1374,7 @@ namespace ignite
              * @endcode
              *
              * Additionally, processor class should be derived from the
-             * ignite::CacheEntryProcessor class, and for the processor class following
-             * template function should be specialized:
-             * @code{.cpp}
-             * namespace ignite
-             * {
-             *     template<>
-             *     int64_t GetBindingId<MyProcessor1>()
-             *     {
-             *         // Returned value should be unique among all registered callables
-             *         return 123;
-             *     }
-             * }
-             * @endcode
+             * ignite::CacheEntryProcessor class.
              *
              * @throw IgniteError on fail.
              *
@@ -1424,8 +1414,10 @@ namespace ignite
              *
              * See the example below for details:
              * @code{.cpp}
-             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBinding& binding)
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
              * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
              *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
              *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
              *     // ...
@@ -1434,19 +1426,7 @@ namespace ignite
              * @endcode
              *
              * Additionally, processor class should be derived from the
-             * ignite::CacheEntryProcessor class, and for the processor class following
-             * template function should be specialized:
-             * @code{.cpp}
-             * namespace ignite
-             * {
-             *     template<>
-             *     int64_t GetBindingId<MyProcessor1>()
-             *     {
-             *         // Returned value should be unique among all registered callables
-             *         return 123;
-             *     }
-             * }
-             * @endcode
+             * ignite::CacheEntryProcessor class.
              *
              * Sets err param which should be checked for the operation result.
              *
@@ -1465,7 +1445,8 @@ namespace ignite
 
                 // We need to store job here because In3Operation class stores
                 // references.
-                int64_t jobId = GetBindingId<P>();
+                binary::BinaryType<P> bt;
+                int64_t jobId = bt.GetTypeId();
 
                 impl::In3Operation<int64_t, K, ProcessorHolder> inOp(jobId, key, procHolder);
                 impl::Out1Operation<R> outOp;
