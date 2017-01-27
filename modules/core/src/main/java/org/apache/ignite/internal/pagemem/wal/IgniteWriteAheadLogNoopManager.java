@@ -59,6 +59,16 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
+    @Override public void reserve(WALPointer start) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void release(WALPointer start) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public int truncate(WALPointer ptr) {
         return 0;
     }

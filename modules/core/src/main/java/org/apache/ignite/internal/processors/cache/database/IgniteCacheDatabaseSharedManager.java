@@ -87,7 +87,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void initDataBase() throws IgniteCheckedException{
+    public void initDataBase() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -139,7 +139,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    public void unLock(){
+    public void unLock() {
 
     }
 
@@ -225,11 +225,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Reserve update history.
      *
-     * @param cacheCtx Cache context.
-     * @return Reserved update counters per partition.
+     * @return Reserved update counters per cache and partition.
      */
-    public Map<Integer, Long> reserveHistory(GridCacheContext cacheCtx) throws IgniteCheckedException {
+    public Map<Integer, Map<Integer, Long>> reserveHistory() throws IgniteCheckedException {
         return Collections.emptyMap();
+    }
+
+    /**
+     * Release reserved update history.
+     *
+     * @param reserved Map returned by {@code reserveHistory()}.
+     */
+    public void releaseHistory(Map<Integer, Map<Integer, Long>> reserved) throws IgniteCheckedException {
+        // No-op
     }
 
     /**

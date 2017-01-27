@@ -75,6 +75,22 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
 
     /**
+     * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
+     *
+     * @param start WAL pointer.
+     * @throws IgniteException If failed to reserve.
+     */
+    public void reserve(WALPointer start) throws IgniteCheckedException;
+
+    /**
+     * Invoke this method to release WAL history since provided pointer that was previously reserved.
+     *
+     * @param start WAL pointer.
+     * @throws IgniteException If failed to release.
+     */
+    public void release(WALPointer start) throws IgniteCheckedException;
+
+    /**
      * Gives a hint to WAL manager to clear entries logged before the given pointer. Some entries before the
      * the given pointer will be kept because there is a configurable WAL history size. Those entries may be used
      * for partial partition rebalancing.

@@ -181,6 +181,15 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
+     * @param cntrMap Partition history counters.
+     */
+    public void partitionHistoryCounters(Map<Integer, Map<Integer, Long>> cntrMap) {
+        for (Map.Entry<Integer, Map<Integer, Long>> e : cntrMap.entrySet()) {
+            partitionHistoryCounters(e.getKey(), e.getValue());
+        }
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @return Partition history counters.
      */

@@ -969,7 +969,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(node,
             id,
             cctx.kernalContext().clientNode(),
-            false,
             false);
 
         if (log.isDebugEnabled())
@@ -998,8 +997,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsSingleMessage createPartitionsSingleMessage(ClusterNode targetNode,
         @Nullable GridDhtPartitionExchangeId exchangeId,
         boolean clientOnlyExchange,
-        boolean sndCounters,
-        boolean reserveHistory)
+        boolean sndCounters)
     {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
@@ -1021,15 +1019,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (sndCounters)
                     m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
-
-                if (reserveHistory) {
-                    try {
-                        m.partitionHistoryCounters(cacheCtx.cacheId(), cacheCtx.shared().database().reserveHistory(cacheCtx));
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
             }
         }
 

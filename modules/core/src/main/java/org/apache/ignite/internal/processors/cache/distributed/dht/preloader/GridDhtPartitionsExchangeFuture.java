@@ -216,10 +216,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
 
+    /** */
     private final Map<UUID, Map<Integer, Long>> partHistSuppliers = new HashMap<>();
 
     /** Forced Rebalance future. */
     private GridFutureAdapter<Boolean> forcedRebFut;
+
+    /** */
+    private final AtomicReference<Map<Integer, Map<Integer, Long>>> partHistReserved = new AtomicReference<>();
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -843,6 +847,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
+        // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
+        Map<Integer, Map<Integer, Long>> partHistReserved0 = cctx.database().reserveHistory();
+
+        if (!partHistReserved.compareAndSet(null, partHistReserved0))
+            cctx.database().releaseHistory(partHistReserved0);
+
         if (crd.isLocal()) {
             if (remaining.isEmpty())
                 onAllReceived();
@@ -1044,8 +1054,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(
-            node, exchangeId(), clientOnlyExchange, true,
-            discoEvt.type() == EVT_NODE_JOINED);
+            node, exchangeId(), clientOnlyExchange, true);
+
+        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
+
+        if (partHistReserved0 != null) {
+            m.partitionHistoryCounters(partHistReserved0);
+        }
 
         if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
             m.setException(changeGlobalStateE);
@@ -1185,6 +1200,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (exchangeOnChangeGlobalState && err == null)
             cctx.kernalContext().state().onExchangeDone();
+
+        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
+
+        if (partHistReserved0 != null && partHistReserved.compareAndSet(partHistReserved0, null)) {
+            try {
+                cctx.database().releaseHistory(partHistReserved0);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to release history", e);
+            }
+        }
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
