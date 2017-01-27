@@ -25,13 +25,22 @@
 
 #foreach ( $organizationName in $projectsSortedByOrganization.keySet() )
 #foreach ( $project in $projectsSortedByOrganization.get( $organizationName ) )
-#if((!($project.licenses.size() == 1 && $project.licenses.get(0).url.contains("www.apache.org/licenses/LICENSE-2.0") && !$project.licenses.get(0).url.contains("and"))) && $project.licenses.size() > 0)
+#if($project.licenses.size() > 0)
 ==============================================================================
 For $project.name #if ($project.url)($project.url)#end $project.artifact
 ==============================================================================
 This product bundles $project.name which is available under a:
 #foreach ( $license in $project.licenses )
-$license.name.replaceAll("[ ]{2,}"," ").replaceAll("\n",""). #if ($license.url)For details, see $license.url.replaceAll("[ ]{2,}"," ").replaceAll("\n","").#end
+## Despite the license for javax.cache:cache-api:jar:1.0.0 was changed to
+## The Apache Software License, Version 2.0, the license name in the POM
+## remains unchanged. As a workaround, explicitly replace the license name
+## to the proper one.
+#if ( $license.name.contains("JSR-000107 JCACHE 2.9 Public Review") )
+	#set( $licenseName = "The Apache Software License, Version 2.0" )
+#else
+	#set( $licenseName = $license.name.replaceAll("[ ]{2,}"," ").replaceAll("\n","") )
+#end
+$licenseName. #if ($license.url)For details, see $license.url.replaceAll("[ ]{2,}"," ").replaceAll("\n","").#end
 
 #end
 

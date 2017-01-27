@@ -229,7 +229,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 For JSR107 API and SPI (https://github.com/jsr107/jsr107spec) javax.cache:cache-api:jar:1.0.0
 ==============================================================================
 This product bundles JSR107 API and SPI which is available under a:
-JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. For details, see https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt.
+The Apache Software License, Version 2.0. For details, see https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt.
 
 ==============================================================================
 For JSch (http://www.jcraft.com/jsch/) com.jcraft:jsch:jar:0.1.50
@@ -250,10 +250,10 @@ This product bundles Scala Library which is available under a:
 BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
 
 ==============================================================================
-For H2 Database Engine (http://www.h2database.com) com.h2database:h2:jar:1.3.175
+For H2 Database Engine (http://www.h2database.com) com.h2database:h2:jar:1.4.191
 ==============================================================================
 This product bundles H2 Database Engine which is available under a:
-The H2 License, Version 1.0. For details, see http://h2database.com/html/license.html.
+MPL 2.0, and EPL 1.0. For details, see http://h2database.com/html/license.html.
 
 ==============================================================================
 For JTidy (http://jtidy.sourceforge.net) net.sf.jtidy:jtidy:jar:r938
