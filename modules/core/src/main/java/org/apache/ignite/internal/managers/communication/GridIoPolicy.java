@@ -49,8 +49,8 @@ public class GridIoPolicy {
     /** Data streamer execution pool. */
     public static final byte DATA_STREAMER_POOL = 9;
 
-    /** SQL query execution pool. */
-    public static final byte SQL_QUERY_POOL = 10;
+    /** Query execution pool. */
+    public static final byte QUERY_POOL = 10;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.
