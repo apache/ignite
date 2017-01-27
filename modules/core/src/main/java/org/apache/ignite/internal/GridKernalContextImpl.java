@@ -823,7 +823,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService sqlQueryPool() { return sqlQryExecSvc; }
+    @Override public ExecutorService sqlQueryPool() {
+        return sqlQryExecSvc;
+    }
 
     /** {@inheritDoc} */
     @Override public IgniteCacheObjectProcessor cacheObjects() {
@@ -1016,7 +1018,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getSqlQueryExecutorService() { return sqlQryExecSvc; }
+    @Override public ExecutorService getSqlQueryExecutorService() {
+        return sqlQryExecSvc;
+    }
 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {

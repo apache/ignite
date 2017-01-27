@@ -170,7 +170,7 @@ public class IgniteConfiguration {
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default size of SQL query thread pool. */
-    public static final int DFLT_SQL_QUERY_THREAD_POOL_SIZE = DFLT_SYSTEM_CORE_THREAD_CNT;
+    public static final int DFLT_SQL_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
     @Deprecated
