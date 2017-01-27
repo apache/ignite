@@ -512,12 +512,13 @@ public class IgfsDataManager extends IgfsManager {
         ByteBuffer data,
         boolean flush,
         IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
+        @Nullable IgfsFileWorkerBatch batch,
+        WriteObserver observer
     ) throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return byteBufWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, data, data.remaining(),
-            flush, affinityRange, batch);
+            flush, affinityRange, batch, observer);
     }
 
     /**
@@ -546,12 +547,13 @@ public class IgfsDataManager extends IgfsManager {
         int len,
         boolean flush,
         IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
+        @Nullable IgfsFileWorkerBatch batch,
+        WriteObserver observer
     ) throws IgniteCheckedException, IOException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return dataInputWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, in, len, flush,
-            affinityRange, batch);
+            affinityRange, batch, observer);
     }
 
     /**
@@ -1201,6 +1203,72 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     *
+     */
+    public static abstract class WriteObserver {
+        /**
+         *
+         * @param bytes
+         */
+        public abstract void addWrittenPrimary(int bytes);
+
+        /**
+         *
+         * @param bytes
+         */
+        public abstract void addWrittenSecondary(int bytes);
+
+        /**
+         *
+         */
+        public abstract void finished();
+    }
+
+    /**
+     * Observer that updates metrics blocks.
+     */
+    public static class MetricsWriteObserver extends WriteObserver {
+        /** Cumulative total written byte counter. */
+        private long bytesPrimary;
+        private long bytesSecondary;
+
+        private final int primaryBlockSize;
+        private final int secondaryBlockSize;
+
+        private final IgfsLocalMetrics metrics;
+
+        MetricsWriteObserver(IgfsLocalMetrics metrics, int primaryBlockSize, int secondaryBlockSize) {
+            this.metrics = metrics;
+            this.primaryBlockSize = primaryBlockSize;
+            this.secondaryBlockSize = secondaryBlockSize;
+        }
+
+        private static int blocksToBeAdded(long totalBytes, int blockSize, int writeLen) {
+            return (int)(totalBytes / blockSize - (totalBytes - writeLen) / blockSize);
+        }
+
+        @Override public void addWrittenPrimary(int bytesAdded) {
+            bytesPrimary += bytesAdded;
+
+            int blocks = blocksToBeAdded(bytesPrimary, primaryBlockSize, bytesAdded);
+
+            metrics.addWriteBlocks(blocks, 0);
+        }
+
+        @Override public void addWrittenSecondary(int bytesAdded) {
+            bytesSecondary += bytesAdded;
+
+            int blocks = blocksToBeAdded(bytesSecondary, secondaryBlockSize, bytesAdded);
+
+            metrics.addWriteBlocks(0, blocks);
+        }
+
+        @Override public void finished() {
+            assert bytesPrimary == bytesSecondary;
+        }
+    }
+
+    /**
      * Abstract class to handle writes from different type of input data.
      */
     private abstract class BlocksWriter<T> {
@@ -1229,10 +1297,11 @@ public class IgfsDataManager extends IgfsManager {
             int srcLen,
             boolean flush,
             IgfsFileAffinityRange affinityRange,
-            @Nullable IgfsFileWorkerBatch batch
+            @Nullable IgfsFileWorkerBatch batch,
+            WriteObserver observer
         ) throws IgniteCheckedException {
             IgniteUuid id = fileInfo.id();
-            int blockSize = fileInfo.blockSize();
+            final int blockSize = fileInfo.blockSize();
 
             int len = remainderLen + srcLen;
 
@@ -1298,7 +1367,8 @@ public class IgfsDataManager extends IgfsManager {
                         if (!nodeBlocks.isEmpty()) {
                             processBatch(id, node, nodeBlocks);
 
-                            igfsCtx.metrics().addWriteBlocks(1, 0);
+                            // TODO: 1)
+                            // igfsCtx.metrics().addWriteBlocks(1, 0);
                         }
 
                         return portion;
@@ -1340,16 +1410,24 @@ public class IgfsDataManager extends IgfsManager {
                 else
                     nodeBlocks.put(key, portion);
 
-                igfsCtx.metrics().addWriteBlocks(writtenTotal, writtenSecondary);
+                // TODO: 2)
+                //igfsCtx.metrics().addWriteBlocks(writtenTotal, writtenSecondary);
 
                 written += portion.length;
+
+                // Update the observer:
+                observer.addWrittenPrimary(portion.length);
+
+                if (batch != null)
+                    observer.addWrittenSecondary(portion.length);
             }
 
             // Process final batch, if exists.
             if (!nodeBlocks.isEmpty()) {
                 processBatch(id, node, nodeBlocks);
 
-                igfsCtx.metrics().addWriteBlocks(nodeBlocks.size(), 0);
+                // TODO: 3)
+                //igfsCtx.metrics().addWriteBlocks(nodeBlocks.size(), 0);
             }
 
             assert written == len;

@@ -635,12 +635,10 @@ public final class IgfsImpl implements IgfsEx {
                     default:
                         assert mode == PROXY : "Unknown mode: " + mode;
 
-                        secondaryFs.update(path, props);
-
-                        IgfsFile file = secondaryFs.info(path);
+                        IgfsFile file = secondaryFs.update(path, props);
 
                         if (file != null)
-                            return new IgfsFileImpl(file, file.blockSize());
+                            return new IgfsFileImpl(file);
                 }
 
                 return null;
@@ -865,17 +863,13 @@ public final class IgfsImpl implements IgfsEx {
                     try {
                         Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
-                        int blockSize;
-
-                        for (IgfsFile child : children) {
-                            if (mode == PROXY)
-                                blockSize = child.blockSize();
-                            else
-                                blockSize = cfg.getBlockSize();
-
-                            IgfsFileImpl impl = new IgfsFileImpl(child, blockSize);
-
-                            files.add(impl);
+                        if (mode == PROXY) {
+                            for (IgfsFile child : children)
+                                files.add(new IgfsFileImpl(child));
+                        }
+                        else {
+                            for (IgfsFile child: children)
+                                files.add(new IgfsFileImpl(child, cfg.getBlockSize()));
                         }
 
                         if (mode == PROXY || !modeRslvr.hasPrimaryChild(path))
@@ -1622,7 +1616,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFile status = secondaryFs.info(path);
 
                 if (status != null)
-                    return new IgfsFileImpl(status, status.blockSize());
+                    return new IgfsFileImpl(status);
                 else
                     return null;
         }

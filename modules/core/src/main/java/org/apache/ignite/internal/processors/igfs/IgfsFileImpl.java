@@ -79,21 +79,22 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
     }
 
     /**
-     * A copy constructor. All the fields are copied from the copied {@code igfsFile}, but the {@code groupBlockSize}
-     * which is specified separately.
+     * A constructor that should be used for DUAL modes: it allows to specify
+     * the blockSize (size of IGFS cache value) for a secondary file system file, which normally
+     * should have blockSize == groupBlockSize == block size on the secondary file system.
      *
      * @param igfsFile The file to copy.
-     * @param blockSize The block size.
+     * @param blockSize The IGFS block size.
      */
-    public IgfsFileImpl(IgfsFile igfsFile, int blockSize) {
+    IgfsFileImpl(IgfsFile igfsFile, int blockSize) {
         A.notNull(igfsFile, "igfsFile");
 
         this.path = igfsFile.path();
         this.fileId = igfsFile instanceof IgfsFileImpl ? ((IgfsFileImpl)igfsFile).fileId : IgniteUuid.randomUuid();
 
-        this.blockSize = blockSize;
         this.len = igfsFile.length();
 
+        this.blockSize = igfsFile.isFile() ? blockSize : 0;
         this.grpBlockSize = igfsFile.isFile() ? igfsFile.groupBlockSize() : 0L;
 
         this.props = igfsFile.properties();
@@ -101,6 +102,16 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
         this.accessTime = igfsFile.accessTime();
         this.modificationTime = igfsFile.modificationTime();
         this.flags = IgfsUtils.flags(igfsFile.isDirectory(), igfsFile.isFile());
+    }
+
+    /**
+     * A constructor that should be used for PROXY mode.
+     * It enforces the PROXY mode rule "groupBlockSize == blockSize".
+     *
+     * @param igfsFile The file to copy.
+     */
+    public IgfsFileImpl(IgfsFile igfsFile) {
+        this(igfsFile, (int)igfsFile.groupBlockSize());
     }
 
     /**

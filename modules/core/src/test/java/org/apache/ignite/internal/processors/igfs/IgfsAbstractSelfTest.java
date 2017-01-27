@@ -2881,6 +2881,50 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     }
 
     /**
+     * Checks block metrics.
+     *
+     * @throws Exception
+     */
+    public void testMetricsBlockSmallWrites() throws Exception {
+        assert !dual || igfsSecondaryFileSystem != null;
+
+        final IgfsPath file00 = new IgfsPath("/file00");
+
+        igfs.create(file00, false).close();
+
+        final int blockSize = igfs.info(file00).blockSize();
+
+        assert blockSize > 0 : "Unexpected block size: " + blockSize;
+
+        igfs.configuration().setPrefetchBlocks(0);
+        igfs.format();
+        igfs.resetMetrics();
+
+        // Start metrics measuring.
+        final IgfsMetrics initMetrics = igfs.metrics();
+
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 0, 0, 0);
+
+        final int writtenCnt = blockSize * 3 + 7;
+
+        try (IgfsOutputStream os = igfs.create(file00, true)) {
+            for (int i=0; i<writtenCnt; i++) {
+                os.write(new byte[] {1});
+                os.flush();
+
+                os.write(new byte[] {1});
+
+                //if (i % 1024 == 0)
+                    os.flush();
+
+                break;
+            }
+        }
+
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 4, (dual || isProxy()) ? 4 : 0, writtenCnt);
+    }
+
+    /**
      * Checks basic metrics.
      *
      * @throws Exception

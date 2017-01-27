@@ -208,5 +208,8 @@ public class IgfsLocalMetrics {
         blocksWritten = F.t(new LongAdder8(), new LongAdder8());
         bytesRead = F.t(new LongAdder8(), new LongAdder8());
         bytesWritten = F.t(new LongAdder8(), new LongAdder8());
+
+        filesOpenedForRead.reset();
+        filesOpenedForWrite.reset();
     }
 }

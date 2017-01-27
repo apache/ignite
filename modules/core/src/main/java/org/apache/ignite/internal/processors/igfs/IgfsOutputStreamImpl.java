@@ -94,6 +94,12 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
         }
     }
 
+    @Override protected IgfsDataManager.WriteObserver createWriteObserver() {
+        return new IgfsDataManager.MetricsWriteObserver(
+            // TODO: get somehow the block sizes:
+            igfsCtx.metrics(), info.blockSize(), secondaryInfo.blockSize());
+    }
+
     /**
      * @return Length of file.
      */
@@ -253,9 +259,8 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
     private void flushRemainder() throws IOException {
         try {
             if (remainder != null) {
-
                 remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, null,
-                    0, ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+                    0, ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch, writeObserver);
 
                 remainder = null;
                 remainderDataLen = 0;
@@ -267,7 +272,7 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void send(Object data, int writeLen) throws IOException {
+    @Override protected void send(Object data, final int writeLen) throws IOException {
         assert Thread.holdsLock(mux);
         assert data instanceof ByteBuffer || data instanceof DataInput;
 
@@ -276,7 +281,7 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
             bytes += writeLen;
             space += writeLen;
 
-            int blockSize = fileInfo.blockSize();
+            final int blockSize = fileInfo.blockSize();
 
             // If data length is not enough to fill full block, fill the remainder and return.
             if (remainderDataLen + writeLen < blockSize) {
@@ -298,15 +303,17 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
                     ((DataInput)data).readFully(remainder, remainderDataLen, writeLen);
 
                 remainderDataLen += writeLen;
+
+                writeObserver.addWrittenPrimary(writeLen);
             }
             else {
                 if (data instanceof ByteBuffer) {
                     remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, remainder,
-                        remainderDataLen, (ByteBuffer)data, false, streamRange, batch);
+                        remainderDataLen, (ByteBuffer)data, false, streamRange, batch, writeObserver);
                 }
                 else {
                     remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, remainder,
-                        remainderDataLen, (DataInput)data, writeLen, false, streamRange, batch);
+                        remainderDataLen, (DataInput)data, writeLen, false, streamRange, batch, writeObserver);
                 }
 
                 remainderDataLen = remainder == null ? 0 : remainder.length;
@@ -364,6 +371,11 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
 
         return affKey == null ? null : new IgfsFileAffinityRange(off, off, affKey);
     }
+
+//    /** {@inheritDoc} */
+//    @Override protected int getBlockSize() {
+//        return fileInfo.blockSize();
+//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

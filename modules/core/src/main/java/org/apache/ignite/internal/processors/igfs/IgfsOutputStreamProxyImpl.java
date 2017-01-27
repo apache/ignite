@@ -52,6 +52,11 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
         this.info = info;
     }
 
+    @Override protected IgfsDataManager.WriteObserver createWriteObserver() {
+        // NB: for PROXY mode primary block size == secondary block size.
+        return new IgfsDataManager.MetricsWriteObserver(igfsCtx.metrics(), info.blockSize(), info.blockSize());
+    }
+
     /** {@inheritDoc} */
     @Override protected int optimizeBufferSize(int bufSize) {
         assert bufSize > 0;
@@ -151,16 +156,17 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
                 throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                     "stream because it was marked as closed: " + batch.path());
             else {
-                int blockSize = info.blockSize();
+                // Zero written to primary Fs because we write directly to secondary Fs:
+                writeObserver.addWrittenSecondary(writeLen);
 
-                if (blockSize > 0) {
-                    int blocks = writeLen / blockSize;
-
-                    if (writeLen % blockSize > 0)
-                        blocks++;
-
-                    igfsCtx.metrics().addWriteBlocks(blocks, blocks);
-                }
+//                int blockSize = getBlockSize();
+//
+//                if (blockSize > 0) {
+//                    int blocks = blocksToBeAdded(blockSize, writeLen);
+//
+//                    if (blocks > 0)
+//                        igfsCtx.metrics().addWriteBlocks(0/* TODO: zero? */, blocks);
+//                }
             }
 
         }
@@ -168,6 +174,10 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             throw new IOException("Failed to store data into file: " + path, e);
         }
     }
+//
+//    @Override protected int getBlockSize() {
+//        return info.blockSize();
+//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
