@@ -101,6 +101,9 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
                     log().info(sb.toString());
                     Field f = fields[unexpectedCnt];
                     Throwable t = ex;
+                    assertTrue("cache name must be null",
+                        t.getMessage().contains("cache: null"));
+                    t = t.getCause();
                     assertTrue("key must be equal \"test_key\"",
                         t.getMessage().contains("val=test_key"));
                     t = t.getCause();
