@@ -129,7 +129,6 @@
     <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
         <property name="rebalanceMode" value="SYNC"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-        <property name="swapEnabled" value="true"/>
         <property name="backups" value="1"/>
         <property name="eagerTtl" value="true"/>
     </bean>

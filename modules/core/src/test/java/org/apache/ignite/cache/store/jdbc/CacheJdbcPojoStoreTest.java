@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
@@ -295,6 +296,12 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
+                if (k instanceof BinaryObject)
+                    k = ((BinaryObject)k).deserialize();
+
+                if (v instanceof BinaryObject)
+                    v = ((BinaryObject)k).deserialize();
+
                 if (k instanceof OrganizationKey && v instanceof Organization)
                     orgKeys.add((OrganizationKey)k);
                 else if (k instanceof PersonKey && v instanceof Person)
@@ -381,6 +388,12 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
+                if (k instanceof BinaryObject)
+                    k = ((BinaryObject)k).deserialize();
+
+                if (v instanceof BinaryObject)
+                    v = ((BinaryObject)k).deserialize();
+
                 if (k instanceof PersonComplexKey && v instanceof Person)
                     prnComplexKeys.add((PersonComplexKey)k);
                 else
