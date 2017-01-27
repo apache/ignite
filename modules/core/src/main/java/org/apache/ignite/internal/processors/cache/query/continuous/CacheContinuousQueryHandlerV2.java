@@ -104,7 +104,8 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     /** {@inheritDoc} */
     @Override public CacheEntryEventFilter getEventFilter() {
         if (filter == null) {
-            assert rmtFilterFactory != null;
+            if (rmtFilterFactory == null)
+                return null;
 
             Factory<? extends CacheEntryEventFilter> factory = rmtFilterFactory;
 
