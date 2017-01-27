@@ -343,7 +343,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    protected ExecutorService sqlQryExecSvc;
+    protected ExecutorService qryExecSvc;
 
     /** */
     @GridToStringExclude
@@ -405,7 +405,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
-     * @param sqlQryExecSvc SQL query executor service.
+     * @param qryExecSvc Query executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -427,7 +427,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
-        ExecutorService sqlQryExecSvc,
+        ExecutorService qryExecSvc,
         List<PluginProvider> plugins
     ) {
         assert grid != null;
@@ -449,7 +449,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.affExecSvc = affExecSvc;
         this.idxExecSvc = idxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
-        this.sqlQryExecSvc = sqlQryExecSvc;
+        this.qryExecSvc = qryExecSvc;
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -823,8 +823,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService sqlQueryPool() {
-        return sqlQryExecSvc;
+    @Override public ExecutorService queryPool() {
+        return qryExecSvc;
     }
 
     /** {@inheritDoc} */
@@ -1018,8 +1018,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getSqlQueryExecutorService() {
-        return sqlQryExecSvc;
+    @Override public ExecutorService getQueryExecutorService() {
+        return qryExecSvc;
     }
 
     /** {@inheritDoc} */

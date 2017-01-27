@@ -1489,8 +1489,8 @@ public class IgnitionEx {
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
-        /** SQL query executor service. */
-        private ThreadPoolExecutor sqlQryExecSvc;
+        /** Query executor service. */
+        private ThreadPoolExecutor qryExecSvc;
 
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
@@ -1786,17 +1786,17 @@ public class IgnitionEx {
                 );
             }
 
-            validateThreadPoolSize(cfg.getSqlQueryThreadPoolSize(), "sql query");
+            validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");
 
-            sqlQryExecSvc = new IgniteThreadPoolExecutor(
-                "sql-query",
+            qryExecSvc = new IgniteThreadPoolExecutor(
+                "query",
                 cfg.getGridName(),
-                cfg.getSqlQueryThreadPoolSize(),
-                cfg.getSqlQueryThreadPoolSize(),
+                cfg.getQueryThreadPoolSize(),
+                cfg.getQueryThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
 
-            sqlQryExecSvc.allowCoreThreadTimeOut(true);
+            qryExecSvc.allowCoreThreadTimeOut(true);
 
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
@@ -1823,7 +1823,7 @@ public class IgnitionEx {
                     affExecSvc,
                     idxExecSvc,
                     callbackExecSvc,
-                    sqlQryExecSvc,
+                    qryExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2418,9 +2418,9 @@ public class IgnitionEx {
 
             sysExecSvc = null;
 
-            U.shutdownNow(getClass(), sqlQryExecSvc, log);
+            U.shutdownNow(getClass(), qryExecSvc, log);
 
-            sqlQryExecSvc = null;
+            qryExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 

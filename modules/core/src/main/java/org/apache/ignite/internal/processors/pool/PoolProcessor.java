@@ -129,7 +129,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                 return ctx.getDataStreamerExecutorService();
 
             case GridIoPolicy.QUERY_POOL:
-                return ctx.getSqlQueryExecutorService();
+                return ctx.getQueryExecutorService();
 
             default: {
                 if (plc < 0)

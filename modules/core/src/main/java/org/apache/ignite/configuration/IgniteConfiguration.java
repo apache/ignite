@@ -169,8 +169,8 @@ public class IgniteConfiguration {
     @Deprecated
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default size of SQL query thread pool. */
-    public static final int DFLT_SQL_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+    /** Default size of query thread pool. */
+    public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
     @Deprecated
@@ -269,8 +269,8 @@ public class IgniteConfiguration {
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
-    /** SQL query pool size. */
-    private int sqlQryPoolSize = DFLT_SQL_QUERY_THREAD_POOL_SIZE;
+    /** Query pool size. */
+    private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -562,7 +562,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        sqlQryPoolSize = cfg.getSqlQueryThreadPoolSize();
+        qryPoolSize = cfg.getQueryThreadPoolSize();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -876,14 +876,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing SQL query messages.
+     * Size of thread pool that is in charge of processing query messages.
      * <p>
-     * If not provided, executor service will have size {@link #DFLT_SQL_QUERY_THREAD_POOL_SIZE}.
+     * If not provided, executor service will have size {@link #DFLT_QUERY_THREAD_POOL_SIZE}.
      *
-     * @return Thread pool size to be used in grid for SQL query messages.
+     * @return Thread pool size to be used in grid for query messages.
      */
-    public int getSqlQueryThreadPoolSize() {
-        return sqlQryPoolSize;
+    public int getQueryThreadPoolSize() {
+        return qryPoolSize;
     }
 
     /**
@@ -993,14 +993,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets SQL query thread pool size to use within grid.
+     * Sets query thread pool size to use within grid.
      *
      * @param poolSize Thread pool size to use within grid.
-     * @see IgniteConfiguration#getSqlQueryThreadPoolSize()
+     * @see IgniteConfiguration#getQueryThreadPoolSize()
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setSqlQueryThreadPoolSize(int poolSize) {
-        sqlQryPoolSize = poolSize;
+    public IgniteConfiguration setQueryThreadPoolSize(int poolSize) {
+        qryPoolSize = poolSize;
 
         return this;
     }
