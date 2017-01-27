@@ -2414,12 +2414,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                             // Add only SQL indexes.
                             if (desc.type() == GridQueryIndexType.SORTED) {
-                                Collection<String> idxFields = e.getValue().fields();
+                                Collection<String> idxFields = new LinkedList<>();
                                 Collection<String> descendings = new LinkedList<>();
 
-                                for (String idxField : idxFields)
+                                for (String idxField : e.getValue().fields()) {
+                                    String allCapsIdxField = idxField.toUpperCase();
+                                    idxFields.add(allCapsIdxField);
                                     if (desc.descending(idxField))
-                                        descendings.add(idxField);
+                                        descendings.add(allCapsIdxField);
+                                }
 
                                 indexesCol.add(new CacheSqlIndexMetadata(e.getKey().toUpperCase(),
                                     idxFields, descendings, false));
