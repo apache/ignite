@@ -1292,9 +1292,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (ctx.checkpoint().enabled())
             perf.add("Disable checkpoints (remove 'checkpointSpi' from configuration)");
 
-        if (cfg.isPeerClassLoadingEnabled())
-            perf.add("Disable peer class loading (set 'peerClassLoadingEnabled' to false)");
-
         if (cfg.isMarshalLocalJobs())
             perf.add("Disable local jobs marshalling (set 'marshalLocalJobs' to false)");
 
