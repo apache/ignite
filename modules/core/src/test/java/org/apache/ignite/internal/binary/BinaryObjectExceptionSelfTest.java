@@ -34,9 +34,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * BinaryObjectExceptionTest
+ * BinaryObjectExceptionSelfTest
  */
-public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
+public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String TEST_KEY = "test_key";
@@ -107,8 +107,8 @@ public class BinaryObjectExceptionTest extends GridCommonAbstractTest {
                     assertTrue("key must be equal \"test_key\"",
                         t.getMessage().contains("val=test_key"));
                     t = t.getCause();
-                    assertTrue("type must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value\"",
-                        t.getMessage().contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionTest$Value"));
+                    assertTrue("type must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value\"",
+                        t.getMessage().contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value"));
                     t = t.getCause();
                     assertTrue("field must be equal \"" + f.getName() + "\"",
                         t.getMessage().contains("field: " + f.getName()));
