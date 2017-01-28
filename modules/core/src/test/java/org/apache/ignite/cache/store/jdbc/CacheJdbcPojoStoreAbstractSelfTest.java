@@ -516,7 +516,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             c1.loadCache(null, "PersonKeyWrong", "SELECT * FROM Person");
         }
         catch (CacheLoaderException e) {
-            String msg = e.getMessage();
+            String msg = e.getCause().getMessage();
 
             assertTrue("Unexpected exception: " + msg,
                 ("Provided key type is not found in store or cache configuration " +
