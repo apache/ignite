@@ -2180,11 +2180,24 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cache exception.
      */
     private RuntimeException cacheException(Exception e) {
+        RuntimeException r;
         if (e instanceof IgniteCheckedException)
-            e = CU.convertToCacheException((IgniteCheckedException)e);
-        return S.INCLUDE_SENSITIVE ?
-            new CacheException("Failure operating with cache: " + getName(), e) :
-            (RuntimeException)e;
+            r = CU.convertToCacheException((IgniteCheckedException)e);
+        else
+            r = (RuntimeException)e;
+        if(!S.INCLUDE_SENSITIVE)
+            return r;
+        String msg = "Failure operating with cache: " + getName();
+        Class<? extends RuntimeException> errType = r.getClass();
+        RuntimeException ce;
+        try {
+            ce = errType.getConstructor(String.class).newInstance(msg);
+        }
+        catch (Exception ex) {
+            ce = new CacheException(msg, e);
+        }
+        ce.initCause(r);
+        return ce;
     }
 
     /**
