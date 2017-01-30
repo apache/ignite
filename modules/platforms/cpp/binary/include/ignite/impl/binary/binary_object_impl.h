@@ -46,12 +46,40 @@ namespace ignite
             {
             public:
                 /**
-                 * Constructor.
+                 * Copy constructor.
                  *
-                 * @param mem Binary object memory.
-                 * @param start Object starting position in memory.
+                 * @param other Another instance.
                  */
-                BinaryObjectImpl(interop::InteropMemory& mem, int32_t start);
+                BinaryObjectImpl(const BinaryObjectImpl& other);
+
+                /**
+                 * Assignment operator.
+                 *
+                 * @param other Another instance.
+                 * @return *this.
+                 */
+                BinaryObjectImpl& operator=(const BinaryObjectImpl& other);
+
+                /**
+                 * Create from InteropMemory instance.
+                 * @throw IgniteError if the memory at the specified offset
+                 *    is not a valid BinaryObject.
+                 *
+                 * @param mem Memory.
+                 * @param offset Offset in memory.
+                 * @return BinaryObjectImpl instance.
+                 */
+                static BinaryObjectImpl FromMemory(interop::InteropMemory& mem, int32_t offset);
+
+                /**
+                 * Create from InteropMemory instance.
+                 * @warning Does not check memory for validity.
+                 *
+                 * @param mem Memory.
+                 * @param offset Offset in memory.
+                 * @return BinaryObjectImpl instance.
+                 */
+                static BinaryObjectImpl FromMemoryUnsafe(interop::InteropMemory& mem, int32_t offset);
 
                 /**
                  * Deserialize object.
@@ -62,7 +90,7 @@ namespace ignite
                 template<typename T>
                 T Deserialize() const
                 {
-                    interop::InteropInputStream stream(&mem);
+                    interop::InteropInputStream stream(mem);
 
                     stream.Position(start);
                     BinaryReaderImpl reader(&stream);
@@ -95,10 +123,16 @@ namespace ignite
                 int32_t GetTypeId() const;
 
             private:
-                IGNITE_NO_COPY_ASSIGNMENT(BinaryObjectImpl)
+                /**
+                 * Constructor.
+                 *
+                 * @param mem Binary object memory.
+                 * @param start Object starting position in memory.
+                 */
+                BinaryObjectImpl(interop::InteropMemory& mem, int32_t start);
 
                 /** Underlying object memory. */
-                interop::InteropMemory& mem;
+                interop::InteropMemory* mem;
 
                 /** Object starting position in memory. */
                 int32_t start;

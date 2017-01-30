@@ -86,20 +86,14 @@ namespace ignite
             {
                 typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
 
-                K key = reader.ReadObject<K>();
-                V value;
+                ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
 
+                K key = reader.ReadObject<K>();
+
+                V value;
                 bool exists = reader.TryReadObject<V>(value);
 
-                bool isLocal = reader.ReadBool();
-
-                // For C++ client we currently always writing processor as an
-                // object, no matter if it's local or not.
-                assert(!isLocal);
-
                 impl::cache::MutableCacheEntryState entryState;
-
-                ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
 
                 R res = procHolder.template Process<R, K, V>(key, value, exists, entryState);
 

@@ -18,6 +18,7 @@
 #include <ignite/ignite_error.h>
 
 #include <ignite/impl/binary/binary_object_header.h>
+#include <ignite/impl/binary/binary_utils.h>
 
 namespace ignite
 {
@@ -31,20 +32,31 @@ namespace ignite
                 {
                     IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
                         "Not enough data in the binary object", "memPtr", mem.PointerLong(),
-                        "len", mem.Length(), "headerLen", SIZE);
+                        "len", mem.Length(), "headerLen", static_cast<int>(SIZE));
                 }
 
-                BinaryObjectHeader hdr(mem.Data() + offset);
+                int8_t type = BinaryUtils::ReadInt8(mem, offset);
+                if (type == impl::binary::IGNITE_TYPE_BINARY)
+                {
+                    int32_t binLen = BinaryUtils::ReadInt32(mem, offset + 1);
+                    int32_t binOff = BinaryUtils::ReadInt32(mem, offset + binLen);
 
-                int8_t type = hdr.GetType();
-                if (type != impl::binary::IGNITE_TYPE_OBJECT)
+                    return BinaryObjectHeader(mem.Data() + offset + binOff);
+                }
+                else if (type != impl::binary::IGNITE_TYPE_OBJECT)
                 {
                     IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
-                        "Not enough data in the binary object", "memPtr", mem.PointerLong(),
-                        "type", type, "expected", impl::binary::IGNITE_TYPE_OBJECT);
+                        "Not expected type header of the binary object", "memPtr", mem.PointerLong(),
+                        "type", static_cast<int>(type),
+                        "expected", static_cast<int>(impl::binary::IGNITE_TYPE_OBJECT));
                 }
 
-                return hdr;
+                return BinaryObjectHeader(mem.Data() + offset);
+            }
+
+            int8_t* BinaryObjectHeader::GetMem()
+            {
+                return reinterpret_cast<int8_t*>(header);
             }
         }
     }

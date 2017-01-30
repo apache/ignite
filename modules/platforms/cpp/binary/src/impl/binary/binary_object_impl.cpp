@@ -26,31 +26,58 @@ namespace ignite
     {
         namespace binary
         {
-            BinaryObjectImpl::BinaryObjectImpl(impl::interop::InteropMemory& mem, int32_t start) :
-                mem(mem),
+            BinaryObjectImpl::BinaryObjectImpl(interop::InteropMemory& mem, int32_t start) :
+                mem(&mem),
                 start(start)
             {
                 // No-op.
             }
 
+            BinaryObjectImpl::BinaryObjectImpl(const BinaryObjectImpl& other) :
+                mem(other.mem),
+                start(other.start)
+            {
+                // No-op.
+            }
+
+            BinaryObjectImpl& BinaryObjectImpl::operator=(const BinaryObjectImpl& other)
+            {
+                mem = other.mem;
+
+                return *this;
+            }
+
+            BinaryObjectImpl BinaryObjectImpl::FromMemory(interop::InteropMemory& mem, int32_t offset)
+            {
+                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, offset);
+
+                int32_t adjustedStart = static_cast<int32_t>(header.GetMem() - mem.Data());
+
+                assert(adjustedStart >= 0);
+
+                return BinaryObjectImpl(mem, adjustedStart);
+            }
+
+            BinaryObjectImpl BinaryObjectImpl::FromMemoryUnsafe(interop::InteropMemory& mem, int32_t offset)
+            {
+                return BinaryObjectImpl(mem, offset);
+            }
+
             const int8_t* BinaryObjectImpl::GetData() const
             {
-                // Creating header here to validate object header layout.
-                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
-
-                return mem.Data() + start + BinaryObjectHeader::SIZE;
+                return mem->Data() + start + BinaryObjectHeader::SIZE;
             }
 
             int32_t BinaryObjectImpl::GetLength() const
             {
-                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+                BinaryObjectHeader header(mem->Data() + start);
 
                 return header.GetDataLength();
             }
 
             int32_t BinaryObjectImpl::GetTypeId() const
             {
-                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+                BinaryObjectHeader header(mem->Data() + start);
 
                 return header.GetTypeId();
             }
