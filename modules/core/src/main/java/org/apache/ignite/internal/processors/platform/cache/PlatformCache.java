@@ -447,12 +447,12 @@ public class PlatformCache extends PlatformAbstractTarget {
                         reader.readObjectDetached()) ? TRUE : FALSE;
 
                 case OP_LOC_LOAD_CACHE:
-                    loadCache0(reader, true, cache);
+                    loadCache0(reader, true);
 
                     return TRUE;
 
                 case OP_LOAD_CACHE:
-                    loadCache0(reader, false, cache);
+                    loadCache0(reader, false);
 
                     return TRUE;
 
@@ -592,13 +592,13 @@ public class PlatformCache extends PlatformAbstractTarget {
                 }
 
                 case OP_LOAD_CACHE_ASYNC: {
-                    setCurrentFuture(loadCache0(reader, false, cache));
+                    setCurrentFuture(loadCacheAsync0(reader, false));
 
                     return readAndListenFuture(reader);
                 }
 
                 case OP_LOC_LOAD_CACHE_ASYNC: {
-                    setCurrentFuture(loadCache0(reader, true, cache));
+                    setCurrentFuture(loadCacheAsync0(reader, true));
 
                     return readAndListenFuture(reader);
                 }
@@ -810,17 +810,56 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @param reader Binary reader.
      * @param loc Local flag.
-     * @param cache Cache.
      * @return Cache async operation future.
      */
-    private IgniteFuture<Void> loadCache0(BinaryRawReaderEx reader, boolean loc, IgniteCache cache) {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
+        PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
+
+        Object[] args = readArgs(reader);
+
+        if (loc)
+            cache.localLoadCache(filter, args);
+        else
+            cache.loadCache(filter, args);
+    }
+
+    /**
+     * Asynchronously loads cache via localLoadCacheAsync or loadCacheAsync.
+     *
+     * @param reader Binary reader.
+     * @param loc Local flag.
+     * @return Cache async operation future.
+     */
+    private IgniteFuture<Void> loadCacheAsync0(BinaryRawReaderEx reader, boolean loc) {
+        PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
+
+        Object[] args = readArgs(reader);
+
+        if (loc)
+            return cache.localLoadCacheAsync(filter, args);
+        else
+            return cache.loadCacheAsync(filter, args);
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return created object.
+     */
+    @Nullable private PlatformCacheEntryFilter createPlatformCacheEntryFilter(BinaryRawReaderEx reader) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
             filter = platformCtx.createCacheEntryFilter(pred, 0);
+        return filter;
+    }
 
+    /**
+     * @param reader Binary reader.
+     * @return Arguments array.
+     */
+    @Nullable private Object[] readArgs(BinaryRawReaderEx reader) {
         Object[] args = null;
 
         int argCnt = reader.readInt();
@@ -831,11 +870,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             for (int i = 0; i < argCnt; i++)
                 args[i] = reader.readObjectDetached();
         }
-
-        if (loc)
-            return cache.localLoadCacheAsync(filter, args);
-        else
-            return cache.loadCacheAsync(filter, args);
+        return args;
     }
 
     /** {@inheritDoc} */
@@ -1140,6 +1175,14 @@ public class PlatformCache extends PlatformAbstractTarget {
         return curFut.get();
     }
 
+    /**
+     * @param fut Future to set.
+     */
+    private void setCurrentFuture(IgniteFuture<?> fut) {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
+    }
+
+
     /** <inheritDoc /> */
     @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
         if (opId == OP_GET_ALL)
@@ -1359,13 +1402,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
 
         throw new IgniteException("Platform cache extension is not registered [id=" + id + ']');
-    }
-
-    /**
-     * @param fut Future to set.
-     */
-    private void setCurrentFuture(IgniteFuture<?> fut) {
-        curFut.set(((IgniteFutureImpl)fut).internalFuture());
     }
 
     /**
