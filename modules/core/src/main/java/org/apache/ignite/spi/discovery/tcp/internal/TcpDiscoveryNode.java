@@ -262,7 +262,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
             try {
                 regionId = Long.valueOf((String)id);
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 regionId = null;
             }
         else
@@ -650,9 +650,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /**
      * Return cluster region id.
      *
-     * @return Cluster region id.
+     * @return Cluster region id or null if not set.
      */
-    public Long getClusterRegionId() {
+    public @Nullable Long getClusterRegionId() {
         return regionId;
     }
 
