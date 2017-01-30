@@ -109,6 +109,9 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private final IgniteServices services;
 
+    /** */
+    private final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
+
     /** Server keep binary flag. */
     private final boolean srvKeepBinary;
 
@@ -153,21 +156,21 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             case OP_DOTNET_DEPLOY_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployAsync(reader, services), null);
+                setCurrentFuture(dotnetDeployAsync(reader, services));
 
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE: {
-                dotnetDeployMultiple(reader, services);
+                dotnetDeployMultiple(reader);
 
                 return TRUE;
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
-                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader, services), null);
+                setCurrentFuture(dotnetDeployMultipleAsync(reader));
 
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_CANCEL: {
@@ -177,15 +180,15 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             case OP_CANCEL_ASYNC: {
-                readAndListenFuture(reader, services.cancelAsync(reader.readString()), null);
+                setCurrentFuture(services.cancelAsync(reader.readString()));
 
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_CANCEL_ALL_ASYNC: {
-                readAndListenFuture(reader, services.cancelAllAsync(), null);
+                setCurrentFuture(services.cancelAllAsync());
 
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             default:
@@ -348,12 +351,23 @@ public class PlatformServices extends PlatformAbstractTarget {
         return super.processInStreamOutObject(type, reader);
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return curFut.get();
+    }
+
+    /**
+     * @param fut Future.
+     */
+    private void setCurrentFuture(IgniteFuture fut) {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
+    }
+
     /**
      * Deploys multiple dotnet services.
      * @param reader Binary reader.
-     * @param services Services.
      */
-    private void dotnetDeployMultiple(BinaryRawReaderEx reader, IgniteServices services) {
+    private void dotnetDeployMultiple(BinaryRawReaderEx reader) {
         String name = reader.readString();
         Object svc = reader.readObjectDetached();
         int totalCnt = reader.readInt();
@@ -364,12 +378,11 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
-     * Deploys multiple dotnet services.
+     * Asynchronously deploys multiple dotnet services.
      * @param reader Binary reader.
-     * @param services Services.
      * @return Future of the operation.
      */
-    private IgniteFuture<Void> dotnetDeployMultipleAsync(BinaryRawReaderEx reader, IgniteServices services) {
+    private IgniteFuture<Void> dotnetDeployMultipleAsync(BinaryRawReaderEx reader) {
         String name = reader.readString();
         Object svc = reader.readObjectDetached();
         int totalCnt = reader.readInt();

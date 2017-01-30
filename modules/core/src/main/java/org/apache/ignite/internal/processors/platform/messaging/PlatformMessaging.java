@@ -69,6 +69,9 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     /** */
     private final IgniteMessaging messaging;
 
+    /** */
+    private final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
+
     /**
      * Ctor.
      *
@@ -129,13 +132,17 @@ public class PlatformMessaging extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_LISTEN_ASYNC: {
-                readAndListenFuture(reader, startRemoteListenAsync(reader, messaging), null);
+                setCurrentFuture(startRemoteListenAsync(reader, messaging));
+
+                readAndListenFuture(reader, currentFuture(), null);
 
                 return TRUE;
             }
 
             case OP_STOP_REMOTE_LISTEN_ASYNC: {
-                readAndListenFuture(reader, messaging.stopRemoteListenAsync(reader.readUuid()), null);
+                setCurrentFuture(messaging.stopRemoteListenAsync(reader.readUuid()));
+
+                readAndListenFuture(reader, currentFuture(), null);
 
                 return TRUE;
             }
@@ -177,6 +184,16 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
 
         return messaging.remoteListen(topic, filter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return curFut.get();
+    }
+
+    /** {@inheritDoc} */
+    private void setCurrentFuture(IgniteFuture fut) {
+        curFut.set(((IgniteFutureImpl)fut).internalFuture());
     }
 
     /**
