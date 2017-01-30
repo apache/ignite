@@ -67,11 +67,11 @@ public class IgniteSemaphoreExample {
 
             // Start consumers on all cluster nodes.
             for (int i = 0; i < NUM_CONSUMERS; i++)
-                ignite.compute().withAsync().run(new Consumer(semaphoreName));
+                ignite.compute().runAsync(new Consumer(semaphoreName));
 
             // Start producers on all cluster nodes.
             for (int i = 0; i < NUM_PRODUCERS; i++)
-                ignite.compute().withAsync().run(new Producer(semaphoreName));
+                ignite.compute().runAsync(new Producer(semaphoreName));
 
             System.out.println("Master node is waiting for all other nodes to finish...");
 
