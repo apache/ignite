@@ -127,7 +127,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
             fail("Successful start of already started Twitter Streamer");
         }
-        catch (IgniteException ex) {
+        catch (IgniteException ignored) {
             // No-op.
         }
 
@@ -145,7 +145,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
             fail("Successful stop of already stopped Twitter Streamer");
         }
-        catch (IgniteException ex) {
+        catch (IgniteException ignored) {
             // No-op.
         }
 

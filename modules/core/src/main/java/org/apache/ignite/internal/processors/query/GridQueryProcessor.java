@@ -490,7 +490,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 return;
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 U.warn(log, "Interrupted while waiting for active queries cancellation.");
 
                 Thread.currentThread().interrupt();

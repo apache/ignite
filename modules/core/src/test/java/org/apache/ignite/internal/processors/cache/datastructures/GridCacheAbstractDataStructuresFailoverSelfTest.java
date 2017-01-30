@@ -444,7 +444,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             try {
                 sem.acquire(1);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedException ignored) {
                 // Expected exception.
                 return;
             }
@@ -472,7 +472,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 try {
                     sem2.acquire();
                 }
-                catch (Exception e){
+                catch (Exception ignored){
                     failed = false;
                 }
                 finally {
@@ -487,7 +487,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         while(!sem1.hasQueuedThreads()){
             try {
                 Thread.sleep(1);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
                 fail();
             }
         }
@@ -641,10 +641,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                     fail("Exception must be thrown.");
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     fail("Interrupted exception not expected here.");
                 }
-                catch (IgniteException e) {
+                catch (IgniteException ignored) {
                     isExceptionThrown = true;
                 }
                 finally {
@@ -734,7 +734,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                     final AtomicBoolean done = new AtomicBoolean(false);
 
-                    IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                    GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
                             try{
                                 l.lock();
@@ -1344,8 +1344,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             try {
                                 barrier.await();
                             }
-                            catch (BrokenBarrierException e) {
-                                // Ignore.
+                            catch (BrokenBarrierException ignored) {
+                                // No-op.
                             }
                         }
                     }
