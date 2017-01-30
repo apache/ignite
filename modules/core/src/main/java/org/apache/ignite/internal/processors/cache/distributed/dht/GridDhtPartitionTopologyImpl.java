@@ -1070,24 +1070,32 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             node2part = partMap;
 
-            Set<ClusterNode>[] p2n = (Set<ClusterNode>[])new Set[cctx.affinity().partitions()];
+            Set<ClusterNode>[] part2node0 = (Set<ClusterNode>[])new Set[part2node.length];
+
+            for(int i = 0; i < part2node.length; i++) {
+                if (part2node[i] != null) {
+                    Set<ClusterNode> partNodes = U.newHashSet(3);
+                    partNodes.addAll(part2node[i]);
+                    part2node0[i] = partNodes;
+                }
+            }
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : partMap.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
-                    Set<ClusterNode> partNodes = p2n[p];
+                    Set<ClusterNode> partNodes = part2node0[p];
 
                     if (partNodes == null) {
                         // Initialize HashSet to size 3 in anticipation that there won't be
                         // more than 3 nodes per partitions.
                         partNodes = U.newHashSet(3);
-                        p2n[p] = partNodes;
+                        part2node0[p] = partNodes;
                     }
 
                     partNodes.add(node(e.getKey()));
                 }
             }
 
-            part2node = p2n;
+            System.arraycopy(part2node0, 0, part2node, 0, part2node0.length);
 
             boolean changed = false;
 
@@ -1185,15 +1193,25 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (changed) {
                 node2part.put(parts.nodeId(), parts);
 
+                Set<ClusterNode>[] part2node0 = (Set<ClusterNode>[])new Set[part2node.length];
+
+                for(int i = 0; i < part2node.length; i++) {
+                    if (part2node[i] != null) {
+                        Set<ClusterNode> partNodes = U.newHashSet(3);
+                        partNodes.addAll(part2node[i]);
+                        part2node0[i] = partNodes;
+                    }
+                }
+
                 // Add new mappings.
                 for (Integer p : parts.keySet()) {
-                    Set<ClusterNode> partNodes = part2node[p];
+                    Set<ClusterNode> partNodes = part2node0[p];
 
                     if (partNodes == null) {
                         // Initialize HashSet to size 3 in anticipation that there won't be
                         // more than 3 nodes per partition.
                         partNodes = U.newHashSet(3);
-                        part2node[p] = partNodes;
+                        part2node0[p] = partNodes;
                     }
 
                     partNodes.add(node(parts.nodeId()));
@@ -1205,12 +1223,14 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (parts.containsKey(p))
                             continue;
 
-                        Set<ClusterNode> partNodes = part2node[p];
+                        Set<ClusterNode> partNodes = part2node0[p];
 
                         if (partNodes != null)
                             partNodes.remove(node(parts.nodeId()));
                     }
                 }
+
+                System.arraycopy(part2node0, 0, part2node, 0, part2node0.length);
             }
             else
                 cur.updateSequence(parts.updateSequence(), parts.topologyVersion());
