@@ -794,10 +794,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             removeTable(tbl);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Queries individual fields (generally used by JDBC drivers).
+     *
+     * @param spaceName Space name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param filter Space name and key filter.
+     * @param enforceJoinOrder Enforce join order of tables in the query.
+     * @param timeout Query timeout in milliseconds.
+     * @param cancel Query cancel.
+     * @return Query result.
+     * @throws IgniteCheckedException If failed.
+     */
     @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
@@ -817,7 +829,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setEnforceJoinOrder(enforceJoinOrder);
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
-            return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+            return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filter, cancel);
         }
 
         List<GridQueryFieldMetadata> meta;
@@ -830,7 +842,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
-            .filter(filters).distributedJoins(false);
+            .filter(filter).distributedJoins(false);
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1160,8 +1172,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    /**
+     * Executes regular query.
+     *
+     * @param spaceName Space name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param type Query return type.
+     * @param filter Space name and key filter.
+     * @return Queried rows.
+     * @throws IgniteCheckedException If failed.
+     */
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> queryLocalSql(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, String type,
         final IndexingQueryFilter filter) throws IgniteCheckedException {
