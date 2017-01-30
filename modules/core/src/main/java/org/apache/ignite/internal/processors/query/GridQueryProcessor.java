@@ -937,8 +937,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                    GridQueryCancel cancel = new GridQueryCancel();
 
-                    final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry, idx.backupFilter(requestTopVer.get(), null));
+                    final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
+                        idx.backupFilter(requestTopVer.get(), null), cancel);
 
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
@@ -946,7 +948,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             return cursor.iterator();
                         }
-                    }, new GridQueryCancel()) {
+                    }, cancel) {
                         @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                             if (cursor instanceof QueryCursorImpl)
                                 return ((QueryCursorImpl)cursor).fieldsMeta();

@@ -87,10 +87,11 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @param qry Query.
      * @param filter Space name and key filter.
+     * @param cancel Query cancel.
      * @return Cursor.
      */
     public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
-        IndexingQueryFilter filter) throws IgniteCheckedException;
+        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Executes regular query.

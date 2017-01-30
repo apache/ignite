@@ -1088,8 +1088,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     @Override public <K, V> QueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
-        final SqlFieldsQuery qry, final IndexingQueryFilter filter) throws IgniteCheckedException {
-        final GridQueryCancel cancel = new GridQueryCancel();
+        final SqlFieldsQuery qry, final IndexingQueryFilter filter, final GridQueryCancel cancel)
+        throws IgniteCheckedException {
 
         if (queryParallelismLevel > 1 && cctx != null
             && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled()) {
@@ -1142,7 +1142,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             String sqlQry = qry.getSql();
             Object[] params = qry.getArgs();
 
-            final GridCloseableIterator<Cache.Entry<K, V>> i = queryLocalSql(space, sqlQry, F.asList(params), type, filter);
+            GridQueryCancel cancel = new GridQueryCancel();
+
+            final GridCloseableIterator<Cache.Entry<K, V>> i = queryLocalSql(space, sqlQry, F.asList(params), type,
+                filter, cancel);
 
             return new QueryCursorImpl<Cache.Entry<K, V>>(new Iterable<Cache.Entry<K, V>>() {
                 @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1168,7 +1171,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     };
                 }
-            }, new GridQueryCancel());
+            }, cancel);
         }
     }
 
@@ -1185,7 +1188,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> queryLocalSql(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, String type,
-        final IndexingQueryFilter filter) throws IgniteCheckedException {
+        final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
             final TableDescriptor tbl = tableDescriptor(type, spaceName);
 
         if (tbl == null)
@@ -1201,7 +1204,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
 
         try {
-            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, null);
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, cancel);
 
             return new CacheEntryIterator(rs);
         }
