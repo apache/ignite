@@ -146,7 +146,7 @@ public final class ComputeFibonacciContinuationExample {
 
                 // If future is not cached in node-local-map, cache it.
                 if (fut1 == null) {
-                    ComputeTaskFuture<BigInteger> futVal = compute.applyAsync(
+                    IgniteFuture<BigInteger> futVal = compute.applyAsync(
                         new ContinuationFibonacciClosure(nodeFilter), n - 1);
 
                     fut1 = locMap.putIfAbsent(n - 1, futVal);
@@ -157,7 +157,7 @@ public final class ComputeFibonacciContinuationExample {
 
                 // If future is not cached in node-local-map, cache it.
                 if (fut2 == null) {
-                    ComputeTaskFuture<BigInteger> futVal = compute.applyAsync(
+                    IgniteFuture<BigInteger> futVal = compute.applyAsync(
                         new ContinuationFibonacciClosure(nodeFilter), n - 2);
 
                     fut2 = locMap.putIfAbsent(n - 2, futVal);
