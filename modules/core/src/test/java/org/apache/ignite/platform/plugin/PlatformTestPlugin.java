@@ -17,35 +17,11 @@
 
 package org.apache.ignite.platform.plugin;
 
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.plugin.IgnitePlugin;
 
 /**
- * Test plugin extension.
+ * Test plugin.
  */
-public class PlatformTestPluginExtension implements PlatformPluginExtension {
-    /** */
-    private final IgniteEx ignite;
-
-    /**
-     * Ctor.
-     *
-     * @param ignite Ignite.
-     */
-    PlatformTestPluginExtension(IgniteEx ignite) {
-        assert ignite != null;
-
-        this.ignite = ignite;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int id() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget createTarget() {
-        return new PlatformTestPluginTarget(ignite.context().platform().context());
-    }
+public class PlatformTestPlugin implements IgnitePlugin {
+    // No-op.
 }

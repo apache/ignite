@@ -92,6 +92,6 @@ public class PlatformTestPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
-        return null;
+        return new PlatformTestPlugin();
     }
 }
