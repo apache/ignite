@@ -22,6 +22,6 @@ import org.apache.ignite.plugin.IgnitePlugin;
 /**
  * Test plugin.
  */
-public class PlatformTestPlugin implements IgnitePlugin {
+class PlatformTestPlugin implements IgnitePlugin {
     // No-op.
 }

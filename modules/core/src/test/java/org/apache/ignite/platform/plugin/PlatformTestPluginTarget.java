@@ -17,19 +17,74 @@
 
 package org.apache.ignite.platform.plugin;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test target.
  */
-public class PlatformTestPluginTarget extends PlatformAbstractTarget {
+class PlatformTestPluginTarget extends PlatformAbstractTarget {
+    /** */
+    private final String name;
+
     /**
      * Constructor.
      *
      * @param platformCtx Context.
      */
-    protected PlatformTestPluginTarget(PlatformContext platformCtx) {
+    PlatformTestPluginTarget(PlatformContext platformCtx, String name) {
         super(platformCtx);
+
+        this.name = name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        return val + 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        return reader.readString().length();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+        String s = reader.readString();
+
+        writer.writeString(s.toUpperCase());
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+            throws IgniteCheckedException {
+        return new PlatformTestPluginTarget(platformCtx, reader.readString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(
+            int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+        PlatformTestPluginTarget t = (PlatformTestPluginTarget)arg;
+
+        writer.writeString(t.name);
+
+        return new PlatformTestPluginTarget(platformCtx, t.name + reader.readString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        writer.writeString(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        return new PlatformTestPluginTarget(platformCtx, name);
     }
 }

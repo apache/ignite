@@ -69,12 +69,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.AreEqual(plugin, plugin2);
 
-                var ex = Assert.Throws<IgniteException>(() => plugin.Provider.Context.GetExtension(0));
-                Assert.AreEqual("Platform extension is not registered [id=0]", ex.Message);
+                var extension = plugin.Provider.Context.GetExtension(0);
+                Assert.IsNotNull(extension);
+
+                CheckPluginTarget(extension);
             }
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
             Assert.AreEqual(true, plugin.Provider.IgniteStopped);
+        }
+
+        /// <summary>
+        /// Checks the plugin target operations.
+        /// </summary>
+        private static void CheckPluginTarget(IPlatformTarget extension)
+        {
+            Assert.AreEqual(3, extension.InLongOutLong(1, 2));
         }
 
         /// <summary>
