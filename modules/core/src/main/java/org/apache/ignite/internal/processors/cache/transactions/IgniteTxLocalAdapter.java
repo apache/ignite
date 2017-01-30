@@ -3064,7 +3064,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
 
         if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
+            log.debug(S.toString("Called putAllAsync(...)",
+                "tx", this, false,
+                "map", map0, true,
+                "retval", retval, false));
 
         assert map0 != null || invokeMap0 != null;
 
