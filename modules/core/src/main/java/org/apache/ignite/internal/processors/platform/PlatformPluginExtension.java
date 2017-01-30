@@ -22,7 +22,7 @@ import org.apache.ignite.plugin.Extension;
 /**
  * Platform extension.
  */
-public interface PlatformExtension extends Extension {
+public interface PlatformPluginExtension extends Extension {
     /**
      * Get extension ID. Must be unique among all extensions.
      *

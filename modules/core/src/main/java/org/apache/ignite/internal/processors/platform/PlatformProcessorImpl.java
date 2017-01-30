@@ -96,7 +96,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private final PlatformConfigurationEx interopCfg;
 
     /** Extensions. */
-    private final PlatformExtension[] extensions;
+    private final PlatformPluginExtension[] extensions;
 
     /** Whether processor is started. */
     private boolean started;
@@ -143,7 +143,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             interopCfg.logger().setContext(platformCtx);
 
         // Initialize extensions (if any).
-        extensions = prepareExtensions(ctx.plugins().extensions(PlatformExtension.class));
+        extensions = prepareExtensions(ctx.plugins().extensions(PlatformPluginExtension.class));
     }
 
     /** {@inheritDoc} */
@@ -345,7 +345,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy extension(int id) {
         if (extensions != null && id < extensions.length) {
-            PlatformExtension ext = extensions[id];
+            PlatformPluginExtension ext = extensions[id];
 
             if (ext != null)
                 return proxy(ext.createTarget());
@@ -608,20 +608,20 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * @param exts Original extensions.
      * @return Prepared extensions.
      */
-    private static PlatformExtension[] prepareExtensions(PlatformExtension[] exts) {
+    private static PlatformPluginExtension[] prepareExtensions(PlatformPluginExtension[] exts) {
         if (!F.isEmpty(exts)) {
             int maxExtId = 0;
 
-            Map<Integer, PlatformExtension> idToExt = new HashMap<>();
+            Map<Integer, PlatformPluginExtension> idToExt = new HashMap<>();
 
-            for (PlatformExtension ext : exts) {
+            for (PlatformPluginExtension ext : exts) {
                 if (ext == null)
                     throw new IgniteException("Platform extension cannot be null.");
 
                 if (ext.id() < 0)
                     throw new IgniteException("Platform extension ID cannot be negative: " + ext);
 
-                PlatformExtension oldCacheExt = idToExt.put(ext.id(), ext);
+                PlatformPluginExtension oldCacheExt = idToExt.put(ext.id(), ext);
 
                 if (oldCacheExt != null)
                     throw new IgniteException("Platform extensions cannot have the same ID [" +
@@ -631,16 +631,16 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                     maxExtId = ext.id();
             }
 
-            PlatformExtension[] res = new PlatformExtension[maxExtId + 1];
+            PlatformPluginExtension[] res = new PlatformPluginExtension[maxExtId + 1];
 
-            for (PlatformExtension ext : exts)
+            for (PlatformPluginExtension ext : exts)
                 res[ext.id()]= ext;
 
             return res;
         }
         else
             //noinspection ZeroLengthArrayAllocation
-            return new PlatformExtension[0];
+            return new PlatformPluginExtension[0];
     }
 
     /**
