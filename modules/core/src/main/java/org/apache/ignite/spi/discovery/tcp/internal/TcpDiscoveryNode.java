@@ -256,8 +256,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         Object id = this.attrs.get("CLUSTER_REGION_ID");
         if (id == null)
             regionId = null;
-        else if (id instanceof Number)
-            regionId = ((Number)id).longValue();
+        else if (id instanceof Integer)
+            regionId = ((Integer)id).longValue();
+        else if (id instanceof Long)
+            regionId = (Long)id;
         else if (id instanceof String)
             try {
                 regionId = Long.valueOf((String)id);
