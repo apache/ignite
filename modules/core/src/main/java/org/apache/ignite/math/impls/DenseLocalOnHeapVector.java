@@ -145,7 +145,41 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public Iterable<Element> all() {
-        return null; // TODO
+        return new Iterable<Element>() {
+            private int idx = 0;
+
+            @Override
+            public Iterator<Element> iterator() {
+                return new Iterator<Element>() {
+                    @Override
+                    public boolean hasNext() {
+                        return idx < data.length - 1;
+                    }
+
+                    @Override
+                    public Element next() {
+                        return new Element() {
+                            private final int i = idx++;
+
+                            @Override
+                            public double get() {
+                                return data[i];
+                            }
+
+                            @Override
+                            public int index() {
+                                return i;
+                            }
+
+                            @Override
+                            public void set(double val) {
+                                data[i] = val;
+                            }
+                        };
+                    }
+                };
+            }
+        };
     }
 
     /** {@inheritDoc */
@@ -159,23 +193,63 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
     }
 
     /** {@inheritDoc */
-    @Override public Vector assign(double val) {
+    @Override public Spliterator<Double> allSpliterator() {
+        return Arrays.spliterator(data);
+    }
+
+    /** {@inheritDoc */
+    @Override public Spliterator<Double> nonZeroSpliterator() {
         return null; // TODO
+    }
+
+    /** {@inheritDoc */
+    @Override public Vector assign(double val) {
+        Arrays.fill(data, val);
+
+        return this;
     }
 
     /** {@inheritDoc */
     @Override public Vector assign(double[] vals) {
-        return null; // TODO
+        if (vals.length != data.length)
+            throw new CardinalityException(data.length, vals.length);
+
+        System.arraycopy(vals, 0, data, 0, vals.length);
+
+        return this;
+    }
+
+    /** {@inheritDoc */
+    @Override
+    public Vector assign(IntToDoubleFunction fun) {
+        assert fun != null;
+
+        Arrays.setAll(data, fun);
+
+        return this;
     }
 
     /** {@inheritDoc */
     @Override public Vector assign(Vector vec) {
-        return null; // TODO
+        assert vec != null;
+
+        if (vec.size() != size())
+            throw new CardinalityException(size(), vec.size());
+
+
+        for (Vector.Element x : vec.all())
+            data[x.index()] = x.get();
+
+        return this;
     }
 
     /** {@inheritDoc */
     @Override public Vector map(DoubleFunction<Double> fun) {
-        return null; // TODO
+        assert fun != null;
+
+        Arrays.setAll(data, (idx) -> fun.apply(data[idx]));
+
+        return this;
     }
 
     /** {@inheritDoc */

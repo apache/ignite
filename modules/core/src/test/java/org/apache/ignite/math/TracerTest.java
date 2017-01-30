@@ -31,6 +31,8 @@ public class TracerTest {
     public void testAsciiVectorTracer() {
         DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(20);
 
+        vec.assign((idx) -> Math.random());
+
         Tracer.showAscii(vec);
         Tracer.showAscii(vec, "%2f");
         Tracer.showAscii(vec, "%.3g");
