@@ -390,9 +390,8 @@ public class TcpDiscoveryNodesRing {
                 if (rmv.equals(maxNode)) {
                     TcpDiscoveryNode newMaxNode = null;
                     for (TcpDiscoveryNode node : nodes) {
-                        if (newMaxNode == null || (newMaxNode.compareTo(node) < 0)) {
+                        if (newMaxNode == null || (newMaxNode.compareTo(node) < 0))
                             newMaxNode = node;
-                        }
                     }
                     maxNode = newMaxNode;
                 }
