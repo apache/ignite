@@ -137,7 +137,8 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
     @Override public DenseLocalOnHeapVector clone() {
         try {
             return new DenseLocalOnHeapVector((DenseLocalOnHeapVector) super.clone());
-        } catch (CloneNotSupportedException e) {
+        }
+        catch (CloneNotSupportedException e) {
             return new DenseLocalOnHeapVector(this);
         }
     }

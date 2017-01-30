@@ -17,12 +17,13 @@
 
 package org.apache.ignite.math;
 
+import org.apache.ignite.*;
 import java.awt.*;
 
 /**
  * This object allows to display matrices and vectors using GUI.
  */
-public interface Tracer {
+public class Tracer {
     public interface MatrixColorPredicate {
         /**
          *
@@ -139,5 +140,68 @@ public interface Tracer {
         assert tracers.length > 0;
 
         // TODO.
+    }
+
+    /**
+     * 
+     * @param vec
+     */
+    static void showAscii(Vector vec, IgniteLogger log, String fmt) {
+        String cls = vec.getClass().getSimpleName();
+
+        log.info(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt) + "]"));
+    }
+
+    /**
+     *
+     * @param vec
+     */
+    static void showAscii(Vector vec, IgniteLogger log) {
+        showAscii(vec, log, "%4f");
+    }
+
+    /**
+     *
+     * @param vec
+     */
+    static void showAscii(Vector vec, String fmt) {
+        String cls = vec.getClass().getSimpleName();
+
+        System.out.println(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt) + "]"));
+    }
+
+    /**
+     *
+     * @param vec
+     */
+    static void showAscii(Vector vec) {
+        showAscii(vec, "%4f");
+    }
+
+    /**
+     *
+     * @param vec
+     * @param fmt
+     * @return
+     */
+    static String mkString(Vector vec, String fmt) {
+        boolean first = true;
+
+        StringBuffer buf = new StringBuffer();
+
+        for (Vector.Element x : vec.all()) {
+            String s = String.format(fmt, x.get());
+
+            if (!first) {
+                buf.append(", ");
+                buf.append(s);
+            }
+            else {
+                buf.append(s);
+                first = false;
+            }
+        }
+
+        return buf.toString();
     }
 }
