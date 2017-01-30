@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System.Collections.Generic;
     using System.IO;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
@@ -67,6 +68,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
                 var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.AreEqual(plugin, plugin2);
+
+                var ex = Assert.Throws<IgniteException>(() => plugin.Provider.Context.GetExtension(0));
+                Assert.AreEqual("Platform extension is not registered [id=0]", ex.Message);
             }
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
