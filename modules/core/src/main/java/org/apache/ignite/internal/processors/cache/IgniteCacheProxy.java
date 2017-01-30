@@ -43,6 +43,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
@@ -97,6 +98,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    protected transient IgniteLogger log;
 
     /** */
     private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
@@ -177,6 +181,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         this.ctx = ctx;
         this.delegate = delegate;
         this.opCtx = opCtx;
+
+        log = ctx.logger(getClass());
 
         gate = ctx.gate();
 
@@ -2180,24 +2186,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cache exception.
      */
     private RuntimeException cacheException(Exception e) {
+        if(S.INCLUDE_SENSITIVE)
+            log.error("Failure operating with cache: " + getName(), e);
         RuntimeException r;
         if (e instanceof IgniteCheckedException)
             r = CU.convertToCacheException((IgniteCheckedException)e);
         else
             r = (RuntimeException)e;
-        if(!S.INCLUDE_SENSITIVE)
-            return r;
-        String msg = "Failure operating with cache: " + getName();
-        Class<? extends RuntimeException> errType = r.getClass();
-        RuntimeException ce;
-        try {
-            ce = errType.getConstructor(String.class).newInstance(msg);
-        }
-        catch (Exception ex) {
-            ce = new CacheException(msg, e);
-        }
-        ce.initCause(r);
-        return ce;
+        return r;
     }
 
     /**
