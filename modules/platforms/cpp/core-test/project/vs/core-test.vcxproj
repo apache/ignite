@@ -38,6 +38,7 @@
     <None Include="..\..\config\invalid.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\binary_object_test.cpp" />
     <ClCompile Include="..\..\src\cache_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\decimal_test.cpp" />
@@ -63,6 +64,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\binary_test_defs.h" />
     <ClInclude Include="..\..\include\ignite\binary_test_utils.h" />
+    <ClInclude Include="..\..\include\ignite\complex_type.h" />
+    <ClInclude Include="..\..\include\ignite\test_type.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

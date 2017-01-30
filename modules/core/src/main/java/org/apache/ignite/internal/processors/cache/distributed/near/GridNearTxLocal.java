@@ -329,15 +329,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final boolean skipVals,
         final boolean needVer,
         boolean keepBinary,
+        final ExpiryPolicy expiryPlc,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
+        IgniteCacheExpiryPolicy expiryPlc0 = optimistic() ?
+            accessPolicy(cacheCtx, keys) :
+            cacheCtx.cache().expiryPolicy(expiryPlc);
+
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
                 topVer,
                 keys,
                 readThrough,
                 /*deserializeBinary*/false,
-                accessPolicy(cacheCtx, keys),
+                expiryPlc0,
                 skipVals,
                 needVer).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
                 @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
@@ -368,7 +373,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
-                    accessPolicy(cacheCtx, keys),
+                    expiryPlc0,
                     skipVals,
                     /*can remap*/true,
                     needVer,
@@ -399,7 +404,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
-                    accessPolicy(cacheCtx, keys),
+                    expiryPlc0,
                     skipVals,
                     /*can remap*/true,
                     needVer,
@@ -433,6 +438,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 skipVals,
                 keepBinary,
                 needVer,
+                expiryPlc,
                 c);
         }
     }
@@ -1161,6 +1167,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param keys Keys.
      * @param retval Return value flag.
      * @param read Read flag.
+     * @param accessTtl Create ttl.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.
@@ -1171,6 +1178,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final Collection<? extends K> keys,
         boolean retval,
         boolean read,
+        long createTtl,
         long accessTtl,
         boolean skipStore,
         boolean keepBinary) {
@@ -1205,6 +1213,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             read,
             retval,
             isolation,
+            createTtl,
             accessTtl,
             CU.empty0(),
             skipStore,
@@ -1303,6 +1312,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext cacheCtx, Collection<KeyCacheObject> keys) {
+        assert optimistic();
+
         if (accessMap != null) {
             for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
                 if (e.getKey().cacheId() == cacheCtx.cacheId() && keys.contains(e.getKey().key()))
