@@ -122,7 +122,8 @@ public class TcpDiscoveryNodesRing {
 
         try {
             return minNodeVer;
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -143,7 +144,8 @@ public class TcpDiscoveryNodesRing {
             clear();
 
             maxInternalOrder = locNode.internalOrder();
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -201,7 +203,8 @@ public class TcpDiscoveryNodesRing {
 
         try {
             return nodes.size() > 1;
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -223,7 +226,8 @@ public class TcpDiscoveryNodesRing {
                     return true;
 
             return false;
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -248,7 +252,7 @@ public class TcpDiscoveryNodesRing {
             long maxInternalOrder0 = maxInternalOrder();
 
             assert node.internalOrder() > maxInternalOrder0 : "Adding node to the middle of the ring " +
-                    "[ring=" + this + ", node=" + node + ']';
+                "[ring=" + this + ", node=" + node + ']';
 
             nodesMap.put(node.id(), node);
 
@@ -257,14 +261,16 @@ public class TcpDiscoveryNodesRing {
             node.lastUpdateTime(U.currentTimeMillis());
 
             nodes.add(node);
-            if (maxNode == null || node.compareTo(maxNode) > 0) maxNode = node;
+            if (maxNode == null || node.compareTo(maxNode) > 0)
+                maxNode = node;
 
             nodeOrder = node.internalOrder();
 
             maxInternalOrder = node.internalOrder();
 
             initializeMinimumVersion();
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
 
@@ -283,7 +289,8 @@ public class TcpDiscoveryNodesRing {
             }
 
             return maxInternalOrder;
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -296,7 +303,7 @@ public class TcpDiscoveryNodesRing {
      * <p>
      * Also initializes nodes last update time with current system time.
      *
-     * @param nodes  List of remote nodes.
+     * @param nodes List of remote nodes.
      * @param topVer Topology version.
      */
     public void restoreTopology(Iterable<TcpDiscoveryNode> nodes, long topVer) {
@@ -327,13 +334,15 @@ public class TcpDiscoveryNodesRing {
                 node.lastUpdateTime(U.currentTimeMillis());
 
                 this.nodes.add(node);
-                if (maxNode == null || node.compareTo(maxNode) > 0) maxNode = node;
+                if (maxNode == null || node.compareTo(maxNode) > 0)
+                    maxNode = node;
             }
 
             nodeOrder = topVer;
 
             initializeMinimumVersion();
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -352,7 +361,8 @@ public class TcpDiscoveryNodesRing {
 
         try {
             return nodesMap.get(nodeId);
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -392,7 +402,8 @@ public class TcpDiscoveryNodesRing {
             initializeMinimumVersion();
 
             return rmv;
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -425,7 +436,8 @@ public class TcpDiscoveryNodesRing {
             topVer = 0;
 
             minNodeVer = locNode.version();
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -444,7 +456,8 @@ public class TcpDiscoveryNodesRing {
                 return null;
 
             return coordinator(null);
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -468,7 +481,8 @@ public class TcpDiscoveryNodesRing {
                 return null;
 
             return Collections.min(filtered);
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -487,7 +501,8 @@ public class TcpDiscoveryNodesRing {
                 return null;
 
             return nextNode(null);
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -497,10 +512,8 @@ public class TcpDiscoveryNodesRing {
      * <p>
      * This may be used when detecting and handling nodes failure.
      *
-     * @param excluded Nodes to exclude from the search (optional). If provided,
-     *                 cannot contain local node.
-     * @return Next node or {@code null} if all nodes were filtered out or
-     * topology contains less than two nodes.
+     * @param excluded Nodes to exclude from the search (optional). If provided, cannot contain local node.
+     * @return Next node or {@code null} if all nodes were filtered out or topology contains less than two nodes.
      */
     @Nullable
     public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
@@ -513,7 +526,8 @@ public class TcpDiscoveryNodesRing {
             Iterator<TcpDiscoveryNode> filtered = serverNodes(excluded, locNode).iterator();
             if (filtered.hasNext()) {
                 return filtered.next();
-            } else {
+            }
+            else {
                 filtered = serverNodes(excluded).iterator();
                 if (filtered.hasNext()) {
                     TcpDiscoveryNode firstNode = filtered.next();
@@ -522,10 +536,12 @@ public class TcpDiscoveryNodesRing {
                         return null;
                     else
                         return firstNode;
-                } else
+                }
+                else
                     return null;
             }
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -540,7 +556,8 @@ public class TcpDiscoveryNodesRing {
 
         try {
             return topVer;
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -562,7 +579,8 @@ public class TcpDiscoveryNodesRing {
             }
 
             return false;
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -577,7 +595,8 @@ public class TcpDiscoveryNodesRing {
 
         try {
             return ++topVer;
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -595,7 +614,8 @@ public class TcpDiscoveryNodesRing {
                 nodeOrder = maxInternalOrder();
 
             return ++nodeOrder;
-        } finally {
+        }
+        finally {
             rwLock.writeLock().unlock();
         }
     }
@@ -611,7 +631,8 @@ public class TcpDiscoveryNodesRing {
             List<TcpDiscoveryNode> list = U.arrayList(nodes, p);
 
             return Collections.unmodifiableCollection(list);
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }
@@ -637,11 +658,11 @@ public class TcpDiscoveryNodesRing {
      * Gets server nodes from topology in part of ring is started from specific node.
      *
      * @param excluded Nodes to exclude from the search (optional).
-     * @param from     Start position in ring (exclude)
+     * @param from Start position in ring (exclude)
      * @return Collection of server nodes.
      */
     private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded,
-                                                     TcpDiscoveryNode from) {
+        TcpDiscoveryNode from) {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes.tailSet(from, false), new P1<TcpDiscoveryNode>() {
@@ -673,7 +694,8 @@ public class TcpDiscoveryNodesRing {
 
         try {
             return S.toString(TcpDiscoveryNodesRing.class, this);
-        } finally {
+        }
+        finally {
             rwLock.readLock().unlock();
         }
     }

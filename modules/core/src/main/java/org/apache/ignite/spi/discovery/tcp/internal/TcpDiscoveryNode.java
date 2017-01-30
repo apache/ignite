@@ -150,7 +150,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private transient boolean daemon;
 
-    /** cluster region id*/
+    /** cluster region id */
     private Long regionId;
 
     /**
@@ -177,8 +177,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId)
-    {
+        Serializable consistentId) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -258,11 +257,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         if (id == null)
             regionId = null;
         else if (id instanceof Number)
-            regionId = ((Number) id).longValue();
+            regionId = ((Number)id).longValue();
         else if (id instanceof String)
             try {
-                regionId = Long.valueOf((String) id);
-            } catch (NumberFormatException e) {
+                regionId = Long.valueOf((String)id);
+            }
+            catch (NumberFormatException e) {
                 regionId = null;
             }
         else
@@ -636,7 +636,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
-            CacheMetricsSnapshot m = (CacheMetricsSnapshot) in.readObject();
+            CacheMetricsSnapshot m = (CacheMetricsSnapshot)in.readObject();
 
             cacheMetrics.put(id, m);
         }

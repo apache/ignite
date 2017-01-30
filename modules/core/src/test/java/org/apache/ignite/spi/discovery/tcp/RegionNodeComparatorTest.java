@@ -58,9 +58,9 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
      */
     private static String pairToString(ComparatorTester.Pair<TcpDiscoveryNode> pair) {
         return "[firstNodeInternalOrder=" + pair.first.internalOrder() +
-                ", firstNodeRegionId=" + pair.first.getAttributes().get("CLUSTER_REGION_ID") +
-                ", secondNodeInternalOrder=" + pair.second.internalOrder() +
-                ", secondNodeRegionId=" + pair.second.getAttributes().get("CLUSTER_REGION_ID") + ']';
+            ", firstNodeRegionId=" + pair.first.getAttributes().get("CLUSTER_REGION_ID") +
+            ", secondNodeInternalOrder=" + pair.second.internalOrder() +
+            ", secondNodeRegionId=" + pair.second.getAttributes().get("CLUSTER_REGION_ID") + ']';
     }
 
     /**
@@ -105,7 +105,7 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
          */
         private TcpDiscoveryNode getRaw() {
             TcpDiscoveryNode node = new TcpDiscoveryNode(new UUID(0L, id.getAndIncrement()), Collections.singletonList("1.1.1.1"),
-                    Collections.singletonList("1.1.1.1"), 88, new DiscoveryMetricsProvider() {
+                Collections.singletonList("1.1.1.1"), 88, new DiscoveryMetricsProvider() {
                 @Override
                 public ClusterMetrics metrics() {
                     return null;

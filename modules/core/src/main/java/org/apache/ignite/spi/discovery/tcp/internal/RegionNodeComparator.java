@@ -29,17 +29,17 @@ public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
      */
     @Override
     public int compare(TcpDiscoveryNode firstNode, TcpDiscoveryNode secondNode) {
-        Long firstId = firstNode.getClusterRegionId();
-        Long secondId = secondNode.getClusterRegionId();
+        Long firstRegionId = firstNode.getClusterRegionId();
+        Long secondRegionId = secondNode.getClusterRegionId();
 
-        if ((firstId == secondId) || firstId.equals(secondId))
+        if (firstRegionId == null && secondRegionId == null)
             return firstNode.compareTo(secondNode);
-        else {
-            if (firstId == null)
-                return -1;
-            else if (secondId == null)
-                return 1;
-            else return (firstId > secondId) ? 1 : -1;
-        }
+        if (firstRegionId == null)
+            return -1;
+        if (secondRegionId == null)
+            return 1;
+        if (firstRegionId.equals(secondRegionId))
+            return firstNode.compareTo(secondNode);
+        return firstRegionId.compareTo(secondRegionId);
     }
 }
