@@ -1087,6 +1087,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         s.setJoinBatchEnabled(distributedJoins);
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> QueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry, final IndexingQueryFilter filter, final GridQueryCancel cancel)
         throws IgniteCheckedException {
