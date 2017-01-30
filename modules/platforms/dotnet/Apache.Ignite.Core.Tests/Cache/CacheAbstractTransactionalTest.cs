@@ -767,6 +767,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests all transactional operations with <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3477")]
         public void TestTransactionScopeAllOperations()
         {
             CheckTxOp((cache, key) => cache.Put(key, -5));
