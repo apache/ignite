@@ -27,7 +27,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobContext;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
