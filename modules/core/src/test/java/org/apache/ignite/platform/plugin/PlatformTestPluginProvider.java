@@ -19,6 +19,8 @@ package org.apache.ignite.platform.plugin;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
 import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +48,8 @@ public class PlatformTestPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-
+        registry.registerExtension(PlatformPluginExtension.class,
+                new PlatformTestPluginExtension((IgniteEx) ctx.grid()));
     }
 
     /** {@inheritDoc} */
