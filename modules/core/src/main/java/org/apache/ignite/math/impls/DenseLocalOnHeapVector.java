@@ -105,12 +105,12 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public boolean isDense() {
-        return false; // TODO
+        return true;
     }
 
     /** {@inheritDoc */
     @Override public boolean isSequentialAccess() {
-        return false; // TODO
+        return true;
     }
 
     /** {@inheritDoc */
@@ -310,7 +310,7 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public boolean isAddConstantTime() {
-        return false; // TODO
+        return true;
     }
 
     /** {@inheritDoc */
