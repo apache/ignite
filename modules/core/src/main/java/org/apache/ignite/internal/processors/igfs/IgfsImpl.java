@@ -179,8 +179,11 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
-        if (secondaryFs instanceof IgfsKernalContextAware)
-            ((IgfsKernalContextAware)secondaryFs).setKernalContext(igfsCtx.kernalContext());
+        if (secondaryFs != null) {
+            igfsCtx.kernalContext().resource().injectGeneric(secondaryFs);
+
+            igfsCtx.kernalContext().resource().injectFileSystem(secondaryFs, this);
+        }
 
         if (secondaryFs instanceof LifecycleAware)
             ((LifecycleAware)secondaryFs).start();
@@ -635,7 +638,7 @@ public final class IgfsImpl implements IgfsEx {
                         IgfsFile file = secondaryFs.update(path, props);
 
                         if (file != null)
-                            return new IgfsFileImpl(secondaryFs.update(path, props), data.groupBlockSize());
+                            return new IgfsFileImpl(file, data.groupBlockSize());
                 }
 
                 return null;
@@ -1229,19 +1232,11 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY) {
-                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
-                        ((IgfsSecondaryFileSystemV2)secondaryFs).setTimes(path, accessTime, modificationTime);
-                    else
-                        throw new UnsupportedOperationException("setTimes is not supported in PROXY mode for " +
-                            "this secondary file system,");
-                }
+                if (mode == PROXY)
+                    secondaryFs.setTimes(path, accessTime, modificationTime);
                 else {
-                    boolean useSecondary =
-                        IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
-
                     meta.updateTimes(path, accessTime, modificationTime,
-                        useSecondary ? (IgfsSecondaryFileSystemV2) secondaryFs : null);
+                        IgfsUtils.isDualMode(mode) ? secondaryFs : null);
                 }
 
                 return null;
@@ -1270,6 +1265,9 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
                 IgfsMode mode = resolveMode(path);
+
+                if (mode == PROXY)
+                    return secondaryFs.affinity(path, start, len, maxLen);
 
                 // Check memory first.
                 IgfsEntryInfo info = meta.infoForPath(path);

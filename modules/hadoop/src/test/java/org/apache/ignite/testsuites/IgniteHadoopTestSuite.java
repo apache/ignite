@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProt
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.Hadoop1OverIgfsProxyTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.KerberosUserNameMapperSelfTest;
@@ -136,6 +137,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsProxyTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
 
