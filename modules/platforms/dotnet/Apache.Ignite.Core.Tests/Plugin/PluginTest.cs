@@ -82,9 +82,19 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// <summary>
         /// Checks the plugin target operations.
         /// </summary>
-        private static void CheckPluginTarget(IPlatformTarget extension)
+        private static void CheckPluginTarget(IPlatformTarget target)
         {
-            Assert.AreEqual(3, extension.InLongOutLong(1, 2));
+            // Increments arg by one.
+            Assert.AreEqual(3, target.InLongOutLong(1, 2));
+            Assert.AreEqual(5, target.InLongOutLong(1, 4));
+
+            // Returns string length.
+            Assert.AreEqual(3, target.InStreamOutLong(1, w => w.WriteString("foo")));
+            Assert.AreEqual(6, target.InStreamOutLong(1, w => w.WriteString("foobar")));
+
+            // Returns uppercase string.
+            Assert.AreEqual("FOO", target.InStreamOutStream(1, w => w.WriteString("foo"), r => r.ReadString()));
+            Assert.AreEqual("BAR", target.InStreamOutStream(1, w => w.WriteString("bar"), r => r.ReadString()));
         }
 
         /// <summary>

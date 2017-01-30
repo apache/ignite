@@ -926,7 +926,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction)
         {
-            return DoOutOp(type, writeAction);
+            return DoOutOp(type, writer => writeAction(writer));
         }
 
         /** <inheritdoc /> */
