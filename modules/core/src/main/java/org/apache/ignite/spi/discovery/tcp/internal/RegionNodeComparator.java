@@ -18,17 +18,18 @@
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.util.Comparator;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * New behavior for node ordering. Sort firstly by region ID, and secondly by topology version.
- * Node without region ID is less the node with the region ID.
+ * Node without region ID (it is equal null) is less the node with the region ID.
  */
 public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
     /**
      * {@inheritDoc}
      */
     @Override
-    public int compare(TcpDiscoveryNode firstNode, TcpDiscoveryNode secondNode) {
+    public int compare(@NotNull TcpDiscoveryNode firstNode, @NotNull TcpDiscoveryNode secondNode) {
         Long firstRegionId = firstNode.getClusterRegionId();
         Long secondRegionId = secondNode.getClusterRegionId();
 
