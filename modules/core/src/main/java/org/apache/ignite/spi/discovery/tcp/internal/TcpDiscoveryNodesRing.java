@@ -37,9 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Convenient way to represent topology for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
  */
 public class TcpDiscoveryNodesRing {
-    /**
-     * Visible nodes filter.
-     */
+    /** Visible nodes filter. */
     public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
         @Override
         public boolean apply(TcpDiscoveryNode node) {
@@ -53,9 +51,7 @@ public class TcpDiscoveryNodesRing {
         }
     };
 
-    /**
-     * Client nodes filter.
-     */
+    /** Client nodes filter. */
     private static final PN CLIENT_NODES = new PN() {
         @Override
         public boolean apply(ClusterNode node) {
@@ -63,26 +59,18 @@ public class TcpDiscoveryNodesRing {
         }
     };
 
-    /**
-     * Local node.
-     */
+    /** Local node. */
     private TcpDiscoveryNode locNode;
 
-    /**
-     * All nodes in topology.
-     */
+    /** All nodes in topology. */
     @GridToStringInclude
     private NavigableSet<TcpDiscoveryNode> nodes;
 
-    /**
-     * All started nodes.
-     */
+    /** All started nodes. */
     @GridToStringExclude
     private Map<UUID, TcpDiscoveryNode> nodesMap = new HashMap<>();
 
-    /**
-     * Current topology version
-     */
+    /** Current topology version */
     private long topVer;
 
     /** */
@@ -96,9 +84,7 @@ public class TcpDiscoveryNodesRing {
      */
     private TcpDiscoveryNode maxNode = null;
 
-    /**
-     * Lock.
-     */
+    /** Lock. */
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
@@ -684,9 +670,7 @@ public class TcpDiscoveryNodesRing {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public String toString() {
         rwLock.readLock().lock();
