@@ -736,7 +736,7 @@ namespace ignite
                     int32_t length = stream->Position() - start;
 
                     flags |= IGNITE_BINARY_FLAG_HAS_SCHEMA;
-                    
+
                     if (schemaType == OFFSET_TYPE_ONE_BYTE)
                         flags |= IGNITE_BINARY_FLAG_OFFSET_ONE_BYTE;
                     else if (schemaType == OFFSET_TYPE_TWO_BYTES)
