@@ -1305,6 +1305,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 onDone(exchangeId().topologyVersion());
             }
+            fullMsgs.clear();
+            singleMsgs.clear();
         }
         catch (IgniteCheckedException e) {
             onDone(e);
