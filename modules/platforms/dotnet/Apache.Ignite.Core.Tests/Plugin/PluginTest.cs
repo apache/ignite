@@ -84,6 +84,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// </summary>
         private static void CheckPluginTarget(IPlatformTarget target)
         {
+            // Returns name.
+            Assert.AreEqual(string.Empty, target.OutStream(1, r => r.ReadString()));
+
             // Increments arg by one.
             Assert.AreEqual(3, target.InLongOutLong(1, 2));
             Assert.AreEqual(5, target.InLongOutLong(1, 4));
@@ -95,6 +98,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Returns uppercase string.
             Assert.AreEqual("FOO", target.InStreamOutStream(1, w => w.WriteString("foo"), r => r.ReadString()));
             Assert.AreEqual("BAR", target.InStreamOutStream(1, w => w.WriteString("bar"), r => r.ReadString()));
+
+            // Returns target with specified name.
+            var newTarget = target.InStreamOutObject(1, w => w.WriteString("name1"));
+            Assert.AreEqual("name1", newTarget.OutStream(1, r => r.ReadString()));
+
+            // Returns target with specified name appended.
+            var res = target.InObjectStreamOutObjectStream(1, newTarget, w => w.WriteString("_abc"),
+                (reader, t) => Tuple.Create(reader.ReadString(), t));
+
+            Assert.AreEqual("name1", res.Item1);  // Old name
+            Assert.AreEqual("name1_abc", res.Item2.OutStream(1, r => r.ReadString()));
+
+            // Returns a copy with same name.
+            var resCopy = res.Item2.OutObject(1);
+            Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
         }
 
         /// <summary>
