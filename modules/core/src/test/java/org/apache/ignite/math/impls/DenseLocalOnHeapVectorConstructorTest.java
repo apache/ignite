@@ -14,7 +14,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("expect exception due to invalid args",IMPOSSIBLE_SIZE,
-                new DenseLocalOnHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
+            new DenseLocalOnHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -26,7 +26,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("expect exception due to missing args",
-                -1, new DenseLocalOnHeapVector(test).size());
+            -1, new DenseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test(expected = ClassCastException.class)
@@ -38,7 +38,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("expect exception due to invalid arr type", IMPOSSIBLE_SIZE,
-                new DenseLocalOnHeapVector(test).size());
+            new DenseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test(expected = ClassCastException.class)
@@ -50,74 +50,74 @@ public class DenseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("expect exception due to invalid copy type", IMPOSSIBLE_SIZE,
-                new DenseLocalOnHeapVector(test).size());
+            new DenseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test
     public void mapTest() {
         assertEquals("default size for null args",100,
-                new DenseLocalOnHeapVector((Map<String, Object>)null).size());
+            new DenseLocalOnHeapVector((Map<String, Object>)null).size());
 
         assertEquals("size from args", 99,
-                new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
+            new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
 
         final double[] test = new double[99];
 
         assertEquals("size from array in args", test.length,
-                new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                    put("arr", test);
-                    put("shallowCopy", false);
-                }}).size());
+            new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
+                put("arr", test);
+                put("shallowCopy", false);
+            }}).size());
 
         assertEquals("size from array in args, shallow copy", test.length,
-                new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                    put("arr", test);
-                    put("shallowCopy", true);
-                }}).size());
+            new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
+                put("arr", test);
+                put("shallowCopy", true);
+            }}).size());
     }
 
     /** */ @Test(expected = NegativeArraySizeException.class)
     public void negativeSizeTest() {
         assertEquals("negative size", IMPOSSIBLE_SIZE,
-                new DenseLocalOnHeapVector(-1).size());
+            new DenseLocalOnHeapVector(-1).size());
     }
 
     /** */ @Test(expected = NullPointerException.class)
     public void nullCopyTest() {
         assertEquals("null array to non-shallow copy", IMPOSSIBLE_SIZE,
-                new DenseLocalOnHeapVector(null, false).size());
+            new DenseLocalOnHeapVector(null, false).size());
     }
 
     /** */ @Test(expected = NullPointerException.class)
     public void nullDefaultCopyTest() {
         assertEquals("null array default copy", IMPOSSIBLE_SIZE,
-                new DenseLocalOnHeapVector((double[])null).size());
+            new DenseLocalOnHeapVector((double[])null).size());
     }
 
     /** */ @Test
     public void primitiveTest() {
         assertEquals("default constructor", 100,
-                new DenseLocalOnHeapVector().size());
+            new DenseLocalOnHeapVector().size());
 
         assertEquals("null array shallow copy", 0,
-                new DenseLocalOnHeapVector(null, true).size());
+            new DenseLocalOnHeapVector(null, true).size());
 
         assertEquals("0 size shallow copy", 0,
-                new DenseLocalOnHeapVector(new double[0], true).size());
+            new DenseLocalOnHeapVector(new double[0], true).size());
 
         assertEquals("0 size", 0,
-                new DenseLocalOnHeapVector(new double[0], false).size());
+            new DenseLocalOnHeapVector(new double[0], false).size());
 
         assertEquals("1 size shallow copy", 1,
-                new DenseLocalOnHeapVector(new double[1], true).size());
+            new DenseLocalOnHeapVector(new double[1], true).size());
 
         assertEquals("1 size", 1,
-                new DenseLocalOnHeapVector(new double[1], false).size());
+            new DenseLocalOnHeapVector(new double[1], false).size());
 
         assertEquals("0 size default copy", 0,
-                new DenseLocalOnHeapVector(new double[0]).size());
+            new DenseLocalOnHeapVector(new double[0]).size());
 
         assertEquals("1 size default copy", 1,
-                new DenseLocalOnHeapVector(new double[1]).size());
+            new DenseLocalOnHeapVector(new double[1]).size());
     }
 }

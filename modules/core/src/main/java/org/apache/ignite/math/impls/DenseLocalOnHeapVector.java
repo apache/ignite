@@ -120,13 +120,12 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DenseLocalOnHeapVector that = (DenseLocalOnHeapVector) o;
-
-        return Arrays.equals(data, that.data);
+        if (this == o)
+            return true;
+        else if (o == null || getClass() != o.getClass())
+            return false;
+        else
+            return Arrays.equals(data, ((DenseLocalOnHeapVector)o).data);
     }
 
     /** */

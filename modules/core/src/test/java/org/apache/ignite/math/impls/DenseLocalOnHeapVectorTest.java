@@ -18,7 +18,7 @@ public class DenseLocalOnHeapVectorTest {
                     final int expSize = size + delta;
 
                     assertEquals("expected size " + expSize + ", shallow copy " + shallowCopy, expSize,
-                            new DenseLocalOnHeapVector(new double[expSize], shallowCopy).size());
+                        new DenseLocalOnHeapVector(new double[expSize], shallowCopy).size());
                 }
     }
 
@@ -37,14 +37,15 @@ public class DenseLocalOnHeapVectorTest {
         assertFalse("expect not Cloneable", Cloneable.class.isAssignableFrom(DenseLocalOnHeapVector.class));
 
         for (DenseLocalOnHeapVector orig : new DenseLocalOnHeapVector[] {
-                new DenseLocalOnHeapVector(),
-                new DenseLocalOnHeapVector(null, true),
-                new DenseLocalOnHeapVector(new double[0], true),
-                new DenseLocalOnHeapVector(new double[0], false),
-                new DenseLocalOnHeapVector(new double[] {1}, true),
-                new DenseLocalOnHeapVector(new double[] {1}, false)
+            new DenseLocalOnHeapVector(),
+            new DenseLocalOnHeapVector(null, true),
+            new DenseLocalOnHeapVector(new double[0], true),
+            new DenseLocalOnHeapVector(new double[0], false),
+            new DenseLocalOnHeapVector(new double[] {1}, true),
+            new DenseLocalOnHeapVector(new double[] {1}, false)
         })
-            cloneTest(orig);
+
+        cloneTest(orig);
     }
 
     /** */ @Test
@@ -276,47 +277,47 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private void alwaysTrueAttributeTest(Predicate<DenseLocalOnHeapVector> pred) {
         assertTrue("default size for null args",
-                pred.test(new DenseLocalOnHeapVector((Map<String, Object>)null)));
+            pred.test(new DenseLocalOnHeapVector((Map<String, Object>)null)));
 
         assertTrue("size from args",
-                pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
+            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
 
         final double[] test = new double[99];
 
         assertTrue("size from array in args",
-                pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                    put("arr", test);
-                    put("shallowCopy", false);
-                }})));
+            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
+                put("arr", test);
+                put("shallowCopy", false);
+            }})));
 
         assertTrue("size from array in args, shallow copy",
-                pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                    put("arr", test);
-                    put("shallowCopy", true);
-                }})));
+            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
+                put("arr", test);
+                put("shallowCopy", true);
+            }})));
 
         assertTrue("default constructor",
-                pred.test(new DenseLocalOnHeapVector()));
+            pred.test(new DenseLocalOnHeapVector()));
 
         assertTrue("null array shallow copy",
-                pred.test(new DenseLocalOnHeapVector(null, true)));
+            pred.test(new DenseLocalOnHeapVector(null, true)));
 
         assertTrue("0 size shallow copy",
-                pred.test(new DenseLocalOnHeapVector(new double[0], true)));
+            pred.test(new DenseLocalOnHeapVector(new double[0], true)));
 
         assertTrue("0 size",
-                pred.test(new DenseLocalOnHeapVector(new double[0], false)));
+            pred.test(new DenseLocalOnHeapVector(new double[0], false)));
 
         assertTrue("1 size shallow copy",
-                pred.test(new DenseLocalOnHeapVector(new double[1], true)));
+            pred.test(new DenseLocalOnHeapVector(new double[1], true)));
 
         assertTrue("1 size",
-                pred.test(new DenseLocalOnHeapVector(new double[1], false)));
+            pred.test(new DenseLocalOnHeapVector(new double[1], false)));
 
         assertTrue("0 size default copy",
-                pred.test(new DenseLocalOnHeapVector(new double[0])));
+            pred.test(new DenseLocalOnHeapVector(new double[0])));
 
         assertTrue("1 size default copy",
-                pred.test(new DenseLocalOnHeapVector(new double[1])));
+            pred.test(new DenseLocalOnHeapVector(new double[1])));
     }
 }
