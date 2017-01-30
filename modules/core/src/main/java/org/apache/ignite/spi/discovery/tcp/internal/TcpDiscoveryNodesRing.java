@@ -39,8 +39,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class TcpDiscoveryNodesRing {
     /** Visible nodes filter. */
     public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
-        @Override
-        public boolean apply(TcpDiscoveryNode node) {
+        @Override public boolean apply(TcpDiscoveryNode node) {
             if (node.visible()) {
                 assert node.order() > 0 : "Invalid node order: " + node;
 
@@ -53,8 +52,7 @@ public class TcpDiscoveryNodesRing {
 
     /** Client nodes filter. */
     private static final PN CLIENT_NODES = new PN() {
-        @Override
-        public boolean apply(ClusterNode node) {
+        @Override public boolean apply(ClusterNode node) {
             return node.isClient();
         }
     };
@@ -432,8 +430,7 @@ public class TcpDiscoveryNodesRing {
      *
      * @return Coordinator node that gives versions to topology (node with the smallest order).
      */
-    @Nullable
-    public TcpDiscoveryNode coordinator() {
+    @Nullable public TcpDiscoveryNode coordinator() {
         rwLock.readLock().lock();
 
         try {
@@ -455,8 +452,7 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Coordinator node among remaining nodes or {@code null} if all nodes are excluded.
      */
-    @Nullable
-    public TcpDiscoveryNode coordinator(@Nullable Collection<TcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode coordinator(@Nullable Collection<TcpDiscoveryNode> excluded) {
         rwLock.readLock().lock();
 
         try {
@@ -477,8 +473,7 @@ public class TcpDiscoveryNodesRing {
      *
      * @return Next node.
      */
-    @Nullable
-    public TcpDiscoveryNode nextNode() {
+    @Nullable public TcpDiscoveryNode nextNode() {
         rwLock.readLock().lock();
 
         try {
@@ -500,8 +495,7 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional). If provided, cannot contain local node.
      * @return Next node or {@code null} if all nodes were filtered out or topology contains less than two nodes.
      */
-    @Nullable
-    public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         assert locNode.internalOrder() > 0 : locNode;
         assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
 
@@ -632,8 +626,7 @@ public class TcpDiscoveryNodesRing {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
-            @Override
-            public boolean apply(TcpDiscoveryNode node) {
+            @Override public boolean apply(TcpDiscoveryNode node) {
                 return !node.isClient() && (excludedEmpty || !excluded.contains(node));
             }
         });
@@ -671,8 +664,7 @@ public class TcpDiscoveryNodesRing {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         rwLock.readLock().lock();
 
         try {
