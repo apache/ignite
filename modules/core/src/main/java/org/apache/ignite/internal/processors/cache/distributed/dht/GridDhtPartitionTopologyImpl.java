@@ -64,8 +64,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Partition topology.
  */
-@GridToStringExclude
-class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+@GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -88,7 +87,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private GridDhtPartitionFullMap node2part;
 
     /** Partition to node map. */
-    private Set<ClusterNode>[] part2node;
+    private volatile Set<ClusterNode>[] part2node;
 
     /** */
     private GridDhtPartitionExchangeId lastExchangeId;
@@ -332,8 +331,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void initPartitions(GridDhtPartitionsExchangeFuture exchFut)
-        throws IgniteInterruptedCheckedException
-    {
+        throws IgniteInterruptedCheckedException {
         U.writeLock(lock);
 
         try {
@@ -832,44 +830,36 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         AffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
 
         List<ClusterNode> affNodes = affAssignment.get(p);
+        assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
+            ", topVer2=" + this.topVer +
+            ", node=" + cctx.gridName() +
+            ", cache=" + cctx.name() +
+            ", node2part=" + node2part + ']';
 
-        lock.readLock().lock();
+        List<ClusterNode> nodes = null;
 
-        try {
-            assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
-                ", topVer2=" + this.topVer +
-                ", node=" + cctx.gridName() +
-                ", cache=" + cctx.name() +
-                ", node2part=" + node2part + ']';
+        Collection<ClusterNode> nodeIds = part2node[p];
 
-            List<ClusterNode> nodes = null;
+        if (!F.isEmpty(nodeIds)) {
+            for (ClusterNode node : nodeIds) {
+                HashSet<UUID> affIds = affAssignment.getIds(p);
 
-            Collection<ClusterNode> nodeIds = part2node[p];
+                if (!affIds.contains(node.id()) && hasState(p, node.id(), OWNING, MOVING, RENTING)) {
 
-            if (!F.isEmpty(nodeIds)) {
-                for (ClusterNode node : nodeIds) {
-                    HashSet<UUID> affIds = affAssignment.getIds(p);
+                    if (node != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion())) {
+                        if (nodes == null) {
+                            nodes = new ArrayList<>(affNodes.size() + 2);
 
-                    if (!affIds.contains(node.id()) && hasState(p, node.id(), OWNING, MOVING, RENTING)) {
-
-                        if (node != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion())) {
-                            if (nodes == null) {
-                                nodes = new ArrayList<>(affNodes.size() + 2);
-
-                                nodes.addAll(affNodes);
-                            }
-
-                            nodes.add(node);
+                            nodes.addAll(affNodes);
                         }
+
+                        nodes.add(node);
                     }
                 }
             }
+        }
 
-            return nodes != null ? nodes : affNodes;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return nodes != null ? nodes : affNodes;
     }
 
     /**
@@ -885,40 +875,33 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
 
-        lock.readLock().lock();
+        assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
+            ", allIds=" + allIds +
+            ", node2part=" + node2part +
+            ", cache=" + cctx.name() + ']';
 
-        try {
-            assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
-                ", allIds=" + allIds +
-                ", node2part=" + node2part +
-                ", cache=" + cctx.name() + ']';
+        Collection<ClusterNode> partNodes = part2node[p];
 
-            Collection<ClusterNode> partNodes = part2node[p];
+        // Node IDs can be null if both, primary and backup, nodes disappear.
+        int size = partNodes == null ? 0 : partNodes.size();
 
-            // Node IDs can be null if both, primary and backup, nodes disappear.
-            int size = partNodes == null ? 0 : partNodes.size();
+        if (size == 0)
+            return Collections.emptyList();
 
-            if (size == 0)
-                return Collections.emptyList();
+        List<ClusterNode> nodes = new ArrayList<>(size);
 
-            List<ClusterNode> nodes = new ArrayList<>(size);
+        for (ClusterNode node : partNodes) {
+            if (topVer.topologyVersion() > 0 && !allIds.contains(node.id()))
+                continue;
 
-            for (ClusterNode node : partNodes) {
-                if (topVer.topologyVersion() > 0 && !allIds.contains(node.id()))
-                    continue;
+            if (hasState(p, node.id(), state, states)) {
 
-                if (hasState(p, node.id(), state, states)) {
-
-                    if (node != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion()))
-                        nodes.add(node);
-                }
+                if (node != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion()))
+                    nodes.add(node);
             }
+        }
 
-            return nodes;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return nodes;
     }
 
     /** {@inheritDoc} */
@@ -1072,7 +1055,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             Set<ClusterNode>[] part2node0 = (Set<ClusterNode>[])new Set[part2node.length];
 
-            for(int i = 0; i < part2node.length; i++) {
+            for (int i = 0; i < part2node.length; i++) {
                 if (part2node[i] != null) {
                     Set<ClusterNode> partNodes = U.newHashSet(3);
                     partNodes.addAll(part2node[i]);
@@ -1195,7 +1178,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 Set<ClusterNode>[] part2node0 = (Set<ClusterNode>[])new Set[part2node.length];
 
-                for(int i = 0; i < part2node.length; i++) {
+                for (int i = 0; i < part2node.length; i++) {
                     if (part2node[i] != null) {
                         Set<ClusterNode> partNodes = U.newHashSet(3);
                         partNodes.addAll(part2node[i]);
@@ -1731,7 +1714,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private ClusterNode node(UUID id) {
         return cctx.discovery().node(id);
     }
-    
+
     /**
      * Iterator over current local partitions.
      */
