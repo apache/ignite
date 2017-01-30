@@ -1166,6 +1166,9 @@
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
                         <configuration>
+                            <excludes>
+                                <exclude>**/org/apache/ignite/**/platform/**/*.class</exclude>
+                            </excludes>
                             <fileSets>
                                 <fileSet implementation="org.apache.maven.shared.model.fileset.FileSet">
                                     <directory>${jacoco.reports.dir}</directory>
