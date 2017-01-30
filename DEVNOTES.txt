@@ -12,6 +12,9 @@ With LGPL dependencies:
 With LGPL dependencies and Scala 2.10:
   mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl -Dscala-2.10
 
+With LGPL dependencies and Scala 2.10 and Ignite-Yardstick:
+  mvn clean package -DskipTests -Prelease,lgpl,yardstick -Dignite.edition=fabric-lgpl -Dscala-2.10
+
 With Apache Ignite.NET:
   Build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
