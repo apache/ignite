@@ -98,6 +98,11 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
         this(arr, false);
     }
 
+    /** IMPL NOTE for clone, see eg http://www.agiledeveloper.com/articles/cloning072002.htm */
+    private DenseLocalOnHeapVector(DenseLocalOnHeapVector original) {
+        this.data = original.data == null ? null : original.data.clone();
+    }
+
     /** {@inheritDoc */
     @Override public int size() {
         return data == null ? 0 : data.length;
@@ -113,9 +118,29 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
         return true;
     }
 
+    /** */
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DenseLocalOnHeapVector that = (DenseLocalOnHeapVector) o;
+
+        return Arrays.equals(data, that.data);
+    }
+
+    /** */
+    @Override public int hashCode() {
+        return Arrays.hashCode(data);
+    }
+
     /** {@inheritDoc */
-    @Override public Vector clone() {
-        return null; // TODO
+    @Override public DenseLocalOnHeapVector clone() {
+        try {
+            return new DenseLocalOnHeapVector((DenseLocalOnHeapVector) super.clone());
+        } catch (CloneNotSupportedException e) {
+            return new DenseLocalOnHeapVector(this);
+        }
     }
 
     /** {@inheritDoc */

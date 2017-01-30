@@ -33,8 +33,18 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void cloneTest() { // TODO write test
+    public void cloneTest() {
+        assertFalse("expect not Cloneable", Cloneable.class.isAssignableFrom(DenseLocalOnHeapVector.class));
 
+        for (DenseLocalOnHeapVector orig : new DenseLocalOnHeapVector[] {
+                new DenseLocalOnHeapVector(),
+                new DenseLocalOnHeapVector(null, true),
+                new DenseLocalOnHeapVector(new double[0], true),
+                new DenseLocalOnHeapVector(new double[0], false),
+                new DenseLocalOnHeapVector(new double[] {1}, true),
+                new DenseLocalOnHeapVector(new double[] {1}, false)
+        })
+            cloneTest(orig);
     }
 
     /** */ @Test
@@ -250,6 +260,17 @@ public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void readExternalTest() { // TODO write test
 
+    }
+
+    /** */
+    private void cloneTest(DenseLocalOnHeapVector orig) {
+        final DenseLocalOnHeapVector clone = orig.clone();
+
+        assertNotSame(orig, clone);
+
+        assertSame(orig.getClass(), clone.getClass());
+
+        assertEquals(orig, clone);
     }
 
     /** */
