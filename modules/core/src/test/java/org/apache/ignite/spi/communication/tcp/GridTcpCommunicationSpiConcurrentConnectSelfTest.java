@@ -36,6 +36,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -50,6 +51,7 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
@@ -76,6 +78,9 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
     /** */
     protected static final List<ClusterNode> nodes = new ArrayList<>();
+
+    /** */
+    private static GridTimeoutProcessor timeoutProcessor;
 
     /** */
     private static int port = 60_000;
@@ -335,10 +340,14 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
+        timeoutProcessor = new GridTimeoutProcessor(new GridTestKernalContext(log));
+
+        timeoutProcessor.start();
+
+        timeoutProcessor.onKernalStart();
+
         for (int i = 0; i < SPI_CNT; i++) {
             CommunicationSpi<Message> spi = createSpi();
-
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 
@@ -350,11 +359,15 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
             ctx.setLocalNode(node);
 
+            ctx.timeoutProcessor(timeoutProcessor);
+
             info(">>> Initialized context: nodeId=" + ctx.localNode().id());
 
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             if (useSsl) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
@@ -422,6 +435,14 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
+        if (timeoutProcessor != null) {
+            timeoutProcessor.onKernalStop(true);
+
+            timeoutProcessor.stop(true);
+
+            timeoutProcessor = null;
+        }
+
         for (CommunicationSpi<Message> spi : spis) {
             spi.onContextDestroyed();
 

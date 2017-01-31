@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -44,6 +45,7 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
@@ -64,11 +66,11 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     protected static final List<ClusterNode> nodes = new ArrayList<>();
 
     /** */
+    private static GridTimeoutProcessor timeoutProcessor;
+
+    /** */
     private static final int SPI_CNT = 2;
 
-    /**
-     *
-     */
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
@@ -94,8 +96,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
-            info("Test listener received message: " + msg);
-
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
 
             GridTestMessage msg0 = (GridTestMessage)msg;
@@ -159,6 +159,8 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                     spi1.sendMessage(node0, new GridTestMessage(node1.id(), ++msgId, 0));
                 }
 
+                U.sleep(500);
+
                 expMsgs += msgPerIter;
 
                 final long totAcked0 = totAcked;
@@ -166,9 +168,14 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                 for (TcpCommunicationSpi spi : spis) {
                     GridNioServer srv = U.field(spi, "nioSrvr");
 
-                    Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
+                    final Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 
-                    assertFalse(sessions.isEmpty());
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return !sessions.isEmpty();
+                        }
+                    }, 5_000);
+
 
                     boolean found = false;
 
@@ -268,15 +275,15 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         ClusterNode node0 = nodes.get(0);
         ClusterNode node1 = nodes.get(1);
 
-        final GridNioServer srv1 = U.field(spi1, "nioSrvr");
-
         int msgId = 0;
 
         // Send message to establish connection.
         spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
 
+        U.sleep(1000);
+
         // Prevent node1 from send
-        GridTestUtils.setFieldValue(srv1, "skipWrite", true);
+        GridTestUtils.setFieldValue(spi1, "skipAck", true);
 
         final GridNioSession ses0 = communicationSession(spi0);
 
@@ -304,7 +311,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
-        GridTestUtils.setFieldValue(srv1, "skipWrite", false);
+        GridTestUtils.setFieldValue(spi1, "skipAck", false);
 
         for (int i = 0; i < 100; i++)
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
@@ -378,10 +385,14 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
+        timeoutProcessor = new GridTimeoutProcessor(new GridTestKernalContext(log));
+
+        timeoutProcessor.start();
+
+        timeoutProcessor.onKernalStart();
+
         for (int i = 0; i < SPI_CNT; i++) {
             TcpCommunicationSpi spi = getSpi(ackCnt, idleTimeout, queueLimit);
-
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 
@@ -391,13 +402,19 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             ctx.setLocalNode(node);
 
+            ctx.timeoutProcessor(timeoutProcessor);
+
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
 
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
+
             spi.setListener(new TestListener());
 
             node.setAttributes(spi.getNodeAttributes());
+
+            node.order(i);
 
             nodes.add(node);
 
@@ -454,6 +471,14 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
+        if (timeoutProcessor != null) {
+            timeoutProcessor.onKernalStop(true);
+
+            timeoutProcessor.stop(true);
+
+            timeoutProcessor = null;
+        }
+
         for (CommunicationSpi<Message> spi : spis) {
             spi.onContextDestroyed();
 

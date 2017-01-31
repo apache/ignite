@@ -68,9 +68,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf;
 
-    /** Whether SSLEngine should use client mode. */
-    private boolean clientMode;
-
     /** Whether direct mode is used. */
     private boolean directMode;
 
@@ -89,13 +86,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         this.sslCtx = sslCtx;
         this.directBuf = directBuf;
         this.order = order;
-    }
-
-    /**
-     * @param clientMode Flag indicating whether SSLEngine should use client mode..
-     */
-    public void clientMode(boolean clientMode) {
-        this.clientMode = clientMode;
     }
 
     /**
@@ -162,6 +152,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         if (sslMeta == null) {
             engine = sslCtx.createSSLEngine();
+
+            boolean clientMode = !ses.accepted();
 
             engine.setUseClientMode(clientMode);
 
