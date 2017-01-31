@@ -248,7 +248,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * and commit is optimistically failed.
      * @throws TransactionHeuristicException If transaction has entered an unknown state.
      */
-    public IgniteFuture<Void> commitAsync() throws IgniteException;
+    public IgniteFuture<Transaction> commitAsync() throws IgniteException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
@@ -271,5 +271,5 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @return a Future representing pending completion of the operation.
      * @throws IgniteException If rollback failed.
      */
-    public IgniteFuture<Void> rollbackAsync() throws IgniteException;
+    public IgniteFuture<Transaction> rollbackAsync() throws IgniteException;
 }

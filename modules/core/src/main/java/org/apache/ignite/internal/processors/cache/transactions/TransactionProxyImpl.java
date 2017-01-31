@@ -270,11 +270,11 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+    @Override public IgniteFuture<Transaction> commitAsync() throws IgniteException {
         enter();
 
         try {
-            return (IgniteFuture<Void>)createFuture(cctx.commitTxAsync(tx));
+            return (IgniteFuture<Transaction>)createFuture(cctx.commitTxAsync(tx));
         }
         finally {
             leave();
@@ -317,11 +317,11 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+    @Override public IgniteFuture<Transaction> rollbackAsync() throws IgniteException {
         enter();
 
         try {
-            return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
+            return (IgniteFuture<Transaction>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

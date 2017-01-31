@@ -548,7 +548,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+        @Override public IgniteFuture<Transaction> commitAsync() throws IgniteException {
             return null;
         }
 
@@ -578,7 +578,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+        @Override public IgniteFuture<Transaction> rollbackAsync() throws IgniteException {
             return null;
         }
     }
