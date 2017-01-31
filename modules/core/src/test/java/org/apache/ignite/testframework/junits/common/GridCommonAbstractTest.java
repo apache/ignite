@@ -695,7 +695,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * Print partitionState for cache.
      */
-    public void printPartitionState(IgniteCache<?, ?> c) {
+    protected void printPartitionState(IgniteCache<?, ?> c) {
         IgniteCacheProxy<?, ?> cache = (IgniteCacheProxy<?, ?>)c;
 
         CacheConfiguration cfg = cache.context().config();
