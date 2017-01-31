@@ -176,7 +176,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param ldr Class loader used to get properties file.
      * @param fileName File name.
      */
-    private void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
+    public void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
         ConcurrentMap cache = getCacheFor(JAVA_ID);
 
         if (!cache.containsKey(clsName.hashCode()))

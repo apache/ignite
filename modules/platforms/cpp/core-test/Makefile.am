@@ -64,6 +64,7 @@ ignite_tests_SOURCES = \
     src/handle_registry_test.cpp \
     src/ignite_error_test.cpp \
     src/binary_test_defs.cpp \
+    src/binary_object_test.cpp \
     src/binary_reader_writer_raw_test.cpp \
     src/binary_reader_writer_test.cpp \
     src/binary_session_test.cpp \

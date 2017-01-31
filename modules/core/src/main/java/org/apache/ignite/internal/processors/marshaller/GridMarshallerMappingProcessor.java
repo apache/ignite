@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,6 +40,8 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -120,6 +124,24 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                     }
                 }
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+    }
+
+    /**
+     * Adds a listener to be notified when mapping changes.
+     *
+     * @param mappingUpdatedListener Mapping updated listener.
+     */
+    public void addMappingUpdatedListener(IgniteBiInClosure<Integer, String> mappingUpdatedListener) {
+
+    }
+
+    /**
+     * Gets an iterator over all current mappings.
+     *
+     * @return Iterator over current mappings.
+     */
+    public Iterator<IgniteBiTuple<Integer, String>> currentMappings() {
+        return Collections.emptyListIterator();
     }
 
     /**
