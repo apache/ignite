@@ -18,7 +18,7 @@
 package org.apache.ignite.hadoop.fs;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
@@ -41,7 +41,7 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
     private volatile HadoopFileSystemCounterWriterDelegate delegate;
 
     /** {@inheritDoc} */
-    @Override public void write(HadoopJob job, HadoopCounters cntrs)
+    @Override public void write(HadoopJobEx job, HadoopCounters cntrs)
         throws IgniteCheckedException {
         delegate(job).write(job, cntrs);
     }
@@ -52,7 +52,7 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
      * @param job Job.
      * @return Delegate.
      */
-    private HadoopFileSystemCounterWriterDelegate delegate(HadoopJob job) {
+    private HadoopFileSystemCounterWriterDelegate delegate(HadoopJobEx job) {
         HadoopFileSystemCounterWriterDelegate delegate0 = delegate;
 
         if (delegate0 == null) {

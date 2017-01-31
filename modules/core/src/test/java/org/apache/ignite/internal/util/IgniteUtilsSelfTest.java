@@ -19,6 +19,10 @@ package org.apache.ignite.internal.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -46,6 +50,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -754,6 +759,67 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         int port = 1234;
 
         assertEquals(1, U.toSocketAddresses(addrs, hostNames, port).size());
+    }
+
+    /**
+     * Composes a test String of given tlength.
+     *
+     * @param len The length.
+     * @return The String.
+     */
+    private static String composeString(int len) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i=0; i<len; i++)
+            sb.append((char)i);
+
+        String x = sb.toString();
+
+        assertEquals(len, x.length());
+
+        return x;
+    }
+
+    /**
+     * Writes the given String to a DataOutput, reads from DataInput, then checks if they are the same.
+     *
+     * @param s0 The String to check serialization for.
+     * @throws Exception On error.
+     */
+    private static void checkString(String s0) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutput dout = new DataOutputStream(baos);
+
+        IgfsUtils.writeUTF(dout, s0);
+
+        DataInput din = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
+
+        String s1 = IgfsUtils.readUTF(din);
+
+        assertEquals(s0, s1);
+    }
+
+    /**
+     * Tests long String serialization/deserialization,
+     *
+     * @throws Exception If failed.
+     */
+    public void testLongStringWriteUTF() throws Exception {
+        checkString(null);
+        checkString("");
+
+        checkString("a");
+
+        checkString("Quick brown fox jumps over the lazy dog.");
+
+        String x = composeString(0xFFFF / 4 - 1);
+        checkString(x);
+
+        x = composeString(0xFFFF / 4);
+        checkString(x);
+
+        x = composeString(0xFFFF / 4 + 1);
+        checkString(x);
     }
 
     /**

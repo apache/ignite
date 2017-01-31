@@ -15,26 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+namespace Apache.Ignite.Core.Plugin.Cache
+{
+    using Apache.Ignite.Core.Cache.Configuration;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+    /// <summary>
+    /// Cache plugin context.
+    /// </summary>
+    public interface ICachePluginContext<out T> where T : ICachePluginConfiguration
+    {
+        /// <summary>
+        /// Gets the Ignite configuration.
+        /// </summary>
+        IgniteConfiguration IgniteConfiguration { get; }
 
-/**
- * Extended version of secondary file system with missing methods.
- *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
- */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
-    /**
-     * Set times for the given path.
-     *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
-     */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+        /// <summary>
+        /// Gets the Ignite cache configuration.
+        /// </summary>
+        CacheConfiguration CacheConfiguration { get; }
+
+        /// <summary>
+        /// Gets the cache plugin configuration.
+        /// </summary>
+        T CachePluginConfiguration { get; }
+
+        /// <summary>
+        /// Gets the Ignite.
+        /// </summary>
+        IIgnite Ignite { get; }
+    }
 }
