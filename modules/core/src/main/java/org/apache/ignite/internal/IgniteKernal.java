@@ -1145,7 +1145,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                                "    ^-- PageMemory [pages=" + pageMem.loadedPages() + "]" + NL +
+                                "    ^-- PageMemory [pages=" + (pageMem != null ? pageMem.loadedPages() : 0) + "]" + NL +
                                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
                                 "    ^-- Non heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
