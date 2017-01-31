@@ -548,5 +548,6 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
     public long usedSpaceSize() throws IgniteException;
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteFileSystem withAsync();
 }
