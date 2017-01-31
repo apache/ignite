@@ -95,6 +95,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteCache<K, V> withAsync();
 
     /** {@inheritDoc} */

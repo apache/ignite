@@ -536,5 +536,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout) throws IgniteException;
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteServices withAsync();
 }
