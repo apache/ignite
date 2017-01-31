@@ -150,16 +150,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteServices svcs1 = randomGrid().services().withAsync();
-        IgniteServices svcs2 = randomGrid().services().withAsync();
+        IgniteServices svcs1 = randomGrid().services();
+        IgniteServices svcs2 = randomGrid().services();
 
-        svcs1.deployClusterSingleton(name, new DummyService());
+        IgniteFuture<?> fut1 = svcs1.deployClusterSingletonAsync(name, new DummyService());
 
-        IgniteFuture<?> fut1 = svcs1.future();
-
-        svcs2.deployClusterSingleton(name, new DummyService());
-
-        IgniteFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.deployClusterSingletonAsync(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -179,16 +175,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteServices svcs1 = randomGrid().services().withAsync();
-        IgniteServices svcs2 = randomGrid().services().withAsync();
+        IgniteServices svcs1 = randomGrid().services();
+        IgniteServices svcs2 = randomGrid().services();
 
-        svcs1.deployClusterSingleton(name, new DummyService());
+        IgniteFuture<?> fut1 = svcs1.deployClusterSingletonAsync(name, new DummyService());
 
-        IgniteFuture<?> fut1 = svcs1.future();
-
-        svcs2.deployNodeSingleton(name, new DummyService());
-
-        IgniteFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.deployNodeSingletonAsync(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -264,11 +256,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services();
 
-        svcs.deployNodeSingleton(name, new DummyService());
-
-        IgniteFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.deployNodeSingletonAsync(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -296,11 +286,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services();
 
-        svcs.deployClusterSingleton(name, new DummyService());
-
-        IgniteFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.deployClusterSingletonAsync(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -329,12 +317,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         String name = "serviceAffinity";
 
-        IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services();
 
-        svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
+        IgniteFuture<?> fut = svcs.deployKeyAffinitySingletonAsync(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
-
-        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -357,11 +343,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services();
 
-        svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
-
-        IgniteFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.deployMultipleAsync(name, new DummyService(), nodeCount() * 2, 3);
 
         info("Deployed service: " + name);
 
@@ -391,11 +375,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services();
 
-        svcs.deployMultiple(name, new DummyService(), cnt, 3);
-
-        IgniteFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.deployMultipleAsync(name, new DummyService(), cnt, 3);
 
         info("Deployed service: " + name);
 

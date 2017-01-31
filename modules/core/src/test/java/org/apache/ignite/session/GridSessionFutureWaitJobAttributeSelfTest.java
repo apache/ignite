@@ -122,11 +122,7 @@ public class GridSessionFutureWaitJobAttributeSelfTest extends GridCommonAbstrac
     private void checkTask(int num) throws InterruptedException {
         Ignite ignite = G.ignite(getTestGridName());
 
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        comp.execute(GridTaskSessionTestTask.class.getName(), num);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTaskSessionTestTask.class.getName(), num);
 
         assert fut != null;
 

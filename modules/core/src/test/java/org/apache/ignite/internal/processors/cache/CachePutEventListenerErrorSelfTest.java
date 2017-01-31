@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -165,12 +166,12 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
             cfg.setAtomicityMode(atomicityMode);
             cfg.setMemoryMode(memMode);
 
-            IgniteCache<Integer, Integer> cache = ignite.createCache(cfg).withAsync();
+            IgniteCache<Integer, Integer> cache = ignite.createCache(cfg);
 
-            cache.put(0, 0);
+            IgniteFuture f = cache.putAsync(0, 0);
 
             try {
-                cache.future().get(2000);
+                f.get(2000);
 
                 assert false : "Exception was not thrown";
             }

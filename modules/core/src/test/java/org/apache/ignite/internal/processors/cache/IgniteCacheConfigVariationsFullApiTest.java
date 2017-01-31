@@ -467,7 +467,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAsync() throws Exception {
+    public void testGetAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key1", 1);
@@ -486,6 +486,26 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cacheAsync.get("wrongKey");
 
         IgniteFuture<Integer> fut3 = cacheAsync.future();
+
+        assert fut1.get() == 1;
+        assert fut2.get() == 2;
+        assert fut3.get() == null;
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetAsync() throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+
+        IgniteFuture<Integer> fut1 = cache.getAsync("key1");
+
+        IgniteFuture<Integer> fut2 = cache.getAsync("key2");
+
+        IgniteFuture<Integer> fut3 = cache.getAsync("wrongKey");
 
         assert fut1.get() == 1;
         assert fut2.get() == 2;
@@ -617,7 +637,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllAsync() throws Exception {
+    public void testGetAllAsyncOld() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -638,6 +658,33 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         cacheAsync.getAll(ImmutableSet.of("key1", "key2"));
         IgniteFuture<Map<String, Integer>> fut3 = cacheAsync.future();
+
+        assert fut2.get().isEmpty();
+        assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
+        assert fut3.get().get("key1") == 1;
+        assert fut3.get().get("key2") == 2;
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetAllAsync() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.getAllAsync(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        IgniteFuture<Map<String, Integer>> fut2 = cache.getAllAsync(Collections.<String>emptySet());
+
+        IgniteFuture<Map<String, Integer>> fut3 = cache.getAllAsync(ImmutableSet.of("key1", "key2"));
 
         assert fut2.get().isEmpty();
         assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
@@ -1483,7 +1530,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAndPutAsync() throws Exception {
+    public void testGetAndPutAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -1509,7 +1556,27 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    public void testPutAsync0() throws Exception {
+    public void testGetAndPutAsync() throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+
+        IgniteFuture<Integer> fut1 = cache.getAndPutAsync("key1", 10);
+
+        IgniteFuture<Integer> fut2 = cache.getAndPutAsync("key2", 11);
+
+        assertEquals((Integer)1, fut1.get(5000));
+        assertEquals((Integer)2, fut2.get(5000));
+
+        assertEquals((Integer)10, cache.get("key1"));
+        assertEquals((Integer)11, cache.get("key2"));
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testPutAsyncOld0() throws Exception {
         IgniteCache cacheAsync = jcache().withAsync();
 
         cacheAsync.getAndPut("key1", 0);
@@ -1525,9 +1592,21 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
+     * @throws Exception In case of error.
+     */
+    public void testPutAsync0() throws Exception {
+        IgniteFuture<?> fut1 = jcache().getAndPutAsync("key1", 0);
+
+        IgniteFuture<?> fut2 = jcache().getAndPutAsync("key2", 1);
+
+        assert fut1.get(5000) == null;
+        assert fut2.get(5000) == null;
+    }
+
+    /**
      * @throws Exception If failed.
      */
-    public void testInvokeAsync() throws Exception {
+    public void testInvokeAsyncOld() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final Object key1 = key(1);
@@ -1556,6 +1635,46 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 assertNull(cacheAsync.invoke(key3, RMV_PROCESSOR));
 
                 IgniteFuture<?> fut2 = cacheAsync.future();
+
+                fut0.get();
+                fut1.get();
+                fut2.get();
+
+                assertEquals(val1, cache.get(key1));
+                assertEquals(val2, cache.get(key2));
+                assertNull(cache.get(key3));
+
+                for (int i = 0; i < gridCount(); i++)
+                    assertNull(jcache(i).localPeek(key3, ONHEAP));
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAsync() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final Object key1 = key(1);
+                final Object key2 = key(2);
+                final Object key3 = key(3);
+
+                final Object val1 = value(1);
+                final Object val2 = value(2);
+                final Object val3 = value(3);
+
+                IgniteCache<Object, Object> cache = jcache();
+
+                cache.put(key2, val1);
+                cache.put(key3, val3);
+
+                IgniteFuture<?> fut0 = cache.invokeAsync(key1, INCR_PROCESSOR, dataMode);
+
+                IgniteFuture<?> fut1 = cache.invokeAsync(key2, INCR_PROCESSOR, dataMode);
+
+
+                IgniteFuture<?> fut2 = cache.invokeAsync(key3, RMV_PROCESSOR);
 
                 fut0.get();
                 fut1.get();
@@ -4399,6 +4518,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
     /**
      * @param key Key.
+     * @return Ignite instance of the primary node for the specified key.
      */
     protected Ignite primaryIgnite(String key) {
         ClusterNode node = grid(0).affinity(cacheName()).mapKeyToNode(key);
@@ -4427,6 +4547,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @param gridIdx Grid index.
      * @param cnt Keys count.
+     * @param startFrom Key value to start.
      * @return Collection of keys for which given cache is primary.
      */
     protected List<String> primaryKeysForCache(int gridIdx, int cnt, int startFrom) {

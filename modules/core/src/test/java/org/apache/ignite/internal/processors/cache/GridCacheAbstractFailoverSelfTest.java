@@ -205,14 +205,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         try {
                             final Ignite g = startGrid(name);
 
-                            IgniteCache<String, Object> cache = g.<String, Object>cache(null).withAsync();
+                            IgniteCache<String, Object> cache = g.<String, Object>cache(null);
 
                             for (int k = half; k < ENTRY_CNT; k++) {
                                 String key = "key" + k;
 
-                                cache.get(key);
-
-                                assertNotNull("Failed to get key: 'key" + k + "'", cache.future().get(30_000));
+                                assertNotNull("Failed to get key: 'key" + k + "'", cache.getAsync(key).get(30_000));
                             }
                         }
                         finally {

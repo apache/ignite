@@ -6045,21 +6045,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            if (async)
-                cache = cache.withAsync();
-
             try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Integer val0 = cache.get(keys.get(0));
+                Integer val0;
 
                 if (async)
-                    val0 = cache.<Integer>future().get();
+                    val0 = cache.getAsync(keys.get(0)).get();
+                else
+                     val0 = cache.get(keys.get(0));
 
                 assertEquals(0, val0.intValue());
 
-                Map<String, Integer> allOutTx = cache.getAllOutTx(F.asSet(keys.get(1)));
+                Map<String, Integer> allOutTx;
 
                 if (async)
-                    allOutTx = cache.<Map<String, Integer>>future().get();
+                    allOutTx = cache.getAllOutTxAsync(F.asSet(keys.get(1))).get();
+                else
+                    allOutTx = cache.getAllOutTx(F.asSet(keys.get(1)));
 
                 assertEquals(1, allOutTx.size());
 

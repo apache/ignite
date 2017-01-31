@@ -215,11 +215,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         ignite1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        IgniteCompute comp = ignite1.compute().withAsync();
-
-        comp.execute(TestSessionTask.class.getName(), type);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite1.compute().executeAsync(TestSessionTask.class.getName(), type);
 
         fut.getTaskSession().mapFuture().get();
 
@@ -254,7 +250,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param ses Session.
      * @param prefix Prefix.
      * @param type Type.
-     * @throws IgniteCheckedException If failed.
      */
     private static void checkSessionAttributes(ComputeTaskSession ses, String prefix, WaitAttributeType type) {
         assert ses != null;

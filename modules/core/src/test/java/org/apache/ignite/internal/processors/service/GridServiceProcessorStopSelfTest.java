@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -56,14 +57,13 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 IgniteServices svcs = ignite.services();
 
-                IgniteServices services = svcs.withAsync();
 
-                services.deployClusterSingleton("myClusterSingletonService", new TestServiceImpl());
+                IgniteFuture f = svcs.deployClusterSingletonAsync("myClusterSingletonService", new TestServiceImpl());
 
                 depLatch.countDown();
 
                 try {
-                    services.future().get();
+                    f.get();
                 }
                 catch (IgniteException e) {
                     finishLatch.countDown();

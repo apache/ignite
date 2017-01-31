@@ -75,16 +75,10 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
 
         ClusterGroup rmts = g.cluster().forRemotes();
 
-        IgniteCompute comp = g.compute(rmts).withAsync();
-
         while (!finish) {
             tasksSem.acquire();
 
-            comp.execute(GridJobExecutionLoadTestTask.class, null);
-
-            ComputeTaskFuture<Object> f = comp.future();
-
-            f.listen(lsnr);
+            g.compute(rmts).executeAsync(GridJobExecutionLoadTestTask.class, null).listen(lsnr);
 
             txCnt.increment();
         }

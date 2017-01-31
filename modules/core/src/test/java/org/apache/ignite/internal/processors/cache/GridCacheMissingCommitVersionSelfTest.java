@@ -123,11 +123,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
         for (Integer key : q) {
             log.info("Trying to update " + key);
 
-            IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
-
-            asyncCache.put(key, 2);
-
-            IgniteFuture<?> fut = asyncCache.future();
+            IgniteFuture<?> fut = cache.putAsync(key, 2);
 
             try {
                 fut.get(5000);

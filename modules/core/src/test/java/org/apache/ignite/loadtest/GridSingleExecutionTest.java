@@ -89,9 +89,8 @@ public final class GridSingleExecutionTest {
             System.exit(1);
         }
         else if (args.length >= 2) {
-            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0])) {
+            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0]))
                 G.start(cfg);
-            }
         }
 
         boolean useSes = false;
@@ -104,12 +103,8 @@ public final class GridSingleExecutionTest {
         try {
             Ignite ignite = G.ignite();
 
-            IgniteCompute comp = ignite.compute().withAsync();
-
             // Execute Hello World task.
-            comp.execute(!useSes ? TestTask.class : TestSessionTask.class, null);
-
-            ComputeTaskFuture<Object> fut = comp.future();
+            ComputeTaskFuture<Object> fut = ignite.compute().executeAsync(!useSes ? TestTask.class : TestSessionTask.class, null);
 
             if (useSes) {
                 fut.getTaskSession().setAttribute("attr1", 1);

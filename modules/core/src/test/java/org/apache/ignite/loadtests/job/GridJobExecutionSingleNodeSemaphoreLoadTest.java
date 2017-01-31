@@ -188,13 +188,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             @Nullable @Override public Object call() throws Exception {
                 sem.acquire();
 
-                IgniteCompute comp = g.compute().withAsync();
-
-                comp.execute(GridJobExecutionLoadTestTask.class, null);
-
-                ComputeTaskFuture<Object> f = comp.future();
-
-                f.listen(lsnr);
+                g.compute().executeAsync(GridJobExecutionLoadTestTask.class, null).listen(lsnr);
 
                 iterCntr.increment();
 

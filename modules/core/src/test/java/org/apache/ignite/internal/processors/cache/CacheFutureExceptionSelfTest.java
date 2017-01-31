@@ -114,15 +114,13 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> clientCache = nearCache ? client.createNearCache(cacheName,
             new NearCacheConfiguration<>()) : client.cache(cacheName);
 
-        IgniteCache<Object, Object> asyncCache = clientCache.withAsync();
-
         fail = true;
 
-        asyncCache.get("key");
+        IgniteFuture f = clientCache.getAsync("key");
 
         final CountDownLatch futLatch = new CountDownLatch(1);
 
-        asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
+        f.listen(new IgniteInClosure<IgniteFuture<Object>>() {
             @Override public void apply(IgniteFuture<Object> fut) {
                 assertTrue(fut.isDone());
 

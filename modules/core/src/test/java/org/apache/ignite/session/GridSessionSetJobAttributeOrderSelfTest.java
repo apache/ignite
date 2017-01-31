@@ -63,12 +63,9 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
 
             ignite1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            IgniteCompute comp = ignite1.compute().withAsync();
-
             for (int i = 0; i < TESTS_COUNT; i++) {
-                comp.withTimeout(100000).execute(SessionTestTask.class.getName(), ignite2.cluster().localNode().id());
-
-                ComputeTaskFuture<?> fut = comp.future();
+                ComputeTaskFuture<?> fut = ignite1.compute().withTimeout(100000).executeAsync(
+                    SessionTestTask.class.getName(), ignite2.cluster().localNode().id());
 
                 fut.getTaskSession().setAttribute(TEST_ATTR_KEY, SETS_ATTR_COUNT);
 

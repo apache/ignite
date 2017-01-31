@@ -113,7 +113,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        IgniteCache<Object, Object> cache = ignite(0).createCache(ccfg).withAsync();
+        IgniteCache<Object, Object> cache = ignite(0).createCache(ccfg);
 
         try {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -126,9 +126,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
                 if (iter++ % 50 == 0)
                     log.info("Iteration: " + iter);
 
-                cache.put(iter, 1);
-
-                IgniteFuture<?> fut = cache.future();
+                IgniteFuture<?> fut = cache.putAsync(iter, 1);
 
                 try {
                     fut.get(10_000);

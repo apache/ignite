@@ -366,22 +366,14 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                 }
 
                 case PUT_ASYNC: {
-                    IgniteCache<Integer, Integer> cache0 = cache.withAsync();
-
                     while (System.currentTimeMillis() < stopTime) {
                         Integer val = ++iter;
 
-                        for (int i = 0; i < keysCnt; i++) {
-                            cache0.put(i, val);
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.putAsync(i, val).get();
 
-                            cache0.future().get();
-                        }
-
-                        for (int i = 0; i < keysCnt; i++) {
-                            cache0.get(i);
-
-                            assertEquals(val, cache0.future().get());
-                        }
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.getAsync(i).get());
                     }
 
                     break;
@@ -533,19 +525,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
 
-            if (async)
-                cache = cache.withAsync();
-
             long stopTime = System.currentTimeMillis() + 60_000;
 
             while (System.currentTimeMillis() < stopTime) {
                 for (int i = 0; i < keysCnt; i++) {
                     try {
-                        if (async) {
-                            cache.put(i, i);
-
-                            cache.future().get();
-                        }
+                        if (async)
+                            cache.putAsync(i, i).get();
                         else
                             cache.put(i, i);
                     }

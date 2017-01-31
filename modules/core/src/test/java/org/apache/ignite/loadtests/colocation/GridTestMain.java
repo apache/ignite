@@ -88,13 +88,11 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        IgniteCompute comp = g.compute().withAsync();
-
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
             final long key = i;
 
-            comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
+            final IgniteFuture<?> f = g.compute().affinityRunAsync("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
                     Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
@@ -103,8 +101,6 @@ public class GridTestMain {
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
                 }
             });
-
-            final IgniteFuture<?> f = comp.future();
 
             q.put(f);
 

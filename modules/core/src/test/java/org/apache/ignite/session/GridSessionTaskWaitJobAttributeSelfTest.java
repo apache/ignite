@@ -107,11 +107,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
     private void checkTask(int num) {
         Ignite ignite = G.ignite(getTestGridName());
 
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        comp.execute(GridTaskSessionTestTask.class.getName(), num);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTaskSessionTestTask.class.getName(), num);
 
         Object res = fut.get();
 

@@ -111,7 +111,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testAsyncFailover() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = ignite(0).<TestKey, TestValue>cache(null).withAsync();
+        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(null);
 
         int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
 
@@ -178,9 +178,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                     for (int k = 0; k < keys; k++)
                         map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(k));
 
-                    cache.putAll(map);
-
-                    IgniteFuture<?> fut = cache.future();
+                    IgniteFuture<?> fut = cache.putAllAsync(map);
 
                     assertNotNull(fut);
 
@@ -227,7 +225,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
         });
 
         try {
-            final IgniteCache<TestKey, TestValue> cache = ignite(0).<TestKey, TestValue>cache(null).withAsync();
+            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(null);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -253,9 +251,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                             for (int k = 0; k < keys; k++)
                                 map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
 
-                            cache.putAll(map);
-
-                            IgniteFuture<?> fut = cache.future();
+                            IgniteFuture<?> fut = cache.putAllAsync(map);
 
                             assertNotNull(fut);
 

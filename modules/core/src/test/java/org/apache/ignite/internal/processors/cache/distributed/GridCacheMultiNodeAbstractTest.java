@@ -66,15 +66,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /** Cache 3. */
     private static IgniteCache<Integer, String> cache3;
 
-    /** Cache 1. */
-    private static IgniteCache<Integer, String> cache1Async;
-
-    /** Cache 2. */
-    private static IgniteCache<Integer, String> cache2Async;
-
-    /** Cache 3. */
-    private static IgniteCache<Integer, String> cache3Async;
-
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -103,10 +94,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache1 = ignite1.cache(null);
         cache2 = ignite2.cache(null);
         cache3 = ignite3.cache(null);
-
-        cache1Async = cache1.withAsync();
-        cache2Async = cache2.withAsync();
-        cache3Async = cache3.withAsync();
     }
 
     /** {@inheritDoc} */
@@ -297,17 +284,11 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, lsnr);
         addListener(ignite3, lsnr);
 
-        cache1Async.getAndPut(2, "val1");
+        IgniteFuture<String> f1 = cache1.getAndPutAsync(2, "val1");
 
-        IgniteFuture<String> f1 = cache1Async.future();
+        IgniteFuture<String> f2 = cache2.getAndPutAsync(2, "val2");
 
-        cache2Async.getAndPut(2, "val2");
-
-        IgniteFuture<String> f2 = cache2Async.future();
-
-        cache3Async.getAndPut(2, "val3");
-
-        IgniteFuture<String> f3 = cache3Async.future();
+        IgniteFuture<String> f3 = cache3.getAndPutAsync(2, "val3");
 
         String v1 = f1.get(20000);
 

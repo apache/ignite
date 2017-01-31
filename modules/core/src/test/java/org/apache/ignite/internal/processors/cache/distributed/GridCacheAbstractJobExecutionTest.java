@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -132,16 +133,14 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Ignite ignite = grid(0);
 
-        Collection<ComputeTaskFuture<?>> futs = new LinkedList<>();
+        Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
         final String key = "TestKey";
 
         info("Primary node for test key: " + grid(0).affinity(null).mapKeyToNode(key));
 
-        IgniteCompute comp = ignite.compute().withAsync();
-
         for (int i = 0; i < jobCnt; i++) {
-            comp.apply(new CX1<Integer, Void>() {
+            futs.add(ignite.compute().applyAsync(new CX1<Integer, Void>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -168,12 +167,10 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
                     return null;
                 }
-            }, i);
-
-            futs.add(comp.future());
+            }, i));
         }
 
-        for (ComputeTaskFuture<?> fut : futs)
+        for (IgniteFuture<?> fut : futs)
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {
