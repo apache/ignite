@@ -89,11 +89,6 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Transactions</h1>
  * Cache API supports transactions. You can group and set of cache methods within a transaction
  * to provide ACID-compliant behavior. See {@link IgniteTransactions} for more information.
- * <h1 class="header">Asynchronous Mode</h1>
- * Cache API supports asynchronous mode via {@link IgniteAsyncSupport} functionality. To turn on
- * asynchronous mode invoke {@link #withAsync()} method. Once asynchronous mode is enabled,
- * all methods with {@link IgniteAsyncSupported @IgniteAsyncSupported} annotation will be executed
- * asynchronously.
  *
  * @param <K> Cache key type.
  * @param <V> Cache value type.
