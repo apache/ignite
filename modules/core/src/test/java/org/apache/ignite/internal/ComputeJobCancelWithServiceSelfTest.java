@@ -71,11 +71,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
 
         Ignite client = startGrid("client");
 
-        IgniteCompute compute = client.compute().withAsync();
-
-        compute.execute(new MyTask(), null);
-
-        ComputeTaskFuture<Integer> fut = compute.future();
+        ComputeTaskFuture<Integer> fut = client.compute().executeAsync(new MyTask(), null);
 
         Thread.sleep(3000);
 

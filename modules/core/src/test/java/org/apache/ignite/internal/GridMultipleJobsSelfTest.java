@@ -162,11 +162,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new IgniteCheckedException("Could not instantiate a job.", e);
                     }
 
-                    IgniteCompute comp = ignite1.compute().withAsync();
-
-                    comp.call(job);
-
-                    ComputeTaskFuture<Boolean> fut = comp.future();
+                    IgniteFuture<Boolean> fut = ignite1.compute().callAsync(job);
 
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);

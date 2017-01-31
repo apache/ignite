@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -614,9 +615,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         IgniteSemaphore semaphore = server.semaphore("sync", 0, true, true);
 
-        IgniteCompute compute = client.compute().withAsync();
-
-        compute.apply(new IgniteClosure<Ignite, Object>() {
+        IgniteFuture fut = client.compute().applyAsync(new IgniteClosure<Ignite, Object>() {
             @Override public Object apply(Ignite ignite) {
                 final IgniteLock l = ignite.reentrantLock("lock", true, fair, true);
 
@@ -662,7 +661,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         for (int i = 0; i < gridCount(); i++)
             stopGrid(i);
 
-        compute.future().get();
+        fut.get();
 
         client.close();
     }

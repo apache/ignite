@@ -110,8 +110,6 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
 
         assertEquals((Boolean)clientMode, grid(0).configuration().isClientMode());
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger gridIdx = new AtomicInteger(1);
@@ -137,9 +135,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
                 for (int i = 0; i < 1000; i++) {
-                    comp.affinityCall((String)null, i, new TestJob());
-
-                    IgniteFuture<?> fut0 = comp.future();
+                    IgniteFuture<?> fut0 = grid(0).compute().affinityCallAsync((String)null, i, new TestJob());
 
                     assertNotNull(fut0);
 

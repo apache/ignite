@@ -68,11 +68,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        assertNull(comp.execute(GridTestTask.class,  "testArg"));
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTestTask.class,  "testArg");
 
         assert fut != null;
 
@@ -89,10 +85,10 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
         ArrayList<IgniteFuture<Object>> futs = new ArrayList<>(2016);
 
-        IgniteCompute compute = grid(1).compute(grid(1).cluster().forNodeId(grid(3).localNode().id())).withAsync();
+        IgniteCompute compute = grid(1).compute(grid(1).cluster().forNodeId(grid(3).localNode().id()));
 
         for (int i = 0; i < 1000; i++) {
-            compute.call(new IgniteCallable<Object>() {
+            futs.add(compute.callAsync(new IgniteCallable<Object>() {
                 @JobContextResource
                 ComputeJobContext ctx;
 
@@ -107,9 +103,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            });
-
-            futs.add(compute.future());
+            }));
         }
 
         info("Finished first loop.");
@@ -118,10 +112,10 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
         idx.set(locId);
 
-        IgniteCompute compute1 = grid(2).compute(grid(2).cluster().forNodeId(grid(3).localNode().id())).withAsync();
+        IgniteCompute compute1 = grid(2).compute(grid(2).cluster().forNodeId(grid(3).localNode().id()));
 
         for (int i = 0; i < 100; i++) {
-            compute1.call(new IgniteCallable<Object>() {
+            futs.add(compute1.callAsync(new IgniteCallable<Object>() {
                 @JobContextResource
                 ComputeJobContext ctx;
 
@@ -136,9 +130,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            });
-
-            futs.add(compute1.future());
+            }));
         }
 
         for (IgniteFuture<Object> fut : futs)

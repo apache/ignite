@@ -95,7 +95,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
     /**
      * @param failoverSafe Failover safe flag.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void checkFailover(boolean failoverSafe) throws Exception {
         IgniteEx g = startGrid(NODES_CNT + 1);
@@ -175,9 +175,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         assertEquals(-2, semaphore1.availablePermits());
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -213,8 +211,6 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
                 return null;
             }
         });
-
-        IgniteFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 

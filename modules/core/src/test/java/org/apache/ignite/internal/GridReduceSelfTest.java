@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -90,9 +91,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
 
             List<ReducerTestClosure> closures = closures(ignite.cluster().nodes().size());
 
-            IgniteCompute comp = compute(ignite.cluster().forLocal()).withAsync();
-
-            comp.call(closures, new R1<Long, Long>() {
+            IgniteFuture<Long> fut = compute(ignite.cluster().forLocal()).callAsync(closures, new R1<Long, Long>() {
                 private long sum;
 
                 @Override public boolean collect(Long e) {
@@ -108,8 +107,6 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
                     return sum;
                 }
             });
-
-            ComputeTaskFuture<Long> fut = comp.future();
 
             assertEquals((Long)1L, fut.get());
 

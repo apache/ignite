@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -80,23 +81,15 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
 
         assertEquals(0, empty.nodes().size());
 
-        IgniteCompute comp = ignite(0).compute(empty).withAsync();
+        IgniteCompute comp = ignite(0).compute(empty);
 
-        comp.affinityRun((String)null, 1, new FailRunnable());
+        checkFutureFails(comp.affinityRunAsync((String)null, 1, new FailRunnable()));
 
-        checkFutureFails(comp);
+        checkFutureFails(comp.applyAsync(new FailClosure(), new Object()));
 
-        comp.apply(new FailClosure(), new Object());
+        checkFutureFails(comp.affinityCallAsync((String)null, 1, new FailCallable()));
 
-        checkFutureFails(comp);
-
-        comp.affinityCall((String)null, 1, new FailCallable());
-
-        checkFutureFails(comp);
-
-        comp.broadcast(new FailCallable());
-
-        checkFutureFails(comp);
+        checkFutureFails(comp.broadcastAsync(new FailCallable()));
     }
 
     /**
@@ -145,11 +138,9 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param comp Compute.
+     * @param fut Future.
      */
-    private void checkFutureFails(IgniteCompute comp) {
-        final ComputeTaskFuture fut = comp.future();
-
+    private void checkFutureFails(final IgniteFuture fut) {
         assertNotNull(fut);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
