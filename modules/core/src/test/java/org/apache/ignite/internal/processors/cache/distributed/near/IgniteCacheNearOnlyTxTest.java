@@ -98,8 +98,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
             log.info("Iteration: " + i);
 
             futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     int val = idx.getAndIncrement();
 
                     IgniteCache<Integer, Integer> cache = ignite1.cache(null);
