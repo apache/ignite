@@ -108,7 +108,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->HasNext(&err);
+                        return impl0->HasNext(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
@@ -153,7 +153,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->GetNextRow(&err);
+                        return impl0->GetNextRow(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,

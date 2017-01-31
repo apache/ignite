@@ -34,8 +34,15 @@ public class OracleDialect extends BasicJdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
+        String cols = mkString(keyCols, ",");
+
+        return String.format("SELECT %1$s FROM (SELECT %1$s, ROWNUM AS rn FROM (SELECT %1$s FROM %2$s ORDER BY %1$s)) WHERE mod(rn, ?) = 0",
+            cols, fullTblName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
 
         String colsLst = mkString(cols, ", ");

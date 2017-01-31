@@ -227,7 +227,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             if (recovery != null) {
                 if (!recovery.add(last)) {
-                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
+                    LT.warn(log, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
                         "[remoteAddr=" + remoteAddress() +
                         ", queueLimit=" + recovery.queueLimit() + ']');
 
@@ -287,9 +287,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     @Override public <T> T addMeta(int key, @Nullable T val) {
         if (val instanceof GridNioRecoveryDescriptor) {
             recovery = (GridNioRecoveryDescriptor)val;
-
-            if (!accepted())
-                recovery.connected();
 
             return null;
         }

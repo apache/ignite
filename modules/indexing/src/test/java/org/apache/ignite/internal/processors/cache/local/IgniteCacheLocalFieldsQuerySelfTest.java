@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -26,6 +28,10 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests for fields queries.
  */
 public class IgniteCacheLocalFieldsQuerySelfTest extends IgniteCacheAbstractFieldsQuerySelfTest {
+//    static {
+//        System.setProperty(IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE, "1");
+//    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
@@ -34,5 +40,15 @@ public class IgniteCacheLocalFieldsQuerySelfTest extends IgniteCacheAbstractFiel
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInformationSchema() throws Exception {
+        IgniteEx ignite = grid(0);
+
+        ignite.cache(CACHE).query(
+            new SqlFieldsQuery("SELECT VALUE FROM INFORMATION_SCHEMA.SETTINGS").setLocal(true)).getAll();
     }
 }

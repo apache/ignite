@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -480,11 +481,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
+                            EntryGetResult getRes = null;
                             CacheObject v = null;
                             GridCacheVersion ver = null;
 
                             if (needVer) {
-                                T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                                getRes = entry.innerGetVersioned(
                                     null,
                                     null,
                                     /*swap*/true,
@@ -495,11 +497,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializeBinary);
+                                    !deserializeBinary,
+                                    null);
 
-                                if (res != null) {
-                                    v = res.get1();
-                                    ver = res.get2();
+                                if (getRes != null) {
+                                    v = getRes.value();
+                                    ver = getRes.version();
                                 }
                             }
                             else {
@@ -538,7 +541,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     keepCacheObj,
                                     deserializeBinary,
                                     true,
-                                    ver);
+                                    getRes,
+                                    ver,
+                                    0,
+                                    0,
+                                    needVer);
                             }
                         }
                         else
@@ -613,6 +620,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
+        long createTtl,
         long accessTtl
     ) {
         assert tx == null || tx instanceof GridNearTxLocal : tx;
@@ -627,6 +635,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             isRead,
             retval,
             timeout,
+            createTtl,
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
@@ -874,6 +883,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param txRead Tx read.
      * @param retval Return value flag.
      * @param timeout Lock timeout.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter filter Optional filter.
      * @param skipStore Skip store flag.
@@ -889,6 +899,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean txRead,
         final boolean retval,
         final long timeout,
+        final long createTtl,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         final boolean skipStore,
@@ -913,6 +924,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 txRead,
                 retval,
                 timeout,
+                createTtl,
                 accessTtl,
                 filter,
                 skipStore,
@@ -934,6 +946,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             txRead,
                             retval,
                             timeout,
+                            createTtl,
                             accessTtl,
                             filter,
                             skipStore,
@@ -954,6 +967,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param txRead Tx read.
      * @param retval Return value flag.
      * @param timeout Lock timeout.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter filter Optional filter.
      * @param skipStore Skip store flag.
@@ -969,6 +983,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean txRead,
         boolean retval,
         final long timeout,
+        final long createTtl,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -986,6 +1001,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 timeout,
                 tx,
                 threadId,
+                createTtl,
                 accessTtl,
                 filter,
                 skipStore,
@@ -1054,6 +1070,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 keys,
                 retval,
                 txRead,
+                createTtl,
                 accessTtl,
                 skipStore,
                 keepBinary);
