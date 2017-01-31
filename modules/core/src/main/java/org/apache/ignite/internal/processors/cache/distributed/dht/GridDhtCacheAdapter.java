@@ -1184,12 +1184,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             false);
 
         if (part != null) {
-            try {
-                part.onDeferredDelete(entry.key(), ver);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
-            }
+            part.onDeferredDelete(entry.key(), ver);
         }
     }
 

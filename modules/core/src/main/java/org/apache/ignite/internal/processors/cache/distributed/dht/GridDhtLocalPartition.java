@@ -29,7 +29,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -46,21 +45,20 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RM_ITEM_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -72,8 +70,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
     /** Maximum size for delete queue. */
-    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
-        200_000);
+    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
+
+    /** Ttl of removed cache item (ms). */
+    public static final int CACHE_RM_ITEM_TTL = Integer.getInteger(IGNITE_CACHE_RM_ITEM_TTL, 10_000);
+
+    /** rmvQueue upper bound limit. */
+    private int rmvQueueLimit;
 
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -109,7 +112,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Remove queue. */
-    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final ConcurrentLinkedDeque8<GridDhtLocalKeyCacheItemHolder> rmvQueue = new ConcurrentLinkedDeque8<>();
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
@@ -146,7 +149,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+        rmvQueueLimit = U.ceilPow2(delQueueSize);
+
+        if (!this.cctx.isDrEnabled())
+            this.cctx.shared().delHist().register(this.rmvQueue, this.cctx);
+
     }
 
     /**
@@ -299,22 +306,27 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * Add cache key object into deferred delete queue.
+     * Make clean on ttl or queue size eviction.
+     *
      * @param key Removed key.
      * @param ver Removed version.
-     * @throws IgniteCheckedException If failed.
      */
-    public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
-        try {
-            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
-
-            if (evicted != null)
-                cctx.dht().removeVersionedEntry(evicted.get1(), evicted.get2());
+    public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) {
+        while (rmvQueue.sizex() > rmvQueueLimit) {
+            GridDhtLocalKeyCacheItemHolder item = rmvQueue.pollFirst();
+            if (item != null)
+                cctx.dht().removeVersionedEntry(item.keyCacheObject(), item.cacheVersion());
         }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedCheckedException(e);
+        GridDhtLocalKeyCacheItemHolder item = rmvQueue.peekFirst();
+        while (item != null && item.expiredTime() < U.currentTimeMillis()) {
+            item = rmvQueue.pollFirst();
+            if (item != null)
+                cctx.dht().removeVersionedEntry(item.keyCacheObject(), item.cacheVersion());
         }
+
+        rmvQueue.add(new GridDhtLocalKeyCacheItemHolder(key, ver));
     }
 
     /**
@@ -807,11 +819,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearDeferredDeletes() {
-        rmvQueue.forEach(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
-            @Override public void apply(T2<KeyCacheObject, GridCacheVersion> t) {
-                cctx.dht().removeVersionedEntry(t.get1(), t.get2());
-            }
-        });
+        for (GridDhtLocalKeyCacheItemHolder e : rmvQueue)
+            cctx.dht().removeVersionedEntry(e.keyCacheObject(), e.cacheVersion());
     }
 
     /** {@inheritDoc} */
@@ -840,5 +849,66 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             "reservations", reservations(),
             "empty", isEmpty(),
             "createTime", U.format(createTime));
+    }
+
+    /**
+     * Immutable keyCache item holder
+     */
+    public static class GridDhtLocalKeyCacheItemHolder {
+        /** Cache Object Key */
+        private final KeyCacheObject keyCache;
+
+        /** Grid unique version */
+        private final GridCacheVersion cacheVer;
+
+        /** Entry expire time. */
+        private final long expireTime;
+
+        /**
+         * @param key Cache Object Key.
+         * @param ver Grid unique version.
+         */
+        private GridDhtLocalKeyCacheItemHolder(KeyCacheObject key, GridCacheVersion ver) {
+
+            expireTime = expiredTime();
+
+            assert expireTime != 0;
+
+            this.keyCache = key;
+            this.cacheVer = ver;
+        }
+
+        /**
+         * @return item expired time
+         */
+        private long expiredTime() {
+            return U.currentTimeMillis() + CACHE_RM_ITEM_TTL;
+        }
+
+        /**
+         * @return Cache Object Key
+         */
+        public KeyCacheObject keyCacheObject() {
+            return keyCache;
+        }
+
+        /**
+         * @return Grid unique version
+         */
+        public GridCacheVersion cacheVersion() {
+            return cacheVer;
+        }
+
+        /**
+         * @return item expired time
+         */
+        public long expireTime() {
+            return expireTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(GridDhtLocalKeyCacheItemHolder.class, this);
+        }
     }
 }
