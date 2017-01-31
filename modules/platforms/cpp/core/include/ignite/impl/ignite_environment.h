@@ -200,13 +200,6 @@ namespace ignite
              */
             IgniteBindingContext GetBindingContext() const;
 
-            /**
-             * Acquire ownership for the object.
-             *
-             * @param obj Java object to acquire.
-             */
-            void* Acquire(void* obj);
-
         private:
             /** Node configuration. */
             IgniteConfiguration* cfg;

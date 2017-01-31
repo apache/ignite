@@ -63,6 +63,20 @@ namespace ignite
                 return BinaryObjectImpl(mem, offset);
             }
 
+            BinaryObjectImpl BinaryObjectImpl::GetField(int32_t idx)
+            {
+                int32_t offset = start + BinaryObjectHeader::SIZE;
+
+                for (int32_t i = 0; i < idx; ++i)
+                {
+                    BinaryObjectHeader fieldHeader = BinaryObjectHeader::FromMemory(*mem, offset);
+
+                    offset += fieldHeader.GetLength();
+                }
+
+                return BinaryObjectImpl::FromMemory(*mem, offset);
+            }
+
             const int8_t* BinaryObjectImpl::GetData() const
             {
                 return mem->Data() + start + BinaryObjectHeader::SIZE;

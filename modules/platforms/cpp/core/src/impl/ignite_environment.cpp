@@ -271,11 +271,6 @@ namespace ignite
             return IgniteBindingContext(*cfg, GetBinding());
         }
 
-        void* IgniteEnvironment::Acquire(void *obj)
-        {
-            return reinterpret_cast<void*>(ctx.Get()->Acquire(reinterpret_cast<jobject>(obj)));
-        }
-
         void IgniteEnvironment::ProcessorReleaseStart()
         {
             if (proc.Get())
@@ -324,22 +319,6 @@ namespace ignite
             }
         }
 
-
-        std::string HexDump(const void* data, size_t count)
-        {
-            std::stringstream  dump;
-            size_t cnt = 0;
-            for (const uint8_t* p = (const uint8_t*)data, *e = (const uint8_t*)data + count; p != e; ++p)
-            {
-                if (cnt++ % 16 == 0)
-                {
-                    dump << std::endl;
-                }
-                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
-            }
-            return dump.str();
-        }
-
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
         {
             if (!binding.Get())
@@ -356,7 +335,8 @@ namespace ignite
             if (local)
                 throw IgniteError(IgniteError::IGNITE_ERR_UNSUPPORTED_OPERATION, "Local invokation is not supported.");
 
-            BinaryObjectImpl binProc = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
+            BinaryObjectImpl binProcHolder = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
+            BinaryObjectImpl binProc = binProcHolder.GetField(0);
 
             int64_t procId = binProc.GetTypeId();
 

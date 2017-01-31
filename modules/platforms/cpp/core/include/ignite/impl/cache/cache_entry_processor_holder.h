@@ -260,14 +260,18 @@ namespace ignite
 
             void Write(BinaryWriter& writer, UnderlyingType obj)
             {
-                writer.WriteObject("proc", obj.getProcessor());
-                writer.WriteObject("arg", obj.getArgument());
+                BinaryRawWriter raw = writer.RawWriter();
+
+                raw.WriteObject(obj.getProcessor());
+                raw.WriteObject(obj.getArgument());
             }
 
             UnderlyingType Read(BinaryReader& reader)
             {
-                const P& proc = reader.ReadObject<P>("proc");
-                const A& arg = reader.ReadObject<A>("arg");
+                BinaryRawReader raw = reader.RawReader();
+
+                const P& proc = raw.ReadObject<P>();
+                const A& arg = raw.ReadObject<A>();
 
                 return UnderlyingType(proc, arg);
             }

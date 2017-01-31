@@ -99,6 +99,17 @@ namespace ignite
                 }
 
                 /**
+                 * Get binary object field.
+                 *
+                 * @warning Works only if all object fields are objects.
+                 *     Otherwise behavior is undefined.
+                 *
+                 * @param idx Field index. Starts from 0.
+                 * @return Binary object field.
+                 */
+                BinaryObjectImpl GetField(int32_t idx);
+
+                /**
                  * Get object data.
                  * @throw IgniteError if the object is not in a valid state.
                  *

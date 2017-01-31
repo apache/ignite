@@ -32,23 +32,23 @@ namespace ignite
                 {
                     IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
                         "Not enough data in the binary object", "memPtr", mem.PointerLong(),
-                        "len", mem.Length(), "headerLen", static_cast<int>(SIZE));
+                        "len", (mem.Length() - offset), "headerLen", static_cast<int>(SIZE));
                 }
 
-                int8_t type = BinaryUtils::ReadInt8(mem, offset);
+                int8_t type = BinaryUtils::UnsafeReadInt8(mem, offset);
                 if (type == impl::binary::IGNITE_TYPE_BINARY)
                 {
-                    int32_t binLen = BinaryUtils::ReadInt32(mem, offset + 1);
-                    int32_t binOff = BinaryUtils::ReadInt32(mem, offset + binLen);
+                    int32_t binLen = BinaryUtils::UnsafeReadInt32(mem, offset + 1);
+                    int32_t binOff = BinaryUtils::ReadInt32(mem, offset + 5 + binLen);
 
-                    return BinaryObjectHeader(mem.Data() + offset + binOff);
+                    return BinaryObjectHeader::FromMemory(mem, offset + 5 + binOff);
                 }
                 else if (type != impl::binary::IGNITE_TYPE_OBJECT)
                 {
                     IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
                         "Not expected type header of the binary object", "memPtr", mem.PointerLong(),
-                        "type", static_cast<int>(type),
-                        "expected", static_cast<int>(impl::binary::IGNITE_TYPE_OBJECT));
+                        "type", (type & 0xFF),
+                        "expected", (impl::binary::IGNITE_TYPE_OBJECT & 0xFF));
                 }
 
                 return BinaryObjectHeader(mem.Data() + offset);

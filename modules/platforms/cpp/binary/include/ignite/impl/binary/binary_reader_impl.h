@@ -918,7 +918,8 @@ namespace ignite
 
                             int32_t footerEnd;
 
-                            if (flags & IGNITE_BINARY_FLAG_HAS_RAW)
+                            if (flags & IGNITE_BINARY_FLAG_HAS_RAW &&
+                                flags & IGNITE_BINARY_FLAG_HAS_SCHEMA)
                             {
                                 // 4 is the size of RawOffset field at the end of the packet.
                                 footerEnd = pos + len - 4;
@@ -932,7 +933,7 @@ namespace ignite
                                 rawOff = schemaOrRawOff;
                             }
 
-                            bool usrType = flags & IGNITE_BINARY_FLAG_USER_TYPE;
+                            bool usrType = (flags & IGNITE_BINARY_FLAG_USER_TYPE) != 0;
 
                             ignite::binary::BinaryType<T> type;
                             TemplatedBinaryIdResolver<T> idRslvr(type);
@@ -951,7 +952,7 @@ namespace ignite
                         default:
                         {
                             IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY, 
-                                           "Unexpected header during deserialization: ", static_cast<int>(hdr));
+                                           "Unexpected header during deserialization: ", (hdr & 0xFF));
                         }
                     }
                 }
