@@ -720,6 +720,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         StringBuilder sb = new StringBuilder();
 
+        sb.append("----preload sync futures----\n");
+
         for (Ignite ig : G.allGrids()) {
             IgniteKernal k = ((IgniteKernal)ig);
 
@@ -727,12 +729,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 .preloader()
                 .syncFuture();
 
-            sb.append("nodeId = ")
+            sb.append("nodeId=")
                 .append(k.context().localNodeId())
-                .append(" preload sync future isDone=")
+                .append(" isDone=")
                 .append(syncFut.isDone())
                 .append("\n");
         }
+
+        sb.append("----rebalance futures----\n");
 
         for (Ignite ig : G.allGrids()) {
             IgniteKernal k = ((IgniteKernal)ig);
@@ -742,21 +746,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 .rebalanceFuture();
 
             try {
-                sb.append("nodeId = ").append(k.context().localNodeId())
-                    .append(" rebalance future isDone=").append(f.isDone())
+                sb.append("nodeId=").append(k.context().localNodeId())
+                    .append(" isDone=").append(f.isDone())
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
-                    .append(" topVer=").append(U.field(f, "topVer"))
+                    .append(" topVer=")
+                    .append((U.hasField(f, "topVer") ?
+                        U.field(f, "topVer") : "[unknown] may be it is finished future"))
                     .append("\n");
 
                 Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
 
-                sb.append("remaining:\n");
+                sb.append("remaining:");
 
                 if (remaining.isEmpty())
                     sb.append("empty\n");
                 else
                     for (Map.Entry<UUID, T2<Long, Collection<Integer>>> e : remaining.entrySet())
-                        sb.append("uuid=").append(e.getKey())
+                        sb.append("\nuuid=").append(e.getKey())
                             .append(" startTime=").append(e.getValue().getKey())
                             .append(" parts=").append(Arrays.toString(e.getValue().getValue().toArray()))
                             .append("\n");
@@ -767,11 +773,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
+        sb.append("----partition state----\n");
+
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
 
-            sb.append("grid=").append(g0.name())
-                .append(" localNodeId=").append(g0.localNode().id())
+            sb.append("localNodeId=").append(g0.localNode().id())
+                .append(" grid=").append(g0.name())
                 .append("\n");
 
             GridDhtPartitionTopology top = dht(cache).topology();
@@ -790,7 +798,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 for (UUID nodeId : F.nodeIds(g0.context().discovery().allNodes())) {
                     if (!nodeId.equals(g0.localNode().id()))
-                        sb.append(" nodeId=")
+                        sb.append(" nodeId = ")
                             .append(nodeId)
                             .append(" part=")
                             .append(p)
@@ -803,7 +811,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             sb.append("\n");
         }
 
-        log.info("dump partition state for " + cfg.getName() + ":\n" + sb.toString());
+        log.info("dump partitions state for <" + cfg.getName() + ">:\n" + sb.toString());
     }
 
     /**
