@@ -378,5 +378,6 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public boolean isEnabled(int type);
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteEvents withAsync();
 }

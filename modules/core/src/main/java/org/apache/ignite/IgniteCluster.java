@@ -476,5 +476,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     @Nullable public IgniteFuture<?> clientReconnectFuture();
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteCluster withAsync();
 }
