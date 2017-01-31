@@ -775,7 +775,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             return;
 
         // Don't track non-primary entries if evicts are synchronized.
-        if (!cctx.isNear() && evictSync && !cctx.affinity().primaryByKey(cctx.localNode(), e.partition(), topVer))
+        if (!cctx.isNear() && evictSync && !cctx.affinity().primaryByPartition(cctx.localNode(), e.partition(), topVer))
             return;
 
         if (!busyLock.enterBusy())
@@ -1449,7 +1449,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                         if (!evts.isEmpty())
                             break;
 
-                        if (!cctx.affinity().primaryByKey(loc, it.next(), topVer))
+                        if (!cctx.affinity().primaryByPartition(loc, it.next(), topVer))
                             it.remove();
                     }
 
