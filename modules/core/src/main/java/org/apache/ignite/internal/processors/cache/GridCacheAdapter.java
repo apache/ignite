@@ -528,6 +528,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Locks future.
      */
@@ -539,6 +540,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
+        long createTtl,
         long accessTtl);
 
     /**
@@ -4878,15 +4880,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         KeyCacheObject key = entry.key();
 
-        try {
-            Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true);
-            Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true);
+        Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true);
+        Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true);
 
-            return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
-        }
-        catch (RuntimeException ex) {
-            throw S.INCLUDE_SENSITIVE ? new IgniteException("Failed to peak a value with key: " + key, ex) : ex;
-        }
+        return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
     }
 
     /**

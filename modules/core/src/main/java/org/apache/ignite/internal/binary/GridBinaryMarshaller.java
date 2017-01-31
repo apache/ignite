@@ -219,57 +219,6 @@ public class GridBinaryMarshaller {
     /** */
     private final BinaryContext ctx;
 
-    /** Converts the type to the string representation */
-    static String typeName(int type) {
-
-        switch (type) {
-            case BYTE:
-                return "BYTE";
-
-            case SHORT:
-                return "SHORT";
-
-            case INT:
-                return "INT";
-
-            case LONG:
-                return "LONG";
-
-            case FLOAT:
-                return "FLOAT";
-
-            case DOUBLE:
-                return "DOUBLE";
-
-            case CHAR:
-                return "CHAR";
-
-            case BOOLEAN:
-                return "BOOLEAN";
-
-            case DECIMAL:
-                return "DECIMAL";
-
-            case STRING:
-                return "STRING";
-
-            case UUID:
-                return "UUID";
-
-            case DATE:
-                return "DATE";
-
-            case ENUM:
-                return "ENUM";
-
-            case TIMESTAMP:
-                return "TIMESTAMP";
-
-            default:
-                return String.valueOf(type);
-        }
-    }
-
     /**
      * @param ctx Context.
      */

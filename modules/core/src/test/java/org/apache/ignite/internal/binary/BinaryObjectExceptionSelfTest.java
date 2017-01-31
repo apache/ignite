@@ -109,9 +109,6 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
                     log().info(sb.toString());
                     Field f = fields[unexpectedCnt];
                     Throwable t = ex;
-                    assertTrue("key must be equal \"test_key\"",
-                        t.getMessage().contains("val=test_key"));
-                    t = t.getCause();
                     assertTrue("type must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value\"",
                         t.getMessage().contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value"));
                     t = t.getCause();

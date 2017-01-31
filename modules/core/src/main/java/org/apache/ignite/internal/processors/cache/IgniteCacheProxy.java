@@ -43,7 +43,6 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
@@ -98,9 +97,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    protected transient IgniteLogger log;
 
     /** */
     private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
@@ -181,8 +177,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         this.ctx = ctx;
         this.delegate = delegate;
         this.opCtx = opCtx;
-
-        log = ctx.logger(getClass());
 
         gate = ctx.gate();
 
@@ -400,7 +394,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -422,7 +416,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -447,7 +441,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -514,7 +508,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             if (needToConvert) {
                                 Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
 
-                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                             }
 
                             return (R)next;
@@ -809,17 +803,17 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     private void convertToBinary(final Query qry) {
         if (ctx.binaryMarshaller()) {
             if (qry instanceof SqlQuery) {
-                final SqlQuery sqlQry = (SqlQuery)qry;
+                final SqlQuery sqlQry = (SqlQuery) qry;
 
                 convertToBinary(sqlQry.getArgs());
             }
             else if (qry instanceof SpiQuery) {
-                final SpiQuery spiQry = (SpiQuery)qry;
+                final SpiQuery spiQry = (SpiQuery) qry;
 
                 convertToBinary(spiQry.getArgs());
             }
             else if (qry instanceof SqlFieldsQuery) {
-                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery)qry;
+                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
 
                 convertToBinary(fieldsQry.getArgs());
             }
@@ -873,7 +867,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return delegate.localEntries(peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -960,7 +954,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return delegate.localPeek(key, peekModes, null);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -982,7 +976,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1002,7 +996,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 return delegate.size(peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1025,7 +1019,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 return delegate.sizeLong(peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1048,7 +1042,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 return delegate.sizeLong(part, peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1065,7 +1059,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return delegate.localSize(peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1082,7 +1076,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return delegate.localSizeLong(peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1099,7 +1093,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return delegate.localSizeLong(part, peekModes);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1127,7 +1121,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1152,7 +1146,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1177,7 +1171,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1202,7 +1196,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1227,7 +1221,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1255,7 +1249,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1340,7 +1334,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                             completionLsnr.onCompletion();
                         }
-                        catch (IgniteException | IgniteCheckedException e) {
+                        catch (IgniteCheckedException e) {
                             completionLsnr.onException(cacheException(e));
                         }
                     }
@@ -1385,7 +1379,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1410,7 +1404,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1432,7 +1426,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1457,7 +1451,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1482,7 +1476,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1507,7 +1501,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1532,7 +1526,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1557,7 +1551,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1582,7 +1576,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1607,7 +1601,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1629,7 +1623,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1646,7 +1640,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 delegate.removeAll();
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1666,7 +1660,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 delegate.clear(key);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1686,7 +1680,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 delegate.clearAll(keys);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1706,7 +1700,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             else
                 delegate.clear();
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -1783,7 +1777,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1823,7 +1817,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1850,7 +1844,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1877,7 +1871,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1904,7 +1898,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1945,7 +1939,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             fut.get();
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1969,7 +1963,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             fut.get();
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -2018,7 +2012,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             ctx.continuousQueries().executeJCacheQuery(lsnrCfg, false, opCtx != null && opCtx.isKeepBinary());
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -2035,7 +2029,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             ctx.continuousQueries().cancelJCacheQuery(lsnrCfg);
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -2052,7 +2046,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return ctx.cache().igniteIterator();
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
         finally {
@@ -2185,15 +2179,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param e Checked exception.
      * @return Cache exception.
      */
-    private RuntimeException cacheException(Exception e) {
-        if(S.INCLUDE_SENSITIVE)
-            log.error("Failure operating with cache: " + getName(), e);
-        RuntimeException r;
-        if (e instanceof IgniteCheckedException)
-            r = CU.convertToCacheException((IgniteCheckedException)e);
-        else
-            r = (RuntimeException)e;
-        return r;
+    private RuntimeException cacheException(IgniteCheckedException e) {
+        return CU.convertToCacheException(e);
     }
 
     /**
@@ -2361,7 +2348,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 onLeave(gate, prev);
             }
         }
-        catch (IgniteException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
