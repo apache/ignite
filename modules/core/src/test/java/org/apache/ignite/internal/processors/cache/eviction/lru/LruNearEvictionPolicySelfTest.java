@@ -58,8 +58,8 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     private CacheMemoryMode memMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = new CacheConfiguration();
 

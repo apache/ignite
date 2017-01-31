@@ -268,7 +268,7 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getIgniteInstanceName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;

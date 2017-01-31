@@ -207,7 +207,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JMX_PORT;
@@ -269,7 +269,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private GridLoggerProxy log;
 
     /** */
-    private String gridName;
+    private String igniteInstanceName;
 
     /** */
     @GridToStringExclude
@@ -417,7 +417,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return gridName;
+        return igniteInstanceName;
     }
 
     /** {@inheritDoc} */
@@ -540,7 +540,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String getInstanceName() {
-        return gridName;
+        return igniteInstanceName;
     }
 
     /** {@inheritDoc} */
@@ -666,7 +666,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Catch generic throwable to secure against user assertions.
         catch (Throwable e) {
             U.error(log, "Failed to notify lifecycle bean (safely ignored) [evt=" + evt +
-                (gridName == null ? "" : ", gridName=" + gridName) + ']', e);
+                (igniteInstanceName == null ? "" : ", igniteInstanceName=" + igniteInstanceName) + ']', e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -711,7 +711,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     )
         throws IgniteCheckedException
     {
-        gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
+        gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
 
         GridKernalGateway gw = this.gw.get();
 
@@ -751,12 +751,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Make sure we got proper configuration.
         validateCommon(cfg);
 
-        gridName = cfg.getGridName();
+        igniteInstanceName = cfg.getIgniteInstanceName();
 
         this.cfg = cfg;
 
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
-            getClass().getName() + (gridName != null ? '%' + gridName : ""));
+            getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
@@ -776,7 +776,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackRebalanceConfiguration();
 
         // Run background network diagnostics.
-        GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
+        GridDiagnostic.runBackgroundCheck(igniteInstanceName, execSvc, log);
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -1195,7 +1195,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
-        ctx.performance().logSuggestions(log, gridName);
+        ctx.performance().logSuggestions(log, igniteInstanceName);
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
@@ -1428,7 +1428,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
-        add(ATTR_GRID_NAME, gridName);
+        add(ATTR_IGNITE_INSTANCE_NAME, igniteInstanceName);
 
         add(ATTR_PEER_CLASSLOADING, cfg.isPeerClassLoadingEnabled());
         add(ATTR_DEPLOYMENT_MODE, cfg.getDeploymentMode());
@@ -1524,7 +1524,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             kernalMBean = U.registerMBean(
                 cfg.getMBeanServer(),
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 "Kernal",
                 getClass().getSimpleName(),
                 this,
@@ -1547,7 +1547,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             locNodeMBean = U.registerMBean(
                 cfg.getMBeanServer(),
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
@@ -1601,7 +1601,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             ObjectName res = U.registerMBean(
                 cfg.getMBeanServer(),
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 "Thread Pools",
                 name,
                 new ThreadPoolMXBeanAdapter(exec),
@@ -1854,7 +1854,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (log.isQuiet()) {
             U.quiet(false, "");
             U.quiet(false, "Ignite node started OK (id=" + U.id8(locNode.id()) +
-                (F.isEmpty(gridName) ? "" : ", grid=" + gridName) + ')');
+                (F.isEmpty(igniteInstanceName) ? "" : ", instance name=" + igniteInstanceName) + ')');
         }
 
         if (log.isInfoEnabled()) {
@@ -1878,7 +1878,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ">>> CPU(s): " + locNode.metrics().getTotalCpus() + NL +
                     ">>> Heap: " + U.heapSize(locNode, 2) + "GB" + NL +
                     ">>> VM name: " + rtBean.getName() + NL +
-                    (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
+                    (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
                     ">>> Local node [" +
                     "ID=" + locNode.id().toString().toUpperCase() +
                     ", order=" + locNode.order() + ", clientMode=" + ctx.clientNode() +
@@ -2001,7 +2001,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
-        gw.compareAndSet(null, new GridKernalGatewayImpl(gridName));
+        gw.compareAndSet(null, new GridKernalGatewayImpl(igniteInstanceName));
 
         GridKernalGateway gw = this.gw.get();
 
@@ -2081,7 +2081,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ctx.cluster().get().clearNodeMap();
 
                 if (log.isDebugEnabled())
-                    log.debug("Grid " + (gridName == null ? "" : '\'' + gridName + "' ") + "is stopping.");
+                    log.debug("Grid " + (igniteInstanceName == null ? "" : '\'' + igniteInstanceName + "' ") +
+                        "is stopping.");
             }
             finally {
                 gw.writeUnlock();
@@ -2151,7 +2152,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Ack stop.
             if (log.isQuiet()) {
-                String nodeName = gridName == null ? "" : "name=" + gridName + ", ";
+                String nodeName = igniteInstanceName == null ? "" : "name=" + igniteInstanceName + ", ";
 
                 if (!errOnStop)
                     U.quiet(false, "Ignite node stopped OK [" + nodeName + "uptime=" +
@@ -2172,7 +2173,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ">>> " + dash + NL +
                         ">>> " + ack + NL +
                         ">>> " + dash + NL +
-                        (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
+                        (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
                         ">>> Grid uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) +
                         NL +
                         NL);
@@ -2186,7 +2187,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     log.info(NL + NL +
                         ">>> " + ack + NL +
                         ">>> " + dash + NL +
-                        (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
+                        (igniteInstanceName == null ? "" : ">>> Ignite instance name: " + igniteInstanceName + NL) +
                         ">>> Grid uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) +
                         NL +
                         ">>> See log above for detailed error message." + NL +
@@ -3176,7 +3177,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        Ignition.stop(gridName, true);
+        Ignition.stop(igniteInstanceName, true);
     }
 
     /** {@inheritDoc} */
@@ -3556,12 +3557,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
+        igniteInstanceName = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, igniteInstanceName);
     }
 
     /**
@@ -3601,7 +3602,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
 
                 U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
-                    ", name=" + ctx.gridName() +
+                    ", name=" + ctx.igniteInstanceName() +
                     ", order=" + locNode.order() +
                     ", topVer=" + discoMrg.topologyVersion() +
                     ", client=" + client +
@@ -3610,7 +3611,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ctx.cache().context().exchange().dumpDebugInfo();
             }
             else
-                U.warn(log, "Dumping debug info for node, context is not initialized [name=" + gridName + ']');
+                U.warn(log, "Dumping debug info for node, context is not initialized [name=" + igniteInstanceName +
+                    ']');
         }
         catch (Exception e) {
             U.error(log, "Failed to dump debug info for node: " + e, e);

@@ -2027,7 +2027,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
-        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
+        // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**

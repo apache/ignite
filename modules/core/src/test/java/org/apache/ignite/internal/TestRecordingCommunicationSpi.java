@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  *
@@ -76,7 +76,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     Set<String> blockNodes = blockCls.get(msg0.getClass());
 
                     if (blockNodes != null) {
-                        String nodeName = (String)node.attributes().get(ATTR_GRID_NAME);
+                        String nodeName = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
 
                         block = blockNodes.contains(nodeName);
                     }

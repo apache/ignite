@@ -32,8 +32,8 @@ public class GridCacheAtomicReplicatedMetricsSelfTest extends GridCacheAbstractM
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(ATOMIC);

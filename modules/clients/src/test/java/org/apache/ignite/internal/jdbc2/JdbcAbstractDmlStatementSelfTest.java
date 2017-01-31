@@ -58,17 +58,17 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     protected Connection conn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration0(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration0(igniteInstanceName);
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration used for starting the grid.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration getConfiguration0(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    private IgniteConfiguration getConfiguration0(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -93,12 +93,12 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration used for starting the grid ready for manipulating binary objects.
      * @throws Exception If failed.
      */
-    IgniteConfiguration getBinaryConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration0(gridName);
+    IgniteConfiguration getBinaryConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = getConfiguration0(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
