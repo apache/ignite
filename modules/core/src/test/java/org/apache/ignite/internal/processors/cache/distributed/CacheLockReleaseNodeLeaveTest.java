@@ -174,8 +174,6 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         }
     }
 
-
-
     /**
      * @throws Exception If failed.
      */
