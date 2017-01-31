@@ -371,6 +371,16 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testParseCreateDropIndex() throws Exception {
+        checkQuery("create index \"\".idx on Person (name ASC)");
+        checkQuery("create spatial index if not exists \"\".idx on Person (old desc, name ASC)");
+        checkQuery("drop index \"\".idx");
+        checkQuery("drop index if exists \"\".idx");
+    }
+
+    /**
+     *
+     */
     private JdbcConnection connection() throws Exception {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
@@ -426,7 +436,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         System.out.println(normalizeSql(res));
 
-        assertSqlEquals(prepared.getPlanSQL(), res);
+        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
     }
 
     @QuerySqlFunction

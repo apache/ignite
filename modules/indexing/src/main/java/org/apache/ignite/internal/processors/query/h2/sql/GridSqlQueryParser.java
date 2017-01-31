@@ -32,6 +32,9 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.DropIndex;
+import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
@@ -64,8 +67,10 @@ import org.h2.index.Index;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
+import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.FunctionTable;
+import org.h2.table.IndexColumn;
 import org.h2.table.RangeTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
@@ -294,6 +299,36 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Command, Prepared> PREPARED =
         GridSqlQueryParser.<Command, Prepared>getter(CommandContainer.class, "prepared");
+
+    /** */
+    private static final Getter<CreateIndex, String> CREATE_INDEX_NAME = getter(CreateIndex.class, "indexName");
+
+    /** */
+    private static final Getter<CreateIndex, String> CREATE_INDEX_TABLE_NAME = getter(CreateIndex.class, "tableName");
+
+    /** */
+    private static final Getter<CreateIndex, IndexColumn[]> CREATE_INDEX_COLUMNS = getter(CreateIndex.class, "indexColumns");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_SPATIAL = getter(CreateIndex.class, "spatial");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_IF_NOT_EXISTS = getter(CreateIndex.class, "ifNotExists");
+
+    /** */
+    private static final Getter<IndexColumn, String> INDEX_COLUMN_NAME = getter(IndexColumn.class, "columnName");
+
+    /** */
+    private static final Getter<IndexColumn, Integer> INDEX_COLUMN_SORT_TYPE = getter(IndexColumn.class, "sortType");
+
+    /** */
+    private static final Getter<DropIndex, String> DROP_INDEX_NAME = getter(DropIndex.class, "indexName");
+
+    /** */
+    private static final Getter<DropIndex, Boolean> DROP_INDEX_IF_EXISTS = getter(DropIndex.class, "ifExists");
+
+    /** */
+    private static final Getter<SchemaCommand, Schema> SCHEMA_COMMAND_SCHEMA = getter(SchemaCommand.class, "schema");
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -594,6 +629,52 @@ public class GridSqlQueryParser {
         return res;
     }
 
+
+
+    /**
+     * @param dropIdx Drop index statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_index">H2 drop index spec</a>
+     */
+    private GridDropIndex parseDropIndex(DropIndex dropIdx) {
+        GridDropIndex res = new GridDropIndex();
+
+        res.name(DROP_INDEX_NAME.get(dropIdx));
+        res.schemaName(SCHEMA_COMMAND_SCHEMA.get(dropIdx).getName());
+        res.ifExists(DROP_INDEX_IF_EXISTS.get(dropIdx));
+
+        return res;
+    }
+
+    /**
+     * @param createIdx Create index statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 create index spec</a>
+     */
+    private GridCreateIndex parseCreateIndex(CreateIndex createIdx) {
+        GridCreateIndex res = new GridCreateIndex();
+
+        res.name(CREATE_INDEX_NAME.get(createIdx));
+        res.schemaName(SCHEMA_COMMAND_SCHEMA.get(createIdx).getName());
+        res.tableName(CREATE_INDEX_TABLE_NAME.get(createIdx));
+        res.spatial(CREATE_INDEX_SPATIAL.get(createIdx));
+        res.ifNotExists(CREATE_INDEX_IF_NOT_EXISTS.get(createIdx));
+
+        IndexColumn[] srcCols = CREATE_INDEX_COLUMNS.get(createIdx);
+        GridIndexColumn[] cols = new GridIndexColumn[srcCols.length];
+
+        for (int i = 0; i < srcCols.length; i++) {
+            GridIndexColumn col = new GridIndexColumn();
+
+            col.name(INDEX_COLUMN_NAME.get(srcCols[i]));
+            col.ascending((INDEX_COLUMN_SORT_TYPE.get(srcCols[i]) & SortOrder.DESCENDING) == 0);
+
+            cols[i] = col;
+        }
+
+        res.columns(cols);
+
+        return res;
+    }
+
     /**
      * @param sortOrder Sort order.
      * @param qry Query.
@@ -658,6 +739,12 @@ public class GridSqlQueryParser {
 
         if (qry instanceof Update)
             return parseUpdate((Update)qry);
+
+        if (qry instanceof CreateIndex)
+            return parseCreateIndex((CreateIndex) qry);
+
+        if (qry instanceof DropIndex)
+            return parseDropIndex((DropIndex) qry);
 
         if (qry instanceof Explain) {
             GridSqlStatement stmt = parse(EXPLAIN_COMMAND.get((Explain) qry));

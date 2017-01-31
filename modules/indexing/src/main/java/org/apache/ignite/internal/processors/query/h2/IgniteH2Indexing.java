@@ -134,6 +134,10 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Delete;
+import org.h2.command.dml.Insert;
+import org.h2.command.dml.Merge;
+import org.h2.command.dml.Update;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -333,6 +337,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor(this);
+
+    /** */
+    private final DdlStatementsProcessor ddlProc = new DdlStatementsProcessor(this);
 
     /** */
     private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
@@ -1255,12 +1262,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
             if (!prepared.isQuery()) {
-                try {
-                    return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
+                if (prepared instanceof Merge || prepared instanceof Insert ||
+                    prepared instanceof Update || prepared instanceof Delete) {
+                    try {
+                        return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
+                            Arrays.deepToString(qry.getArgs()) + "]", e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
-                        Arrays.deepToString(qry.getArgs()) + "]", e);
+                else {
+                    try {
+                        return ddlProc.runDdlStatement(cctx, prepared);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
+                            Arrays.deepToString(qry.getArgs()) + "]", e);
+                    }
                 }
             }
 
