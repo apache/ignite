@@ -51,7 +51,7 @@ void CheckRawPrimitive(T val)
     BinaryRawReader rawReader(&reader);
 
     T readVal = Read<T>(rawReader);
-    
+
     BOOST_REQUIRE(readVal == val);
 }
 
@@ -1712,6 +1712,27 @@ BOOST_AUTO_TEST_CASE(TestMapTyped)
     MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
 
     CheckRawMap(&typ);
+}
+
+BOOST_AUTO_TEST_CASE(TestUserType)
+{
+    PureRaw expected("Hello Ignite from", 2017);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, NULL);
+
+    writer.WriteObject<PureRaw>(expected);
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+
+    PureRaw actual = reader.ReadObject<PureRaw>();
+
+    BOOST_REQUIRE(actual == expected);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
