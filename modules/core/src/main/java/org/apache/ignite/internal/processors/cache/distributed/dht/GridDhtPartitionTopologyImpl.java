@@ -830,7 +830,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         AffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
 
         List<ClusterNode> affNodes = affAssignment.get(p);
-        assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
+        assert checkNode2PartValid() : "Invalid node-to-partitions map [topVer1=" + topVer +
             ", topVer2=" + this.topVer +
             ", node=" + cctx.gridName() +
             ", cache=" + cctx.name() +
@@ -875,7 +875,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
 
-        assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
+        assert checkNode2PartValid() : "Invalid node-to-partitions map [topVer=" + topVer +
             ", allIds=" + allIds +
             ", node2part=" + node2part +
             ", cache=" + cctx.name() + ']';
@@ -902,6 +902,17 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
 
         return nodes;
+    }
+
+    /** Validates node2part */
+    private boolean checkNode2PartValid() {
+        lock.readLock().lock();
+        try {
+            return node2part != null && node2part.valid();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
