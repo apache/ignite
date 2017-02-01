@@ -15,37 +15,47 @@
  * limitations under the License.
  */
 
-#include "ignite/binary/binary_type.h"
+/**
+ * @file
+ * Declares ignite::binary::BinaryIdentityResolver class.
+ */
+
+#ifndef _IGNITE_BINARY_BINARY_IDENTITY_RESOLVER
+#define _IGNITE_BINARY_BINARY_IDENTITY_RESOLVER
+
+#include <stdint.h>
+
+#include <ignite/common/common.h>
+
+#include <ignite/binary/binary_object.h>
 
 namespace ignite
 {
     namespace binary
     {
-        int32_t GetBinaryStringHashCode(const char* val)
+        /**
+         * Binary identity resolver.
+         */
+        class IGNITE_IMPORT_EXPORT BinaryIdentityResolver
         {
-            if (val)
+        public:
+            /**
+             * Destructor.
+             */
+            virtual ~BinaryIdentityResolver()
             {
-                int32_t hash = 0;
-
-                int i = 0;
-
-                while (true)
-                {
-                    char c = *(val + i++);
-
-                    if (c == '\0')
-                        break;
-
-                    if ('A' <= c && c <= 'Z')
-                        c = c | 0x20;
-
-                    hash = 31 * hash + c;
-                }
-
-                return hash;
+                // No-op.
             }
 
-            return 0;
-        }
+            /**
+             * Get binary object hash code.
+             *
+             * @param obj Binary object.
+             * @return Hash code.
+             */
+            virtual int32_t GetHashCode(const BinaryObject& obj) = 0;
+        };
     }
 }
+
+#endif //_IGNITE_BINARY_BINARY_IDENTITY_RESOLVER

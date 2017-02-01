@@ -17,24 +17,10 @@
 
 #include <cassert>
 
-#include "test_utils.h"
+#include "ignite/test_utils.h"
 
 namespace ignite_test
 {
-    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
-    {
-        SQLCHAR sqlstate[7] = {};
-        SQLINTEGER nativeCode;
-
-        SQLCHAR message[ODBC_BUFFER_SIZE];
-        SQLSMALLINT reallen = 0;
-
-        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
-
-        return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
-            std::string(reinterpret_cast<char*>(message), reallen);
-    }
-
     void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
     {
         using namespace ignite;
@@ -59,7 +45,7 @@ namespace ignite_test
         cfg.jvmMaxMem = 4096;
 #endif
 
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
         assert(cfgPath != 0);
 
@@ -89,4 +75,5 @@ namespace ignite_test
 
         return Ignition::Start(cfg, name);
     }
+
 }

@@ -15,37 +15,28 @@
  * limitations under the License.
  */
 
-#include "ignite/binary/binary_type.h"
+#include <ignite/binary/binary_object.h>
+#include <ignite/impl/binary/binary_utils.h>
+
+#include <ignite/binary/binary_array_identity_resolver.h>
 
 namespace ignite
 {
     namespace binary
     {
-        int32_t GetBinaryStringHashCode(const char* val)
+        BinaryArrayIdentityResolver::BinaryArrayIdentityResolver()
         {
-            if (val)
-            {
-                int32_t hash = 0;
+            // No-op.
+        }
 
-                int i = 0;
+        BinaryArrayIdentityResolver::~BinaryArrayIdentityResolver()
+        {
+            // No-op.
+        }
 
-                while (true)
-                {
-                    char c = *(val + i++);
-
-                    if (c == '\0')
-                        break;
-
-                    if ('A' <= c && c <= 'Z')
-                        c = c | 0x20;
-
-                    hash = 31 * hash + c;
-                }
-
-                return hash;
-            }
-
-            return 0;
+        int32_t BinaryArrayIdentityResolver::GetHashCode(const BinaryObject& obj)
+        {
+            return impl::binary::BinaryUtils::GetDataHashCode(obj.GetData(), obj.GetLength());
         }
     }
 }

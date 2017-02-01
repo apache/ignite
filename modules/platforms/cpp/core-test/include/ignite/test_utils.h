@@ -15,42 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_TEST_TEST_UTILS
-#define _IGNITE_ODBC_TEST_TEST_UTILS
-
-#ifdef _WIN32
-#   include <windows.h>
-#endif
-
-#include <sql.h>
-#include <sqlext.h>
-
-#include <string>
+#ifndef _IGNITE_CORE_TEST_TEST_UTILS
+#define _IGNITE_CORE_TEST_TEST_UTILS
 
 #include "ignite/ignition.h"
 
-#define ODBC_FAIL_ON_ERROR(ret, type, handle)                       \
-    if (!SQL_SUCCEEDED(ret))                                        \
-    {                                                               \
-        Ignition::StopAll(true);                                    \
-        BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle)); \
-    }
-
-
 namespace ignite_test
 {
-    /** Read buffer size. */
-    enum { ODBC_BUFFER_SIZE = 1024 };
-
-    /**
-     * Extract error message.
-     *
-     * @param handleType Type of the handle.
-     * @param handle Handle.
-     * @return Error message.
-     */
-    std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle);
-
     /**
      * Initialize configuration for a node.
      *
@@ -89,4 +60,4 @@ namespace ignite_test
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
 }
 
-#endif // _IGNITE_ODBC_TEST_TEST_UTILS
+#endif // _IGNITE_CORE_TEST_TEST_UTILS
