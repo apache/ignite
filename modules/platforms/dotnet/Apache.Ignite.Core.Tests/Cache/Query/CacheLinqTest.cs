@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text.RegularExpressions;
@@ -744,6 +745,42 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var actualIds = personsByOrg.Select(x => x.PersonId).ToArray();
 
             Assert.AreEqual(expectedIds, actualIds);
+        }
+
+        [Test]
+        public void TestContains()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+            var orgCache = GetOrgCache().AsCacheQueryable();
+
+            var keys = new[] {1, 2, 3};
+
+
+            //var test = cache
+            //    .Where(x => new[] {1, 2}.Contains(x.Key))
+            //    .ToArray();
+            var x = new int[] {};
+
+            //CheckFunc(e => new[] {1, 2, 3}.Contains(e.Key), cache);
+            //CheckFunc(e => x.Contains(e.Key), cache);
+            //CheckFunc(e => new int[0].Contains(e.Key), cache);
+            CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
+            //CheckFunc(e => new List<int> {1, 2, 3}.Contains(e.Key), cache);
+            //CheckFunc(e => new List<int> ().Contains(e.Key), cache);
+
+
+            //var cacheEntries = cache
+            //    //.Join(cache,entry => entry.Key, entry => entry.Key, (entry, cacheEntry) => new {entry, cacheEntry})
+            //    //.Where(entry => entry.entry.Value.OrganizationId > 0 && entry.cacheEntry.Value.Age > 10)
+            //    //.Where(entry => keys.Contains(entry.entry.Key))
+
+            //    //.Where(entry => entry.Key == 1)
+            //    //.Where(entry => keys.Contains(entry.Key) && new[] { 1, 2, 3 }.Contains(entry.Value.Age))
+            //    .Where(entry => keys.Contains(entry.Key) && new[] { 1, 2, 3 }.Contains(entry.Value.Age)  && entry.Value.Age > 0)
+            //    .ToArray();
+
+            ////var joined = cache.Where(entry => orgCache.Select(org => org.Key).Contains(entry.Key+1000)).ToArray();
+            //var joined = cache.Where(entry => cache.Select(org => org.Key).Contains(entry.Key+800)).ToArray();
         }
 
         /// <summary>

@@ -184,6 +184,9 @@ namespace Apache.Ignite.Linq.Impl
                          || op is DefaultIfEmptyResultOperator || op is SkipResultOperator || op is TakeResultOperator)
                     // Will be processed later
                     break;
+                else if (op is ContainsResultOperator)
+                    // Should be processed already
+                    break;
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }

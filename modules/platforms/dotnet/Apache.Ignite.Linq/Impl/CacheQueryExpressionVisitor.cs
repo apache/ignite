@@ -20,6 +20,7 @@ using System.Text;
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -473,11 +474,154 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
-            // This happens when New expression uses a subquery, in a GroupBy.
-            _modelVisitor.VisitSelectors(expression.QueryModel, false);
+            //var subQueryModel = expression.QueryModel;
+            //if (subQueryModel.IsIdentityQuery()
+            //    && subQueryModel.ResultOperators.Count == 1
+            //    && subQueryModel.ResultOperators.First() is ContainsResultOperator)
+            //{
+            //    var contains = (ContainsResultOperator)subQueryModel.ResultOperators.First();
+            //    var fromExpression = subQueryModel.MainFromClause.FromExpression;
+
+            //    if (fromExpression.NodeType == ExpressionType.Parameter
+            //        || fromExpression.NodeType == ExpressionType.Constant
+            //        || fromExpression.NodeType == ExpressionType.ListInit
+            //        || fromExpression.NodeType == ExpressionType.NewArrayInit
+            //        || fromExpression.NodeType == ExpressionType.MemberAccess
+            //        )
+            //    {
+
+            //    }
+
+            //}
+
+            var subQueryModel = expression.QueryModel;
+            if (subQueryModel.IsIdentityQuery() && subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
+            {
+                ResultBuilder.Append("(");
+                var contains = (ContainsResultOperator)subQueryModel.ResultOperators.First();
+                Visit(contains.Item);
+                ResultBuilder.Append(" IN (");
+
+                var fromExpression = subQueryModel.MainFromClause.FromExpression;
+
+                switch (fromExpression.NodeType)
+                { 
+                    case ExpressionType.MemberAccess:
+                        var memberExpression = (MemberExpression) fromExpression;
+
+                        var queryable = ExpressionWalker.GetCacheQueryable(memberExpression, false);
+
+                        if (queryable == null)
+                        {
+                            var enumerable = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
+                            if (enumerable != null)
+                            {
+                                AppendInParameters(enumerable);
+                            }
+                        }
+                        else
+                        {
+                            _modelVisitor.VisitQueryModel(subQueryModel);
+                        }
+
+                        break;
+                    case ExpressionType.ListInit:
+                        var listInitExpression = (ListInitExpression) fromExpression;
+                        var values = listInitExpression.Initializers
+                            .SelectMany(init => init.Arguments)
+                            .Select(ExpressionWalker.EvaluateExpression<object>);
+                        AppendInParameters(values);
+                        break;
+                    case ExpressionType.NewArrayInit:
+                        var newArrayExpression = (NewArrayExpression) fromExpression;
+                        AppendInParameters(newArrayExpression.Expressions.Select(ExpressionWalker.EvaluateExpression<object>));
+                        break;
+                    case ExpressionType.Parameter:
+                        break;
+                    default: throw new NotSupportedException("From expression not supported: " + fromExpression);
+                }
+
+                ResultBuilder.Append("))");
+            }
+            else
+            {
+                // This happens when New expression uses a subquery, in a GroupBy.
+                _modelVisitor.VisitSelectors(expression.QueryModel, false);
+            }
 
             return expression;
         }
+        
+
+        private void AppendInParameters(IEnumerable enumerable)
+        {
+            var first = true;
+            foreach (var val in enumerable)
+            {
+                if (!first)
+                {
+                    ResultBuilder.Append(", ");
+                }
+                first = false;
+
+                AppendParameter(val);
+            }
+        }
+
+
+        //protected virtual IReadOnlyList<Expression> ProcessInExpressionValues(
+        //	[NotNull] IEnumerable<Expression> inExpressionValues)
+        //{
+        //	Check.NotNull(inExpressionValues, nameof(inExpressionValues));
+
+        //	var inConstants = new List<Expression>();
+
+        //	foreach (var inValue in inExpressionValues)
+        //	{
+        //		var inConstant = inValue as ConstantExpression;
+
+        //		if (inConstant != null)
+        //		{
+        //			AddInExpressionValues(inConstant.Value, inConstants, inConstant);
+        //		}
+        //		else
+        //		{
+        //			var inParameter = inValue as ParameterExpression;
+
+        //			if (inParameter != null)
+        //			{
+        //				object parameterValue;
+        //				if (_parametersValues.TryGetValue(inParameter.Name, out parameterValue))
+        //				{
+        //					AddInExpressionValues(parameterValue, inConstants, inParameter);
+
+        //					IsCacheable = false;
+        //				}
+        //			}
+        //			else
+        //			{
+        //				var inListInit = inValue as ListInitExpression;
+
+        //				if (inListInit != null)
+        //				{
+        //					inConstants.AddRange(ProcessInExpressionValues(
+        //						inListInit.Initializers.SelectMany(i => i.Arguments)));
+        //				}
+        //				else
+        //				{
+        //					var newArray = inValue as NewArrayExpression;
+
+        //					if (newArray != null)
+        //					{
+        //						inConstants.AddRange(ProcessInExpressionValues(newArray.Expressions));
+        //					}
+        //				}
+        //			}
+        //		}
+        //	}
+
+        //	return inConstants;
+        //}
 
         /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
