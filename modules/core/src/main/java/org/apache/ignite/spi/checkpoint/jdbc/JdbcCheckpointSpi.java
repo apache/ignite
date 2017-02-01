@@ -306,10 +306,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * this SPI from Spring configuration file. Refer to {@code Apache DBCP} project for more information.
      *
      * @param dataSrc DataSource object to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setDataSource(DataSource dataSrc) {
+    public JdbcCheckpointSpi setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
+
+        return this;
     }
 
     /**
@@ -317,10 +320,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * the value is {@link #DFLT_NUMBER_OF_RETRIES}.
      *
      * @param retryNum Number of retries in case of any database errors.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setNumberOfRetries(int retryNum) {
+    public JdbcCheckpointSpi setNumberOfRetries(int retryNum) {
         this.retryNum = retryNum;
+
+        return this;
     }
 
     /**
@@ -329,10 +335,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      *
      * @param user Checkpoint database user name to set.
      * @see #setPwd(String)
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setUser(String user) {
+    public JdbcCheckpointSpi setUser(String user) {
         this.user = user;
+
+        return this;
     }
 
     /**
@@ -341,20 +350,26 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      *
      * @param pwd Checkpoint database password to set.
      * @see #setUser(String)
+     ** @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setPwd(String pwd) {
+    public JdbcCheckpointSpi setPwd(String pwd) {
         this.pwd = pwd;
+
+        return this;
     }
 
     /**
      * Sets checkpoint table name. By default {@link #DFLT_CHECKPOINT_TABLE_NAME} is used.
      *
      * @param tblName Checkpoint table name to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCheckpointTableName(String tblName) {
+    public JdbcCheckpointSpi setCheckpointTableName(String tblName) {
         this.tblName = tblName;
+
+        return this;
     }
 
     /**
@@ -363,10 +378,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * change key field type (see {@link #setKeyFieldType(String)}).
      *
      * @param keyName Checkpoint key field name to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setKeyFieldName(String keyName) {
+    public JdbcCheckpointSpi setKeyFieldName(String keyName) {
         this.keyName = keyName;
+
+        return this;
     }
 
     /**
@@ -375,10 +393,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * By default {@link #DFLT_EXPIRE_DATE_FIELD_TYPE} is used.
      *
      * @param keyType Checkpoint key field type to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setKeyFieldType(String keyType) {
+    public JdbcCheckpointSpi setKeyFieldType(String keyType) {
         this.keyType = keyType;
+
+        return this;
     }
 
     /**
@@ -387,10 +408,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * (see {@link #setValueFieldType(String)}).
      *
      * @param valName Checkpoint value field name to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setValueFieldName(String valName) {
+    public JdbcCheckpointSpi setValueFieldName(String valName) {
         this.valName = valName;
+
+        return this;
     }
 
     /**
@@ -400,10 +424,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * then the type should be {@code longvarbinary}.
      *
      * @param valType Checkpoint value field type to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setValueFieldType(String valType) {
+    public JdbcCheckpointSpi setValueFieldType(String valType) {
         this.valType = valType;
+
+        return this;
     }
 
     /**
@@ -413,10 +440,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * (see {@link #setExpireDateFieldType(String)}).
      *
      * @param expDateName Checkpoint expiration date field name to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setExpireDateFieldName(String expDateName) {
+    public JdbcCheckpointSpi setExpireDateFieldName(String expDateName) {
         this.expDateName = expDateName;
+
+        return this;
     }
 
     /**
@@ -425,10 +455,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * corresponding SQL {@code DATETIME} type.
      *
      * @param expDateType Checkpoint expiration date field type to set.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setExpireDateFieldType(String expDateType) {
+    public JdbcCheckpointSpi setExpireDateFieldType(String expDateType) {
         this.expDateType = expDateType;
+
+        return this;
     }
 
     /**

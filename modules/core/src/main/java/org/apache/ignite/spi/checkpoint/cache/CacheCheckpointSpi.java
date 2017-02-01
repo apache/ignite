@@ -124,10 +124,13 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
      * If cache name is not provided {@link #DFLT_CACHE_NAME} is used.
      *
      * @param cacheName Cache name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCacheName(String cacheName) {
+    public CacheCheckpointSpi setCacheName(String cacheName) {
         this.cacheName = cacheName;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -140,9 +140,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * Sets default user name. See {@link #getDefaultUserName()} for details.
      *
      * @param dfltUsrName Default user name.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultUserName(@Nullable String dfltUsrName) {
+    public IgniteHadoopIgfsSecondaryFileSystem setDefaultUserName(@Nullable String dfltUsrName) {
         this.dfltUsrName = dfltUsrName;
+
+        return this;
     }
 
     /**
@@ -162,9 +165,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * Sets secondary file system factory. See {@link #getFileSystemFactory()} for details.
      *
      * @param factory Secondary file system factory.
+     * @return {@code this} for chaining.
      */
-    public void setFileSystemFactory(HadoopFileSystemFactory factory) {
+    public IgniteHadoopIgfsSecondaryFileSystem setFileSystemFactory(HadoopFileSystemFactory factory) {
         this.factory = factory;
+
+        return this;
     }
 
     /** {@inheritDoc} */

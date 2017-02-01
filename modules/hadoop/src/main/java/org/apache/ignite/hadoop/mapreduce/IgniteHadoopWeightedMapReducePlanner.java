@@ -640,9 +640,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set local mapper weight. See {@link #getLocalMapperWeight()} for more information.
      *
      * @param locMapperWeight Local mapper weight.
+     * @return {@code this} for chaining.
      */
-    public void setLocalMapperWeight(int locMapperWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setLocalMapperWeight(int locMapperWeight) {
         this.locMapperWeight = locMapperWeight;
+
+        return this;
     }
 
     /**
@@ -661,9 +664,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set remote mapper weight. See {@link #getRemoteMapperWeight()} for more information.
      *
      * @param rmtMapperWeight Remote mapper weight.
+     * @return {@code this} for chaining.
      */
-    public void setRemoteMapperWeight(int rmtMapperWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setRemoteMapperWeight(int rmtMapperWeight) {
         this.rmtMapperWeight = rmtMapperWeight;
+
+        return this;
     }
 
     /**
@@ -682,9 +688,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set local reducer weight. See {@link #getLocalReducerWeight()} for more information.
      *
      * @param locReducerWeight Local reducer weight.
+     * @return {@code this} for chaining.
      */
-    public void setLocalReducerWeight(int locReducerWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setLocalReducerWeight(int locReducerWeight) {
         this.locReducerWeight = locReducerWeight;
+
+        return this;
     }
 
     /**
@@ -703,9 +712,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set remote reducer weight. See {@link #getRemoteReducerWeight()} for more information.
      *
      * @param rmtReducerWeight Remote reducer weight.
+     * @return {@code this} for chaining.
      */
-    public void setRemoteReducerWeight(int rmtReducerWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setRemoteReducerWeight(int rmtReducerWeight) {
         this.rmtReducerWeight = rmtReducerWeight;
+
+        return this;
     }
 
     /**
@@ -725,9 +737,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * information.
      *
      * @param reducerMigrationThresholdWeight Reducer migration threshold weight.
+     * @return {@code this} for chaining.
      */
-    public void setPreferLocalReducerThresholdWeight(int reducerMigrationThresholdWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setPreferLocalReducerThresholdWeight(int reducerMigrationThresholdWeight) {
         this.preferLocReducerThresholdWeight = reducerMigrationThresholdWeight;
+
+        return this;
     }
 
     /** {@inheritDoc} */
