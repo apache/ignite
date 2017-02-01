@@ -454,6 +454,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Interop\IPlatformTarget.cs" />
     <Compile Include="Interop\JavaObject.cs" />
     <Compile Include="Interop\Package-Info.cs" />
     <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
