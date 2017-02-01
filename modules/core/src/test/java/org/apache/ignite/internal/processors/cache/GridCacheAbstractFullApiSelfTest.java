@@ -1932,13 +1932,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteFuture<Transaction> f = null;
 
-            if (tx != null) {
-                tx = (Transaction)tx.withAsync();
-
-                tx.commit();
-
-                f = tx.future();
-            }
+            if (tx != null)
+                f = tx.commitAsync();
 
             assertNull(fut1.get());
             assertNull(fut2.get());
