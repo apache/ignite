@@ -180,7 +180,7 @@ public class GridDhtPartitionDemander {
         try {
             rebalanceFut.cancel();
         }
-        catch (Exception ex) {
+        catch (Exception ignored) {
             rebalanceFut.onDone(false);
         }
 
@@ -375,9 +375,9 @@ public class GridDhtPartitionDemander {
                                         if (f.get()) // Not cancelled.
                                             next.run(); // Starts next cache rebalancing (according to the order).
                                     }
-                                    catch (IgniteCheckedException ignored) {
+                                    catch (IgniteCheckedException e) {
                                         if (log.isDebugEnabled())
-                                            log.debug(ignored.getMessage());
+                                            log.debug(e.getMessage());
                                     }
                                 }
                             });
@@ -1012,7 +1012,7 @@ public class GridDhtPartitionDemander {
                             d, cctx.ioPolicy(), cctx.config().getRebalanceTimeout());
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send failover context cleanup request to node");
                 }

@@ -191,7 +191,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (f.node().id().equals(nodeId)) {
                     found = true;
 
-                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onNodeLeft();
                 }
             }
 
@@ -387,7 +387,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException) e);
+                        fut.onNodeLeft();
                     else
                         fut.onResult(e);
                 }
@@ -903,9 +903,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         /**
-         * @param e Topology exception.
          */
-        synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+        synchronized void onNodeLeft() {
             if (remapped)
                 return;
 

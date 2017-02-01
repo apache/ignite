@@ -175,8 +175,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             while (!fut.isDone())
                 client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null));
         }
-        catch (ClusterTopologyException ignore) {
-            log.info("Expected error: " + ignore);
+        catch (ClusterTopologyException e) {
+            log.info("Expected error: " + e);
         }
         finally {
             stopAllGrids();

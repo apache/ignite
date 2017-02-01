@@ -1185,7 +1185,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                             break;
                                         }
-                                        catch (GridCacheEntryRemovedException rmvdErr) {
+                                        catch (GridCacheEntryRemovedException ignored) {
                                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer));
                                         }
                                     }

@@ -549,7 +549,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
-            true,
             null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
@@ -573,7 +572,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         return getAllAsyncInternal(keys,
             forcePrimary,
-            skipTx,
             subjId,
             taskName,
             deserializeBinary,
@@ -586,7 +584,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
-     * @param skipTx Skip tx flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -599,7 +596,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture<Map<K, V>> getAllAsyncInternal(
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
-        boolean skipTx,
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
@@ -1709,7 +1705,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (forceFut != null)
                     forceFut.get();
             }
-            catch (NodeStoppingException e) {
+            catch (NodeStoppingException ignored) {
                 return;
             }
             catch (IgniteCheckedException e) {
@@ -1726,7 +1722,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     try {
                         fut.get();
                     }
-                    catch (NodeStoppingException e) {
+                    catch (NodeStoppingException ignored) {
                         return;
                     }
                     catch (IgniteCheckedException e) {

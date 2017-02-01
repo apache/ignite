@@ -4143,8 +4143,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put("key1", 1);
         cache.put("key2", 2);
 
-        Map map = new HashMap<>();
-
         for (int i = 0; i < gridCount(); i++) {
             for (Cache.Entry entry : jcache(i))
                 storeStgy.putToStore(entry.getKey(), entry.getValue());

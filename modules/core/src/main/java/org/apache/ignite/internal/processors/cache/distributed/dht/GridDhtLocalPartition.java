@@ -787,7 +787,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                         return lastEntry;
                     }
-                    catch (GridCacheEntryRemovedException e) {
+                    catch (GridCacheEntryRemovedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry: " + lastEntry);
                     }
