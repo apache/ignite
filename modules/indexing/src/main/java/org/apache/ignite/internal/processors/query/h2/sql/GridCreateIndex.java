@@ -134,10 +134,16 @@ public class GridCreateIndex extends GridSqlStatement {
             (ifNotExists ? "IF NOT EXISTS " : "") + Parser.quoteIdentifier(schemaName) + '.' +
             Parser.quoteIdentifier(name) + " ON " + Parser.quoteIdentifier(tblName) + " (");
 
-        for (GridIndexColumn c : cols)
-            sb.append(c.getSQL()).append(", ");
+        boolean first = true;
 
-        sb.delete(sb.length() - 2, sb.length()).append(')');
+        for (GridIndexColumn c : cols) {
+            if (first)
+                first = false;
+            else
+                sb.append(", ");
+
+            sb.append(c.getSQL());
+        }
 
         return sb.toString();
     }
