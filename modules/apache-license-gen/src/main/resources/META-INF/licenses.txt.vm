@@ -19,8 +19,7 @@
 ## $Id$
 ##
 // ------------------------------------------------------------------
-// List of #if ($projectName)$projectName#else${project.name}#end module's dependencies provided as a part of this distribution
-// which licenses differ from Apache Software License.
+// List of #if ($projectName)$projectName#else${project.name}#end module's dependencies provided as a part of this distribution.
 // ------------------------------------------------------------------
 
 #foreach ( $organizationName in $projectsSortedByOrganization.keySet() )
@@ -31,12 +30,11 @@ For $project.name #if ($project.url)($project.url)#end $project.artifact
 ==============================================================================
 This product bundles $project.name which is available under a:
 #foreach ( $license in $project.licenses )
-## Despite the license for javax.cache:cache-api:jar:1.0.0 was changed to
-## The Apache Software License, Version 2.0, the license name in the POM
-## remains unchanged. As a workaround, explicitly replace the license name
-## to the proper one.
+## JSR 107 updated the license to Apache License, Version 2.0
+## (https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt) but the JSR's POM
+## still remains unchanged. Handling this with the instructions below.
 #if ( $license.name.contains("JSR-000107 JCACHE 2.9 Public Review") )
-	#set( $licenseName = "The Apache Software License, Version 2.0" )
+	#set( $licenseName = "Apache License, Version 2.0" )
 #else
 	#set( $licenseName = $license.name.replaceAll("[ ]{2,}"," ").replaceAll("\n","") )
 #end
