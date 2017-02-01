@@ -112,7 +112,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 return false;
             }
 
-            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+            if (cctx.affinity().backupByPartition(cctx.localNode(), part, topVer)) {
                 this.topVer = AffinityTopologyVersion.NONE;
 
                 return false;
@@ -162,7 +162,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                 }
                             }
 
-                            ClusterNode primaryNode = cctx.affinity().primary(key, topVer);
+                            ClusterNode primaryNode = cctx.affinity().primaryByKey(key, topVer);
 
                             if (primaryNode == null)
                                 this.topVer = AffinityTopologyVersion.NONE;
@@ -686,7 +686,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         ClusterNode primary = null;
 
         try {
-            primary = cctx.affinity().primary(part, topVer);
+            primary = cctx.affinity().primaryByPartition(part, topVer);
         }
         catch (IllegalStateException ignore) {
             // Do not have affinity history.

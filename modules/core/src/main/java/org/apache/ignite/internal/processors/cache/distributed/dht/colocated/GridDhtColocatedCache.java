@@ -174,7 +174,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         AffinityTopologyVersion topVer,
         boolean allowDetached
     ) {
-        return allowDetached && !ctx.affinity().primary(ctx.localNode(), key, topVer) ?
+        return allowDetached && !ctx.affinity().primaryByKey(ctx.localNode(), key, topVer) ?
             createEntry(key) : entryExx(key, topVer);
     }
 
@@ -670,7 +670,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
                     // Send request to remove from remote nodes.
-                    ClusterNode primary = ctx.affinity().primary(key, topVer);
+                    ClusterNode primary = ctx.affinity().primaryByKey(key, topVer);
 
                     if (primary == null) {
                         if (log.isDebugEnabled())
@@ -790,7 +790,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         map = U.newHashMap(affNodes.size());
                     }
 
-                    ClusterNode primary = ctx.affinity().primary(key, topVer);
+                    ClusterNode primary = ctx.affinity().primaryByKey(key, topVer);
 
                     if (primary == null) {
                         if (log.isDebugEnabled())

@@ -568,7 +568,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             for (int p = 0; p < num; p++) {
                 GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
-                if (cctx.affinity().localNode(p, topVer)) {
+                if (cctx.affinity().partitionLocalNode(p, topVer)) {
                     // This partition will be created during next topology event,
                     // which obviously has not happened at this point.
                     if (locPart == null) {
@@ -691,7 +691,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             loc = locParts.get(p);
 
-            boolean belongs = cctx.affinity().localNode(p, topVer);
+            boolean belongs = cctx.affinity().partitionLocalNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts.set(p, loc = null);
