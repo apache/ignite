@@ -756,14 +756,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var keys = new[] {1, 2, 3};
             var emptyKeys = new int[0];
             int[] nullKeys = null;
+            var bigNumberOfKeys = 10000;
+            var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys - 10 + PersonCount, bigNumberOfKeys + PersonCount)
+                .ToArray();
+            var hashSetKeys = new HashSet<int>(keys);
 
-            CheckFunc(e => e.Key, cache.Where(e => new[] {1, 2, 3}.Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => new[] { 1, 2, 3 }.Contains(e.Key)));
             CheckFunc(e => e.Key, cache.Where(e => emptyKeys.Contains(e.Key)));
             CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
             CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => new List<int> {1, 2, 3}.Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => new List<int> { 1, 2, 3 }.Contains(e.Key)));
             CheckFunc(e => e.Key, cache.Where(e => new List<int>(keys).Contains(e.Key)));
             CheckFunc(e => e.Key, cache.Where(e => nullKeys.Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => aLotOfKeys.Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => hashSetKeys.Contains(e.Key)));
             CheckFunc(e => e.Value.Name, roleCache.Where(e => new[] { "Role_1", "NonExistentName", null }.Contains(e.Value.Name)));
 
 
