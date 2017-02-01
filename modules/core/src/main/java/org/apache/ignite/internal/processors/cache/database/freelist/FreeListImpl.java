@@ -72,145 +72,162 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
-    private final PageHandler<CacheDataRow, Boolean> updateRow =
-        new PageHandler<CacheDataRow, Boolean>() {
-            @Override public Boolean run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int itemId)
-                throws IgniteCheckedException {
-                DataPageIO io = (DataPageIO)iox;
+    private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
 
-                int rowSize = getRowSize(row);
+    /**
+     *
+     */
+    private class UpdateRowHandler extends PageHandler<CacheDataRow, Boolean> {
+        /** {@inheritDoc} */
+        @Override public Boolean run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int itemId)
+            throws IgniteCheckedException {
+            DataPageIO io = (DataPageIO)iox;
 
-                boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
+            int rowSize = getRowSize(row);
 
-                if (updated && isWalDeltaRecordNeeded(wal, page)) {
-                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                    byte[] payload = new byte[rowSize];
+            boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
-                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
+            if (updated && isWalDeltaRecordNeeded(wal, page)) {
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                byte[] payload = new byte[rowSize];
 
-                    assert data.payloadSize() == rowSize;
+                DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
 
-                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+                assert data.payloadSize() == rowSize;
 
-                    wal.log(new DataPageUpdateRecord(
-                        cacheId,
-                        page.id(),
-                        itemId,
-                        payload));
-                }
+                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
-                return updated;
+                wal.log(new DataPageUpdateRecord(
+                    cacheId,
+                    page.id(),
+                    itemId,
+                    payload));
             }
-        };
+
+            return updated;
+        }
+    };
 
     /** */
-    private final PageHandler<CacheDataRow, Integer> writeRow =
-        new PageHandler<CacheDataRow, Integer>() {
-            @Override public Integer run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int written)
-                throws IgniteCheckedException {
-                DataPageIO io = (DataPageIO)iox;
+    private final PageHandler<CacheDataRow, Integer> writeRow = new WriteRowHandler();
 
-                int rowSize = getRowSize(row);
-                int oldFreeSpace = io.getFreeSpace(pageAddr);
+    /**
+     *
+     */
+    private class WriteRowHandler extends PageHandler<CacheDataRow, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int written)
+            throws IgniteCheckedException {
+            DataPageIO io = (DataPageIO)iox;
 
-                assert oldFreeSpace > 0 : oldFreeSpace;
+            int rowSize = getRowSize(row);
+            int oldFreeSpace = io.getFreeSpace(pageAddr);
 
-                // If the full row does not fit into this page write only a fragment.
-                written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, pageAddr, io, row, rowSize):
-                    addRowFragment(page, pageAddr, io, row, written, rowSize);
+            assert oldFreeSpace > 0 : oldFreeSpace;
 
-                // Reread free space after update.
-                int newFreeSpace = io.getFreeSpace(pageAddr);
+            // If the full row does not fit into this page write only a fragment.
+            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, pageAddr, io, row, rowSize):
+                addRowFragment(page, pageAddr, io, row, written, rowSize);
 
-                if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
-                    int bucket = bucket(newFreeSpace, false);
+            // Reread free space after update.
+            int newFreeSpace = io.getFreeSpace(pageAddr);
 
-                    put(null, page, pageAddr, bucket);
-                }
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                int bucket = bucket(newFreeSpace, false);
 
-                // Avoid boxing with garbage generation for usual case.
-                return written == rowSize ? COMPLETE : written;
+                put(null, page, pageAddr, bucket);
             }
 
-            /**
-             * @param page Page.
-             * @param pageAddr Page address.
-             * @param io IO.
-             * @param row Row.
-             * @param rowSize Row size.
-             * @return Written size which is always equal to row size here.
-             * @throws IgniteCheckedException If failed.
-             */
-            private int addRow(
-                Page page,
-                long pageAddr,
-                DataPageIO io,
-                CacheDataRow row,
-                int rowSize
-            ) throws IgniteCheckedException {
-                io.addRow(pageAddr, row, rowSize, pageSize());
+            // Avoid boxing with garbage generation for usual case.
+            return written == rowSize ? COMPLETE : written;
+        }
 
-                if (isWalDeltaRecordNeeded(wal, page)) {
-                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                    byte[] payload = new byte[rowSize];
+        /**
+         * @param page Page.
+         * @param pageAddr Page address.
+         * @param io IO.
+         * @param row Row.
+         * @param rowSize Row size.
+         * @return Written size which is always equal to row size here.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int addRow(
+            Page page,
+            long pageAddr,
+            DataPageIO io,
+            CacheDataRow row,
+            int rowSize
+        ) throws IgniteCheckedException {
+            io.addRow(pageAddr, row, rowSize, pageSize());
 
-                    DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
+            if (isWalDeltaRecordNeeded(wal, page)) {
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                byte[] payload = new byte[rowSize];
 
-                    assert data.payloadSize() == rowSize;
+                DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
 
-                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+                assert data.payloadSize() == rowSize;
 
-                    wal.log(new DataPageInsertRecord(
-                        cacheId,
-                        page.id(),
-                        payload));
-                }
+                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
-                return rowSize;
+                wal.log(new DataPageInsertRecord(
+                    cacheId,
+                    page.id(),
+                    payload));
             }
 
-            /**
-             * @param page Page.
-             * @param pageAddr Page address.
-             * @param io IO.
-             * @param row Row.
-             * @param written Written size.
-             * @param rowSize Row size.
-             * @return Updated written size.
-             * @throws IgniteCheckedException If failed.
-             */
-            private int addRowFragment(
-                Page page,
-                long pageAddr,
-                DataPageIO io,
-                CacheDataRow row,
-                int written,
-                int rowSize
-            ) throws IgniteCheckedException {
-                // Read last link before the fragment write, because it will be updated there.
-                long lastLink = row.link();
+            return rowSize;
+        }
 
-                int payloadSize = io.addRowFragment(pageMem, pageAddr, row, written, rowSize, pageSize());
+        /**
+         * @param page Page.
+         * @param pageAddr Page address.
+         * @param io IO.
+         * @param row Row.
+         * @param written Written size.
+         * @param rowSize Row size.
+         * @return Updated written size.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int addRowFragment(
+            Page page,
+            long pageAddr,
+            DataPageIO io,
+            CacheDataRow row,
+            int written,
+            int rowSize
+        ) throws IgniteCheckedException {
+            // Read last link before the fragment write, because it will be updated there.
+            long lastLink = row.link();
 
-                assert payloadSize > 0 : payloadSize;
+            int payloadSize = io.addRowFragment(pageMem, pageAddr, row, written, rowSize, pageSize());
 
-                if (isWalDeltaRecordNeeded(wal, page)) {
-                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                    byte[] payload = new byte[payloadSize];
+            assert payloadSize > 0 : payloadSize;
 
-                    DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
+            if (isWalDeltaRecordNeeded(wal, page)) {
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                byte[] payload = new byte[payloadSize];
 
-                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
+                DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
 
-                    wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
-                }
+                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
-                return written + payloadSize;
+                wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
             }
-        };
+
+            return written + payloadSize;
+        }
+    };
+
 
     /** */
-    private final PageHandler<Void, Long> rmvRow = new PageHandler<Void, Long>() {
+    private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
+
+    /**
+     *
+     */
+    private class RemoveRowHandler extends PageHandler<Void, Long> {
+        /** {@inheritDoc} */
         @Override public Long run(Page page, PageIO iox, long pageAddr, Void arg, int itemId)
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
