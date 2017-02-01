@@ -22,9 +22,15 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,19 +38,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Query;
-import org.h2.command.dml.Update;
 import org.h2.engine.Session;
-import org.h2.expression.Expression;
 import org.h2.jdbc.JdbcConnection;
-import org.h2.util.StringUtils;
+import org.h2.message.DbException;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -85,7 +91,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             String.class, Person.class
         );
 
-        c.setCacheConfiguration(cc);
+        CacheConfiguration cc2 = new CacheConfiguration(cc);
+        cc2.setName("schema2");
+
+        c.setCacheConfiguration(cc, cc2);
 
         return c;
     }
@@ -371,11 +380,149 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testParseCreateDropIndex() throws Exception {
-        checkQuery("create index \"\".idx on Person (name ASC)");
-        checkQuery("create spatial index if not exists \"\".idx on Person (old desc, name ASC)");
+    public void testParseCreateIndex() throws Exception {
+        assertCreateIndexEquals(
+            buildCreateIndex(null, "Person", "", false, QueryIndexType.SORTED, "name", true),
+            "create index on Person (name)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "", false, QueryIndexType.SORTED, "name", true),
+            "create index idx on Person (name ASC)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "schema2", false, QueryIndexType.GEOSPATIAL, "name", true),
+            "create spatial index \"schema2\".idx on \"schema2\".Person (name ASC)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "schema2", true, QueryIndexType.SORTED, "name", true),
+            "create index if not exists \"schema2\".idx on \"schema2\".Person (name)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "schema2", true, QueryIndexType.SORTED, "name", false),
+            "create index if not exists idx on \"schema2\".Person (name dEsC)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
+            "create spatial index if not exists idx on Person (old, name desc)");
+
+        assertParseThrows("create index if not exists \"schema2\".idx on Person (name)",
+            DbException.class, "Schema name must match [90080-191]");
+
+        assertParseThrows("create hash index if not exists idx on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create unique index if not exists idx on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create primary key on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create primary key hash on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create index on Person (name nulls first)",
+            IgniteSQLException.class, "NULLS FIRST and NULLS LAST modifiers are not supported for index columns");
+
+        assertParseThrows("create index on Person (name desc nulls last)",
+            IgniteSQLException.class, "NULLS FIRST and NULLS LAST modifiers are not supported for index columns");
+    }
+
+    /**
+     *
+     */
+    public void testParseDropIndex() throws Exception {
         checkQuery("drop index \"\".idx");
         checkQuery("drop index if exists \"\".idx");
+    }
+
+    /**
+     * @param sql Statement.
+     * @param exCls Exception class.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertParseThrows(final String sql, Class<? extends Exception> exCls, String msg) {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Prepared p = parse(sql);
+                return new GridSqlQueryParser().parse(p);
+            }
+        }, exCls, msg);
+    }
+
+    /**
+     * Parse SQL and compare it to expected instance.
+     */
+    private void assertCreateIndexEquals(GridCreateIndex exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+
+        assertTrue(stmt instanceof GridCreateIndex);
+
+        assertCreateIndexEquals(exp, (GridCreateIndex) stmt);
+    }
+
+    /**
+     * Test two instances of {@link GridCreateIndex} for equality.
+     */
+    private void assertCreateIndexEquals(GridCreateIndex exp, GridCreateIndex actual) {
+        assertEquals(exp.ifNotExists(), actual.ifNotExists());
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
+
+        assertEqualsIgnoreCase(exp.index().getName(), actual.index().getName());
+
+        Iterator<Map.Entry<String, Boolean>> expFldsIt = exp.index().getFields().entrySet().iterator();
+        Iterator<Map.Entry<String, Boolean>> actualFldsIt = actual.index().getFields().entrySet().iterator();
+
+        while (expFldsIt.hasNext()) {
+            assertTrue(actualFldsIt.hasNext());
+
+            Map.Entry<String, Boolean> expEntry = expFldsIt.next();
+            Map.Entry<String, Boolean> actualEntry = actualFldsIt.next();
+
+            assertEqualsIgnoreCase(expEntry.getKey(), actualEntry.getKey());
+            assertEquals(expEntry.getValue(), actualEntry.getValue());
+        }
+
+        assertFalse(actualFldsIt.hasNext());
+
+        assertEquals(exp.index().getIndexType(), actual.index().getIndexType());
+    }
+
+    /**
+     *
+     */
+    private static void assertEqualsIgnoreCase(String exp, String actual) {
+        assertEquals((exp == null), (actual == null));
+
+        if (exp != null)
+            assertTrue(exp.equalsIgnoreCase(actual));
+    }
+
+    /**
+     *
+     */
+    private GridCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
+        QueryIndexType type, Object... flds) {
+        QueryIndex idx = new QueryIndex();
+        idx.setName(name);
+        assert !F.isEmpty(flds) && flds.length % 2 == 0;
+
+        LinkedHashMap<String, Boolean> trueFlds = new LinkedHashMap<>();
+        for (int i = 0; i < flds.length / 2; i++)
+            trueFlds.put((String) flds[i * 2], (Boolean) flds[i * 2 + 1]);
+
+        idx.setFields(trueFlds);
+        idx.setIndexType(type);
+
+        GridCreateIndex res = new GridCreateIndex();
+        res.schemaName(schemaName);
+        res.tableName(tblName);
+        res.ifNotExists(ifNotExists);
+        res.index(idx);
+        return res;
     }
 
     /**

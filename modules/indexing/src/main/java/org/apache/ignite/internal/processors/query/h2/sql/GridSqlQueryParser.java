@@ -316,6 +316,16 @@ public class GridSqlQueryParser {
     private static final Getter<CreateIndex, Boolean> CREATE_INDEX_SPATIAL = getter(CreateIndex.class, "spatial");
 
     /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_PRIMARY_KEY = getter(CreateIndex.class,
+        "primaryKey");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_UNIQUE = getter(CreateIndex.class, "unique");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_HASH = getter(CreateIndex.class, "hash");
+
+    /** */
     private static final Getter<CreateIndex, Boolean> CREATE_INDEX_IF_NOT_EXISTS = getter(CreateIndex.class,
         "ifNotExists");
 
@@ -658,6 +668,11 @@ public class GridSqlQueryParser {
      * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 {@code CREATE INDEX} spec.</a>
      */
     private GridCreateIndex parseCreateIndex(CreateIndex createIdx) {
+        if (CREATE_INDEX_HASH.get(createIdx) || CREATE_INDEX_PRIMARY_KEY.get(createIdx) ||
+            CREATE_INDEX_UNIQUE.get(createIdx))
+            throw new IgniteSQLException("Only SPATIAL modifier is supported for CREATE INDEX",
+                IgniteQueryErrorCode.UNSUPPORTED_TOKEN);
+
         GridCreateIndex res = new GridCreateIndex();
 
         res.schemaName(SCHEMA_COMMAND_SCHEMA.get(createIdx).getName());
@@ -673,8 +688,15 @@ public class GridSqlQueryParser {
 
         LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
 
-        for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx))
-            flds.put(INDEX_COLUMN_NAME.get(col), (INDEX_COLUMN_SORT_TYPE.get(col) & SortOrder.DESCENDING) == 0);
+        for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx)) {
+            int sortType = INDEX_COLUMN_SORT_TYPE.get(col);
+
+            if ((sortType & SortOrder.NULLS_FIRST) != 0 || (sortType & SortOrder.NULLS_LAST) != 0)
+                throw new IgniteSQLException("NULLS FIRST and NULLS LAST modifiers are not supported for index columns",
+                    IgniteQueryErrorCode.UNSUPPORTED_TOKEN);
+
+            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+        }
 
         idx.setFields(flds);
 

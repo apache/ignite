@@ -36,6 +36,10 @@ public final class IgniteQueryErrorCode {
     /** Code encountered unexpected type of SQL operation - like {@code EXPLAIN MERGE}. */
     public final static int UNSUPPORTED_OPERATION = 1002;
 
+    /** Code encountered token that corresponds to unsupported feature
+     * during parsing of a statement that is otherwise generally supported. */
+    public final static int UNSUPPORTED_TOKEN = 1003;
+
     /* 2xxx - analysis errors */
 
     /** Code encountered SQL statement of some type that it did not expect in current analysis context. */
@@ -58,7 +62,7 @@ public final class IgniteQueryErrorCode {
     /** Statement type does not match that declared by JDBC driver. */
     public final static int STMT_TYPE_MISMATCH = 3003;
 
-    /** Statement type does not match that declared by JDBC driver. */
+    /** DROP TABLE failed. */
     public final static int TABLE_DROP_FAILED = 3004;
 
     /* 4xxx - cache related runtime errors */
