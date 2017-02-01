@@ -1988,6 +1988,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
+                if (locNode != null)
+                    throw new IllegalStateException();
+
                 locNode = node;
 
                 continue;
