@@ -931,7 +931,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
-                        List<ClusterNode> nodes = ctx.affinity().nodes(e.getKey(), topVer);
+                        List<ClusterNode> nodes = ctx.affinity().nodesByKey(e.getKey(), topVer);
 
                         for (int i = 0; i < nodes.size(); i++) {
                             ClusterNode node = nodes.get(i);

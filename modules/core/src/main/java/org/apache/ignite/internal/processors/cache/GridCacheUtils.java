@@ -953,26 +953,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets primary node on which given key is cached.
-     *
-     * @param ctx Cache.
-     * @param key Key to find primary node for.
-     * @return Primary node for the key.
-     */
-    @SuppressWarnings( {"unchecked"})
-    @Nullable public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
-        assert ctx != null;
-        assert key != null;
-
-        CacheConfiguration cfg = ctx.cache().configuration();
-
-        if (cfg.getCacheMode() != PARTITIONED)
-            return ctx.localNode();
-
-        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
-    }
-
-    /**
      * @param asc {@code True} for ascending.
      * @return Descending order comparator.
      */

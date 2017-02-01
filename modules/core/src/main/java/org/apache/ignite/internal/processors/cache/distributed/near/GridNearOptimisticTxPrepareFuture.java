@@ -605,7 +605,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
         else
             nodes = cacheCtx.isLocal() ?
-                cacheCtx.affinity().nodes(entry.key(), topVer) :
+                cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
                 cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);

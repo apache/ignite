@@ -2463,7 +2463,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
 
-                boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.partition(),
+                boolean primary = !req.fastMap() || ctx.affinity().primaryByPartition(ctx.localNode(), entry.partition(),
                     req.topologyVersion());
 
                 Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
@@ -2553,7 +2553,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
-                        if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
+                        if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
                             // If put the same value as in request then do not need to send it back.
                             if (op == TRANSFORM || writeVal != updRes.newValue()) {
                                 res.addNearValue(i,
@@ -2684,7 +2684,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 Map<KeyCacheObject, CacheObject> storeMap = req.fastMap() ?
                     F.view(putMap, new P1<CacheObject>() {
                         @Override public boolean apply(CacheObject key) {
-                            return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
+                            return ctx.affinity().primaryByKey(ctx.localNode(), key, req.topologyVersion());
                         }
                     }) :
                     putMap;
@@ -2707,7 +2707,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 Collection<KeyCacheObject> storeKeys = req.fastMap() ?
                     F.view(rmvKeys, new P1<Object>() {
                         @Override public boolean apply(Object key) {
-                            return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
+                            return ctx.affinity().primaryByKey(ctx.localNode(), key, req.topologyVersion());
                         }
                     }) :
                     rmvKeys;
@@ -2746,7 +2746,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     assert writeVal != null || op == DELETE : "null write value found.";
 
-                    boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
+                    boolean primary = !req.fastMap() || ctx.affinity().primaryByPartition(ctx.localNode(),
+                        entry.partition(),
                         req.topologyVersion());
 
                     Collection<UUID> readers = null;
@@ -2842,7 +2843,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (hasNear) {
                         if (primary) {
-                            if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
+                            if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
                                 int idx = firstEntryIdx + i;
 
                                 if (req.operation() == TRANSFORM) {
