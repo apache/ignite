@@ -474,26 +474,6 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
-            //var subQueryModel = expression.QueryModel;
-            //if (subQueryModel.IsIdentityQuery()
-            //    && subQueryModel.ResultOperators.Count == 1
-            //    && subQueryModel.ResultOperators.First() is ContainsResultOperator)
-            //{
-            //    var contains = (ContainsResultOperator)subQueryModel.ResultOperators.First();
-            //    var fromExpression = subQueryModel.MainFromClause.FromExpression;
-
-            //    if (fromExpression.NodeType == ExpressionType.Parameter
-            //        || fromExpression.NodeType == ExpressionType.Constant
-            //        || fromExpression.NodeType == ExpressionType.ListInit
-            //        || fromExpression.NodeType == ExpressionType.NewArrayInit
-            //        || fromExpression.NodeType == ExpressionType.MemberAccess
-            //        )
-            //    {
-
-            //    }
-
-            //}
-
             var subQueryModel = expression.QueryModel;
             if (subQueryModel.IsIdentityQuery() && subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
             {
@@ -527,18 +507,30 @@ namespace Apache.Ignite.Linq.Impl
                         break;
                     case ExpressionType.ListInit:
                         var listInitExpression = (ListInitExpression) fromExpression;
-                        var values = listInitExpression.Initializers
+                        var listValues = listInitExpression.Initializers
                             .SelectMany(init => init.Arguments)
                             .Select(ExpressionWalker.EvaluateExpression<object>);
-                        AppendInParameters(values);
+                        AppendInParameters(listValues);
                         break;
                     case ExpressionType.NewArrayInit:
                         var newArrayExpression = (NewArrayExpression) fromExpression;
                         AppendInParameters(newArrayExpression.Expressions.Select(ExpressionWalker.EvaluateExpression<object>));
                         break;
                     case ExpressionType.Parameter:
+
+                        //TODO: !!!!!
                         break;
-                    default: throw new NotSupportedException("From expression not supported: " + fromExpression);
+                    default:
+                        var defaultValues = Expression.Lambda(fromExpression).Compile().DynamicInvoke();
+                        if (defaultValues is IEnumerable)
+                        {
+                            AppendInParameters(defaultValues as IEnumerable);
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("From expression not supported: " + fromExpression);
+                        }
+                        break;
                 }
 
                 ResultBuilder.Append("))");
@@ -555,16 +547,19 @@ namespace Apache.Ignite.Linq.Impl
 
         private void AppendInParameters(IEnumerable enumerable)
         {
-            var first = true;
-            foreach (var val in enumerable)
+            if (enumerable != null)
             {
-                if (!first)
+                var first = true;
+                foreach (var val in enumerable)
                 {
-                    ResultBuilder.Append(", ");
-                }
-                first = false;
+                    if (!first)
+                    {
+                        ResultBuilder.Append(", ");
+                    }
+                    first = false;
 
-                AppendParameter(val);
+                    AppendParameter(val);
+                }
             }
         }
 

@@ -751,22 +751,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestContains()
         {
             var cache = GetPersonCache().AsCacheQueryable();
-            var orgCache = GetOrgCache().AsCacheQueryable();
+            var roleCache = GetRoleCache().AsCacheQueryable();
 
             var keys = new[] {1, 2, 3};
+            var emptyKeys = new int[0];
+            int[] nullKeys = null;
 
-
-            //var test = cache
-            //    .Where(x => new[] {1, 2}.Contains(x.Key))
-            //    .ToArray();
-            var x = new int[] {};
-
-            //CheckFunc(e => new[] {1, 2, 3}.Contains(e.Key), cache);
-            //CheckFunc(e => x.Contains(e.Key), cache);
-            //CheckFunc(e => new int[0].Contains(e.Key), cache);
+            CheckFunc(e => e.Key, cache.Where(e => new[] {1, 2, 3}.Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => emptyKeys.Contains(e.Key)));
             CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
-            //CheckFunc(e => new List<int> {1, 2, 3}.Contains(e.Key), cache);
-            //CheckFunc(e => new List<int> ().Contains(e.Key), cache);
+            CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => new List<int> {1, 2, 3}.Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => new List<int>(keys).Contains(e.Key)));
+            CheckFunc(e => e.Key, cache.Where(e => nullKeys.Contains(e.Key)));
+            CheckFunc(e => e.Value.Name, roleCache.Where(e => new[] { "Role_1", "NonExistentName", null }.Contains(e.Value.Name)));
 
 
             //var cacheEntries = cache
