@@ -209,7 +209,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Get> askNeighbor = new GetPageHandler<Get>() {
+    private final GetPageHandler<Get> askNeighbor = new AskNeighbor();
+
+    /**
+     *
+     */
+    private class AskNeighbor extends GetPageHandler<Get> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page page, long pageAddr, BPlusIO<L> io, Get g, int isBack) {
             assert !io.isLeaf(); // Inner page.
 
@@ -236,7 +242,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Get> search = new GetPageHandler<Get>() {
+    private final GetPageHandler<Get> search = new Search();
+
+    /**
+     *
+     */
+    private class Search extends GetPageHandler<Get> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page page, long pageAddr, BPlusIO<L> io, Get g, int lvl)
             throws IgniteCheckedException {
             // Check the triangle invariant.
@@ -312,9 +324,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Put> replace = new GetPageHandler<Put>() {
+    private final GetPageHandler<Put> replace = new Replace();
+
+    /**
+     *
+     */
+    private class Replace extends GetPageHandler<Put> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
-            throws IgniteCheckedException {
+            throws IgniteCheckedException  {
             // Check the triangle invariant.
             if (io.getForward(pageAddr) != p.fwdId)
                 return RETRY;
@@ -354,7 +372,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Put> insert = new GetPageHandler<Put>() {
+    private final GetPageHandler<Put> insert = new Insert();
+
+    /**
+     *
+     */
+    private class Insert extends GetPageHandler<Put> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
             assert p.btmLvl == lvl : "we must always insert at the bottom level: " + p.btmLvl + " " + lvl;
@@ -394,7 +418,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Remove> rmvFromLeaf = new GetPageHandler<Remove>() {
+    private final GetPageHandler<Remove> rmvFromLeaf = new RemoveFromLeaf();
+
+    /**
+     *
+     */
+    private class RemoveFromLeaf extends GetPageHandler<Remove> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page leaf, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             assert lvl == 0 : lvl; // Leaf.
@@ -466,7 +496,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Remove> lockBackAndRmvFromLeaf = new GetPageHandler<Remove>() {
+    private final GetPageHandler<Remove> lockBackAndRmvFromLeaf = new LockBackAndRmvFromLeaf();
+
+    /**
+     *
+     */
+    private class LockBackAndRmvFromLeaf extends GetPageHandler<Remove> {
+        /** {@inheritDoc} */
         @Override protected Result run0(Page back, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             // Check that we have consistent view of the world.
@@ -485,7 +521,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Remove> lockBackAndTail = new GetPageHandler<Remove>() {
+    private final GetPageHandler<Remove> lockBackAndTail = new LockBackAndTail();
+
+    /**
+     *
+     */
+    private class LockBackAndTail extends GetPageHandler<Remove> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page back, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             // Check that we have consistent view of the world.
@@ -503,7 +545,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Remove> lockTailForward = new GetPageHandler<Remove>() {
+    private final GetPageHandler<Remove> lockTailForward = new LockTailForward();
+
+    /**
+     *
+     */
+    private class LockTailForward extends GetPageHandler<Remove> {
+        /** {@inheritDoc} */
         @Override protected Result run0(Page page, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             r.addTail(page, pageAddr, io, lvl, Tail.FORWARD);
@@ -513,7 +561,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Remove> lockTail = new GetPageHandler<Remove>() {
+    private final GetPageHandler<Remove> lockTail = new LockTail();
+
+    /**
+     *
+     */
+    private class LockTail extends GetPageHandler<Remove> {
+        /** {@inheritDoc} */
         @Override public Result run0(Page page, long pageAddr, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             assert lvl > 0 : lvl; // We are not at the bottom.
@@ -537,7 +591,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final PageHandler<Void, Bool> cutRoot = new PageHandler<Void, Bool>() {
+    private final PageHandler<Void, Bool> cutRoot = new CutRoot();
+
+    /**
+     *
+     */
+    private class CutRoot extends PageHandler<Void, Bool> {
+        /** {@inheritDoc} */
         @Override public Bool run(Page meta, PageIO iox, long pageAddr, Void ignore, int lvl)
             throws IgniteCheckedException {
             // Safe cast because we should never recycle meta page until the tree is destroyed.
@@ -561,7 +621,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final PageHandler<Long, Bool> addRoot = new PageHandler<Long, Bool>() {
+    private final PageHandler<Long, Bool> addRoot = new AddRoot();
+
+    /**
+     *
+     */
+    private class AddRoot extends PageHandler<Long, Bool> {
+        /** {@inheritDoc} */
         @Override public Bool run(Page meta, PageIO iox, long pageAddr, Long rootPageId, int lvl)
             throws IgniteCheckedException {
             assert rootPageId != null;
@@ -586,7 +652,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final PageHandler<Long, Bool> initRoot = new PageHandler<Long, Bool>() {
+    private final PageHandler<Long, Bool> initRoot = new InitRoot();
+
+    /**
+     *
+     */
+    private class InitRoot extends PageHandler<Long, Bool> {
+        /** {@inheritDoc} */
         @Override public Bool run(Page meta, PageIO iox, long pageAddr, Long rootId, int lvl)
             throws IgniteCheckedException {
             assert rootId != null;
