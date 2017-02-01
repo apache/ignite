@@ -1,11 +1,7 @@
 Building from Ignite sources
 =========================================
 
-1. Create a local clone of Ignite repository
-
-https://git-wip-us.apache.org/repos/asf/ignite
-
-2. Run
+Run
 
 mvn clean package -Pyardstick -pl modules/yardstick -am -DskipTests
 
@@ -16,19 +12,9 @@ This command will compile the project and also unpack scripts from `yardstick-re
 
 Artifacts can be found in `modules/yardstick/target/assembly` directory.
 
-
-Building from standalone sources
-================================
-
-Run following maven command:
-
-mvn clean package
-
-Artifacts can be found in `/target/assembly directory.`
-
-
 Writing Ignite Benchmarks
 =========================
+
 All benchmarks extend `AbstractBenchmark` class. A new benchmark should also extend this abstract class
-and implement `test` method. This is the method which actually test performance.
+and implement `test` method. This is the method which actually tests performance.
 

@@ -540,7 +540,7 @@
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/DEVNOTES.txt"
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
                                 </configuration>
