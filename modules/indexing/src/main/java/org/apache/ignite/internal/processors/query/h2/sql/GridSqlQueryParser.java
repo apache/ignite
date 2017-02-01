@@ -665,11 +665,14 @@ public class GridSqlQueryParser {
         res.ifNotExists(CREATE_INDEX_IF_NOT_EXISTS.get(createIdx));
 
         QueryIndex idx = new QueryIndex();
+
         idx.setName(CREATE_INDEX_NAME.get(createIdx));
         idx.setIndexType(CREATE_INDEX_SPATIAL.get(createIdx) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
         IndexColumn[] cols = CREATE_INDEX_COLUMNS.get(createIdx);
+
         LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
+
         for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx))
             flds.put(INDEX_COLUMN_NAME.get(col), (INDEX_COLUMN_SORT_TYPE.get(col) & SortOrder.DESCENDING) == 0);
 
