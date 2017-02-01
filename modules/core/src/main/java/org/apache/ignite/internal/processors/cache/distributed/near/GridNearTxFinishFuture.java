@@ -350,7 +350,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                             GridCacheContext cacheCtx = e.context();
 
                             try {
-                                if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
+                                if (e.op() != NOOP && !cacheCtx.affinity().keyLocalNode(e.key(), topVer)) {
                                     GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
                                     if (entry != null)

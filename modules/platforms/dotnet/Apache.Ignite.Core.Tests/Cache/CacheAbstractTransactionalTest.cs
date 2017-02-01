@@ -569,6 +569,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeSingleCache()
         {
             var cache = Cache();
@@ -606,6 +607,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// with multiple participating caches.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeMultiCache()
         {
             var cache1 = Cache();
@@ -646,6 +648,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// when Ignite tx is started manually.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeWithManualIgniteTx()
         {
             var cache = Cache();
@@ -671,6 +674,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3430")]
         public void TestSuppressedTransactionScope()
         {
             var cache = Cache();
@@ -690,6 +694,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> with nested scopes.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3430")]
         public void TestNestedTransactionScope()
         {
             var cache = Cache();
@@ -732,6 +737,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test that ambient <see cref="TransactionScope"/> options propagate to Ignite transaction.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeOptions()
         {
             var cache = Cache();
@@ -767,7 +773,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests all transactional operations with <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3477")]
+        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeAllOperations()
         {
             CheckTxOp((cache, key) => cache.Put(key, -5));

@@ -214,12 +214,12 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode loc = ignite.cluster().localNode();
 
-                if (loc.equals(aff.primary(key, topVer)))
+                if (loc.equals(aff.primaryByKey(key, topVer)))
                     return true;
 
                 AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
 
-                assertEquals(loc, aff.primary(key, topVer0));
+                assertEquals(loc, aff.primaryByKey(key, topVer0));
             }
 
             return null;
