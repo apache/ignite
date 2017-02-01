@@ -48,6 +48,15 @@ namespace ignite
             {
             public:
                 /**
+                 * Get data hash code.
+                 *
+                 * @param data Data pointer.
+                 * @param size Data size in bytes.
+                 * @return Hash code.
+                 */
+                static int32_t GetDataHashCode(const void* data, size_t size);
+
+                /**
                  * Utility method to read signed 8-bit integer from stream.
                  *
                  * @param stream Stream.

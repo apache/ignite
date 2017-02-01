@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include <ignite/binary/binary_type.h>
 #include <ignite/binary/binary_object.h>
+#include <ignite/impl/binary/binary_utils.h>
 
 #include <ignite/binary/binary_array_identity_resolver.h>
 
@@ -36,7 +36,7 @@ namespace ignite
 
         int32_t BinaryArrayIdentityResolver::GetHashCode(const BinaryObject& obj)
         {
-            return GetDataHashCode(obj.GetData(), obj.GetLength());
+            return impl::binary::BinaryUtils::GetDataHashCode(obj.GetData(), obj.GetLength());
         }
     }
 }

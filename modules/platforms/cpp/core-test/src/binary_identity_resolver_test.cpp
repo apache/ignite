@@ -417,15 +417,15 @@ BOOST_AUTO_TEST_CASE(GetDataHashCode)
     uint8_t data8[] = { 0xFF };
     uint8_t data9[] = { 0xFF, 0xFF, 0xFF, 0xFF };
 
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data1, sizeof(data1)), 0x0000001F);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data2, sizeof(data2)), 0x000e1781);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data3, sizeof(data3)), 0x94E4B2C1);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data4, sizeof(data4)), 0x00000020);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data5, sizeof(data5)), 0x0000001E);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data6, sizeof(data6)), 0x9EBADAC6);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data7, sizeof(data7)), 0xC5D38B5C);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data8, sizeof(data8)), 0x0000001E);
-    BOOST_CHECK_EQUAL(binary::GetDataHashCode(data9, sizeof(data9)), 0x000D9F41);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data1, sizeof(data1)), 0x0000001F);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data2, sizeof(data2)), 0x000e1781);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data3, sizeof(data3)), 0x94E4B2C1);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data4, sizeof(data4)), 0x00000020);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data5, sizeof(data5)), 0x0000001E);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data6, sizeof(data6)), 0x9EBADAC6);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data7, sizeof(data7)), 0xC5D38B5C);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data8, sizeof(data8)), 0x0000001E);
+    BOOST_CHECK_EQUAL(BinaryUtils::GetDataHashCode(data9, sizeof(data9)), 0x000D9F41);
 }
 
 BOOST_AUTO_TEST_CASE(ArrayIdentityResolver)
