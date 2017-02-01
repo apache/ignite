@@ -34,6 +34,31 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class RegionNodeComparatorTest extends GridCommonAbstractTest {
     /**
+     * The test for the preservation of order.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSaveOrdering() throws Exception {
+        final Comparator<TcpDiscoveryNode> comparator = new RegionNodeComparator();
+        final NodeFactory factory = new NodeFactory();
+
+        ArrayList<TcpDiscoveryNode> allNodes = new ArrayList<>(1000);
+        for (int i = 0; i<1000; i++) {
+            allNodes.add(factory.get(1L));
+        }
+
+        TreeSet<TcpDiscoveryNode> nativeSet = new TreeSet<>();
+        TreeSet<TcpDiscoveryNode> customSet = new TreeSet<>(comparator);
+
+        for (int i = 0; i<allNodes.size(); i++) {
+            nativeSet.add(allNodes.get(i));
+            customSet.add(allNodes.get(allNodes.size()-i-1));
+        }
+
+        assertEqualsCollections(nativeSet, customSet);
+    }
+
+    /**
      * Test for basic mathematical properties comparison
      *
      * @throws Exception If failed.
