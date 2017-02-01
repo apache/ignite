@@ -398,10 +398,13 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
      * For unknown {@code IGNITE_HOME} list of URI must be provided explicitly.
      *
      * @param uriList GAR file URIs.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setUriList(List<String> uriList) {
+    public UriDeploymentSpi setUriList(List<String> uriList) {
         this.uriList = uriList;
+
+        return this;
     }
 
     /**
@@ -409,10 +412,13 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
      * Otherwise it should try to load new unit regardless to possible file duplication.
      *
      * @param checkMd5 new value for the property
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCheckMd5(boolean checkMd5) {
+    public UriDeploymentSpi setCheckMd5(boolean checkMd5) {
         this.checkMd5 = checkMd5;
+
+        return this;
     }
 
     /**
@@ -433,10 +439,13 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
      *
      * @param encodeUri {@code true} if every URI should be encoded and
      *      {@code false} otherwise.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setEncodeUri(boolean encodeUri) {
+    public UriDeploymentSpi setEncodeUri(boolean encodeUri) {
         this.encodeUri = encodeUri;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -467,10 +476,13 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
      * Sets scanners.
      *
      * @param scanners Scanners.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setScanners(UriDeploymentScanner... scanners) {
+    public UriDeploymentSpi setScanners(UriDeploymentScanner... scanners) {
         this.scanners = scanners;
+
+        return this;
     }
 
     /** {@inheritDoc} */

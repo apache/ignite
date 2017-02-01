@@ -290,12 +290,15 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
      * time on every node.
      *
      * @param probe Implementation of node load probe
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLoadProbe(AdaptiveLoadProbe probe) {
+    public AdaptiveLoadBalancingSpi setLoadProbe(AdaptiveLoadProbe probe) {
         A.ensure(probe != null, "probe != null");
 
         this.probe = probe;
+
+        return this;
     }
 
     /** {@inheritDoc} */

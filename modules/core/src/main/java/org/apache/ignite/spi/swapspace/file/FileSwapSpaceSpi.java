@@ -199,10 +199,13 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * Sets base directory.
      *
      * @param baseDir Base directory.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setBaseDirectory(String baseDir) {
+    public FileSwapSpaceSpi setBaseDirectory(String baseDir) {
         this.baseDir = baseDir;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -215,9 +218,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * When this ratio becomes higher than specified number compacting thread starts working.
      *
      * @param maxSparsity Maximum sparsity. Must be between 0 and 1, default is {@link #DFLT_MAX_SPARSITY}.
+     * @return {@code this} for chaining.
      */
-    public void setMaximumSparsity(float maxSparsity) {
+    public FileSwapSpaceSpi setMaximumSparsity(float maxSparsity) {
         this.maxSparsity = maxSparsity;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -230,9 +236,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * {@link #DFLT_BUF_SIZE}.
      *
      * @param writeBufSize Write buffer size in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setWriteBufferSize(int writeBufSize) {
+    public FileSwapSpaceSpi setWriteBufferSize(int writeBufSize) {
         this.writeBufSize = writeBufSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -246,9 +255,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * {@link #DFLT_QUE_SIZE}.
      *
      * @param maxWriteQueSize Max write queue size in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setMaxWriteQueueSize(int maxWriteQueSize) {
+    public FileSwapSpaceSpi setMaxWriteQueueSize(int maxWriteQueSize) {
         this.maxWriteQueSize = maxWriteQueSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -261,12 +273,15 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * CPU cores available to this JVM.
      *
      * @param readStripesNum Read stripe number.
+     * @return {@code this} for chaining.
      */
-    public void setReadStripesNumber(int readStripesNum) {
+    public FileSwapSpaceSpi setReadStripesNumber(int readStripesNum) {
         A.ensure(readStripesNum == -1 || (readStripesNum & (readStripesNum - 1)) == 0,
             "readStripesNum must be positive and power of two");
 
         this.readStripesNum = readStripesNum;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -231,10 +231,13 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
      * Sets bucket name suffix.
      *
      * @param bucketNameSuffix Bucket name suffix.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setBucketNameSuffix(String bucketNameSuffix) {
+    public S3CheckpointSpi setBucketNameSuffix(String bucketNameSuffix) {
         this.bucketNameSuffix = bucketNameSuffix;
+
+        return this;
     }
 
     /**
@@ -243,10 +246,13 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
      * For details refer to Amazon S3 API reference.
      *
      * @param cfg Amazon client configuration.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setClientConfiguration(ClientConfiguration cfg) {
+    public S3CheckpointSpi setClientConfiguration(ClientConfiguration cfg) {
         this.cfg = cfg;
+
+        return this;
     }
 
     /**
@@ -255,10 +261,13 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
      * For details refer to Amazon S3 API reference.
      *
      * @param cred AWS credentials.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setAwsCredentials(AWSCredentials cred) {
+    public S3CheckpointSpi setAwsCredentials(AWSCredentials cred) {
         this.cred = cred;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -151,10 +151,13 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
      *
      * @param maxFailoverAttempts Maximum number of attempts to execute a failed
      *      job on another node.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMaximumFailoverAttempts(int maxFailoverAttempts) {
+    public JobStealingFailoverSpi setMaximumFailoverAttempts(int maxFailoverAttempts) {
         this.maxFailoverAttempts = maxFailoverAttempts;
+
+        return this;
     }
 
     /** {@inheritDoc} */

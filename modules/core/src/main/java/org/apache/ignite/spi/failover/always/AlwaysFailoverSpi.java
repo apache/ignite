@@ -134,10 +134,13 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
      * If not specified, {@link #DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
      *
      * @param maxFailoverAttempts Maximum number of attempts to execute a failed job on another node.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMaximumFailoverAttempts(int maxFailoverAttempts) {
+    public AlwaysFailoverSpi setMaximumFailoverAttempts(int maxFailoverAttempts) {
         this.maxFailoverAttempts = maxFailoverAttempts;
+
+        return this;
     }
 
     /** {@inheritDoc} */

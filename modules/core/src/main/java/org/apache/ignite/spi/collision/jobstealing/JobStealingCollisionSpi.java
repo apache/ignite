@@ -374,10 +374,13 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} methods).
      *
      * @param stealAttrs Node attributes to enable job stealing for.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setStealingAttributes(Map<String, ? extends Serializable> stealAttrs) {
+    public JobStealingCollisionSpi setStealingAttributes(Map<String, ? extends Serializable> stealAttrs) {
         this.stealAttrs = stealAttrs;
+
+        return this;
     }
 
     /** {@inheritDoc} */

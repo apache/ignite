@@ -300,8 +300,10 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
      * @param taskPriAttrKey Priority session attribute key.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setPriorityAttributeKey(String taskPriAttrKey) {
+    public PriorityQueueCollisionSpi setPriorityAttributeKey(String taskPriAttrKey) {
         this.taskPriAttrKey = taskPriAttrKey;
+
+        return this;
     }
 
     /**
@@ -311,10 +313,13 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
      * If not provided, default value is {@code {@link #DFLT_JOB_PRIORITY_ATTRIBUTE_KEY}}.
      *
      * @param jobPriAttrKey Job priority attribute key.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setJobPriorityAttributeKey(String jobPriAttrKey) {
+    public PriorityQueueCollisionSpi setJobPriorityAttributeKey(String jobPriAttrKey) {
         this.jobPriAttrKey = jobPriAttrKey;
+
+        return this;
     }
 
     /** {@inheritDoc} */

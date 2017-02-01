@@ -198,10 +198,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      * For details refer to Google Cloud Platform API reference.
      *
      * @param projectName Project name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setProjectName(String projectName) {
+    public TcpDiscoveryGoogleStorageIpFinder setProjectName(String projectName) {
         this.projectName = projectName;
+
+        return this;
     }
 
     /**
@@ -211,10 +214,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      * perform this operation.
      *
      * @param bucketName Bucket name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setBucketName(String bucketName) {
+    public TcpDiscoveryGoogleStorageIpFinder setBucketName(String bucketName) {
         this.bucketName = bucketName;
+
+        return this;
     }
 
 
@@ -226,10 +232,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      *     Service Account Authentication</a>.
      *
      * @param p12FileName Private key file full path.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setServiceAccountP12FilePath(String p12FileName) {
+    public TcpDiscoveryGoogleStorageIpFinder setServiceAccountP12FilePath(String p12FileName) {
         this.srvcAccountP12FilePath = p12FileName;
+
+        return this;
     }
 
     /**
@@ -240,10 +249,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      *     Service Account Authentication</a>.
      *
      * @param id Service account ID.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setServiceAccountId(String id) {
+    public TcpDiscoveryGoogleStorageIpFinder setServiceAccountId(String id) {
         this.srvcAccountId = id;
+
+        return this;
     }
 
     /**

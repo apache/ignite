@@ -216,10 +216,13 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
      *
      * @param isUseWeights If {@code true} then random load is distributed according
      *      to node weights.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setUseWeights(boolean isUseWeights) {
+    public WeightedRandomLoadBalancingSpi setUseWeights(boolean isUseWeights) {
         this.isUseWeights = isUseWeights;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -233,10 +236,13 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
      * is {@link #DFLT_NODE_WEIGHT} and is equal for all nodes.
      *
      * @param nodeWeight Weight of this node.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setNodeWeight(int nodeWeight) {
+    public WeightedRandomLoadBalancingSpi setNodeWeight(int nodeWeight) {
         this.nodeWeight = nodeWeight;
+
+        return this;
     }
 
     /** {@inheritDoc} */

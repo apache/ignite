@@ -223,10 +223,13 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
      *
      * @param isPerTask Configuration parameter indicating whether a new round robin order should
      *      be created for every task. Default is {@code false}.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setPerTask(boolean isPerTask) {
+    public RoundRobinLoadBalancingSpi setPerTask(boolean isPerTask) {
         this.isPerTask = isPerTask;
+
+        return this;
     }
 
     /** {@inheritDoc} */

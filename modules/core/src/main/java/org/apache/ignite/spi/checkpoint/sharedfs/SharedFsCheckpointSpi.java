@@ -196,13 +196,16 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
      *
      * @param dirPaths Absolute or Ignite installation home folder relative path where checkpoints
      * will be stored.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setDirectoryPaths(Collection<String> dirPaths) {
+    public SharedFsCheckpointSpi setDirectoryPaths(Collection<String> dirPaths) {
         A.ensure(!F.isEmpty(dirPaths), "!F.isEmpty(dirPaths)");
 
         this.dirPaths.clear();
         this.dirPaths.addAll(dirPaths);
+
+        return this;
     }
 
     /** {@inheritDoc} */

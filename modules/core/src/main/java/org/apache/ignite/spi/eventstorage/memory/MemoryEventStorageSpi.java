@@ -131,10 +131,13 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * Sets filter for events to be recorded.
      *
      * @param filter Filter to use.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setFilter(IgnitePredicate<Event> filter) {
+    public MemoryEventStorageSpi setFilter(IgnitePredicate<Event> filter) {
         this.filter = filter;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -177,10 +180,13 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * If not provided, default value is {@link #DFLT_EXPIRE_AGE_MS}.
      *
      * @param expireAgeMs Expiration time in milliseconds.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setExpireAgeMs(long expireAgeMs) {
+    public MemoryEventStorageSpi setExpireAgeMs(long expireAgeMs) {
         this.expireAgeMs = expireAgeMs;
+
+        return this;
     }
 
     /**
@@ -189,10 +195,13 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * If not provided, default value {@link #DFLT_EXPIRE_COUNT} will be used.
      *
      * @param expireCnt Maximum queue size.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setExpireCount(long expireCnt) {
+    public MemoryEventStorageSpi setExpireCount(long expireCnt) {
         this.expireCnt = expireCnt;
+
+        return this;
     }
 
     /** {@inheritDoc} */
