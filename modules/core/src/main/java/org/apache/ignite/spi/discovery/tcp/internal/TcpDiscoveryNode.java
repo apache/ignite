@@ -613,7 +613,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readUuid(in);
 
-        attrs = U.sealMap(U.<String, Object>readMap(in));
+        setAttributes(U.<String, Object>readMap(in));
         addrs = U.readCollection(in);
         hostNames = U.readCollection(in);
         discPort = in.readInt();
