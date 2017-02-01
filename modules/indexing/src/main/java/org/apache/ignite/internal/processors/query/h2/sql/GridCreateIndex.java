@@ -122,7 +122,7 @@ public class GridCreateIndex extends GridSqlStatement {
             sb.append(Parser.quoteIdentifier(e.getKey())).append(e.getValue() ? " ASC" : " DESC");
         }
 
-        sb.delete(sb.length() - 2, sb.length()).append(')');
+        sb.append(')');
 
         return sb.toString();
     }
