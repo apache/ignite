@@ -33,7 +33,9 @@ public class GridDropIndex extends GridSqlStatement {
      */
     private String schemaName;
 
-    /** */
+    /**
+     * Attempt to drop the index only if it exists.
+     */
     private boolean ifExists;
 
     /**
@@ -64,12 +66,16 @@ public class GridDropIndex extends GridSqlStatement {
         this.schemaName = schemaName;
     }
 
-    /** */
+    /**
+     * @return whether attempt to drop the index should be made only if it exists.
+     */
     public boolean ifExists() {
         return ifExists;
     }
 
-    /** */
+    /**
+     * @param ifExists whether attempt to drop the index should be made only if it exists.
+     */
     public void ifExists(boolean ifExists) {
         this.ifExists = ifExists;
     }

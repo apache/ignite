@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.h2.command.Command;
@@ -307,13 +309,15 @@ public class GridSqlQueryParser {
     private static final Getter<CreateIndex, String> CREATE_INDEX_TABLE_NAME = getter(CreateIndex.class, "tableName");
 
     /** */
-    private static final Getter<CreateIndex, IndexColumn[]> CREATE_INDEX_COLUMNS = getter(CreateIndex.class, "indexColumns");
+    private static final Getter<CreateIndex, IndexColumn[]> CREATE_INDEX_COLUMNS = getter(CreateIndex.class,
+        "indexColumns");
 
     /** */
     private static final Getter<CreateIndex, Boolean> CREATE_INDEX_SPATIAL = getter(CreateIndex.class, "spatial");
 
     /** */
-    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_IF_NOT_EXISTS = getter(CreateIndex.class, "ifNotExists");
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_IF_NOT_EXISTS = getter(CreateIndex.class,
+        "ifNotExists");
 
     /** */
     private static final Getter<IndexColumn, String> INDEX_COLUMN_NAME = getter(IndexColumn.class, "columnName");
@@ -632,8 +636,10 @@ public class GridSqlQueryParser {
 
 
     /**
-     * @param dropIdx Drop index statement.
-     * @see <a href="http://h2database.com/html/grammar.html#drop_index">H2 drop index spec</a>
+     * Parse {@code DROP INDEX} statement.
+     *
+     * @param dropIdx {@code DROP INDEX} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_index">H2 {@code DROP INDEX} spec.</a>
      */
     private GridDropIndex parseDropIndex(DropIndex dropIdx) {
         GridDropIndex res = new GridDropIndex();
@@ -646,31 +652,30 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param createIdx Create index statement.
-     * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 create index spec</a>
+     * Parse {@code CREATE INDEX} statement.
+     *
+     * @param createIdx {@code CREATE INDEX} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 {@code CREATE INDEX} spec.</a>
      */
     private GridCreateIndex parseCreateIndex(CreateIndex createIdx) {
         GridCreateIndex res = new GridCreateIndex();
 
-        res.name(CREATE_INDEX_NAME.get(createIdx));
         res.schemaName(SCHEMA_COMMAND_SCHEMA.get(createIdx).getName());
         res.tableName(CREATE_INDEX_TABLE_NAME.get(createIdx));
-        res.spatial(CREATE_INDEX_SPATIAL.get(createIdx));
         res.ifNotExists(CREATE_INDEX_IF_NOT_EXISTS.get(createIdx));
 
-        IndexColumn[] srcCols = CREATE_INDEX_COLUMNS.get(createIdx);
-        GridIndexColumn[] cols = new GridIndexColumn[srcCols.length];
+        QueryIndex idx = new QueryIndex();
+        idx.setName(CREATE_INDEX_NAME.get(createIdx));
+        idx.setIndexType(CREATE_INDEX_SPATIAL.get(createIdx) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-        for (int i = 0; i < srcCols.length; i++) {
-            GridIndexColumn col = new GridIndexColumn();
+        IndexColumn[] cols = CREATE_INDEX_COLUMNS.get(createIdx);
+        LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
+        for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx))
+            flds.put(INDEX_COLUMN_NAME.get(col), (INDEX_COLUMN_SORT_TYPE.get(col) & SortOrder.DESCENDING) == 0);
 
-            col.name(INDEX_COLUMN_NAME.get(srcCols[i]));
-            col.ascending((INDEX_COLUMN_SORT_TYPE.get(srcCols[i]) & SortOrder.DESCENDING) == 0);
+        idx.setFields(flds);
 
-            cols[i] = col;
-        }
-
-        res.columns(cols);
+        res.index(idx);
 
         return res;
     }

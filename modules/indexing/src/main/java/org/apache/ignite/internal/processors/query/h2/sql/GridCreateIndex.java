@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.h2.command.Parser;
@@ -26,11 +26,6 @@ import org.h2.command.Parser;
  * CREATE INDEX statement.
  */
 public class GridCreateIndex extends GridSqlStatement {
-    /**
-     * Index name.
-     */
-    private String name;
-
     /**
      * Schema name.
      */
@@ -42,36 +37,25 @@ public class GridCreateIndex extends GridSqlStatement {
     private String tblName;
 
     /**
-     * Index cols.
+     * Attempt to create the index only if it does not exist.
      */
-    private GridIndexColumn[] cols;
-
-    /**
-     * Whether SPATIAL index creation has been requested.
-     */
-    private boolean spatial;
-
-    /** */
     private boolean ifNotExists;
 
     /**
-     * @return Index name.
+     * Index to create.
      */
-    public String name() {
-        return name;
-    }
+    private QueryIndex idx;
 
     /**
-     * @param name Index name.
+     * @return Schema name for new index.
      */
-    public void name(String name) {
-        this.name = name;
-    }
-
     public String schemaName() {
         return schemaName;
     }
 
+    /**
+     * @param schemaName Schema name for new index.
+     */
     public void schemaName(String schemaName) {
         this.schemaName = schemaName;
     }
@@ -91,72 +75,55 @@ public class GridCreateIndex extends GridSqlStatement {
     }
 
     /**
-     * @return Index cols.
+     * @return whether attempt to create the index should be made only if it does not exist.
      */
-    public GridIndexColumn[] columns() {
-        return cols;
-    }
-
-    /**
-     * @param cols Index cols.
-     */
-    public void columns(GridIndexColumn[] cols) {
-        this.cols = cols;
-    }
-
-    /**
-     * @return Whether SPATIAL index creation has been requested.
-     */
-    public boolean spatial() {
-        return spatial;
-    }
-
-    /**
-     * @param spatial Whether SPATIAL index creation has been requested.
-     */
-    public void spatial(boolean spatial) {
-        this.spatial = spatial;
-    }
-
-    /** */
     public boolean ifNotExists() {
         return ifNotExists;
     }
 
-    /** */
+    /**
+     * @param ifNotExists whether attempt to create the index should be made only if it does not exist.
+     */
     public void ifNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
     }
 
+    /**
+     * @return Index to create.
+     */
+    public QueryIndex index() {
+        return idx;
+    }
+
+    /**
+     * @param idx Index to create.
+     */
+    public void index(QueryIndex idx) {
+        this.idx = idx;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StringBuilder sb = new StringBuilder("CREATE " + (spatial ? "SPATIAL " : "") + "INDEX " +
-            (ifNotExists ? "IF NOT EXISTS " : "") + Parser.quoteIdentifier(schemaName) + '.' +
-            Parser.quoteIdentifier(name) + " ON " + Parser.quoteIdentifier(tblName) + " (");
+        StringBuilder sb = new StringBuilder("CREATE ")
+            .append(idx.getIndexType() == QueryIndexType.GEOSPATIAL ? "SPATIAL " : "")
+            .append("INDEX ").append(ifNotExists ? "IF NOT EXISTS " : "")
+            .append(Parser.quoteIdentifier(schemaName)).append('.')
+            .append(Parser.quoteIdentifier(idx.getName())).append(" ON ")
+            .append(Parser.quoteIdentifier(tblName)).append(" (");
 
         boolean first = true;
 
-        for (GridIndexColumn c : cols) {
+        for (Map.Entry<String, Boolean> e : idx.getFields().entrySet()) {
             if (first)
                 first = false;
             else
                 sb.append(", ");
 
-            sb.append(c.getSQL());
+            sb.append(Parser.quoteIdentifier(e.getKey())).append(e.getValue() ? " ASC" : " DESC");
         }
 
+        sb.delete(sb.length() - 2, sb.length()).append(')');
+
         return sb.toString();
-    }
-
-    public QueryIndex toQueryIndex() {
-        QueryIndex res = new QueryIndex(name);
-        res.setIndexType(spatial ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
-        LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
-
-        for (GridIndexColumn col : cols)
-            flds.put(col.name(), col.ascending());
-
-        res.setFields(flds);
-        return res;
     }
 }

@@ -31,10 +31,12 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.h2.command.Prepared;
 
 /**
- *
+ * Logic to execute DDL statements.
  */
 class DdlStatementsProcessor {
-    /** */
+    /**
+     * Indexing.
+     */
     private final IgniteH2Indexing indexing;
 
     /** */
@@ -42,12 +44,17 @@ class DdlStatementsProcessor {
         this.indexing = indexing;
     }
 
-    /** */
+    /**
+     * Execute DDL statement.
+     *
+     * @param cctx Cache context.
+     * @param stmt H2 statement to parse and execute.
+     */
     QueryCursor<List<?>> runDdlStatement(GridCacheContext<?, ?> cctx, Prepared stmt) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(stmt);
 
         if (gridStmt instanceof GridCreateIndex) {
-            QueryIndex newIdx = ((GridCreateIndex) gridStmt).toQueryIndex();
+            QueryIndex newIdx = ((GridCreateIndex) gridStmt).index();
 
             throw new UnsupportedOperationException("CREATE INDEX");
         }

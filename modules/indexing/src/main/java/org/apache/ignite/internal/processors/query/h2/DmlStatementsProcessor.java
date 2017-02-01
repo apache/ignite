@@ -1025,7 +1025,7 @@ public class DmlStatementsProcessor {
      * @param stmt Statement.
      * @return {@code True} if this is DML.
      */
-    public boolean isDmlStatement(Prepared stmt) {
+    static boolean isDmlStatement(Prepared stmt) {
         return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
     }
 
