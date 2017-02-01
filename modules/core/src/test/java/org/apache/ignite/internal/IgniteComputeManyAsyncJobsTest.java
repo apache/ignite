@@ -41,6 +41,7 @@ public class IgniteComputeManyAsyncJobsTest extends GridCommonAbstractTest {
 //        if (gridName.endsWith("1"))
 //            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMessageQueueLimit(0);
 
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMessageQueueLimit(1024);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
