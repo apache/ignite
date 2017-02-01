@@ -642,8 +642,9 @@ public class TcpDiscoveryNodesRing {
     private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded,
         TcpDiscoveryNode from) {
         final boolean excludedEmpty = F.isEmpty(excluded);
-
-        return F.view(nodes.tailSet(from, false), new P1<TcpDiscoveryNode>() {
+        NavigableSet<TcpDiscoveryNode> nodesSet = nodes.tailSet(from, false);
+        if (nodesSet.isEmpty()) return Collections.EMPTY_SET;
+        return F.view(nodesSet, new P1<TcpDiscoveryNode>() {
             @Override
             public boolean apply(TcpDiscoveryNode node) {
                 return !node.isClient() && (excludedEmpty || !excluded.contains(node));
