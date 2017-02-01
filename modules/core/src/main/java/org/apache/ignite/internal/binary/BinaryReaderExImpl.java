@@ -1448,8 +1448,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         int pos = BinaryUtils.positionForHandle(in);
 
-        throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
-            ", actual=" + flag + ']');
+        throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + fieldTypeName(expFlag) +
+            ", actual=" + fieldTypeName(flag) + ']');
     }
 
     /**
