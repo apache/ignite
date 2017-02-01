@@ -264,6 +264,13 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     protected void fetchNextPage(GridResultPage page) {
+        assert !page.isLast();
+
+        if(page.isFail())
+            page.fetchNextPage(); //rethrow exceptions
+
+        assert page.res != null;
+
         Counter[] counters = remainingRows.get(page.source());
 
         int segId = page.res.segmentId();
