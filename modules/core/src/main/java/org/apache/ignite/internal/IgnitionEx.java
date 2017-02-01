@@ -2367,12 +2367,12 @@ public class IgnitionEx {
 
                     shutdownHook = null;
 
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown hook is removed.");
                 }
                 catch (IllegalStateException e) {
                     // Shutdown is in progress...
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
@@ -2382,7 +2382,7 @@ public class IgnitionEx {
             try {
                 grid0.stop(cancel);
 
-                if (log.isDebugEnabled())
+                if (log != null && log.isDebugEnabled())
                     log.debug("Grid instance stopped ok: " + name);
             }
             catch (Throwable e) {
