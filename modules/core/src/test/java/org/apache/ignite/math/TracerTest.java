@@ -19,6 +19,7 @@ package org.apache.ignite.math;
 
 import org.apache.ignite.math.impls.*;
 import org.junit.*;
+import java.io.*;
 
 /**
  * TODO: add description.
@@ -26,15 +27,36 @@ import org.junit.*;
 public class TracerTest {
     /**
      *
+     * @param size
+     * @return
+     */
+    private Vector makeRandomVector(int size) {
+        DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
+
+        vec.assign((idx) -> Math.random());
+
+        return vec;
+    }
+
+    /**
+     *
      */
     @Test
     public void testAsciiVectorTracer() {
-        DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(20);
-
-        vec.assign((idx) -> Math.random());
+        Vector vec = makeRandomVector(20);
 
         Tracer.showAscii(vec);
         Tracer.showAscii(vec, "%2f");
         Tracer.showAscii(vec, "%.3g");
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testHtmlVectorTracer() throws IOException {
+        Vector vec = makeRandomVector(20);
+
+        Tracer.showHtml(vec);
     }
 }

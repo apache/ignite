@@ -18,7 +18,10 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import java.awt.*;
+import java.io.*;
+import java.util.stream.*;
 
 /**
  * This object allows to display matrices and vectors using GUI.
@@ -176,6 +179,70 @@ public class Tracer {
      */
     static void showAscii(Vector vec) {
         showAscii(vec, "%4f");
+    }
+
+    /**
+     * Shows given matrix in the browser with D3-based visualization.
+     *
+     * @param mtx Matrix to show.
+     * @throws IOException Thrown in case of any errors.
+     */
+    static void showHtml(Matrix mtx) throws IOException {
+        // Read it every time so that we can change it at runtime.
+        String tmpl = fileToString("d3-matrix-template.html");
+
+        // TODO: update template.
+
+        openHtmlFile(tmpl);
+    }
+
+    /**
+     * Shows given vector in the browser with D3-based visualization.
+     *
+     * @param vec Vector to show.
+     * @throws IOException Thrown in case of any errors.
+     */
+    static void showHtml(Vector vec) throws IOException {
+        // Read it every time so that we can change it at runtime.
+        String tmpl = fileToString("d3-vector-template.html");
+
+        // TODO: update template.
+
+        openHtmlFile(tmpl);
+    }
+
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    private static String fileToString(String fileName) throws IOException {
+        InputStreamReader is = new InputStreamReader(Tracer.class.getResourceAsStream(fileName));
+
+        String str = new BufferedReader(is).lines().collect(Collectors.joining("\n"));
+
+        is.close();
+
+        return str;
+    }
+
+    /**
+     * Opens file in the browser with given HTML content.
+     *
+     * @param html HTML content.
+     * @throws IOException Thrown in case of any errors.
+     */
+    static private void openHtmlFile(String html) throws IOException {
+        File temp = File.createTempFile(IgniteUuid.randomUuid().toString(), ".html");
+
+        BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
+
+        bw.write(html);
+
+        bw.close();
+
+        Desktop.getDesktop().browse(temp.toURI());
     }
 
     /**
