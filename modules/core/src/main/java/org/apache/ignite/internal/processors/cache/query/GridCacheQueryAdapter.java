@@ -92,8 +92,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** Transformer. */
     private IgniteClosure<?, ?> transform;
 
-    /** Partition. */
-    private Integer part;
+    /** Partitions. */
+    private int[] parts;
 
     /** */
     private final boolean incMeta;
@@ -131,25 +131,25 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @param cctx Context.
      * @param type Query type.
+     * @param transform Transform closure.
      * @param filter Scan filter.
-     * @param part Partition.
+     * @param parts Partitions.
      * @param keepBinary Keep binary flag.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable IgniteClosure<Map.Entry, Object> transform,
-        @Nullable Integer part,
+        @Nullable int[] parts,
         boolean keepBinary) {
         assert cctx != null;
         assert type != null;
-        assert part == null || part >= 0;
 
         this.cctx = cctx;
         this.type = type;
         this.filter = filter;
         this.transform = transform;
-        this.part = part;
+        this.parts = parts;
         this.keepBinary = keepBinary;
 
         log = cctx.logger(getClass());
@@ -167,7 +167,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param clsName Class name.
      * @param clause Clause.
      * @param filter Scan filter.
-     * @param part Partition.
+     * @param parts Partitions.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      */
@@ -176,19 +176,18 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
-        @Nullable Integer part,
+        @Nullable int[] parts,
         boolean incMeta,
         boolean keepBinary) {
         assert cctx != null;
         assert type != null;
-        assert part == null || part >= 0;
 
         this.cctx = cctx;
         this.type = type;
         this.clsName = clsName;
         this.clause = clause;
         this.filter = filter;
-        this.part = part;
+        this.parts = parts;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
 
@@ -208,7 +207,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param dedup Enable dedup flag.
      * @param prj Grid projection.
      * @param filter Key-value filter.
-     * @param part Partition.
+     * @param parts Partitions.
      * @param clsName Class name.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
@@ -226,7 +225,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean dedup,
         ClusterGroup prj,
         IgniteBiPredicate<Object, Object> filter,
-        @Nullable Integer part,
+        @Nullable int[] parts,
         @Nullable String clsName,
         String clause,
         boolean incMeta,
@@ -243,7 +242,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
-        this.part = part;
+        this.parts = parts;
         this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
@@ -424,8 +423,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Partition.
      */
-    @Nullable public Integer partition() {
-        return part;
+    @Nullable public int[] partitions() {
+        return parts;
     }
 
     /**
@@ -465,7 +464,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private <R> CacheQueryFuture<R> execute0(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         assert type != SCAN : this;
 
-        Collection<ClusterNode> nodes;
+        Collection<GridCacheQueryPartSet> nodes;
 
         try {
             nodes = nodes();
@@ -502,7 +501,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+        boolean loc = nodes.size() == 1 && F.first(nodes).node().id().equals(cctx.localNodeId());
 
         if (type == SQL_FIELDS || type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
@@ -516,11 +515,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of qyery: " + type;
 
-        Collection<ClusterNode> nodes = nodes();
+        Collection<GridCacheQueryPartSet> nodes = nodes();
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (nodes.isEmpty() && part == null)
+        if (nodes.isEmpty() && parts == null)
             return new GridEmptyCloseableIterator();
 
         if (log.isDebugEnabled())
@@ -536,10 +535,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        if (part != null && !cctx.isLocal())
-            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
+        if (parts != null && !cctx.isLocal())
+            return new ScanQueryFallbackClosableIterator(parts, this, qryMgr, cctx);
         else {
-            boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+            // TODO FIXME local if all partitions are local.
+            boolean loc = nodes.size() == 1 && F.first(nodes).node().id().equals(cctx.localNodeId());
 
             return loc ? qryMgr.scanQueryLocal(this, true) : qryMgr.scanQueryDistributed(this, nodes);
         }
@@ -548,10 +548,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Nodes to execute on.
      */
-    private Collection<ClusterNode> nodes() throws IgniteCheckedException {
+    private Collection<GridCacheQueryPartSet> nodes() throws IgniteCheckedException {
         CacheMode cacheMode = cctx.config().getCacheMode();
 
-        Integer part = partition();
+        int[] parts = partitions();
 
         switch (cacheMode) {
             case LOCAL:
@@ -559,22 +559,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     U.warn(log, "Ignoring query projection because it's executed over LOCAL cache " +
                         "(only local node will be queried): " + this);
 
-                if (type == SCAN && cctx.config().getCacheMode() == LOCAL &&
-                    part != null && part >= cctx.affinity().partitions())
-                    throw new IgniteCheckedException("Invalid partition number: " + part);
-
-                return Collections.singletonList(cctx.localNode());
-
+                return Collections.singletonList(new GridCacheQueryPartSet(cctx.localNode()));
             case REPLICATED:
-                if (prj != null || part != null)
-                    return nodes(cctx, prj, part);
+                if (prj != null || parts != null)
+                    return nodes(cctx, prj, parts);
 
                 return cctx.affinityNode() ?
-                    Collections.singletonList(cctx.localNode()) :
+                    Collections.singletonList(new GridCacheQueryPartSet(cctx.localNode())) :
                     Collections.singletonList(F.rand(nodes(cctx, null, null)));
 
             case PARTITIONED:
-                return nodes(cctx, prj, part);
+                return nodes(cctx, prj, parts);
 
             default:
                 throw new IllegalStateException("Unknown cache distribution mode: " + cacheMode);
@@ -586,27 +581,27 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param prj Projection (optional).
      * @return Collection of data nodes in provided projection (if any).
      */
-    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
-        @Nullable final ClusterGroup prj, @Nullable final Integer part) {
+    private static Collection<GridCacheQueryPartSet> nodes(final GridCacheContext<?, ?> cctx,
+        @Nullable final ClusterGroup prj, @Nullable final int[] parts) {
         assert cctx != null;
 
         final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-        Collection<ClusterNode> affNodes = CU.affinityNodes(cctx);
+        if (prj == null && parts == null)
+            return GridCacheQueryPartSet.forNodes(CU.affinityNodes(cctx));
 
-        if (prj == null && part == null)
-            return affNodes;
+        final Collection<GridCacheQueryPartSet> owners = parts == null ?
+            GridCacheQueryPartSet.forNodes(CU.affinityNodes(cctx)) :
+            GridCacheQueryPartSet.forPartitions(cctx.topology(), topVer, parts);
 
-        final Set<ClusterNode> owners =
-            part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
-
-        return F.view(affNodes, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || owners.contains(n));
+        return F.view(owners, new P1<GridCacheQueryPartSet>() {
+            @Override public boolean apply(GridCacheQueryPartSet n) {
+                return cctx.discovery().cacheAffinityNode(n.node(), cctx.name()) &&
+                    (prj == null || prj.node(n.node().id()) != null);
             }
         });
+
+        //(part == null || owners.contains(n))
     }
 
     /** {@inheritDoc} */
@@ -643,7 +638,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private final GridCacheContext cctx;
 
         /** Partition. */
-        private final int part;
+        private final int[] parts;
 
         /** Flag indicating that a first item has been returned to a user. */
         private boolean firstItemReturned;
@@ -652,17 +647,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private Map.Entry cur;
 
         /**
-         * @param part Partition.
+         * @param parts Partition.
          * @param qry Query.
          * @param qryMgr Query manager.
          * @param cctx Cache context.
          */
-        private ScanQueryFallbackClosableIterator(int part, GridCacheQueryAdapter qry,
+        private ScanQueryFallbackClosableIterator(int[] parts, GridCacheQueryAdapter qry,
             GridCacheQueryManager qryMgr, GridCacheContext cctx) {
             this.qry = qry;
             this.qryMgr = qryMgr;
             this.cctx = cctx;
-            this.part = part;
+            this.parts = parts;
+
+            // Check if all partitions are collocated.
 
             nodes = fallbacks(cctx.discovery().topologyVersionEx());
 
@@ -676,6 +673,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private Queue<ClusterNode> fallbacks(AffinityTopologyVersion topVer) {
             Deque<ClusterNode> fallbacks = new LinkedList<>();
             Collection<ClusterNode> owners = new HashSet<>();
+
+            int part = parts[0];
 
             for (ClusterNode node : cctx.topology().owners(part, topVer)) {
                 if (node.isLocal())

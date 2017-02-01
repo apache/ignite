@@ -1855,13 +1855,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param c Key/value closure.
-     * @param part Partition.
+     * @param parts Partitions.
      * @param primary Include primaries.
      * @param backup Include backups.
      * @return Off-heap iterator.
      */
     public <T> GridCloseableIterator<T> rawOffHeapIterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c,
-        @Nullable Integer part,
+        @Nullable int[] parts,
         boolean primary,
         boolean backup)
     {
@@ -1873,23 +1873,23 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         checkIteratorQueue();
 
         if (primary && backup) {
-            if (part == null)
+            if (parts == null)
                 return offheap.iterator(spaceName, c);
             else
-                return offheap.iterator(spaceName, c, part);
+                return new CloseablePartitionsIterator<T, T>(U.toIntegerSet(parts)) {
+                    @Override protected GridCloseableIterator<T> partitionIterator(int part)
+                        throws IgniteCheckedException {
+                        return offheap.iterator(spaceName, c, part);
+                    }
+                };
         }
 
         AffinityTopologyVersion ver = cctx.affinity().affinityTopologyVersion();
 
-        Set<Integer> parts;
+        Set<Integer> partsSet = parts == null ? primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), ver) :
+                cctx.affinity().backupPartitions(cctx.localNodeId(), ver) : U.toIntegerSet(parts);
 
-        if (part == null)
-            parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), ver) :
-                cctx.affinity().backupPartitions(cctx.localNodeId(), ver);
-        else
-            parts = Collections.singleton(part);
-
-        return new CloseablePartitionsIterator<T, T>(parts) {
+        return new CloseablePartitionsIterator<T, T>(partsSet) {
             @Override protected GridCloseableIterator<T> partitionIterator(int part)
                 throws IgniteCheckedException {
                 return offheap.iterator(spaceName, c, part);
@@ -1899,19 +1899,19 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      *
-     * @param part Partition.
+     * @param parts Partitions.
      * @param primary Include primaries.
      * @param backup Include backups.
      * @return Raw off-heap iterator.
      */
-    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawOffHeapIterator(@Nullable Integer part,
+    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawOffHeapIterator(@Nullable int[] parts,
         final boolean primary,
         final boolean backup)
     {
         if (!offheapEnabled || (!primary && !backup))
             return new GridEmptyCloseableIterator<>();
 
-        if (primary && backup && part == null)
+        if (primary && backup && parts == null)
             return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
                 private GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = offheap.iterator(spaceName);
 
@@ -1943,15 +1943,10 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         AffinityTopologyVersion ver = cctx.affinity().affinityTopologyVersion();
 
-        Set<Integer> parts;
+        Set<Integer> partsSet = parts == null ? primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), ver) :
+            cctx.affinity().backupPartitions(cctx.localNodeId(), ver) : U.toIntegerSet(parts);
 
-        if (part == null)
-            parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), ver) :
-                cctx.affinity().backupPartitions(cctx.localNodeId(), ver);
-        else
-            parts = Collections.singleton(part);
-
-        return new CloseablePartitionsIterator<Map.Entry<byte[], byte[]>, IgniteBiTuple<byte[], byte[]>>(parts) {
+        return new CloseablePartitionsIterator<Map.Entry<byte[], byte[]>, IgniteBiTuple<byte[], byte[]>>(partsSet) {
             private Map.Entry<byte[], byte[]> cur;
 
             @Override protected Map.Entry<byte[], byte[]> onNext() {
@@ -2040,11 +2035,11 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param part Partition.
+     * @param parts Partitions.
      * @return Raw off-heap iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator(int part)
+    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator(int[] parts)
         throws IgniteCheckedException
     {
         if (!swapEnabled)
@@ -2053,7 +2048,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         checkIteratorQueue();
 
         return new CloseablePartitionsIterator<Map.Entry<byte[], byte[]>, Map.Entry<byte[], byte[]>>(
-            Collections.singleton(part)) {
+            U.toIntegerSet(parts)) {
             @Override protected GridCloseableIterator<Map.Entry<byte[], byte[]>> partitionIterator(int part)
                 throws IgniteCheckedException
             {

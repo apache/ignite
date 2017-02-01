@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -58,6 +61,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Tests partition scan query fallback.
@@ -136,12 +140,14 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            int part = anyLocalPartition(cache.context());
+            int[] parts = randomLocalPartitions(cache.context(), 3);
+
+            log().info("Partitions: " + Arrays.toString(parts));
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
-                cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
+                cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
 
-            doTestScanQuery(qry, part);
+            doTestScanQuery(qry, parts);
         }
         finally {
             stopAllGrids();
@@ -376,17 +382,35 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /**
      * @param qry Query.
-     * @param part Partition.
+     * @param parts Partitions.
      */
-    protected void doTestScanQuery(QueryCursor<Cache.Entry<Integer, Integer>> qry, int part) {
+    protected void doTestScanQuery(QueryCursor<Cache.Entry<Integer, Integer>> qry, int... parts) {
         Collection<Cache.Entry<Integer, Integer>> qryEntries = qry.getAll();
 
-        Map<Integer, Integer> map = entries.get(part);
+        int totalCnt = 0;
 
-        for (Cache.Entry<Integer, Integer> e : qryEntries)
-            assertEquals(map.get(e.getKey()), e.getValue());
+        for (int part : parts) {
+            Map<Integer, Integer> map = entries.get(part);
 
-        assertEquals("Invalid number of entries for partition: " + part, map.size(), qryEntries.size());
+            Set<Map.Entry<Integer, Integer>> set = map.entrySet();
+
+            int cnt = 0;
+
+            for (Map.Entry<Integer, Integer> entry : set)
+                for (Cache.Entry<Integer, Integer> e : qryEntries) {
+                    if (entry.getKey().equals(e.getKey())) {
+                        assertEquals(entry.getValue(), e.getValue());
+
+                        cnt++;
+                    }
+                }
+
+            totalCnt += cnt;
+
+            assertEquals("Invalid number of entries for partition: " + part, map.size(), cnt);
+        }
+
+        assertEquals("Invalid total number of entries", totalCnt, qryEntries.size());
     }
 
     /**
@@ -417,6 +441,31 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      */
     private static int anyLocalPartition(GridCacheContext<?, ?> cctx) {
         return F.first(cctx.topology().localPartitions()).id();
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param cnt
+     * @return
+     */
+    private static int[] randomLocalPartitions(GridCacheContext<?, ?> cctx, int cnt) {
+        List<GridDhtLocalPartition> lps = cctx.topology().localPartitions();
+
+        Set<Integer> parts = new HashSet<>();
+
+        while(parts.size() != cnt)
+            parts.add(lps.get(ThreadLocalRandom8.current().nextInt(0, lps.size())).id());
+
+        int[] ret = new int[parts.size()];
+
+        int c = 0;
+
+        Iterator<Integer> it = parts.iterator();
+
+        while(it.hasNext())
+            ret[c++] = it.next();
+
+        return ret;
     }
 
     /**

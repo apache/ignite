@@ -6713,6 +6713,24 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Converts primitive integer array to {@link Integer} set.
+     *
+     * @param arr Array.
+     * @return Integer set.
+     */
+    public static Set<Integer> toIntegerSet(int... arr) {
+        if (arr == null)
+            return Collections.emptySet();
+
+        Set<Integer> set = new HashSet<>(arr.length);
+
+        for (int i : arr)
+            set.add(i);
+
+        return set;
+    }
+
+    /**
      * @param arr1 Array 1.
      * @param arr2 Array 2.
      */
