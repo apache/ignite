@@ -47,7 +47,9 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
+import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.platform.dotnet.*;
+import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -197,6 +199,17 @@ public class PlatformConfigurationUtils {
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
+
+        int pluginCnt = in.readInt();
+
+        if (pluginCnt > 0) {
+            CachePluginConfiguration[] plugins = new CachePluginConfiguration[pluginCnt];
+
+            for (int i = 0; i < pluginCnt; i++)
+                plugins[i] = new PlatformCachePluginConfiguration(in.readObjectDetached());
+
+            ccfg.setPluginConfigurations(plugins);
+        }
 
         return ccfg;
     }
@@ -829,6 +842,23 @@ public class PlatformConfigurationUtils {
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
+
+        CachePluginConfiguration[] plugins = ccfg.getPluginConfigurations();
+        if (plugins != null) {
+            int cnt = 0;
+
+            for (CachePluginConfiguration cfg : plugins) {
+                if (cfg instanceof PlatformCachePluginConfiguration)
+                    cnt++;
+            }
+
+            writer.writeInt(cnt);
+
+            for (CachePluginConfiguration cfg : plugins) {
+                if (cfg instanceof PlatformCachePluginConfiguration)
+                    writer.writeObject(((PlatformCachePluginConfiguration)cfg).nativeCfg());
+            }
+        }
     }
 
     /**
