@@ -861,7 +861,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(Collection<ClusterNode> nodes,
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
-        @Nullable Map<UUID, Map<Integer, Long>> partHistSuppliers,
+        @Nullable Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers,
         final boolean compress) {
         final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
             lastVer,

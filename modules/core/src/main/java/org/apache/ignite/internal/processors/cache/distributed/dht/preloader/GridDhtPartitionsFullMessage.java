@@ -70,7 +70,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Partitions history suppliers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<UUID, Map<Integer, Long>> partHistSuppliers;
+    private Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers;
 
     /** Serialized partitions history suppliers. */
     private byte[] partHistSuppliersBytes;
@@ -105,12 +105,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable Map<UUID, Map<Integer, Long>> partHistSuppliers) {
+        @Nullable Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers) {
         super(id, lastVer);
 
         assert id == null || topVer.equals(id.topologyVersion());
 
         this.topVer = topVer;
+        this.partHistSuppliers = partHistSuppliers;
     }
 
     /**
@@ -186,6 +187,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         }
 
         return Collections.emptyMap();
+    }
+
+    public Map<UUID, Map<T2<Integer, Integer>, Long>> partitionHistorySuppliers() {
+        if (partHistSuppliers == null)
+            return Collections.emptyMap();
+
+        return partHistSuppliers;
     }
 
     /**

@@ -231,6 +231,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return Collections.emptyMap();
     }
 
+    public boolean reserveHistory(int cacheId, int partId, long cntr) {
+        return false;
+    }
+
     /**
      * Release reserved update history.
      *
