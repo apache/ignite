@@ -7961,6 +7961,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Check that field exist.
+     *
+     * @param obj Object.
+     * @param fieldName Field name.
+     * @return Boolean flag.
+     */
+    public static boolean hasField(Object obj, String fieldName){
+        try {
+            field(obj, fieldName);
+
+            return true;
+        }catch (IgniteException e){
+            return false;
+        }
+    }
+    /**
      * Gets object field offset.
      *
      * @param cls Object class.
