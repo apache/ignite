@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
@@ -87,7 +86,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private GridDhtPartitionFullMap node2part;
 
     /** Partition to node map. */
-    private volatile Set<ClusterNode>[] part2node;
+    private volatile List<ClusterNode>[] part2node;
 
     /** */
     private GridDhtPartitionExchangeId lastExchangeId;
@@ -129,7 +128,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         log = cctx.logger(getClass());
 
         locParts = new AtomicReferenceArray<>(cctx.config().getAffinity().partitions());
-        part2node = (Set<ClusterNode>[])new Set[cctx.config().getAffinity().partitions()];
+        part2node = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
     }
 
     /**
@@ -211,7 +210,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                             break;
                         }
-                        catch (IgniteFutureTimeoutCheckedException e) {
+                        catch (IgniteFutureTimeoutCheckedException ignored) {
                             if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
                                 U.warn(log, "Failed to wait for partition eviction [" +
                                     "topVer=" + topVer +
@@ -838,7 +837,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         List<ClusterNode> nodes = null;
 
-        Collection<ClusterNode> nodeIds = part2node[p];
+        List<ClusterNode>[] part2node0 = part2node;
+        Collection<ClusterNode> nodeIds = part2node0[p];
 
         if (!F.isEmpty(nodeIds)) {
             for (ClusterNode node : nodeIds) {
@@ -880,7 +880,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             ", node2part=" + node2part +
             ", cache=" + cctx.name() + ']';
 
-        Collection<ClusterNode> partNodes = part2node[p];
+        List<ClusterNode>[] part2node0 = part2node;
+        Collection<ClusterNode> partNodes = part2node0[p];
 
         // Node IDs can be null if both, primary and backup, nodes disappear.
         int size = partNodes == null ? 0 : partNodes.size();
@@ -1064,32 +1065,25 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             node2part = partMap;
 
-            Set<ClusterNode>[] part2node0 = (Set<ClusterNode>[])new Set[part2node.length];
-
-            for (int i = 0; i < part2node.length; i++) {
-                if (part2node[i] != null) {
-                    Set<ClusterNode> partNodes = U.newHashSet(3);
-                    partNodes.addAll(part2node[i]);
-                    part2node0[i] = partNodes;
-                }
-            }
+            List<ClusterNode>[] part2node0 = part2nodeCopy();
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : partMap.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
-                    Set<ClusterNode> partNodes = part2node0[p];
+                    List<ClusterNode> partNodes = part2node0[p];
 
                     if (partNodes == null) {
                         // Initialize HashSet to size 3 in anticipation that there won't be
                         // more than 3 nodes per partitions.
-                        partNodes = U.newHashSet(3);
+                        partNodes = new ArrayList<>(3);
                         part2node0[p] = partNodes;
                     }
 
-                    partNodes.add(node(e.getKey()));
+                    if (!partNodes.contains(node(e.getKey())))
+                        partNodes.add(node(e.getKey()));
                 }
             }
 
-            System.arraycopy(part2node0, 0, part2node, 0, part2node0.length);
+            part2node = part2node0;
 
             boolean changed = false;
 
@@ -1187,28 +1181,21 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (changed) {
                 node2part.put(parts.nodeId(), parts);
 
-                Set<ClusterNode>[] part2node0 = (Set<ClusterNode>[])new Set[part2node.length];
-
-                for (int i = 0; i < part2node.length; i++) {
-                    if (part2node[i] != null) {
-                        Set<ClusterNode> partNodes = U.newHashSet(3);
-                        partNodes.addAll(part2node[i]);
-                        part2node0[i] = partNodes;
-                    }
-                }
+                List<ClusterNode>[] part2node0 = part2nodeCopy();
 
                 // Add new mappings.
                 for (Integer p : parts.keySet()) {
-                    Set<ClusterNode> partNodes = part2node0[p];
+                    List<ClusterNode> partNodes = part2node0[p];
 
                     if (partNodes == null) {
                         // Initialize HashSet to size 3 in anticipation that there won't be
                         // more than 3 nodes per partition.
-                        partNodes = U.newHashSet(3);
+                        partNodes = new ArrayList(3);
                         part2node0[p] = partNodes;
                     }
 
-                    partNodes.add(node(parts.nodeId()));
+                    if (!partNodes.contains(node(parts.nodeId())))
+                        partNodes.add(node(parts.nodeId()));
                 }
 
                 // Remove obsolete mappings.
@@ -1217,14 +1204,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         if (parts.containsKey(p))
                             continue;
 
-                        Set<ClusterNode> partNodes = part2node0[p];
+                        List<ClusterNode> partNodes = part2node0[p];
 
                         if (partNodes != null)
                             partNodes.remove(node(parts.nodeId()));
                     }
                 }
 
-                System.arraycopy(part2node0, 0, part2node, 0, part2node0.length);
+                part2node = part2node0;
             }
             else
                 cur.updateSequence(parts.updateSequence(), parts.topologyVersion());
@@ -1423,13 +1410,25 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         map.put(p, state);
 
-        Set<ClusterNode> ids = part2node[p];
+        lock.writeLock().lock();
+        try {
+            List<ClusterNode>[] part2node0 = part2nodeCopy();
 
-        if (ids == null) {
-            ids = U.newHashSet(3);
-            part2node[p] = ids;
+            List<ClusterNode> ids = part2node0[p];
+
+            if (ids == null) {
+                ids = new ArrayList<>(3);
+                part2node0[p] = ids;
+            }
+
+            if (!ids.contains(cctx.localNode()))
+                ids.add(cctx.localNode());
+
+            part2node = part2node0;
         }
-        ids.add(cctx.localNode());
+        finally {
+            lock.writeLock().unlock();
+        }
 
         return updateSeq;
     }
@@ -1459,15 +1458,23 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             GridDhtPartitionMap2 parts = node2part.remove(nodeId);
 
             if (parts != null) {
-                for (Integer p : parts.keySet()) {
-                    Set<ClusterNode> partNodes = part2node[p];
+                lock.writeLock().lock();
+                try {
+                    List<ClusterNode>[] part2node0 = part2nodeCopy();
+                    for (Integer p : parts.keySet()) {
+                        List<ClusterNode> partNodes = part2node0[p];
 
-                    if (partNodes != null) {
-                        partNodes.remove(node(nodeId));
+                        if (partNodes != null) {
+                            partNodes.remove(node(nodeId));
 
-                        if (partNodes.isEmpty())
-                            part2node[p] = null;
+                            if (partNodes.isEmpty())
+                                part2node0[p] = null;
+                        }
                     }
+                    part2node = part2node0;
+                }
+                finally {
+                    lock.writeLock().unlock();
                 }
             }
 
@@ -1697,7 +1704,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
-                    Set<ClusterNode> partNodes = part2node[p];
+                    List<ClusterNode> partNodes = part2node[p];
 
                     assert partNodes != null : "Failed consistency check [part=" + p + ", nodeId=" + e.getKey() + ']';
                     assert partNodes.contains(node(e.getKey())) : "Failed consistency check [part=" + p + ", nodeId=" +
@@ -1705,8 +1712,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 }
             }
 
-            for (int p = 0; p < part2node.length; p++) {
-                Set<ClusterNode> partNodes = part2node[p];
+            List<ClusterNode>[] part2node0 = part2node;
+
+            for (int p = 0; p < part2node0.length; p++) {
+                List<ClusterNode> partNodes = part2node0[p];
                 if (F.isEmpty(partNodes))
                     continue;
 
@@ -1724,6 +1733,20 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** */
     private ClusterNode node(UUID id) {
         return cctx.discovery().node(id);
+    }
+
+    /**
+     * @return Copy of part2node array for copy-on-write operations.
+     */
+    private List<ClusterNode>[] part2nodeCopy() {
+        List<ClusterNode>[] part2node0 = (List<ClusterNode>[])new List[part2node.length];
+
+        for (int i = 0; i < part2node.length; i++) {
+            if (part2node[i] != null)
+                part2node0[i] = new ArrayList<>(part2node[i]);
+
+        }
+        return part2node0;
     }
 
     /**
