@@ -125,7 +125,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                                 break;
                             }
-                            catch (GridCacheEntryRemovedException e) {
+                            catch (GridCacheEntryRemovedException ignored) {
                                 entry = ctx.cache().entryEx(entry.key(), tx.topologyVersion());
 
                                 txEntry.cached(entry);

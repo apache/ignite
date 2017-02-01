@@ -96,7 +96,7 @@ class WriteFileOperation extends FileOperation {
     /** {@inheritDoc} */
     @Override public void handleFile(String strPath) throws Exception {
         IgfsPath path = new IgfsPath(strPath);
-        IgfsOutputStream out = null;
+        IgfsOutputStream out;
 
         try {
             out = fs.create(path, false);
@@ -154,7 +154,7 @@ class ReadFileOperation extends FileOperation {
     /** {@inheritDoc} */
     @Override public void handleFile(String strPath) throws Exception {
         IgfsPath path = new IgfsPath(strPath);
-        IgfsInputStream in = null;
+        IgfsInputStream in;
 
         try {
             in = fs.open(path);

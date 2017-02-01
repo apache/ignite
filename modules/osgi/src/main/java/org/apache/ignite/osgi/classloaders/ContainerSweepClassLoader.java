@@ -77,7 +77,7 @@ public class ContainerSweepClassLoader extends BundleDelegatingClassLoader {
             cls = super.loadClass(name, resolve);
             return cls;
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException ignored) {
             // Continue.
         }
 
@@ -119,7 +119,7 @@ public class ContainerSweepClassLoader extends BundleDelegatingClassLoader {
                 cls = b.loadClass(name);
                 break;
             }
-            catch (ClassNotFoundException e) {
+            catch (ClassNotFoundException ignored) {
                 // No-op.
             }
         }

@@ -445,7 +445,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             try {
                 onDone(toEntryInfo(fut.get()));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException ignored) {
                 assert false; // Should never happen.
             }
         }

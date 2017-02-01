@@ -90,7 +90,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
 
             mbean.getMBeanInfo();
         }
-        catch (AssertionError e) {
+        catch (AssertionError ignored) {
             return;
         }
 
@@ -109,7 +109,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
 
             mbean.getMBeanInfo();
         }
-        catch (AssertionError e) {
+        catch (AssertionError ignored) {
             return;
         }
 
@@ -128,7 +128,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
 
             mbean.getMBeanInfo();
         }
-        catch (AssertionError e) {
+        catch (AssertionError ignored) {
             return;
         }
 
@@ -147,7 +147,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
 
             mbean.getMBeanInfo();
         }
-        catch (AssertionError e) {
+        catch (AssertionError ignored) {
             return;
         }
 

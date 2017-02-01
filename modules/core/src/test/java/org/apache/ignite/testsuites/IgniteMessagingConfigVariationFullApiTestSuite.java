@@ -27,8 +27,6 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
 
-import javax.cache.configuration.Factory;
-
 /**
  * Test sute for Messaging process.
  */

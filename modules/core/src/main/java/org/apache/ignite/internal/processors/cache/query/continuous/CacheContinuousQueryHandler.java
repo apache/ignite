@@ -1253,7 +1253,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                 try {
                                     cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
                                 }
-                                catch (ClusterTopologyCheckedException e) {
+                                catch (ClusterTopologyCheckedException ignored) {
                                     IgniteLogger log = ctx.log(getClass());
 
                                     if (log.isDebugEnabled())
