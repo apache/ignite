@@ -1262,13 +1262,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
             if (!prepared.isQuery()) {
-                if (prepared instanceof Merge || prepared instanceof Insert ||
-                    prepared instanceof Update || prepared instanceof Delete) {
+                if (dmlProc.isDmlStatement(prepared)) {
                     try {
                         return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
+                        throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry + ", params=" +
                             Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
@@ -1277,7 +1276,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         return ddlProc.runDdlStatement(cctx, prepared);
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
+                        throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ", params=" +
                             Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
