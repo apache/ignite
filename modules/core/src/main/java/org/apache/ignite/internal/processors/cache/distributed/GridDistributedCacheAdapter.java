@@ -282,7 +282,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
         PeekModes modes = parsePeekModes(peekModes, true);
 
         long size = 0;
@@ -296,9 +296,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             IgniteCacheOffheapManager offheap = ctx.offheap();
 
-            if (ctx.affinity().primary(ctx.localNode(), partition, topVer) && modes.primary ||
-                ctx.affinity().backup(ctx.localNode(), partition, topVer) && modes.backup)
-                size += offheap.entriesCount(partition);
+            if (ctx.affinity().primaryByPartition(ctx.localNode(), part, topVer) && modes.primary ||
+                ctx.affinity().backupByPartition(ctx.localNode(), part, topVer) && modes.backup)
+                size += offheap.entriesCount(part);
         }
 
         return size;

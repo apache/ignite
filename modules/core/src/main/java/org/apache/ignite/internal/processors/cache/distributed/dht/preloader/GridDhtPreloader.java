@@ -349,7 +349,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Picked owners.
      */
     private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
+        Collection<ClusterNode> affNodes = cctx.affinity().nodesByPartition(p, topVer);
 
         int affCnt = affNodes.size();
 

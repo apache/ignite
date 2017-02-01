@@ -559,7 +559,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         else
             val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
-        ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
+        ClusterNode primary = cctx.affinity().primaryByKey(cacheKey, topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +

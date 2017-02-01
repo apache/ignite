@@ -370,7 +370,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
             for (Cache.Entry e : grid(i).context().cache().internalCache(cctx.name()).localEntries(modes)) {
                 Object key = e.getKey();
 
-                if (aff.primary(grid(i).localNode(), key, AffinityTopologyVersion.NONE)
+                if (aff.primaryByKey(grid(i).localNode(), key, AffinityTopologyVersion.NONE)
                     && key instanceof GridCacheQueueHeaderKey)
                     return i;
             }

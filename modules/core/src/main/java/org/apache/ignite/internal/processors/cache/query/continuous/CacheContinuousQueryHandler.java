@@ -862,7 +862,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 GridCacheAffinityManager aff = cctx.affinity();
 
                 if (initUpdCntrsPerNode != null) {
-                    for (ClusterNode node : aff.nodes(partId, initTopVer)) {
+                    for (ClusterNode node : aff.nodesByPartition(partId, initTopVer)) {
                         Map<Integer, T2<Long, Long>> map = initUpdCntrsPerNode.get(node.id());
 
                         if (map != null) {

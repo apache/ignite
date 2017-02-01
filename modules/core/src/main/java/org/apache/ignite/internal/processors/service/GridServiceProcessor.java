@@ -1668,7 +1668,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         while (it.hasNext()) {
                             Cache.Entry<Object, Object> e = it.next();
 
-                            if (cache.context().affinity().primary(ctx.grid().localNode(), e.getKey(), topVer)) {
+                            if (cache.context().affinity().primaryByKey(ctx.grid().localNode(), e.getKey(), topVer)) {
                                 String name = ((GridServiceAssignmentsKey)e.getKey()).name();
 
                                 try {

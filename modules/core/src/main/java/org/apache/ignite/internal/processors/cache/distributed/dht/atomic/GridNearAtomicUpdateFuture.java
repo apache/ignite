@@ -949,7 +949,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         else
             val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
-        ClusterNode primary = cctx.affinity().primary(cacheKey.partition(), topVer);
+        ClusterNode primary = cctx.affinity().primaryByPartition(cacheKey.partition(), topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
@@ -1001,7 +1001,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         // If we can send updates in parallel - do it.
         return fastMap ? cctx.topology().nodes(affMgr.partition(key), topVer) :
-            Collections.singletonList(affMgr.primary(key, topVer));
+            Collections.singletonList(affMgr.primaryByKey(key, topVer));
     }
 
     /** {@inheritDoc} */
