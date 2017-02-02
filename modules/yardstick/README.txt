@@ -8,25 +8,29 @@ Building the project
 Please look for the building instructions in `DEVNOTES.txt`
 
 
-Running Ignite Benchmarks
-=========================
+Running Ignite Benchmarks on local machine
+==========================================
 
 The simplest way to run benchmarks is running following command in `benchmarks` directory:
 
 ./bin/benchmark-run-all.sh config/benchmark-atomic-put.properties
 
-Without any additional changes this command will run the PutBenchmark on your local machine. By default it takes
-1 minute to warm-up and 5 minutes to run a benchmark, so after 6 minutes the collected results should be in
+Without any additional changes this command will run the PutBenchmark on your local machine. You can find results in
 `results-DATE-TIME` directory.
+
 NOTE: You need to configure ssh key-based authentication to localhost for running benchmarks on your local machine.
 
-For running benchmarks on remote hosts you need to upload Ignite-Yardstick to each one of your remote hosts.
+
+Running Ignite Benchmarks on remote hosts
+=========================================
+
+For running Ignite benchmarks on remote hosts you need to upload Ignite-Yardstick to each one of your remote hosts.
 
 NOTE: The path to the uploaded Ignite-Yardstick should be exactly the same on each host.
 
 Then you need to make some changes in config files:
 
-1. You need to comment or delete the 30th
+1. You need to comment or delete the
         <property name="localHost" value="127.0.0.1"/>
 line in `config/ignite-localhost-config.xml` file.
 
@@ -51,7 +55,7 @@ parameter for `./bin/benchmark-run-all.sh` script.
 
 If you run `./bin/benchmark-run-all.sh` command without any parameters and without changing any config files
 it will take as a parameter default config file `config/benchmark.properties` and run all the provided benchmarks on
-your local machine. By default this task takes about 3 hours to complete.
+your local machine.
 
 Provided Benchmarks
 ===================
