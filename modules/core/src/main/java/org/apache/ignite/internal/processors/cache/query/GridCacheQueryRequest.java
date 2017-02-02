@@ -125,6 +125,9 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /** Partition. */
     private int part = -1;
 
+    /** Partitions. */
+    private int[] parts;
+
     /** */
     private AffinityTopologyVersion topVer;
 
@@ -244,6 +247,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
+        @Nullable int[] parts,
         boolean addDepInfo
     ) {
         assert type != null || fields;
@@ -269,6 +273,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
+        this.parts = parts;
         this.addDepInfo = addDepInfo;
     }
 
@@ -484,6 +489,13 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         return part;
     }
 
+    /**
+     * @return partition.
+     */
+    public int[] partitions() {
+        return parts;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -619,6 +631,11 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
                 writer.incrementState();
 
+            case 23:
+                if (!writer.writeIntArray("parts", parts))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -799,6 +816,14 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
                 reader.incrementState();
 
+            case 23:
+                parts = reader.readIntArray("parts");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridCacheQueryRequest.class);
@@ -811,7 +836,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 24;
     }
 
     /** {@inheritDoc} */

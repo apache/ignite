@@ -538,7 +538,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (parts != null && !cctx.isLocal())
             return new ScanQueryFallbackClosableIterator(parts, this, qryMgr, cctx);
         else {
-            // TODO FIXME local if all partitions are local.
             boolean loc = nodes.size() == 1 && F.first(nodes).node().id().equals(cctx.localNodeId());
 
             return loc ? qryMgr.scanQueryLocal(this, true) : qryMgr.scanQueryDistributed(this, nodes);

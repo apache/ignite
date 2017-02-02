@@ -272,7 +272,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 null,
                 req.keyValueFilter(),
-                req.partition() == -1 ? null : new int[] {req.partition()},
+                req.partitions(),
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
@@ -541,7 +541,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 clsName,
                 qry.query().scanFilter(),
-                qry.query().partitions()[0],
+                null,
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -552,6 +552,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
+                qry.query().partitions(),
                 // Force deployment anyway if scan query is used.
                 cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
 
@@ -737,6 +738,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
+                null,
                 cctx.deploymentEnabled());
 
             addQueryFuture(req.id(), fut);

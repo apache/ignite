@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -45,13 +42,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryPartSet;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -61,7 +57,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Tests partition scan query fallback.
@@ -140,9 +135,11 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            int[] parts = randomLocalPartitions(cache.context(), 3);
+            GridCacheQueryPartSet pSet = randomNodePartitions(cache.context(), ignite.cluster().localNode(), 3);
 
-            log().info("Partitions: " + Arrays.toString(parts));
+            log().info("Partitions: " + pSet.partitions());
+
+            int[] parts = U.toIntArray(pSet.partitions());
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
                 cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
@@ -169,16 +166,16 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            IgniteBiTuple<Integer, UUID> tup = remotePartition(cache.context());
+            GridCacheQueryPartSet pSet = randomNodePartitions(cache.context(), F.rand(ignite.cluster().forRemotes().nodes()), 3);
 
-            int part = tup.get1();
+            expNodeId = pSet.node().id();
 
-            expNodeId = tup.get2();
+            int[] parts = U.toIntArray(pSet.partitions());
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
-                cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
+                cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
 
-            doTestScanQuery(qry, part);
+            doTestScanQuery(qry, parts);
         }
         finally {
             stopAllGrids();
@@ -445,43 +442,21 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /**
      * @param cctx Cache context.
-     * @param cnt
-     * @return
+     * @param node Cluster node owning the partitions.
+     * @param cnt Count.
+     * @return Partition set.
      */
-    private static int[] randomLocalPartitions(GridCacheContext<?, ?> cctx, int cnt) {
-        List<GridDhtLocalPartition> lps = cctx.topology().localPartitions();
-
-        Set<Integer> parts = new HashSet<>();
-
-        while(parts.size() != cnt)
-            parts.add(lps.get(ThreadLocalRandom8.current().nextInt(0, lps.size())).id());
-
-        int[] ret = new int[parts.size()];
-
-        int c = 0;
-
-        Iterator<Integer> it = parts.iterator();
-
-        while(it.hasNext())
-            ret[c++] = it.next();
-
-        return ret;
-    }
-
-    /**
-     * @param cctx Cctx.
-     * @return Remote partition.
-     */
-    private IgniteBiTuple<Integer, UUID> remotePartition(final GridCacheContext cctx) {
-        ClusterNode node = F.first(cctx.kernalContext().grid().cluster().forRemotes().nodes());
-
+    private static GridCacheQueryPartSet randomNodePartitions(final GridCacheContext cctx, ClusterNode node, int cnt) {
         GridCacheAffinityManager affMgr = cctx.affinity();
 
-        AffinityTopologyVersion topVer = affMgr.affinityTopologyVersion();
+        Set<Integer> parts = affMgr.primaryPartitions(node.id(), affMgr.affinityTopologyVersion());
 
-        Set<Integer> parts = affMgr.primaryPartitions(node.id(), topVer);
+        GridCacheQueryPartSet pSet = new GridCacheQueryPartSet(node);
 
-        return new IgniteBiTuple<>(F.first(parts), node.id());
+        while(pSet.size() != cnt)
+            pSet.add(F.rand(parts));
+
+        return pSet;
     }
 
     /**

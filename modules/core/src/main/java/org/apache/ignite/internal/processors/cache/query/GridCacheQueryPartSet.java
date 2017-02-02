@@ -34,16 +34,25 @@ import org.apache.ignite.lang.IgniteClosure;
  */
 public class GridCacheQueryPartSet {
     /** */
-    private ClusterNode node;
+    private final ClusterNode node;
 
     /** Partitions. */
-    private Collection<Integer> parts = new LinkedList<>();
+    private final Collection<Integer> parts;
 
     /**
      * @param node Node.
      */
-    GridCacheQueryPartSet(ClusterNode node) {
+    public GridCacheQueryPartSet(ClusterNode node) {
+        this(node, new LinkedList<Integer>());
+    }
+
+    /**
+     * @param node Node.
+     */
+    public GridCacheQueryPartSet(ClusterNode node, Collection<Integer> parts) {
         this.node = node;
+
+        this.parts = parts;
     }
 
     /**
