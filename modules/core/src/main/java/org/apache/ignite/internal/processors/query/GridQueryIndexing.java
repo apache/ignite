@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -232,20 +230,16 @@ public interface GridQueryIndexing {
      * Rebuilds all indexes of given type from hash index.
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public void rebuildIndexesFromHash(@Nullable String spaceName,
-        GridQueryTypeDescriptor type) throws IgniteCheckedException;
+    public void rebuildIndexesFromHash(@Nullable String spaceName) throws IgniteCheckedException;
 
     /**
      * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
-     * @throws IgniteCheckedException If failed.
      */
-    public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type);
+    public void markForRebuildFromHash(@Nullable String spaceName);
 
     /**
      * Returns backup filter.

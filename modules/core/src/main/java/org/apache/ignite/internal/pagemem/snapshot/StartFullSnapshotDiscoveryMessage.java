@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -143,7 +145,14 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullSnapshotAckDiscoveryMessage(globalSnapshotId, fullSnapshot, lastFullSnapshotIdForCache, cacheNames, err, initiatorId, msg);
+        return new StartFullSnapshotAckDiscoveryMessage(
+            globalSnapshotId,
+            fullSnapshot,
+            lastFullSnapshotIdForCache,
+            cacheNames,
+            err,
+            initiatorId,
+            msg);
     }
 
     /** {@inheritDoc} */
@@ -156,5 +165,10 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
      */
     public void fullSnapshot(boolean full) {
         fullSnapshot = full;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StartFullSnapshotDiscoveryMessage.class, this);
     }
 }

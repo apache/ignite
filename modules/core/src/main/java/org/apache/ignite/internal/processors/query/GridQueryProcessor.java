@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.concurrent.TimeUnit;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -70,9 +70,8 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -91,7 +90,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -598,7 +596,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return rebuildIndexes(space, typesByName.get(new TypeName(space, valTypeName)), false);
+            return rebuildIndexes(space, typesByName.get(new TypeName(space, valTypeName)));
         }
         finally {
             busyLock.leaveBusy();
@@ -610,8 +608,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc,
-        final boolean fromHash) {
+    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
@@ -620,16 +617,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 
-        if (fromHash)
-            idx.markForRebuildFromHash(space, desc);
-
         GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
             @Override protected void body() {
                 try {
-                    if (fromHash)
-                        idx.rebuildIndexesFromHash(space, desc);
-                    else
-                        idx.rebuildIndexes(space, desc);
+                    idx.rebuildIndexes(space, desc);
 
                     fut.onDone();
                 }
@@ -637,7 +628,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     fut.onDone(e);
                 }
                 catch (Throwable e) {
-                    log.error("Failed to rebuild indexes for type: " + desc.name(), e);
+                    U.error(log, "Failed to rebuild indexes for type [space=" + space +
+                        ", name=" + desc.name() + ']', e);
 
                     fut.onDone(e);
 
@@ -668,7 +660,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue(), false));
+                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
 
             fut.markInitialized();
 
@@ -682,22 +674,42 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Rebuilds indexes for provided caches from corresponding hash indexes.
      *
-     * @param cacheIds Cache IDs.
+     * @param cacheName Cache name.
      * @return Future that will be completed when rebuilding is finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(final String cacheName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
         try {
-            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
+            final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 
-            for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().space)))
-                    fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue(), true));
-            }
+            idx.markForRebuildFromHash(cacheName);
 
-            fut.markInitialized();
+            GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
+                @Override protected void body() {
+                    try {
+                        idx.rebuildIndexesFromHash(cacheName);
+
+                        fut.onDone();
+                    }
+                    catch (Exception e) {
+                        fut.onDone(e);
+                    }
+                    catch (Throwable e) {
+                        U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName + ']');
+
+                        fut.onDone(e);
+
+                        if (e instanceof Error)
+                            throw e;
+                    }
+                }
+            };
+
+            fut.setWorker(w);
+
+            execSvc.execute(w);
 
             return fut;
         }
