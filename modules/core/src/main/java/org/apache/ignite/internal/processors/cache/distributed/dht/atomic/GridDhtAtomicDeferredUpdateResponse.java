@@ -140,7 +140,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 37;
     }
 

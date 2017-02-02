@@ -138,7 +138,7 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -22;
     }
 

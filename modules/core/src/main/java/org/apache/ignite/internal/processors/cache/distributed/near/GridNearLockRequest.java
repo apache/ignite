@@ -620,7 +620,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 51;
     }
 

@@ -345,7 +345,7 @@ public class GridIoUserMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 9;
     }
 

@@ -436,7 +436,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 23;
     }
 

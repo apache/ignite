@@ -163,7 +163,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 36;
     }
 

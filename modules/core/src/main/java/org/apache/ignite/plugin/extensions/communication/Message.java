@@ -47,7 +47,7 @@ public interface Message extends Serializable {
      *
      * @return Message type.
      */
-    public byte directType();
+    public short directType();
 
     /**
      * Gets fields count.

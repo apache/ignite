@@ -31,8 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * H2 Value message factory.
  */
 public class GridH2ValueMessageFactory implements MessageFactory {
-    /** {@inheritDoc} */
-    @Nullable @Override public Message create(byte type) {
+    /** {@inheritDoc}
+     * @param type*/
+    @Nullable @Override public Message create(short type) {
         switch (type) {
             case -4:
                 return GridH2Null.INSTANCE;

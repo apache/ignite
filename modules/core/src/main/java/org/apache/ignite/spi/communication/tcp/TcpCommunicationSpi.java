@@ -1946,7 +1946,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         if (impl == null)
                             impl = getSpiContext().messageFactory();
 
@@ -3097,7 +3097,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (recovery != null) {
                         HandshakeMessage msg;
 
-                        int msgSize = 33;
+                        int msgSize = 34;
 
                         if (handshakeConnIdx != null) {
                             msg = new HandshakeMessage2(locNode.id(),
@@ -3469,7 +3469,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         if (impl == null)
                             impl = getSpiContext().messageFactory();
 
@@ -4015,7 +4015,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             if (buf.remaining() < 33)
                 return false;
 
-            buf.put(directType());
+            buf.putShort(directType());
 
             byte[] bytes = U.uuidToBytes(nodeId);
 
@@ -4049,7 +4049,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return HANDSHAKE_MSG_TYPE;
         }
 
@@ -4095,7 +4095,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return -44;
         }
 
@@ -4196,7 +4196,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return RECOVERY_LAST_ID_MSG_TYPE;
         }
 
@@ -4276,7 +4276,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return NODE_ID_MSG_TYPE;
         }
 

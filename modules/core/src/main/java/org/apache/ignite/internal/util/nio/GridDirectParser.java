@@ -20,8 +20,10 @@ package org.apache.ignite.internal.util.nio;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -72,8 +74,14 @@ public class GridDirectParser implements GridNioParser {
         Message msg = ses.removeMeta(MSG_META_KEY);
 
         try {
-            if (msg == null && buf.hasRemaining())
-                msg = msgFactory.create(buf.get());
+            if (msg == null && buf.hasRemaining()) {
+                buf.order(GridUnsafe.BIG_ENDIAN ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+
+                short type = buf.getShort();
+
+                System.out.println("+++ READ " + Integer.toHexString(type));
+                msg = msgFactory.create(type);
+            }
 
             boolean finished = false;
 

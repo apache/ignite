@@ -168,8 +168,9 @@ public class GridIoMessageFactory implements MessageFactory {
         this.ext = ext;
     }
 
-    /** {@inheritDoc} */
-    @Override public Message create(byte type) {
+    /** {@inheritDoc}
+     * @param type*/
+    @Override public Message create(short type) {
         Message msg = null;
 
         switch (type) {

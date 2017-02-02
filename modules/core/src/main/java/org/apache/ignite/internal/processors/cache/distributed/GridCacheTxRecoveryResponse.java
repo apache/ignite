@@ -193,7 +193,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 17;
     }
 

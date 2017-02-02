@@ -631,7 +631,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 41;
     }
 

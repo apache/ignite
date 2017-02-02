@@ -346,7 +346,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 59;
     }
 

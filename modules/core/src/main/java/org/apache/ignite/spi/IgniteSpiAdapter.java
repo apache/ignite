@@ -727,7 +727,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
