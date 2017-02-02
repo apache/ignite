@@ -240,7 +240,7 @@ public class ClassesGenerator {
                             if (!Modifier.isPublic(cons.getModifiers()))
                                 errs.add("Default constructor in Externalizable class is not public: " + cls.getName());
                         }
-                        catch (NoSuchMethodException e) {
+                        catch (NoSuchMethodException ignored) {
                             errs.add("No default constructor in Externalizable class: " + cls.getName());
                         }
                     }

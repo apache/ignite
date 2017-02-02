@@ -274,7 +274,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             return true;
 
         // Check if we are on the backup node.
-        return !cacheCtx.affinity().backups(key, topVer).contains(cctx.localNode());
+        return !cacheCtx.affinity().backupsByKey(key, topVer).contains(cctx.localNode());
     }
 
     /** {@inheritDoc} */

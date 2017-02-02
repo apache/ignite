@@ -205,17 +205,17 @@ BOOST_AUTO_TEST_CASE(PrimitiveGuid)
 BOOST_AUTO_TEST_CASE(PrimitiveDate)
 {
     CheckSimpleNP<Date>(Date(0));
-    CheckSimpleNP<Date>(BinaryUtils::MakeDateGmt(1998, 12, 3, 18, 32, 01));
-    CheckSimpleNP<Date>(BinaryUtils::MakeDateGmt(2017, 1, 18, 20, 50, 41));
-    CheckSimpleNP<Date>(BinaryUtils::MakeDateLocal(1998, 12, 3, 18, 32, 01));
+    CheckSimpleNP<Date>(common::MakeDateGmt(1998, 12, 3, 18, 32, 01));
+    CheckSimpleNP<Date>(common::MakeDateGmt(2017, 1, 18, 20, 50, 41));
+    CheckSimpleNP<Date>(common::MakeDateLocal(1998, 12, 3, 18, 32, 01));
 }
 
 BOOST_AUTO_TEST_CASE(PrimitiveTimestamp)
 {
     CheckSimpleNP<Timestamp>(Timestamp(0));
-    CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(1998, 12, 3, 18, 32, 01, 593846589));
-    CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampGmt(2017, 1, 18, 20, 50, 41, 920700532));
-    CheckSimpleNP<Timestamp>(BinaryUtils::MakeTimestampLocal(1998, 12, 3, 18, 32, 01, 2385));
+    CheckSimpleNP<Timestamp>(common::MakeTimestampGmt(1998, 12, 3, 18, 32, 01, 593846589));
+    CheckSimpleNP<Timestamp>(common::MakeTimestampGmt(2017, 1, 18, 20, 50, 41, 920700532));
+    CheckSimpleNP<Timestamp>(common::MakeTimestampLocal(1998, 12, 3, 18, 32, 01, 2385));
 }
 
 #endif //CHECK_BINARY_OBJECT_WITH_PRIMITIVES
@@ -224,8 +224,8 @@ BOOST_AUTO_TEST_CASE(UserTestType)
 {
     CheckSimpleNP(TestType());
     CheckSimpleNP(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
-        BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
+        common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
 }
 
 BOOST_AUTO_TEST_CASE(UserComplexType)
@@ -269,8 +269,8 @@ BOOST_AUTO_TEST_CASE(UserTestTypeGetData)
 {
     CheckData(TestType());
     CheckData(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
-        BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
+        common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
 }
 
 BOOST_AUTO_TEST_CASE(UserBinaryFieldsGetData)

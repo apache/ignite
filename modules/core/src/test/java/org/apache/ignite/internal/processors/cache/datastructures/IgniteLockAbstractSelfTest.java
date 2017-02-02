@@ -500,7 +500,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("Condition not associated with this lock passed as argument.");
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
                 info("IllegalArgumentException thrown as it should be.");
             }
 
@@ -511,7 +511,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("This method should throw exception when lock is not held.");
             }
-            catch (IllegalMonitorStateException e) {
+            catch (IllegalMonitorStateException ignored) {
                 info("IllegalMonitorStateException thrown as it should be.");
             }
 
@@ -529,7 +529,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("Condition not associated with this lock passed as argument.");
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
                 info("IllegalArgumentException thrown as it should be.");
             }
 
@@ -540,7 +540,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("This method should throw exception when lock is not held.");
             }
-            catch (IllegalMonitorStateException e) {
+            catch (IllegalMonitorStateException ignored) {
                 info("IllegalMonitorStateException thrown as it should be.");
             }
 
@@ -604,7 +604,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("This method should throw exception when lock is not held.");
             }
-            catch (IllegalMonitorStateException e) {
+            catch (IllegalMonitorStateException ignored) {
                 info("IllegalMonitorStateException thrown as it should be.");
             }
 
@@ -746,7 +746,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         lock0.lockInterruptibly();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         assertFalse(Thread.currentThread().isInterrupted());
 
                         isInterrupted = true;
@@ -842,7 +842,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                                         l.lockInterruptibly();
                                     }
-                                    catch(IgniteInterruptedException e){
+                                    catch(IgniteInterruptedException ignored){
                                         exceptionThrown.set(true);
                                     }
                                     finally {
@@ -946,7 +946,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         lock0.lock();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
 
                         fail("Lock() method is uninterruptible.");
@@ -1031,7 +1031,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         locked = lock0.tryLock();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
 
                         fail("tryLock() method is uninterruptible.");
@@ -1114,7 +1114,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         locked = lock0.tryLock(100, TimeUnit.MILLISECONDS);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
                     }
                     finally {
@@ -1190,7 +1190,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         cond.awaitUninterruptibly();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
                     }
                     finally {
@@ -1279,7 +1279,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         cond.await();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
                     }
                     finally {

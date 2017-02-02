@@ -130,7 +130,7 @@ public class HadoopExecutorService {
                     return; // Rejected due to shutdown.
             }
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
 
             return;
@@ -217,7 +217,7 @@ public class HadoopExecutorService {
 
                 awaitTimeMillis -= 100;
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 break;
             }
         }
