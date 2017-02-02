@@ -82,6 +82,22 @@ namespace ignite
     {
         namespace binary
         {
+            int32_t BinaryUtils::GetDataHashCode(const void * data, size_t size)
+            {
+                if (data)
+                {
+                    int32_t hash = 1;
+                    const int8_t* bytes = static_cast<const int8_t*>(data);
+
+                    for (int i = 0; i < size; ++i)
+                        hash = 31 * hash + bytes[i];
+
+                    return hash;
+                }
+
+                return 0;
+            }
+
             int8_t BinaryUtils::ReadInt8(InteropInputStream* stream)
             {
                 return stream->ReadInt8();
@@ -316,70 +332,6 @@ namespace ignite
             {
                 stream->WriteInt32(len);
                 stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val), len);
-            }
-
-            Date BinaryUtils::MakeDateGmt(int year, int month, int day, int hour,
-                int min, int sec)
-            {
-                tm date = { 0 };
-
-                date.tm_year = year - 1900;
-                date.tm_mon = month - 1;
-                date.tm_mday = day;
-                date.tm_hour = hour;
-                date.tm_min = min;
-                date.tm_sec = sec;
-
-                return CTmToDate(date);
-            }
-
-            Date BinaryUtils::MakeDateLocal(int year, int month, int day, int hour,
-                int min, int sec)
-            {
-                tm date = { 0 };
-
-                date.tm_year = year - 1900;
-                date.tm_mon = month - 1;
-                date.tm_mday = day;
-                date.tm_hour = hour;
-                date.tm_min = min;
-                date.tm_sec = sec;
-
-                time_t localTime = common::IgniteTimeLocal(date);
-
-                return CTimeToDate(localTime);
-            }
-
-            Timestamp BinaryUtils::MakeTimestampGmt(int year, int month, int day,
-                int hour, int min, int sec, long ns)
-            {
-                tm date = { 0 };
-
-                date.tm_year = year - 1900;
-                date.tm_mon = month - 1;
-                date.tm_mday = day;
-                date.tm_hour = hour;
-                date.tm_min = min;
-                date.tm_sec = sec;
-
-                return CTmToTimestamp(date, ns);
-            }
-
-            Timestamp BinaryUtils::MakeTimestampLocal(int year, int month, int day,
-                int hour, int min, int sec, long ns)
-            {
-                tm date = { 0 };
-
-                date.tm_year = year - 1900;
-                date.tm_mon = month - 1;
-                date.tm_mday = day;
-                date.tm_hour = hour;
-                date.tm_min = min;
-                date.tm_sec = sec;
-
-                time_t localTime = common::IgniteTimeLocal(date);
-
-                return CTimeToTimestamp(localTime, ns);
             }
         }
     }

@@ -200,7 +200,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * successful attempt doesn't mean that node was actually started and joined topology. For large
      * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
-     * <p>
      *
      * @param file Configuration file.
      * @param restart Whether to stop existing nodes. If {@code true}, all existing
@@ -401,7 +400,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * successful attempt doesn't mean that node was actually started and joined topology. For large
      * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
      * node logs for details.
-     * <p>
      *
      * @param hosts Startup parameters.
      * @param dflts Default values.

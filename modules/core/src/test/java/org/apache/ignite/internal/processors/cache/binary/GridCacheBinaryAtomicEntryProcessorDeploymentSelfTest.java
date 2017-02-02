@@ -108,7 +108,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
 
                     fail("Exception did not happened.");
                 }
-                catch (BinaryInvalidTypeException e) {
+                catch (BinaryInvalidTypeException ignored) {
                     // No-op.
                 }
             }
@@ -118,7 +118,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
 
                     fail("Exception did not happened.");
                 }
-                catch (BinaryInvalidTypeException e) {
+                catch (BinaryInvalidTypeException ignored) {
                     // No-op.
                 }
         }

@@ -527,7 +527,7 @@ public class IgniteTxHandler {
                 if (!aff1.equals(aff2))
                     return true;
             }
-            catch (IllegalStateException err) {
+            catch (IllegalStateException ignored) {
                 return true;
             }
         }
@@ -1318,7 +1318,7 @@ public class IgniteTxHandler {
                             else
                                 assert !ctx.discovery().alive(nodeId) : nodeId;
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteCheckedException ignored) {
                             if (txFinishMsgLog.isDebugEnabled()) {
                                 txFinishMsgLog.debug("Failed to gain entry processor return value. [txId=" + nearTxId +
                                     ", dhtTxId=" + req.version() +
@@ -1498,7 +1498,7 @@ public class IgniteTxHandler {
 
                                     break;
                                 }
-                                catch (GridCacheEntryRemovedException e) {
+                                catch (GridCacheEntryRemovedException ignored) {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 

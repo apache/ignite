@@ -283,7 +283,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
-
         if (async)
             return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.executeAsync(taskName, arg)));
         else

@@ -163,7 +163,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
                     List<Event> evts = pullEvents(tstamp, 10);
                     return evts.get(evts.size() - 1).type() == EVT_JOB_FINISHED;
                 }
-                catch (Exception e) {
+                catch (Exception ignored) {
                     return false;
                 }
             }

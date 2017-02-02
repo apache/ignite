@@ -1813,7 +1813,6 @@ public final class IgfsImpl implements IgfsEx {
         return new IgniteFutureImpl<>(fut);
     }
 
-
     /**
      * IGFS thread factory.
      */

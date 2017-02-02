@@ -821,7 +821,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             req.addDeploymentInfo());
                     }
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -887,7 +887,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     res.entries(entries);
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -931,7 +931,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
-                        List<ClusterNode> nodes = ctx.affinity().nodes(e.getKey(), topVer);
+                        List<ClusterNode> nodes = ctx.affinity().nodesByKey(e.getKey(), topVer);
 
                         for (int i = 0; i < nodes.size(); i++) {
                             ClusterNode node = nodes.get(i);
@@ -1214,7 +1214,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             return !aff1.equals(aff2);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             return true;
         }
     }

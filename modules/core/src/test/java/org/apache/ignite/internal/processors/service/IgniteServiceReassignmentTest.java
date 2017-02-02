@@ -176,7 +176,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-                catch (IgniteException e) {
+                catch (IgniteException ignored) {
                     return false;
                 }
             }

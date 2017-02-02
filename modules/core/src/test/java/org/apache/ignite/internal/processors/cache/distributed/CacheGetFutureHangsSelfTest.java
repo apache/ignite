@@ -152,7 +152,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
                             }
-                            catch (InterruptedException e) {
+                            catch (InterruptedException ignored) {
                                 Thread.currentThread().interrupt();
                             }
                         }
@@ -174,7 +174,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
                             }
-                            catch (InterruptedException e) {
+                            catch (InterruptedException ignored) {
                                 Thread.currentThread().interrupt();
                             }
                         }
