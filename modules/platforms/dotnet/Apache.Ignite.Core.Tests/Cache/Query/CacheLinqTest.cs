@@ -107,6 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             orgCache[1000] = new Organization {Id = 1000, Name = "Org_0"};
             orgCache[1001] = new Organization {Id = 1001, Name = "Org_1"};
+            orgCache[1002] = new Organization {Id = 1002, Name = null};
 
             var roleCache = GetRoleCache();
 
@@ -751,26 +752,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestContains()
         {
             var cache = GetPersonCache().AsCacheQueryable();
-            var roleCache = GetRoleCache().AsCacheQueryable();
+            var orgCache = GetOrgCache().AsCacheQueryable();
 
             var keys = new[] {1, 2, 3};
             var emptyKeys = new int[0];
-            int[] nullKeys = null;
+
             var bigNumberOfKeys = 10000;
             var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys - 10 + PersonCount, bigNumberOfKeys + PersonCount)
                 .ToArray();
             var hashSetKeys = new HashSet<int>(keys);
 
-            CheckFunc(e => e.Key, cache.Where(e => new[] { 1, 2, 3 }.Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => emptyKeys.Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => new int[0].Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => new List<int> { 1, 2, 3 }.Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => new List<int>(keys).Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => nullKeys.Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => aLotOfKeys.Contains(e.Key)));
-            CheckFunc(e => e.Key, cache.Where(e => hashSetKeys.Contains(e.Key)));
-            CheckFunc(e => e.Value.Name, roleCache.Where(e => new[] { "Role_1", "NonExistentName", null }.Contains(e.Value.Name)));
+            CheckWhereFunc(cache, e => new[] {1, 2, 3}.Contains(e.Key));
+            CheckWhereFunc(cache, e => emptyKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
+            CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int> {1, 2, 3}.Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int>(keys).Contains(e.Key));
+            CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null}.Contains(e.Value.Name));
+
+            int[] nullKeys = null;
+            var nullKeysEntries = cache
+                .Where(e => nullKeys.Contains(e.Key))
+                .ToArray();
+
+            Assert.AreEqual(nullKeysEntries.Length, 0, "Checking 'null.Contains' should return 0");
 
 
             //var cacheEntries = cache
@@ -1448,6 +1455,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Perform intermediate anonymous type conversion to check type projection
             actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo)
                 .OrderBy(x => x).ToArray();
+
+            // Compare results
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+        }
+
+        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
+        {
+            // Calculate result locally, using real method invocation
+            var expected = query
+                .ToArray()
+                .AsQueryable()
+                .Where(whereExpression)
+                .Select(entry => entry.Key)
+                .OrderBy(x => x)
+                .ToArray();
+
+            // Perform SQL query
+            var actual = query
+                .Where(whereExpression)
+                .Select(entry => entry.Key)
+                .ToArray()
+                .OrderBy(x => x)
+                .ToArray();
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
