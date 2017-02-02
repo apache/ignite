@@ -671,7 +671,7 @@ public class GridSqlQueryParser {
         if (CREATE_INDEX_HASH.get(createIdx) || CREATE_INDEX_PRIMARY_KEY.get(createIdx) ||
             CREATE_INDEX_UNIQUE.get(createIdx))
             throw new IgniteSQLException("Only SPATIAL modifier is supported for CREATE INDEX",
-                IgniteQueryErrorCode.UNSUPPORTED_TOKEN);
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridCreateIndex res = new GridCreateIndex();
 
@@ -693,7 +693,7 @@ public class GridSqlQueryParser {
 
             if ((sortType & SortOrder.NULLS_FIRST) != 0 || (sortType & SortOrder.NULLS_LAST) != 0)
                 throw new IgniteSQLException("NULLS FIRST and NULLS LAST modifiers are not supported for index columns",
-                    IgniteQueryErrorCode.UNSUPPORTED_TOKEN);
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
         }
