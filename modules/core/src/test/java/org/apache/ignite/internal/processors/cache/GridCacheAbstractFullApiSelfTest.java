@@ -1930,7 +1930,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteFuture<?> fut2 = jcache().putAsync("key2", 11);
 
-            IgniteFuture<Transaction> f = null;
+            IgniteFuture<Void> f = null;
 
             if (tx != null)
                 f = tx.commitAsync();
@@ -1938,7 +1938,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNull(fut1.get());
             assertNull(fut2.get());
 
-            assert f == null || f.get().state() == COMMITTED;
+            try {
+                if (f != null)
+                    f.get();
+            } catch (Throwable t) {
+                assert false : "Unexpected exception " + t;
+            }
         }
         finally {
             if (tx != null)
@@ -3856,6 +3861,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * @param async If {@code true} uses async method.
+     * @param oldAsync Use old async API.
      * @throws Exception If failed.
      */
     protected void globalClearAll(boolean async, boolean oldAsync) throws Exception {
@@ -4908,6 +4914,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * @param key Key.
+     * @return Ignite instance for primary node.
      */
     protected Ignite primaryIgnite(String key) {
         ClusterNode node = grid(0).affinity(null).mapKeyToNode(key);

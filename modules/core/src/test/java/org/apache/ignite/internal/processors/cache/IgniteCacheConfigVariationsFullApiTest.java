@@ -1854,7 +1854,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             IgniteFuture<?> fut2 = jcache().putAsync("key2", 11);
 
-            IgniteFuture<Transaction> f = null;
+            IgniteFuture<Void> f = null;
 
             if (tx != null)
                 f = tx.commitAsync();
@@ -1862,7 +1862,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             assertNull(fut1.get());
             assertNull(fut2.get());
 
-            assert f == null || f.get().state() == COMMITTED;
+            try {
+                if (f != null)
+                    f.get();
+            } catch (Throwable t) {
+                assert false : "Unexpected exception " + t;
+            }
         }
         finally {
             if (tx != null)
