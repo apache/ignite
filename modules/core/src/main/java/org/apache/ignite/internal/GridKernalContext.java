@@ -325,6 +325,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public IgniteStripedThreadPoolExecutor asyncCallbackPool();
 
     /**
+     * Gets query pool.
+     *
+     * @return query pool.
+     */
+    public ExecutorService queryPool();
+
+    /**
      * Gets cache object processor.
      *
      * @return Cache object processor.
@@ -571,6 +578,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing executor service.
      */
     @Nullable public ExecutorService getIndexingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing query messages.
+     *
+     * @return Thread pool implementation to be used in grid for query messages.
+     */
+    public ExecutorService getQueryExecutorService();
 
     /**
      * Gets exception registry.
