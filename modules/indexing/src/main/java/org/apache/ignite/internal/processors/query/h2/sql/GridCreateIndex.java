@@ -29,6 +29,9 @@ public class GridCreateIndex extends GridSqlStatement {
     /** Schema name. */
     private String schemaName;
 
+    /** Affected cache name. */
+    private String cacheName;
+
     /** Table name. */
     private String tblName;
 
@@ -50,6 +53,20 @@ public class GridCreateIndex extends GridSqlStatement {
      */
     public void schemaName(String schemaName) {
         this.schemaName = schemaName;
+    }
+
+    /**
+     * @return Affected cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @param cacheName Affected cache name.
+     */
+    public void cacheName(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**

@@ -1780,7 +1780,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("FIRSTNAME", o.get("fieldName").asText());
         assertEquals("java.lang.String", o.get("fieldTypeName").asText());
-        assertEquals("person", o.get("schemaName").asText());
+        assertEquals("person", o.get("cacheName").asText());
         assertEquals("PERSON", o.get("typeName").asText());
 
         assertFalse(queryCursorFound());

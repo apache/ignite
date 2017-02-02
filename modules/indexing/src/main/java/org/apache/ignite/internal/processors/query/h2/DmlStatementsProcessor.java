@@ -1010,7 +1010,7 @@ public class DmlStatementsProcessor {
      * @return Resulting Iterable.
      */
     @SuppressWarnings("unchecked")
-    private static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
+    public static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
         QueryCursorImpl<List<?>> res =
             new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), null, false);
 
