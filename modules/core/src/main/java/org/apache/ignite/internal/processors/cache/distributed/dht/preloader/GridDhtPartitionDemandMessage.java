@@ -125,9 +125,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         parts.add(p);
 
         if (clean) {
-            if (DebugUtils.hasFlag("test"))
-                System.out.println("???");
-
             if (cleanParts == null)
                 cleanParts = new HashSet<>();
 

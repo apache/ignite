@@ -72,8 +72,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Partition topology.
  */
-@GridToStringExclude
-class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+@GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -1200,7 +1199,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 locPart.updateCounter(cntr.get2());
                         }
 
-                        if (locPart.state() != OWNING) {
+                        if (locPart.state() == MOVING) {
                             boolean success = locPart.own();
 
                             assert success : locPart;
@@ -1211,32 +1210,35 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     else if (state == MOVING) {
                         GridDhtLocalPartition locPart = locParts.get(p);
 
-                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null) {
+                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null &&
+                            locPart.state() == OWNING) {
                             // TODO : remove
 
-                            try {
-                                locPart.rent(false);
-
-                                locPart.tryEvict();
-                            }
-                            catch (IgniteCheckedException ex) {
-                                throw new IgniteException(ex);
-                            }
-                        }
-
-                        assert locPart != null;
-
-                        if (locPart.state() == OWNING) {
-                            locPart.moving();
+//                            try {
+                            locPart.rent(false);
 
                             changed = true;
+//                            }
+//                            catch (IgniteCheckedException ex) {
+//                                throw new IgniteException(ex);
+//                            }
                         }
+                        else {
+                            if (locPart == null)
+                                locPart = createPartition(p);
 
-                        if (cntrMap != null) {
-                            T2<Long, Long> cntr = cntrMap.get(p);
+                            if (locPart.state() == OWNING) {
+                                locPart.moving();
 
-                            if (cntr != null && cntr.get2() > locPart.updateCounter())
-                                locPart.updateCounter(cntr.get2());
+                                changed = true;
+                            }
+
+                            if (cntrMap != null) {
+                                T2<Long, Long> cntr = cntrMap.get(p);
+
+                                if (cntr != null && cntr.get2() > locPart.updateCounter())
+                                    locPart.updateCounter(cntr.get2());
+                            }
                         }
                     }
                 }
@@ -1865,7 +1867,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
 
-            updateLocal(part.id(), part.state(), seq);
+            if (!part2node.get(part.id()).contains(cctx.localNodeId()))
+                updateLocal(part.id(), part.state(), seq);
 
             consistencyCheck();
         }

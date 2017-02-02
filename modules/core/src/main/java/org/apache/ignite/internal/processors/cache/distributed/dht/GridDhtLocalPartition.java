@@ -622,7 +622,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      * @return Future to signal that this node is no longer an owner or backup.
      */
-    IgniteInternalFuture<?> rent(boolean updateSeq) {
+    public IgniteInternalFuture<?> rent(boolean updateSeq) {
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);

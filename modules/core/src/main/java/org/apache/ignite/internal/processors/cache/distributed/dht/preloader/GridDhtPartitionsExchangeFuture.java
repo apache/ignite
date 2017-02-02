@@ -816,9 +816,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.preloader().onTopologyChanged(this);
         }
 
-        if (DebugUtils.hasFlag("test"))
-            System.out.println("???");
-
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         Map<Integer, Map<Integer, Long>> partHistReserved0 = cctx.database().reserveHistory();
 

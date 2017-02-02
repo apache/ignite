@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -77,6 +78,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 
 /**
@@ -298,13 +300,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert part != null;
                 assert part.id() == p;
 
-                if (part.state() != MOVING) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition assignment (state is not MOVING): " + part);
-
-                    continue; // For.
-                }
-
                 ClusterNode histSupplier = null;
 
                 if (cctx.shared().database().persistenceEnabled()) {
@@ -315,6 +310,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
 
                 if (histSupplier != null) {
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
+
+                        continue; // For.
+                    }
+
                     GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
 
                     if (msg == null) {
@@ -327,8 +329,26 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     msg.addPartition(p, false);
                 }
                 else {
-                    if (cctx.shared().database().persistenceEnabled()) {
-                        // TODO : wait until local partition is cleared.
+                    if (cctx.shared().database().persistenceEnabled() && part.updateCounter() > 0) {
+                        if (part.state() == RENTING || part.state() == EVICTED) {
+                            try {
+                                part.rent(false).get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Error while clearing outdated local partition", e);
+                            }
+
+                            part = top.localPartition(p, topVer, true);
+
+                            assert part != null;
+                        }
+                    }
+
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
+
+                        continue; // For.
                     }
 
                     Collection<ClusterNode> picked = pickedOwners(p, topVer);
