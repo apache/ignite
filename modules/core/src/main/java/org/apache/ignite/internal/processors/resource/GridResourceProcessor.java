@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.spi.IgniteSpi;
@@ -219,7 +219,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         assert obj != null;
 
         if (log.isDebugEnabled())
-            log.debug("Injecting resources: " + obj);
+            log.debug(S.toString("Injecting resources", "obj", obj, true));
 
         // Unwrap Proxy object.
         obj = unwrapTarget(obj);
