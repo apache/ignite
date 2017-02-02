@@ -69,10 +69,9 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
      * Adds a Near key.
      *
      * @param key Key.
-     * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
+    public void addNearKey(KeyCacheObject key)
         throws IgniteCheckedException {
         if (nearKeys == null)
             nearKeys = new ArrayList<>();

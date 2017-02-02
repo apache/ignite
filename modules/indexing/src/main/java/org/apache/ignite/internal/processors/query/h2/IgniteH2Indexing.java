@@ -1232,7 +1232,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             try {
                                 ctx.cache().createMissingCaches();
                             }
-                            catch (IgniteCheckedException e1) {
+                            catch (IgniteCheckedException ignored) {
                                 throw new CacheException("Failed to create missing caches.", e);
                             }
 
@@ -2058,7 +2058,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return aff.primary(locNode, k, topVer0);
+                        return aff.primaryByKey(locNode, k, topVer0);
                     }
                 };
             }

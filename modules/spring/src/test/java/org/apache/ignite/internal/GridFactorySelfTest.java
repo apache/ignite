@@ -134,7 +134,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
                 fail();
             }
-            catch (IgniteException expected) {
+            catch (IgniteException ignored) {
                 // No-op.
             }
         }

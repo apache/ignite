@@ -236,7 +236,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
             fail("Enumerations of aliases in select block must be prohibited");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             // all fine
         }
 

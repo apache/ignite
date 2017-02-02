@@ -838,16 +838,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_QRY_SQL:
-                return runQuery(reader, readSqlQuery(reader));
+                return runQuery(readSqlQuery(reader));
 
             case OP_QRY_SQL_FIELDS:
-                return runFieldsQuery(reader, readFieldsQuery(reader));
+                return runFieldsQuery(readFieldsQuery(reader));
 
             case OP_QRY_TXT:
-                return runQuery(reader, readTextQuery(reader));
+                return runQuery(readTextQuery(reader));
 
             case OP_QRY_SCAN:
-                return runQuery(reader, readScanQuery(reader));
+                return runQuery(readScanQuery(reader));
 
             case OP_QRY_CONTINUOUS: {
                 long ptr = reader.readLong();
@@ -1180,7 +1180,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified query.
      */
-    private PlatformQueryCursor runQuery(BinaryRawReaderEx reader, Query qry) throws IgniteCheckedException {
+    private PlatformQueryCursor runQuery(Query qry) throws IgniteCheckedException {
 
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -1196,7 +1196,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified fields query.
      */
-    private PlatformFieldsQueryCursor runFieldsQuery(BinaryRawReaderEx reader, Query qry)
+    private PlatformFieldsQueryCursor runFieldsQuery(Query qry)
         throws IgniteCheckedException {
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);

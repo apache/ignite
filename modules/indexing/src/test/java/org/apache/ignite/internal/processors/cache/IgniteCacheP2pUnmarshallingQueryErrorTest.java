@@ -54,7 +54,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
 
             fail("p2p marshalling failed, but error response was not sent");
         }
-        catch (CacheException e) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -82,7 +82,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
     }

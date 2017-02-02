@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(TestDayname)
 {
     TestType in;
 
-    in.dateField = impl::binary::BinaryUtils::MakeDateGmt(2016, 8, 29);
+    in.dateField = common::MakeDateGmt(2016, 8, 29);
 
     testCache.Put(1, in);
 
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(TestDayofmonth)
 {
     TestType in;
 
-    in.dateField = impl::binary::BinaryUtils::MakeDateGmt(2016, 8, 29);
+    in.dateField = common::MakeDateGmt(2016, 8, 29);
 
     testCache.Put(1, in);
 
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(TestDayofweek)
 {
     TestType in;
 
-    in.dateField = impl::binary::BinaryUtils::MakeDateGmt(2016, 8, 29);
+    in.dateField = common::MakeDateGmt(2016, 8, 29);
 
     testCache.Put(1, in);
 
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(TestDayofyear)
 {
     TestType in;
 
-    in.dateField = impl::binary::BinaryUtils::MakeDateGmt(2016, 8, 29);
+    in.dateField = common::MakeDateGmt(2016, 8, 29);
 
     testCache.Put(1, in);
 
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(TestExtract)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(TestHour)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(TestMinute)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(TestMonth)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(TestMonthname)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(TestQuarter)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(TestSecond)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(TestWeek)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(TestYear)
 {
     TestType in;
 
-    in.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
+    in.timestampField = common::MakeTimestampGmt(2016, 2, 24, 13, 45, 23, 580695103);
 
     testCache.Put(1, in);
 
