@@ -569,7 +569,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeSingleCache()
         {
             var cache = Cache();
@@ -607,7 +606,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// with multiple participating caches.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeMultiCache()
         {
             var cache1 = Cache();
@@ -648,7 +646,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// when Ignite tx is started manually.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeWithManualIgniteTx()
         {
             var cache = Cache();
@@ -674,7 +671,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestSuppressedTransactionScope()
         {
             var cache = Cache();
@@ -694,7 +690,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> with nested scopes.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestNestedTransactionScope()
         {
             var cache = Cache();
@@ -737,7 +732,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test that ambient <see cref="TransactionScope"/> options propagate to Ignite transaction.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeOptions()
         {
             var cache = Cache();
@@ -773,10 +767,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests all transactional operations with <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeAllOperations()
         {
-            for (var i = 0; i < 100; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 CheckTxOp((cache, key) => cache.Put(key, -5));
                 CheckTxOp((cache, key) => cache.PutAsync(key, -5).Wait());
@@ -792,7 +785,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CheckTxOp((cache, key) =>
                 {
                     cache.Remove(key);
-                    cache.PutIfAbsentAsync(key, -10);
+                    cache.PutIfAbsentAsync(key, -10).Wait();
                 });
 
                 CheckTxOp((cache, key) => cache.GetAndPut(key, -9));
@@ -810,28 +803,28 @@ namespace Apache.Ignite.Core.Tests.Cache
                 });
 
                 CheckTxOp((cache, key) => cache.GetAndRemove(key));
-                CheckTxOp((cache, key) => cache.GetAndRemoveAsync(key));
+                CheckTxOp((cache, key) => cache.GetAndRemoveAsync(key).Wait());
 
                 CheckTxOp((cache, key) => cache.GetAndReplace(key, -11));
-                CheckTxOp((cache, key) => cache.GetAndReplaceAsync(key, -11));
+                CheckTxOp((cache, key) => cache.GetAndReplaceAsync(key, -11).Wait());
 
                 CheckTxOp((cache, key) => cache.Invoke(key, new AddProcessor(), 1));
-                CheckTxOp((cache, key) => cache.InvokeAsync(key, new AddProcessor(), 1));
+                CheckTxOp((cache, key) => cache.InvokeAsync(key, new AddProcessor(), 1).Wait());
 
                 CheckTxOp((cache, key) => cache.InvokeAll(new[] {key}, new AddProcessor(), 1));
-                CheckTxOp((cache, key) => cache.InvokeAllAsync(new[] {key}, new AddProcessor(), 1));
+                CheckTxOp((cache, key) => cache.InvokeAllAsync(new[] {key}, new AddProcessor(), 1).Wait());
 
                 CheckTxOp((cache, key) => cache.Remove(key));
-                CheckTxOp((cache, key) => cache.RemoveAsync(key));
+                CheckTxOp((cache, key) => cache.RemoveAsync(key).Wait());
 
                 CheckTxOp((cache, key) => cache.RemoveAll(new[] {key}));
                 CheckTxOp((cache, key) => cache.RemoveAllAsync(new[] {key}).Wait());
 
                 CheckTxOp((cache, key) => cache.Replace(key, 100));
-                CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100));
+                CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100).Wait());
 
                 CheckTxOp((cache, key) => cache.Replace(key, cache[key], 100));
-                CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100));
+                CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100).Wait());
             }
         }
 
