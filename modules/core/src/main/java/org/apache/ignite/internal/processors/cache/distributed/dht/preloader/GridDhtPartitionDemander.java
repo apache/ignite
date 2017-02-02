@@ -513,7 +513,6 @@ public class GridDhtPartitionDemander {
                             // New requests will not be covered by failovers.
                             cctx.io().sendOrderedMessage(node,
                                 rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
-
                         }
 
                         if (log.isDebugEnabled())

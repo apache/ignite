@@ -448,6 +448,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
+                assert topVer != null;
+
                 Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
                 if (backupQueue0 == null)
