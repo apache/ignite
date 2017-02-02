@@ -2086,7 +2086,8 @@ public class IgnitionEx {
                             "\" because it is reserved for internal purposes.");
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot match the template \""
+                        throw new IgniteCheckedException(
+                            "Cache name '" + ccfg.getName() + "' cannot match the template \""
                             + IgfsUtils.IGFS_CACHE_PREFIX + "<igfs_name>(" + IgfsUtils.DATA_CACHE_SUFFIX + "|"
                             + IgfsUtils.META_CACHE_SUFFIX
                             + ")\" because it is reserved for IGFS internal purposes.");
