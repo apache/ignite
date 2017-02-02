@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  * JDBC test of MERGE statement w/binary marshaller - no nodes know about classes.

@@ -379,7 +379,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
         try {
             port = Integer.parseInt(res[1]);
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException ignored) {
             throw new IgniteSpiException("Invalid port number: " + res[1]);
         }
 
