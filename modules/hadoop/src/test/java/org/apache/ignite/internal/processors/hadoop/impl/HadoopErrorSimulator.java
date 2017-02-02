@@ -208,8 +208,8 @@ public class HadoopErrorSimulator {
                 if ((bits & 1) != 0)
                     simulateError();
             }
-            catch (IOException e) {
-                // ignore
+            catch (IOException ignored) {
+                // No-op.
             }
         }
 
@@ -237,8 +237,8 @@ public class HadoopErrorSimulator {
                 if ((bits & 16) != 0)
                     simulateError();
             }
-            catch (IOException e) {
-                // ignore
+            catch (IOException ignored) {
+                // No-op.
             }
         }
 
@@ -266,8 +266,8 @@ public class HadoopErrorSimulator {
                 if ((bits & 256) != 0)
                     simulateError();
             }
-            catch (IOException e) {
-                // ignore
+            catch (IOException ignored) {
+                // No-op.
             }
         }
 

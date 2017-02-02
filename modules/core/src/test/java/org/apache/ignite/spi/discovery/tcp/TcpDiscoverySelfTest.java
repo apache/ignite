@@ -1327,7 +1327,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 nodeSpi.set(new TestCustomEventRaceSpi());
 
-                Ignite ignite2 = startGrid(2);
+                startGrid(2);
 
                 return null;
             }
@@ -2040,7 +2040,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return false;
                 }
-                catch (IgniteIllegalStateException e) {
+                catch (IgniteIllegalStateException ignored) {
                     return true;
                 }
             }
@@ -2406,8 +2406,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     try {
                         Thread.sleep(5_000);
                     }
-                    catch (InterruptedException e) {
-                        // Ignore.
+                    catch (InterruptedException ignored) {
+                        // No-op.
                     }
                 }
 
