@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -73,6 +74,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_RESET_METRICS = 11;
+
+    /** */
+    public static final int OP_PREPARE = 12;
 
     /** */
     private final IgniteTransactions txs;
@@ -155,6 +159,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
+            case OP_PREPARE:
+                ((TransactionProxyImpl)tx(val)).tx().prepare();
+
+                return TRUE;
+
             case OP_COMMIT:
                 tx(val).commit();
 
