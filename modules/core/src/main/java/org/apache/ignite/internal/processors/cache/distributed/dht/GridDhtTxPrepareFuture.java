@@ -1141,9 +1141,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     private IgniteTxOptimisticCheckedException versionCheckError(IgniteTxEntry entry) {
         GridCacheContext cctx = entry.context();
 
-        return new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
-            "read/write conflict [key=" + entry.key().value(cctx.cacheObjectContext(), false) +
-            ", cache=" + cctx.name() + ']');
+        return new IgniteTxOptimisticCheckedException(S.toString(
+            "Failed to prepare transaction, read/write conflict",
+            "key", entry.key().value(cctx.cacheObjectContext(), false), true,
+            "cache", cctx.name(), false));
     }
 
     /**
