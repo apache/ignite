@@ -79,7 +79,7 @@ public class GridDirectParser implements GridNioParser {
 
                 short type = buf.getShort();
 
-                System.out.println("+++ READ " + Integer.toHexString(type));
+                System.out.println("+++ READ " + Thread.currentThread().getName() + String.format(" %04X", type));
                 msg = msgFactory.create(type);
             }
 
