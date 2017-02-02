@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -217,7 +218,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
 
     /** */
-    private final Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers = new HashMap<>();
+    private final ConcurrentMap<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers = new ConcurrentHashMap<>();
 
     /** Forced Rebalance future. */
     private GridFutureAdapter<Boolean> forcedRebFut;
@@ -367,6 +368,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public boolean dummyReassign() {
         return (dummy() || forcePreload()) && reassign();
+    }
+
+    public ConcurrentMap<UUID, Map<T2<Integer, Integer>, Long>> partitionHistorySuppliers() {
+        return partHistSuppliers;
     }
 
     /**
@@ -805,6 +810,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cacheCtx.preloader().onTopologyChanged(this);
         }
+
+        if (DebugUtils.hasFlag("test"))
+            System.out.println("???");
 
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         Map<Integer, Map<Integer, Long>> partHistReserved0 = cctx.database().reserveHistory();
@@ -1522,14 +1530,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
 
+            if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
+                continue;
+
+            long cntr = state == GridDhtPartitionState.MOVING ? part.initialUpdateCounter() : part.updateCounter();
+
+            Long minCntr = minCntrs.get(part.id());
+
+            if (minCntr == null || minCntr > cntr)
+                minCntrs.put(part.id(), cntr);
+
             if (state != GridDhtPartitionState.OWNING)
                 continue;
 
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
 
-            if (maxCntr == null || part.initialUpdateCounter() > maxCntr.cnt)
-                maxCntrs.put(part.id(), new CounterWithNodes(part.updateCounter(), cctx.localNodeId()));
-            else if (part.initialUpdateCounter() == maxCntr.cnt)
+            if (maxCntr == null || cntr > maxCntr.cnt)
+                maxCntrs.put(part.id(), new CounterWithNodes(cntr, cctx.localNodeId()));
+            else if (cntr == maxCntr.cnt)
                 maxCntr.nodes.add(cctx.localNodeId());
         }
 
@@ -1547,8 +1565,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             top.setOwners(p, e.getValue().nodes, entryLeft == 0);
         }
 
-        if (DebugUtils.hasFlag("test"))
-            System.out.println("???");
+        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
+
+        Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.cacheId()) : null;
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -1556,6 +1575,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (minCntr == maxCntrs.get(p).cnt)
                 continue;
+
+            if (localReserved != null) {
+                Long localCntr = localReserved.get(p);
+
+                if (localCntr != null && localCntr <= minCntr) {
+                    Map<T2<Integer, Integer>, Long> nodeMap = partHistSuppliers.get(cctx.localNodeId());
+
+                    if (nodeMap == null) {
+                        nodeMap = new HashMap<>();
+
+                        partHistSuppliers.put(cctx.localNodeId(), nodeMap);
+                    }
+
+                    nodeMap.put(new T2<>(top.cacheId(), p), minCntr);
+
+                    continue;
+                }
+            }
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.cacheId()).get(p);
@@ -1569,7 +1606,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         partHistSuppliers.put(e0.getKey(), nodeMap);
                     }
 
-                    nodeMap.put(new T2<Integer, Integer>(top.cacheId(), p), minCntr);
+                    nodeMap.put(new T2<>(top.cacheId(), p), minCntr);
 
                     break;
                 }

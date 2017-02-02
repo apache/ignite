@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,6 +58,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -235,6 +238,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         top = null;
     }
+
     /**
      * @return Node stop exception.
      */
@@ -270,12 +274,21 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-            ", cache=" + cctx.name() +
-            ", topVer=" + top.topologyVersion() + ']';
+                ", cache=" + cctx.name() +
+                ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
         AffinityTopologyVersion topVer = assigns.topologyVersion();
+
+        Map<Integer, ClusterNode> historySuppliers = new HashMap<>();
+
+        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : exchFut.partitionHistorySuppliers().entrySet()) {
+            for (int p = 0; p < partCnt; p++) {
+                if (e.getValue().containsKey(new T2<>(cctx.cacheId(), p)))
+                    historySuppliers.put(p, cctx.discovery().node(e.getKey()));
+            }
+        }
 
         for (int p = 0; p < partCnt; p++) {
             if (cctx.shared().exchange().hasPendingExchange()) {
@@ -302,35 +315,51 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     continue; // For.
                 }
 
-                Collection<ClusterNode> picked = pickedOwners(p, topVer);
+                ClusterNode histSupplier = historySuppliers.get(p);
 
-                if (picked.isEmpty()) {
-                    top.own(part);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                        cctx.events().addPreloadEvent(p,
-                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
-                            discoEvt.type(), discoEvt.timestamp());
-                    }
-
-                    if (log.isDebugEnabled())
-                        log.debug("Owning partition as there are no other owners: " + part);
-                }
-                else {
-                    ClusterNode n = F.rand(picked);
-
-                    GridDhtPartitionDemandMessage msg = assigns.get(n);
+                if (histSupplier != null) {
+                    GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
 
                     if (msg == null) {
-                        assigns.put(n, msg = new GridDhtPartitionDemandMessage(
+                        assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
                             exchFut.exchangeId().topologyVersion(),
                             cctx.cacheId()));
                     }
 
                     msg.addPartition(p);
+                }
+                else {
+                    Collection<ClusterNode> picked = pickedOwners(p, topVer);
+
+                    if (picked.isEmpty()) {
+                        top.own(part);
+
+                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                            DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                            cctx.events().addPreloadEvent(p,
+                                EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                                discoEvt.type(), discoEvt.timestamp());
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug("Owning partition as there are no other owners: " + part);
+                    }
+                    else {
+                        ClusterNode n = F.rand(picked);
+
+                        GridDhtPartitionDemandMessage msg = assigns.get(n);
+
+                        if (msg == null) {
+                            assigns.put(n, msg = new GridDhtPartitionDemandMessage(
+                                top.updateSequence(),
+                                exchFut.exchangeId().topologyVersion(),
+                                cctx.cacheId()));
+                        }
+
+                        msg.addPartition(p);
+                    }
                 }
             }
         }
