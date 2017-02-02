@@ -96,7 +96,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
     protected static final String USER = "vasya";
 
     /** Secondary IGFS name. */
-    protected static final String SECONDARY_IGFS_NAME = "grid-9";
+    protected static final String SECONDARY_IGFS_NAME = "igfs-secondary";
 
     /** Red constant. */
     protected static final int red = 10_000;
@@ -165,13 +165,9 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
                 try {
                     secondaryFs.info(p);
 
-                    System.out.println("+");
-
                     return true;
                 }
                 catch (RuntimeException e) {
-                    System.out.println("-");
-
                     return false;
                 }
             }
@@ -362,7 +358,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         super.beforeTest();
     }
 
-    @Override protected boolean isRemoteJvm(String gridName) {
+    @Override protected final boolean isRemoteJvm(String gridName) {
         if (gridName.contains("secondary"))
             return false;
 
@@ -380,7 +376,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected final Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
+    protected final Ignite startGridWithIgfs(final String gridName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -414,13 +410,9 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMarshaller(IgniteTestResources.getMarshaller());
-
         cfg.setGridName(gridName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true)); // NB -- does not connect to anything
-        cfg.setDiscoverySpi(discoSpi);
+        cfg.setDiscoverySpi(null);
 
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);

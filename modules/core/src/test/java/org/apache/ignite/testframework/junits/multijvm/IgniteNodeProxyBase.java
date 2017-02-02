@@ -55,9 +55,10 @@ public class IgniteNodeProxyBase {
     protected final transient Ignite locJvmGrid;
 
     /**
+     * Constructor.
      *
-     * @param cfg
-     * @param log
+     * @param cfg The configuration.
+     * @param log The log.
      */
     public IgniteNodeProxyBase(IgniteConfiguration cfg, IgniteLogger log, Ignite locIg,
             NodeProcessParameters params) throws Exception {
@@ -151,13 +152,13 @@ public class IgniteNodeProxyBase {
     protected GridJavaProcess createProcess(NodeProcessParameters params) throws Exception {
         assert cfg.getGridName() != null : "name";
 
-        cfg.setWorkDirectory(params.uniqueProcessDir ? createUniqueDir("work").getAbsolutePath() : null);
+        cfg.setWorkDirectory(params.isUniqueWorkDir() ? createUniqueDir("work").getAbsolutePath() : null);
 
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id).setConsistentId(id));
 
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
-        if (F.isEmpty(params.jvmArguments)) {
+        if (F.isEmpty(params.getJvmArguments())) {
             // Calculate JVM parameters based on his process options:
             Marshaller marsh = cfg.getMarshaller();
 
@@ -172,7 +173,7 @@ public class IgniteNodeProxyBase {
             }
         }
         else
-            filteredJvmArgs.addAll(params.jvmArguments);
+            filteredJvmArgs.addAll(params.getJvmArguments());
 
         return GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),
@@ -188,8 +189,8 @@ public class IgniteNodeProxyBase {
             System.getProperty(TEST_MULTIJVM_JAVA_HOME),
             filteredJvmArgs, // JVM Args.
             System.getProperty("surefire.test.class.path"),
-            params.uniqueProcessDir ? createUniqueDir("process") : null,
-            params.processEnv
+            params.isUniqueProcDir() ? createUniqueDir("process") : null,
+            params.getProcEnv()
         );
     }
 

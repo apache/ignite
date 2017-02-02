@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.File;
-import java.util.Collections;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -140,7 +139,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        if (igfsEnabled()) {
+        // Secondary Fs has its own filesystem config :
+        if (igfsEnabled() && !gridName.contains("secondary")) {
             cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
 
             cfg.setFileSystemConfiguration(igfsConfiguration());
@@ -224,7 +224,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected final boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 
@@ -240,15 +240,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected int gridCount() {
         return 3;
-    }
-
-    /** {@inheritDoc} */
-    protected boolean isRemoteJvm(String gridName) {
-//        // Secondary Fs node should always be run in the test JVM:
-//        if (gridName.toLowerCase().contains("secondary"))
-//            return false;
-
-        return super.isRemoteJvm(gridName);
     }
 
     /** {@inheritDoc} */
@@ -272,17 +263,15 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Gets special JVM parameters for the remote node.
+     * Gets special JVM parameters for specified remote node.
      *
-     * @param nodeIdx
-     * @return
+     * @param nodeIdx Th enode index.
+     * @return The node parameters.
      */
     NodeProcessParameters getRemoteNodeParameters(int nodeIdx) {
         assert nodeIdx > 0;
 
-        //return NodeProcessParameters.DEFAULT;
-        return new NodeProcessParameters(false, false, null,
-            Collections.singletonList("-DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true"));
+        return NodeProcessParameters.DFLT;
     }
 
     /** {@inheritDoc} */

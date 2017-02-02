@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
@@ -37,10 +36,6 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     /** */
     private GridBinaryMarshaller impl;
 
-//    public BinaryMarshaller() {
-//        Thread.dumpStack();
-//    }
-//
     /**
      * Checks whether {@code BinaryMarshaller} is able to work on the current JVM.
      * <p>
