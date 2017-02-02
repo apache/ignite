@@ -59,8 +59,8 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void reserve(WALPointer start) throws IgniteCheckedException {
-        // No-op.
+    @Override public boolean reserve(WALPointer start) throws IgniteCheckedException {
+        return false;
     }
 
     /** {@inheritDoc} */
