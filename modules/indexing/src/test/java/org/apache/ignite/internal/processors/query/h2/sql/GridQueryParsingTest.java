@@ -92,6 +92,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         );
 
         CacheConfiguration cc2 = new CacheConfiguration(cc);
+
         cc2.setName("schema2");
 
         c.setCacheConfiguration(cc, cc2);
@@ -456,6 +457,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Prepared p = parse(sql);
+
                 return new GridSqlQueryParser().parse(p);
             }
         }, exCls, msg);
@@ -501,9 +503,11 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     private static GridDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
         GridDropIndex res = new GridDropIndex();
+
         res.name(name);
         res.schemaName(schema);
         res.ifExists(ifExists);
+
         return res;
     }
 
@@ -551,10 +555,13 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static GridCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
         QueryIndexType type, Object... flds) {
         QueryIndex idx = new QueryIndex();
+
         idx.setName(name);
+
         assert !F.isEmpty(flds) && flds.length % 2 == 0;
 
         LinkedHashMap<String, Boolean> trueFlds = new LinkedHashMap<>();
+
         for (int i = 0; i < flds.length / 2; i++)
             trueFlds.put((String) flds[i * 2], (Boolean) flds[i * 2 + 1]);
 
@@ -562,10 +569,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         idx.setIndexType(type);
 
         GridCreateIndex res = new GridCreateIndex();
+
         res.schemaName(schemaName);
         res.tableName(tblName);
         res.ifNotExists(ifNotExists);
         res.index(idx);
+
         return res;
     }
 

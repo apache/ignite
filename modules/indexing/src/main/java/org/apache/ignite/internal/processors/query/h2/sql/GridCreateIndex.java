@@ -26,24 +26,16 @@ import org.h2.command.Parser;
  * CREATE INDEX statement.
  */
 public class GridCreateIndex extends GridSqlStatement {
-    /**
-     * Schema name.
-     */
+    /** Schema name. */
     private String schemaName;
 
-    /**
-     * Table name.
-     */
+    /** Table name. */
     private String tblName;
 
-    /**
-     * Attempt to create the index only if it does not exist.
-     */
+    /** Attempt to create the index only if it does not exist. */
     private boolean ifNotExists;
 
-    /**
-     * Index to create.
-     */
+    /** Index to create. */
     private QueryIndex idx;
 
     /**

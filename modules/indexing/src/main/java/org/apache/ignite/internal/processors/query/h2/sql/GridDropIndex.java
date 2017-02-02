@@ -23,19 +23,13 @@ import org.h2.command.Parser;
  * DROP INDEX statement.
  */
 public class GridDropIndex extends GridSqlStatement {
-    /**
-     * Index name.
-     */
+    /** Index name. */
     private String name;
 
-    /**
-     * Schema name.
-     */
+    /** Schema name. */
     private String schemaName;
 
-    /**
-     * Attempt to drop the index only if it exists.
-     */
+    /** Attempt to drop the index only if it exists. */
     private boolean ifExists;
 
     /**
