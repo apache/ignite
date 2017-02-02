@@ -305,6 +305,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public TcpDiscoverySharedFsIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoverySharedFsIpFinder.class, this);
     }

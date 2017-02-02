@@ -382,10 +382,13 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
      * If not provided, default value is {@code java.io.tmpdir} system property value.
      *
      * @param tmpDirPath Temporary directory path.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setTemporaryDirectoryPath(String tmpDirPath) {
+    public UriDeploymentSpi setTemporaryDirectoryPath(String tmpDirPath) {
         this.tmpDirPath = tmpDirPath;
+
+        return this;
     }
 
     /**
@@ -1352,6 +1355,13 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
 
             return o1.getTimestamp() == o2.getTimestamp() ? 0 : -1;
         }
+    }
+
+    /** {@inheritDoc} */
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */

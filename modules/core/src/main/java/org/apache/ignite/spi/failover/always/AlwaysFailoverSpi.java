@@ -289,6 +289,14 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     }
 
     /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AlwaysFailoverSpi.class, this);
     }

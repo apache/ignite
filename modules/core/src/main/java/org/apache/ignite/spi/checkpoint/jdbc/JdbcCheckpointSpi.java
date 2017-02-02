@@ -915,4 +915,12 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
 }

@@ -59,6 +59,14 @@ public class NoopCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NoopCollisionSpi.class, this);
     }

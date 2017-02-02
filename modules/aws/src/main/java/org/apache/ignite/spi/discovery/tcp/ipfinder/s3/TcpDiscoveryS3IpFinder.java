@@ -363,6 +363,13 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public TcpDiscoveryS3IpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryS3IpFinder.class, this, "super", super.toString());
     }

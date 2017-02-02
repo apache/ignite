@@ -193,10 +193,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * Sets SPI name.
      *
      * @param name SPI name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setName(String name) {
+    public IgniteSpiAdapter setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /** {@inheritDoc} */

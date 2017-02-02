@@ -668,11 +668,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TcpDiscoveryMulticastIpFinder.class, this, "super", super.toString());
-    }
-
     /**
      * @param e Network error to handle.
      * @return {@code True} if this error is recoverable and the operation can be retried.
@@ -686,6 +681,18 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryMulticastIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryMulticastIpFinder.class, this, "super", super.toString());
     }
 
     /**

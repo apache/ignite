@@ -1001,6 +1001,14 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     }
 
     /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JobStealingCollisionSpi.class, this);
     }

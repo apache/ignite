@@ -264,6 +264,13 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public TcpDiscoveryVmIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryVmIpFinder.class, this, "super", super.toString());
     }

@@ -68,4 +68,12 @@ public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     @Override public void spiStop() throws IgniteSpiException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
 }

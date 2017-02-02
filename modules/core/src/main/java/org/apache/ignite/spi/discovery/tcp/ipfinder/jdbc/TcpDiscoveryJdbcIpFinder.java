@@ -410,6 +410,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public TcpDiscoveryJdbcIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryJdbcIpFinder.class, this);
     }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
 
+import com.google.common.collect.Sets;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.google.common.collect.Sets;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -369,6 +369,13 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     public TcpDiscoveryZookeeperIpFinder setAllowDuplicateRegistrations(boolean allowDuplicateRegistrations) {
         this.allowDuplicateRegistrations = allowDuplicateRegistrations;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryZookeeperIpFinder setShared(boolean shared) {
+        super.setShared(shared);
 
         return this;
     }

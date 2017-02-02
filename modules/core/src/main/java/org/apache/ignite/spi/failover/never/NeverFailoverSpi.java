@@ -100,6 +100,14 @@ public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, N
     }
 
     /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NeverFailoverSpi.class, this);
     }

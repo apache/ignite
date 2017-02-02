@@ -568,11 +568,6 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
         return Collections.singletonList(createSpiAttributeName(PRIORITY_ATTRIBUTE_KEY));
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PriorityQueueCollisionSpi.class, this);
-    }
-
     /**
      * Returns (possibly shared) comparator fo sorting GridCollisionJobContextWrapper
      * by priority.
@@ -584,6 +579,19 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
             priComp = new PriorityGridCollisionJobContextComparator();
 
         return priComp;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public IgniteSpiAdapter setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PriorityQueueCollisionSpi.class, this);
     }
 
     /**
