@@ -574,8 +574,10 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(CheckpointListener lsnr) {
+    @Override public S3CheckpointSpi setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
+
+        return this;
     }
 
     /** {@inheritDoc} */

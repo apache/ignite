@@ -245,8 +245,10 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(CheckpointListener lsnr) {
+    @Override public CacheCheckpointSpi setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -66,8 +66,10 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     }
 
     /** {@inheritDoc} */
-    @Override public void setCheckpointListener(CheckpointListener lsnr) {
+    @Override public NoopCheckpointSpi setCheckpointListener(CheckpointListener lsnr) {
         // No-op.
+
+        return this;
     }
 
     /** {@inheritDoc} */
