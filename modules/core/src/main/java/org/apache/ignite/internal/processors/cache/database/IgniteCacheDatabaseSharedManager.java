@@ -227,20 +227,22 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @return Reserved update counters per cache and partition.
      */
-    public Map<Integer, Map<Integer, Long>> reserveHistory() {
+    public Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
         return Collections.emptyMap();
-    }
-
-    public boolean reserveHistory(int cacheId, int partId, long cntr) {
-        return false;
     }
 
     /**
      * Release reserved update history.
-     *
-     * @param reserved Map returned by {@code reserveHistory()}.
      */
-    public void releaseHistory(Map<Integer, Map<Integer, Long>> reserved) {
+    public void releaseHistoryForExchange() {
+        // No-op
+    }
+
+    public boolean reserveHistoryForPreloading(int cacheId, int partId, long cntr) {
+        return false;
+    }
+
+    public void releaseHistoryForPreloading() {
         // No-op
     }
 

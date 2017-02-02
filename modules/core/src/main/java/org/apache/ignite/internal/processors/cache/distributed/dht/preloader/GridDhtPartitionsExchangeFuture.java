@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
-import org.apache.ignite.DebugUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -224,7 +223,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private GridFutureAdapter<Boolean> forcedRebFut;
 
     /** */
-    private final AtomicReference<Map<Integer, Map<Integer, Long>>> partHistReserved = new AtomicReference<>();
+    private volatile Map<Integer, Map<Integer, Long>> partHistReserved;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -816,11 +815,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.preloader().onTopologyChanged(this);
         }
 
-        // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
-        Map<Integer, Map<Integer, Long>> partHistReserved0 = cctx.database().reserveHistory();
+        cctx.database().releaseHistoryForPreloading();
 
-        if (!partHistReserved.compareAndSet(null, partHistReserved0))
-            cctx.database().releaseHistory(partHistReserved0);
+        // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
+        partHistReserved = cctx.database().reserveHistoryForExchange();
 
         waitPartitionRelease();
 
@@ -1066,7 +1064,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(
             node, exchangeId(), clientOnlyExchange, true);
 
-        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
+        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
         if (partHistReserved0 != null) {
             m.partitionHistoryCounters(partHistReserved0);
@@ -1215,7 +1213,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (localReserved != null) {
             for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
-                boolean success = cctx.database().reserveHistory(e.getKey().get1(), e.getKey().get2(), e.getValue());
+                boolean success = cctx.database().reserveHistoryForPreloading(
+                    e.getKey().get1(), e.getKey().get2(), e.getValue());
 
                 if (!success) {
                     // TODO: how to handle?
@@ -1224,10 +1223,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
-
-        if (partHistReserved0 != null && partHistReserved.compareAndSet(partHistReserved0, null))
-            cctx.database().releaseHistory(partHistReserved0);
+        cctx.database().releaseHistoryForExchange();
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
@@ -1561,7 +1557,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             top.setOwners(p, e.getValue().nodes, entryLeft == 0);
         }
 
-        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
+        Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.cacheId()) : null;
 
