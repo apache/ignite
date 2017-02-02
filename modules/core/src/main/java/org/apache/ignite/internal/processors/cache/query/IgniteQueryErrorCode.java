@@ -33,7 +33,7 @@ public final class IgniteQueryErrorCode {
     /** General parsing error - for the cases when there's no more specific code available. */
     public final static int PARSING = 1001;
 
-    /** Code encountered unexpected type of SQL operation - like {@code EXPLAIN MERGE}. */
+    /** Requested operation is not supported. */
     public final static int UNSUPPORTED_OPERATION = 1002;
 
     /* 2xxx - analysis errors */
@@ -58,7 +58,7 @@ public final class IgniteQueryErrorCode {
     /** Statement type does not match that declared by JDBC driver. */
     public final static int STMT_TYPE_MISMATCH = 3003;
 
-    /** Statement type does not match that declared by JDBC driver. */
+    /** DROP TABLE failed. */
     public final static int TABLE_DROP_FAILED = 3004;
 
     /* 4xxx - cache related runtime errors */
