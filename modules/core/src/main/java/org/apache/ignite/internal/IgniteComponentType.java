@@ -70,6 +70,13 @@ public enum IgniteComponentType {
         "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory"
     ),
 
+    /** DDL statements processing. */
+    DDL(
+        null,
+        "org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor",
+        "ignite-indexing"
+    ),
+
     /** Nodes starting using SSH. */
     SSH(
         null,

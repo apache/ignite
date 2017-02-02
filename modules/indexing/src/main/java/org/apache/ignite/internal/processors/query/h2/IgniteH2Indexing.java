@@ -89,7 +89,9 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridStatementType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -335,9 +337,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor(this);
 
     /** */
-    private final DdlStatementsProcessor ddlProc = new DdlStatementsProcessor(this);
-
-    /** */
     private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
 
     /** Statement cache. */
@@ -429,8 +428,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        return prepareStatement(connectionForSpace(schema), sql, false);
+    @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
+        return prepareStatement(connectionForSpace(space), sql, true);
     }
 
     /**
@@ -1258,21 +1257,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
             if (!prepared.isQuery()) {
-                if (dmlProc.isDmlStatement(prepared)) {
+                if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                     try {
                         return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry + ", params=" +
-                            Arrays.deepToString(qry.getArgs()) + "]", e);
-                    }
-                }
-                else {
-                    try {
-                        return ddlProc.runDdlStatement(cctx, prepared);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ", params=" +
                             Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
@@ -1523,6 +1513,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         sb.a(name.substring(sb.length(), name.length()));
 
         return sb.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridStatementType statementType(PreparedStatement stmt) {
+        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+
+        if (p.isQuery())
+            return GridStatementType.QUERY;
+
+        if (DmlStatementsProcessor.isDmlStatement(p))
+            return GridStatementType.DML;
+
+        if (DdlStatementsProcessor.isDdlStatement(p))
+            return GridStatementType.DDL;
+
+        throw new IgniteSQLException("Unknown statement type [type=" + p.getClass().getName() + ']',
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

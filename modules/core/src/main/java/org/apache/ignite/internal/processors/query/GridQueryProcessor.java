@@ -100,6 +100,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.IgniteComponentType.DDL;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
@@ -156,6 +157,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridQueryIndexing idx;
 
     /** */
+    private final GridDdlStatementsProcessor ddlProc;
+
+    /** */
     private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
 
     /** */
@@ -177,6 +181,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        ddlProc = DDL.inClassPath() ? U.<GridDdlStatementsProcessor>newInstance(DDL.className()) : null;
     }
 
     /** {@inheritDoc} */
@@ -189,6 +195,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             execSvc = ctx.getExecutorService();
 
             idx.start(ctx, busyLock);
+        }
+
+        if (ddlProc != null) {
+            ctx.resource().injectGeneric(ddlProc);
+
+            ddlProc.start(ctx);
         }
 
         // Schedule queries detail metrics eviction.
@@ -822,6 +834,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            PreparedStatement stmt;
+
+            try {
+                stmt = prepareNativeStatement(cctx.name(), qry.getSql());
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
+
+            // TODO properly rework this (remove DML processor ref from indexing, make it a component like DDL proc)
+            if (idx.statementType(stmt) == GridStatementType.DDL)
+                return ddlProc.runDdlStatement(cctx, stmt);
+
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     return idx.queryTwoStep(cctx, qry, null);
@@ -960,14 +985,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      *
-     * @param schema Schema.
+     * @param space Space name.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
         checkxEnabled();
 
-        return idx.prepareNativeStatement(schema, sql);
+        return idx.prepareNativeStatement(space, sql);
     }
 
     /**

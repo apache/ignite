@@ -232,14 +232,22 @@ public interface GridQueryIndexing {
     /**
      * Prepare native statement to retrieve JDBC metadata from.
      *
-     * @param schema Schema.
+     * @param space Schema.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
+    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException;
 
     /**
      * Cancels all executing queries.
      */
     public void cancelAllQueries();
+
+    /**
+     * Determine statement type (query, or DML op, or DDL op).
+     *
+     * @param stmt Statement.
+     * @return Type.
+     */
+    public GridStatementType statementType(PreparedStatement stmt);
 }

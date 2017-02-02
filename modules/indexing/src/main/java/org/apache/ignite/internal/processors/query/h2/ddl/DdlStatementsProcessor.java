@@ -15,43 +15,54 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.h2.ddl;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridDdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.resources.LoggerResource;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.DropIndex;
+import org.h2.jdbc.JdbcPreparedStatement;
 
 /**
- * Logic to execute DDL statements.
+ *
  */
-class DdlStatementsProcessor {
-    /**
-     * Indexing.
-     */
-    private final IgniteH2Indexing indexing;
+public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
+    /** Logger. */
+    @LoggerResource
+    private IgniteLogger log;
 
-    /** */
-    DdlStatementsProcessor(IgniteH2Indexing indexing) {
-        this.indexing = indexing;
+    /** {@inheritDoc} */
+    @Override public void start(GridKernalContext ctx) throws IgniteCheckedException {
+        // No-op.
     }
 
-    /**
-     * Execute DDL statement.
-     *
-     * @param cctx Cache context.
-     * @param stmt H2 statement to parse and execute.
-     */
-    QueryCursor<List<?>> runDdlStatement(GridCacheContext<?, ?> cctx, Prepared stmt) throws IgniteCheckedException {
-        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(stmt);
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryCursor<List<?>> runDdlStatement(GridCacheContext<?, ?> cctx, PreparedStatement stmt)
+        throws IgniteCheckedException {
+        assert stmt instanceof JdbcPreparedStatement;
+
+        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(GridSqlQueryParser
+            .prepared((JdbcPreparedStatement) stmt));
 
         if (gridStmt instanceof GridCreateIndex) {
             QueryIndex newIdx = ((GridCreateIndex) gridStmt).index();
@@ -63,5 +74,9 @@ class DdlStatementsProcessor {
         else
             throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+    }
+
+    public static boolean isDdlStatement(Prepared cmd) {
+        return cmd instanceof CreateIndex || cmd instanceof DropIndex;
     }
 }
