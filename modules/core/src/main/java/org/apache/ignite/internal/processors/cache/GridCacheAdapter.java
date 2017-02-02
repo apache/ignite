@@ -2400,7 +2400,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "invokeAsync [key=" + key + ", entryProcessor=" + entryProcessor + ']';
+                return S.toString("invokeAsync",
+                    "key", key, true,
+                    "entryProcessor", entryProcessor, false);
             }
         });
 
