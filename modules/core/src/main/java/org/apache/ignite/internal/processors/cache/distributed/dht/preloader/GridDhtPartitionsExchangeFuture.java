@@ -370,8 +370,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         return (dummy() || forcePreload()) && reassign();
     }
 
-    public ConcurrentMap<UUID, Map<T2<Integer, Integer>, Long>> partitionHistorySuppliers() {
-        return partHistSuppliers;
+    @Nullable public UUID partitionHistorySupplier(int cacheId, int partId) {
+        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : partHistSuppliers.entrySet()) {
+            if (e.getValue().containsKey(new T2<>(cacheId, partId)))
+                return e.getKey();
+        }
+
+        return null;
     }
 
     /**
@@ -1224,14 +1229,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved.get();
 
-        if (partHistReserved0 != null && partHistReserved.compareAndSet(partHistReserved0, null)) {
-            try {
-                cctx.database().releaseHistory(partHistReserved0);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to release history", e);
-            }
-        }
+        if (partHistReserved0 != null && partHistReserved.compareAndSet(partHistReserved0, null))
+            cctx.database().releaseHistory(partHistReserved0);
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())

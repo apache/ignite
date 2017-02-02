@@ -227,7 +227,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @return Reserved update counters per cache and partition.
      */
-    public Map<Integer, Map<Integer, Long>> reserveHistory() throws IgniteCheckedException {
+    public Map<Integer, Map<Integer, Long>> reserveHistory() {
         return Collections.emptyMap();
     }
 
@@ -240,7 +240,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param reserved Map returned by {@code reserveHistory()}.
      */
-    public void releaseHistory(Map<Integer, Map<Integer, Long>> reserved) throws IgniteCheckedException {
+    public void releaseHistory(Map<Integer, Map<Integer, Long>> reserved) {
         // No-op
     }
 

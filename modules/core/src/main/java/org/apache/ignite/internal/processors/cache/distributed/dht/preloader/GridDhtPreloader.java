@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -281,15 +280,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityTopologyVersion topVer = assigns.topologyVersion();
 
-        Map<Integer, ClusterNode> historySuppliers = new HashMap<>();
-
-        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : exchFut.partitionHistorySuppliers().entrySet()) {
-            for (int p = 0; p < partCnt; p++) {
-                if (e.getValue().containsKey(new T2<>(cctx.cacheId(), p)))
-                    historySuppliers.put(p, cctx.discovery().node(e.getKey()));
-            }
-        }
-
         for (int p = 0; p < partCnt; p++) {
             if (cctx.shared().exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
@@ -315,7 +305,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     continue; // For.
                 }
 
-                ClusterNode histSupplier = historySuppliers.get(p);
+                ClusterNode histSupplier = null;
+
+                if (cctx.shared().database().persistenceEnabled()) {
+                    UUID nodeId = exchFut.partitionHistorySupplier(cctx.cacheId(), p);
+
+                    if (nodeId != null)
+                        histSupplier = cctx.discovery().node(nodeId);
+                }
 
                 if (histSupplier != null) {
                     GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
@@ -327,9 +324,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             cctx.cacheId()));
                     }
 
-                    msg.addPartition(p);
+                    msg.addPartition(p, false);
                 }
                 else {
+                    if (cctx.shared().database().persistenceEnabled()) {
+                        // TODO : wait until local partition is cleared.
+                    }
+
                     Collection<ClusterNode> picked = pickedOwners(p, topVer);
 
                     if (picked.isEmpty()) {
@@ -358,7 +359,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                                 cctx.cacheId()));
                         }
 
-                        msg.addPartition(p);
+                        msg.addPartition(p, true);
                     }
                 }
             }

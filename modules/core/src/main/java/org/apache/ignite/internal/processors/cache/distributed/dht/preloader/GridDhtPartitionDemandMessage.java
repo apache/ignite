@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import org.apache.ignite.DebugUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -49,6 +51,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** Partition. */
     @GridDirectCollection(int.class)
     private Collection<Integer> parts;
+
+    /** Partition. */
+    @GridDirectCollection(int.class)
+    private Collection<Integer> cleanParts;
 
     /** Partition. */
     @GridDirectMap(keyType = int.class, valueType = long.class)
@@ -85,7 +91,8 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      * @param cp Message to copy from.
      * @param parts Partitions.
      */
-    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts, Map<Integer, Long> partsCntrs) {
+    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts,
+        Map<Integer, Long> partsCntrs) {
         cacheId = cp.cacheId;
         updateSeq = cp.updateSeq;
         topic = cp.topic;
@@ -96,6 +103,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         // Create a copy of passed in collection since it can be modified when this message is being sent.
         this.parts = new HashSet<>(parts);
         this.partsCntrs = partsCntrs;
+
+        if (cp.cleanParts != null)
+            this.cleanParts = new HashSet<>(cp.cleanParts);
     }
 
     /**
@@ -108,19 +118,32 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /**
      * @param p Partition.
      */
-    void addPartition(int p) {
+    void addPartition(int p, boolean clean) {
         if (parts == null)
             parts = new HashSet<>();
 
         parts.add(p);
-    }
 
+        if (clean) {
+            if (cleanParts == null)
+                cleanParts = new HashSet<>();
+
+            cleanParts.add(p);
+        }
+    }
 
     /**
      * @return Partition.
      */
     Collection<Integer> partitions() {
         return parts;
+    }
+
+    boolean isClean(int p) {
+        if (cleanParts == null)
+            return false;
+
+        return cleanParts.contains(p);
     }
 
     /**
@@ -273,6 +296,12 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeCollection("cleanParts", cleanParts, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -345,6 +374,14 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
+            case 10:
+                cleanParts = reader.readCollection("cleanParts", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtPartitionDemandMessage.class);
@@ -357,7 +394,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

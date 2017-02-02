@@ -278,10 +278,17 @@ class GridDhtPartitionSupplier {
                         IgniteRebalanceIterator iter;
 
                         if (sctx == null || sctx.entryIt == null) {
-                            iter = cctx.offheap().rebalanceIterator(part, d.topologyVersion(), d.partitionCounter(part));
+                            iter = cctx.offheap().rebalanceIterator(part, d.topologyVersion(),
+                                d.isClean(part) ? null : d.partitionCounter(part));
 
-                            if (!iter.historical())
+                            if (!iter.historical()) {
+                                assert d.isClean(part);
+
                                 s.clean(part);
+                            }
+                            else {
+                                assert !d.isClean(part);
+                            }
                         }
                         else
                             iter = (IgniteRebalanceIterator)sctx.entryIt;
