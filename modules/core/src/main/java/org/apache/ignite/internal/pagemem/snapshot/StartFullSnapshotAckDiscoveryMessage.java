@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,10 +63,15 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
      * @param err Error.
      * @param cacheNames Cache names.
      */
-    public StartFullSnapshotAckDiscoveryMessage(long globalSnapshotId, boolean fullSnapshot,
+    public StartFullSnapshotAckDiscoveryMessage(
+        long globalSnapshotId,
+        boolean fullSnapshot,
         Map<Integer, Long> lastFullSnapshotIdForCache,
-        Collection<String> cacheNames, Exception err,
-        UUID initiatorNodeId, String msg) {
+        Collection<String> cacheNames,
+        Exception err,
+        UUID initiatorNodeId,
+        String msg
+    ) {
         this.globalSnapshotId = globalSnapshotId;
         this.fullSnapshot = fullSnapshot;
         this.lastFullSnapshotIdForCache = lastFullSnapshotIdForCache;
@@ -143,5 +150,10 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StartFullSnapshotAckDiscoveryMessage.class, this);
     }
 }

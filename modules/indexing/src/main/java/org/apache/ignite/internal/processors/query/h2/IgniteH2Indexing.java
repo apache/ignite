@@ -78,15 +78,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
@@ -96,11 +97,11 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -146,7 +147,6 @@ import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
 import org.h2.jdbc.JdbcConnection;
@@ -1667,77 +1667,51 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Rebuild indexes from hash index.
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void rebuildIndexesFromHash(@Nullable String spaceName,
-        GridQueryTypeDescriptor type) throws IgniteCheckedException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
-
-        if (tbl == null)
-            return;
-
-        assert tbl.tbl != null;
-
-        assert tbl.tbl.rebuildFromHashInProgress();
-
-        H2PkHashIndex hashIdx = tbl.pkHashIdx;
-
-        Cursor cursor = hashIdx.find((Session)null, null, null);
-
-        int cacheId = CU.cacheId(tbl.schema.ccfg.getName());
+    @Override public void rebuildIndexesFromHash(@Nullable String spaceName) throws IgniteCheckedException {
+        int cacheId = CU.cacheId(spaceName);
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-        while (cursor.next()) {
-            CacheDataRow dataRow = (CacheDataRow)cursor.get();
+        IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
 
-            boolean done = false;
+        for (int p = 0; p < cctx.affinity().partitions(); p++) {
+            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.keysIterator(p)) {
+                while (keyIter.hasNext()) {
+                    KeyCacheObject key = keyIter.next();
 
-            while (!done) {
-                GridCacheEntryEx entry = cctx.cache().entryEx(dataRow.key());
+                    while (true) {
+                        try {
+                            GridCacheEntryEx entry = cctx.isNear() ?
+                                cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
 
-                try {
-                    synchronized (entry) {
-                        // TODO : How to correctly get current value and link here?
+                            entry.ensureIndexed();
 
-                        GridH2Row row = tbl.tbl.rowDescriptor().createRow(entry.key(), entry.partition(),
-                            dataRow.value(), entry.version(), entry.expireTime());
-
-                        row.link(dataRow.link());
-
-                        List<Index> indexes = tbl.tbl.getAllIndexes();
-
-                        for (int i = 2; i < indexes.size(); i++) {
-                            Index idx = indexes.get(i);
-
-                            if (idx instanceof H2TreeIndex)
-                                ((H2TreeIndex)idx).put(row);
+                            break;
                         }
-
-                        done = true;
+                        catch (GridCacheEntryRemovedException ignore) {
+                            // Retry.
+                        }
+                        catch (GridDhtInvalidPartitionException ignore) {
+                            break;
+                        }
                     }
                 }
-                catch (GridCacheEntryRemovedException e) {
-                    // No-op
-                }
             }
-
         }
 
-        tbl.tbl.markRebuildFromHashInProgress(false);
+        for (TableDescriptor tblDesc : tables(spaceName))
+            tblDesc.tbl.markRebuildFromHashInProgress(false);
     }
 
     /** {@inheritDoc} */
-    @Override public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type) {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+    @Override public void markForRebuildFromHash(@Nullable String spaceName) {
+        for (TableDescriptor tblDesc : tables(spaceName)) {
+            assert tblDesc.tbl != null;
 
-        if (tbl == null)
-            return;
-
-        assert tbl.tbl != null;
-
-        tbl.tbl.markRebuildFromHashInProgress(true);
+            tblDesc.tbl.markRebuildFromHashInProgress(true);
+        }
     }
 
     /**

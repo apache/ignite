@@ -1109,7 +1109,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void dumpStack(String msg) {
-        new Exception(debugPrefix() + msg).printStackTrace(System.out);
+        new Exception(debugPrefix() + msg).printStackTrace(System.err);
     }
 
     /**

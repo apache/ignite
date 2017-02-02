@@ -180,8 +180,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForSnapshot(long snapshotId, UUID snapshotNodeId,
-        Collection<String> cacheNames) {
+    @Nullable public IgniteInternalFuture wakeupForSnapshot(long snapshotId) {
         return null;
     }
 

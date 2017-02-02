@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
@@ -320,12 +319,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(key, partId, val, ver, expireTime);
+        dataStore(part).update(key, val, ver, expireTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIndexes(KeyCacheObject key, GridDhtLocalPartition part) throws IgniteCheckedException {
+        dataStore(part).updateIndexes(key);
     }
 
     /** {@inheritDoc} */
@@ -890,11 +893,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public void update(KeyCacheObject key,
-            int p,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime) throws IgniteCheckedException {
-            DataRow dataRow = new DataRow(key.hashCode(), key, val, ver, p, expireTime);
+            DataRow dataRow = new DataRow(key.hashCode(), key, val, ver, partId, expireTime);
 
             // Make sure value bytes initialized.
             key.valueBytes(cctx.cacheObjectContext());
@@ -919,9 +921,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     assert qryMgr.enabled();
 
                     if (old != null)
-                        qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
+                        qryMgr.store(key, partId, old.value(), old.version(), val, ver, expireTime, dataRow.link());
                     else
-                        qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
+                        qryMgr.store(key, partId, null, null, val, ver, expireTime, dataRow.link());
                 }
 
                 if (old != null) {
@@ -940,6 +942,27 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             }
             finally {
                 busyLock.leaveBusy();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateIndexes(KeyCacheObject key) throws IgniteCheckedException {
+            if (indexingEnabled) {
+                DataRow row = dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
+
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                if (row != null) {
+                    qryMgr.store(
+                        key,
+                        partId,
+                        null,
+                        null,
+                        row.value(),
+                        row.version(),
+                        row.expireTime(),
+                        row.link());
+                }
             }
         }
 
