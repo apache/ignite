@@ -1101,7 +1101,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @return {@code True} if local node is current primary for given entry.
      */
     private boolean primaryLocal(GridCacheEntryEx entry) {
-        return entry.context().affinity().primary(cctx.localNode(), entry.partition(), AffinityTopologyVersion.NONE);
+        return entry.context().affinity().primaryByPartition(cctx.localNode(), entry.partition(), AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -1185,7 +1185,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                             break;
                                         }
-                                        catch (GridCacheEntryRemovedException rmvdErr) {
+                                        catch (GridCacheEntryRemovedException ignored) {
                                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer));
                                         }
                                     }
@@ -1389,7 +1389,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     finally {
                         if (entry != null && readCommitted()) {
                             if (cacheCtx.isNear()) {
-                                if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.partition(), topVer)) {
+                                if (cacheCtx.affinity().partitionBelongs(cacheCtx.localNode(), entry.partition(), topVer)) {
                                     if (entry.markObsolete(xidVer))
                                         cacheCtx.cache().removeEntry(entry);
                                 }

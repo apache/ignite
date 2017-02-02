@@ -48,6 +48,10 @@ export default class IgniteConfigurationGenerator {
         return new Bean('org.apache.ignite.cache.QueryEntity', 'qryEntity', domain, cacheDflts);
     }
 
+    static domainJdbcTypeBean(domain) {
+        return new Bean('org.apache.ignite.cache.store.jdbc.JdbcType', 'type', domain);
+    }
+
     static discoveryConfigurationBean(discovery) {
         return new Bean('org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi', 'discovery', discovery, clusterDflts.discovery);
     }
@@ -1383,7 +1387,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate domain model for store group.
-    static domainStore(domain, cfg = this.domainConfigurationBean(domain)) {
+    static domainStore(domain, cfg = this.domainJdbcTypeBean(domain)) {
         cfg.stringProperty('databaseSchema')
             .stringProperty('databaseTable');
 
@@ -1562,8 +1566,7 @@ export default class IgniteConfigurationGenerator {
                         if (_.isNil(domain.databaseTable))
                             return acc;
 
-                        const typeBean = new Bean('org.apache.ignite.cache.store.jdbc.JdbcType', 'type',
-                            _.merge({}, domain, {cacheName: cache.name}))
+                        const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName: cache.name}))
                             .stringProperty('cacheName');
 
                         setType(typeBean, 'keyType');

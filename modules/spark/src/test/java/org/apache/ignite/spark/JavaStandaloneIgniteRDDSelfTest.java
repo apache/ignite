@@ -39,7 +39,6 @@ import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.List;

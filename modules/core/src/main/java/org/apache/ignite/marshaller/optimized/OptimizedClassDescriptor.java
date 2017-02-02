@@ -882,7 +882,7 @@ class OptimizedClassDescriptor {
 
             return new Fields(fields);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             return fields;
         }
     }
