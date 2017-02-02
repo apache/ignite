@@ -4331,8 +4331,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put("key1", 1);
         cache.put("key2", 2);
 
-        Map map = new HashMap<>();
-
         for (int i = 0; i < gridCount(); i++) {
             for (Cache.Entry entry : jcache(i))
                 storeStgy.putToStore(entry.getKey(), entry.getValue());
@@ -5777,7 +5775,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             int size = 0;
 
             for (String key : keys) {
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx())) {
                     GridCacheEntryEx e =
                         ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -5818,7 +5816,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             int size = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
@@ -6079,7 +6077,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             int size = 0;
 
             for (String key : keys)
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(cacheName).localSize(ALL));
