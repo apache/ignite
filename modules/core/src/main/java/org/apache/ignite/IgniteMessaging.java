@@ -179,8 +179,6 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
 
     /**
      * Asynchronously unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Listen ID that was returned from {@link #remoteListen(Object, IgniteBiPredicate)} method.
      * @return a Future representing pending completion of the operation.

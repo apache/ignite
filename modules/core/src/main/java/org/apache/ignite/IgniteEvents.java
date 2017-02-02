@@ -111,7 +111,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * local listener notifications.
      * <p>
      * The listener can be unsubscribed automatically if local node stops, if {@code locLsnr} callback
-     * returns {@code false} or if {@link #stopRemoteListen(UUID)} is called.
+     * returns {@code false} or if {@link #stopRemoteListen(UUID)} or {@link #stopRemoteListenAsync(UUID)} are called.
      *
      * @param locLsnr Listener callback that is called on local node. If {@code null}, this events will be handled
      *      on remote nodes by passed in {@code rmtFilter}.
@@ -123,7 +123,8 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
-     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} or
+     * {@link #stopRemoteListenAsync(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
      */
     @IgniteAsyncSupported
@@ -139,7 +140,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * local listener notifications.
      * <p>
      * The listener can be unsubscribed automatically if local node stops, if {@code locLsnr} callback
-     * returns {@code false} or if {@link #stopRemoteListen(UUID)} is called.
+     * returns {@code false} or if {@link #stopRemoteListen(UUID)} or {@link #stopRemoteListenAsync(UUID)} are called.
      *
      * @param <T> Type of the event.
      * @param locLsnr Listener callback that is called on local node. If {@code null}, this events will be handled
@@ -152,7 +153,8 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided remote filter will be sent to local node.
      * @return a Future representing pending completion of the operation. The completed future contains
-     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} or
+     *      {@link #stopRemoteListenAsync(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
      */
     public <T extends Event> IgniteFuture<UUID> remoteListenAsync(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
@@ -191,9 +193,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
-     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @see #stopRemoteListen(UUID)
+     * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} or
+     *      {@link #stopRemoteListen(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
+     * @see #stopRemoteListen(UUID)
+     * @see #stopRemoteListenAsync(UUID)
      */
     @IgniteAsyncSupported
     public <T extends Event> UUID remoteListen(int bufSize,
@@ -234,9 +238,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided remote filter will be sent to local node.
      * @return a Future representing pending completion of the operation. The completed future contains
-     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @see #stopRemoteListen(UUID)
+     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)}
+     *      or {@link #stopRemoteListen(UUID)} methods to stop listening.
      * @throws IgniteException If failed to add listener.
+     * @see #stopRemoteListen(UUID)
+     * @see #stopRemoteListenAsync(UUID)
      */
     public <T extends Event> IgniteFuture<UUID> remoteListenAsync(int bufSize,
         long interval,
@@ -254,8 +260,9 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)} method.
-     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
      * @throws IgniteException If failed to stop listeners.
+     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
+     * @see #remoteListenAsync(int, long, boolean, IgniteBiPredicate, IgnitePredicate, int...)
      */
     @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteException;
@@ -266,9 +273,10 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)} method.
-     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
      * @return a Future representing pending completion of the operation.
      * @throws IgniteException If failed to stop listeners.
+     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
+     * @see #remoteListenAsync(int, long, boolean, IgniteBiPredicate, IgnitePredicate, int...)
      */
     public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException;
 
