@@ -20,6 +20,10 @@ Without any additional changes this command will run the PutBenchmark on your lo
 
 NOTE: You need to configure ssh key-based authentication to localhost for running benchmarks on your local machine.
 
+If you run `./bin/benchmark-run-all.sh` command without any parameters and without changing any config files
+it will take as a parameter default config file `config/benchmark.properties` and run all the provided benchmarks on
+your local machine.
+
 
 Running Ignite Benchmarks on remote hosts
 =========================================
@@ -53,9 +57,6 @@ benchmarks.
 It is recommended to create some copies of original config files, edit these copies and then use as a
 parameter for `./bin/benchmark-run-all.sh` script.
 
-If you run `./bin/benchmark-run-all.sh` command without any parameters and without changing any config files
-it will take as a parameter default config file `config/benchmark.properties` and run all the provided benchmarks on
-your local machine.
 
 Provided Benchmarks
 ===================
