@@ -769,7 +769,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestTransactionScopeAllOperations()
         {
-            for (var i = 0; i < 1000; i++)
+            for (var i = 0; i < 10; i++)
             {
                 CheckTxOp((cache, key) => cache.Put(key, -5));
                 CheckTxOp((cache, key) => cache.PutAsync(key, -5).Wait());
@@ -833,50 +833,62 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private void CheckTxOp(Action<ICache<int, int>, int> act)
         {
-            var cache = Cache();
-
-            cache[1] = 1;
-            cache[2] = 2;
-
-            // Rollback.
-            using (new TransactionScope())
+            var isolationLevels = new[]
             {
-                act(cache, 1);
+                IsolationLevel.Serializable, IsolationLevel.RepeatableRead, IsolationLevel.ReadCommitted,
+                IsolationLevel.ReadUncommitted, IsolationLevel.Snapshot, IsolationLevel.Chaos
+            };
 
-                Assert.IsNotNull(cache.Ignite.GetTransactions().Tx, "Transaction has not started.");
-            }
-
-            Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(2, cache[2]);
-
-            using (new TransactionScope())
+            foreach (var isolationLevel in isolationLevels)
             {
-                act(cache, 1);
-                act(cache, 2);
+                var txOpts = new TransactionOptions {IsolationLevel = isolationLevel};
+                const TransactionScopeOption scope = TransactionScopeOption.Required;
+
+                var cache = Cache();
+
+                cache[1] = 1;
+                cache[2] = 2;
+
+                // Rollback.
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+
+                    Assert.IsNotNull(cache.Ignite.GetTransactions().Tx, "Transaction has not started.");
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                // Commit.
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.AreEqual(2, cache[2]);
+
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.IsTrue(!cache.ContainsKey(2) || cache[2] != 2);
             }
-
-            Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(2, cache[2]);
-
-            // Commit.
-            using (var ts = new TransactionScope())
-            {
-                act(cache, 1);
-                ts.Complete();
-            }
-
-            Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
-            Assert.AreEqual(2, cache[2]);
-
-            using (var ts = new TransactionScope())
-            {
-                act(cache, 1);
-                act(cache, 2);
-                ts.Complete();
-            }
-
-            Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
-            Assert.IsTrue(!cache.ContainsKey(2) || cache[2] != 2);
         }
 
         [Serializable]
