@@ -30,6 +30,7 @@ namespace Apache.Ignite.Linq.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
+    using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
@@ -478,62 +479,55 @@ namespace Apache.Ignite.Linq.Impl
             if (subQueryModel.IsIdentityQuery() && subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
             {
                 ResultBuilder.Append("(");
-                var contains = (ContainsResultOperator)subQueryModel.ResultOperators.First();
-                Visit(contains.Item);
-                ResultBuilder.Append(" IN (");
 
+                // TODO: frist evaluate values, check for null values
+                var contains = (ContainsResultOperator)subQueryModel.ResultOperators.First();
                 var fromExpression = subQueryModel.MainFromClause.FromExpression;
 
-                switch (fromExpression.NodeType)
-                { 
-                    case ExpressionType.MemberAccess:
-                        var memberExpression = (MemberExpression) fromExpression;
+                var queryable = ExpressionWalker.GetCacheQueryable(fromExpression, false);
 
-                        var queryable = ExpressionWalker.GetCacheQueryable(memberExpression, false);
+                if (queryable != null)
+                {
+                    Visit(contains.Item);
 
-                        if (queryable == null)
-                        {
-                            var enumerable = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
-                            if (enumerable != null)
-                            {
-                                AppendInParameters(enumerable);
-                            }
-                        }
-                        else
-                        {
-                            _modelVisitor.VisitQueryModel(subQueryModel);
-                        }
+                    ResultBuilder.Append(" IN (");
+                    _modelVisitor.VisitQueryModel(subQueryModel);
+                    ResultBuilder.Append(")");
+                }
+                else
+                {
+                    var inValues = GetInValues(fromExpression)
+                       .ToArray();
 
-                        break;
-                    case ExpressionType.ListInit:
-                        var listInitExpression = (ListInitExpression) fromExpression;
-                        var listValues = listInitExpression.Initializers
-                            .SelectMany(init => init.Arguments)
-                            .Select(ExpressionWalker.EvaluateExpression<object>);
-                        AppendInParameters(listValues);
-                        break;
-                    case ExpressionType.NewArrayInit:
-                        var newArrayExpression = (NewArrayExpression) fromExpression;
-                        AppendInParameters(newArrayExpression.Expressions.Select(ExpressionWalker.EvaluateExpression<object>));
-                        break;
-                    case ExpressionType.Parameter:
+                    var hasNulls = inValues.Any(o => o == null);
+                    //var hasNotNulls = inValues.Any(o => o != null);
 
-                        //TODO: !!!!!
-                        break;
-                    default:
-                        var defaultValues = Expression.Lambda(fromExpression).Compile().DynamicInvoke();
-                        if (defaultValues is IEnumerable)
-                        {
-                            AppendInParameters(defaultValues as IEnumerable);
-                        }
-                        else
-                        {
-                            throw new NotSupportedException("From expression not supported: " + fromExpression);
-                        }
-                        break;
+                    if (hasNulls)
+                    {
+                        ResultBuilder.Append("(");
+                    }
+
+                    //if (hasNotNulls)
+                    //{
+                        Visit(contains.Item);
+                        ResultBuilder.Append(" IN (");
+                        AppendInParameters(inValues.Where(o => o != null));
+                        ResultBuilder.Append(")");
+                    //}
+                    //else
+                    //{
+                        //ResultBuilder.Append("0 = 1");
+                    //}
+
+                    if (hasNulls)
+                    {
+                        ResultBuilder.Append(") OR ");
+                        Visit(contains.Item);
+                        ResultBuilder.Append(" IS NULL");
+                    }
                 }
 
-                ResultBuilder.Append("))");
+                ResultBuilder.Append(")");
             }
             else
             {
@@ -543,7 +537,50 @@ namespace Apache.Ignite.Linq.Impl
 
             return expression;
         }
-        
+
+        private IEnumerable<object> GetInValues(Expression fromExpression)
+        {
+            IEnumerable result;
+            switch (fromExpression.NodeType)
+            {
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression) fromExpression;
+                    result = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
+                    break;
+                case ExpressionType.ListInit:
+                    var listInitExpression = (ListInitExpression) fromExpression;
+                    result = listInitExpression.Initializers
+                        .SelectMany(init => init.Arguments)
+                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                    break;
+                case ExpressionType.NewArrayInit:
+                    var newArrayExpression = (NewArrayExpression) fromExpression;
+                    result = newArrayExpression.Expressions
+                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                    break;
+                case ExpressionType.Parameter:
+                    //TODO: !!!!!
+                    //break;
+                default:
+                    var defaultValues = Expression.Lambda(fromExpression).Compile().DynamicInvoke();
+                    if (defaultValues is IEnumerable)
+                    {
+                        result = defaultValues as IEnumerable;
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("From expression is not supported: " + fromExpression);
+                    }
+                    break;
+            }
+
+            result = result ?? Enumerable.Empty<object>();
+
+            return result
+                .Cast<object>()
+                .ToArray();
+        }
+
 
         private void AppendInParameters(IEnumerable enumerable)
         {

@@ -758,7 +758,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var emptyKeys = new int[0];
 
             var bigNumberOfKeys = 10000;
-            var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys - 10 + PersonCount, bigNumberOfKeys + PersonCount)
+            var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys + 10 - PersonCount, bigNumberOfKeys + PersonCount)
                 .ToArray();
             var hashSetKeys = new HashSet<int>(keys);
 
@@ -771,13 +771,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
             CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null}.Contains(e.Value.Name));
+            CheckWhereFunc(cache, e => !keys.Contains(e.Key));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null}.Contains(e.Value.Name));
 
             int[] nullKeys = null;
             var nullKeysEntries = cache
                 .Where(e => nullKeys.Contains(e.Key))
                 .ToArray();
 
-            Assert.AreEqual(nullKeysEntries.Length, 0, "Checking 'null.Contains' should return 0");
+            Assert.AreEqual(nullKeysEntries.Length, 0, "Evaluating 'null.Contains' should return zero results");
 
 
             //var cacheEntries = cache
