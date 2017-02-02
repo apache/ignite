@@ -28,7 +28,7 @@
 ==============================================================================
 For $project.name #if ($project.url)($project.url)#end $project.artifact
 ==============================================================================
-This product bundles $project.name which is available under a:
+This product bundles $project.name which is available under the following:
 #foreach ( $license in $project.licenses )
 ## JSR 107 updated the license to Apache License, Version 2.0
 ## (https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt) but the JSR's POM
