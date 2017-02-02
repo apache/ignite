@@ -44,8 +44,8 @@ namespace ignite
 
                 return hash;
             }
-            else
-                return 0;
+
+            return 0;
         }
     }
 }

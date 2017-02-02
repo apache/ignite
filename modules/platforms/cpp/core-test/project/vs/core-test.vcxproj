@@ -33,12 +33,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\cache-identity.xml" />
     <None Include="..\..\config\cache-query.xml" />
     <None Include="..\..\config\cache-test.xml" />
     <None Include="..\..\config\invalid.xml" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary_object_test.cpp" />
+    <ClCompile Include="..\..\src\binary_identity_resolver_test.cpp" />
     <ClCompile Include="..\..\src\cache_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\decimal_test.cpp" />
@@ -59,6 +61,7 @@
     <ClCompile Include="..\..\src\reference_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
+    <ClCompile Include="..\..\src\test_utils.cpp" />
     <ClCompile Include="..\..\src\transactions_test.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -66,6 +69,7 @@
     <ClInclude Include="..\..\include\ignite\binary_test_utils.h" />
     <ClInclude Include="..\..\include\ignite\complex_type.h" />
     <ClInclude Include="..\..\include\ignite\test_type.h" />
+    <ClInclude Include="..\..\include\ignite\test_utils.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

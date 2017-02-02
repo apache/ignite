@@ -51,7 +51,7 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
         int k3 = cnt++;
         int a1 = cnt++;
         int a2 = cnt++;
-        int a3 = cnt++;
+        int a3 = cnt;
 
         // addMeta(name, val).
         assert ma.addMeta(attr1, "val1") == null;
