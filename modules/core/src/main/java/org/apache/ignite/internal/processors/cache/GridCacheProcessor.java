@@ -1869,6 +1869,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
+        GridCacheSharedDelHistManager delHistMgr = new GridCacheSharedDelHistManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
@@ -1882,6 +1883,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topMgr,
             ioMgr,
             ttl,
+            delHistMgr,
             jta,
             storeSesLsnrs
         );

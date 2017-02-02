@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,7 +30,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -46,13 +46,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,6 +59,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RM_ITEM_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -70,10 +69,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
+
 public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
+
+    /** Ttl of removed cache item (ms). */
+    public static final int CACHE_RM_ITEM_TTL = Integer.getInteger(IGNITE_CACHE_RM_ITEM_TTL, 10_000);
 
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -109,7 +112,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Remove queue. */
-    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final LinkedBlockingQueue<T3<KeyCacheObject, GridCacheVersion, Long>> rmvQueue;
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
@@ -146,7 +149,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+        rmvQueue = new LinkedBlockingQueue<>(U.ceilPow2(delQueueSize));
+
+        cctx.shared().delHist().register(rmvQueue, cctx);
     }
 
     /**
@@ -299,21 +304,34 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @return removed item expired time
+     */
+    private long expiredTime() {
+        return U.currentTimeMillis() + CACHE_RM_ITEM_TTL;
+    }
+
+    private synchronized boolean putIfRemain(T3<KeyCacheObject, GridCacheVersion, Long> item) throws InterruptedException {
+        if (rmvQueue.remainingCapacity() > 0) {
+            rmvQueue.put(item);
+            return true;
+        } else
+            return false;
+    }
+
+    /**
      * @param key Removed key.
      * @param ver Removed version.
      * @throws IgniteCheckedException If failed.
      */
     public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
         try {
-            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
-
-            if (evicted != null)
-                cctx.dht().removeVersionedEntry(evicted.get1(), evicted.get2());
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
+            if (!putIfRemain(new T3<>(key, ver, expiredTime()))) {
+                T3<KeyCacheObject, GridCacheVersion, Long> evicted = rmvQueue.poll();
+                if (evicted != null)
+                    cctx.dht().removeVersionedEntry(evicted.get1(), evicted.get2());
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -807,11 +825,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearDeferredDeletes() {
-        rmvQueue.forEach(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
-            @Override public void apply(T2<KeyCacheObject, GridCacheVersion> t) {
-                cctx.dht().removeVersionedEntry(t.get1(), t.get2());
-            }
-        });
+        for (T3<KeyCacheObject, GridCacheVersion, Long> e : rmvQueue) {
+            cctx.dht().removeVersionedEntry(e.get1(), e.get2());
+        }
     }
 
     /** {@inheritDoc} */
