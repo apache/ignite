@@ -33,12 +33,9 @@ public final class IgniteQueryErrorCode {
     /** General parsing error - for the cases when there's no more specific code available. */
     public final static int PARSING = 1001;
 
-    /** Code encountered unexpected type of SQL operation - like {@code EXPLAIN MERGE}. */
+    /** Code encountered unexpected type of SQL operation - like {@code EXPLAIN MERGE},
+     * or a token that is not handled by Ignite - say, {@code CREATE UNIQUE INDEX} (<b>UNIQUE</b> is not supported). */
     public final static int UNSUPPORTED_OPERATION = 1002;
-
-    /** Code encountered token that corresponds to unsupported feature
-     * during parsing of a statement that is otherwise generally supported. */
-    public final static int UNSUPPORTED_TOKEN = 1003;
 
     /* 2xxx - analysis errors */
 
