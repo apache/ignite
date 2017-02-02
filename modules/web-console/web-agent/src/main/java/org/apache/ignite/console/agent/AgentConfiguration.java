@@ -89,12 +89,9 @@ public class AgentConfiguration {
 
     /**
      * @param tokens Tokens.
-     * @return {@code this} for chaining.
      */
-    public AgentConfiguration tokens(List<String> tokens) {
+    public void tokens(List<String> tokens) {
         this.tokens = tokens;
-
-        return this;
     }
 
     /**
@@ -106,12 +103,9 @@ public class AgentConfiguration {
 
     /**
      * @param srvUri URI.
-     * @return {@code this} for chaining.
      */
-    public AgentConfiguration serverUri(String srvUri) {
+    public void serverUri(String srvUri) {
         this.srvUri = srvUri;
-
-        return this;
     }
 
     /**
@@ -123,12 +117,9 @@ public class AgentConfiguration {
 
     /**
      * @param nodeUri Node URI.
-     * @return {@code this} for chaining.
      */
-    public AgentConfiguration nodeUri(String nodeUri) {
+    public void nodeUri(String nodeUri) {
         this.nodeUri = nodeUri;
-
-        return this;
     }
 
     /**
@@ -140,12 +131,9 @@ public class AgentConfiguration {
 
     /**
      * @param demoNodeUri Demo node URI.
-     * @return {@code this} for chaining.
      */
-    public AgentConfiguration demoNodeUri(String demoNodeUri) {
+    public void demoNodeUri(String demoNodeUri) {
         this.demoNodeUri = demoNodeUri;
-
-        return this;
     }
 
     /**
@@ -164,12 +152,9 @@ public class AgentConfiguration {
 
     /**
      * @param driversFolder Driver folder.
-     * @return {@code this} for chaining.
      */
-    public AgentConfiguration driversFolder(String driversFolder) {
+    public void driversFolder(String driversFolder) {
         this.driversFolder = driversFolder;
-
-        return this;
     }
 
     /**
@@ -212,9 +197,8 @@ public class AgentConfiguration {
 
     /**
      * @param cmd Command.
-     * @return {@code this} for chaining.
      */
-    public AgentConfiguration merge(AgentConfiguration cmd) {
+    public void merge(AgentConfiguration cmd) {
         if (tokens == null)
             tokens(cmd.tokens());
 
@@ -232,8 +216,6 @@ public class AgentConfiguration {
 
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
-
-        return this;
     }
 
     /** {@inheritDoc} */
