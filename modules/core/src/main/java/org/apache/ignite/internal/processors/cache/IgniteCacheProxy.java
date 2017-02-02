@@ -2307,32 +2307,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void resetLostPartitions() {
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            IgniteInternalFuture<?> fut = ctx.kernalContext().cache().resetCacheState(getName());
-
-            if (isAsync())
-                setFuture(fut);
-            else {
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    throw CU.convertToCacheException(e);
-                }
-            }
-        }
-        finally {
-            onLeave(gate, prev);
-        }
-
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
 

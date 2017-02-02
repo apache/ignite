@@ -1041,6 +1041,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
+        assert node != null;
+
+        // Reset lost partition before send local partition to coordinator.
+        if (!F.isEmpty(reqs)) {
+            Set<String> caches = new HashSet<>();
+
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.resetLostPartitions())
+                    caches.add(req.cacheName());
+            }
+
+            if (!F.isEmpty(caches))
+                resetLostPartitions(caches);
+        }
+
         GridDhtPartitionsSingleMessage m = cctx.exchange().createPartitionsSingleMessage(
             node, exchangeId(), clientOnlyExchange, true);
 
@@ -1141,17 +1156,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (!F.isEmpty(reqs)) {
-                for (DynamicCacheChangeRequest req : reqs) {
-                    if (req.resetLostPartitions()) {
-                        resetLostPartitions();
-
-                        break;
-                    }
-                }
-            }
-
-            detectLostPartitions();
+            if (discoEvt.type() == EVT_NODE_LEFT ||
+                discoEvt.type() == EVT_NODE_FAILED ||
+                discoEvt.type() == EVT_NODE_JOINED)
+                detectLostPartitions();
 
             Map<Integer, CacheValidation> m = new HashMap<>(cctx.cacheContexts().size());
 
@@ -1514,13 +1522,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      *
      */
-    private void resetLostPartitions() {
+    private void resetLostPartitions(Collection<String> cacheNames) {
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
                 return;
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (!cacheCtx.isLocal())
+                if (!cacheCtx.isLocal() && cacheNames.contains(cacheCtx.name()))
                     cacheCtx.topology().resetLostPartitions();
             }
         }
@@ -1551,12 +1559,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)((DiscoveryCustomEvent)discoEvt)
                         .customMessage();
 
+                    Set<String> caches = new HashSet<>();
+
                     for (DynamicCacheChangeRequest req : batch.requests()) {
                         if (req.resetLostPartitions())
-                            resetLostPartitions();
+                            caches.add(req.cacheName());
                         else if (req.globalStateChange() && req.state() != ClusterState.INACTIVE)
                             assignPartitionsStates();
                     }
+
+                    if (!F.isEmpty(caches))
+                        resetLostPartitions(caches);
                 }
             }
             else if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)

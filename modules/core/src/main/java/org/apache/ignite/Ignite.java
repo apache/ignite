@@ -612,4 +612,9 @@ public interface Ignite extends AutoCloseable {
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      */
     public void active(boolean active);
+
+    /**
+     * Clears partition's lost state and moves caches to a normal mode.
+     */
+    public void resetLostPartitions(Collection<String> cacheNames);
 }
