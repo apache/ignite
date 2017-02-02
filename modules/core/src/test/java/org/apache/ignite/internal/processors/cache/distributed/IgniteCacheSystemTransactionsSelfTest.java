@@ -59,7 +59,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (String cacheName : new String[] {null, CU.UTILITY_CACHE_NAME, CU.MARSH_CACHE_NAME}) {
+        for (String cacheName : new String[] {null, CU.UTILITY_CACHE_NAME}) {
             IgniteKernal kernal = (IgniteKernal)ignite(0);
 
             GridCacheAdapter<Object, Object> cache = kernal.context().cache().internalCache(cacheName);
@@ -103,22 +103,6 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
         checkEntries(null,                  "1", "11", "2", "22", "3", null);
         checkEntries(CU.UTILITY_CACHE_NAME, "1", null, "2", "2",  "3", "3");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMarshallerCacheShouldNotStartTx() throws Exception {
-        IgniteKernal ignite = (IgniteKernal)grid(0);
-
-        final GridCacheAdapter<String,String> marshallerCache = (GridCacheAdapter<String, String>)(GridCacheAdapter)
-            ignite.context().cache().marshallerCache();
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return marshallerCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
-            }
-        }, IgniteException.class, null);
     }
 
     /**

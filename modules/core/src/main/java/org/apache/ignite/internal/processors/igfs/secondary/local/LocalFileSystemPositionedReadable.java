@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * Positioned readable interface for local secondary file system.
  */
-public class LocalIgfsSecondaryFileSystemPositionedReadable extends BufferedInputStream
+public class LocalFileSystemPositionedReadable extends BufferedInputStream
     implements IgfsSecondaryFileSystemPositionedReadable {
     /** Last read position. */
     private long lastReadPos;
@@ -37,7 +37,7 @@ public class LocalIgfsSecondaryFileSystemPositionedReadable extends BufferedInpu
      * @param in Input stream.
      * @param bufSize Buffer size.
      */
-    public LocalIgfsSecondaryFileSystemPositionedReadable(FileInputStream in, int bufSize) {
+    public LocalFileSystemPositionedReadable(FileInputStream in, int bufSize) {
         super(in, bufSize);
     }
 
