@@ -35,8 +35,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -574,8 +574,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
         catch (GridDhtInvalidPartitionException e) {
             if (log.isDebugEnabled())
-                log.debug("Ignoring entry for partition that does not belong [key=" + key + ", val=" + val +
-                    ", err=" + e + ']');
+                log.debug(S.toString("Ignoring entry for partition that does not belong",
+                    "key", key, true,
+                    "val", val, true,
+                    "err", e, false));
         }
     }
 
