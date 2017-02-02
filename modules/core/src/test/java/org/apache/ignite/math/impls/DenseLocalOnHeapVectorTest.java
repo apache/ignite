@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -76,8 +77,19 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void getElementTest() { // TODO write test
+    public void getElementTest() {
+        for (int size : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
+            for (int delta : new int[] {-1, 0, 1})
+                for (boolean shallowCopy : new boolean[] {false, true}) {
+                    final int expSize = size + delta;
 
+                    final DenseLocalOnHeapVector v = new DenseLocalOnHeapVector(new double[expSize], shallowCopy);
+
+                    for (Vector.Element e : v.all())
+                        e.set(e.index());
+
+                    assertCloseEnough(v);
+                }
     }
 
     /** */ @Test
@@ -336,5 +348,51 @@ public class DenseLocalOnHeapVectorTest {
 
         assertTrue("1 size default copy",
             pred.test(new DenseLocalOnHeapVector(new double[1])));
+    }
+
+    /** */
+    private void assertCloseEnough(DenseLocalOnHeapVector obtained) {
+        final int size = obtained.size();
+
+        for (int i = 0; i < size; i++) {
+            final Vector.Element e = obtained.getElement(i);
+
+            final Metric metric = new Metric(i, e.get());
+
+            assertEquals("vector index", i, e.index());
+
+            assertTrue("not close enough at index " + i + ", size " + size + ", " + metric, metric.closeEnough());
+        }
+    }
+
+    /** */
+    private static class Metric {
+        /** */
+        private static final double tolerance = 0.1;
+
+        /** */
+        private final double exp;
+
+        /** */
+        private final double obtained;
+
+        /** **/
+        Metric(double exp, double obtained) {
+            this.exp = exp;
+            this.obtained = obtained;
+        }
+
+        /** */
+        boolean closeEnough() {
+            return Math.abs(exp - obtained) < tolerance;
+        }
+
+        /** @{inheritDoc} */
+        @Override public String toString() {
+            return "Metric{" + "expected=" + exp +
+                ", obtained=" + obtained +
+                ", tolerance=" + tolerance +
+                '}';
+        }
     }
 }

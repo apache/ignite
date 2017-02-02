@@ -120,12 +120,8 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** */
     @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        else if (o == null || getClass() != o.getClass())
-            return false;
-        else
-            return Arrays.equals(data, ((DenseLocalOnHeapVector)o).data);
+        return this == o || !(o == null || getClass() != o.getClass())
+            && Arrays.equals(data, ((DenseLocalOnHeapVector) o).data);
     }
 
     /** */
@@ -148,34 +144,14 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
         return new Iterable<Element>() {
             private int idx = 0;
 
-            @Override
-            public Iterator<Element> iterator() {
+            @Override public Iterator<Element> iterator() {
                 return new Iterator<Element>() {
-                    @Override
-                    public boolean hasNext() {
-                        return idx < data.length - 1;
+                    @Override public boolean hasNext() {
+                        return idx < data.length;
                     }
 
-                    @Override
-                    public Element next() {
-                        return new Element() {
-                            private final int i = idx++;
-
-                            @Override
-                            public double get() {
-                                return data[i];
-                            }
-
-                            @Override
-                            public int index() {
-                                return i;
-                            }
-
-                            @Override
-                            public void set(double val) {
-                                data[i] = val;
-                            }
-                        };
+                    @Override public Element next() {
+                        return getElement(idx++);
                     }
                 };
             }
@@ -189,7 +165,19 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public Element getElement(int idx) {
-        return null; // TODO
+        return new Element() {
+            @Override public double get() {
+                return data[idx];
+            }
+
+            @Override public int index() {
+                return idx;
+            }
+
+            @Override public void set(double val) {
+                data[idx] = val;
+            }
+        };
     }
 
     /** {@inheritDoc */
@@ -220,8 +208,7 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
     }
 
     /** {@inheritDoc */
-    @Override
-    public Vector assign(IntToDoubleFunction fun) {
+    @Override public Vector assign(IntToDoubleFunction fun) {
         assert fun != null;
 
         Arrays.setAll(data, fun);
