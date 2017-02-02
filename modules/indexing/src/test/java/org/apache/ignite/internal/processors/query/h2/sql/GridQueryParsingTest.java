@@ -397,6 +397,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             buildCreateIndex("idx", "Person", "schema2", true, QueryIndexType.SORTED, "name", true),
             "create index if not exists \"schema2\".idx on \"schema2\".Person (name)");
 
+        // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "schema2", true, QueryIndexType.SORTED, "name", false),
             "create index if not exists idx on \"schema2\".Person (name dEsC)");
@@ -405,6 +406,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             buildCreateIndex("idx", "Person", "", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
             "create spatial index if not exists idx on Person (old, name desc)");
 
+        // Schemas for index and table must match (here schema for the table defaults to empty string)
         assertParseThrows("create index if not exists \"schema2\".idx on Person (name)",
             DbException.class, "Schema name must match [90080-191]");
 
@@ -431,8 +433,17 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public void testParseDropIndex() throws Exception {
-        checkQuery("drop index \"\".idx");
-        checkQuery("drop index if exists \"\".idx");
+        // Schema that is not set defaults to default schema of connection which is empty string
+        assertDropIndexEquals(buildDropIndex("idx", "", false), "drop index idx");
+        assertDropIndexEquals(buildDropIndex("idx", "", true), "drop index if exists idx");
+        assertDropIndexEquals(buildDropIndex("idx", "schema2", true), "drop index if exists \"schema2\".idx");
+        assertDropIndexEquals(buildDropIndex("idx", "schema2", false), "drop index \"schema2\".idx");
+
+        // Message is null as long as it may differ from system to system, so we just check for exceptions
+        assertParseThrows("drop index schema2.", DbException.class, null);
+        assertParseThrows("drop index", DbException.class, null);
+        assertParseThrows("drop index if exists", DbException.class, null);
+        assertParseThrows("drop index if exists schema2.", DbException.class, null);
     }
 
     /**
@@ -464,9 +475,42 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Parse SQL and compare it to expected instance of DROP INDEX.
+     */
+    private void assertDropIndexEquals(GridDropIndex exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+
+        assertTrue(stmt instanceof GridDropIndex);
+
+        assertDropIndexEquals(exp, (GridDropIndex) stmt);
+    }
+
+    /**
+     * Test two instances of {@link GridDropIndex} for equality.
+     */
+    private static void assertDropIndexEquals(GridDropIndex exp, GridDropIndex actual) {
+        assertEqualsIgnoreCase(exp.name(), actual.name());
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEquals(exp.ifExists(), actual.ifExists());
+    }
+
+    /**
+     *
+     */
+    private static GridDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
+        GridDropIndex res = new GridDropIndex();
+        res.name(name);
+        res.schemaName(schema);
+        res.ifExists(ifExists);
+        return res;
+    }
+
+    /**
      * Test two instances of {@link GridCreateIndex} for equality.
      */
-    private void assertCreateIndexEquals(GridCreateIndex exp, GridCreateIndex actual) {
+    private static void assertCreateIndexEquals(GridCreateIndex exp, GridCreateIndex actual) {
         assertEquals(exp.ifNotExists(), actual.ifNotExists());
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
@@ -504,7 +548,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private GridCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
+    private static GridCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
         QueryIndexType type, Object... flds) {
         QueryIndex idx = new QueryIndex();
         idx.setName(name);
