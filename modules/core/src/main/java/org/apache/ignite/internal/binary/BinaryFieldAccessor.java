@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -140,24 +141,6 @@ public abstract class BinaryFieldAccessor {
     }
 
     /**
-     * Get field ID
-     *
-     * @return ID.
-     */
-    public int id() {
-        return id;
-    }
-
-    /**
-     * Get field name
-     *
-     * @return Name.
-     */
-    public String name() {
-        return name;
-    }
-
-    /**
      * Write field.
      *
      * @param obj Object.
@@ -177,17 +160,12 @@ public abstract class BinaryFieldAccessor {
         try {
             read0(obj, reader);
         }
-        catch (BinaryObjectException ex) {
-            if (S.INCLUDE_SENSITIVE) {
-                String fieldName = name();
-                if (fieldName == null || fieldName.isEmpty())
-                    fieldName = String.valueOf(id());
-                throw new BinaryObjectException("Failed to deserialize field: " + fieldName, ex);
-            }
+        catch (Exception ex) {
+            if (S.INCLUDE_SENSITIVE && !F.isEmpty(name))
+                throw new BinaryObjectException("Failed to deserialize field [name=" + name + ']', ex);
             else
-                throw ex;
+                throw new BinaryObjectException("Failed to deserialize field [id=" + id + ']', ex);
         }
-
     }
 
     /**
@@ -215,8 +193,6 @@ public abstract class BinaryFieldAccessor {
          */
         protected AbstractPrimitiveAccessor(Field field, int id, BinaryWriteMode mode) {
             super(field, id, mode);
-
-            assert field != null;
 
             offset = GridUnsafe.objectFieldOffset(field);
         }

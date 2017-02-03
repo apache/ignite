@@ -861,7 +861,7 @@ public class BinaryClassDescriptor {
 
             return res;
         }
-        catch (BinaryObjectException e) {
+        catch (Exception e) {
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
                 throw new BinaryObjectException("Failed to deserialize object [typeName=" + typeName + ']', e);
             else
