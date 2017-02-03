@@ -65,6 +65,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         CollectionConfiguration cfg = collectionConfiguration();
 
         cfg.setCollocated(collocated);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         return cfg;
     }

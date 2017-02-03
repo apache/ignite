@@ -64,6 +64,8 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -321,6 +323,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
+
+    public static final boolean DFLT_CONNECTION_PER_POLICY = false;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
@@ -985,6 +989,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** */
     private int connectionsPerNode = DFLT_CONN_PER_NODE;
 
+    /** */
+    private boolean publicPoolConn = DFLT_CONNECTION_PER_POLICY;
+
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
 
@@ -1219,6 +1226,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** {@inheritDoc} */
     @Override public int getConnectionsPerNode() {
         return connectionsPerNode;
+    }
+
+    /**
+     * Set this to {@code true} if {@code TcpCommunicationSpi} should use
+     * separate connection specifically for messages that will be processed
+     * in public pool. This option allows avoid possible starvation when
+     * back-pressure control enabled ({@link #getMessageQueueLimit()} > 0).
+     * <p>
+     *     If {@link #getConnectionsPerNode() == 0} has no effect.
+     * </p>
+     * <p>
+     *     Default is {@code false}.
+     * </p>
+     *
+     * @param connPerPlc {@code true} if use separate connection for public pool messages.
+     */
+    public void setUseSeparatePublicPoolConnection(boolean connPerPlc) {
+        this.publicPoolConn = connPerPlc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isUseSeparatePublicPoolConnection() {
+        return publicPoolConn;
     }
 
     /**
@@ -1763,14 +1793,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         if (connectionsPerNode > 1) {
             connPlc = new ConnectionPolicy() {
-                @Override public int connectionIndex() {
-                    return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+                @Override public int connectionIndex(Message msg) {
+                    int idx = (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+
+                    if (publicPoolConn && msg instanceof GridIoMessage) {
+                        byte plc = ((GridIoMessage)msg).policy();
+
+                        if (plc == GridIoPolicy.PUBLIC_POOL)
+                            idx = 0;
+                        else
+                            idx = idx == 0 ? idx + 1 : idx;
+                    }
+
+                    return idx;
                 }
             };
         }
         else {
             connPlc = new ConnectionPolicy() {
-                @Override public int connectionIndex() {
+                @Override public int connectionIndex(Message msg) {
                     return 0;
                 }
             };
@@ -2331,7 +2372,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            int connIdx = useMultipleConnections(node) ? connPlc.connectionIndex() : 0;
+            int connIdx = useMultipleConnections(node) ? connPlc.connectionIndex(msg) : 0;
 
             try {
                 boolean retry;
@@ -3326,7 +3367,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return {@code True} if given node supports multiple connections per-node for communication.
      */
     private boolean useMultipleConnections(ClusterNode node) {
-        return node.version().compareToIgnoreTimestamp(MULTIPLE_CONN_SINCE_VER) >= 0;
+        return true || node.version().compareToIgnoreTimestamp(MULTIPLE_CONN_SINCE_VER) >= 0;
     }
 
     /**
@@ -4492,6 +4533,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /**
          * @return Thread connection index.
          */
-        int connectionIndex();
+        int connectionIndex(Message msg);
     }
 }

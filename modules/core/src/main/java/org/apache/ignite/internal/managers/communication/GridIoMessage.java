@@ -102,7 +102,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Policy.
      */
-    byte policy() {
+    public byte policy() {
         return plc;
     }
 
