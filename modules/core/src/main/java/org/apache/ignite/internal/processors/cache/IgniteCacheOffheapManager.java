@@ -131,8 +131,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     public void updateIndexes(
         KeyCacheObject key,
-        GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**

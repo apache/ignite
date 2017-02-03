@@ -928,7 +928,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                DataRow dataRow = new DataRow(key, val, ver, p, expireTime);
+                DataRow dataRow = new DataRow(key, val, ver, partId, expireTime);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -998,7 +998,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public void updateIndexes(KeyCacheObject key) throws IgniteCheckedException {
             if (indexingEnabled) {
-                DataRow row = dataTree.findOne(new KeySearchRow(key.hashCode(), key, 0));
+                CacheDataRow row = dataTree.findOne(new SearchRow(key));
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
