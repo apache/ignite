@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -1165,10 +1166,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param page Page.
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      */
-    public static void checkPageId(Page page, ByteBuffer buf) {
-        long pageId = PageIO.getPageId(buf);
+    public static void checkPageId(Page page, long pageAddr) {
+        long pageId = PageIO.getPageId(pageAddr);
 
         // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
         if (pageId != 0L && page.id() != pageId)
@@ -1228,22 +1229,22 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
-            initNew();
+            initTree(true);
         }
 
         /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<Long> io, ByteBuffer buf, int idx, Long n2)
+        @Override protected int compare(BPlusIO<Long> io, long pageAddr, int idx, Long n2)
             throws IgniteCheckedException {
-            Long n1 = io.getLookupRow(this, buf, idx);
+            Long n1 = io.getLookupRow(this, pageAddr, idx);
 
             return Long.compare(n1, n2);
         }
 
         /** {@inheritDoc} */
-        @Override protected Long getRow(BPlusIO<Long> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+        @Override protected Long getRow(BPlusIO<Long> io, long pageAddr, int idx) throws IgniteCheckedException {
             assert io.canGetRow() : io;
 
-            return io.getLookupRow(this, buf, idx);
+            return io.getLookupRow(this, pageAddr, idx);
         }
 
         /**
@@ -1280,11 +1281,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadLock(Page page, ByteBuffer buf) {
-            if (buf != null) {
-                long pageId = PageIO.getPageId(buf);
+        @Override public void onReadLock(Page page, long pageAddr) {
+            if (pageAddr != 0L) {
+                long pageId = PageIO.getPageId(pageAddr);
 
-                checkPageId(page, buf);
+                checkPageId(page, pageAddr);
 
                 assertNull(locks(true).put(page.id(), pageId));
             }
@@ -1293,10 +1294,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadUnlock(Page page, ByteBuffer buf) {
-            checkPageId(page, buf);
+        @Override public void onReadUnlock(Page page, long pageAddr) {
+            checkPageId(page, pageAddr);
 
-            long pageId = PageIO.getPageId(buf);
+            long pageId = PageIO.getPageId(pageAddr);
 
             assertEquals(Long.valueOf(pageId), locks(true).remove(page.id()));
         }
@@ -1307,11 +1308,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteLock(Page page, ByteBuffer buf) {
-            if (buf != null) {
-                checkPageId(page, buf);
+        @Override public void onWriteLock(Page page, long pageAddr) {
+            if (pageAddr != 0L) {
+                checkPageId(page, pageAddr);
 
-                long pageId = PageIO.getPageId(buf);
+                long pageId = PageIO.getPageId(pageAddr);
 
                 if (pageId == 0L)
                     pageId = page.id(); // It is a newly allocated page.
@@ -1323,8 +1324,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
-            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(buf)));
+        @Override public void onWriteUnlock(Page page, long pageAddr) {
+            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(pageAddr)));
 
             assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
         }
@@ -1391,15 +1392,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int getMaxCount(ByteBuffer buf) {
+        @Override public int getMaxCount(long buf, int pageSize) {
             if (MAX_PER_PAGE != 0)
                 return MAX_PER_PAGE;
 
-            return super.getMaxCount(buf);
+            return super.getMaxCount(buf, pageSize);
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx)
+        @Override public void store(long dst, int dstIdx, BPlusIO<Long> srcIo, long src, int srcIdx)
             throws IgniteCheckedException {
             Long row = srcIo.getLookupRow(null, src, srcIdx);
 
@@ -1415,16 +1416,21 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            checkNotRemoved(row);
-
-            buf.putLong(off, row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, ByteBuffer buf, int idx)
+        @Override public void storeByOffset(long pageAddr, int off, Long row) {
+            checkNotRemoved(row);
+
+            PageUtils.putLong(pageAddr, off, row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            Long row = buf.getLong(offset(idx));
+            Long row = PageUtils.getLong(pageAddr, offset(idx));
 
             checkNotRemoved(row);
 
@@ -1441,7 +1447,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE, true);
 
         pageMem.start();
 
@@ -1461,34 +1467,39 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final class LongLeafIO extends BPlusLeafIO<Long> {
         /**
          */
-        protected LongLeafIO() {
+        LongLeafIO() {
             super(LONG_LEAF_IO, 1, 8);
         }
 
         /** {@inheritDoc} */
-        @Override public int getMaxCount(ByteBuffer buf) {
+        @Override public int getMaxCount(long pageAddr, int pageSize) {
             if (MAX_PER_PAGE != 0)
                 return MAX_PER_PAGE;
 
-            return super.getMaxCount(buf);
+            return super.getMaxCount(pageAddr, pageSize);
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            buf.putLong(off, row);
+        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx) {
+        @Override public void storeByOffset(long pageAddr, int off, Long row) {
+            PageUtils.putLong(pageAddr, off, row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(long dst, int dstIdx, BPlusIO<Long> srcIo, long src, int srcIdx) {
             assert srcIo == this;
 
-            dst.putLong(offset(dstIdx), src.getLong(offset(srcIdx)));
+            PageUtils.putLong(dst, offset(dstIdx), PageUtils.getLong(src, offset(srcIdx)));
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, ByteBuffer buf, int idx)
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return buf.getLong(offset(idx));
+            return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
 }

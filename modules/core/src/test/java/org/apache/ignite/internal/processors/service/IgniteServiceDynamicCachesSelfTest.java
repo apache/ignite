@@ -83,11 +83,15 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
             final String svcName = "myService";
 
-            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, "key");
+            String key = "key";
+
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+
+            final Ignite ig2 = primaryNode(key, cacheName);
 
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    return svcs.service(svcName) != null;
+                    return ig2.services().service(svcName) != null;
                 }
             }, 10 * 1000);
 
@@ -125,20 +129,30 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         final String svcName = "myService";
 
-        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, "key");
+        String key = "key";
+
+        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
         assert svcs.service(svcName) == null;
 
         ig.createCache(ccfg);
 
+        final Ignite ig2 = primaryNode(key, cacheName);
+
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    return svcs.service(svcName) != null;
+                    boolean res = ig2.services().service(svcName) != null;
+
+                    info("try get service " + svcName + " res: " + res);
+
+                    return res;
                 }
             }, 10 * 1000);
 
             assertTrue("Service was not deployed", res);
+
+            info("stopping cache: " + cacheName);
 
             ig.destroyCache(cacheName);
 

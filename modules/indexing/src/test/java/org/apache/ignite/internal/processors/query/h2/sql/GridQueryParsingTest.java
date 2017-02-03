@@ -320,7 +320,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("merge into Person(old, name) select 5, 'John'");
         checkQuery("merge into Person(old, name) select p1.old, 'Name' from person p1 join person p2 on " +
             "p2.name = p1.parentName where p2.old > 30");
-        checkQuery("merge into Person(old) select 5 from Person UNION select street from Address limit ? offset ?");
+        checkQuery("merge into Person(old) select 5 from Person UNION select street from \"addr\".Address limit ? offset ?");
     }
 
     /** */
@@ -361,7 +361,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("insert into Person(old, name) select 5, 'John'");
         checkQuery("insert into Person(old, name) select p1.old, 'Name' from person p1 join person p2 on " +
             "p2.name = p1.parentName where p2.old > 30");
-        checkQuery("insert into Person(old) select 5 from Person UNION select street from Address limit ? offset ?");
+        checkQuery("insert into Person(old) select 5 from Person UNION select street from \"addr\".Address limit ? offset ?");
     }
 
     /** */
@@ -428,7 +428,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static String normalizeSql(String sql) {
         return sql.toLowerCase()
             .replaceAll("/\\*(?:.|\r|\n)*?\\*/", " ")
-            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " ")
+            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " on true ")
             .replaceAll("\\s+", " ")
             .replaceAll("\\( +", "(")
             .replaceAll(" +\\)", ")")

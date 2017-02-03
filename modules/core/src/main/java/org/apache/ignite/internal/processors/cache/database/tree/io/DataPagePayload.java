@@ -15,40 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
-
-import java.io.Externalizable;
+package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 /**
- * Abstract fragment of an input data source.
+ *
  */
-public abstract class HadoopInputSplit implements Externalizable {
+public class DataPagePayload {
     /** */
-    protected String[] hosts;
+    private final int off;
+
+    /** */
+    private final int payloadSize;
+
+    /** */
+    private final long nextLink;
 
     /**
-     * Array of hosts where this input split resides.
-     *
-     * @return Hosts.
+     * @param off Offset.
+     * @param payloadSize Payload size.
+     * @param nextLink Next link.
      */
-    public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
+    DataPagePayload(int off, int payloadSize, long nextLink) {
+        this.off = off;
+        this.payloadSize = payloadSize;
+        this.nextLink = nextLink;
     }
 
     /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @param obj Another object.
-     * @return {@code true} If objects are equal.
+     * @return Offset.
      */
-    @Override public abstract boolean equals(Object obj);
+    public int offset() {
+        return off;
+    }
 
     /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @return Hash code of the object.
+     * @return Payload size.
      */
-    @Override public abstract int hashCode();
+    public int payloadSize() {
+        return payloadSize;
+    }
+
+    /**
+     * @return Next link.
+     */
+    public long nextLink() {
+        return nextLink;
+    }
 }

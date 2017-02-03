@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -315,7 +316,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, pageSize);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, pageSize, true);
 
         pageMem.start();
 
@@ -395,6 +396,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public void link(long link) {
             this.link = link;
         }
+
+        /** {@inheritDoc} */
+        @Override public int hash() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /**
@@ -455,6 +461,13 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             buf.put(data);
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int putValue(long addr) throws IgniteCheckedException {
+            PageUtils.putBytes(addr, 0, data);
+
+            return data.length;
         }
 
         /** {@inheritDoc} */

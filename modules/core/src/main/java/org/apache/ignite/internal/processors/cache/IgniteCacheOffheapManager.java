@@ -111,6 +111,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param val  Value.
      * @param ver  Version.
      * @param expireTime Expire time.
+     * @param oldRow Old row if available.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
@@ -119,7 +120,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        GridDhtLocalPartition part
+        GridDhtLocalPartition part,
+        @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException;
 
     /**
@@ -129,7 +131,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     public void updateIndexes(
         KeyCacheObject key,
-        GridDhtLocalPartition part
+        GridDhtLocalPartition part,
+        @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException;
 
     /**
@@ -306,12 +309,14 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
+         * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
         void update(KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
-            long expireTime) throws IgniteCheckedException;
+            long expireTime,
+            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
          * @param key Key.

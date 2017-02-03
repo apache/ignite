@@ -431,6 +431,11 @@ public class IgniteMock implements Ignite {
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        // No-op.
+    }
+
     /**
      * @param staticCfg Configuration.
      */

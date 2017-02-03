@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-
-import java.util.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
  * Interface for ignite internal tree.
@@ -29,10 +27,11 @@ public interface IgniteTree<L, T> {
     /**
      * Put value in this tree.
      *
-     * @param value value to be associated with the specified key
-     * @return the previous value associated with key
+     * @param val Value to be associated with the specified key.
+     * @return The previous value associated with key.
+     * @throws IgniteCheckedException If failed.
      */
-    T put(T value) throws IgniteCheckedException;
+    public T put(T val) throws IgniteCheckedException;
 
     /**
      * Returns the value to which the specified key is mapped, or {@code null} if this tree contains no mapping for the
@@ -40,9 +39,10 @@ public interface IgniteTree<L, T> {
      *
      * @param key the key whose associated value is to be returned
      * @return the value to which the specified key is mapped, or {@code null} if this tree contains no mapping for the
-     * key
+     *  key.
+     * @throws IgniteCheckedException If failed.
      */
-    T findOne(L key) throws IgniteCheckedException;
+    public T findOne(L key) throws IgniteCheckedException;
 
     /**
      * Returns a cursor from lower to upper bounds inclusive.
@@ -50,21 +50,24 @@ public interface IgniteTree<L, T> {
      * @param lower Lower bound or {@code null} if unbounded.
      * @param upper Upper bound or {@code null} if unbounded.
      * @return Cursor.
+     * @throws IgniteCheckedException If failed.
      */
-    GridCursor<T> find(L lower, L upper) throws IgniteCheckedException;
+    public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException;
 
     /**
      * Removes the mapping for a key from this tree if it is present.
      *
-     * @param key key whose mapping is to be removed from the tree
-     * @return the previous value associated with key, or null if there was no mapping for key.
+     * @param key Key whose mapping is to be removed from the tree.
+     * @return The previous value associated with key, or null if there was no mapping for key.
+     * @throws IgniteCheckedException If failed.
      */
-    T remove(L key) throws IgniteCheckedException;
+    public T remove(L key) throws IgniteCheckedException;
 
     /**
      * Returns the number of elements in this tree.
      *
      * @return the number of elements in this tree
+     * @throws IgniteCheckedException If failed.
      */
-    long size() throws IgniteCheckedException;
+    public long size() throws IgniteCheckedException;
 }

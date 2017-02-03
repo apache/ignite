@@ -1593,6 +1593,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (!busyLock.enterBusy())
                 return;
 
+            //Must check that threadpool was not shutdown.
+            if (depExe.isShutdown())
+                return;
+
             try {
                 final AffinityTopologyVersion topVer;
 

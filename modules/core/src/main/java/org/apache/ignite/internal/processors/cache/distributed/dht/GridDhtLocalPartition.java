@@ -126,10 +126,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final CacheDataStore store;
 
     /** Partition updates. */
-    private ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
+    private final ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
 
     /** Last applied update. */
-    private AtomicLong lastApplied = new AtomicLong(0);
+    private final AtomicLong lastApplied = new AtomicLong(0);
 
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
@@ -250,16 +250,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public long lastAppliedUpdate() {
         return lastApplied.get();
-    }
-
-    /**
-     * @return Last received update.
-     */
-    private long lastReceivedUpdate() {
-        if (updates.isEmpty())
-            return lastApplied.get();
-
-        return updates.lastKey();
     }
 
     /**

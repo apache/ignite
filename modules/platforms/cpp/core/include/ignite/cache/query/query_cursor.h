@@ -190,7 +190,7 @@ namespace ignite
                  *
                  * @throw IgniteError class instance in case of failure.
                  */
-                void GetAll(std::vector<CacheEntry<K, V>>& res)
+                void GetAll(std::vector<CacheEntry<K, V> >& res)
                 {
                     IgniteError err;
 
@@ -208,7 +208,7 @@ namespace ignite
                  * @param Vector where query entries will be stored.
                  * @param err Used to set operation result.
                  */
-                void GetAll(std::vector<CacheEntry<K, V>>& res, IgniteError& err)
+                void GetAll(std::vector<CacheEntry<K, V> >& res, IgniteError& err)
                 {
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 

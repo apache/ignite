@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.util.typedef.PA;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -40,6 +41,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  */
@@ -148,11 +150,19 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
 
                         IgniteEx backUp = startGrid(2);
 
-                        IgniteCache<Integer, Integer> cache3 = backUp.cache(null);
+                        final IgniteCache<Integer, Integer> cache3 = backUp.cache(null);
 
                         lock.lock();
 
                         try {
+                            boolean res = waitForCondition(new PA() {
+                                @Override public boolean apply() {
+                                    return cache3.localPeek(finalKey) != null;
+                                }
+                            }, 1000);
+
+                            assertTrue(res);
+
                             Integer backUpVal = cache3.localPeek(finalKey);
 
                             Integer exp = cntr.get();

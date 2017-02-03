@@ -615,7 +615,7 @@ public class GridH2Table extends TableBase {
                                 "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
                     }
                     else if (old != null) // Row was not replaced, need to remove manually.
-                        idx.remove(old);
+                        idx.removex(old);
                 }
             }
             else {

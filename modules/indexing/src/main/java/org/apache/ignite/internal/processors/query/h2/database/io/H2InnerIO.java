@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -53,22 +54,31 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
     }
 
     /** {@inheritDoc} */
-    @Override public SearchRow getLookupRow(BPlusTree<SearchRow,?> tree, ByteBuffer buf, int idx)
+    @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
+        GridH2Row row0 = (GridH2Row)row;
+
+        assert row0.link != 0;
+
+        PageUtils.putLong(pageAddr, off, row0.link);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SearchRow getLookupRow(BPlusTree<SearchRow,?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
-        long link = getLink(buf, idx);
+        long link = getLink(pageAddr, idx);
 
         return ((H2Tree)tree).getRowFactory().getRow(link);
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<SearchRow> srcIo, ByteBuffer src, int srcIdx) {
-        long link = ((H2RowLinkIO)srcIo).getLink(src, srcIdx);
+    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
+        long link = ((H2RowLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
 
-        dst.putLong(offset(dstIdx), link);
+        PageUtils.putLong(dstPageAddr, offset(dstIdx), link);
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink(ByteBuffer buf, int idx) {
-        return buf.getLong(offset(idx));
+    @Override public long getLink(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx));
     }
 }

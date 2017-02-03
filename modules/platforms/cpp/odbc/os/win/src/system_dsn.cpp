@@ -16,6 +16,7 @@
  */
 
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
 #include "ignite/odbc/dsn_config.h"
@@ -147,27 +148,27 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 {
     using namespace ignite::odbc;
 
-    LOG_MSG("ConfigDSN called\n");
+    LOG_MSG("ConfigDSN called");
 
     Configuration config;
 
-    LOG_MSG("Attributes: %s\n", attributes);
+    LOG_MSG("Attributes: " << attributes);
 
     config.FillFromConfigAttributes(attributes);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
         return FALSE;
 
-    LOG_MSG("Driver: %s\n", driver);
-    LOG_MSG("Attributes: %s\n", attributes);
+    LOG_MSG("Driver: " << driver);
+    LOG_MSG("Attributes: " << attributes);
 
-    LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
+    LOG_MSG("DSN: " << config.GetDsn());
 
     switch (req)
     {
         case ODBC_ADD_DSN:
         {
-            LOG_MSG("ODBC_ADD_DSN\n");
+            LOG_MSG("ODBC_ADD_DSN");
 
             if (!DisplayConfigureDsnWindow(hwndParent, config))
                 return FALSE;
@@ -180,7 +181,7 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
         case ODBC_CONFIG_DSN:
         {
-            LOG_MSG("ODBC_CONFIG_DSN\n");
+            LOG_MSG("ODBC_CONFIG_DSN");
 
             std::string dsn = config.GetDsn();
 
@@ -202,7 +203,7 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
         case ODBC_REMOVE_DSN:
         {
-            LOG_MSG("ODBC_REMOVE_DSN\n");
+            LOG_MSG("ODBC_REMOVE_DSN");
 
             if (!UnregisterDsn(config.GetDsn().c_str()))
                 return FALSE;

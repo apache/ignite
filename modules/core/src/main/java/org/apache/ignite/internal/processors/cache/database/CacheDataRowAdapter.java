@@ -21,14 +21,17 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -73,10 +76,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * Read row from data pages.
      *
      * @param cctx Cache context.
-     * @param keyOnly {@code true} If need to read only key object.
+     * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    public final void initFromLink(GridCacheContext<?, ?> cctx, boolean keyOnly) throws IgniteCheckedException {
+    public final void initFromLink(GridCacheContext<?, ?> cctx, RowData rowData) throws IgniteCheckedException {
         assert cctx != null : "cctx";
         assert link != 0 : "link";
         assert key == null : "key";
@@ -88,26 +91,39 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean first = true;
 
         do {
-            try (Page page = page(pageId(nextLink), cctx)) {
-                ByteBuffer buf = page.getForRead(); // Non-empty data page must not be recycled.
+            PageMemory pageMem = cctx.shared().database().pageMemory();
 
-                assert buf != null: nextLink;
+            try (Page page = page(pageId(nextLink), cctx)) {
+                long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
+
+                assert pageAddr != 0L : nextLink;
 
                 try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    nextLink = io.setPositionAndLimitOnPayload(buf, itemId(nextLink));
+                    DataPagePayload data = io.readPayload(pageAddr,
+                        itemId(nextLink),
+                        pageMem.pageSize());
+
+                    nextLink = data.nextLink();
 
                     if (first) {
                         if (nextLink == 0) {
                             // Fast path for a single page row.
-                            readFullRow(coctx, buf, keyOnly);
+                            readFullRow(coctx, pageAddr + data.offset(), rowData);
 
                             return;
                         }
 
                         first = false;
                     }
+
+                    ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+
+                    buf.position(data.offset());
+                    buf.limit(data.offset() + data.payloadSize());
+
+                    boolean keyOnly = rowData == RowData.KEY_ONLY;
 
                     incomplete = readFragment(coctx, buf, keyOnly, incomplete);
 
@@ -121,7 +137,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
         while(nextLink != 0);
 
-        assert isReady(): "ready";
+        assert isReady() : "ready";
     }
 
     /**
@@ -130,6 +146,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param keyOnly {@code true} If need to read only key object.
      * @param incomplete Incomplete object.
      * @throws IgniteCheckedException If failed.
+     * @return Read object.
      */
     private IncompleteObject<?> readFragment(
         CacheObjectContext coctx,
@@ -175,24 +192,47 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /**
      * @param coctx Cache object context.
-     * @param buf Buffer.
-     * @param keyOnly {@code true} If need to read only key object.
+     * @param addr Address.
+     * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    private void readFullRow(CacheObjectContext coctx, ByteBuffer buf, boolean keyOnly) throws IgniteCheckedException {
-        key = coctx.processor().toKeyCacheObject(coctx, buf);
+    private void readFullRow(CacheObjectContext coctx, long addr, RowData rowData) throws IgniteCheckedException {
+        int off = 0;
 
-        if (keyOnly) {
-            assert key != null: "key";
+        int len = PageUtils.getInt(addr, off);
+        off += 4;
 
-            return;
+        if (rowData != RowData.NO_KEY) {
+            byte type = PageUtils.getByte(addr, off);
+            off++;
+
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
+            off += len;
+
+            key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
+
+            if (rowData == RowData.KEY_ONLY)
+                return;
         }
+        else
+            off += len + 1;
 
-        val = coctx.processor().toCacheObject(coctx, buf);
-        ver = CacheVersionIO.read(buf, false);
-        expireTime = buf.getLong();
+        len = PageUtils.getInt(addr, off);
+        off += 4;
 
-        assert isReady(): "ready";
+        byte type = PageUtils.getByte(addr, off);
+        off++;
+
+        byte[] bytes = PageUtils.getBytes(addr, off, len);
+        off += len;
+
+        val = coctx.processor().toCacheObject(coctx, type, bytes);
+
+        ver = CacheVersionIO.read(addr + off, false);
+
+        off += CacheVersionIO.size(ver, false);
+
+        expireTime = PageUtils.getLong(addr, off);
     }
 
     /**
@@ -249,6 +289,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
      */
     private IncompleteObject<?> readIncompleteExpireTime(
         ByteBuffer buf,
@@ -292,6 +333,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
      */
     private IncompleteObject<?> readIncompleteVersion(
         ByteBuffer buf,
@@ -350,6 +392,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
         return key;
     }
 
+    /**
+     * @param key Key.
+     */
+    public void key(KeyCacheObject key) {
+        assert key != null;
+
+        this.key = key;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject value() {
         assert val != null : "Value is not ready: " + this;
@@ -385,8 +436,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(CacheDataRowAdapter.class, this, "link", U.hexLong(link));
+    @Override public int hash() {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -397,5 +448,24 @@ public class CacheDataRowAdapter implements CacheDataRow {
      */
     private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
         return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
+    }
+
+    /**
+     *
+     */
+    public enum RowData {
+        /** */
+        FULL,
+
+        /** */
+        KEY_ONLY,
+
+        /** */
+        NO_KEY
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheDataRowAdapter.class, this, "link", U.hexLong(link));
     }
 }

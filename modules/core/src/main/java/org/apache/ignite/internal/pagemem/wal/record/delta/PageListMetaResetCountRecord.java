@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 
 /**
@@ -34,10 +34,10 @@ public class PageListMetaResetCountRecord extends PageDeltaRecord  {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
+    @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
+        PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.resetCount(buf);
+        io.resetCount(pageAddr);
     }
 
     /** {@inheritDoc} */
