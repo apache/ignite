@@ -2610,7 +2610,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
-            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
             if (desc == null) {
                 log.warning("Reset lost partition will not be executed, " +
