@@ -418,7 +418,7 @@ namespace ignite
                 /**
                  * Releases control over lock without unlocking it.
                  */
-                void Release()
+                void Forget()
                 {
                     lock = 0;
                 }
@@ -433,7 +433,7 @@ namespace ignite
                     {
                         lock->Leave();
 
-                        Release();
+                        Forget();
                     }
                 }
 
