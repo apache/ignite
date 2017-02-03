@@ -604,10 +604,10 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
             new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
+            @Override public UUID apply(ClusterNode node) {
+                return node.id();
+            }
+        });
 
         ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes();
 
