@@ -342,7 +342,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
                     ? services.serviceProxy(name, PlatformService.class, sticky)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
-                    platformCtx.kernalContext());
+                        platformCtx.kernalContext());
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
@@ -365,7 +365,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         int maxPerNodeCnt = reader.readInt();
 
         services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
-            totalCnt, maxPerNodeCnt);
+                totalCnt, maxPerNodeCnt);
     }
 
     /**

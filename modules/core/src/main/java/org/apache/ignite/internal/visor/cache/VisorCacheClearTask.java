@@ -95,9 +95,11 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
          * @return {@code true} If subJob was not completed and this job should be suspended.
          */
         private boolean callAsync(IgniteCallable<Integer> subJob, int idx) {
-            IgniteCompute compute = ignite.compute(ignite.cluster().forCacheNodes(cacheName));
+            IgniteCompute compute = ignite.compute(ignite.cluster().forCacheNodes(cacheName)).withAsync();
 
-            IgniteFuture<Integer> fut = compute.callAsync(subJob);
+            compute.call(subJob);
+
+            IgniteFuture<Integer> fut = compute.future();
 
             futs[idx] = fut;
 

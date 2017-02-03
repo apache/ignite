@@ -529,7 +529,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
                 maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
-                    null), null, false, 0, 16);
+                null), null, false, 0, 16);
 
         assert res.size() == 3;
 

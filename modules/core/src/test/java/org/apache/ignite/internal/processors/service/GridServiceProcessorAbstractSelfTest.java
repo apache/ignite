@@ -332,7 +332,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
-            CACHE_NAME, affKey);
+                CACHE_NAME, affKey);
 
         IgniteFuture<?> fut = svcs.future();
 
