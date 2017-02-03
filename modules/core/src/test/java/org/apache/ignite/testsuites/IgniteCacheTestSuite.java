@@ -229,16 +229,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Warmup closure tests.
         suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
 
-        // Affinity tests.
-        suite.addTestSuite(FairAffinityFunctionNodesSelfTest.class);
-        suite.addTestSuite(FairAffinityFunctionSelfTest.class);
-        suite.addTestSuite(FairAffinityDynamicCacheSelfTest.class);
-        suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
-        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
-        suite.addTestSuite(AffinityClientNodeSelfTest.class);
-        suite.addTestSuite(LocalAffinityFunctionTest.class);
-        suite.addTestSuite(AffinityHistoryCleanupTest.class);
-
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
 
