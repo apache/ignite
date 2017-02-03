@@ -1489,6 +1489,9 @@ public class IgnitionEx {
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
+        /** Query executor service. */
+        private ThreadPoolExecutor qryExecSvc;
+
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
 
@@ -1783,6 +1786,18 @@ public class IgnitionEx {
                 );
             }
 
+            validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");
+
+            qryExecSvc = new IgniteThreadPoolExecutor(
+                "query",
+                cfg.getGridName(),
+                cfg.getQueryThreadPoolSize(),
+                cfg.getQueryThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            qryExecSvc.allowCoreThreadTimeOut(true);
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1808,6 +1823,7 @@ public class IgnitionEx {
                     affExecSvc,
                     idxExecSvc,
                     callbackExecSvc,
+                    qryExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2401,6 +2417,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), sysExecSvc, log);
 
             sysExecSvc = null;
+
+            U.shutdownNow(getClass(), qryExecSvc, log);
+
+            qryExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 
