@@ -238,6 +238,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE] = "Date";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP] = "Timestamp";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM] = "Enum";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.HANDLE] = "Handle";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ] = "Object";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_OBJ] = "Object";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.COL] = "Collection";
@@ -350,7 +351,8 @@ public class BinaryUtils {
      * @return Field type name.
      */
     public static String fieldTypeName(int typeId) {
-        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
+        if(typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
+            return String.valueOf(typeId);
 
         String typeName = FIELD_TYPE_NAMES[typeId];
 

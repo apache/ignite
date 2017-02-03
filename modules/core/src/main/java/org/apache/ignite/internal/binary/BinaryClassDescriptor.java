@@ -806,58 +806,69 @@ public class BinaryClassDescriptor {
      * @throws BinaryObjectException If failed.
      */
     Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
-        assert reader != null;
-        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
+        try {
+            assert reader != null;
+            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
-        Object res;
+            Object res;
 
-        switch (mode) {
-            case BINARY:
-                res = newInstance();
+            switch (mode) {
+                case BINARY:
+                    res = newInstance();
 
-                reader.setHandle(res);
+                    reader.setHandle(res);
 
-                if (serializer != null)
-                    serializer.readBinary(res, reader);
-                else
-                    ((Binarylizable)res).readBinary(reader);
+                    if (serializer != null)
+                        serializer.readBinary(res, reader);
+                    else
+                        ((Binarylizable)res).readBinary(reader);
 
-                break;
+                    break;
 
-            case OBJECT:
-                res = newInstance();
+                case OBJECT:
+                    res = newInstance();
 
-                reader.setHandle(res);
+                    reader.setHandle(res);
 
-                for (BinaryFieldAccessor info : fields)
-                    info.read(res, reader);
+                    for (BinaryFieldAccessor info : fields)
+                        info.read(res, reader);
 
-                break;
+                    break;
 
-            default:
-                assert false : "Invalid mode: " + mode;
+                default:
+                    assert false : "Invalid mode: " + mode;
 
-                return null;
+                    return null;
+            }
+
+            if (readResolveMtd != null) {
+                try {
+                    res = readResolveMtd.invoke(res);
+
+                    reader.setHandle(res);
+                }
+                catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                catch (InvocationTargetException e) {
+                    if (e.getTargetException() instanceof BinaryObjectException)
+                        throw (BinaryObjectException)e.getTargetException();
+
+                    throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
+                }
+            }
+
+            return res;
         }
-
-        if (readResolveMtd != null) {
-            try {
-                res = readResolveMtd.invoke(res);
-
-                reader.setHandle(res);
-            }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() instanceof BinaryObjectException)
-                    throw (BinaryObjectException)e.getTargetException();
-
-                throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
-            }
+        catch (BinaryObjectException ex) {
+            if (S.INCLUDE_SENSITIVE) {
+                String typeName = typeName();
+                if (typeName == null || typeName.isEmpty())
+                    typeName = String.valueOf(typeId());
+                throw new BinaryObjectException("Failed to deserialize type: " + typeName, ex);
+            } else
+                throw ex;
         }
-
-        return res;
     }
 
     /**

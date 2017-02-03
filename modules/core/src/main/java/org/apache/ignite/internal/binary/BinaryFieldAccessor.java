@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public abstract class BinaryFieldAccessor {
     /** Field ID. */
     protected final int id;
+
+    /** Field name */
+    protected final String name;
 
     /** Mode. */
     protected final BinaryWriteMode mode;
@@ -116,10 +120,12 @@ public abstract class BinaryFieldAccessor {
      * @param id Field ID.
      * @param mode Mode;
      */
-    protected BinaryFieldAccessor(int id, BinaryWriteMode mode) {
+    protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode) {
+        assert field != null;
         assert id != 0;
         assert mode != null;
 
+        this.name = field.getName();
         this.id = id;
         this.mode = mode;
     }
@@ -131,6 +137,24 @@ public abstract class BinaryFieldAccessor {
      */
     public BinaryWriteMode mode() {
         return mode;
+    }
+
+    /**
+     * Get field ID
+     *
+     * @return ID.
+     */
+    public int id() {
+        return id;
+    }
+
+    /**
+     * Get field name
+     *
+     * @return Name.
+     */
+    public String name() {
+        return name;
     }
 
     /**
@@ -149,7 +173,31 @@ public abstract class BinaryFieldAccessor {
      * @param reader Reader.
      * @throws BinaryObjectException If failed.
      */
-    public abstract void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException;
+    public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        try {
+            read0(obj, reader);
+        }
+        catch (BinaryObjectException ex) {
+            if (S.INCLUDE_SENSITIVE) {
+                String fieldName = name();
+                if (fieldName == null || fieldName.isEmpty())
+                    fieldName = String.valueOf(id());
+                throw new BinaryObjectException("Failed to deserialize field: " + fieldName, ex);
+            }
+            else
+                throw ex;
+        }
+
+    }
+
+    /**
+     * Read field.
+     *
+     * @param obj Object.
+     * @param reader Reader.
+     * @throws BinaryObjectException If failed.
+     */
+    protected abstract void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException;
 
     /**
      * Base primitive field accessor.
@@ -166,7 +214,7 @@ public abstract class BinaryFieldAccessor {
          * @param mode Mode.
          */
         protected AbstractPrimitiveAccessor(Field field, int id, BinaryWriteMode mode) {
-            super(id, mode);
+            super(field, id, mode);
 
             assert field != null;
 
@@ -197,7 +245,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             byte val = reader.readByte(id);
 
             GridUnsafe.putByteField(obj, offset, val);
@@ -227,7 +275,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             boolean val = reader.readBoolean(id);
 
             GridUnsafe.putBooleanField(obj, offset, val);
@@ -257,7 +305,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             short val = reader.readShort(id);
 
             GridUnsafe.putShortField(obj, offset, val);
@@ -287,7 +335,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             char val = reader.readChar(id);
 
             GridUnsafe.putCharField(obj, offset, val);
@@ -317,7 +365,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             int val = reader.readInt(id);
 
             GridUnsafe.putIntField(obj, offset, val);
@@ -347,7 +395,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             long val = reader.readLong(id);
 
             GridUnsafe.putLongField(obj, offset, val);
@@ -377,7 +425,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             float val = reader.readFloat(id);
 
             GridUnsafe.putFloatField(obj, offset, val);
@@ -407,7 +455,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             double val = reader.readDouble(id);
 
             GridUnsafe.putDoubleField(obj, offset, val);
@@ -432,7 +480,7 @@ public abstract class BinaryFieldAccessor {
          * @param mode Mode.
          */
         DefaultFinalClassAccessor(Field field, int id, BinaryWriteMode mode, boolean dynamic) {
-            super(id, mode);
+            super(field, id, mode);
 
             assert field != null;
 
@@ -635,7 +683,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             Object val = dynamic ? reader.readField(id) : readFixedType(reader);
 
             try {
