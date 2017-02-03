@@ -348,6 +348,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Deploys multiple dotnet services.
+     *
      * @param reader Binary reader.
      */
     private void dotnetDeployMultiple(BinaryRawReaderEx reader) {
@@ -362,6 +363,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Asynchronously deploys multiple dotnet services.
+     *
      * @param reader Binary reader.
      * @return Future of the operation.
      */
@@ -377,6 +379,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Deploys dotnet service.
+     *
      * @param reader Binary reader.
      * @param services Services.
      */
@@ -388,6 +391,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Deploys dotnet service asynchronously.
+     *
      * @param reader Binary reader.
      * @param services Services.
      * @return Future of the operation.
@@ -468,6 +472,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         /**
          * Invokes the proxy.
+         *
          * @param mthdName Method name.
          * @param srvKeepBinary Binary flag.
          * @param args Args.

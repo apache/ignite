@@ -101,8 +101,8 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      collection of grid events returned from specified nodes.
      * @throws IgniteException If query failed.
      */
-    public <T extends Event> IgniteFuture<List<T>> remoteQueryAsync(IgnitePredicate<T> p, long timeout, @Nullable int... types)
-        throws IgniteException;
+    public <T extends Event> IgniteFuture<List<T>> remoteQueryAsync(IgnitePredicate<T> p, long timeout,
+        @Nullable int... types) throws IgniteException;
 
     /**
      * Adds event listener for specified events to all nodes in the cluster group (possibly including
@@ -304,8 +304,8 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the operation. The completed future contains grid event.
      * @throws IgniteException If wait was interrupted.
      */
-    public <T extends Event> IgniteFuture<T> waitForLocalAsync(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
-        throws IgniteException;
+    public <T extends Event> IgniteFuture<T> waitForLocalAsync(@Nullable IgnitePredicate<T> filter,
+        @Nullable int... types) throws IgniteException;
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.
