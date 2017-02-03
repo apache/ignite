@@ -111,7 +111,6 @@ namespace ignite
 
                 /**
                  * Get object data.
-                 * @throw IgniteError if the object is not in a valid state.
                  *
                  * @return Pointer to object data.
                  */
@@ -132,6 +131,14 @@ namespace ignite
                  * @return Type ID.
                  */
                 int32_t GetTypeId() const;
+
+                /**
+                 * Get object hash code.
+                 * @throw IgniteError if the object is not in a valid state.
+                 *
+                 * @return Object hash code.
+                 */
+                int32_t GetHashCode() const;
 
             private:
                 /**

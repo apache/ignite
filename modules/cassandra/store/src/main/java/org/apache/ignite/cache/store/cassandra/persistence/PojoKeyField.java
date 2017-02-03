@@ -55,7 +55,7 @@ public class PojoKeyField extends PojoField {
             try {
                 sortOrder = SortOrder.valueOf(el.getAttribute(SORT_ATTR).trim().toUpperCase());
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
                 throw new IllegalArgumentException("Incorrect sort order '" + el.getAttribute(SORT_ATTR) + "' specified");
             }
         }

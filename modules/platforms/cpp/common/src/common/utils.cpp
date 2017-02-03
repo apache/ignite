@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#include <time.h>
-
-#include <windows.h>
-
 #include <ignite/common/utils.h>
 
 namespace ignite
@@ -60,30 +56,6 @@ namespace ignite
             str.assign(str, newBegin, (newEnd - newBegin) + 1);
         }
 
-        time_t IgniteTimeGm(const tm& time)
-        {
-            tm tmc = time;
-
-            return _mkgmtime(&tmc);
-        }
-
-        time_t IgniteTimeLocal(const tm& time)
-        {
-            tm tmc = time;
-
-            return mktime(&tmc);
-        }
-
-        bool IgniteGmTime(time_t in, tm& out)
-        {
-            return gmtime_s(&out, &in) == 0;
-        }
-
-        bool IgniteLocalTime(time_t in, tm& out)
-        {
-            return localtime_s(&out, &in) == 0;
-        }
-
         char* CopyChars(const char* val)
         {
             if (val) {
@@ -103,34 +75,6 @@ namespace ignite
             delete[] val;
         }
 
-        bool GetEnv(const std::string& name, std::string& val)
-        {
-            char res0[32767];
-
-            DWORD envRes = GetEnvironmentVariableA(name.c_str(), res0, sizeof(res0) / sizeof(res0[0]));
-
-            if (envRes == 0)
-                return false;
-
-            val.assign(res0);
-
-            return true;
-        }
-
-        bool FileExists(const std::string& path)
-        {
-            WIN32_FIND_DATAA findres;
-
-            HANDLE hnd = FindFirstFileA(path.c_str(), &findres);
-
-            if (hnd == INVALID_HANDLE_VALUE)
-                return false;
-
-            FindClose(hnd);
-
-            return true;
-        }
-
         uint32_t ToBigEndian(uint32_t value)
         {
             // The answer is 42
@@ -141,6 +85,70 @@ namespace ignite
                 return ((value & 0xFF) << 24) | (((value >> 8) & 0xFF) << 16) | (((value >> 16) & 0xFF) << 8) | ((value >> 24) & 0xFF);
 
             return value;
+        }
+
+        Date MakeDateGmt(int year, int month, int day, int hour,
+            int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            return CTmToDate(date);
+        }
+
+        Date MakeDateLocal(int year, int month, int day, int hour,
+            int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            time_t localTime = common::IgniteTimeLocal(date);
+
+            return CTimeToDate(localTime);
+        }
+
+        Timestamp MakeTimestampGmt(int year, int month, int day,
+            int hour, int min, int sec, long ns)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            return CTmToTimestamp(date, ns);
+        }
+
+        Timestamp MakeTimestampLocal(int year, int month, int day,
+            int hour, int min, int sec, long ns)
+        {
+            tm date = { 0 };
+
+            date.tm_year = year - 1900;
+            date.tm_mon = month - 1;
+            date.tm_mday = day;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            time_t localTime = common::IgniteTimeLocal(date);
+
+            return CTimeToTimestamp(localTime, ns);
         }
     }
 }

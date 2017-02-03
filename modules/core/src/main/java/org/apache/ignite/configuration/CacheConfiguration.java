@@ -794,7 +794,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether expired cache entries will be eagerly removed from cache. When
+     * Gets flag indicating whether expired cache entries will be eagerly removed from cache.
+     * If there is at least one cache configured with this flag set to {@code true}, Ignite
+     * will create a single thread to clean up expired entries in background. When flag is
      * set to {@code false}, expired entries will be removed on next entry access.
      * <p>
      * When not set, default value is {@link #DFLT_EAGER_TTL}.

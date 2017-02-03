@@ -25,6 +25,7 @@
 #include "test_utils.h"
 
 using namespace ignite;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -192,7 +193,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampSelect)
 {
     TestType in1;
     in1.i32Field = 1;
-    in1.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2017, 1, 13, 19, 54, 01, 987654321);
+    in1.timestampField = common::MakeTimestampGmt(2017, 1, 13, 19, 54, 01, 987654321);
 
     testCache.Put(1, in1);
 
@@ -230,7 +231,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampInsert)
     data.fraction = 987654321;
 
     using ignite::impl::binary::BinaryUtils;
-    Timestamp expected = BinaryUtils::MakeTimestampGmt(data.year, data.month, data.day, data.hour,
+    Timestamp expected = common::MakeTimestampGmt(data.year, data.month, data.day, data.hour,
         data.minute, data.second, data.fraction);
 
     SQLLEN lenInd = sizeof(data);
@@ -259,7 +260,7 @@ BOOST_AUTO_TEST_CASE(TestTimeSelect)
 
     TestType in1;
     in1.i32Field = 1;
-    in1.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2017, 1, 13, ts.hour, ts.minute, ts.second);
+    in1.timestampField = common::MakeTimestampGmt(2017, 1, 13, ts.hour, ts.minute, ts.second);
 
     testCache.Put(1, in1);
 
@@ -293,8 +294,7 @@ BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
     data.second = 1;
 
     using ignite::impl::binary::BinaryUtils;
-    Timestamp expected = BinaryUtils::MakeTimestampGmt(1970, 1, 1, data.hour,
-        data.minute, data.second, 0);
+    Timestamp expected = common::MakeTimestampGmt(1970, 1, 1, data.hour, data.minute, data.second, 0);
 
     SQLLEN lenInd = sizeof(data);
     ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIMESTAMP, sizeof(data), 0, &data, sizeof(data), &lenInd);

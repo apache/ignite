@@ -95,6 +95,13 @@ namespace ignite
 
                 return header.GetTypeId();
             }
+
+            int32_t BinaryObjectImpl::GetHashCode() const
+            {
+                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+
+                return header.GetHashCode();
+            }
         }
     }
 }

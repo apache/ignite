@@ -366,7 +366,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
                 try {
                     return 0 == zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size();
                 }
-                catch (Exception e) {
+                catch (Exception ignored) {
                     return false;
                 }
             }

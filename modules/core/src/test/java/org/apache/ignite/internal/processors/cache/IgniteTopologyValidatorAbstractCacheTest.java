@@ -107,7 +107,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
             assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
         }
-        catch (CacheException ex) {
+        catch (CacheException ignored) {
             assert false : "topology validation broken";
         }
     }
@@ -121,7 +121,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         try {
             assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
         }
-        catch (CacheException ex) {
+        catch (CacheException ignored) {
             assert false : "topology validation broken";
         }
     }

@@ -295,6 +295,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private ObjectName restExecSvcMBean;
 
+    /** */
+    @GridToStringExclude
+    private ObjectName qryExecSvcMBean;
+
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
 
@@ -674,6 +678,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
+     * @param callbackExecSvc Callback executor service.
+     * @param qryExecSvc Query executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -692,6 +698,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
+        ExecutorService qryExecSvc,
         GridAbsClosure errHnd
     )
         throws IgniteCheckedException
@@ -801,6 +808,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 affExecSvc,
                 idxExecSvc,
                 callbackExecSvc,
+                qryExecSvc,
                 plugins
             );
 
@@ -961,7 +969,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Register MBeans.
             registerKernalMBean();
             registerLocalNodeMBean();
-            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
+            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1300,9 +1308,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (ctx.checkpoint().enabled())
             perf.add("Disable checkpoints (remove 'checkpointSpi' from configuration)");
 
-        if (cfg.isPeerClassLoadingEnabled())
-            perf.add("Disable peer class loading (set 'peerClassLoadingEnabled' to false)");
-
         if (cfg.isMarshalLocalJobs())
             perf.add("Disable local jobs marshalling (set 'marshalLocalJobs' to false)");
 
@@ -1548,11 +1553,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService restExecSvc) throws IgniteCheckedException {
+        ExecutorService restExecSvc,
+        ExecutorService qryExecSvc) throws IgniteCheckedException {
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
+        qryExecSvcMBean = registerExecutorMBean(qryExecSvc, "GridQueryExecutor");
 
         ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
@@ -2046,7 +2053,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
                     unregisterMBean(locNodeMBean) &
-                    unregisterMBean(restExecSvcMBean)
+                    unregisterMBean(restExecSvcMBean) &
+                    unregisterMBean(qryExecSvcMBean)
             ))
                 errOnStop = false;
 

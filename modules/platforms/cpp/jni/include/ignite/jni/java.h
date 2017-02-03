@@ -192,6 +192,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_events;
                 jmethodID m_PlatformProcessor_services;
                 jmethodID m_PlatformProcessor_extensions;
+                jmethodID m_PlatformProcessor_extension;
                 jmethodID m_PlatformProcessor_atomicLong;
                 jmethodID m_PlatformProcessor_getIgniteConfiguration;
                 jmethodID m_PlatformProcessor_getCacheNames;
@@ -369,6 +370,7 @@ namespace ignite
                 jobject ProcessorEvents(jobject obj, jobject prj);
                 jobject ProcessorServices(jobject obj, jobject prj);
                 jobject ProcessorExtensions(jobject obj);
+                jobject ProcessorExtension(jobject obj, int id);
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
