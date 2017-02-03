@@ -1001,8 +1001,6 @@ public class IgnitionEx {
 
         String name = startCtx.config().getGridName();
 
-        System.out.println("############## Starting LOCAL grid [" + name + "]");
-
         if (name != null && name.isEmpty())
             throw new IgniteCheckedException("Non default grid instances cannot have empty string name.");
 

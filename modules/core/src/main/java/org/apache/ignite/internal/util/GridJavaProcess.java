@@ -134,8 +134,6 @@ public final class GridJavaProcess {
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
         @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp,
         @Nullable File dir, @Nullable Map<String, String> env) throws Exception {
-        System.out.println("#### JVM args: " + jvmArgs);
-
         GridJavaProcess gjProc = new GridJavaProcess();
 
         gjProc.log = log;

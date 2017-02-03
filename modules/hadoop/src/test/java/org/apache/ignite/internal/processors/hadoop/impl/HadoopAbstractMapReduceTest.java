@@ -64,7 +64,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -156,22 +155,9 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * Checks owner of the path.
      * @param p The path.
      */
-    private void checkOwner(final IgfsPath p) throws Exception {
+    private void checkOwner(IgfsPath p) {
         String ownerPrim = getOwner(igfs, p);
         assertEquals(USER, ownerPrim);
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    secondaryFs.info(p);
-
-                    return true;
-                }
-                catch (RuntimeException e) {
-                    return false;
-                }
-            }
-        }, 5000));
 
         String ownerSec = getOwnerSecondary(secondaryFs, p);
         assertEquals(USER, ownerSec);
@@ -358,13 +344,6 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         super.beforeTest();
     }
 
-    @Override protected final boolean isRemoteJvm(String gridName) {
-        if (gridName.contains("secondary"))
-            return false;
-
-        return super.isRemoteJvm(gridName);
-    }
-
     /**
      * Start grid with IGFS.
      *
@@ -376,7 +355,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected final Ignite startGridWithIgfs(final String gridName, String igfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -412,8 +391,11 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
 
         cfg.setGridName(gridName);
 
-        cfg.setDiscoverySpi(null);
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+
+        cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 

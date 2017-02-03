@@ -32,6 +32,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -139,8 +140,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        // Secondary Fs has its own filesystem config :
-        if (igfsEnabled() && !gridName.contains("secondary")) {
+        if (igfsEnabled()) {
             cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
 
             cfg.setFileSystemConfiguration(igfsConfiguration());
@@ -223,11 +223,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
     /**
      * @return {@code True} if REST is enabled on Hadoop nodes.
      */
@@ -251,7 +246,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         if (cfg == null)
             cfg = optimize(getConfiguration(gridName));
 
-        System.out.println("############## Starting remote grid [" +gridName + "]");
+        X.println("  Starting remote grid [" +gridName + "]");
 
         int gridIdx = getTestGridIndex(gridName);
 

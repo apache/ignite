@@ -191,10 +191,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings("ConstantConditions")
     public void testMixedAddrs() throws Exception {
-        if (isMultiJvm())
-            // TODO : debug this test in multi-JVM mode.
-            return;
-
         restPort = REST_PORT;
 
         startGrids(gridCount());
