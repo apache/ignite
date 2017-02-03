@@ -71,6 +71,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         //Ring
         suite.addTest(new TestSuite(RegionNodeComparatorTest.class));
+        suite.addTest(new TestSuite(RegionTcpDiscoverySelfTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
