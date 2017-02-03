@@ -138,7 +138,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (spi == null) {
             spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
-                new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
+                getTestTcpDiscoverySpi() : getTcpDiscoverySpi();
         }
         else
             nodeSpi.set(null);
@@ -1304,13 +1304,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     private void customEventRace1(final boolean cacheStartFrom1, boolean stopCrd) throws Exception {
-        TestCustomEventRaceSpi spi0 = new TestCustomEventRaceSpi();
+        TestCustomEventRaceSpi spi0 = getTestCustomEventRaceSpi();
 
         nodeSpi.set(spi0);
 
         final Ignite ignite0 = startGrid(0);
 
-        nodeSpi.set(new TestCustomEventRaceSpi());
+        nodeSpi.set(getTestCustomEventRaceSpi());
 
         final Ignite ignite1 = startGrid(1);
 
@@ -1325,7 +1325,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 log.info("Start 2");
 
-                nodeSpi.set(new TestCustomEventRaceSpi());
+                nodeSpi.set(getTestCustomEventRaceSpi());
 
                 Ignite ignite2 = startGrid(2);
 
@@ -1375,7 +1375,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cache.get(1));
 
-        nodeSpi.set(new TestCustomEventRaceSpi());
+        nodeSpi.set(getTestCustomEventRaceSpi());
 
         Ignite ignite = startGrid(3);
 
@@ -1416,14 +1416,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testNodeShutdownOnRingMessageWorkerFailure() throws Exception {
         try {
-            final TestMessageWorkerFailureSpi1 spi0 = new TestMessageWorkerFailureSpi1(
+            final TestMessageWorkerFailureSpi1 spi0 = getTestMessageWorkerFailureSpi1(
                 TestMessageWorkerFailureSpi1.EXCEPTION_MODE);
 
             nodeSpi.set(spi0);
 
             final Ignite ignite0 = startGrid("testNodeShutdownOnRingMessageWorkerFailureFailedNode");
 
-            nodeSpi.set(new TcpDiscoverySpi());
+            nodeSpi.set(getTcpDiscoverySpi());
 
             Ignite ignite1 = startGrid(1);
 
@@ -1466,7 +1466,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testNoRingMessageWorkerAbnormalFailureOnSegmentation() throws Exception {
         try {
-            TestMessageWorkerFailureSpi1 spi1 = new TestMessageWorkerFailureSpi1(
+            TestMessageWorkerFailureSpi1 spi1 = getTestMessageWorkerFailureSpi1(
                 TestMessageWorkerFailureSpi1.SEGMENTATION_MODE);
 
             nodeSpi.set(spi1);
@@ -1474,7 +1474,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid("testNoRingMessageWorkerAbnormalFailureNormalNode");
 
 
-            nodeSpi.set(new TcpDiscoverySpi());
+            nodeSpi.set(getTcpDiscoverySpi());
 
             final Ignite ignite2 = startGrid("testNoRingMessageWorkerAbnormalFailureSegmentedNode");
 
@@ -1551,7 +1551,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite0 = startGrid(0);
 
-            TestMessageWorkerFailureSpi2 spi0 = new TestMessageWorkerFailureSpi2();
+            TestMessageWorkerFailureSpi2 spi0 = getTestMessageWorkerFailureSpi2();
 
             nodeSpi.set(spi0);
 
@@ -1583,17 +1583,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     private void customEventCoordinatorFailure(boolean twoNodes) throws Exception {
-        TestCustomEventCoordinatorFailureSpi spi0 = new TestCustomEventCoordinatorFailureSpi();
+        TestCustomEventCoordinatorFailureSpi spi0 = getTestCustomEventCoordinatorFailureSpi();
 
         nodeSpi.set(spi0);
 
         Ignite ignite0 = startGrid(0);
 
-        nodeSpi.set(new TestCustomEventCoordinatorFailureSpi());
+        nodeSpi.set(getTestCustomEventCoordinatorFailureSpi());
 
         Ignite ignite1 = startGrid(1);
 
-        nodeSpi.set(new TestCustomEventCoordinatorFailureSpi());
+        nodeSpi.set(getTestCustomEventCoordinatorFailureSpi());
 
         Ignite ignite2 = twoNodes ? null : startGrid(2);
 
@@ -1637,7 +1637,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         log.info("Try start one more node.");
 
-        nodeSpi.set(new TestCustomEventCoordinatorFailureSpi());
+        nodeSpi.set(getTestCustomEventCoordinatorFailureSpi());
 
         Ignite ignite = startGrid(twoNodes ? 2 : 3);
 
@@ -1660,15 +1660,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             startGrid(1);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             Ignite ignite2 = startGrid(2);
 
@@ -1692,11 +1692,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             startGrid(1);
 
@@ -1706,7 +1706,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int idx = nodeIdx.incrementAndGet();
 
-                    nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+                    nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
                     startGrid(idx);
 
@@ -1734,11 +1734,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testFailedNodes3() throws Exception {
         try {
-            nodeSpi.set(new TestFailedNodesSpi(-1));
+            nodeSpi.set(getTestFailedNodesSpi(-1));
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(2));
+            nodeSpi.set(getTestFailedNodesSpi(2));
 
             Ignite ignite1 = startGrid(1);
 
@@ -1769,15 +1769,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(getTestFailedNodesSpi(FAIL_ORDER));
 
             Ignite ignite1 = startGrid(1);
 
-            TestFailedNodesSpi spi = new TestFailedNodesSpi(FAIL_ORDER);
+            TestFailedNodesSpi spi = getTestFailedNodesSpi(FAIL_ORDER);
 
             spi.stopBeforeSndFail = true;
 
@@ -1816,7 +1816,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 final int NODES = iter == 0 ? 2 : rnd.nextInt(3, 6);
 
                 for (int i = 0; i < NODES; i++) {
-                    nodeSpi.set(new TestFailedNodesSpi(-1));
+                    nodeSpi.set(getTestFailedNodesSpi(-1));
 
                     startGrid(i);
                 }
@@ -1866,13 +1866,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testCustomEventAckNotSend() throws Exception {
         try {
-            TestCustomerEventAckSpi spi0 = new TestCustomerEventAckSpi();
+            TestCustomerEventAckSpi spi0 = getTestCustomerEventAckSpi();
 
             nodeSpi.set(spi0);
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestCustomerEventAckSpi());
+            nodeSpi.set(getTestCustomerEventAckSpi());
 
             Ignite ignite1 = startGrid(1);
 
@@ -1894,7 +1894,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testDiscoveryEventsDiscard() throws Exception {
         try {
-            TestEventDiscardSpi spi = new TestEventDiscardSpi();
+            TestEventDiscardSpi spi = getTestEventDiscardSpi();
 
             nodeSpi.set(spi);
 
@@ -1950,7 +1950,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite.configuration().getDiscoverySpi();
 
-                    TcpDiscoveryStatistics stats = GridTestUtils.getFieldValue(spi, "stats");
+                    TcpDiscoveryStatistics stats = spi.stats;
 
                     Integer cnt = stats.sentMessages().get(TcpDiscoveryNodeFailedMessage.class.getSimpleName());
 
@@ -1990,14 +1990,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 ccfgs[i] = ccfg;
             }
 
-            TestDiscoveryDataDuplicateSpi spi = new TestDiscoveryDataDuplicateSpi();
+            TestDiscoveryDataDuplicateSpi spi = getTestDiscoveryDataDuplicateSpi();
 
             nodeSpi.set(spi);
 
             startGrid(0);
 
             for (int i = 0; i < 5; i++) {
-                nodeSpi.set(new TestDiscoveryDataDuplicateSpi());
+                nodeSpi.set(getTestDiscoveryDataDuplicateSpi());
 
                 startGrid(i + 1);
             }
@@ -2015,7 +2015,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             client = false;
 
-            nodeSpi.set(new TestDiscoveryDataDuplicateSpi());
+            nodeSpi.set(getTestDiscoveryDataDuplicateSpi());
 
             startGrid(7);
 
@@ -2083,10 +2083,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestDiscoveryDataDuplicateSpi getTestDiscoveryDataDuplicateSpi(){
+        return new TestDiscoveryDataDuplicateSpi();
+    }
+
     /**
      *
      */
-    private static class TestDiscoveryDataDuplicateSpi extends TcpDiscoverySpi {
+    protected static class TestDiscoveryDataDuplicateSpi extends TcpDiscoverySpi {
         /** */
         static volatile boolean fail;
 
@@ -2143,11 +2148,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestEventDiscardSpi getTestEventDiscardSpi() {
+        return new TestEventDiscardSpi();
+    }
 
     /**
      *
      */
-    private static class TestEventDiscardSpi extends TcpDiscoverySpi {
+    protected static class TestEventDiscardSpi extends TcpDiscoverySpi {
         /** */
         private ConcurrentHashSet<IgniteUuid> msgIds = new ConcurrentHashSet<>();
 
@@ -2173,10 +2182,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestCustomerEventAckSpi getTestCustomerEventAckSpi() {
+        return new TestCustomerEventAckSpi();
+    }
+
     /**
      *
      */
-    private static class TestCustomerEventAckSpi extends TcpDiscoverySpi {
+    protected static class TestCustomerEventAckSpi extends TcpDiscoverySpi {
         /** */
         private volatile boolean stopBeforeSndAck;
 
@@ -2217,10 +2231,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestFailedNodesSpi getTestFailedNodesSpi(int failOrder){
+        return new TestFailedNodesSpi(failOrder);
+    }
+
     /**
      * Simulate scenario when node detects node failure trying to send message, but node still alive.
      */
-    private static class TestFailedNodesSpi extends TcpDiscoverySpi {
+    protected static class TestFailedNodesSpi extends TcpDiscoverySpi {
         /** */
         private AtomicBoolean failMsg = new AtomicBoolean();
 
@@ -2295,10 +2314,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestCustomEventCoordinatorFailureSpi getTestCustomEventCoordinatorFailureSpi(){
+        return new TestCustomEventCoordinatorFailureSpi();
+    }
+
     /**
      *
      */
-    private static class TestCustomEventCoordinatorFailureSpi extends TcpDiscoverySpi {
+    protected static class TestCustomEventCoordinatorFailureSpi extends TcpDiscoverySpi {
         /** */
         private volatile CountDownLatch latch;
 
@@ -2323,10 +2347,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestCustomEventRaceSpi getTestCustomEventRaceSpi(){
+        return new TestCustomEventRaceSpi();
+    }
+
     /**
      *
      */
-    private static class TestCustomEventRaceSpi extends TcpDiscoverySpi {
+    protected static class TestCustomEventRaceSpi extends TcpDiscoverySpi {
         /** */
         private volatile CountDownLatch nodeAdded1;
 
@@ -2372,10 +2401,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    protected TestMessageWorkerFailureSpi1 getTestMessageWorkerFailureSpi1(int failureMode){
+        return new TestMessageWorkerFailureSpi1(failureMode);
+    }
+
     /**
      *
      */
-    private static class TestMessageWorkerFailureSpi1 extends TcpDiscoverySpi {
+    protected static class TestMessageWorkerFailureSpi1 extends TcpDiscoverySpi {
         /** */
         private static int EXCEPTION_MODE = 0;
 
@@ -2417,10 +2451,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    protected TestMessageWorkerFailureSpi2 getTestMessageWorkerFailureSpi2() {
+        return new TestMessageWorkerFailureSpi2();
+    }
+
     /**
      *
      */
-    private static class TestMessageWorkerFailureSpi2 extends TcpDiscoverySpi {
+    protected static class TestMessageWorkerFailureSpi2 extends TcpDiscoverySpi {
         /** */
         private volatile boolean stop;
 
@@ -2435,6 +2473,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 stop = true;
         }
+    }
+
+    /** */
+    protected TcpDiscoverySpi getTcpDiscoverySpi() {
+        return new TcpDiscoverySpi();
+    }
+
+    /** */
+    protected TestTcpDiscoverySpi getTestTcpDiscoverySpi() {
+        return new TestTcpDiscoverySpi();
     }
 
     /**
