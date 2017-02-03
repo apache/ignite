@@ -62,6 +62,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
@@ -849,6 +850,10 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
 
         for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
+
+            lsnr.setCntBackup(0);
+            lsnr.setCntPrimary(0);
+
             log.info("Stop iteration: " + i);
 
             TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -916,6 +921,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
 
             checkEvents(expEvts, lsnr, false);
+
+            if (!asyncCallback()) {
+                assertEquals(1, lsnr.getCntPrimary());
+                assertTrue(lsnr.getCntBackup() > 1);
+            }
         }
 
         cur.close();
@@ -2584,6 +2594,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         /** Events. */
         private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
+        /** Counter primary nodes. */
+        private int cntPrimary;
+
+        /** Counter backup nodes. */
+        private int cntBackup;
+
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
             for (CacheEntryEvent<?, ?> e : evts) {
@@ -2592,12 +2608,33 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 keys.add(key);
 
                 assert this.evts.put(key, e) == null;
+
+                if (e.unwrap(CacheQueryEntryEvent.class).isPrimary())
+                    cntPrimary++;
+                else if (e.unwrap(CacheQueryEntryEvent.class).isBackup())
+                    cntBackup++;
             }
         }
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
             return (Integer)e.getValue() % 2 == 0;
+        }
+
+        public int getCntPrimary() {
+            return cntPrimary;
+        }
+
+        public void setCntPrimary(int cntPrimary) {
+            this.cntPrimary = cntPrimary;
+        }
+
+        public int getCntBackup() {
+            return cntBackup;
+        }
+
+        public void setCntBackup(int cntBackup) {
+            this.cntBackup = cntBackup;
         }
     }
 
