@@ -1025,7 +1025,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
-    public void testAsyncOld() throws Exception {
+    public void testAsync() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
         assertFalse(ignite2.message().isAsync());
@@ -1098,58 +1098,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
                 return null;
             }
         }, IllegalStateException.class, null);
-
-        stopFut.get();
-
-        message(ignite1.cluster().forRemotes()).send(topic, "msg2");
-
-        U.sleep(1000);
-
-        assertEquals(1, msgCnt.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAsync() throws Exception {
-        final AtomicInteger msgCnt = new AtomicInteger();
-
-        assertFalse(ignite2.message().isAsync());
-
-        final IgniteMessaging msg = ignite2.message();
-
-        final String topic = "topic";
-
-        IgniteFuture<UUID> fut = msg.remoteListenAsync(topic, new P2<UUID, Object>() {
-            @Override public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() +
-                    " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
-
-                msgCnt.incrementAndGet();
-
-                return true;
-            }
-        });
-
-        Assert.assertNotNull(fut);
-
-        UUID id = fut.get();
-
-        Assert.assertNotNull(id);
-
-        message(ignite1.cluster().forRemotes()).send(topic, "msg1");
-
-        GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                return msgCnt.get() > 0;
-            }
-        }, 5000);
-
-        assertEquals(1, msgCnt.get());
-
-        IgniteFuture<Void> stopFut =msg.stopRemoteListenAsync(id);
-
-        Assert.assertNotNull(stopFut);
 
         stopFut.get();
 

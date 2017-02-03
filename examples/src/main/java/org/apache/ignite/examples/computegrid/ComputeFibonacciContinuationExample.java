@@ -27,6 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -141,12 +142,13 @@ public final class ComputeFibonacciContinuationExample {
 
                 ClusterGroup p = ignite.cluster().forPredicate(nodeFilter);
 
-                IgniteCompute compute = ignite.compute(p);
+                IgniteCompute compute = ignite.compute(p).withAsync();
 
                 // If future is not cached in node-local-map, cache it.
                 if (fut1 == null) {
-                    IgniteFuture<BigInteger> futVal = compute.applyAsync(
-                        new ContinuationFibonacciClosure(nodeFilter), n - 1);
+                    compute.apply(new ContinuationFibonacciClosure(nodeFilter), n - 1);
+
+                    ComputeTaskFuture<BigInteger> futVal = compute.future();
 
                     fut1 = locMap.putIfAbsent(n - 1, futVal);
 
@@ -156,8 +158,9 @@ public final class ComputeFibonacciContinuationExample {
 
                 // If future is not cached in node-local-map, cache it.
                 if (fut2 == null) {
-                    IgniteFuture<BigInteger> futVal = compute.applyAsync(
-                        new ContinuationFibonacciClosure(nodeFilter), n - 2);
+                    compute.apply(new ContinuationFibonacciClosure(nodeFilter), n - 2);
+
+                    ComputeTaskFuture<BigInteger> futVal = compute.<BigInteger>future();
 
                     fut2 = locMap.putIfAbsent(n - 2, futVal);
 

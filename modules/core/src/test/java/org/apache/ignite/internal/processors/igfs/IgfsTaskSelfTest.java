@@ -170,25 +170,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Test task.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ConstantConditions")
-    public void testTaskAsync() throws Exception {
-        String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
-
-        generateFile(TOTAL_WORDS);
-        Long genLen = igfs.info(FILE).length();
-
-        IgniteBiTuple<Long, Integer> taskRes = igfs.executeAsync(new Task(),
-            new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg).get();
-
-        assert F.eq(genLen, taskRes.getKey());
-        assert F.eq(TOTAL_WORDS, taskRes.getValue());
-    }
-
-    /**
      * Generate file with random data and provided argument.
      *
      * @param wordCnt Word count.

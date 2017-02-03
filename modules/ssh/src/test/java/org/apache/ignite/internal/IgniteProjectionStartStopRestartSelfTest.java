@@ -529,7 +529,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
                 maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
-                null), null, false, 0, 16);
+                    null), null, false, 0, 16);
 
         assert res.size() == 3;
 
@@ -604,10 +604,10 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
             new IgniteClosure<ClusterNode, UUID>() {
-            @Override public UUID apply(ClusterNode node) {
-                return node.id();
-            }
-        });
+                @Override public UUID apply(ClusterNode node) {
+                    return node.id();
+                }
+            });
 
         ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes();
 
@@ -1051,6 +1051,10 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         boolean restart,
         int timeout,
         int maxConn) {
-        return cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn).get(WAIT_TIMEOUT);
+        cluster = cluster.withAsync();
+
+        assertNull(cluster.startNodes(hosts, dflts, restart, timeout, maxConn));
+
+        return cluster.<Collection<ClusterStartNodeResult>>future().get(WAIT_TIMEOUT);
     }
 }

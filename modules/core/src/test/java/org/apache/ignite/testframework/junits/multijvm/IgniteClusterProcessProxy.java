@@ -121,21 +121,8 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart,
-        int timeout, int maxConn) throws IgniteException {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
-        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts,
-        boolean restart, int timeout, int maxConn) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
