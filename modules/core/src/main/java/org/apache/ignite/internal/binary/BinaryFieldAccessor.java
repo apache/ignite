@@ -458,8 +458,6 @@ public abstract class BinaryFieldAccessor {
         DefaultFinalClassAccessor(Field field, int id, BinaryWriteMode mode, boolean dynamic) {
             super(field, id, mode);
 
-            assert field != null;
-
             this.field = field;
             this.dynamic = dynamic;
         }
