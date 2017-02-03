@@ -74,7 +74,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
 
     /**
      * Returns {@code true} if {@code TcpCommunicationSpi} should use
-     * separate connection specifically for messages that will be processed
+     * separate connections specifically for messages that will be processed
      * in public pool. This option allows avoid possible starvation when
      * back-pressure control enabled ({@link #getMessageQueueLimit()} > 0).
      * <p>
@@ -87,7 +87,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * @return {@code true} if use separate connection for public pool messages.
      */
     @MXBeanDescription("Separate connection for public pool messages.")
-    public boolean isUseSeparatePublicPoolConnection();
+    public boolean isUseSeparatePublicPoolConnections();
 
     /**
      * Gets local port for shared memory communication.

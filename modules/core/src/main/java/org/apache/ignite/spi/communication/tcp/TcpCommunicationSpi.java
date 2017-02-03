@@ -1231,7 +1231,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /**
      * Set this to {@code true} if {@code TcpCommunicationSpi} should use
-     * separate connection specifically for messages that will be processed
+     * separate connections specifically for messages that will be processed
      * in public pool. This option allows avoid possible starvation when
      * back-pressure control enabled ({@link #getMessageQueueLimit()} > 0).
      * <p>
@@ -1243,12 +1243,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param connPerPlc {@code true} if use separate connection for public pool messages.
      */
-    public void setUseSeparatePublicPoolConnection(boolean connPerPlc) {
+    public void setUseSeparatePublicPoolConnections(boolean connPerPlc) {
         this.publicPoolConn = connPerPlc;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUseSeparatePublicPoolConnection() {
+    @Override public boolean isUseSeparatePublicPoolConnections() {
         return publicPoolConn;
     }
 
@@ -1795,16 +1795,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (connectionsPerNode > 1) {
             connPlc = new ConnectionPolicy() {
                 @Override public int connectionIndex(Message msg) {
-                    int idx = (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+                    long tId = U.safeAbs(Thread.currentThread().getId());
 
-                    if (publicPoolConn && msg instanceof GridIoMessage) {
-                        byte plc = ((GridIoMessage)msg).policy();
+                    int idx = (int)(tId % connectionsPerNode);
 
-                        if (plc == GridIoPolicy.PUBLIC_POOL)
-                            idx = 0;
-                        else
-                            idx = idx == 0 ? idx + 1 : idx;
+                    if (publicPoolConn && msg instanceof GridIoMessage)
+                        idx = publicConnectionIndex(((GridIoMessage)msg).policy(), idx, tId);
+
+                    return idx;
+                }
+
+                private int publicConnectionIndex(byte plc, int idx, long tId) {
+                    int pubConnections = (int)(connectionsPerNode * 0.01); // 1% of all connections
+
+                    if (pubConnections == 0)
+                        pubConnections += 1;
+
+                    if (plc == GridIoPolicy.PUBLIC_POOL) {
+                        if (idx >= pubConnections)
+                            idx = (int)(tId % pubConnections);
                     }
+                    else
+                        idx = (int)(tId % (connectionsPerNode - pubConnections)) + pubConnections;
 
                     return idx;
                 }

@@ -37,14 +37,10 @@ public class IgniteComputeManyAsyncJobsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        // Commented code resolves hang.
-//        if (gridName.endsWith("1"))
-//            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMessageQueueLimit(0);
-
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMessageQueueLimit(1024);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(2);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUseSeparatePublicPoolConnection(true);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUseSeparatePublicPoolConnections(false);
 
         return cfg;
     }
@@ -80,6 +76,11 @@ public class IgniteComputeManyAsyncJobsTest extends GridCommonAbstractTest {
             if (fut != null)
                 fut.get();
         } while (fut != null);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10_000;
     }
 
     /**
