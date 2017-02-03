@@ -109,14 +109,11 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
             ByteBuffer input = (ByteBuffer)msg;
 
             StringBuilder sb = new StringBuilder();
-
-//            int bl = 0;
-//            while (input.hasRemaining()) {
-//                sb.append(String.format("%02X ", input.get()));
-//                bl++;
-//            }
-//
-//            input.rewind();
+            sb.append('(').append(input.remaining()).append(") ");
+            int pos = input.position();
+            while (input.hasRemaining())
+                sb.append(String.format("%02X ", input.get()));
+            input.position(pos);
 
             System.out.println("+++ onMessageReceived: " + Thread.currentThread().getName() + " " + sb);
 
