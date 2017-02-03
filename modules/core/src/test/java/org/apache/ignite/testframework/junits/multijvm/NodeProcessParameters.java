@@ -1,8 +1,10 @@
 package org.apache.ignite.testframework.junits.multijvm;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.processors.hadoop.HadoopClasspathUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +25,41 @@ public class NodeProcessParameters {
     public static NodeProcessParameters forNode(String nodeGridName) {
         return new NodeProcessParameters(false, false, null, true, Arrays.asList("-ea", "-Dignite.node="+nodeGridName));
     }
+
+    /**
+     * Version of bode process parameters composition that inherits all the Hadoop-related
+     * system properties passed in with -D. This is important because these properties may be absent in the
+     * environment.
+     *
+     * @param nodeGridName The node name.
+     * @return The paramaters.
+     */
+    public static NodeProcessParameters forNodeWithHadoop(String nodeGridName) {
+        List<String> list = new ArrayList<>(Arrays.asList("-ea", "-Dignite.node="+nodeGridName));
+
+        addSystemProperty(list, HadoopClasspathUtils.PREFIX);
+        addSystemProperty(list, HadoopClasspathUtils.HOME);
+        addSystemProperty(list, HadoopClasspathUtils.COMMON_HOME);
+        addSystemProperty(list, HadoopClasspathUtils.HDFS_HOME);
+        addSystemProperty(list, HadoopClasspathUtils.MAPRED_HOME);
+        addSystemProperty(list, HadoopClasspathUtils.HADOOP_USER_LIBS);
+
+        return new NodeProcessParameters(false, false, null, true, list);
+    }
+
+    /**
+     * Adds the value of the property to the given list.
+     *
+     * @param list The list to add argument into.
+     * @param key The System property key to add.
+     */
+    private static void addSystemProperty(List<String> list, String key) {
+        String val = System.getProperty(key);
+
+        if (val != null)
+            list.add("-D" + key + "=" + val);
+    }
+
 
     /** Unique work dir flag. */
     private final boolean uniqueWorkDir;
