@@ -1193,7 +1193,15 @@ public class BinaryUtils {
         int scale = in.readInt();
         byte[] mag = doReadByteArray(in);
 
+        boolean negative = mag[0] < 0;
+
+        if (negative)
+            mag[0] &= 0x7F;
+
         BigInteger intVal = new BigInteger(mag);
+
+        if (negative)
+            intVal = intVal.negate();
 
         return new BigDecimal(intVal, scale);
     }

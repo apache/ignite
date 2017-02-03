@@ -407,7 +407,15 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             BigInteger intVal = val.unscaledValue();
 
+            boolean negative = intVal.signum() == -1;
+
+            if (negative)
+                intVal = intVal.negate();
+
             byte[] vals = intVal.toByteArray();
+
+            if (negative)
+                vals[0] |= -0x80;
 
             out.unsafeWriteInt(vals.length);
             out.writeByteArray(vals);
