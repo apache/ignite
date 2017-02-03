@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;

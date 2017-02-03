@@ -203,7 +203,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
                 break;
 
-
             case OP_ROLLBACK_ASYNC:
                 fut0 = tx(txId).rollbackAsync();
 

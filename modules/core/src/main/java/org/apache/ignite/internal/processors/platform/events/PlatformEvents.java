@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -98,9 +96,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
     /** */
     private final EventCollectionResultWriter eventColResWriter;
 
-    /** */
-    private final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
-
     /**
      * Ctor.
      *
@@ -149,16 +144,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_REMOTE_QUERY_ASYNC:
-                setCurrentFuture(startRemoteQueryAsync(reader, events));
-
-                readAndListenFuture(reader, currentFuture(), eventColResWriter);
+                readAndListenFuture(reader, startRemoteQueryAsync(reader, events), eventColResWriter);
 
                 return TRUE;
 
             case OP_WAIT_FOR_LOCAL_ASYNC: {
-                setCurrentFuture(startWaitForLocalAsync(reader, events));
-
-                readAndListenFuture(reader, currentFuture(), eventResWriter);
+                readAndListenFuture(reader, startWaitForLocalAsync(reader, events), eventResWriter);
 
                 return TRUE;
             }
@@ -345,18 +336,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         return super.processInLongOutLong(type, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return curFut.get();
-    }
-
-    /**
-     * @param fut Future.
-     */
-    private void setCurrentFuture(IgniteFuture fut) {
-        curFut.set(((IgniteFutureImpl)fut).internalFuture());
     }
 
     /** {@inheritDoc} */
