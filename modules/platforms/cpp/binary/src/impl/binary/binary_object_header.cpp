@@ -38,10 +38,10 @@ namespace ignite
                 int8_t type = BinaryUtils::UnsafeReadInt8(mem, offset);
                 if (type == impl::binary::IGNITE_TYPE_BINARY)
                 {
-                    int32_t binLen = BinaryUtils::UnsafeReadInt32(mem, offset + 1);
-                    int32_t binOff = BinaryUtils::ReadInt32(mem, offset + 5 + binLen);
+                    int32_t binLen = BinaryUtils::UnsafeReadInt32(mem, offset + IGNITE_COMMON_HDR_LEN);
+                    int32_t binOff = BinaryUtils::ReadInt32(mem, offset + IGNITE_BINARY_HDR_LEN + binLen);
 
-                    return BinaryObjectHeader::FromMemory(mem, offset + 5 + binOff);
+                    return BinaryObjectHeader::FromMemory(mem, offset + IGNITE_BINARY_HDR_LEN + binOff);
                 }
                 else if (type != impl::binary::IGNITE_TYPE_OBJECT)
                 {
