@@ -1604,9 +1604,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
         }
-//
-//        if (DebugUtils.hasFlag("test") && top.cacheId() == CU.cacheId("cache1"))
-//            System.out.println("???");
     }
 
     /**
@@ -1843,6 +1840,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void updatePartitionFullMap(GridDhtPartitionsFullMessage msg) {
         cctx.versions().onExchange(msg.lastVersion().order());
 
+        assert partHistSuppliers.isEmpty();
+
+        partHistSuppliers.putAll(msg.partitionHistorySuppliers());
+
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
 
@@ -1859,10 +1860,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cctx.exchange().clientTopology(cacheId, this).update(this, entry.getValue(), cntrMap);
             }
         }
-
-        assert partHistSuppliers.isEmpty();
-
-        partHistSuppliers.putAll(msg.partitionHistorySuppliers());
     }
 
     /**

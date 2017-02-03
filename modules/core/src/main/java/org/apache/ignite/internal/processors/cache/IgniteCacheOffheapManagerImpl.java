@@ -635,8 +635,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** {@inheritDoc} */
     @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
         throws IgniteCheckedException {
-//        if (DebugUtils.hasFlag("test") && cctx.cacheId() == CU.cacheId("cache1"))
-//            System.out.println("???");
 
         final GridIterator<CacheDataRow> it = iterator(part);
 
