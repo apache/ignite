@@ -77,11 +77,6 @@ public class TcpDiscoveryNodesRing {
     /** */
     private long maxInternalOrder;
 
-    /**
-     * Node with maximum  topology version.
-     */
-    private TcpDiscoveryNode maxNode = null;
-
     /** Lock. */
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -245,8 +240,6 @@ public class TcpDiscoveryNodesRing {
             node.lastUpdateTime(U.currentTimeMillis());
 
             nodes.add(node);
-            if (maxNode == null || node.compareTo(maxNode) > 0)
-                maxNode = node;
 
             nodeOrder = node.internalOrder();
 
@@ -268,10 +261,8 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            if (maxInternalOrder == 0) {
-                return maxNode != null ? maxInternalOrder = maxNode.internalOrder() : -1;
-            }
-
+            if (maxInternalOrder == 0)
+                return -1;
             return maxInternalOrder;
         }
         finally {
@@ -318,8 +309,6 @@ public class TcpDiscoveryNodesRing {
                 node.lastUpdateTime(U.currentTimeMillis());
 
                 this.nodes.add(node);
-                if (maxNode == null || node.compareTo(maxNode) > 0)
-                    maxNode = node;
             }
 
             nodeOrder = topVer;
@@ -370,16 +359,6 @@ public class TcpDiscoveryNodesRing {
             if (rmv != null) {
                 nodes = new TreeSet<>(nodes);
                 nodes.remove(rmv);
-
-                if (rmv.equals(maxNode)) {
-                    TcpDiscoveryNode newMaxNode = null;
-                    for (TcpDiscoveryNode node : nodes) {
-                        if (newMaxNode == null || (newMaxNode.compareTo(node) < 0))
-                            newMaxNode = node;
-                    }
-                    maxNode = newMaxNode;
-                }
-
             }
 
             initializeMinimumVersion();
@@ -405,7 +384,6 @@ public class TcpDiscoveryNodesRing {
 
             if (locNode != null) {
                 nodes.add(locNode);
-                maxNode = locNode;
             }
 
             nodesMap = new HashMap<>();
@@ -414,7 +392,7 @@ public class TcpDiscoveryNodesRing {
                 nodesMap.put(locNode.id(), locNode);
 
             nodeOrder = 0;
-            maxInternalOrder = 0;
+            maxInternalOrder = locNode.internalOrder();
 
             topVer = 0;
 
