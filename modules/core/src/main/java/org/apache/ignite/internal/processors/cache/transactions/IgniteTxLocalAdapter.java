@@ -2229,7 +2229,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     @Nullable Object val,
                     @Nullable GridCacheVersion loadVer) {
                     if (log.isDebugEnabled())
-                        log.debug("Loaded value from remote node [key=" + key + ", val=" + val + ']');
+                        log.debug(S.toString("Loaded value from remote node",
+                            "key", key, false,
+                            "val", val, true));
 
                     IgniteTxEntry e = entry(new IgniteTxKey(key, cacheCtx.cacheId()));
 
