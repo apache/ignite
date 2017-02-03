@@ -106,6 +106,7 @@ public class TestTransaction implements Transaction {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
         return null;
     }
@@ -135,6 +136,7 @@ public class TestTransaction implements Transaction {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
         return null;
     }
