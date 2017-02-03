@@ -18,7 +18,6 @@
 package org.apache.ignite.jdbc.suite;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
 import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;

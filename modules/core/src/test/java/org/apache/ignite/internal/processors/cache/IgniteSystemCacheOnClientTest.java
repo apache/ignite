@@ -65,30 +65,9 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
 
         assertTrue(ignite.configuration().isClientMode());
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return ignite.internalCache(CU.MARSH_CACHE_NAME) != null;
-            }
-        }, 5000);
-
-        GridCacheAdapter marshCache = ignite.internalCache(CU.MARSH_CACHE_NAME);
-
-        assertNotNull(marshCache);
-
-        assertFalse(marshCache.context().isNear());
-
-        marshCache = ((IgniteKernal)ignite(0)).internalCache(CU.MARSH_CACHE_NAME);
-
-        assertFalse(marshCache.context().isNear());
-
-        Collection<ClusterNode> affNodes = marshCache.affinity().mapKeyToPrimaryAndBackups(1);
-
-        assertEquals(1, affNodes.size());
-        assertTrue(affNodes.contains(ignite(0).cluster().localNode()));
-
         GridCacheAdapter utilityCache = ((IgniteKernal)ignite(0)).internalCache(CU.UTILITY_CACHE_NAME);
 
-        affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
+        Collection<ClusterNode> affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
 
         assertEquals(1, affNodes.size());
         assertTrue(affNodes.contains(ignite(0).cluster().localNode()));

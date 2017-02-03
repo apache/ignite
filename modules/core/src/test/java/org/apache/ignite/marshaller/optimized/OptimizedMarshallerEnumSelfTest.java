@@ -18,19 +18,33 @@
 package org.apache.ignite.marshaller.optimized;
 
 import junit.framework.TestCase;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 
 /**
  *
  */
 public class OptimizedMarshallerEnumSelfTest extends TestCase {
+
+    private String igniteHome = System.getProperty("user.dir");
+
+    private final IgniteLogger rootLog = new GridTestLog4jLogger(false);
     /**
      * @throws Exception If failed.
      */
     public void testEnumSerialisation() throws Exception {
         OptimizedMarshaller marsh = new OptimizedMarshaller();
 
-        marsh.setContext(new MarshallerContextTestImpl());
+        MarshallerContextTestImpl context = new MarshallerContextTestImpl();
+
+        context.onMarshallerProcessorStarted(newContext(), null);
+
+        marsh.setContext(context);
 
         byte[] bytes = marsh.marshal(TestEnum.Bond);
 
@@ -38,6 +52,15 @@ public class OptimizedMarshallerEnumSelfTest extends TestCase {
 
         assertEquals(TestEnum.Bond, unmarshalled);
         assertEquals(TestEnum.Bond.desc, unmarshalled.desc);
+    }
+
+    private GridKernalContext newContext() throws IgniteCheckedException {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteHome(igniteHome);
+        cfg.setClientMode(false);
+
+        return new GridTestKernalContext(rootLog.getLogger(OptimizedMarshallerEnumSelfTest.class), cfg);
     }
 
     private enum TestEnum {

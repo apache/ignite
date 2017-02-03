@@ -33,10 +33,6 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfs;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutProc;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutputStream;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsStreamDelegate;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
@@ -142,7 +138,7 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
         try {
             switchHandlerErrorFlag(true);
 
-            HadoopIgfs client = new HadoopIgfsOutProc("127.0.0.1", 10500, getTestGridName(0), "igfs", LOG, null);
+            HadoopIgfs client = new HadoopIgfsOutProc("127.0.0.1", 10500, "igfs", LOG, null);
 
             client.handshake(null);
 

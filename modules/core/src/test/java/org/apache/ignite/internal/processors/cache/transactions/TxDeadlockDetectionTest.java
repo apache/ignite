@@ -129,7 +129,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                             stopGrid(NODES_CNT);
                         }
-                        catch (Exception e) {
+                        catch (Exception ignored) {
                             // No-op.
                         }
                     }

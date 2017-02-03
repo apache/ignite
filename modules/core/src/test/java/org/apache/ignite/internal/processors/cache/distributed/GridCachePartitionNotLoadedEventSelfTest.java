@@ -237,7 +237,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         try {
             fut.get(1, TimeUnit.SECONDS);
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutCheckedException ignored) {
             timeout = true;
         }
 

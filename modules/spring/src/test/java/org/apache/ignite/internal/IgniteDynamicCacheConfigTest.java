@@ -205,7 +205,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteException e) {
+        catch (IgniteException ignored) {
             // No-op.
         }
     }

@@ -188,6 +188,34 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
         int maxConn) throws IgniteException;
 
     /**
+     * Starts one or more nodes on remote host(s) asynchronously.
+     * <p>
+     * This method takes INI file which defines all startup parameters. It can contain one or
+     * more sections, each for a host or for range of hosts (note that they must have different
+     * names) and a special '{@code defaults}' section with default values. They are applied to
+     * undefined parameters in host's sections.
+     * <p>
+     * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
+     * contains hostname, success flag and error message if attempt was not successful. Note that
+     * successful attempt doesn't mean that node was actually started and joined topology. For large
+     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * node logs for details.
+     *
+     * @param file Configuration file.
+     * @param restart Whether to stop existing nodes. If {@code true}, all existing
+     *      nodes on the host will be stopped before starting new ones. If
+     *      {@code false}, nodes will be started only if there are less
+     *      nodes on the host than expected.
+     * @param timeout Connection timeout.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return a Future representing pending completion of the starting nodes.
+     * @throws IgniteException In case of error.
+     */
+    public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart, int timeout,
+        int maxConn) throws IgniteException;
+
+
+    /**
      * Starts one or more nodes on remote host(s).
      * <p>
      * Each map in {@code hosts} collection
@@ -290,6 +318,105 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
     /**
+     * Starts one or more nodes on remote host(s) asynchronously.
+     * <p>
+     * Each map in {@code hosts} collection
+     * defines startup parameters for one host or for a range of hosts. The following
+     * parameters are supported:
+     *     <table class="doctable">
+     *         <tr>
+     *             <th>Name</th>
+     *             <th>Type</th>
+     *             <th>Description</th>
+     *         </tr>
+     *         <tr>
+     *             <td><b>host</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Hostname (required). Can define several hosts if their IPs are sequential.
+     *                 E.g., {@code 10.0.0.1~5} defines range of five IP addresses. Other
+     *                 parameters are applied to all hosts equally.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>port</b></td>
+     *             <td>Integer</td>
+     *             <td>Port number (default is {@code 22}).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>uname</b></td>
+     *             <td>String</td>
+     *             <td>Username (if not defined, current local username will be used).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>passwd</b></td>
+     *             <td>String</td>
+     *             <td>Password (if not defined, private key file must be defined).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>key</b></td>
+     *             <td>File</td>
+     *             <td>Private key file (if not defined, password must be defined).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>nodes</b></td>
+     *             <td>Integer</td>
+     *             <td>
+     *                 Expected number of nodes on the host. If some nodes are started
+     *                 already, then only remaining nodes will be started. If current count of
+     *                 nodes is equal to this number, and {@code restart} flag is {@code false},
+     *                 then nothing will happen.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>igniteHome</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Path to Ignite installation folder. If not defined, IGNITE_HOME
+     *                 environment variable must be set on remote hosts.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>cfg</b></td>
+     *             <td>String</td>
+     *             <td>Path to configuration file (relative to {@code igniteHome}).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>script</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Custom startup script file name and path (relative to {@code igniteHome}).
+     *                 You can also specify a space-separated list of parameters in the same
+     *                 string (for example: {@code "bin/my-custom-script.sh -v"}).
+     *             </td>
+     *         </tr>
+     *     </table>
+     * <p>
+     * {@code dflts} map defines default values. They are applied to undefined parameters in
+     * {@code hosts} collection.
+     * <p>
+     * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
+     * contains hostname, success flag and error message if attempt was not successful. Note that
+     * successful attempt doesn't mean that node was actually started and joined topology. For large
+     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * node logs for details.
+     *
+     * @param hosts Startup parameters.
+     * @param dflts Default values.
+     * @param restart Whether to stop existing nodes. If {@code true}, all existing
+     *      nodes on the host will be stopped before starting new ones. If
+     *      {@code false}, nodes will be started only if there are less
+     *      nodes on the host than expected.
+     * @param timeout Connection timeout in milliseconds.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return a Future representing pending completion of the starting nodes.
+     * @throws IgniteException In case of error.
+     */
+    public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(Collection<Map<String, Object>> hosts,
+        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
+
+
+    /**
      * Stops nodes satisfying optional set of predicates.
      * <p>
      * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
@@ -347,5 +474,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     @Nullable public IgniteFuture<?> clientReconnectFuture();
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteCluster withAsync();
 }
