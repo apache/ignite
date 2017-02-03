@@ -63,6 +63,8 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 InitAccounts(cache);
 
+                Console.WriteLine("\n>>> Transferring with Ignite transaction API...");
+
                 // Transfer money between accounts in a single transaction.
                 using (var tx = cache.Ignite.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
                     TransactionIsolation.RepeatableRead))
@@ -82,6 +84,8 @@ namespace Apache.Ignite.Examples.Datagrid
                 DisplayAccounts(cache);
 
                 InitAccounts(cache);
+
+                Console.WriteLine("\n>>> Transferring with TransactionScope API...");
 
                 // Do the same transaction with TransactionScope API.
                 using (var ts = new TransactionScope())
