@@ -2087,10 +2087,8 @@ public class IgnitionEx {
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
                         throw new IgniteCheckedException(
-                            "Cache name '" + ccfg.getName() + "' cannot match the template \""
-                            + IgfsUtils.IGFS_CACHE_PREFIX + "<igfs_name>(" + IgfsUtils.DATA_CACHE_SUFFIX + "|"
-                            + IgfsUtils.META_CACHE_SUFFIX
-                            + ")\" because it is reserved for IGFS internal purposes.");
+                            "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
+                                + "\" because it is reserved for IGFS internal purposes.");
 
                     cacheCfgs.add(ccfg);
                 }
@@ -2101,8 +2099,6 @@ public class IgnitionEx {
             assert cfg.getCacheConfiguration() != null;
 
             IgfsUtils.prepareCacheConfigurations(cfg);
-
-            IgfsProcessor.validateLocalIgfsConfigurations(cfg);
         }
 
         /**

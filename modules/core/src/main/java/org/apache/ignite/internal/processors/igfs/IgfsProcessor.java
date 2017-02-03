@@ -66,12 +66,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** Null IGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
-    /** Min available TCP port. */
-    private static final int MIN_TCP_PORT = 1;
-
-    /** Max available TCP port. */
-    private static final int MAX_TCP_PORT = 0xFFFF;
-
     /** Converts context to IGFS. */
     private static final IgniteClosure<IgfsContext,IgniteFileSystem> CTX_TO_IGFS = new C1<IgfsContext, IgniteFileSystem>() {
         @Override public IgniteFileSystem apply(IgfsContext igfsCtx) {
@@ -288,111 +282,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      */
     private String maskName(@Nullable String name) {
         return name == null ? NULL_NAME : name;
-    }
-
-    /**
-     * Validates local IGFS configurations. Compares attributes only for IGFSes with same name.
-     *
-     * @param igniteCfg Ignite config.
-     * @throws IgniteCheckedException If any of IGFS configurations is invalid.
-     */
-    public static void validateLocalIgfsConfigurations(IgniteConfiguration igniteCfg)
-        throws IgniteCheckedException {
-
-        if (igniteCfg.getFileSystemConfiguration() == null || igniteCfg.getFileSystemConfiguration().length == 0)
-            return;
-
-        Collection<String> cfgNames = new HashSet<>();
-        Collection<String> metaCacheNames = new HashSet<>();
-        Collection<String> dataCacheNames = new HashSet<>();
-
-        for (FileSystemConfiguration cfg : igniteCfg.getFileSystemConfiguration()) {
-            String name = cfg.getName();
-
-            if (cfgNames.contains(name))
-                throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
-                    "assign unique name to each): " + name);
-
-            CacheConfiguration dataCacheCfg = cfg.getDataCacheConfiguration();
-
-            String dataCacheName = cfg.getDataCacheName();
-
-            if (dataCacheCfg == null && dataCacheName != null && dataCacheNames.contains(dataCacheName)) {
-                throw new IgniteCheckedException("Data cache names should be different for different " +
-                    "IGFS instances configuration (fix configuration " + cfg + ')');
-            }
-
-            CacheConfiguration metaCacheCfg = cfg.getMetaCacheConfiguration();
-
-            String metaCacheName = cfg.getMetaCacheName();
-
-            if (metaCacheCfg == null && metaCacheName != null && metaCacheNames.contains(metaCacheName)) {
-                throw new IgniteCheckedException("Meta cache names should be different for different " +
-                    "IGFS instances configuration (fix configuration " + cfg + ')');
-            }
-
-            if (dataCacheCfg == null && metaCacheCfg == null) {
-                dataCacheNames.add(dataCacheName);
-                metaCacheNames.add(metaCacheName);
-
-                if (F.eq(dataCacheName, metaCacheName)
-                    || dataCacheNames.contains(metaCacheName)
-                    || metaCacheNames.contains(dataCacheName)) {
-                    throw new IgniteCheckedException("Meta cache and data cache should be different " +
-                        "(fix configuration " + cfg + ')');
-                }
-            }
-
-            CacheConfiguration effectiveMetaCacheCfg = metaCacheCfg != null ? metaCacheCfg
-                : CU.config(igniteCfg, metaCacheName);
-
-            CacheConfiguration effectiveDataCacheCfg = dataCacheCfg != null ? dataCacheCfg
-                : CU.config(igniteCfg, dataCacheName);
-
-            if (GridQueryProcessor.isEnabled(effectiveDataCacheCfg))
-                throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
-
-            if (GridQueryProcessor.isEnabled(effectiveMetaCacheCfg))
-                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
-
-            if (effectiveMetaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
-
-            if (!(effectiveDataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
-                throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
-                    IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
-
-            IgfsIpcEndpointConfiguration ipcCfg = cfg.getIpcEndpointConfiguration();
-
-            if (ipcCfg != null) {
-                final int tcpPort = ipcCfg.getPort();
-
-                if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
-                    throw new IgniteCheckedException("IGFS endpoint TCP port is out of range [" + MIN_TCP_PORT +
-                        ".." + MAX_TCP_PORT + "]: " + tcpPort);
-
-                if (ipcCfg.getThreadCount() <= 0)
-                    throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
-                        ipcCfg.getThreadCount());
-            }
-
-            boolean secondary = cfg.getDefaultMode() == IgfsMode.PROXY;
-
-            if (cfg.getPathModes() != null) {
-                for (Map.Entry<String, IgfsMode> mode : cfg.getPathModes().entrySet()) {
-                    if (mode.getValue() == IgfsMode.PROXY)
-                        secondary = true;
-                }
-            }
-
-            if (secondary && cfg.getSecondaryFileSystem() == null) {
-                // When working in any mode except of primary, secondary FS config must be provided.
-                throw new IgniteCheckedException("Grid configuration parameter invalid: " +
-                    "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
-            }
-
-            cfgNames.add(name);
-        }
     }
 
     /**
