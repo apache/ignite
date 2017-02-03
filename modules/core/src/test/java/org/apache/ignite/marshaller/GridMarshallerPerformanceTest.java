@@ -115,7 +115,11 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     public void testGridMarshaller() throws Exception {
         final GridTuple<byte[]> tuple = new GridTuple<>();
 
+        /** Test marshaller context */
+        final MarshallerContext marshCtx = new MarshallerContextTestImpl();
+
         final OptimizedMarshaller marsh = new OptimizedMarshaller();
+        marsh.setContext(marshCtx);
 
         IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
             @Override public void applyx(TestObject obj) throws IgniteCheckedException {
