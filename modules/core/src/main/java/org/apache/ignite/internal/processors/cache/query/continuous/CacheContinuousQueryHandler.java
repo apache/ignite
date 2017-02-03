@@ -39,6 +39,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -384,7 +385,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 final boolean recordIgniteEvt,
                 GridDhtAtomicAbstractUpdateFuture fut) {
                 if (ignoreExpired && evt.getEventType() == EventType.EXPIRED)
-                    return ;
+                    return;
 
                 final GridCacheContext<K, V> cctx = cacheContext(ctx);
 
@@ -842,6 +843,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnect() {
+        if (internal)
+            return;
+        
+        for (PartitionRecovery rec: rcvs.values())
+            rec.resetTopologyCache();
+    }
+
     /**
      * @param ctx Context.
      * @param partId Partition id.
@@ -957,6 +967,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 curTop = topVer;
             }
+        }
+
+        /**
+         * Reset cached topology.
+         */
+        void resetTopologyCache() {
+            curTop = AffinityTopologyVersion.NONE;
         }
 
         /**
@@ -1410,7 +1427,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          * @return Non-null tuple if acknowledge should be sent to backups.
          */
         @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
-            acknowledgeOnTimeout() {
+        acknowledgeOnTimeout() {
             return size > 0 ? acknowledgeData() : null;
         }
 
