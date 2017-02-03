@@ -326,7 +326,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     msg.addPartition(p, false);
                 }
                 else {
-                    if (cctx.shared().database().persistenceEnabled() && part.updateCounter() > 0) {
+                    if (cctx.shared().database().persistenceEnabled()) {
                         if (part.state() == RENTING || part.state() == EVICTED) {
                             try {
                                 part.rent(false).get();

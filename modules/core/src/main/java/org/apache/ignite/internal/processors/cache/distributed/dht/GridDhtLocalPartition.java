@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.DebugUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -140,8 +142,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param id Partition ID.
      * @param entryFactory Entry factory.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
+        int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.id = id;
@@ -169,11 +171,19 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             // TODO ignite-db
             throw new IgniteException(e);
         }
+
+        if (cctx.cacheId() == CU.cacheId("indexed")) {
+            DebugUtils.addToHistory(cctx.localNode(), "part", id, new T4<>(
+                cctx.discovery().topologyVersionEx(),
+                null,
+                MOVING, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)));
+        }
     }
 
     /**
      * @return Data store.
      */
+
     public CacheDataStore dataStore() {
         return store;
     }
@@ -517,7 +527,14 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(((long)stateToRestore.ordinal())  <<  32);
+        state.set(((long)stateToRestore.ordinal()) << 32);
+
+        if (cctx.cacheId() == CU.cacheId("indexed")) {
+            DebugUtils.addToHistory(cctx.localNode(), "part", id, new T4<>(
+                cctx.discovery().topologyVersionEx(),
+                null,
+                stateToRestore, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)));
+        }
     }
 
     /**
@@ -532,6 +549,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                 if (update)
                     try {
+                        if (cctx.cacheId() == CU.cacheId("indexed")) {
+                            DebugUtils.addToHistory(cctx.localNode(), "part", id, new T4<>(
+                                cctx.discovery().topologyVersionEx(),
+                                GridDhtPartitionState.fromOrdinal((int)(reservations >> 32)),
+                                toState, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)));
+                        }
+
                         cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(), id, toState, updateCounter()));
                     }
                     catch (IgniteCheckedException e) {
@@ -700,7 +724,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearEvicting() {
-       boolean free;
+        boolean free;
 
         while (true) {
             int cnt = evictGuard.get();

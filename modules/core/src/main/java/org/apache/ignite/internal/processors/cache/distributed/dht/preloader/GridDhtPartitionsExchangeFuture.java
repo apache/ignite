@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
+import org.apache.ignite.DebugUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -76,6 +77,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1102,6 +1105,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
             m.setExceptionsMap(changeGlobalStateExceptions);
 
+        DebugUtils.addToHistory(cctx.localNode(), "fullMap", null, new T4<>(
+            topologyVersion(), discoEvt, m, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)
+        ));
+
         return m;
     }
 
@@ -1218,7 +1225,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (!success) {
                     // TODO: how to handle?
-                    onDone(new IgniteCheckedException("Could not reserve history"));
+                    err = new IgniteCheckedException("Could not reserve history");
                 }
             }
         }
@@ -1499,7 +1506,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 Long cntr = e0.getValue().get1();
 
                 if (cntr == null)
-                    continue;
+                    cntr = 0L;
 
                 Long minCntr = minCntrs.get(p);
 
@@ -1565,7 +1572,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             int p = e.getKey();
             long minCntr = e.getValue();
 
-            if (minCntr == maxCntrs.get(p).cnt)
+            // If minimal counter is zero, do clean preloading.
+            if (minCntr == maxCntrs.get(p).cnt || minCntr == 0)
                 continue;
 
             if (localReserved != null) {

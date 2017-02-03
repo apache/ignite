@@ -1117,8 +1117,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 return null;
             }
 
-            long updateSeq = this.updateSeq.incrementAndGet();
-
             if (exchId != null)
                 lastExchangeId = exchId;
 
@@ -1208,18 +1206,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     else if (state == MOVING) {
                         GridDhtLocalPartition locPart = locParts.get(p);
 
-                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null &&
-                            locPart.state() == OWNING) {
-                            // TODO : remove
-
-//                            try {
-                            locPart.rent(false);
+                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null && locPart.updateCounter() > 0) {
+                            locPart.rent(true);
 
                             changed = true;
-//                            }
-//                            catch (IgniteCheckedException ex) {
-//                                throw new IgniteException(ex);
-//                            }
                         }
                         else {
                             if (locPart == null)
@@ -1241,6 +1231,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     }
                 }
             }
+
+            long updateSeq = this.updateSeq.incrementAndGet();
 
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
@@ -1865,8 +1857,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
 
-            if (!part2node.get(part.id()).contains(cctx.localNodeId()))
-                updateLocal(part.id(), part.state(), seq);
+            updateLocal(part.id(), part.state(), seq);
 
             consistencyCheck();
         }
@@ -1890,6 +1881,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** {@inheritDoc} */
     @Override public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros) {
         lock.readLock().lock();
+
+        // TODO
+        skipZeros = false;
 
         try {
             Map<Integer, T2<Long, Long>> res;
