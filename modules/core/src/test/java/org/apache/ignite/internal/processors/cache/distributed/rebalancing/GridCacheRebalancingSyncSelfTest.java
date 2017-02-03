@@ -240,7 +240,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(0, new AffinityTopologyVersion(2, waitMinorVer));
         waitForRebalancing(1, new AffinityTopologyVersion(2, waitMinorVer));
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -250,7 +250,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 3);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -261,7 +261,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(1, new AffinityTopologyVersion(4, waitMinorVer));
         waitForRebalancing(2, new AffinityTopologyVersion(4, waitMinorVer));
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -271,7 +271,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 5);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 

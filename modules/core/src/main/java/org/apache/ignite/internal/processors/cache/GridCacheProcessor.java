@@ -2570,22 +2570,43 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Resets cache state after the cache has been moved to recovery state.
      *
-     * @param cacheName Cache name.
-     * @return Future that will be completed when state is changed.
+     * @param cacheNames Cache names.
+     * @return Future that will be completed when state is changed for all caches.
      */
-    public IgniteInternalFuture<?> resetCacheState(String cacheName) {
-        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cacheName));
-
-        if (proxy == null || proxy.proxyClosed())
-            return new GridFinishedFuture<>(); // No-op.
-
+    public IgniteInternalFuture<?> resetCacheState(Collection<String> cacheNames) {
         checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+        if (F.isEmpty(cacheNames))
+            cacheNames = registeredCaches.keySet();
 
-        t.markResetLostPartitions();
+        Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
-        return F.first(initiateCacheChanges(F.asList(t), false));
+        for (String cacheName : cacheNames) {
+            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+
+            if (desc == null) {
+                log.warning("Reset lost partition will not be executed, " +
+                    "because cache with name:" + cacheName + " doesn't not exist");
+
+                continue;
+            }
+
+            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
+                UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+            req.markResetLostPartitions();
+
+            reqs.add(req);
+        }
+
+        GridCompoundFuture fut = new GridCompoundFuture();
+
+        for (DynamicCacheStartFuture f : initiateCacheChanges(reqs, false))
+            fut.add(f);
+
+        fut.markInitialized();
+
+        return fut;
     }
 
     /**
@@ -2690,7 +2711,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
-        Collection<DynamicCacheChangeRequest> reqs, boolean failIfExists
+        Collection<DynamicCacheChangeRequest> reqs,
+        boolean failIfExists
     ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 

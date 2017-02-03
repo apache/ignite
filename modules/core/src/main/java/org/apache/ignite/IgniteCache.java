@@ -933,10 +933,4 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Lost paritions.
      */
     public Collection<Integer> lostPartitions();
-
-    /**
-     * Clears partition's lost state and moves cache to a normal mode.
-     */
-    @IgniteAsyncSupported
-    public void resetLostPartitions();
 }
