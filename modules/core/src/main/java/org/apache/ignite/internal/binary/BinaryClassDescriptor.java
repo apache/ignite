@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
@@ -860,14 +861,11 @@ public class BinaryClassDescriptor {
 
             return res;
         }
-        catch (BinaryObjectException ex) {
-            if (S.INCLUDE_SENSITIVE) {
-                String typeName = typeName();
-                if (typeName == null || typeName.isEmpty())
-                    typeName = String.valueOf(typeId());
-                throw new BinaryObjectException("Failed to deserialize type: " + typeName, ex);
-            } else
-                throw ex;
+        catch (BinaryObjectException e) {
+            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+                throw new BinaryObjectException("Failed to deserialize object [typeName=" + typeName + ']', e);
+            else
+                throw new BinaryObjectException("Failed to deserialize object [typeId=" + typeId + ']', e);
         }
     }
 
