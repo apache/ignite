@@ -56,6 +56,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
@@ -225,6 +226,41 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (int i = 0; i < gridCount(); i++)
             assertEquals(globalPrimarySize, jcache(i).size(PRIMARY));
 
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(globalPrimarySize, jcache(i).sizeLong(PRIMARY));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(globalPrimarySize, (int)jcache(i).sizeAsync(PRIMARY).get());
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals((long)globalPrimarySize, (long)jcache(i).sizeLongAsync(PRIMARY).get());
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgniteCacheProxy cache = (IgniteCacheProxy)jcache(i);
+
+            long cacheSize = 0;
+
+            int parts = cache.context().affinity().partitions();
+
+            for (int part = 0; part < parts; ++part)
+                cacheSize += jcache(i).sizeLong(part, PRIMARY);
+
+            assertEquals((long)globalPrimarySize, cacheSize);
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgniteCacheProxy cache = (IgniteCacheProxy)jcache(i);
+
+            long cacheSize = 0;
+
+            int parts = cache.context().affinity().partitions();
+
+            for (int part = 0; part < parts; ++part)
+                cacheSize += jcache(i).sizeLongAsync(part, PRIMARY).get();
+
+            assertEquals((long)globalPrimarySize, cacheSize);
+        }
+
         int times = 1;
 
         if (cacheMode() == REPLICATED)
@@ -242,10 +278,21 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception In case of error.
      */
     public void testContainsKey() throws Exception {
-        jcache().put("testContainsKey", 1);
 
-        checkContainsKey(true, "testContainsKey");
+        Map<String, Integer> vals = new HashMap<>();
+
+        for (int i = 0; i < CNT; i++)
+            vals.put("key" + i, i);
+
+        jcache().putAll(vals);
+
+        checkContainsKey(true, "key0");
         checkContainsKey(false, "testContainsKeyWrongKey");
+
+        for (int i = 0; i < gridCount(); i++) {
+            assertTrue(jcache(i).containsKeys(vals.keySet()));
+            assertTrue(jcache(i).containsKeysAsync(vals.keySet()).get());
+        }
     }
 
     /**
@@ -899,6 +946,50 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllAsyncOptimisticReadCommitted() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                checkInvokeAllAsync(OPTIMISTIC, READ_COMMITTED);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllAsyncOptimisticRepeatableRead() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                checkInvokeAllAsync(OPTIMISTIC, REPEATABLE_READ);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllAsyncPessimisticReadCommitted() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                checkInvokeAllAsync(PESSIMISTIC, READ_COMMITTED);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllAsyncPessimisticRepeatableRead() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                checkInvokeAllAsync(PESSIMISTIC, REPEATABLE_READ);
+            }
+        });
+    }
+
+    /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
@@ -981,6 +1072,103 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put(key3, val3);
 
         res = cache.invokeAll(F.asMap(key1, INCR_PROCESSOR, key2, INCR_PROCESSOR, key3, INCR_PROCESSOR), dataMode);
+
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertEquals(val4, cache.get(key3));
+
+        assertNull(res.get(key1));
+        assertEquals(val1, res.get(key2).get());
+        assertEquals(val3, res.get(key3).get());
+
+        assertEquals(2, res.size());
+    }
+
+    /**
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @throws Exception If failed.
+     */
+    private void checkInvokeAllAsync(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+        // TODO IGNITE-2664: enable tests for all modes when IGNITE-2664 will be fixed.
+        if (dataMode != DataMode.EXTERNALIZABLE && gridCount() > 1)
+            return;
+
+        final Object key1 = key(1);
+        final Object key2 = key(2);
+        final Object key3 = key(3);
+
+        final Object val1 = value(1);
+        final Object val2 = value(2);
+        final Object val3 = value(3);
+        final Object val4 = value(4);
+
+        final IgniteCache<Object, Object> cache = jcache();
+
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        if (txShouldBeUsed()) {
+            Map<Object, EntryProcessorResult<Object>> res;
+
+            try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                res = cache.invokeAllAsync(F.asSet(key1, key2, key3), INCR_PROCESSOR, dataMode).get();
+
+                tx.commit();
+            }
+
+            assertEquals(val1, cache.get(key1));
+            assertEquals(val2, cache.get(key2));
+            assertEquals(val4, cache.get(key3));
+
+            assertNull(res.get(key1));
+            assertEquals(val1, res.get(key2).get());
+            assertEquals(val3, res.get(key3).get());
+
+            assertEquals(2, res.size());
+
+            cache.remove(key1);
+            cache.put(key2, val1);
+            cache.put(key3, val3);
+        }
+
+        Map<Object, EntryProcessorResult<Object>> res =
+            cache.invokeAllAsync(F.asSet(key1, key2, key3), RMV_PROCESSOR).get();
+
+        for (int i = 0; i < gridCount(); i++) {
+            assertNull(jcache(i).localPeek(key1, ONHEAP));
+            assertNull(jcache(i).localPeek(key2, ONHEAP));
+            assertNull(jcache(i).localPeek(key3, ONHEAP));
+        }
+
+        assertNull(res.get(key1));
+        assertEquals(val1, res.get(key2).get());
+        assertEquals(val3, res.get(key3).get());
+
+        assertEquals(2, res.size());
+
+        cache.remove(key1);
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        res = cache.invokeAllAsync(F.asSet(key1, key2, key3), INCR_PROCESSOR, dataMode).get();
+
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertEquals(val4, cache.get(key3));
+
+        assertNull(res.get(key1));
+        assertEquals(val1, res.get(key2).get());
+        assertEquals(val3, res.get(key3).get());
+
+        assertEquals(2, res.size());
+
+        cache.remove(key1);
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        res = cache.invokeAllAsync(
+            F.asMap(key1, INCR_PROCESSOR, key2, INCR_PROCESSOR, key3, INCR_PROCESSOR), dataMode).get();
 
         assertEquals(val1, cache.get(key1));
         assertEquals(val2, cache.get(key2));
@@ -4143,8 +4331,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put("key1", 1);
         cache.put("key2", 2);
 
-        Map map = new HashMap<>();
-
         for (int i = 0; i < gridCount(); i++) {
             for (Cache.Entry entry : jcache(i))
                 storeStgy.putToStore(entry.getKey(), entry.getValue());
@@ -4191,8 +4377,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     private void checkContainsKey(boolean exp, Object key) throws Exception {
-        if (nearEnabled())
+        if (nearEnabled()) {
             assertEquals(exp, jcache().containsKey(key));
+            assertEquals(exp, (boolean)jcache().containsKeyAsync(key).get());
+        }
         else {
             boolean contains = false;
 
@@ -5459,6 +5647,45 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testGetEntry() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                Map<String, Integer> vals = new HashMap<>();
+
+                for (int i = 0; i < CNT; i++)
+                    vals.put("key" + i, i);
+
+                jcache(0).putAll(vals);
+
+                for (int i = 0; i < gridCount(); i++) {
+                    assertEquals(0, jcache(i).getEntry("key0").getValue());
+                    assertEquals(0, jcache(i).getEntryAsync("key0").get().getValue());
+
+                    assertTrue(
+                        F.transform(
+                            jcache(i).getEntries(vals.keySet()),
+                            new IgniteClosure<CacheEntry<Object, Object>, Object>() {
+                                @Override public Object apply(CacheEntry<Object, Object> entry) {
+                                    return entry.getValue();
+                                }
+                            }).containsAll(vals.values()));
+
+                    assertTrue(
+                        F.transform(
+                            jcache(i).getEntriesAsync(vals.keySet()).get(),
+                            new IgniteClosure<CacheEntry<Object, Object>, Object>() {
+                                @Override public Object apply(CacheEntry<Object, Object> entry) {
+                                    return entry.getValue();
+                                }
+                            }).containsAll(vals.values()));
+                }
+            }
+        });
+    }
+
+    /**
      * Sets given value, returns old value.
      */
     public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
@@ -5548,7 +5775,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             int size = 0;
 
             for (String key : keys) {
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx())) {
                     GridCacheEntryEx e =
                         ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -5589,7 +5816,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             int size = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
@@ -5850,7 +6077,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             int size = 0;
 
             for (String key : keys)
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(cacheName).localSize(ALL));

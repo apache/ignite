@@ -39,12 +39,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Query;
-import org.h2.command.dml.Update;
 import org.h2.engine.Session;
-import org.h2.expression.Expression;
 import org.h2.jdbc.JdbcConnection;
-import org.h2.util.StringUtils;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;

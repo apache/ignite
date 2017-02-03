@@ -167,7 +167,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetAndPutIfAbsentTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -242,7 +242,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws CacheException {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new SizeTask(cacheName, isAsync, peekModes, false));
     }
 
     /** {@inheritDoc} */
@@ -251,7 +251,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
 
     /** {@inheritDoc} */
@@ -260,7 +260,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }
 
     /** {@inheritDoc} */
@@ -299,7 +299,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(K key) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetTask<K, V>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -309,7 +309,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetEntryTask<K, V>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -319,7 +319,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetAllTask<K, V>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -329,7 +329,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetEntriesTask<K, V>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -339,7 +339,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetAllOutTxTask<K, V>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -349,7 +349,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ContainsKeyTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -364,7 +364,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeysAsync(Set<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ContainsKeysTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -374,7 +374,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> putAsync(K key, V val) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new PutTask<>(cacheName, isAsync, expiryPlc, key, val));
     }
 
     /** {@inheritDoc} */
@@ -384,7 +384,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndPutAsync(K key, V val) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetAndPutTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -394,7 +394,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new PutAllTask<>(cacheName, isAsync, map));
     }
 
     /** {@inheritDoc} */
@@ -404,7 +404,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putIfAbsentAsync(K key, V val) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new PutIfAbsentTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -414,7 +414,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new RemoveTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -424,7 +424,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key, V oldVal) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new RemoveIfExistsTask<>(cacheName, isAsync, key, oldVal));
     }
 
     /** {@inheritDoc} */
@@ -434,7 +434,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndRemoveAsync(K key) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetAndRemoveTask<K, V>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
@@ -444,7 +444,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ReplaceIfExistsTask<>(cacheName, isAsync, key, oldVal, newVal));
     }
 
     /** {@inheritDoc} */
@@ -454,7 +454,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V val) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ReplaceTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -464,7 +464,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndReplaceAsync(K key, V val) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new GetAndReplaceTask<>(cacheName, isAsync, key, val));
     }
 
     /** {@inheritDoc} */
@@ -474,7 +474,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> removeAllAsync(Set<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new RemoveAllKeysTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -484,7 +484,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> removeAllAsync() {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new RemoveAllTask<K, V>(cacheName, isAsync));
     }
 
     /** {@inheritDoc} */
@@ -494,7 +494,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync() {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ClearTask(cacheName, isAsync));
     }
 
     /** {@inheritDoc} */
@@ -504,7 +504,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync(K key) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ClearKeyTask<>(cacheName, isAsync, false, key));
     }
 
     /** {@inheritDoc} */
@@ -514,7 +514,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return compute.callAsync(new ClearAllKeys<>(cacheName, isAsync, false, keys));
     }
 
     /** {@inheritDoc} */
@@ -534,8 +534,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> invokeAsync(
-        K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        K key, EntryProcessor<K, V, T> processor, Object... args) {
+        return compute.callAsync(new InvokeTask<>(cacheName, isAsync, key, processor, args));
     }
 
     /** {@inheritDoc} */
@@ -544,9 +544,9 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor,
-        Object... arguments) {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> processor,
+        Object... args) {
+        return compute.callAsync(new InvokeTask<>(cacheName, isAsync, key, processor, args));
     }
 
     /** {@inheritDoc} */
@@ -560,8 +560,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor, Object... args) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        EntryProcessor<K, V, T> processor, Object... args) {
+        return compute.callAsync(new InvokeAllTask<>(cacheName, isAsync, keys, processor, args));
     }
 
     /** {@inheritDoc} */
@@ -1505,6 +1505,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /**
          * @param cacheName Cache name.
          * @param async Async.
+         * @param loc Local flag.
          * @param key Key.
          */
         public ClearKeyTask(String cacheName, boolean async, boolean loc, K key) {
@@ -1537,6 +1538,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /**
          * @param cacheName Cache name.
          * @param async Async.
+         * @param loc Local flag.
          * @param keys Keys.
          */
         public ClearAllKeys(String cacheName, boolean async, boolean loc, Set<? extends K> keys) {

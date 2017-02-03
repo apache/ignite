@@ -63,6 +63,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
@@ -94,6 +95,9 @@
     <Compile Include="Plugin\TestIgnitePlugin.cs" />
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Plugin\Cache\CachePlugin.cs" />
+    <Compile Include="Plugin\Cache\CachePluginConfiguration.cs" />
+    <Compile Include="Plugin\Cache\CachePluginTest.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />

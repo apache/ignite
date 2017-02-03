@@ -998,7 +998,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                             tx.commit();
                         }
-                        catch (CacheException | ClusterTopologyException e) {
+                        catch (CacheException | ClusterTopologyException ignored) {
                             log.warning("Failed put. [Key=" + key + ", val=" + key + "]");
 
                             continue;
@@ -1014,7 +1014,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                             tx.commit();
                         }
-                        catch (CacheException | ClusterTopologyException e) {
+                        catch (CacheException | ClusterTopologyException ignored) {
                             log.warning("Failed put. [Key=" + key + ", val=" + key + "]");
 
                             continue;
@@ -2408,7 +2408,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             U.sleep(sleepTime);
         }
-        catch (IgniteInterruptedCheckedException e) {
+        catch (IgniteInterruptedCheckedException ignored) {
             Thread.interrupted();
         }
     }
