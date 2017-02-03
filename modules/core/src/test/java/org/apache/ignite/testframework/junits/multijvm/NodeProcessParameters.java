@@ -1,5 +1,6 @@
 package org.apache.ignite.testframework.junits.multijvm;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -11,6 +12,17 @@ import org.jetbrains.annotations.Nullable;
 public class NodeProcessParameters {
     /** The default node process parameters. */
     public static NodeProcessParameters DFLT = new NodeProcessParameters(false, false, null, true/*inheritEnv*/, null);
+
+    /**
+     * Creates parameters for external Ignite node.
+     * Adds special JVM arg line identifier to simplify process tracking.
+     *
+     * @param nodeGridName The name of Ignite node in arbitrary form.
+     * @return The node process parameters.
+     */
+    public static NodeProcessParameters forNode(String nodeGridName) {
+        return new NodeProcessParameters(false, false, null, true, Arrays.asList("-ea", "-Dignite.node="+nodeGridName));
+    }
 
     /** Unique work dir flag. */
     private final boolean uniqueWorkDir;

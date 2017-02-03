@@ -271,7 +271,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     NodeProcessParameters getRemoteNodeParameters(int nodeIdx) {
         assert nodeIdx > 0;
 
-        return NodeProcessParameters.DFLT;
+        return NodeProcessParameters.forNode(getTestGridName(nodeIdx));
     }
 
     /** {@inheritDoc} */
