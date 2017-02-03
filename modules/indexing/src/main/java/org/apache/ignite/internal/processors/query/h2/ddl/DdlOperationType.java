@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 /**
- * Created by apaschenko on 02.02.17.
+ * DDL operation type.
  */
 public enum DdlOperationType {
+    /** */
     CREATE_INDEX,
+
+    /** */
     DROP_INDEX
     ,
 }

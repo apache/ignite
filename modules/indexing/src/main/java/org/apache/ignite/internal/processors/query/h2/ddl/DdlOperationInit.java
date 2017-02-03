@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -28,20 +31,31 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final IgniteUuid id = IgniteUuid.randomUuid();
+
     /** Arguments. */
     private DdlOperationArguments args;
 
-    /** Type. */
-    private DdlOperationType opType;
+    /**
+     * Map {@code node id} -> {@code init exception, if any}.
+     * If this field is null, then this message is being processed by coordinator.
+     */
+    private Map<UUID, IgniteCheckedException> nodesState;
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
-        return null;
+        return id;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+        assert nodesState != null;
+
+        if (!nodesState.isEmpty())
+            throw new UnsupportedOperationException("Send INIT error over the ring");
+
+        throw new UnsupportedOperationException("Return ACK error");
     }
 
     /** {@inheritDoc} */
@@ -49,23 +63,31 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
         return true;
     }
 
-    /** */
+    /**
+     * @return Operation arguments.
+     */
     public DdlOperationArguments getArguments() {
         return args;
     }
 
-    /** */
+    /**
+     * @param args Operation arguments.
+     */
     public void setArguments(DdlOperationArguments args) {
         this.args = args;
     }
 
-    /** */
-    public DdlOperationType getOperationType() {
-        return opType;
+    /**
+     * @return Nodes state.
+     */
+    public Map<UUID, IgniteCheckedException> getNodesState() {
+        return nodesState;
     }
 
-    /** */
-    public void setOperationType(DdlOperationType opType) {
-        this.opType = opType;
+    /**
+     * @param nodesState Nodes state.
+     */
+    public void setNodesState(Map<UUID, IgniteCheckedException> nodesState) {
+        this.nodesState = nodesState;
     }
 }

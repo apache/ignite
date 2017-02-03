@@ -17,26 +17,41 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Base class for DDL operation arguments.
+ * Abstraction for DDL operation as a whole.
  */
-abstract class DdlOperationArguments implements Serializable {
-    /** Operation ID. */
-    public final IgniteUuid opId;
+public class DdlOperation extends GridFutureAdapter {
+    /** Unique ID of this operation. */
+    private final IgniteUuid id;
 
-    /** Cache name. */
-    public final String cacheName;
+    /** Kernal context. */
+    private final GridKernalContext ctx;
 
-    /** Operation type. */
-    public final DdlOperationType opType;
+    /** Operation arguments. */
+    private final DdlOperationArguments args;
 
     /** */
-    DdlOperationArguments(IgniteUuid opId, String cacheName, DdlOperationType opType) {
-        this.opId = opId;
-        this.cacheName = cacheName;
-        this.opType = opType;
+    public DdlOperation(IgniteUuid id, GridKernalContext ctx, DdlOperationArguments args) {
+        assert id != null && id.equals(args.opId);
+
+        this.id = id;
+        this.ctx = ctx;
+        this.args = args;
+    }
+
+    /**
+     *
+     */
+    public void init() throws IgniteCheckedException {
+        DdlOperationInit initMsg = new DdlOperationInit();
+
+        initMsg.setArguments(args);
+
+        ctx.discovery().sendCustomEvent(initMsg);
     }
 }

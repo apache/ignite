@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Arguments for {@code CREATE INDEX}.
  */
-public class CreateIndexArguments implements DdlOperationArguments {
-    /** Cache name. */
-    public final String cacheName;
-
+public class CreateIndexArguments extends DdlOperationArguments {
     /** Index. */
     public final QueryIndex idx;
 
@@ -37,8 +35,8 @@ public class CreateIndexArguments implements DdlOperationArguments {
      * @param idx Index params.
      * @param ifNotExists Ignore operation  if index exists.
      */
-    public CreateIndexArguments(String cacheName, QueryIndex idx, boolean ifNotExists) {
-        this.cacheName = cacheName;
+    public CreateIndexArguments(IgniteUuid opId, String cacheName, QueryIndex idx, boolean ifNotExists) {
+        super(opId, cacheName, DdlOperationType.CREATE_INDEX);
         this.idx = idx;
         this.ifNotExists = ifNotExists;
     }
