@@ -33,7 +33,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_odbc_la_LIBADD = \
     @top_srcdir@/binary/libignite-binary.la \
@@ -79,7 +79,8 @@ libignite_odbc_la_SOURCES = \
     src/column.cpp \
     src/statement.cpp \
     src/type_traits.cpp \
-    src/utility.cpp
+    src/utility.cpp \
+    src/log.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

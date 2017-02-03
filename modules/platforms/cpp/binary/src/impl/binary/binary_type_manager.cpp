@@ -28,7 +28,7 @@ namespace ignite
         namespace binary
         {
             BinaryTypeManager::BinaryTypeManager() : 
-                snapshots(SharedPointer<std::map<int32_t, SPSnap>>(new std::map<int32_t, SPSnap>)),
+                snapshots(SharedPointer<std::map<int32_t, SPSnap> >(new std::map<int32_t, SPSnap>)),
                 pending(new std::vector<SPSnap>()), 
                 cs(new CriticalSection()), 
                 pendingVer(0), ver(0)
@@ -46,9 +46,7 @@ namespace ignite
 
             SharedPointer<BinaryTypeHandler> BinaryTypeManager::GetHandler(int32_t typeId)
             {
-                SharedPointer<std::map<int32_t, SPSnap>> snapshots0 = snapshots;
-
-                SPSnap snapshot = (*snapshots0.Get())[typeId];
+                SPSnap snapshot = (*snapshots.Get())[typeId];
 
                 return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(snapshot));
             }
@@ -108,12 +106,12 @@ namespace ignite
             bool BinaryTypeManager::ProcessPendingUpdates(BinaryTypeUpdater* updater, IgniteError* err)
             {
                 bool success = true; // Optimistically assume that all will be fine.
-                
-                cs->Enter();
+
+                CsLockGuard guard(*cs);
 
                 for (std::vector<SPSnap>::iterator it = pending->begin(); it != pending->end(); ++it)
                 {
-                    Snap* pendingSnap = (*it).Get();
+                    Snap* pendingSnap = it->Get();
 
                     if (updater->Update(pendingSnap, err))
                     {
@@ -156,7 +154,7 @@ namespace ignite
                         if (!snapshotFound)
                             (*newSnapshots)[pendingSnap->GetTypeId()] = *it;
 
-                        snapshots = SharedPointer<std::map<int32_t, SPSnap>>(newSnapshots);
+                        snapshots = SharedPointer<std::map<int32_t, SPSnap> >(newSnapshots);
                     }
                     else
                     {
@@ -173,8 +171,6 @@ namespace ignite
 
                     ver = pendingVer;
                 }
-
-                cs->Leave();
 
                 return success;
             }

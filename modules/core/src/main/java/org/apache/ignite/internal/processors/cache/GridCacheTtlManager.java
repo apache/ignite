@@ -141,7 +141,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                             break;
                         }
-                        catch (GridCacheEntryRemovedException e0) {
+                        catch (GridCacheEntryRemovedException ignored) {
                             entry = entry.context().cache().entryEx(entry.key());
 
                             touch = true;

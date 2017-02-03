@@ -44,6 +44,7 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -160,6 +161,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
+
+    /** Default is @{true} */
+    private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
 
     /**
      * @param ctx Kernal context.
@@ -487,7 +491,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 return;
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 U.warn(log, "Interrupted while waiting for active queries cancellation.");
 
                 Thread.currentThread().interrupt();
@@ -687,7 +691,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             coctx = cacheObjectContext(space);
 
-            ctx.indexing().store(space, key.value(coctx, false), val.value(coctx, false), expirationTime);
+            Object key0 = unwrap(key, coctx);
+
+            Object val0 = unwrap(val, coctx);
+
+            ctx.indexing().store(space, key0, val0, expirationTime);
         }
 
         if (idx == null)
@@ -740,6 +748,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Unwrap CacheObject if needed.
+     */
+    private Object unwrap(CacheObject obj, CacheObjectContext coctx) {
+        return isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(obj) ? obj : obj.value(coctx, false);
     }
 
     /**
@@ -1044,7 +1059,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(space);
 
-            ctx.indexing().remove(space, key.value(coctx, false));
+            Object key0 = unwrap(key, coctx);
+
+            ctx.indexing().remove(space, key0);
         }
 
         if (idx == null)
@@ -1187,11 +1204,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            ctx.indexing().onSwap(
-                spaceName,
-                key.value(
-                    coctx,
-                    false));
+            Object key0 = unwrap(key, coctx);
+
+            ctx.indexing().onSwap(spaceName, key0);
         }
 
         if (idx == null)
@@ -1226,7 +1241,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ctx.indexing().enabled()) {
             CacheObjectContext coctx = cacheObjectContext(spaceName);
 
-            ctx.indexing().onUnswap(spaceName, key.value(coctx, false), val.value(coctx, false));
+            Object key0 = unwrap(key, coctx);
+
+            Object val0 = unwrap(val, coctx);
+
+            ctx.indexing().onUnswap(spaceName, key0, val0);
         }
 
         if (idx == null)
@@ -2160,7 +2179,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!(obj instanceof BinaryObjectBuilder))
                 throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-            setValue0((BinaryObjectBuilder) obj, name(), propVal, type());
+            setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
 
             if (needsBuild) {
                 obj = ((BinaryObjectBuilder) obj).build();
@@ -2168,7 +2187,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 assert parent != null;
 
                 // And now let's set this newly constructed object to parent
-                setValue0((BinaryObjectBuilder) srcObj, parent.name(), obj, obj.getClass());
+                setValue0((BinaryObjectBuilder) srcObj, parent.propName, obj, obj.getClass());
             }
         }
 

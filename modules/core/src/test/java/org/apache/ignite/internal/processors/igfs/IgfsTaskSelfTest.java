@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -42,15 +36,20 @@ import org.apache.ignite.igfs.mapreduce.IgfsTaskArgs;
 import org.apache.ignite.igfs.mapreduce.records.IgfsStringDelimiterRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -76,13 +75,10 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     private static final int BLOCK_SIZE = 64 * 1024;
 
     /** Total words in file. */
-    private static final int TOTAL_WORDS = 2 * 1024 * 1024;
+    private static final int TOTAL_WORDS = 1024 * 1024;
 
     /** Node count */
-    private static final int NODE_CNT = 4;
-
-    /** Repeat count. */
-    private static final int REPEAT_CNT = 10;
+    private static final int NODE_CNT = 3;
 
     /** IGFS. */
     private static IgniteFileSystem igfs;
@@ -159,63 +155,18 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testTask() throws Exception {
-        U.sleep(3000); // TODO: Sleep in order to wait for fragmentizing to finish.
+        String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
 
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
+        generateFile(TOTAL_WORDS);
+        Long genLen = igfs.info(FILE).length();
 
-            generateFile(TOTAL_WORDS);
-            Long genLen = igfs.info(FILE).length();
+        IgniteBiTuple<Long, Integer> taskRes = igfs.execute(new Task(),
+            new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
-            IgniteBiTuple<Long, Integer> taskRes = igfs.execute(new Task(),
-                new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
-
-            assert F.eq(genLen, taskRes.getKey());
-            assert F.eq(TOTAL_WORDS, taskRes.getValue());
-        }
-    }
-
-    /**
-     * Test task.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTaskAsync() throws Exception {
-        U.sleep(3000);
-
-        assertFalse(igfs.isAsync());
-
-        IgniteFileSystem igfsAsync = igfs.withAsync();
-
-        assertTrue(igfsAsync.isAsync());
-
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
-
-            generateFile(TOTAL_WORDS);
-            Long genLen = igfs.info(FILE).length();
-
-            assertNull(igfsAsync.execute(
-                new Task(), new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
-
-            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = igfsAsync.future();
-
-            assertNotNull(fut);
-
-            IgniteBiTuple<Long, Integer> taskRes = fut.get();
-
-            assert F.eq(genLen, taskRes.getKey());
-            assert F.eq(TOTAL_WORDS, taskRes.getValue());
-        }
-
-        igfsAsync.format();
-
-        IgniteFuture<?> fut = igfsAsync.future();
-
-        assertNotNull(fut);
-
-        fut.get();
+        assert F.eq(genLen, taskRes.getKey());
+        assert F.eq(TOTAL_WORDS, taskRes.getValue());
     }
 
     /**
@@ -252,12 +203,13 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ConstantConditions")
         @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) {
             long totalLen = 0;
             int argCnt = 0;
 
             for (ComputeJobResult res : ress) {
-                IgniteBiTuple<Long, Integer> res0 = (IgniteBiTuple<Long, Integer>)res.getData();
+                IgniteBiTuple<Long, Integer> res0 = res.getData();
 
                 if (res0 != null) {
                     totalLen += res0.getKey();
@@ -272,6 +224,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /**
      * Job.
      */
+    @SuppressWarnings("unused")
     private static class Job implements IgfsJob, Serializable {
         @IgniteInstanceResource
         private Ignite ignite;

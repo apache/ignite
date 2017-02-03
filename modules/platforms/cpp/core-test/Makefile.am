@@ -39,7 +39,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 ignite_tests_LDADD = \
     @top_srcdir@/core/libignite.la \
@@ -54,6 +54,7 @@ ignite_tests_LDFLAGS = \
 ignite_tests_SOURCES = \
     src/reference_test.cpp \
     src/bits_test.cpp \
+	src/binary_identity_resolver_test.cpp \
     src/cache_test.cpp \
     src/cache_query_test.cpp \
     src/continuous_query_test.cpp \
@@ -64,6 +65,7 @@ ignite_tests_SOURCES = \
     src/handle_registry_test.cpp \
     src/ignite_error_test.cpp \
     src/binary_test_defs.cpp \
+    src/binary_object_test.cpp \
     src/binary_reader_writer_raw_test.cpp \
     src/binary_reader_writer_test.cpp \
     src/binary_session_test.cpp \
@@ -72,7 +74,8 @@ ignite_tests_SOURCES = \
     src/fixed_size_array_test.cpp \
     src/transactions_test.cpp \
     src/teamcity_messages.cpp \
-    src/teamcity_boost.cpp
+    src/teamcity_boost.cpp \
+	src/test_utils.cpp
 
 run-check: check
 	./ignite-tests -p

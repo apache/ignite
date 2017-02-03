@@ -19,47 +19,12 @@
 
 #include <windows.h>
 
-#include <ignite/common/utils.h>
+#include <ignite/common/platform_utils.h>
 
 namespace ignite
 {
     namespace common
     {
-        /**
-         * Check if string ends with the given ending.
-         *
-         * @param str String to check.
-         * @param ending Ending.
-         * @return Result.
-         */
-        inline bool StringEndsWith(const std::string& str, const std::string& ending)
-        {
-            if (str.length() > ending.length())
-                return str.compare(str.length() - ending.length(), ending.length(), ending) == 0;
-
-            return false;
-        }
-
-        void StripSurroundingWhitespaces(std::string& str)
-        {
-            std::string::size_type newBegin = 0;
-            while (newBegin < str.size() && ::isspace(str[newBegin]))
-                ++newBegin;
-
-            if (newBegin == str.size())
-            {
-                str.clear();
-
-                return;
-            }
-
-            std::string::size_type newEnd = str.size() - 1;
-            while (::isspace(str[newEnd]))
-                --newEnd;
-
-            str.assign(str, newBegin, (newEnd - newBegin) + 1);
-        }
-
         time_t IgniteTimeGm(const tm& time)
         {
             tm tmc = time;
@@ -84,25 +49,6 @@ namespace ignite
             return localtime_s(&out, &in) == 0;
         }
 
-        char* CopyChars(const char* val)
-        {
-            if (val) {
-                size_t len = strlen(val);
-                char* dest = new char[len + 1];
-                strcpy(dest, val);
-                *(dest + len) = 0;
-                return dest;
-            }
-            else
-                return NULL;
-        }
-
-        void ReleaseChars(char* val)
-        {
-            if (val)
-                delete[] val;
-        }
-
         std::string GetEnv(const std::string& name, bool& found)
         {
             char res0[32767];
@@ -115,7 +61,7 @@ namespace ignite
 
                 return std::string(res0);
             }
-            else 
+            else
             {
                 found = false;
 
