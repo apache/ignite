@@ -73,7 +73,7 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
                 try {
                     Thread.sleep(500);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     // No-op.
                 }
             }
