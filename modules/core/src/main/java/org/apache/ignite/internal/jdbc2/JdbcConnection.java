@@ -575,7 +575,11 @@ public class JdbcConnection implements Connection {
                     throw new SQLException("Failed to establish connection with node (is it a server node?): " +
                         nodeId);
 
-                return ignite.compute(grp).callAsync(task).get(timeout, SECONDS);
+                IgniteCompute compute = ignite.compute(grp).withAsync();
+
+                compute.call(task);
+
+                return compute.<Boolean>future().get(timeout, SECONDS);
             }
             else
                 return task.call();
