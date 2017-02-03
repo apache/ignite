@@ -324,7 +324,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
-    public static final boolean DFLT_CONNECTION_PER_POLICY = false;
+    /** Default separate connection per public pool. */
+    public static final boolean DFLT_SEPARATE_CONN_PER_PUB_POOL = false;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
@@ -989,8 +990,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** */
     private int connectionsPerNode = DFLT_CONN_PER_NODE;
 
-    /** */
-    private boolean publicPoolConn = DFLT_CONNECTION_PER_POLICY;
+    /** Use separate connection for public pool messages. */
+    private boolean publicPoolConn = DFLT_SEPARATE_CONN_PER_PUB_POOL;
 
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
@@ -3367,7 +3368,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return {@code True} if given node supports multiple connections per-node for communication.
      */
     private boolean useMultipleConnections(ClusterNode node) {
-        return true || node.version().compareToIgnoreTimestamp(MULTIPLE_CONN_SINCE_VER) >= 0;
+        return node.version().compareToIgnoreTimestamp(MULTIPLE_CONN_SINCE_VER) >= 0;
     }
 
     /**
