@@ -2,6 +2,7 @@ package org.apache.ignite.testframework.junits.multijvm;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -9,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class NodeProcessParameters {
     /** The default node process parameters. */
-    public static NodeProcessParameters DFLT = new NodeProcessParameters(false, false, null, null);
+    public static NodeProcessParameters DFLT = new NodeProcessParameters(false, false, null, true/*inheritEnv*/, null);
 
     /** Unique work dir flag. */
     private final boolean uniqueWorkDir;
@@ -32,10 +33,17 @@ public class NodeProcessParameters {
      * @param jvmArgs The JVM arguments.
      */
     public NodeProcessParameters(boolean uniqueWorkDir, boolean uniqueProcDir,
-        @Nullable Map<String, String> procEnv, @Nullable List<String> jvmArgs) {
+        @Nullable Map<String, String> procEnv, boolean inheritEnv, @Nullable List<String> jvmArgs) {
         this.uniqueWorkDir = uniqueWorkDir;
         this.uniqueProcDir = uniqueProcDir;
-        this.procEnv = procEnv;
+
+        if (inheritEnv) {
+            A.ensure(procEnv == null, "If we inherit the environment env, don't pass the one in.");
+
+            this.procEnv = System.getenv();
+        } else
+            this.procEnv = procEnv;
+
         this.jvmArguments = jvmArgs;
     }
 
