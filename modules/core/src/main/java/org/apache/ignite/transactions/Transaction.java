@@ -240,7 +240,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
      *
-     * @return a Future representing pending completion of the operation.
+     * @return a Future representing pending completion of the commit.
      * @throws IgniteException If commit failed.
      * @throws TransactionTimeoutException If transaction is timed out.
      * @throws TransactionRollbackException If transaction is automatically rolled back.
@@ -268,7 +268,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Asynchronously rolls back this transaction.
      *
-     * @return a Future representing pending completion of the operation.
+     * @return a Future representing pending completion of the rollback.
      * @throws IgniteException If rollback failed.
      */
     public IgniteFuture<Void> rollbackAsync() throws IgniteException;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.messaging;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -27,10 +26,9 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.lang.IgniteFuture;
 
 import java.util.UUID;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Interop messaging.
@@ -68,9 +66,6 @@ public class PlatformMessaging extends PlatformAbstractTarget {
 
     /** */
     private final IgniteMessaging messaging;
-
-    /** */
-    private final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
 
     /**
      * Ctor.
@@ -132,17 +127,13 @@ public class PlatformMessaging extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_LISTEN_ASYNC: {
-                setCurrentFuture(startRemoteListenAsync(reader, messaging));
-
-                readAndListenFuture(reader, currentFuture(), null);
+                readAndListenFuture(reader, startRemoteListenAsync(reader, messaging));
 
                 return TRUE;
             }
 
             case OP_STOP_REMOTE_LISTEN_ASYNC: {
-                setCurrentFuture(messaging.stopRemoteListenAsync(reader.readUuid()));
-
-                readAndListenFuture(reader, currentFuture(), null);
+                readAndListenFuture(reader, messaging.stopRemoteListenAsync(reader.readUuid()));
 
                 return TRUE;
             }
@@ -184,16 +175,6 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
 
         return messaging.remoteListen(topic, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return curFut.get();
-    }
-
-    /** {@inheritDoc} */
-    private void setCurrentFuture(IgniteFuture fut) {
-        curFut.set(((IgniteFutureImpl)fut).internalFuture());
     }
 
     /**

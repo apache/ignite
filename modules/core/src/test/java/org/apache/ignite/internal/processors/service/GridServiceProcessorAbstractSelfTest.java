@@ -290,7 +290,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDeployAsyncOnEachNode() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceOnEachNode";
+        String name = "serviceOnEachNodeAsync";
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
@@ -350,7 +350,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDeploySingletonAsync() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceSingleton";
+        String name = "serviceSingletonAsync";
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -388,7 +388,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
-            CACHE_NAME, affKey);
+                CACHE_NAME, affKey);
 
         IgniteFuture<?> fut = svcs.future();
 
@@ -412,7 +412,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
-        String name = "serviceAffinity";
+        String name = "serviceAffinityAsync";
 
         IgniteFuture<?> fut = g.services().deployKeyAffinitySingletonAsync(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
@@ -464,7 +464,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDeployMultipleAsync1() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceMultiple1";
+        String name = "serviceMultipleAsync1";
 
         CountDownLatch latch = new CountDownLatch(nodeCount() * 2);
 
@@ -526,7 +526,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDeployMultipleAsync2() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceMultiple2";
+        String name = "serviceMultipleAsync2";
 
         int cnt = nodeCount() * 2 + 1;
 
@@ -591,7 +591,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testCancelSingletonAsync() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceCancel";
+        String name = "serviceCancelAsync";
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -661,7 +661,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testCancelAsyncEachNode() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceCancelEachNode";
+        String name = "serviceCancelEachNodeAsync";
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 

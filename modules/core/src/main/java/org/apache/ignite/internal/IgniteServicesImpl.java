@@ -92,8 +92,9 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         }
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Void> deployNodeSingletonAsync(String name, Service svc) throws IgniteException {
-        return null;
+        return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployNodeSingleton(prj, name, svc));
     }
 
     /** {@inheritDoc} */

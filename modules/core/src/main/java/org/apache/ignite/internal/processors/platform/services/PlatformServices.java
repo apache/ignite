@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.services;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -109,9 +107,6 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private final IgniteServices services;
 
-    /** */
-    private final ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
-
     /** Server keep binary flag. */
     private final boolean srvKeepBinary;
 
@@ -156,9 +151,9 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             case OP_DOTNET_DEPLOY_ASYNC: {
-                setCurrentFuture(dotnetDeployAsync(reader, services));
+                readAndListenFuture(reader, dotnetDeployAsync(reader, services));
 
-                return readAndListenFuture(reader);
+                return TRUE;
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE: {
@@ -168,9 +163,9 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
-                setCurrentFuture(dotnetDeployMultipleAsync(reader));
+                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader));
 
-                return readAndListenFuture(reader);
+                return TRUE;
             }
 
             case OP_CANCEL: {
@@ -180,15 +175,15 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             case OP_CANCEL_ASYNC: {
-                setCurrentFuture(services.cancelAsync(reader.readString()));
+                readAndListenFuture(reader, services.cancelAsync(reader.readString()));
 
-                return readAndListenFuture(reader);
+                return TRUE;
             }
 
             case OP_CANCEL_ALL_ASYNC: {
-                setCurrentFuture(services.cancelAllAsync());
+                readAndListenFuture(reader, services.cancelAllAsync());
 
-                return readAndListenFuture(reader);
+                return TRUE;
             }
 
             default:
@@ -351,20 +346,9 @@ public class PlatformServices extends PlatformAbstractTarget {
         return super.processInStreamOutObject(type, reader);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return curFut.get();
-    }
-
-    /**
-     * @param fut Future.
-     */
-    private void setCurrentFuture(IgniteFuture fut) {
-        curFut.set(((IgniteFutureImpl)fut).internalFuture());
-    }
-
     /**
      * Deploys multiple dotnet services.
+     *
      * @param reader Binary reader.
      */
     private void dotnetDeployMultiple(BinaryRawReaderEx reader) {
@@ -379,6 +363,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Asynchronously deploys multiple dotnet services.
+     *
      * @param reader Binary reader.
      * @return Future of the operation.
      */
@@ -394,6 +379,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Deploys dotnet service.
+     *
      * @param reader Binary reader.
      * @param services Services.
      */
@@ -405,6 +391,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /**
      * Deploys dotnet service asynchronously.
+     *
      * @param reader Binary reader.
      * @param services Services.
      * @return Future of the operation.
@@ -485,6 +472,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         /**
          * Invokes the proxy.
+         *
          * @param mthdName Method name.
          * @param srvKeepBinary Binary flag.
          * @param args Args.
@@ -494,9 +482,8 @@ public class PlatformServices extends PlatformAbstractTarget {
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
             throws IgniteCheckedException, NoSuchMethodException {
-            if (proxy instanceof PlatformService) {
+            if (proxy instanceof PlatformService)
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
-            }
             else {
                 assert proxy instanceof GridServiceProxy;
 
