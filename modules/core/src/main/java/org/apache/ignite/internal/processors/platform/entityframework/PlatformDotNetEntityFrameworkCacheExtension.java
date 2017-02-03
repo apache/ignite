@@ -187,10 +187,11 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         final ClusterGroup dataNodes = grid.cluster().forDataNodes(dataCacheName);
 
-        IgniteFuture f = grid.compute(dataNodes).broadcastAsync(
-            new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
+        IgniteCompute asyncCompute = grid.compute(dataNodes).withAsync();
 
-        f.listen(new CleanupCompletionListener(metaCache, dataCacheName));
+        asyncCompute.broadcast(new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
+
+        asyncCompute.future().listen(new CleanupCompletionListener(metaCache, dataCacheName));
     }
 
     /**

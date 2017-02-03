@@ -21,7 +21,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
@@ -37,7 +36,6 @@ import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,68 +58,44 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     /** {@inheritDoc} */
     @Override public void format() {
         try {
-            saveOrGet(igfs.formatAsync0());
+            saveOrGet(igfs.formatAsync());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
-        return igfs.formatAsync();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return saveOrGet(igfs.executeAsync0(task, rslvr, paths, arg));
+            return saveOrGet(igfs.executeAsync(task, rslvr, paths, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException {
-        return igfs.executeAsync(task, rslvr, paths, arg);
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
-            return saveOrGet(igfs.executeAsync0(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+            return saveOrGet(igfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen,
-        @Nullable T arg) throws IgniteException {
-        return igfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg);
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return saveOrGet(igfs.executeAsync0(taskCls, rslvr, paths, arg));
+            return saveOrGet(igfs.executeAsync(taskCls, rslvr, paths, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException {
-        return igfs.executeAsync(taskCls, rslvr, paths, arg);
     }
 
     /** {@inheritDoc} */
@@ -129,18 +103,11 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         try {
-            return saveOrGet(igfs.executeAsync0(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+            return saveOrGet(igfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
-        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen,
-        @Nullable T arg) throws IgniteException {
-        return igfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg);
     }
 
     /** {@inheritDoc} */

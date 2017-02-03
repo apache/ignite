@@ -187,6 +187,7 @@ public interface IgniteInternalTx extends AutoCloseable {
      *
      * @throws IgniteCheckedException If commit failed.
      */
+    @IgniteAsyncSupported
     public void commit() throws IgniteCheckedException;
 
     /**
@@ -201,6 +202,7 @@ public interface IgniteInternalTx extends AutoCloseable {
      *
      * @throws IgniteCheckedException If rollback failed.
      */
+    @IgniteAsyncSupported
     public void rollback() throws IgniteCheckedException;
 
     /**

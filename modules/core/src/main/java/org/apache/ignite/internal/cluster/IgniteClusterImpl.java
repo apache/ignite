@@ -330,7 +330,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @return Future with results.
      * @see IgniteCluster#startNodes(java.io.File, boolean, int, int)
      */
-    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync0(File file,
+    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file,
       boolean restart,
       int timeout,
       int maxConn)
@@ -342,7 +342,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         try {
             IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
-            return startNodesAsync0(t.get1(), t.get2(), restart, timeout, maxConn);
+            return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -358,7 +358,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @return Future with results.
      * @see IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)
      */
-    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync0(
+    IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
         Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts,
         boolean restart,
