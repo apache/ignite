@@ -319,7 +319,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     /**
      *
      */
-    private static class NodesTask extends ClusterTaskAdapter<Collection<ClusterNode>> {
+    static class NodesTask extends ClusterTaskAdapter<Collection<ClusterNode>> {
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> call() throws Exception {
             return cluster().nodes();

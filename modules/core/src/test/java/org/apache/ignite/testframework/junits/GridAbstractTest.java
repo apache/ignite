@@ -870,17 +870,18 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String gridName, boolean cancel) {
         try {
-            Ignite ignite = grid(gridName);
-
-            assert ignite != null : "Ignite returned null grid for name: " + gridName;
-
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
-                ((IgniteKernal)ignite).context().localNodeId() + ']');
-
-            if (!isRemoteJvm(gridName))
-                G.stop(gridName, cancel);
-            else
+            if (isRemoteJvm(gridName))
                 IgniteProcessProxy.stop(gridName, cancel);
+            else {
+                Ignite ignite = grid(gridName);
+
+                assert ignite != null : "Ignite returned null grid for name: " + gridName;
+
+                info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
+                    ((IgniteKernal)ignite).context().localNodeId() + ']');
+
+                G.stop(gridName, cancel);
+            }
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
@@ -993,7 +994,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(String name) {
-        if (!isRemoteJvm(name))
+        if (!isRemoteJvm(name) || (name != null && name.contains("secondary")))
             return (IgniteEx)G.ignite(name);
         else {
             if (isRemoteJvm())
@@ -1558,7 +1559,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @param gridName Grid name.
      * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
-    protected boolean isRemoteJvm(String gridName) {
+    protected boolean isRemoteJvm(@Nullable String gridName) {
+        if (gridName == null)
+            return false; // Null-name grid can only be local.
+
         return isMultiJvm() && !isFirstGrid(gridName);
     }
 
@@ -1891,22 +1895,6 @@ public abstract class GridAbstractTest extends TestCase {
         serializedObj.put(res.uuid, obj);
 
         return res;
-    }
-
-    /**
-     * @param name Name.
-     * @param remote Remote.
-     * @param thisRemote This remote.
-     */
-    public static IgniteEx grid(String name, boolean remote, boolean thisRemote) {
-        if (!remote)
-            return (IgniteEx)G.ignite(name);
-        else {
-            if (thisRemote)
-                return IgniteNodeRunner.startedInstance();
-            else
-                return IgniteProcessProxy.ignite(name);
-        }
     }
 
     /**

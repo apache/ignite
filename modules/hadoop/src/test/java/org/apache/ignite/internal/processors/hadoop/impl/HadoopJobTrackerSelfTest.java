@@ -66,6 +66,13 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        // NB: this test cannot run in multi-JVM mode
+        // since it checks status with IgniteKernal#hadoop(), which is not implemented in Proxy:
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted0() throws Exception {
         startGrids(gridCount());
     }

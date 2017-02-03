@@ -17,11 +17,8 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -65,50 +62,23 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite proxy for ignite instance at another JVM.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
-public class IgniteProcessProxy implements IgniteEx {
-    /** Grid proxies. */
-    private static final transient ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
-
-    /** Property that specify alternative {@code JAVA_HOME}. */
-    private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
-
-    /** Jvm process with ignite instance. */
-    private final transient GridJavaProcess proc;
-
-    /** Configuration. */
-    private final transient IgniteConfiguration cfg;
-
-    /** Local JVM grid. */
-    private final transient Ignite locJvmGrid;
-
-    /** Logger. */
-    private final transient IgniteLogger log;
-
-    /** Grid id. */
-    private final UUID id = UUID.randomUUID();
-
+public class IgniteProcessProxy extends IgniteNodeProxyBase implements IgniteEx {
     /**
      * @param cfg Configuration.
      * @param log Logger.
@@ -116,86 +86,7 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid)
         throws Exception {
-        this.cfg = cfg;
-        this.locJvmGrid = locJvmGrid;
-        this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
-
-        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id));
-
-        Collection<String> filteredJvmArgs = new ArrayList<>();
-
-        Marshaller marsh = cfg.getMarshaller();
-
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                filteredJvmArgs.add(arg);
-        }
-
-        final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
-
-        locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
-
-        proc = GridJavaProcess.exec(
-            IgniteNodeRunner.class.getCanonicalName(),
-            cfgFileName, // Params.
-            this.log,
-            // Optional closure to be called each time wrapped process prints line to system.out or system.err.
-            new IgniteInClosure<String>() {
-                @Override public void apply(String s) {
-                    IgniteProcessProxy.this.log.info(s);
-                }
-            },
-            null,
-            System.getProperty(TEST_MULTIJVM_JAVA_HOME),
-            filteredJvmArgs, // JVM Args.
-            System.getProperty("surefire.test.class.path")
-        );
-
-        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
-
-        IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getGridName(), this);
-
-        if (prevVal != null) {
-            remoteCompute().run(new StopGridTask(cfg.getGridName(), true));
-
-            throw new IllegalStateException("There was found instance assotiated with " + cfg.getGridName() +
-                ", instance= " + prevVal + ". New started node was stopped.");
-        }
-    }
-
-    /**
-     */
-    private static class NodeStartedListener extends IgnitePredicateX<Event> {
-        /** Id. */
-        private final UUID id;
-
-        /** Remote node started latch. */
-        private final CountDownLatch rmtNodeStartedLatch;
-
-        /**
-         * @param id Id.
-         * @param rmtNodeStartedLatch Remote node started latch.
-         */
-        NodeStartedListener(UUID id, CountDownLatch rmtNodeStartedLatch) {
-            this.id = id;
-            this.rmtNodeStartedLatch = rmtNodeStartedLatch;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean applyx(Event e) {
-            if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
-                rmtNodeStartedLatch.countDown();
-
-                return false;
-            }
-
-            return true;
-        }
+        super(cfg, log, locJvmGrid, NodeProcessParameters.DFLT);
     }
 
     /**
@@ -203,13 +94,13 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return Instance by name or exception wiil be thrown.
      */
     public static IgniteProcessProxy ignite(String gridName) {
-        IgniteProcessProxy res = gridProxies.get(gridName);
+        IgniteNodeProxyBase res = gridProxies.get(gridName);
 
         if (res == null)
             throw new IgniteIllegalStateException("Grid instance was not properly started " +
                 "or was already stopped: " + gridName + ". All known grid instances: " + gridProxies.keySet());
 
-        return res;
+        return (IgniteProcessProxy)res;
     }
 
     /**
@@ -219,7 +110,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param cancel If {@code true} then all jobs currently will be cancelled.
      */
     public static void stop(String gridName, boolean cancel) {
-        IgniteProcessProxy proxy = gridProxies.get(gridName);
+        IgniteNodeProxyBase proxy = gridProxies.get(gridName);
 
         if (proxy != null) {
             proxy.remoteCompute().run(new StopGridTask(gridName, cancel));
@@ -234,7 +125,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param gridName Grid name.
      */
     public static void kill(String gridName) {
-        IgniteProcessProxy proxy = gridProxies.get(gridName);
+        IgniteNodeProxyBase proxy = gridProxies.get(gridName);
 
         A.notNull(gridName, "gridName");
 
@@ -257,9 +148,9 @@ public class IgniteProcessProxy implements IgniteEx {
     public static Ignite ignite(UUID locNodeId) {
         A.notNull(locNodeId, "locNodeId");
 
-        for (IgniteProcessProxy ignite : gridProxies.values()) {
+        for (IgniteNodeProxyBase ignite : gridProxies.values()) {
             if (ignite.getId().equals(locNodeId))
-                return ignite;
+                return (IgniteProcessProxy)ignite;
         }
 
         throw new IgniteIllegalStateException("Grid instance with given local node ID was not properly " +
@@ -270,7 +161,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * Kill all running processes.
      */
     public static void killAll() {
-        for (IgniteProcessProxy ignite : gridProxies.values()) {
+        for (IgniteNodeProxyBase ignite : gridProxies.values()) {
             try {
                 ignite.getProcess().kill();
             }
@@ -280,25 +171,6 @@ public class IgniteProcessProxy implements IgniteEx {
         }
 
         gridProxies.clear();
-    }
-
-    /**
-     * @return Local JVM grid instance.
-     */
-    public Ignite localJvmGrid() {
-        return locJvmGrid;
-    }
-
-    /**
-     * @return Grid id.
-     */
-    public UUID getId() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return cfg.getGridName();
     }
 
     /** {@inheritDoc} */
@@ -645,50 +517,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return new AffinityProcessProxy<>(cacheName, this);
-    }
-
-    /**
-     * @return Jvm process in which grid node started.
-     */
-    public GridJavaProcess getProcess() {
-        return proc;
-    }
-
-    /**
-     * @return {@link IgniteCompute} instance to communicate with remote node.
-     */
-    public IgniteCompute remoteCompute() {
-        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
-
-        if (grp.nodes().isEmpty())
-            throw new IllegalStateException("Could not found node with id=" + id + ".");
-
-        return locJvmGrid.compute(grp);
-    }
-
-    /**
-     *
-     */
-    private static class StopGridTask implements IgniteRunnable {
-        /** Grid name. */
-        private final String gridName;
-
-        /** Cancel. */
-        private final boolean cancel;
-
-        /**
-         * @param gridName Grid name.
-         * @param cancel Cancel.
-         */
-        public StopGridTask(String gridName, boolean cancel) {
-            this.gridName = gridName;
-            this.cancel = cancel;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            G.stop(gridName, cancel);
-        }
     }
 
     /**
