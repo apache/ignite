@@ -75,6 +75,6 @@ if exist "%IGNITE_HOME%\config" goto run
 :run
 
 :: Starts H2 server and console.
-"%JAVA_HOME%\bin\java.exe" -cp "%IGNITE_HOME%\libs\ignite-indexing\h2-1.3.175.jar" org.h2.tools.Console %*
+"%JAVA_HOME%\bin\java.exe" -cp "%IGNITE_HOME%\libs\ignite-indexing\h2-1.4.191.jar" org.h2.tools.Console %*
 
 :error_finish
