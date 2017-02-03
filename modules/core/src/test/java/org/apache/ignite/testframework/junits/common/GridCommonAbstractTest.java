@@ -707,17 +707,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param c Cache proxy.
+     */
+    protected void printPartitionState(IgniteCache<?, ?> c) {
+        printPartitionState(c.getConfiguration(CacheConfiguration.class).getName(),0);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param firstParts Count partition for print (will be print first count partition).
      *
      * Print partitionState for cache.
      */
-    protected void printPartitionState(IgniteCache<?, ?> c) {
-        IgniteCacheProxy<?, ?> cache = (IgniteCacheProxy<?, ?>)c;
-
-        CacheConfiguration cfg = cache.context().config();
-
-        if (cfg == null)
-            return;
-
+    protected void printPartitionState(String cacheName, int firstParts) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("----preload sync futures----\n");
@@ -725,7 +726,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         for (Ignite ig : G.allGrids()) {
             IgniteKernal k = ((IgniteKernal)ig);
 
-            IgniteInternalFuture<?> syncFut = k.internalCache(cfg.getName())
+            IgniteInternalFuture<?> syncFut = k.internalCache(cacheName)
                 .preloader()
                 .syncFuture();
 
@@ -741,7 +742,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         for (Ignite ig : G.allGrids()) {
             IgniteKernal k = ((IgniteKernal)ig);
 
-            IgniteInternalFuture<?> f = k.internalCache(cfg.getName())
+            IgniteInternalFuture<?> f = k.internalCache(cacheName)
                 .preloader()
                 .rebalanceFuture();
 
@@ -782,9 +783,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 .append(" grid=").append(g0.name())
                 .append("\n");
 
-            GridDhtPartitionTopology top = dht(cache).topology();
+            IgniteCacheProxy<?, ?> cache = g0.context().cache().jcache(cacheName);
 
-            for (int p = 0; p < cfg.getAffinity().partitions(); p++) {
+            GridDhtCacheAdapter<?, ?> dht = dht(cache);
+
+            GridDhtPartitionTopology top = dht.topology();
+
+            int parts = firstParts == 0 ? cache.context()
+                .config()
+                .getAffinity()
+                .partitions() : firstParts;
+
+            for (int p = 0; p < parts; p++) {
+                AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
+
+                Collection<UUID> affNodes = F.nodeIds(dht.context()
+                    .affinity()
+                    .assignment(readyVer)
+                    .idealAssignment()
+                    .get(p));
+
                 GridDhtLocalPartition part = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
                 sb.append("local part=");
@@ -794,16 +812,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 else
                     sb.append(p).append(" is null");
 
-                sb.append("\n");
+                sb.append(" isAffNode=")
+                    .append(affNodes.contains(g0.localNode().id()))
+                    .append("\n");
 
                 for (UUID nodeId : F.nodeIds(g0.context().discovery().allNodes())) {
                     if (!nodeId.equals(g0.localNode().id()))
-                        sb.append(" nodeId = ")
+                        sb.append(" nodeId=")
                             .append(nodeId)
                             .append(" part=")
                             .append(p)
                             .append(" state=")
                             .append(top.partitionState(nodeId, p))
+                            .append(" isAffNode=")
+                            .append(affNodes.contains(nodeId))
                             .append("\n");
                 }
             }
@@ -811,7 +833,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             sb.append("\n");
         }
 
-        log.info("dump partitions state for <" + cfg.getName() + ">:\n" + sb.toString());
+        log.info("dump partitions state for <" + cacheName + ">:\n" + sb.toString());
     }
 
     /**
