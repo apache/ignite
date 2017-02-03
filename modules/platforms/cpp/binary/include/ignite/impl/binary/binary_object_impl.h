@@ -46,6 +46,14 @@ namespace ignite
             {
             public:
                 /**
+                 * Constructor.
+                 *
+                 * @param mem Binary object memory.
+                 * @param start Object starting position in memory.
+                 */
+                BinaryObjectImpl(interop::InteropMemory& mem, int32_t start);
+
+                /**
                  * Copy constructor.
                  *
                  * @param other Another instance.
@@ -141,14 +149,6 @@ namespace ignite
                 int32_t GetHashCode() const;
 
             private:
-                /**
-                 * Constructor.
-                 *
-                 * @param mem Binary object memory.
-                 * @param start Object starting position in memory.
-                 */
-                BinaryObjectImpl(interop::InteropMemory& mem, int32_t start);
-
                 /** Underlying object memory. */
                 interop::InteropMemory* mem;
 

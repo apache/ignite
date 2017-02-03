@@ -48,41 +48,33 @@ namespace ignite
         {
             return localtime_s(&out, &in) == 0;
         }
-
-        std::string GetEnv(const std::string& name, bool& found)
+		
+        bool GetEnv(const std::string& name, std::string& val)
         {
             char res0[32767];
 
-            DWORD envRes = GetEnvironmentVariableA(name.c_str(), res0, 32767);
+            DWORD envRes = GetEnvironmentVariableA(name.c_str(), res0, sizeof(res0) / sizeof(res0[0]));
 
-            if (envRes != 0)
-            {
-                found = true;
-
-                return std::string(res0);
-            }
-            else
-            {
-                found = false;
-
-                return std::string();
-            }
-        }
-
-        bool FileExists(const std::string& path)
-        {
-            WIN32_FIND_DATAA findres;
-
-            HANDLE hnd = FindFirstFileA(path.c_str(), &findres);
-
-            if (hnd == INVALID_HANDLE_VALUE)
+            if (envRes == 0)
                 return false;
-            else
-            {
-                FindClose(hnd);
 
-                return true;
-            }
+            val.assign(res0);
+
+            return true;
         }
+
+		bool FileExists(const std::string& path)
+		{
+			WIN32_FIND_DATAA findres;
+
+			HANDLE hnd = FindFirstFileA(path.c_str(), &findres);
+
+			if (hnd == INVALID_HANDLE_VALUE)
+				return false;
+
+			FindClose(hnd);
+
+			return true;
+		}
     }
 }

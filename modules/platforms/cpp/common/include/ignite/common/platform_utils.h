@@ -56,15 +56,15 @@ namespace ignite
          * @return True on success.
          */
         IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
-
+		
         /**
          * Read system environment variable taking thread-safety in count.
          *
          * @param name Environment variable name.
-         * @param found Whether environment variable with such name was found.
-         * @return Environment variable value.
+         * @param val Environment variable value.
+         * @return True if the environment variable with such name was found.
          */
-        IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, bool& found);
+        IGNITE_IMPORT_EXPORT bool GetEnv(const std::string& name, std::string& val);
 
         /**
          * Ensure that file on the given path exists in the system.

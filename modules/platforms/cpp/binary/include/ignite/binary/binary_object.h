@@ -54,6 +54,18 @@ namespace ignite
             {
                 // No-op.
             };
+
+            /**
+             * Constructor.
+             *
+             * @param mem Binary object memory.
+             * @param start Object starting position in memory.
+             */
+            BinaryObject(impl::interop::InteropMemory& mem, int32_t start) :
+                impl(mem, start)
+            {
+                // No-op.
+            };
             /// @endcond
 
             /**

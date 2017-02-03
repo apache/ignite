@@ -51,25 +51,25 @@ namespace ignite
             return localtime_r(&in, &out) == 0;
         }
 
-        std::string GetEnv(const std::string& name, bool& found)
-        {
-            char* val0 = std::getenv(name.c_str());
+		bool GetEnv(const std::string& name, std::string& val)
+		{
+			char* val0 = std::getenv(name.c_str());
 
-            if (!val0)
-                return false;
+			if (!val0)
+				return false;
 
-            val = val0;
+			val = val0;
 
-            return true;
-        }
+			return true;
+		}
 
-        bool FileExists(const std::string& path)
-        {
-            struct stat s;
+		bool FileExists(const std::string& path)
+		{
+			struct stat s;
 
-            int res = stat(path.c_str(), &s);
+			int res = stat(path.c_str(), &s);
 
-            return res != -1;
-        }
+			return res != -1;
+		}
     }
 }

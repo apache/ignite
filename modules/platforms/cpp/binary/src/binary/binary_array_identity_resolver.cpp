@@ -36,7 +36,7 @@ namespace ignite
 
         int32_t BinaryArrayIdentityResolver::GetHashCode(const BinaryObject& obj)
         {
-            return impl::binary::BinaryUtils::GetDataHashCode(obj.GetData(), obj.GetLength());
+            return impl::binary::BinaryUtils::GetDataHashCode(obj.impl.GetData(), obj.impl.GetLength());
         }
     }
 }
