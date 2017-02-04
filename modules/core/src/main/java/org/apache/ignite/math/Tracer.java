@@ -206,9 +206,12 @@ public class Tracer {
         // Read it every time so that we can change it at runtime.
         String tmpl = fileToString("d3-vector-template.html");
 
-        // TODO: update template.
+        String cls = vec.getClass().getSimpleName();
 
-        openHtmlFile(tmpl);
+        openHtmlFile(tmpl.
+            replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
+            replaceAll("/\\*@DATA@\\*/.*\n", "var data = [" + mkString(vec, "%4f") + "];\n")
+        );
     }
 
     /**

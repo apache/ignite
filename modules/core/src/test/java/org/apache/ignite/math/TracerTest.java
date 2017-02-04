@@ -55,8 +55,8 @@ public class TracerTest {
      */
     @Test
     public void testHtmlVectorTracer() throws IOException {
-        Vector vec = makeRandomVector(20);
+        Vector vec1 = makeRandomVector(1000);
 
-        Tracer.showHtml(vec);
+        Tracer.showHtml(vec1);
     }
 }
