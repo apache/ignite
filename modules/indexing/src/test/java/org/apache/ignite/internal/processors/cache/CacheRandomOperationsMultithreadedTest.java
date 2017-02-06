@@ -227,7 +227,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (U.currentTimeMillis() < stopTime)
-                        randomOperation(rnd, ignite, cache, indexing);
+                        randomOperation(rnd, cache, indexing);
                 }
             }, 1, "test-thread");
         }
@@ -238,12 +238,10 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
 
     /**
      * @param rnd Random generator.
-     * @param ignite Node.
      * @param cache Cache.
      * @param indexing Indexing flag.
      */
     private void randomOperation(ThreadLocalRandom rnd,
-        Ignite ignite,
         IgniteCache<Object, Object> cache,
         boolean indexing) {
         int r0 = rnd.nextInt(100);

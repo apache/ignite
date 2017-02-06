@@ -105,7 +105,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 }
             }
         }
-        catch (SecurityException e) {
+        catch (SecurityException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -153,7 +153,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert str.charAt(str.length() - 1) == '.' : str;
             }
         }
-        catch (SecurityException | ClassNotFoundException e) {
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -183,7 +183,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert str.charAt(str.length() - 1) == '.' : str;
             }
         }
-        catch (SecurityException | ClassNotFoundException e) {
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -209,7 +209,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert str.trim().length() > 0;
             }
         }
-        catch (SecurityException | ClassNotFoundException e) {
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -265,7 +265,7 @@ public class IgniteStandardMXBean extends StandardMBean {
             if (res != null)
                 return res;
         }
-        catch (NoSuchMethodException e) {
+        catch (NoSuchMethodException ignored) {
             // No-op. Default value will be returned.
         }
 

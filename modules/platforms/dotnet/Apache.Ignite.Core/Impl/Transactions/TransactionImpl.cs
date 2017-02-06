@@ -112,6 +112,19 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Executes prepare step of the two phase commit.
+        /// </summary>
+        public void Prepare()
+        {
+            lock (this)
+            {
+                ThrowIfClosed();
+
+                _txs.TxPrepare(this);
+            }
+        }
+
+        /// <summary>
         /// Commits this tx and closes it.
         /// </summary>
         public void Commit()

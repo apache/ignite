@@ -441,7 +441,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
                     found = true;
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    ignite.cache(null);
 
                     assertEquals("Unexpected value for: " + ignite.name(), key, key);
                 }

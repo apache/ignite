@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Transactions;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -2644,6 +2645,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache[1] = 5;
 
             Assert.AreEqual(5, cache[1]);
+        }
+
+        /// <summary>
+        /// Tests that operations in TransactionScope work correctly in any cache mode (tx or non-tx).
+        /// </summary>
+        [Test]
+        public void TestTransactionScope()
+        {
+            var cache = Cache();
+
+            cache[1] = 1;
+
+            using (var ts = new TransactionScope())
+            {
+                cache[1] = 2;
+
+                ts.Complete();
+            }
+
+            Assert.AreEqual(2, cache[1]);
         }
 
         private void TestKeepBinaryFlag(bool async)
