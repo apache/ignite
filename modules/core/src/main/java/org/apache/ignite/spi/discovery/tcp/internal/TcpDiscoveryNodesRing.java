@@ -309,6 +309,8 @@ public class TcpDiscoveryNodesRing {
                 node.lastUpdateTime(U.currentTimeMillis());
 
                 this.nodes.add(node);
+                if (maxInternalOrder < node.internalOrder())
+                    maxInternalOrder = node.internalOrder();
             }
 
             nodeOrder = topVer;
