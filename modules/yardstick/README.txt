@@ -1,31 +1,36 @@
 Yardstick Ignite Benchmarks
 ===========================
-Yardstick Ignite is a set of Ignite Grid (http://ignite.apache.org/) benchmarks written on top of Yardstick framework.
+Apache Ignite benchmarks are written on top of Yardstick Framework (https://github.com/gridgain/yardstick) and allow
+you to measure performance of various Apache Ignite components and modules.
+
+The documentation below describes how to execute and configure already assembled benchmarks. If you need to add new
+benchmarks or build existing one then refer to instruction from `DEVNOTES.txt`.
+
+Visit Yardstick Repository (https://github.com/gridgain/yardstick) for detailed information in regards resulting graphs
+generation and how the frameworks works.
 
 
-Building the project
-====================
-Please look for the building instructions in `DEVNOTES.txt`
-
-
-Running Ignite Benchmarks on local machine
+Running Ignite Benchmarks Locally
 ==========================================
 
-The simplest way to run benchmarks is running following command in `benchmarks` directory:
+The simplest way to start with benchmarking is to use one of the executable scripts available under `benchmarks\bin` directory:
 
 ./bin/benchmark-run-all.sh config/benchmark-atomic-put.properties
 
-Without any additional changes this command will run the PutBenchmark on your local machine. You can find results in
-`results-DATE-TIME` directory.
+The command above will benchmark the cache put operation for a distributed atomic cache. The results of the benchmark will be added
+to auto-generated `results-{DATE-TIME}` directory.
+
+If `./bin/benchmark-run-all.sh` command is executed as is without any parameters and modifications in configurations files then
+all the available benchmarks will be executed on a local machine using `config/benchmark.properties` configuration.
+
+To get more information about available benchmarks and configuration parameters refer to “Provided Benchmarks” and
+“Properties And Command Line Arguments” sections below.
+
 
 NOTE: You need to configure ssh key-based authentication to localhost for running benchmarks on your local machine.
 
-If you run `./bin/benchmark-run-all.sh` command without any parameters and without changing any config files
-it will take as a parameter default config file `config/benchmark.properties` and run all the provided benchmarks on
-your local machine.
 
-
-Running Ignite Benchmarks on remote hosts
+Running Ignite Benchmarks Remotely
 =========================================
 
 For running Ignite benchmarks on remote hosts you need to upload Ignite-Yardstick to each one of your remote hosts.
@@ -87,13 +92,6 @@ The following benchmarks are provided:
 23. `PutAllBenchmark` - benchmarks atomic distributed cache batch put operation
 24. `PutAllTxBenchmark` - benchmarks transactional distributed cache batch put operation
 
-
-Yardstick Framework
-===================
-Visit Yardstick Repository (https://github.com/gridgain/yardstick) for detailed information on how to run Yardstick
-benchmarks and how to generate graphs.
-
-The documentation below describes configuration parameters in addition to standard Yardstick parameters.
 
 Properties And Command Line Arguments
 =====================================
