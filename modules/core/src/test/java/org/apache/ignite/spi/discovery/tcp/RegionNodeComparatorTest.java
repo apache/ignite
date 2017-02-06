@@ -43,16 +43,16 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
         final NodeFactory factory = new NodeFactory();
 
         ArrayList<TcpDiscoveryNode> allNodes = new ArrayList<>(1000);
-        for (int i = 0; i<1000; i++) {
+        for (int i = 0; i < 1000; i++) {
             allNodes.add(factory.get(1L));
         }
 
         TreeSet<TcpDiscoveryNode> nativeSet = new TreeSet<>();
         TreeSet<TcpDiscoveryNode> customSet = new TreeSet<>(comparator);
 
-        for (int i = 0; i<allNodes.size(); i++) {
+        for (int i = 0; i < allNodes.size(); i++) {
             nativeSet.add(allNodes.get(i));
-            customSet.add(allNodes.get(allNodes.size()-i-1));
+            customSet.add(allNodes.get(allNodes.size() - i - 1));
         }
 
         assertEqualsCollections(nativeSet, customSet);
@@ -205,7 +205,8 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
                         return new Pair<>(obj, exist);
                     if (comparator.compare(exist, obj) != 0)
                         return new Pair<>(exist, obj);
-                } else {
+                }
+                else {
                     set.put(obj, obj);
                     if (comparator.compare(obj, obj) != 0)
                         return new Pair<>(obj, obj);

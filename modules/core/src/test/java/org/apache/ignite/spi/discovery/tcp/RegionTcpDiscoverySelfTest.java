@@ -116,7 +116,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         super();
     }
 
-    private static void addRegion(Map<String, Object>  attrs, String name){
+    private static void addRegion(Map<String, Object> attrs, String name) {
         final long region;
         if (regionIds.containsKey(name))
             region = regionIds.get(name);
