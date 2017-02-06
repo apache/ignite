@@ -114,11 +114,16 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         for (int i = 0; i < fastIdxs.size(); i++) {
                             FastIndexHelper fastIdx = fastIdxs.get(i);
+
                             Value v1 = fastIdx.get(pageAddr, off + fieldOff);
                             fieldOff += fastIdx.size();
+                            if (v1 == null) {
+                                // can't compare further
+                                return 0;
+                            }
 
                             Value v2 = row.getValue(fastIdx.columnIdx());
-                            if (v1 == null || v2 == null) {
+                            if (v2 == null) {
                                 // can't compare further
                                 return 0;
                             }
@@ -132,12 +137,19 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         for (int i = fastIdxs.size(), len = indexColumns.length; i < len; i++) {
                             int idx0 = columnIds[i];
+
                             Value v1 = rowData.getValue(idx0);
-                            Value v2 = row.getValue(idx0);
-                            if (v1 == null || v2 == null) {
+                            if (v1 == null) {
                                 // can't compare further
                                 return 0;
                             }
+
+                            Value v2 = row.getValue(idx0);
+                            if (v2 == null) {
+                                // can't compare further
+                                return 0;
+                            }
+
                             int c = compareValues(v1, v2, indexColumns[i].sortType);
                             if (c != 0)
                                 return c;
