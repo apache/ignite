@@ -21,7 +21,9 @@ import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -101,7 +103,37 @@ public class DenseLocalOnHeapVectorTest {
                     expIdx, v.size());
             }
         );
+    }
 
+    /** */ @Test
+    public void allTestBound() {
+        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
+
+        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
+
+        consumeSampleVectors(
+            (expSizeParam, shallowCopyParam) -> {
+                expSize.set(expSizeParam);
+
+                shallowCp.set(shallowCopyParam);
+            }, (v) -> {
+                final Iterator<Vector.Element> it = v.all().iterator();
+
+                while (it.hasNext())
+                    assertNotNull(it.next());
+
+                boolean expECaught = false;
+
+                try {
+                    it.next();
+                } catch (NoSuchElementException e) {
+                    expECaught = true;
+                }
+
+                assertTrue("expected exception missed for size " + expSize.get() + ", shallow copy " + shallowCp.get(),
+                    expECaught);
+            }
+        );
     }
 
     /** */ @Test
