@@ -748,13 +748,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(expectedIds, actualIds);
         }
 
+        /// <summary>
+        /// Tests IEnumerable.Contains
+        /// </summary>
         [Test]
         public void TestContains()
         {
             var cache = GetPersonCache().AsCacheQueryable();
             var orgCache = GetOrgCache().AsCacheQueryable();
 
-            var keys = new[] {1, 2, 3};
+            var keys = new[] { 1, 2, 3 };
             var emptyKeys = new int[0];
 
             var bigNumberOfKeys = 10000;
@@ -762,38 +765,45 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
             var hashSetKeys = new HashSet<int>(keys);
 
-            CheckWhereFunc(cache, e => new[] {1, 2, 3}.Contains(e.Key));
+            CheckWhereFunc(cache, e => new[] { 1, 2, 3 }.Contains(e.Key));
             CheckWhereFunc(cache, e => emptyKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
             CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
-            CheckWhereFunc(cache, e => new List<int> {1, 2, 3}.Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int> { 1, 2, 3 }.Contains(e.Key));
             CheckWhereFunc(cache, e => new List<int>(keys).Contains(e.Key));
             CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
-            CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null}.Contains(e.Value.Name));
             CheckWhereFunc(cache, e => !keys.Contains(e.Key));
-            CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null}.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new string[] { null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new string[] { null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new string[] { null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new string[] { null, null }.Contains(e.Value.Name));
 
             int[] nullKeys = null;
             var nullKeysEntries = cache
                 .Where(e => nullKeys.Contains(e.Key))
                 .ToArray();
 
-            Assert.AreEqual(nullKeysEntries.Length, 0, "Evaluating 'null.Contains' should return zero results");
+            Assert.AreEqual(0, nullKeysEntries.Length, "Evaluating 'null.Contains' should return zero results");
 
+            var subSelectCount = cache
+                .Count(entry => orgCache
+                    .Where(orgEntry => orgEntry.Value.Name == "Org_1")
+                    .Select(orgEntry => orgEntry.Key)
+                    .Contains(entry.Value.OrganizationId));
 
-            //var cacheEntries = cache
-            //    //.Join(cache,entry => entry.Key, entry => entry.Key, (entry, cacheEntry) => new {entry, cacheEntry})
-            //    //.Where(entry => entry.entry.Value.OrganizationId > 0 && entry.cacheEntry.Value.Age > 10)
-            //    //.Where(entry => keys.Contains(entry.entry.Key))
+            var org1 = orgCache
+                .Where(orgEntry => orgEntry.Value.Name == "Org_1")
+                .Select(orgEntry => orgEntry.Key)
+                .First();
 
-            //    //.Where(entry => entry.Key == 1)
-            //    //.Where(entry => keys.Contains(entry.Key) && new[] { 1, 2, 3 }.Contains(entry.Value.Age))
-            //    .Where(entry => keys.Contains(entry.Key) && new[] { 1, 2, 3 }.Contains(entry.Value.Age)  && entry.Value.Age > 0)
-            //    .ToArray();
+            var subSelectCheckCount = cache.Count(entry => entry.Value.OrganizationId == org1);
 
-            ////var joined = cache.Where(entry => orgCache.Select(org => org.Key).Contains(entry.Key+1000)).ToArray();
-            //var joined = cache.Where(entry => cache.Select(org => org.Key).Contains(entry.Key+800)).ToArray();
+            Assert.AreEqual(subSelectCheckCount,subSelectCount, "subselecting another CacheQueryable failed");
         }
 
         /// <summary>

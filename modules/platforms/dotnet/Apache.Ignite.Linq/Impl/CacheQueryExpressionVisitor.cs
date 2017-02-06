@@ -472,16 +472,18 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
             var subQueryModel = expression.QueryModel;
-            if (subQueryModel.IsIdentityQuery() && subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
+
+            // Check if IEnumerable.Contains
+            if (subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
             {
                 ResultBuilder.Append("(");
 
-                // TODO: frist evaluate values, check for null values
-                var contains = (ContainsResultOperator)subQueryModel.ResultOperators.First();
+                var contains = (ContainsResultOperator) subQueryModel.ResultOperators.First();
                 var fromExpression = subQueryModel.MainFromClause.FromExpression;
 
                 var queryable = ExpressionWalker.GetCacheQueryable(fromExpression, false);
@@ -497,27 +499,19 @@ namespace Apache.Ignite.Linq.Impl
                 else
                 {
                     var inValues = GetInValues(fromExpression)
-                       .ToArray();
+                        .ToArray();
 
                     var hasNulls = inValues.Any(o => o == null);
-                    //var hasNotNulls = inValues.Any(o => o != null);
 
                     if (hasNulls)
                     {
                         ResultBuilder.Append("(");
                     }
 
-                    //if (hasNotNulls)
-                    //{
-                        Visit(contains.Item);
-                        ResultBuilder.Append(" IN (");
-                        AppendInParameters(inValues.Where(o => o != null));
-                        ResultBuilder.Append(")");
-                    //}
-                    //else
-                    //{
-                        //ResultBuilder.Append("0 = 1");
-                    //}
+                    Visit(contains.Item);
+                    ResultBuilder.Append(" IN (");
+                    AppendInParameters(inValues.Where(o => o != null));
+                    ResultBuilder.Append(")");
 
                     if (hasNulls)
                     {
