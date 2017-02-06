@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.query.h2.database.FastIndex;
+import org.apache.ignite.internal.processors.query.h2.database.FastIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.database.H2ExtrasTree;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
@@ -35,7 +35,7 @@ import org.h2.result.SearchRow;
  */
 public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
 
-    public static final int IDX_SIZE = 32;
+    public static final int PAYLOAD_SIZE = 32;
 
     /** */
     public static final IOVersions<H2Extras32InnerIO> VERSIONS = new IOVersions<>(
@@ -46,7 +46,7 @@ public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
      * @param ver Page format version.
      */
     private H2Extras32InnerIO(int ver) {
-        super(T_H2_EX32_REF_INNER, ver, true, 8 + IDX_SIZE);
+        super(T_H2_EX32_REF_INNER, ver, true, 8 + PAYLOAD_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -60,19 +60,19 @@ public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
 
         assert row0.link != 0;
 
-        List<FastIndex> fastIdx = row0.fastIdx;
+        List<FastIndexHelper> fastIdx = ((H2ExtrasTree)row0.tree).fastIdxs();
 
         assert fastIdx != null;
 
         int fieldOff = 0;
 
         for (int i = 0; i < fastIdx.size(); i++) {
-            FastIndex idx = fastIdx.get(i);
+            FastIndexHelper idx = fastIdx.get(i);
             idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIdx()));
             fieldOff += idx.size();
         }
 
-        PageUtils.putLong(pageAddr, off + IDX_SIZE, row0.link);
+        PageUtils.putLong(pageAddr, off + PAYLOAD_SIZE, row0.link);
     }
 
     /** {@inheritDoc} */
@@ -83,7 +83,7 @@ public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
         assert link != 0;
 
         GridH2Row r0 = ((H2ExtrasTree)tree).getRowFactory().getRow(link);
-        r0.fastIdx = ((H2ExtrasTree)tree).fastIdxs();
+        r0.tree = tree;
 
         return r0;
     }
@@ -92,18 +92,18 @@ public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
         int srcOff = srcIo.offset(srcIdx);
 
-        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, IDX_SIZE);
-        long link = PageUtils.getInt(srcPageAddr, srcOff + IDX_SIZE);
+        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, PAYLOAD_SIZE);
+        long link = PageUtils.getInt(srcPageAddr, srcOff + PAYLOAD_SIZE);
 
         assert link != 0;
 
         int dstOff = offset(dstIdx);
 
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
-        PageUtils.putLong(dstPageAddr, dstOff + IDX_SIZE, link);
+        PageUtils.putLong(dstPageAddr, dstOff + PAYLOAD_SIZE, link);
     }
 
     private long getLink(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + IDX_SIZE);
+        return PageUtils.getLong(pageAddr, offset(idx) + PAYLOAD_SIZE);
     }
 }

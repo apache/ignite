@@ -28,25 +28,40 @@ import org.h2.value.ValueLong;
 /**
  * Author: kdudkov.
  */
-public class FastIndex {
-    public static final List<Integer> ALL_TYPES = Arrays.asList(Value.BYTE, Value.INT, Value.LONG);
+public class FastIndexHelper {
+    /** */
+    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(Value.BYTE, Value.INT, Value.LONG);
 
+    /** */
     private final int type;
-    private final int columnIdx;
+    /** */
+    private final int colIdx;
+    /** */
+    private final int sortType;
 
-    public FastIndex(int type, int columnIdx) {
+    /** */
+    public FastIndexHelper(int type, int colIdx, int sortType) {
         this.type = type;
-        this.columnIdx = columnIdx;
+        this.colIdx = colIdx;
+        this.sortType = sortType;
     }
 
+    /** */
     public int type() {
         return type;
     }
 
+    /** */
     public int columnIdx() {
-        return columnIdx;
+        return colIdx;
     }
 
+    /** */
+    public int sortType() {
+        return sortType;
+    }
+
+    /** */
     public int size() {
         switch (type) {
             case Value.BYTE:
@@ -63,6 +78,7 @@ public class FastIndex {
         }
     }
 
+    /** */
     public Value get(long pageAddr, int off) {
         switch (type) {
             case Value.BYTE:
@@ -79,6 +95,7 @@ public class FastIndex {
         }
     }
 
+    /** */
     public void put(long pageAddr, int off, Value val) {
         switch (type) {
             case Value.BYTE:

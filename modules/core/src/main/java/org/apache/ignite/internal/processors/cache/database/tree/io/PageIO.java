@@ -77,10 +77,10 @@ public abstract class PageIO {
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
     /** */
-    private static IOVersions<? extends BPlusInnerIO<?>> h2IntInnerIOs;
+    private static IOVersions<? extends BPlusInnerIO<?>> h2ExtraInnerIOs;
 
     /** */
-    private static IOVersions<? extends BPlusLeafIO<?>> h2IntLeafIOs;
+    private static IOVersions<? extends BPlusLeafIO<?>> h2ExtraLeafIOs;
 
     /** */
     public static final int TYPE_OFF = 0;
@@ -301,8 +301,8 @@ public abstract class PageIO {
     ) {
         h2InnerIOs = innerIOs;
         h2LeafIOs = leafIOs;
-        h2IntInnerIOs = intInnerIOs;
-        h2IntLeafIOs = intLeafIOs;
+        h2ExtraInnerIOs = intInnerIOs;
+        h2ExtraLeafIOs = intLeafIOs;
     }
 
     /**
@@ -432,16 +432,16 @@ public abstract class PageIO {
                 return (Q)h2LeafIOs.forVersion(ver);
 
             case T_H2_EX32_REF_INNER:
-                if (h2IntInnerIOs == null)
+                if (h2ExtraInnerIOs == null)
                     break;
 
-                return (Q)h2IntInnerIOs.forVersion(ver);
+                return (Q)h2ExtraInnerIOs.forVersion(ver);
 
             case T_H2_EX32_REF_LEAF:
-                if (h2IntLeafIOs == null)
+                if (h2ExtraLeafIOs == null)
                     break;
 
-                return (Q)h2IntLeafIOs.forVersion(ver);
+                return (Q)h2ExtraLeafIOs.forVersion(ver);
 
             case T_DATA_REF_INNER:
                 return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);

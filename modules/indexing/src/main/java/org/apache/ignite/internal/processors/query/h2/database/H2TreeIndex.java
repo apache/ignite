@@ -56,7 +56,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
-    private final List<FastIndex> fastIdxs;
+    private final List<FastIndexHelper> fastIdxs;
 
     /**
      * @param cctx Cache context.
@@ -90,7 +90,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             RootPage page = cctx.offheap().rootPageForIndex(name);
 
-            fastIdxs = getAvailableFastColumns(colsList);
+            fastIdxs = getAvailableFastColumns(cols);
 
             if (pk || fastIdxs.isEmpty()) {
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
@@ -113,7 +113,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                         int fieldOff = 0;
 
                         for (int i = 0; i < fastIdxs.size(); i++) {
-                            FastIndex fastIdx = fastIdxs.get(i);
+                            FastIndexHelper fastIdx = fastIdxs.get(i);
                             Value v1 = fastIdx.get(pageAddr, off + fieldOff);
                             fieldOff += fastIdx.size();
 
@@ -123,7 +123,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                                 return 0;
                             }
 
-                            int c = compareValues(v1, v2, indexColumns[i].sortType);
+                            int c = compareValues(v1, v2, fastIdx.sortType());
                             if (c != 0)
                                 return c;
                         }
@@ -157,20 +157,20 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
-     * @param colsList Columns list.
+     * @param cols Columns array.
      * @return
      */
-    private List<FastIndex> getAvailableFastColumns(List<IndexColumn> colsList) {
-        List<FastIndex> res = new ArrayList<>();
+    private List<FastIndexHelper> getAvailableFastColumns(IndexColumn[] cols) {
+        List<FastIndexHelper> res = new ArrayList<>();
 
-        int maxPayloadSize = H2Extras32InnerIO.IDX_SIZE;
+        int maxPayloadSize = H2Extras32InnerIO.PAYLOAD_SIZE;
         int payloadSize = 0;
 
-        for (int i = 0; i < colsList.size(); i++) {
-            IndexColumn col = colsList.get(i);
-            if (!FastIndex.ALL_TYPES.contains(col.column.getType()))
+        for (int i = 0; i < cols.length; i++) {
+            IndexColumn col = cols[i];
+            if (!FastIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
                 break;
-            FastIndex idx = new FastIndex(col.column.getType(), col.column.getColumnId());
+            FastIndexHelper idx = new FastIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
 
             payloadSize += idx.size();
             if (payloadSize > maxPayloadSize)
@@ -238,7 +238,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            row.fastIdx = fastIdxs;
+            row.tree = tree;
             return tree.put(row);
         }
         catch (IgniteCheckedException e) {
@@ -249,7 +249,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            row.fastIdx = fastIdxs;
+            row.tree = tree;
             return tree.putx(row);
         }
         catch (IgniteCheckedException e) {

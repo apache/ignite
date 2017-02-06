@@ -38,7 +38,7 @@ public abstract class H2ExtrasTree extends BPlusTree<SearchRow, GridH2Row> {
     private final H2RowFactory rowStore;
 
     /** */
-    private final List<FastIndex> fastIdxs;
+    private final List<FastIndexHelper> fastIdxs;
 
     /**
      * @param name Tree name.
@@ -61,7 +61,7 @@ public abstract class H2ExtrasTree extends BPlusTree<SearchRow, GridH2Row> {
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew,
-        List<FastIndex> fastIdxs
+        List<FastIndexHelper> fastIdxs
     ) throws IgniteCheckedException {
         super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, H2Extras32InnerIO.VERSIONS, H2Extras32LeafIO.VERSIONS);
 
@@ -81,7 +81,7 @@ public abstract class H2ExtrasTree extends BPlusTree<SearchRow, GridH2Row> {
         return rowStore;
     }
 
-    public List<FastIndex> fastIdxs() {
+    public List<FastIndexHelper> fastIdxs() {
         return fastIdxs;
     }
 
