@@ -296,7 +296,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
                 }
             }, 5_000));
         }
-        catch (WakeupException e) {
+        catch (WakeupException ignored) {
             // ignore for shutdown.
         }
         finally {

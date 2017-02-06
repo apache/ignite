@@ -115,7 +115,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         try {
             streamer.stop();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // ignore if already stopped
         }
 
@@ -275,7 +275,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             streamer.start();
             fail("Streamer started; should have failed.");
         }
-        catch (IgniteException e) {
+        catch (IgniteException ignored) {
             assertTrue(streamer.getCamelContext().getStatus() == ServiceStatus.Stopped);
             assertTrue(streamer.getCamelContext().getEndpointRegistry().size() == 0);
         }

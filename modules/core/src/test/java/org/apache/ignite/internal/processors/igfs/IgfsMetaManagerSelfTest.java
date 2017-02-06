@@ -158,7 +158,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         for (IgniteBiTuple<IgniteUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
             IgniteUuid fileId = tup.get1();
-            String fileName = tup.get2();
 
             for (Map<String, String> props : Arrays.asList(null, Collections.<String, String>emptyMap()))
                 expectsUpdatePropertiesFail(fileId, props, AssertionError.class, "Expects not-empty file's properties");

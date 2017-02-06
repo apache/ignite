@@ -808,7 +808,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             return;
 
         // Don't track non-primary entries if evicts are synchronized.
-        if (!cctx.isNear() && evictSync && !cctx.affinity().primary(cctx.localNode(), e.partition(), topVer))
+        if (!cctx.isNear() && evictSync && !cctx.affinity().primaryByPartition(cctx.localNode(), e.partition(), topVer))
             return;
 
         if (!busyLock.enterBusy())
@@ -910,7 +910,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         if (evictSyncAgr) {
             assert !cctx.isNear(); // Make sure cache is not NEAR.
 
-            if (cctx.affinity().backups(
+            if (cctx.affinity().backupsByKey(
                     entry.key(),
                     cctx.topology().topologyVersion()).contains(cctx.localNode()) &&
                 evictSync)
@@ -1498,7 +1498,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         if (!evts.isEmpty())
                             break;
 
-                        if (!cctx.affinity().primary(loc, it.next(), topVer))
+                        if (!cctx.affinity().primaryByPartition(loc, it.next(), topVer))
                             it.remove();
                     }
 
