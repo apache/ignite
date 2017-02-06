@@ -147,11 +147,14 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
             @Override public Iterator<Element> iterator() {
                 return new Iterator<Element>() {
                     @Override public boolean hasNext() {
-                        return idx < data.length;
+                        return idx < size();
                     }
 
                     @Override public Element next() {
-                        return getElement(idx++);
+                        if (hasNext())
+                            return getElement(idx++);
+
+                        throw new NoSuchElementException();
                     }
                 };
             }
@@ -160,7 +163,55 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public Iterable<Element> nonZeroes() {
-        return null; // TODO
+        return new Iterable<Element>() {
+            private final static int NOT_INITIALIZED = -1;
+
+            private int idx = 0;
+
+            private int idxNext = NOT_INITIALIZED;
+
+            @Override public Iterator<Element> iterator() {
+                return new Iterator<Element>() {
+                    @Override public boolean hasNext() {
+                        findNext();
+
+                        return !over();
+                    }
+
+                    @Override public Element next() {
+                        if (hasNext()) {
+                            idx = idxNext;
+
+                            return getElement(idxNext);
+                        }
+
+                        throw new NoSuchElementException();
+                    }
+
+                    private void findNext() {
+                        if (over())
+                            return;
+
+                        if (idxNext != NOT_INITIALIZED && idx != idxNext)
+                            return;
+
+                        while (idx < size() && !zero(get(idx)))
+                            idx++;
+
+                        idxNext = idx++;
+                    }
+
+                    private boolean over() {
+                        return idxNext >= size();
+                    }
+                };
+            }
+        };
+    }
+
+    /** */
+    private boolean zero(double val) {
+        return val == 0.0;
     }
 
     /** {@inheritDoc */
@@ -346,7 +397,12 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public int nonZeroElements() {
-        return 0; // TODO
+        int res = 0;
+
+        for (Element ignored : nonZeroes())
+            res++;
+
+        return res;
     }
 
     /** {@inheritDoc */
@@ -360,7 +416,7 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
     }
 
     /** {@inheritDoc */
-    @Override public Vector viewPart(int offset, int length) {
+    @Override public Vector viewPart(int off, int len) {
         return null; // TODO
     }
 

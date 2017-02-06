@@ -22,6 +22,9 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static org.junit.Assert.*;
@@ -30,14 +33,19 @@ import static org.junit.Assert.*;
 public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void sizeTest() {
-        for (int size : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            for (int delta : new int[] {-1, 0, 1})
-                for (boolean shallowCopy : new boolean[] {false, true}) {
-                    final int expSize = size + delta;
+        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
-                    assertEquals("expected size " + expSize + ", shallow copy " + shallowCopy, expSize,
-                        new DenseLocalOnHeapVector(new double[expSize], shallowCopy).size());
-                }
+        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
+
+        consumeSampleVectors(
+            (expSizeParam, shallowCopyParam) -> {
+                expSize.set(expSizeParam);
+
+                shallowCp.set(shallowCopyParam);
+            },
+            (v) -> assertEquals("expected size " + expSize.get() + ", shallow copy " + shallowCp.get(),
+                (int) expSize.get(), v.size())
+        );
     }
 
     /** */ @Test
@@ -67,7 +75,32 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void allTest() { // TODO write test
+    public void allTest() {
+        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
+
+        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
+
+        consumeSampleVectors(
+            (expSizeParam, shallowCopyParam) -> {
+                expSize.set(expSizeParam);
+
+                shallowCp.set(shallowCopyParam);
+            }, (v) -> {
+                int expIdx = 0;
+
+                for (Vector.Element e : v.all()) {
+                    int actualIdx = e.index();
+
+                    assertEquals("unexpected index for size " + expSize.get() + ", shallow copy " + shallowCp.get(),
+                        expIdx, actualIdx);
+
+                    expIdx++;
+                }
+
+                assertEquals("unexpected amount of elements for size " + expSize.get() + ", shallow copy " + shallowCp.get(),
+                    expIdx, v.size());
+            }
+        );
 
     }
 
@@ -78,18 +111,12 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void getElementTest() {
-        for (int size : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            for (int delta : new int[] {-1, 0, 1})
-                for (boolean shallowCopy : new boolean[] {false, true}) {
-                    final int expSize = size + delta;
+        consumeSampleVectors(v -> {
+            for (Vector.Element e : v.all())
+                e.set(e.index());
 
-                    final DenseLocalOnHeapVector v = new DenseLocalOnHeapVector(new double[expSize], shallowCopy);
-
-                    for (Vector.Element e : v.all())
-                        e.set(e.index());
-
-                    assertCloseEnough(v);
-                }
+            assertCloseEnough(v);
+        });
     }
 
     /** */ @Test
@@ -348,6 +375,26 @@ public class DenseLocalOnHeapVectorTest {
 
         assertTrue("1 size default copy",
             pred.test(new DenseLocalOnHeapVector(new double[1])));
+    }
+
+    /** */
+    private void consumeSampleVectors(Consumer<DenseLocalOnHeapVector> consumer) {
+        consumeSampleVectors(null, consumer);
+    }
+
+    /** */
+    private void consumeSampleVectors(BiConsumer<Integer, Boolean> paramsConsumer,
+        Consumer<DenseLocalOnHeapVector> consumer) {
+        for (int size : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
+            for (int delta : new int[] {-1, 0, 1})
+                for (boolean shallowCopy : new boolean[] {false, true}) {
+                    final int expSize = size + delta;
+
+                    if (paramsConsumer != null)
+                        paramsConsumer.accept(expSize, shallowCopy);
+
+                    consumer.accept(new DenseLocalOnHeapVector(new double[expSize], shallowCopy));
+                }
     }
 
     /** */
