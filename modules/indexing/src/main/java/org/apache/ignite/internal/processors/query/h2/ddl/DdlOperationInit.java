@@ -60,6 +60,7 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
             if (e.getValue() != null)
                 errors.put(e.getKey(), e.getValue());
 
+        // TODO: Can we send IO message to initiator asynchronously?
         if (!errors.isEmpty()) {
             DdlOperationInitError err = new DdlOperationInitError();
 

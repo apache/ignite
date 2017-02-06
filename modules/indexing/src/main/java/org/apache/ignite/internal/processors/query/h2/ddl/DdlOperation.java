@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Abstraction for DDL operation as a whole.
  */
+// TODO: Rename to DdlOperationFuture.
 public class DdlOperation extends GridFutureAdapter {
     /** Unique ID of this operation. */
     private final IgniteUuid id;

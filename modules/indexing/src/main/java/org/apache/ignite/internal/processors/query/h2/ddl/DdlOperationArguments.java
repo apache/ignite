@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Base class for DDL operation arguments.
  */
+// TODO: Change to composition.
 abstract class DdlOperationArguments implements Serializable {
     /** ID of node that initiated this operation. */
     public final UUID sndNodeId;

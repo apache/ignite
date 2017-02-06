@@ -79,6 +79,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
                 if (msg.getNodesState() == null) {
                     // Null state means we're at coordinator, so let's populate state with participating nodes
                     // in accordance with topology version.
+                    // TODO: Is cacheNodes the right method here? May be cacheAffinityNides? Ask Alex G..
                     Collection<ClusterNode> nodes = ctx.discovery().cacheNodes(msg.getArguments().cacheName, topVer);
 
                     Map<UUID, IgniteCheckedException> newNodesState = new HashMap<>();
