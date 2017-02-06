@@ -38,11 +38,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.binary.BinaryFieldIdentityResolver;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -61,7 +62,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.binary.BinaryFieldIdentityResolver;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -536,14 +536,12 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testCustomArrays() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3244");
-
         IgniteCache<Integer, TestObject[]> cache = jcache(0);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             TestObject[] arr = new TestObject[] {new TestObject(i)};
 
-            cache.put(0, arr);
+            cache.put(i, arr);
         }
 
 

@@ -463,17 +463,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (BinaryUtils.isBinaryType(obj.getClass()))
             return obj;
 
-        if (obj instanceof Object[]) {
-            Object[] arr = (Object[])obj;
-
-            Object[] pArr = new Object[arr.length];
-
-            for (int i = 0; i < arr.length; i++)
-                pArr[i] = marshalToBinary(arr[i]);
-
-            return pArr;
-        }
-
         if (obj instanceof IgniteBiTuple) {
             IgniteBiTuple tup = (IgniteBiTuple)obj;
 

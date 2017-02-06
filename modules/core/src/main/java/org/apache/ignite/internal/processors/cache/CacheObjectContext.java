@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -214,7 +215,7 @@ import org.apache.ignite.internal.util.typedef.F;
         if (BinaryUtils.knownArray(arr))
             return arr;
 
-        Object[] res = new Object[arr.length];
+        Object[] res = (Object[])Array.newInstance(arr.getClass().getComponentType(), arr.length);
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i], keepBinary, cpy);
