@@ -2146,8 +2146,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return obj0.getField(name());
             }
             else
-                throw new IgniteCheckedException("Unexpected type of binary object to get field value from [obj=" + obj
-                    + ", type=" + obj.getClass() + ']');
+                throw new IgniteCheckedException("Unexpected binary object class [type=" + obj.getClass() + ']');
         }
 
         /** {@inheritDoc} */
@@ -2173,7 +2172,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 needsBuild = true;
 
-                obj = ((BinaryObjectExImpl) obj).toBuilder();
+                obj = ((BinaryObjectExImpl)obj).toBuilder();
             }
 
             if (!(obj instanceof BinaryObjectBuilder))

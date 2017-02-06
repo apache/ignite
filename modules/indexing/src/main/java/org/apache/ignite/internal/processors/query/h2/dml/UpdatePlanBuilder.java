@@ -24,7 +24,6 @@ import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -49,6 +48,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
@@ -308,7 +308,7 @@ public final class UpdatePlanBuilder {
      * @param hasProps Whether column list affects individual properties of key or value.
      * @param key Whether supplier should be created for key or for value.
      * @return Closure returning key or value.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
@@ -399,8 +399,12 @@ public final class UpdatePlanBuilder {
                             return ctor0.newInstance();
                         }
                         catch (Exception e) {
-                            throw new IgniteCheckedException("Failed to invoke default ctor for " +
-                                (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            if (S.INCLUDE_SENSITIVE)
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            else
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + '.', e);
                         }
                     }
                 };
@@ -414,16 +418,18 @@ public final class UpdatePlanBuilder {
                             return GridUnsafe.allocateInstance(cls);
                         }
                         catch (InstantiationException e) {
-                            throw new IgniteCheckedException("Failed to instantiate " +
-                                (key ? "key" : "value") + " via Unsafe [type=" + typeName + ']', e);
+                            if (S.INCLUDE_SENSITIVE)
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            else
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + '.', e);
                         }
                     }
                 };
             }
         }
     }
-
-
 
     /**
      * @param target Expression to extract the table from.
@@ -493,12 +499,18 @@ public final class UpdatePlanBuilder {
         return false;
     }
 
-    /** Simple supplier that just takes specified element of a given row. */
+    /**
+     * Simple supplier that just takes specified element of a given row.
+     */
     private final static class PlainValueSupplier implements KeyValueSupplier {
         /** Index of column to use. */
         private final int colIdx;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param colIdx Column index.
+         */
         private PlainValueSupplier(int colIdx) {
             this.colIdx = colIdx;
         }
