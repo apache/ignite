@@ -40,7 +40,7 @@ public class IgniteComputeManyAsyncJobsTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMessageQueueLimit(1024);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(2);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUseSeparatePublicPoolConnections(false);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUseSeparatePublicPoolConnections(true);
 
         return cfg;
     }
@@ -80,7 +80,7 @@ public class IgniteComputeManyAsyncJobsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60_000;
+        return 30_000;
     }
 
     /**
