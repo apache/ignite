@@ -1183,9 +1183,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         GridDhtLocalPartition part = topology().localPartition(entry.partition(), AffinityTopologyVersion.NONE,
             false);
 
-        if (part != null) {
+        if (part != null)
             part.onDeferredDelete(entry.key(), ver);
-        }
     }
 
     /**
