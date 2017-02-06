@@ -687,8 +687,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                     if (entry.getValue() != GridDhtPartitionState.OWNING) {
                                         LT.warn(log(),
-                                            "Waiting for correct partition state, should be OWNING [state=" +
-                                                entry.getValue() + "]");
+                                            "Waiting for correct partition state part=" + entry.getKey()
+                                                + ", should be OWNING [state=" + entry.getValue() + "], node=" +
+                                                g.name() + ", cache=" + c.getName());
 
                                         Thread.sleep(200); // Busy wait.
 
