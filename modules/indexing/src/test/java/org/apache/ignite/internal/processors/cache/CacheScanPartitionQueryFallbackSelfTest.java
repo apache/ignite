@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -81,7 +82,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private volatile boolean clientMode;
 
     /** Expected first node ID. */
-    private static UUID expNodeId;
+    private static Set<UUID >expNodeIds;
 
     /** Communication SPI factory. */
     private CommunicationSpiFactory commSpiFactory;
@@ -156,7 +157,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
-    public void testScanRemote() throws Exception {
+    public void testScanRemoteCollocated() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
         commSpiFactory = new TestRemoteCommunicationSpiFactory();
@@ -168,9 +169,48 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             GridCacheQueryPartSet pSet = randomNodePartitions(cache.context(), F.rand(ignite.cluster().forRemotes().nodes()), 3);
 
-            expNodeId = pSet.node().id();
+            expNodeIds = Collections.singleton(pSet.node().id());
 
             int[] parts = U.toIntArray(pSet.partitions());
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
+
+            doTestScanQuery(qry, parts);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan should perform on the remote node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testScanRemotePartitioned() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestRemoteCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            Collection<ClusterNode> nodes = ignite.cluster().nodes();
+
+            Set<Integer> pSet = new HashSet<>();
+
+            expNodeIds = new HashSet<>();
+
+            for (ClusterNode node : nodes) {
+                pSet.addAll(randomNodePartitions(cache.context(), node, 1).partitions());
+
+                expNodeIds.add(node.id());
+            }
+
+            int[] parts = U.toIntArray(pSet);
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
                 cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
@@ -522,7 +562,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest)
-                        assertEquals(expNodeId, node.id());
+                        assertTrue(expNodeIds.contains(node.id()));
 
                     super.sendMessage(node, msg, ackC);
                 }
