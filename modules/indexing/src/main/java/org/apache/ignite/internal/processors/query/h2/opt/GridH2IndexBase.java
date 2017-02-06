@@ -568,39 +568,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * @param qctx Query context.
-     * @param cctx Cache context.
-     * @return Collection of nodes for broadcasting.
-     */
-    private List<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
-        Map<UUID, int[]> partMap = qctx.partitionsMap();
-
-        List<ClusterNode> res;
-
-        if (partMap == null)
-            res = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
-        else {
-            res = new ArrayList<>(partMap.size());
-
-            GridKernalContext ctx = kernalContext();
-
-            for (UUID nodeId : partMap.keySet()) {
-                ClusterNode node = ctx.discovery().node(nodeId);
-
-                if (node == null)
-                    throw new GridH2RetryException("Failed to find node.");
-
-                res.add(node);
-            }
-        }
-
-        if (F.isEmpty(res))
-            throw new GridH2RetryException("Failed to collect affinity nodes.");
-
-        return res;
-    }
-
-    /**
      * @param cctx Cache context.
      * @param qctx Query context.
      * @param affKeyObj Affinity key.
@@ -1181,20 +1148,20 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             // Add range to every message of every participating node.
             for (int i = 0; i < segmentKeys.size(); i++) {
-                    SegmentKey segment = segmentKeys.get(i);
-                    assert segment != null;
+                    SegmentKey segmentKey = segmentKeys.get(i);
+                    assert segmentKey != null;
 
-                    RangeStream stream = rangeStreams.get(segment);
+                    RangeStream stream = rangeStreams.get(segmentKey);
 
                     List<GridH2RowRangeBounds> bounds;
 
                     if (stream == null) {
-                        stream = new RangeStream(qctx, segment.node);
+                        stream = new RangeStream(qctx, segmentKey.node);
 
-                        stream.req = createRequest(qctx, batchLookupId, segment.segmentId);
+                        stream.req = createRequest(qctx, batchLookupId, segmentKey.segmentId);
                         stream.req.bounds(bounds = new ArrayList<>());
 
-                        rangeStreams.put(segment, stream);
+                        rangeStreams.put(segmentKey, stream);
                     }
                     else
                         bounds = stream.req.bounds();
