@@ -20,13 +20,14 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.h2.value.ValueByte;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 
 /**
- * Author: kdudkov.
+ * Helper class for in-page indexes.
  */
 public class FastIndexHelper {
     /** */
@@ -39,7 +40,11 @@ public class FastIndexHelper {
     /** */
     private final int sortType;
 
-    /** */
+    /**
+     * @param type Index type (see {@link Value}).
+     * @param colIdx Index column index.
+     * @param sortType Column sort type (see {@link IndexColumn#sortType}).
+     */
     public FastIndexHelper(int type, int colIdx, int sortType) {
         this.type = type;
         this.colIdx = colIdx;
