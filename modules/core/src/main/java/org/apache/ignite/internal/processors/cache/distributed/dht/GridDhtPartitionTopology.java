@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -195,6 +194,11 @@ public interface GridDhtPartitionTopology {
     public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
 
     /**
+     * @return {@code True} If one of cache nodes has partitions in {@link GridDhtPartitionState#MOVING} state.
+     */
+    public boolean hasMovingPartitions();
+
+    /**
      * @param e Entry removed from cache.
      */
     public void onRemoved(GridDhtCacheEntry e);
@@ -203,9 +207,9 @@ public interface GridDhtPartitionTopology {
      * @param exchId Exchange ID.
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
-     * @return Local partition map if there were evictions or {@code null} otherwise.
+     * @return {@code True} if topology state changed.
      */
-    public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
+    public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, Long> cntrMap);
 
@@ -213,11 +217,18 @@ public interface GridDhtPartitionTopology {
      * @param exchId Exchange ID.
      * @param parts Partitions.
      * @param cntrMap Partition update counters.
-     * @return Local partition map if there were evictions or {@code null} otherwise.
+     * @param checkEvictions Check evictions flag.
+     * @return {@code True} if topology state changed.
      */
-    @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
+    @Nullable public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, Long> cntrMap);
+        @Nullable Map<Integer, Long> cntrMap,
+        boolean checkEvictions);
+
+    /**
+     *
+     */
+    public void checkEvictions();
 
     /**
      * @param skipZeros If {@code true} then filters out zero counters.
@@ -236,12 +247,6 @@ public interface GridDhtPartitionTopology {
      * @param updateSeq Update sequence increment flag.
      */
     public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
-
-    /**
-     * @param nodeId Node to get partitions for.
-     * @return Partitions for node.
-     */
-    @Nullable public GridDhtPartitionMap2 partitions(UUID nodeId);
 
     /**
      * Prints memory stats.

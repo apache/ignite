@@ -151,6 +151,14 @@
                                                     <property name="javaFieldName" value="orgId"/>
                                                     <property name="javaFieldType" value="java.lang.Integer"/>
                                                 </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldName" value="GENDER"/>
+                                                    <property name="databaseFieldType">
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </property>
+                                                    <property name="javaFieldName" value="gender"/>
+                                                    <property name="javaFieldType" value="org.apache.ignite.cache.store.jdbc.model.Gender"/>
+                                                </bean>
                                             </list>
                                         </property>
                                     </bean>

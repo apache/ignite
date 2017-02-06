@@ -32,7 +32,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -239,7 +238,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
                 GridCacheSharedContext<?, ?> ctx = k.context().cache().context();
 
                 ClusterNode oldest =
-                    GridCacheUtils.oldestAliveCacheServerNode(ctx, new AffinityTopologyVersion(currVer));
+                    ctx.discovery().oldestAliveCacheServerNode(new AffinityTopologyVersion(currVer));
 
                 assertNotNull(oldest);
 

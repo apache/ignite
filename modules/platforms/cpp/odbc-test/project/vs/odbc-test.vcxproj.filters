@@ -94,6 +94,9 @@
     <ClCompile Include="..\..\src\sql_system_functions_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql_esc_convert_function_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\sql_operators_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -128,6 +131,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\sql_test_suite_fixture.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\complex_type.h">
+      <Filter>Code\CacheTypes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

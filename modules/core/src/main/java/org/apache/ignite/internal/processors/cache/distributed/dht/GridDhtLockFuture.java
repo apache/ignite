@@ -156,6 +156,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /** Pending locks. */
     private final Collection<KeyCacheObject> pendingLocks;
 
+    /** TTL for create operation. */
+    private long createTtl;
+
     /** TTL for read operation. */
     private long accessTtl;
 
@@ -194,6 +197,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         long timeout,
         GridDhtTxLocalAdapter tx,
         long threadId,
+        long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -214,6 +218,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
@@ -481,7 +486,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             MiniFuture f = (MiniFuture)fut;
 
             if (f.node().id().equals(nodeId)) {
-                f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
+                f.onResult();
 
                 found = true;
             }
@@ -525,8 +530,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 MiniFuture mini = (MiniFuture) future(i);
 
                 if (mini.futureId().equals(miniId)) {
@@ -940,7 +947,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyCheckedException)
-                            fut.onResult((ClusterTopologyCheckedException)e);
+                            fut.onResult();
                         else {
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("DHT lock fut, failed to send request [txId=" + nearLockVer +
@@ -1059,10 +1066,22 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                             try {
                                 CacheObject val0 = cctx.toCacheObject(val);
 
+                                long ttl = createTtl;
+                                long expireTime;
+
+                                if (ttl == CU.TTL_ZERO)
+                                    expireTime = CU.expireTimeInPast();
+                                else {
+                                    if (ttl == CU.TTL_NOT_CHANGED)
+                                        ttl = CU.TTL_ETERNAL;
+
+                                    expireTime = CU.toExpireTime(ttl);
+                                }
+
                                 entry0.initialValue(val0,
                                     ver,
-                                    0,
-                                    0,
+                                    ttl,
+                                    expireTime,
                                     false,
                                     topVer,
                                     GridDrType.DR_LOAD,
@@ -1177,9 +1196,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         }
 
         /**
-         * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult() {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT lock fut, mini future node left [txId=" + nearLockVer +
                     ", dhtTxId=" + lockVer +

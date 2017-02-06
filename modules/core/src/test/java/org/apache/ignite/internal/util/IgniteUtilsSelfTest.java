@@ -54,7 +54,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
-import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
@@ -325,7 +324,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             col = Arrays.asList(this, this, this);
 
-            GridTestKernalContext ctx = newContext();
+            newContext();
 
             subGrid = ignite.cluster().forNodes(Collections.singleton(node));
         }

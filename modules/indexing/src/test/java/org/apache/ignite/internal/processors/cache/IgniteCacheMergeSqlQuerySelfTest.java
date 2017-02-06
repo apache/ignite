@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  *
@@ -32,7 +31,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     public void testMergeWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
-        p.query(new SqlFieldsQuery("merge into Person (_key, id, name) values ('s', ?, ?), " +
+        p.query(new SqlFieldsQuery("merge into Person (_key, id, firstName) values ('s', ?, ?), " +
             "('a', 2, 'Alex')").setArgs(1, "Sergi"));
 
         assertEquals(createPerson(1, "Sergi"), p.get("s"));
@@ -52,7 +51,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         assertEquals("Sergi", p.get("s"));
         assertEquals("Alex", p.get("a"));
 
-        p.query(new SqlFieldsQuery("merge into Person(_key, id, name) " +
+        p.query(new SqlFieldsQuery("merge into Person(_key, id, firstName) " +
             "(select substring(lower(_val), 0, 2), cast(length(_val) as int), _val from String)"));
 
         assertEquals(createPerson(5, "Sergi"), p.get("se"));
@@ -67,7 +66,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
-            "merge into Person (_key, id, name) values (cast(? as int), ?, ?), (2, (5 - 3), 'Alex')")
+            "merge into Person (_key, id, firstName) values (cast(? as int), ?, ?), (2, (5 - 3), 'Alex')")
             .setArgs("1", 1, "Sergi"));
 
         assertEquals(createPerson(1, "Sergi"), p.get(1));
@@ -82,7 +81,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
-            "merge into Person (key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
+            "merge into Person (key, id, firstName) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
 
         assertEquals(createPerson(1, "Sergi"), p.get(new Key(1)));
 
@@ -95,7 +94,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
-        p.query(new SqlFieldsQuery("merge into \"Person2\" (\"Id\", \"id\", \"name\", \"IntVal\") values (1, ?, ?, 5), " +
+        p.query(new SqlFieldsQuery("merge into \"Person2\" (\"Id\", \"id\", \"firstName\", \"IntVal\") values (1, ?, ?, 5), " +
             "(2, 3, 'Alex', 6)").setArgs(4, "Sergi"));
 
         assertEquals(createPerson2(4, "Sergi", 5), p.get(new Key2(1)));
@@ -127,7 +126,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
-            "merge into Person (key, strKey, id, name) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
+            "merge into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
 
         assertEquals(createPerson(1, "Sergi"), p.get(new Key3(1)));
 
@@ -144,7 +143,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
-            "merge into Person (key, strKey, id, name) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
+            "merge into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
 
         assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
 

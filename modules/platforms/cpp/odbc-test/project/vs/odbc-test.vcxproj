@@ -97,7 +97,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-gd-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_unit_test_framework-vc100-mt-gd-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -130,7 +130,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_unit_test_framework-vc100-mt-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -178,6 +178,7 @@
     <ClCompile Include="..\..\src\sql_operators_test.cpp" />
     <ClCompile Include="..\..\src\sql_string_functions_test.cpp" />
     <ClCompile Include="..\..\src\sql_system_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_esc_convert_function_test.cpp" />
     <ClCompile Include="..\..\src\sql_types_test.cpp" />
     <ClCompile Include="..\..\src\sql_value_expressions_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
@@ -186,6 +187,7 @@
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\complex_type.h" />
     <ClInclude Include="..\..\include\sql_test_suite_fixture.h" />
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_type.h" />

@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -73,6 +74,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_RESET_METRICS = 11;
+
+    /** */
+    public static final int OP_PREPARE = 12;
 
     /** */
     private final IgniteTransactions txs;
@@ -153,8 +157,13 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
+            case OP_PREPARE:
+                ((TransactionProxyImpl)tx(val)).tx().prepare();
+
+                return TRUE;
+
             case OP_COMMIT:
                 tx(val).commit();
 
@@ -184,7 +193,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         long txId = reader.readLong();
 
         final Transaction asyncTx = (Transaction)tx(txId).withAsync();
@@ -220,7 +229,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_START: {
                 TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());
@@ -245,7 +254,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();

@@ -3551,7 +3551,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer)
+        GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
 
         checkObsolete();
@@ -3568,9 +3569,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheObject old = rawGetOrUnmarshalUnlocked(false);
 
-                long ttl = ttlExtras();
+                long ttl;
+                long expTime;
 
-                long expTime = CU.toExpireTime(ttl);
+                if (loadExpiryPlc != null) {
+                    IgniteBiTuple<Long, Long> initTtlAndExpireTime = initialTtlAndExpireTime(loadExpiryPlc);
+
+                    ttl = initTtlAndExpireTime.get1();
+                    expTime = initTtlAndExpireTime.get2();
+                }
+                else {
+                    ttl = ttlExtras();
+                    expTime = expireTimeExtras();
+                }
 
                 // Detach value before index update.
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);

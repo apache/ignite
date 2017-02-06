@@ -33,15 +33,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\cache-identity.xml" />
     <None Include="..\..\config\cache-query.xml" />
     <None Include="..\..\config\cache-test.xml" />
+    <None Include="..\..\config\invalid.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\binary_object_test.cpp" />
+    <ClCompile Include="..\..\src\binary_identity_resolver_test.cpp" />
     <ClCompile Include="..\..\src\cache_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\decimal_test.cpp" />
     <ClCompile Include="..\..\src\dynamic_size_array_test.cpp" />
     <ClCompile Include="..\..\src\fixed_size_array_test.cpp" />
+    <ClCompile Include="..\..\src\continuous_query_test.cpp" />
     <ClCompile Include="..\..\src\ignite_error_test.cpp" />
     <ClCompile Include="..\..\src\ignition_test.cpp" />
     <ClCompile Include="..\..\src\handle_registry_test.cpp" />
@@ -53,13 +58,18 @@
     <ClCompile Include="..\..\src\interop_memory_test.cpp" />
     <ClCompile Include="..\..\src\interop_test.cpp" />
     <ClCompile Include="..\..\src\bits_test.cpp" />
+    <ClCompile Include="..\..\src\reference_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
+    <ClCompile Include="..\..\src\test_utils.cpp" />
     <ClCompile Include="..\..\src\transactions_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\binary_test_defs.h" />
     <ClInclude Include="..\..\include\ignite\binary_test_utils.h" />
+    <ClInclude Include="..\..\include\ignite\complex_type.h" />
+    <ClInclude Include="..\..\include\ignite\test_type.h" />
+    <ClInclude Include="..\..\include\ignite\test_utils.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -128,7 +138,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-gd-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-gd-1_58.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_thread-vc100-mt-gd-1_58.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_system-vc100-mt-gd-1_58.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_chrono-vc100-mt-gd-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -143,7 +153,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-gd-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BOOST_HOME)\lib32-msvc-10.0\libboost_unit_test_framework-vc100-mt-gd-1_58.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_thread-vc100-mt-gd-1_58.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_system-vc100-mt-gd-1_58.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_chrono-vc100-mt-gd-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -161,7 +171,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-1_58.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_thread-vc100-mt-1_58.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_system-vc100-mt-1_58.lib;$(BOOST_HOME)\lib64-msvc-10.0\libboost_chrono-vc100-mt-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -179,7 +189,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(BOOST_HOME)\lib64-msvc-10.0\libboost_unit_test_framework-vc100-mt-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BOOST_HOME)\lib32-msvc-10.0\libboost_unit_test_framework-vc100-mt-1_58.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_thread-vc100-mt-1_58.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_system-vc100-mt-1_58.lib;$(BOOST_HOME)\lib32-msvc-10.0\libboost_chrono-vc100-mt-1_58.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -122,6 +122,7 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
@@ -170,6 +171,21 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -44:
+                msg = new TcpCommunicationSpi.HandshakeMessage2();
+
+                break;
+
+            case -43:
+                msg = new IgniteIoTestMessage();
+
+                break;
+
+            case -42:
+                msg = new HadoopDirectShuffleMessage();
+
+                break;
+
             case -41:
                 msg = new HadoopShuffleFinishResponse();
 
@@ -810,7 +826,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-36]- this
+            // [-3..119] [124..127] [-36..-44]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:

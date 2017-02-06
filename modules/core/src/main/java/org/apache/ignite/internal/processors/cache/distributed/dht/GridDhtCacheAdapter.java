@@ -218,7 +218,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
-        preldr.onKernalStart();
+        if (preldr != null)
+            preldr.onKernalStart();
     }
 
     /** {@inheritDoc} */
@@ -757,7 +758,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
         assert ctx.affinityNode();
 
-        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(req.accessTtl());
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
         IgniteInternalFuture<GridCacheEntryInfo> fut =
             getDhtSingleAsync(
@@ -820,7 +821,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             req.addDeploymentInfo());
                     }
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -857,9 +858,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert ctx.affinityNode();
         assert !req.reload() : req;
 
-        long ttl = req.accessTtl();
-
-        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
         IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
             getDhtAsync(nodeId,
@@ -888,7 +887,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     res.entries(entries);
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -932,7 +931,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
-                        List<ClusterNode> nodes = ctx.affinity().nodes(e.getKey(), topVer);
+                        List<ClusterNode> nodes = ctx.affinity().nodesByKey(e.getKey(), topVer);
 
                         for (int i = 0; i < nodes.size(); i++) {
                             ClusterNode node = nodes.get(i);
@@ -1166,7 +1165,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PartitionEntrySet.class, this, "super", super.toString());
+            return S.toString(PartitionEntrySet.class, this, "super", super.toString(), true);
         }
     }
 
@@ -1215,7 +1214,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             return !aff1.equals(aff2);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             return true;
         }
     }

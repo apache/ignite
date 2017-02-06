@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable once CppUnusedIncludeDirective
 #include <cstring>   // needed only on linux
 #include <string>
 #include <exception>
@@ -194,33 +195,33 @@ namespace ignite
 
             const char* C_PLATFORM_PROCESSOR = "org/apache/ignite/internal/processors/platform/PlatformProcessor";
             JniMethod M_PLATFORM_PROCESSOR_RELEASE_START = JniMethod("releaseStart", "()V", false);
-            JniMethod M_PLATFORM_PROCESSOR_PROJECTION = JniMethod("projection", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CACHE = JniMethod("cache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE = JniMethod("createCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG = JniMethod("createCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = JniMethod("getOrCreateCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE = JniMethod("createNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE = JniMethod("getOrCreateNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_PROJECTION = JniMethod("projection", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_CACHE = JniMethod("cache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE = JniMethod("createCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG = JniMethod("createCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = JniMethod("getOrCreateCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE = JniMethod("createNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE = JniMethod("getOrCreateNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_DESTROY_CACHE = JniMethod("destroyCache", "(Ljava/lang/String;)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_TRANSACTIONS = JniMethod("transactions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_COMPUTE = JniMethod("compute", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_MESSAGE = JniMethod("message", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_EVENTS = JniMethod("events", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_TRANSACTIONS = JniMethod("transactions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_COMPUTE = JniMethod("compute", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_MESSAGE = JniMethod("message", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_EVENTS = JniMethod("events", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION = JniMethod("getIgniteConfiguration", "(J)V", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_CACHE_NAMES = JniMethod("getCacheNames", "(J)V", false);
             JniMethod M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED = JniMethod("loggerIsLevelEnabled", "(I)Z", false);
             JniMethod M_PLATFORM_PROCESSOR_LOGGER_LOG = JniMethod("loggerLog", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
-            JniMethod M_PLATFORM_PROCESSOR_BINARY_PROCESSOR = JniMethod("binaryProcessor", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_BINARY_PROCESSOR = JniMethod("binaryProcessor", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
 
-            const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
+            const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTargetProxy";
             JniMethod M_PLATFORM_TARGET_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(IJ)J", false);
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_LONG = JniMethod("inStreamOutLong", "(IJ)J", false);
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_OBJECT = JniMethod("inStreamOutObject", "(IJ)Ljava/lang/Object;", false);
@@ -260,7 +261,7 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_RELEASE = JniMethod("continuousQueryFilterRelease", "(JJ)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_TOPOLOGY_UPDATE = JniMethod("dataStreamerTopologyUpdate", "(JJJI)V", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_STREAM_RECEIVER_INVOKE = JniMethod("dataStreamerStreamReceiverInvoke", "(JJLjava/lang/Object;JZ)V", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_STREAM_RECEIVER_INVOKE = JniMethod("dataStreamerStreamReceiverInvoke", "(JJLorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;JZ)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_BYTE_RES = JniMethod("futureByteResult", "(JJI)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_FUTURE_BOOL_RES = JniMethod("futureBoolResult", "(JJI)V", true);
@@ -307,13 +308,16 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_LOGGER_LOG = JniMethod("loggerLog", "(JILjava/lang/String;Ljava/lang/String;Ljava/lang/String;J)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_LOGGER_IS_LEVEL_ENABLED = JniMethod("loggerIsLevelEnabled", "(JI)Z", true);
 
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJLorg/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinityFunctionTarget;)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJLorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_PARTITION = JniMethod("affinityFunctionPartition", "(JJJ)I", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS = JniMethod("affinityFunctionAssignPartitions", "(JJJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE = JniMethod("affinityFunctionRemoveNode", "(JJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY = JniMethod("affinityFunctionDestroy", "(JJ)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
+
+            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(JIJ)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_LONG_LONG_OBJECT_OUT_LONG = JniMethod("inLongLongLongObjectOutLong", "(JIJJJLjava/lang/Object;)J", true);
 
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
@@ -326,10 +330,6 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
-
-            const char* C_PLATFORM_LISTENABLE = "org/apache/ignite/internal/processors/platform/utils/PlatformListenable";
-            JniMethod M_PLATFORM_LISTENABLE_CANCEL = JniMethod("cancel", "()Z", false);
-            JniMethod M_PLATFORM_LISTENABLE_IS_CANCELED = JniMethod("isCancelled", "()Z", false);
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
@@ -552,10 +552,6 @@ namespace ignite
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
                 m_PlatformUtils_errData = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_ERR_DATA);
 
-                c_PlatformListenable = FindClass(env, C_PLATFORM_LISTENABLE);
-                m_PlatformListenable_cancel = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_CANCEL);                    
-                m_PlatformListenable_isCancelled = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_IS_CANCELED);
-
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
             }
@@ -619,92 +615,17 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[62];
+					JNINativeMethod methods[5];
 
                     int idx = 0;
 
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_CREATE, reinterpret_cast<void*>(JniCacheStoreCreate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_INVOKE, reinterpret_cast<void*>(JniCacheStoreInvoke));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_DESTROY, reinterpret_cast<void*>(JniCacheStoreDestroy));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_SESSION_CREATE, reinterpret_cast<void*>(JniCacheStoreSessionCreate));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_ENTRY_FILTER_CREATE, reinterpret_cast<void*>(JniCacheEntryFilterCreate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_ENTRY_FILTER_APPLY, reinterpret_cast<void*>(JniCacheEntryFilterApply));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_ENTRY_FILTER_DESTROY, reinterpret_cast<void*>(JniCacheEntryFilterDestroy));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CACHE_INVOKE, reinterpret_cast<void*>(JniCacheInvoke));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_MAP, reinterpret_cast<void*>(JniComputeTaskMap));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_JOB_RESULT, reinterpret_cast<void*>(JniComputeTaskJobResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_REDUCE, reinterpret_cast<void*>(JniComputeTaskReduce));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_TASK_COMPLETE, reinterpret_cast<void*>(JniComputeTaskComplete));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_SERIALIZE, reinterpret_cast<void*>(JniComputeJobSerialize));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_CREATE, reinterpret_cast<void*>(JniComputeJobCreate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_EXECUTE, reinterpret_cast<void*>(JniComputeJobExecute));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_DESTROY, reinterpret_cast<void*>(JniComputeJobDestroy));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPUTE_JOB_CANCEL, reinterpret_cast<void*>(JniComputeJobCancel));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_LSNR_APPLY, reinterpret_cast<void*>(JniContinuousQueryListenerApply));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_CREATE, reinterpret_cast<void*>(JniContinuousQueryFilterCreate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_EVAL, reinterpret_cast<void*>(JniContinuousQueryFilterApply));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONTINUOUS_QUERY_FILTER_RELEASE, reinterpret_cast<void*>(JniContinuousQueryFilterRelease));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_TOPOLOGY_UPDATE, reinterpret_cast<void*>(JniDataStreamerTopologyUpdate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_DATA_STREAMER_STREAM_RECEIVER_INVOKE, reinterpret_cast<void*>(JniDataStreamerStreamReceiverInvoke));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_BYTE_RES, reinterpret_cast<void*>(JniFutureByteResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_BOOL_RES, reinterpret_cast<void*>(JniFutureBoolResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_SHORT_RES, reinterpret_cast<void*>(JniFutureShortResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_CHAR_RES, reinterpret_cast<void*>(JniFutureCharResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_INT_RES, reinterpret_cast<void*>(JniFutureIntResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_FLOAT_RES, reinterpret_cast<void*>(JniFutureFloatResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_LONG_RES, reinterpret_cast<void*>(JniFutureLongResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_DOUBLE_RES, reinterpret_cast<void*>(JniFutureDoubleResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_OBJ_RES, reinterpret_cast<void*>(JniFutureObjectResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_NULL_RES, reinterpret_cast<void*>(JniFutureNullResult));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_FUTURE_ERR, reinterpret_cast<void*>(JniFutureError));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_LIFECYCLE_EVENT, reinterpret_cast<void*>(JniLifecycleEvent));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_CREATE, reinterpret_cast<void*>(JniMessagingFilterCreate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_APPLY, reinterpret_cast<void*>(JniMessagingFilterApply));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_DESTROY, reinterpret_cast<void*>(JniMessagingFilterDestroy));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_CREATE, reinterpret_cast<void*>(JniEventFilterCreate));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_APPLY, reinterpret_cast<void*>(JniEventFilterApply));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_DESTROY, reinterpret_cast<void*>(JniEventFilterDestroy));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_INIT, reinterpret_cast<void*>(JniServiceInit));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_EXECUTE, reinterpret_cast<void*>(JniServiceExecute));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_CANCEL, reinterpret_cast<void*>(JniServiceCancel));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_INVOKE_METHOD, reinterpret_cast<void*>(JniServiceInvokeMethod));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CLUSTER_NODE_FILTER_APPLY, reinterpret_cast<void*>(JniClusterNodeFilterApply));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_NODE_INFO, reinterpret_cast<void*>(JniNodeInfo));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MEMORY_REALLOCATE, reinterpret_cast<void*>(JniMemoryReallocate));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_START, reinterpret_cast<void*>(JniOnStart));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_STOP, reinterpret_cast<void*>(JniOnStop));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongOutLong));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongLongOutLong));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED, reinterpret_cast<void*>(JniOnClientDisconnected));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED, reinterpret_cast<void*>(JniOnClientReconnected));
-
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT, reinterpret_cast<void*>(JniAffinityFunctionInit));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_PARTITION, reinterpret_cast<void*>(JniAffinityFunctionPartition));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS, reinterpret_cast<void*>(JniAffinityFunctionAssignPartitions));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE, reinterpret_cast<void*>(JniAffinityFunctionRemoveNode));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY, reinterpret_cast<void*>(JniAffinityFunctionDestroy));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE, reinterpret_cast<void*>(JniConsoleWrite));
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_LOGGER_LOG, reinterpret_cast<void*>(JniLoggerLog));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_LOGGER_IS_LEVEL_ENABLED, reinterpret_cast<void*>(JniLoggerIsLevelEnabled));
+
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniInLongOutLong));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_LONG_LONG_LONG_OBJECT_OUT_LONG, reinterpret_cast<void*>(JniInLongLongLongObjectOutLong));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -1436,37 +1357,15 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr) {
+            jobject JniContext::CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(
                     obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObject, type, memPtr);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, err);
 
                 return LocalToGlobal(env, res);
-            }
-
-            bool JniContext::ListenableCancel(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_cancel);
-
-                ExceptionCheck(env);
-
-                return res != 0;;
-            }
-
-            bool JniContext::ListenableIsCancelled(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_isCancelled);
-
-                ExceptionCheck(env);
-
-                return res != 0;;
             }
 
 			jobject JniContext::Acquire(jobject obj)
@@ -1647,257 +1546,13 @@ namespace ignite
                     return NULL;
             }
 
-            JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreCreateHandler, cacheStoreCreate, memPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniCacheStoreDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, CacheStoreDestroyHandler, cacheStoreDestroy, objPtr);
-            }
-
-            JNIEXPORT jlong JNICALL JniCacheStoreSessionCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong storePtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreSessionCreateHandler, cacheStoreSessionCreate, storePtr);
-            }
-
-            JNIEXPORT jlong JNICALL JniCacheEntryFilterCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, CacheEntryFilterCreateHandler, cacheEntryFilterCreate, memPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniCacheEntryFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, CacheEntryFilterApplyHandler, cacheEntryFilterApply, objPtr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniCacheEntryFilterDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, CacheEntryFilterDestroyHandler, cacheEntryFilterDestroy, objPtr);
-            }
-
-            JNIEXPORT void JNICALL JniCacheInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong inMemPtr, jlong outMemPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, CacheInvokeHandler, cacheInvoke, inMemPtr, outMemPtr);
-            }
-
-            JNIEXPORT void JNICALL JniComputeTaskMap(JNIEnv *env, jclass cls, jlong envPtr, jlong taskPtr, jlong inMemPtr, jlong outMemPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ComputeTaskMapHandler, computeTaskMap, taskPtr, inMemPtr, outMemPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniComputeTaskJobResult(JNIEnv *env, jclass cls, jlong envPtr, jlong taskPtr, jlong jobPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ComputeTaskJobResultHandler, computeTaskJobRes, taskPtr, jobPtr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniComputeTaskReduce(JNIEnv *env, jclass cls, jlong envPtr, jlong taskPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ComputeTaskReduceHandler, computeTaskReduce, taskPtr);
-            }
-
-            JNIEXPORT void JNICALL JniComputeTaskComplete(JNIEnv *env, jclass cls, jlong envPtr, jlong taskPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ComputeTaskCompleteHandler, computeTaskComplete, taskPtr, memPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniComputeJobSerialize(JNIEnv *env, jclass cls, jlong envPtr, jlong jobPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ComputeJobSerializeHandler, computeJobSerialize, jobPtr, memPtr);
-            }
-
-            JNIEXPORT jlong JNICALL JniComputeJobCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ComputeJobCreateHandler, computeJobCreate, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniComputeJobExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong jobPtr, jint cancel, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ComputeJobExecuteHandler, computeJobExec, jobPtr, cancel, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniComputeJobCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong jobPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ComputeJobCancelHandler, computeJobCancel, jobPtr);
-            }
-
-            JNIEXPORT void JNICALL JniComputeJobDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong jobPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ComputeJobDestroyHandler, computeJobDestroy, jobPtr);
-            }
-
-            JNIEXPORT void JNICALL JniContinuousQueryListenerApply(JNIEnv *env, jclass cls, jlong envPtr, jlong cbPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ContinuousQueryListenerApplyHandler, contQryLsnrApply, cbPtr, memPtr);
-            }
-
-            JNIEXPORT jlong JNICALL JniContinuousQueryFilterCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ContinuousQueryFilterCreateHandler, contQryFilterCreate, memPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniContinuousQueryFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong filterPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ContinuousQueryFilterApplyHandler, contQryFilterApply, filterPtr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniContinuousQueryFilterRelease(JNIEnv *env, jclass cls, jlong envPtr, jlong filterPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ContinuousQueryFilterReleaseHandler, contQryFilterRelease, filterPtr);
-            }
-
-            JNIEXPORT void JNICALL JniDataStreamerTopologyUpdate(JNIEnv *env, jclass cls, jlong envPtr, jlong ldrPtr, jlong topVer, jint topSize) {
-                IGNITE_SAFE_PROC(env, envPtr, DataStreamerTopologyUpdateHandler, dataStreamerTopologyUpdate, ldrPtr, topVer, topSize);
-            }
-
-            JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable) {
-                jobject cache0 = env->NewGlobalRef(cache);
-
-                if (cache0)
-                {
-                    JniGlobalRefGuard guard(env, cache0);
-
-                    IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache0, memPtr, keepPortable);
-                }
-            }
-
-            JNIEXPORT void JNICALL JniFutureByteResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureByteResultHandler, futByteRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureBoolResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureBoolResultHandler, futBoolRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureShortResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureShortResultHandler, futShortRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureCharResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureCharResultHandler, futCharRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureIntResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureIntResultHandler, futIntRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureFloatResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jfloat res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureFloatResultHandler, futFloatRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureLongResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jlong res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureLongResultHandler, futLongRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureDoubleResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jdouble res) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureDoubleResultHandler, futDoubleRes, futPtr, res);
-            }
-
-            JNIEXPORT void JNICALL JniFutureObjectResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureObjectResultHandler, futObjRes, futPtr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniFutureNullResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureNullResultHandler, futNullRes, futPtr);
-            }
-
-            JNIEXPORT void JNICALL JniFutureError(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, FutureErrorHandler, futErr, futPtr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniLifecycleEvent(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jint evt) {
-                IGNITE_SAFE_PROC(env, envPtr, LifecycleEventHandler, lifecycleEvt, ptr, evt);
-            }
-
-            JNIEXPORT void JNICALL JniMemoryReallocate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr, jint cap) {
-                IGNITE_SAFE_PROC(env, envPtr, MemoryReallocateHandler, memRealloc, memPtr, cap);
-            }
-
-            JNIEXPORT jlong JNICALL JniMessagingFilterCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, MessagingFilterCreateHandler, messagingFilterCreate, memPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniMessagingFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, MessagingFilterApplyHandler, messagingFilterApply, ptr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniMessagingFilterDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
-                IGNITE_SAFE_PROC(env, envPtr, MessagingFilterDestroyHandler, messagingFilterDestroy, ptr);
-            }
-
-            JNIEXPORT jlong JNICALL JniEventFilterCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, EventFilterCreateHandler, eventFilterCreate, memPtr);
-            }
-
-            JNIEXPORT jint JNICALL JniEventFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, EventFilterApplyHandler, eventFilterApply, ptr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniEventFilterDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
-                IGNITE_SAFE_PROC(env, envPtr, EventFilterDestroyHandler, eventFilterDestroy, ptr);
-            }
-
-            JNIEXPORT jlong JNICALL JniServiceInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ServiceInitHandler, serviceInit, memPtr);
-            }
-
-			JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ServiceExecuteHandler, serviceExecute, svcPtr, memPtr);
-            }
-
-			JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ServiceCancelHandler, serviceCancel, svcPtr, memPtr);
-            }
-
-			JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, ServiceInvokeMethodHandler, serviceInvokeMethod, svcPtr, inMemPtr, outMemPtr);
-            }
-
-			JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-				IGNITE_SAFE_FUNC(env, envPtr, ClusterNodeFilterApplyHandler, clusterNodeFilterApply, memPtr);
-            }
-
-            JNIEXPORT jlong JNICALL JniNodeInfo(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, NodeInfoHandler, nodeInfo, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject proc, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, proc, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr) {
-                IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnStopHandler, onStop);
-            }
-
-            JNIEXPORT jlong JNICALL JniExtensionCallbackInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1) {
-                IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongOutLongHandler, extensionCallbackInLongOutLong, typ, arg1);
-            }
-
-            JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
-                IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
-            }
-
-            JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr) {
-                IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnClientDisconnectedHandler, onClientDisconnected);
-            }
-
-            JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted) {
-                IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
-            }
-
-            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr, jobject baseFunc) {
-                void* baseFuncRef = baseFunc ? env->NewGlobalRef(baseFunc) : 0;
-                IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionInitHandler, affinityFunctionInit, memPtr, baseFuncRef);
-            }
-
-            JNIEXPORT jint JNICALL JniAffinityFunctionPartition(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionPartitionHandler, affinityFunctionPartition, ptr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionAssignPartitionsHandler, affinityFunctionAssignPartitions, ptr, inMemPtr, outMemPtr);
-            }
-
-            JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionRemoveNodeHandler, affinityFunctionRemoveNode, ptr, memPtr);
-            }
-
-            JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
-                IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionDestroyHandler, affinityFunctionDestroy, ptr);
-            }
-
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
                 CONSOLE_LOCK.Enter();
 
                 if (consoleWriteHandlers.size() > 0) {
                     ConsoleWriteHandler consoleWrite = consoleWriteHandlers.at(0);
 
-                    const char* strChars = env->GetStringUTFChars(str, nullptr);
+                    const char* strChars = env->GetStringUTFChars(str, 0);
                     const int strCharsLen = env->GetStringUTFLength(str);
 
                     consoleWrite(strChars, strCharsLen, isErr);
@@ -1932,6 +1587,14 @@ namespace ignite
 
             JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
                 IGNITE_SAFE_FUNC(env, envPtr, LoggerIsLevelEnabledHandler, loggerIsLevelEnabled, level);
+            }
+
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val) {
+                IGNITE_SAFE_FUNC(env, envPtr, InLongOutLongHandler, inLongOutLong, type, val);
+            }
+
+            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg) {
+                IGNITE_SAFE_FUNC(env, envPtr, InLongLongLongObjectOutLongHandler, inLongLongLongObjectOutLong, type, val1, val2, val3, arg);
             }
         }
     }

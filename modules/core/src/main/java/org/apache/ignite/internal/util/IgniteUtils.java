@@ -153,7 +153,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -236,7 +235,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.SharedSecrets;
 import sun.misc.URLClassPath;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
@@ -506,10 +504,27 @@ public abstract class IgniteUtils {
         }
     };
 
-    /**
-     * Initializes enterprise check.
+    /** */
+    private static final boolean assertionsEnabled;
+
+    /*
+     *
      */
     static {
+        boolean assertionsEnabled0 = true;
+
+        try {
+            assert false;
+
+            assertionsEnabled0 = false;
+        }
+        catch (AssertionError ignored) {
+            assertionsEnabled0 = true;
+        }
+        finally {
+            assertionsEnabled = assertionsEnabled0;
+        }
+
         String osName = System.getProperty("os.name");
 
         String osLow = osName.toLowerCase();
@@ -1281,6 +1296,27 @@ public abstract class IgniteUtils {
             deadlockedThreadsIds = Collections.emptySet();
 
         return deadlockedThreadsIds;
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @param sb Builder.
+     */
+    public static void printStackTrace(long threadId, GridStringBuilder sb) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        ThreadInfo threadInfo = mxBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+
+        printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
+    }
+
+    /**
+     * @return {@code true} if there is java level deadlock.
+     */
+    public static boolean deadlockPresent() {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        return !F.isEmpty(mxBean.findDeadlockedThreads());
     }
 
     /**
@@ -6141,6 +6177,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return {@code True} if assertions enabled.
+     */
+    public static boolean assertionsEnabled() {
+        return assertionsEnabled;
+    }
+
+    /**
      * Gets OS JDK string.
      *
      * @return OS JDK string.
@@ -8337,6 +8380,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
      * Gets wrapper class for a primitive type.
      *
      * @param cls Class. If {@code null}, method is no-op.
@@ -9419,7 +9474,7 @@ public abstract class IgniteUtils {
 
                 return fld;
             }
-            catch (NoSuchFieldException e) {
+            catch (NoSuchFieldException ignored) {
                 // No-op.
             }
 

@@ -44,6 +44,34 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getLocalPort();
 
     /**
+     * Returns {@code true} if {@code TcpCommunicationSpi} should
+     * maintain connection for outgoing and incoming messages separately.
+     * In this case total number of connections between local and some remote node
+     * is {@link #getConnectionsPerNode()} * 2.
+     * <p>
+     * Returns {@code false} if each connection of {@link #getConnectionsPerNode()}
+     * should be used for outgoing and incoming messages.
+     * <p>
+     * Default is {@code false}.
+     *
+     * @return {@code true} to use paired connections and {@code false} otherwise.
+     * @see #getConnectionsPerNode()
+     */
+    @MXBeanDescription("Paired connections used.")
+    public boolean isUsePairedConnections();
+
+    /**
+     * Gets number of connections to each remote node. if {@link #isUsePairedConnections()}
+     * is {@code true} then number of connections is doubled and half is used for incoming and
+     * half for outgoing messages.
+     *
+     * @return Number of connections per node.
+     * @see #isUsePairedConnections()
+     */
+    @MXBeanDescription("Connections per node.")
+    public int getConnectionsPerNode();
+
+    /**
      * Gets local port for shared memory communication.
      *
      * @return Port number.
@@ -151,6 +179,16 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Reconnect count on connection failure.")
     public int getReconnectCount();
+
+    /**
+     * Defines how many non-blocking {@code selector.selectNow()} should be made before
+     * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+     * Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
+     *
+     * @return Selector thread busy-loop iterations.
+     */
+    @MXBeanDescription("Selector thread busy-loop iterations.")
+    public long getSelectorSpins();
 
     /**
      * Gets value for {@code TCP_NODELAY} socket option.

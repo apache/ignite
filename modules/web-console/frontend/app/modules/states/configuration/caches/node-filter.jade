@@ -54,6 +54,6 @@ include /app/helpers/jade/mixins.jade
                         -var required = nodeFilterKind + ' === "Custom"'
 
                         +java-class('Class name:', customNodeFilter + '.className', '"customNodeFilter"',
-                            'true', required, 'Class name of custom node filter implementation')
+                            'true', required, 'Class name of custom node filter implementation', required)
             .col-sm-6
                 +preview-xml-java(model, 'cacheNodeFilter', 'igfss')

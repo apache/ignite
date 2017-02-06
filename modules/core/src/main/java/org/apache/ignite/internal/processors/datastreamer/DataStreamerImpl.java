@@ -1651,9 +1651,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 GridDeployment dep = null;
-                GridPeerDeployAware jobPda0 = null;
-
-                jobPda0 = jobPda;
+                GridPeerDeployAware jobPda0 = jobPda;
 
                 if (ctx.deploy().enabled() && jobPda0 != null) {
                     try {
@@ -1945,7 +1943,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         expiryTime = CU.toExpireTime(ttl);
                     }
 
-                    boolean primary = cctx.affinity().primary(cctx.localNode(), entry.key(), topVer);
+                    boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
                     entry.initialValue(e.getValue(),
                         ver,

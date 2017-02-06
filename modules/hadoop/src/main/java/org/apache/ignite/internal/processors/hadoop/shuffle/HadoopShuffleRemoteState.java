@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.lang.IgniteInClosure;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Remote shuffle state.
  */
-class HadoopShuffleRemoteState<T> {
+class HadoopShuffleRemoteState {
     /** Message count. */
     private final AtomicLong msgCnt = new AtomicLong();
 

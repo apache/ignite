@@ -21,7 +21,7 @@
 	<Product Name='Apache Ignite ODBC 64-bit Driver' Manufacturer='The Apache Software Foundation'
 		Id='F3E308E4-910C-4AF5-82DE-2ACF4D64830E' 
 		UpgradeCode='1D7AEFDF-6CD2-4FB5-88F2-811A89832D6D'
-		Language='1033' Codepage='1252' Version='1.6.7.0'>
+		Language='1033' Codepage='1252' Version='2.0.0.16694'>
 		
 		<Package Id='*' Keywords='Installer' Description="Apache Ignite ODBC 64-bit Driver Installer"
 			Comments='Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
