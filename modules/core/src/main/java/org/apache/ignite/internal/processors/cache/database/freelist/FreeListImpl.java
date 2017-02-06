@@ -361,7 +361,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             boolean reuseBucket = false;
 
             // TODO: properly handle reuse bucket.
-            for (int b = bucket; b < BUCKETS - 1; b++) {
+            for (int b = bucket + 1; b < BUCKETS - 1; b++) {
                 pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
 
                 if (pageId != 0L) {
@@ -370,6 +370,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     break;
                 }
             }
+
+            if (pageId == 0L)
+                pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
 
             try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
