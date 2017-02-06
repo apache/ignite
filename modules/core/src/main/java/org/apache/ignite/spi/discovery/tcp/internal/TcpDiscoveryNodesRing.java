@@ -71,7 +71,7 @@ public class TcpDiscoveryNodesRing {
 
     /** Number of old nodes in topology. */
     @GridToStringExclude
-    private final AtomicLong oldNodesCount = new AtomicLong(0L);
+    private long oldNodesCount = 0L;
 
     /** Current topology version */
     private long topVer;
@@ -240,8 +240,7 @@ public class TcpDiscoveryNodesRing {
 
             nodesMap.put(node.id(), node);
 
-            assert node.version().greaterThanEqual(1, 9, 0): node.version().toString();
-            if (!node.version().greaterThanEqual(1, 9, 0) && oldNodesCount.getAndIncrement()>0) {
+            if (!node.version().greaterThanEqual(1, 9, 0) && oldNodesCount++>0) {
                 TreeSet nodesTmp = new TreeSet<>();
                 nodesTmp.addAll(nodes);
                 nodes = nodesTmp;
@@ -305,6 +304,12 @@ public class TcpDiscoveryNodesRing {
 
             boolean firstAdd = true;
 
+
+            for (TcpDiscoveryNode node : nodes) {
+                if (!node.version().greaterThanEqual(1, 9, 0))
+                    oldNodesCount++;
+            }
+
             for (TcpDiscoveryNode node : nodes) {
                 if (nodesMap.containsKey(node.id()))
                     continue;
@@ -312,7 +317,7 @@ public class TcpDiscoveryNodesRing {
                 nodesMap.put(node.id(), node);
 
                 if (firstAdd) {
-                    if (!node.version().greaterThanEqual(1, 9, 0) && oldNodesCount.getAndIncrement()>0) {
+                    if (oldNodesCount>0) {
                         TreeSet nodesTmp = new TreeSet<>();
                         nodesTmp.addAll(this.nodes);
                         this.nodes = nodesTmp;
@@ -376,8 +381,7 @@ public class TcpDiscoveryNodesRing {
             TcpDiscoveryNode rmv = nodesMap.remove(nodeId);
 
             if (rmv != null) {
-                assert rmv.version().greaterThanEqual(1, 9, 0): rmv.version().toString();
-                if (!rmv.version().greaterThanEqual(1, 9, 0) && oldNodesCount.decrementAndGet()<=0) {
+                if (!rmv.version().greaterThanEqual(1, 9, 0) && --oldNodesCount<=0) {
                     TreeSet nodesTmp = new TreeSet<>(nodeComparator);
                     nodesTmp.addAll(nodes);
                     nodes = nodesTmp;
@@ -408,7 +412,7 @@ public class TcpDiscoveryNodesRing {
 
         try {
             nodes = new TreeSet<>(nodeComparator);
-            oldNodesCount.set(0L);
+            oldNodesCount = 0L;
 
             if (locNode != null) {
                 nodes.add(locNode);
