@@ -299,10 +299,10 @@ public class IgniteJdbcDriver implements Driver {
     private static final String PARAM_STREAMING_FLUSH_FREQ = "streamingFlushFrequency";
 
     /** DML streaming node buffer size. */
-    private static final String PARAM_STREAMING_NODE_BUFFER_SIZE = "streamingBufferSizePerNode";
+    private static final String PARAM_STREAMING_PER_NODE_BUF_SIZE = "streamingPerNodeBufferSize";
 
     /** DML streaming parallel operations per node. */
-    private static final String PARAM_STREAMING_NODE_PAR_OPS = "streamingParallelOperationsPerNode";
+    private static final String PARAM_STREAMING_PER_NODE_PAR_OPS = "streamingPerNodeParallelOperations";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
@@ -332,10 +332,10 @@ public class IgniteJdbcDriver implements Driver {
     public static final String PROP_STREAM_FLUSH_FREQ = PROP_PREFIX + PARAM_STREAMING_FLUSH_FREQ;
 
     /** DML stream node buffer size property name. */
-    public static final String PROP_STREAM_NODE_BUFFER_SIZE = PROP_PREFIX + PARAM_STREAMING_NODE_BUFFER_SIZE;
+    public static final String PROP_STREAM_NODE_BUFFER_SIZE = PROP_PREFIX + PARAM_STREAMING_PER_NODE_BUF_SIZE;
 
     /** DML stream parallel operations per node property name. */
-    public static final String PROP_STREAM_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_NODE_PAR_OPS;
+    public static final String PROP_STREAM_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
