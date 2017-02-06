@@ -105,7 +105,7 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
             nodes.add(factory.get(i % REGIONS));
 
         ArrayList<TcpDiscoveryNode> sortedNodes = new ArrayList<>(nodes);
-        sortedNodes.sort(comparator);
+        Collections.sort(sortedNodes, comparator);
 
         int i = 0;
         for (int r = 1; r <= REGIONS; r++) {
@@ -129,8 +129,10 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
          * @return Node without id and CLUSTER_REGION_ID.
          */
         private TcpDiscoveryNode getRaw() {
-            TcpDiscoveryNode node = new TcpDiscoveryNode(new UUID(0L, id.getAndIncrement()), Collections.singletonList("1.1.1.1"),
+            return new TcpDiscoveryNode(new UUID(0L, id.getAndIncrement()), Collections.singletonList("1.1.1.1"),
                 Collections.singletonList("1.1.1.1"), 88, new DiscoveryMetricsProvider() {
+                private final Map<Integer, CacheMetrics> EMPTY = new HashMap<Integer, CacheMetrics>(0);
+
                 @Override
                 public ClusterMetrics metrics() {
                     return null;
@@ -138,11 +140,9 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
 
                 @Override
                 public Map<Integer, CacheMetrics> cacheMetrics() {
-                    return Collections.EMPTY_MAP;
+                    return EMPTY;
                 }
             }, new IgniteProductVersion(), null);
-
-            return node;
         }
 
         /**
@@ -199,15 +199,17 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < N; i++) {
                 T obj = factory.get();
-                T exist = set.putIfAbsent(obj, obj);
-                if (exist != null) {
+                if (set.containsKey(obj)) {
+                    T exist = set.get(obj);
                     if (comparator.compare(obj, exist) != 0)
                         return new Pair<>(obj, exist);
                     if (comparator.compare(exist, obj) != 0)
                         return new Pair<>(exist, obj);
+                } else {
+                    set.put(obj, obj);
+                    if (comparator.compare(obj, obj) != 0)
+                        return new Pair<>(obj, obj);
                 }
-                if (comparator.compare(obj, obj) != 0)
-                    return new Pair<>(obj, obj);
             }
 
             return null;

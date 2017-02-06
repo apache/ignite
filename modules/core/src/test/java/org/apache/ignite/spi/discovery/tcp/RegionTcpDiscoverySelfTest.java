@@ -116,6 +116,17 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         super();
     }
 
+    private static void addRegion(Map<String, Object>  attrs, String name){
+        final long region;
+        if (regionIds.containsKey(name))
+            region = regionIds.get(name);
+        else {
+            region = regionCount.getAndIncrement();
+            regionIds.put(name, region);
+        }
+        attrs.put("CLUSTER_REGION_ID", region);
+    }
+
     /** {@inheritDoc} */
     @Override
     protected TcpDiscoverySpi getTcpDiscoverySpi() {
@@ -127,11 +138,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -147,11 +154,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -167,11 +170,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -187,11 +186,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -207,11 +202,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -232,11 +223,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -252,11 +239,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -272,11 +255,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -297,11 +276,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
@@ -317,11 +292,7 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs,
             IgniteProductVersion ver) {
-            long region = regionCount.getAndIncrement();
-            Long exist = regionIds.putIfAbsent(getName(), region);
-            if (exist != null)
-                region = exist;
-            attrs.putIfAbsent("CLUSTER_REGION_ID", region);
+            addRegion(attrs, getName());
             super.setNodeAttributes(attrs, ver);
         }
     }
