@@ -326,16 +326,16 @@ public class IgniteJdbcDriver implements Driver {
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** DML streaming property name. */
-    public static final String PROP_STREAM = PROP_PREFIX + PARAM_STREAMING;
+    public static final String PROP_STREAMING = PROP_PREFIX + PARAM_STREAMING;
 
     /** DML stream auto flush frequency property name. */
-    public static final String PROP_STREAM_FLUSH_FREQ = PROP_PREFIX + PARAM_STREAMING_FLUSH_FREQ;
+    public static final String PROP_STREAMING_FLUSH_FREQ = PROP_PREFIX + PARAM_STREAMING_FLUSH_FREQ;
 
     /** DML stream node buffer size property name. */
-    public static final String PROP_STREAM_NODE_BUFFER_SIZE = PROP_PREFIX + PARAM_STREAMING_PER_NODE_BUF_SIZE;
+    public static final String PROP_STREAMING_PER_NODE_BUF_SIZE = PROP_PREFIX + PARAM_STREAMING_PER_NODE_BUF_SIZE;
 
     /** DML stream parallel operations per node property name. */
-    public static final String PROP_STREAM_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
+    public static final String PROP_STREAMING_PER_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";

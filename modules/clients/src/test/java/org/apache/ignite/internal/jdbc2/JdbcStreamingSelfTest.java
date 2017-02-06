@@ -103,8 +103,8 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         Properties props = new Properties();
 
-        props.setProperty(IgniteJdbcDriver.PROP_STREAM, "true");
-        props.setProperty(IgniteJdbcDriver.PROP_STREAM_FLUSH_FREQ, "500");
+        props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
+        props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, "500");
 
         conn = DriverManager.getConnection(BASE_URL, props);
     }
