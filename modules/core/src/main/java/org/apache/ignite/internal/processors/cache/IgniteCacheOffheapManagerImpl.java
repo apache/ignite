@@ -387,21 +387,28 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         GridIterator<CacheDataRow> it = rowsIterator(true, true, null);
 
         while (it.hasNext()) {
-            KeyCacheObject key = it.next().key();
+            cctx.shared().database().checkpointReadLock();
 
             try {
-                if (obsoleteVer == null)
-                    obsoleteVer = cctx.versions().next();
+                KeyCacheObject key = it.next().key();
 
-                GridCacheEntryEx entry = cctx.cache().entryEx(key);
+                try {
+                    if (obsoleteVer == null)
+                        obsoleteVer = cctx.versions().next();
 
-                entry.clear(obsoleteVer, readers);
+                    GridCacheEntryEx entry = cctx.cache().entryEx(key);
+
+                    entry.clear(obsoleteVer, readers);
+                }
+                catch (GridDhtInvalidPartitionException ignore) {
+                    // Ignore.
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to clear cache entry: " + key, e);
+                }
             }
-            catch (GridDhtInvalidPartitionException ignore) {
-                // Ignore.
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to clear cache entry: " + key, e);
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
             }
         }
     }
@@ -762,30 +769,37 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         int amount
     ) throws IgniteCheckedException {
         if (pendingEntries != null) {
-            GridCacheVersion obsoleteVer = null;
+            cctx.shared().database().checkpointReadLock();
 
-            long now = U.currentTimeMillis();
+            try {
+                GridCacheVersion obsoleteVer = null;
 
-            GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
+                long now = U.currentTimeMillis();
 
-            int cleared = 0;
+                GridCursor<PendingRow> cur = pendingEntries.find(START_PENDING_ROW, new PendingRow(now, 0));
 
-            while (cur.next()) {
-                PendingRow row = cur.get();
+                int cleared = 0;
 
-                if (amount != -1 && cleared > amount)
-                    return true;
+                while (cur.next()) {
+                    PendingRow row = cur.get();
 
-                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                    if (amount != -1 && cleared > amount)
+                        return true;
 
-                if (pendingEntries.remove(row) != null) {
-                    if (obsoleteVer == null)
-                        obsoleteVer = cctx.versions().next();
+                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
+                    if (pendingEntries.remove(row) != null) {
+                        if (obsoleteVer == null)
+                            obsoleteVer = cctx.versions().next();
+
+                        c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
+                    }
+
+                    cleared++;
                 }
-
-                cleared++;
+            }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
             }
         }
 

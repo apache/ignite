@@ -1947,7 +1947,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (req.stop()) {
                     stopGateway(req);
 
-                    prepareCacheStop(req);
+                    sharedCtx.database().checkpointReadLock();
+
+                    try {
+                        prepareCacheStop(req);
+                    }
+                    finally {
+                        sharedCtx.database().checkpointReadUnlock();
+                    }
                 }
                 else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
                     IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
