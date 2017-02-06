@@ -17,120 +17,57 @@
 
 package org.apache.ignite.internal.suggestions;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
 
 /**
  * Java Virtual Machine configuration suggestions.
  */
 public class JvmConfigurationSuggestions {
-    private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
-
     private static final String XMX = "-Xmx";
     private static final String MX = "-mx";
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
     private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
     private static final String USE_TLAB = "-XX:+UseTLAB";
     private static final String SERVER = "-server";
-    private static final String PRINT_GC_DETAILS = "-XX:+PrintGCDetails";
-    private static final String PRINT_GC_TIME_STAMPS = "-XX:+PrintGCTimeStamps";
-    private static final String PRINT_GC_DATE_STAMPS = "-XX:+PrintGCDateStamps";
-    private static final String USE_GC_LOG_FILE_ROTATION = "-XX:+UseGCLogFileRotation";
-    private static final String NUMBER_OF_GC_LOG_FILES = "-XX:NumberOfGCLogFiles";
-    private static final String GC_LOG_FILE_SIZE = "-XX:GCLogFileSize";
-    private static final String XLOGGC = "-Xloggc";
     private static final String USE_G1_GC = "-XX:+UseG1GC";
 
     /**
-     * Log suggestions of JVM configuration tuning to increase Ignite performance.
+     * Checks JVM configurations and produces tuning suggestions.
      *
-     * @param log - Logger.
+     * @return - list of suggestions of Java Virtual Machine configuration tuning to increase Ignite performance.
      */
-    public static synchronized void logSuggestions(@NotNull IgniteLogger log) {
-        if (disabled)
-            return;
+    @NotNull
+    public static synchronized List<String> getSuggestions() {
+        List<String> suggestions = new ArrayList<>();
 
         if (U.heapSize(1) > 30.5)
-            U.quietAndInfo(log, "Heap size is greater than 30.5Gb, JVM will not use compressed oops.");
+            suggestions.add("JVM heap size is greater than 30.5Gb, JVM will not use compressed oops");
 
         List<String> args = U.jvmArgs();
-        List<String> gcLoggingOptions = getGCLoggingOptions(args);
 
-        if (!gcLoggingOptions.isEmpty()) {
-            U.quietAndInfo(log, "JVM Garbage Collection logging is not configured properly.");
-            U.quietAndInfo(log, "Please, add the following parameters to the JVM configuration:");
-            for (String option : gcLoggingOptions)
-                U.quietAndInfo(log, "    " + option);
-        }
-
-        List<String> jvmOptions = getRecommendedOptions(args);
-
-        if (!jvmOptions.isEmpty()) {
-            U.quietAndInfo(log, "Use the following JVM-options to increase Ignite performance:");
-            for (String option : jvmOptions)
-                U.quietAndInfo(log, "    " + option);
-        }
-
-        if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC)) {
-            U.quietAndInfo(log, "For JDK 1.8 use the G1 garbage collector:");
-            U.quietAndInfo(log, "    " + USE_G1_GC);
-        }
-    }
-
-    @NotNull
-    private static List<String> getGCLoggingOptions(@NotNull List<String> args) {
-        List<String> options = new LinkedList<>();
-
-        if (!args.contains(PRINT_GC_DETAILS))
-            options.add(PRINT_GC_DETAILS);
-
-        if (!args.contains(PRINT_GC_TIME_STAMPS))
-            options.add(PRINT_GC_TIME_STAMPS);
-
-        if (!args.contains(PRINT_GC_DATE_STAMPS))
-            options.add(PRINT_GC_DATE_STAMPS);
-
-        if (!args.contains(USE_GC_LOG_FILE_ROTATION))
-            options.add(USE_GC_LOG_FILE_ROTATION);
-
-        if (!anyStartWith(args, NUMBER_OF_GC_LOG_FILES))
-            options.add(NUMBER_OF_GC_LOG_FILES + "=10");
-
-        if (!anyStartWith(args, GC_LOG_FILE_SIZE))
-            options.add(GC_LOG_FILE_SIZE + "=100M");
-
-        if (!anyStartWith(args, XLOGGC))
-            options.add(XLOGGC + ":/path/to/gc/logs/log.txt");
-
-        return options;
-    }
-
-    @NotNull
-    private static List<String> getRecommendedOptions(@NotNull List<String> args) {
-        List<String> options = new LinkedList<>();
-        // option '-server' isn't in input arguments
         if (!U.jvmName().toLowerCase().contains("server"))
-            options.add(SERVER);
+            suggestions.add("Enable server mode for JVM (add '" + SERVER + "' to JVM options)");
+
+        if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC))
+            suggestions.add("Enable G1 Garbage Collector (add '" + USE_G1_GC + "' to JVM options");
 
         if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
-            options.add(XMX + "<size>[g|G|m|M|k|K]");
+            suggestions.add("Specify JVM heap max size (add '" + XMX + "<size>[g|G|m|M|k|K]' to JVM options)");
 
         if (!anyStartWith(args, MAX_DIRECT_MEMORY_SIZE))
-            options.add(MAX_DIRECT_MEMORY_SIZE + "=<size>[g|G|m|M|k|K]");
+            suggestions.add("Specify New I/O max total size (add '" + MAX_DIRECT_MEMORY_SIZE + "=<size>[g|G|m|M|k|K]' to JVM options)");
 
         if (!args.contains(USE_TLAB))
-            options.add(USE_TLAB);
+            suggestions.add("Enable using thread-local allocation blocks (add '" + USE_TLAB + "' to JVM options)");
 
         if (!args.contains(DISABLE_EXPLICIT_GC))
-            options.add(DISABLE_EXPLICIT_GC);
+            suggestions.add("Disable processing of calls to System.gc() (add '" + DISABLE_EXPLICIT_GC + "' to JVM options)");
 
-        return options;
+        return suggestions;
     }
 
     private static boolean anyStartWith(@NotNull List<String> lines, @NotNull String prefix) {

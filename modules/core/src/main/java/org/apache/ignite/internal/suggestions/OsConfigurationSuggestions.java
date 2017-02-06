@@ -23,22 +23,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
 
 /**
  * Operation System configuration suggestions.
  */
 public class OsConfigurationSuggestions {
-    private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
-
     private static final String VM_PARAMS_BASE_PATH = "/proc/sys/vm/";
     private static final String DIRTY_WRITEBACK_CENTISECS = "dirty_writeback_centisecs";
     private static final String DIRTY_EXPIRE_CENTISECS = "dirty_expire_centisecs";
@@ -47,41 +41,34 @@ public class OsConfigurationSuggestions {
     private static final String EXTRA_FREE_KBYTES = "extra_free_kbytes";
 
     /**
-     * Log suggestions of Operation system configuration tuning to increase Ignite performance.
+     * Checks os configurations and produces tuning suggestions.
      *
-     * @param log - Logger.
+     * @return - list of suggestions of Operation system configuration tuning to increase Ignite performance.
      */
-    public static synchronized void logSuggestions(@NotNull IgniteLogger log) {
-        if (disabled)
-            return;
+    @NotNull
+    public static synchronized List<String> getSuggestions() {
+        List<String> suggestions = new ArrayList<>();
 
         if (isRedHat()) {
-            List<String> suggestions = new LinkedList<>();
-            String sysctlWVM = "sysctl –w vm.";
-            String value;
+            String setParamMessage = "Set OS parameter: vm.";
+            String value, expected;
 
-            if ((value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals("500"))
-                suggestions.add(sysctlWVM + DIRTY_WRITEBACK_CENTISECS + "=500");
+            if ((value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals(expected = "500"))
+                suggestions.add(setParamMessage + DIRTY_WRITEBACK_CENTISECS + "=" + expected);
 
-            if ((value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals("500"))
-                suggestions.add(sysctlWVM + DIRTY_EXPIRE_CENTISECS + "=500");
+            if ((value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals(expected = "500"))
+                suggestions.add(setParamMessage + DIRTY_EXPIRE_CENTISECS + "=" + expected);
 
-            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals("10"))
-                suggestions.add(sysctlWVM + SWAPPINESS + "=10");
+            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals(expected = "10"))
+                suggestions.add(setParamMessage + SWAPPINESS + "=" + expected);
 
-            if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals("0"))
-                suggestions.add(sysctlWVM + ZONE_RECLAIM_MODE + "=0");
+            if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
+                suggestions.add(setParamMessage + ZONE_RECLAIM_MODE + "=" + expected);
 
-            if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && !value.equals("1240000"))
-                suggestions.add(sysctlWVM + EXTRA_FREE_KBYTES + "=1240000");
-
-            if (!suggestions.isEmpty()) {
-                U.quietAndInfo(log, "Please, use the following commands to configure your OS:");
-                for (String suggestion : suggestions)
-                    U.quietAndInfo(log, "    " + suggestion);
-                U.quietAndInfo(log, "Consult with your IT department before making changes at the Linux kernel level in production!");
-            }
+            if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && !value.equals(expected = "1240000"))
+                suggestions.add(setParamMessage + EXTRA_FREE_KBYTES + "=" + expected);
         }
+        return suggestions;
     }
 
     @Nullable
@@ -94,7 +81,7 @@ public class OsConfigurationSuggestions {
 
             return readLine(path);
         }
-        catch (Exception ignore) {
+        catch (Exception ignored) {
             return null;
         }
     }

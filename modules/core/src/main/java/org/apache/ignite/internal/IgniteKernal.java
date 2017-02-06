@@ -933,6 +933,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Suggest configuration optimizations.
             suggestOptimizations(cfg);
 
+            // Suggest JVM optimizations.
+            ctx.performance().addAll(JvmConfigurationSuggestions.getSuggestions());
+
+            // Suggest Operation System optimizations.
+            ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
+
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
 
@@ -1168,10 +1174,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
         ctx.performance().logSuggestions(log, gridName);
-        JvmConfigurationSuggestions.logSuggestions(log);
-        OsConfigurationSuggestions.logSuggestions(log);
-        U.quietAndInfo(log, "Get more information on performance tuning: " + GridPerformanceSuggestions.SUGGESTIONS_LINK);
-        U.quietAndInfo(log, "");
+
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
         ackStart(rtBean);
