@@ -28,6 +28,9 @@ public class GridDdlMessageFactory implements MessageFactory {
     /** */
     final static byte OPERATION_RESULT = -4;
 
+    /** */
+    final static byte NODE_RESULT = -5;
+
     /** {@inheritDoc} */
     @Nullable @Override public Message create(byte type) {
         switch (type) {

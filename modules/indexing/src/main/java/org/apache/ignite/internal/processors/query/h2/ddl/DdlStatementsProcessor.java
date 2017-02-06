@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -147,7 +148,26 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
             }
         });
 
-        // TODO add handler for TOPIC_DDL
+        ctx.io().addMessageListener(GridTopic.TOPIC_DDL, new GridMessageListener() {
+            /** {@inheritDoc} */
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (msg instanceof DdlOperationResult) {
+                    DdlOperationResult res = (DdlOperationResult) msg;
+
+                    onResult(res.getOperationId(), bytesToErrors(res.getErrors()));
+                }
+            }
+        });
+    }
+
+    /**
+     * Callback handling DDL operation result.
+     *
+     * @param opId DDL operation ID.
+     * @param errors Map of node IDs to their errors.
+     */
+    private void onResult(IgniteUuid opId, Map<UUID, IgniteCheckedException> errors) {
+        throw new UnsupportedOperationException("onResult");
     }
 
     /**
@@ -222,6 +242,12 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
         op.get();
     }
 
+    /**
+     * Convert map values which are {@link IgniteCheckedException}s to byte arrays to send to initiator.
+     *
+     * @param errors Map of node IDs to {@link IgniteCheckedException}s.
+     * @return Map of node IDs to serialized {@link IgniteCheckedException}s.
+     */
     private Map<UUID, byte[]> errorsToBytes(Map<UUID, IgniteCheckedException> errors){
         if (F.isEmpty(errors))
             return null;
@@ -239,6 +265,12 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
         return res;
     }
 
+    /**
+     * Convert map values which are byte arrays back to {@link IgniteCheckedException}s to process at initiator.
+     *
+     * @param errors Map of node IDs to serialized {@link IgniteCheckedException}s.
+     * @return Map of node IDs to {@link IgniteCheckedException}s.
+     */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private Map<UUID, IgniteCheckedException> bytesToErrors(Map<UUID, byte[]> errors) {
         if (F.isEmpty(errors))
