@@ -401,8 +401,6 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         Connection conn = getConnection();
         try {
-            Random rnd = new Random();
-
             PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME, GENDER FROM PERSON WHERE ID = ?");
 
             stmt.setInt(1, -1);

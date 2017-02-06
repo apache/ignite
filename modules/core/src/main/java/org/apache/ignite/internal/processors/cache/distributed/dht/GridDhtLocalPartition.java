@@ -628,7 +628,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if local node is primary for this partition.
      */
     public boolean primary(AffinityTopologyVersion topVer) {
-        return cctx.affinity().primary(cctx.localNode(), id, topVer);
+        return cctx.affinity().primaryByPartition(cctx.localNode(), id, topVer);
     }
 
     /**
@@ -636,7 +636,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if local node is backup for this partition.
      */
     public boolean backup(AffinityTopologyVersion topVer) {
-        return cctx.affinity().backup(cctx.localNode(), id, topVer);
+        return cctx.affinity().backupByPartition(cctx.localNode(), id, topVer);
     }
 
     /**
@@ -799,7 +799,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                         return lastEntry;
                     }
-                    catch (GridCacheEntryRemovedException e) {
+                    catch (GridCacheEntryRemovedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry: " + lastEntry);
                     }

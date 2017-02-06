@@ -158,7 +158,7 @@ public class HadoopIgfsEndpoint {
                 if (port < 0 || port > 65535)
                     throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
         }

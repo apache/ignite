@@ -313,8 +313,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                     try {
                         Thread.sleep(2000);
                     }
-                    catch (InterruptedException e) {
-                        // Ignore
+                    catch (InterruptedException ignored) {
+                        // No-op.
                     }
 
                     throw new SocketTimeoutException("Forced timeout");

@@ -224,7 +224,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.swap().offheapEntriesCount(true, false, cctx.affinity().affinityTopologyVersion());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }
@@ -234,7 +234,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.swap().offheapEntriesCount(false, true, cctx.affinity().affinityTopologyVersion());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }
@@ -281,7 +281,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.cache().swapKeys();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }
@@ -291,7 +291,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.cache().swapSize();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }

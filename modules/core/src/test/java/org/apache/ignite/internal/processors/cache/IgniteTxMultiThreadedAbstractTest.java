@@ -250,7 +250,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                                     break;
                                 }
-                                catch (TransactionOptimisticException e) {
+                                catch (TransactionOptimisticException ignored) {
                                     // Retry.
                                 }
                             }
