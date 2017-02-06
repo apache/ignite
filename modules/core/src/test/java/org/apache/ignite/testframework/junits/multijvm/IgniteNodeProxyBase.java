@@ -77,7 +77,9 @@ public class IgniteNodeProxyBase {
 
         this.proc = createProcess(params);
 
-        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ", name=" + cfg.getGridName() +']';
+        boolean awaited = rmtNodeStartedLatch.await(30, TimeUnit.SECONDS);
+
+        assert awaited: "Remote node has not joined [id=" + id + ", name=" + cfg.getGridName() +']';
 
         IgniteNodeProxyBase prevVal = gridProxies.putIfAbsent(cfg.getGridName(), this);
 
