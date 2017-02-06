@@ -56,6 +56,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
+    /** */
     private final List<FastIndexHelper> fastIdxs;
 
     /**
@@ -256,6 +257,9 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+        finally {
+            row.tree = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -266,6 +270,9 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
+        }
+        finally {
+            row.tree = null;
         }
     }
 
