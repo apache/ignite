@@ -240,7 +240,8 @@ public class TcpDiscoveryNodesRing {
 
             nodesMap.put(node.id(), node);
 
-            if (!node.version().greaterThanEqual(1, 9, 0) && oldNodesCount++ > 0) {
+            if (!node.version().greaterThanEqual(1, 9, 0)) {
+                oldNodesCount++;
                 TreeSet nodesTmp = new TreeSet<>();
                 nodesTmp.addAll(nodes);
                 nodes = nodesTmp;
@@ -302,35 +303,27 @@ public class TcpDiscoveryNodesRing {
 
             clear();
 
-            boolean firstAdd = true;
-
-
             for (TcpDiscoveryNode node : nodes) {
                 if (!node.version().greaterThanEqual(1, 9, 0))
                     oldNodesCount++;
             }
+
+            if (oldNodesCount > 0) {
+                TreeSet nodesTmp = new TreeSet<>();
+                nodesTmp.addAll(this.nodes);
+                this.nodes = nodesTmp;
+            }
+            else
+                this.nodes = new TreeSet<>(this.nodes);
 
             for (TcpDiscoveryNode node : nodes) {
                 if (nodesMap.containsKey(node.id()))
                     continue;
 
                 nodesMap.put(node.id(), node);
-
-                if (firstAdd) {
-                    if (oldNodesCount>0) {
-                        TreeSet nodesTmp = new TreeSet<>();
-                        nodesTmp.addAll(this.nodes);
-                        this.nodes = nodesTmp;
-                    } else {
-                        this.nodes = new TreeSet<>(this.nodes);
-                    }
-
-                    firstAdd = false;
-                }
-
                 node.lastUpdateTime(U.currentTimeMillis());
-
                 this.nodes.add(node);
+
                 if (maxInternalOrder < node.internalOrder())
                     maxInternalOrder = node.internalOrder();
             }
