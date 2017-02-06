@@ -1472,6 +1472,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
         }
 
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
         private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
         {
             // Calculate result locally, using real method invocation

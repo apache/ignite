@@ -509,6 +509,7 @@ namespace Apache.Ignite.Linq.Impl
                     }
 
                     Visit(contains.Item);
+
                     ResultBuilder.Append(" IN (");
                     AppendInParameters(inValues.Where(o => o != null));
                     ResultBuilder.Append(")");
@@ -532,6 +533,9 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
+        /// <summary>
+        /// Gets values for IN expression
+        /// </summary>
         private IEnumerable<object> GetInValues(Expression fromExpression)
         {
             IEnumerable result;
@@ -575,7 +579,9 @@ namespace Apache.Ignite.Linq.Impl
                 .ToArray();
         }
 
-
+        /// <summary>
+        /// Appends parameters using ", " as delimeter
+        /// </summary>
         private void AppendInParameters(IEnumerable enumerable)
         {
             if (enumerable != null)
@@ -593,61 +599,6 @@ namespace Apache.Ignite.Linq.Impl
                 }
             }
         }
-
-
-        //protected virtual IReadOnlyList<Expression> ProcessInExpressionValues(
-        //	[NotNull] IEnumerable<Expression> inExpressionValues)
-        //{
-        //	Check.NotNull(inExpressionValues, nameof(inExpressionValues));
-
-        //	var inConstants = new List<Expression>();
-
-        //	foreach (var inValue in inExpressionValues)
-        //	{
-        //		var inConstant = inValue as ConstantExpression;
-
-        //		if (inConstant != null)
-        //		{
-        //			AddInExpressionValues(inConstant.Value, inConstants, inConstant);
-        //		}
-        //		else
-        //		{
-        //			var inParameter = inValue as ParameterExpression;
-
-        //			if (inParameter != null)
-        //			{
-        //				object parameterValue;
-        //				if (_parametersValues.TryGetValue(inParameter.Name, out parameterValue))
-        //				{
-        //					AddInExpressionValues(parameterValue, inConstants, inParameter);
-
-        //					IsCacheable = false;
-        //				}
-        //			}
-        //			else
-        //			{
-        //				var inListInit = inValue as ListInitExpression;
-
-        //				if (inListInit != null)
-        //				{
-        //					inConstants.AddRange(ProcessInExpressionValues(
-        //						inListInit.Initializers.SelectMany(i => i.Arguments)));
-        //				}
-        //				else
-        //				{
-        //					var newArray = inValue as NewArrayExpression;
-
-        //					if (newArray != null)
-        //					{
-        //						inConstants.AddRange(ProcessInExpressionValues(newArray.Expressions));
-        //					}
-        //				}
-        //			}
-        //		}
-        //	}
-
-        //	return inConstants;
-        //}
 
         /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
