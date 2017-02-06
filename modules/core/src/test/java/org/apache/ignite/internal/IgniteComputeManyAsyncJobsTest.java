@@ -80,7 +80,7 @@ public class IgniteComputeManyAsyncJobsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10_000;
+        return 60_000;
     }
 
     /**
