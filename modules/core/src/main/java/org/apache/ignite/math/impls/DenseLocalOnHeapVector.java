@@ -195,7 +195,7 @@ public class DenseLocalOnHeapVector implements Vector, Externalizable {
                         if (idxNext != NOT_INITIALIZED && idx != idxNext)
                             return;
 
-                        while (idx < size() && !zero(get(idx)))
+                        while (idx < size() && zero(get(idx)))
                             idx++;
 
                         idxNext = idx++;

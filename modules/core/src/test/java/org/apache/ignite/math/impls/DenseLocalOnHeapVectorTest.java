@@ -116,29 +116,89 @@ public class DenseLocalOnHeapVectorTest {
                 expSize.set(expSizeParam);
 
                 shallowCp.set(shallowCopyParam);
-            }, (v) -> {
-                final Iterator<Vector.Element> it = v.all().iterator();
-
-                while (it.hasNext())
-                    assertNotNull(it.next());
-
-                boolean expECaught = false;
-
-                try {
-                    it.next();
-                } catch (NoSuchElementException e) {
-                    expECaught = true;
-                }
-
-                assertTrue("expected exception missed for size " + expSize.get() + ", shallow copy " + shallowCp.get(),
-                    expECaught);
-            }
+            },
+            v -> iteratorTestBound(v.all().iterator(), expSize.get(), shallowCp.get())
         );
+    }
+
+    /** */
+    private void iteratorTestBound(Iterator<Vector.Element> it, int expSize, boolean shallowCp) {
+        while (it.hasNext())
+            assertNotNull(it.next());
+
+        boolean expECaught = false;
+
+        try {
+            it.next();
+        } catch (NoSuchElementException e) {
+            expECaught = true;
+        }
+
+        assertTrue("expected exception missed for size " + expSize + ", shallow copy " + shallowCp,
+            expECaught);
+    }
+
+    /** */ @Test
+    public void nonZeroesTestBasic() {
+        final int size = 5;
+
+        final double[] zeroesOdd = new double[size], zeroesEven = new double[size];
+
+        for (int idx = 0; idx < size; idx++) {
+            final boolean odd = (idx & 1) == 1;
+
+            zeroesOdd[idx] = odd ? 1 : 0;
+
+            zeroesEven[idx] = odd ? 0 : 1;
+        }
+
+        final DenseLocalOnHeapVector oddZeroesVec = new DenseLocalOnHeapVector(zeroesOdd),
+            evenZeroesVec = new DenseLocalOnHeapVector(zeroesEven);
+
+        for (Vector.Element e : oddZeroesVec.nonZeroes()) {
+            final int idx = e.index();
+
+            final boolean odd = (idx & 1) == 1;
+
+            final double val = e.get();
+
+            assertFalse("not an odd index " + idx + ", for value " + val, odd);
+
+            assertTrue("non zero value " + val + " at odd index " + idx, val == 0.0);
+        }
+
+        for (Vector.Element e : evenZeroesVec.nonZeroes()) {
+            final int idx = e.index();
+
+            final boolean odd = (idx & 1) == 1;
+
+            final double val = e.get();
+
+            assertTrue("not an even index " + idx + ", for value " + val, odd);
+
+            assertTrue("non zero value " + val + " at even index " + idx, val == 0.0);
+        }
     }
 
     /** */ @Test
     public void nonZeroesTest() { // TODO write test
 
+    }
+
+    /** */ @Test
+    public void nonZeroesTestBound() {
+        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
+
+        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
+
+        consumeSampleVectors(
+            (expSizeParam, shallowCopyParam) -> {
+                expSize.set(expSizeParam);
+
+                shallowCp.set(shallowCopyParam);
+            },
+            v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+                        -> iteratorTestBound(vec.nonZeroes().iterator(), expSize.get(), shallowCp.get())));
     }
 
     /** */ @Test
@@ -407,6 +467,45 @@ public class DenseLocalOnHeapVectorTest {
 
         assertTrue("1 size default copy",
             pred.test(new DenseLocalOnHeapVector(new double[1])));
+    }
+
+    /** */
+    private void consumeSampleVectorsWithZeroes(DenseLocalOnHeapVector sample,
+        BiConsumer<DenseLocalOnHeapVector, Integer> consumer) {
+
+        int idx = 0;
+
+        for (Vector.Element e : sample.all())
+            e.set(1 + idx++); // IMPL NOTE fill with non-zeroes
+
+        consumer.accept(sample, 0);
+
+        final int sampleSize = sample.size();
+
+        if (sampleSize == 0)
+            return;
+
+        for (Vector.Element e : sample.all())
+            e.set(0);
+
+        consumer.accept(sample, sampleSize);
+
+        for (int testIdx : new int[] {0, sampleSize / 2, sampleSize - 1}) {
+            sample.getElement(testIdx).set(0);
+
+            consumer.accept(sample, 1);
+
+            sample.getElement(testIdx).set(1 + testIdx);
+        }
+
+        if (sampleSize < 3)
+            return;
+
+        sample.getElement(sampleSize / 3).set(0);
+
+        sample.getElement((2 * sampleSize) / 3).set(0);
+
+        consumer.accept(sample, 2);
     }
 
     /** */
