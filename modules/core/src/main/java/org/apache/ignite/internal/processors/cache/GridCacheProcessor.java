@@ -1142,7 +1142,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.continuous().onCacheStart(cacheCtx);
 
-        if (sharedCtx.pageStore() != null)
+        if (sharedCtx.pageStore() != null  && !ctx.clientNode())
             sharedCtx.pageStore().initializeForCache(cacheCtx.config());
 
         CacheConfiguration cfg = cacheCtx.config();
