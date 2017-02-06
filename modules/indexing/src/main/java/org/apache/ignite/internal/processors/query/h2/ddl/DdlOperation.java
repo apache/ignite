@@ -36,10 +36,8 @@ public class DdlOperation extends GridFutureAdapter {
     private final DdlOperationArguments args;
 
     /** */
-    public DdlOperation(IgniteUuid id, GridKernalContext ctx, DdlOperationArguments args) {
-        assert id != null && id.equals(args.opId);
-
-        this.id = id;
+    public DdlOperation(GridKernalContext ctx, DdlOperationArguments args) {
+        this.id = args.opId;
         this.ctx = ctx;
         this.args = args;
     }

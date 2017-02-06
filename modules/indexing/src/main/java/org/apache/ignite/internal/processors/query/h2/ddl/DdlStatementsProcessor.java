@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -39,6 +41,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.LoggerResource;
 import org.h2.command.Prepared;
@@ -62,7 +66,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
     private Map<IgniteUuid, DdlOperation> operations = new ConcurrentHashMap8<>();
 
     /** Arguments of operations for which this node is a server. Are stored at {@code INIT} stage. */
-    private Map<IgniteUuid, DdlOperationArguments> serverArgs = new ConcurrentHashMap8<>();
+    private Map<IgniteUuid, DdlOperationArguments> operationArgs = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
     @Override public void start(final GridKernalContext ctx) throws IgniteCheckedException {
@@ -80,7 +84,8 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
                     Map<UUID, IgniteCheckedException> newNodesState = new HashMap<>();
 
                     for (ClusterNode node : nodes)
-                        newNodesState.put(node.id(), null);
+                        if (!node.isClient())
+                            newNodesState.put(node.id(), null);
 
                     msg.setNodesState(newNodesState);
                 }
@@ -90,11 +95,58 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
                 try {
                     handleInit(msg.getArguments());
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     msg.getNodesState().put(ctx.localNodeId(), new IgniteCheckedException(e));
                 }
             }
         });
+
+        ctx.discovery().setCustomEventListener(DdlOperationAck.class, new CustomEventListener<DdlOperationAck>() {
+            /** {@inheritDoc} */
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlOperationAck msg) {
+                throw new UnsupportedOperationException("DDL ACK handling");
+            }
+        });
+
+        // Ring sent error message will be processed once at coordinator which is deemed as its sender
+        // and converted to error message for the client, if needed
+        ctx.discovery().setCustomEventListener(DdlOperationInitError.class,
+            new CustomEventListener<DdlOperationInitError>() {
+            /** {@inheritDoc} */
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                DdlOperationInitError msg) {
+                DdlOperationArguments args = operationArgs.remove(msg.getOperationId());
+
+                ClusterNode locNode = ctx.grid().localNode();
+
+                boolean isCoord = F.eqNodes(snd, locNode);
+
+                if (!isCoord)
+                    return;
+                else if (args == null) {
+                    log.error("DDL operation not found by its id at its coordinator");
+
+                    return;
+                }
+
+                 // TODO handle locally if appropriate
+
+                DdlOperationResult res = new DdlOperationResult();
+
+                res.setOperationId(args.opId);
+
+                res.setErrors(errorsToBytes(msg.getErrors()));
+
+                try {
+                    ctx.io().send(args.sndNodeId, GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to notify client about DDL operation completion [opId=" + args.opId + ']', e);
+                }
+            }
+        });
+
+        // TODO add handler for TOPIC_DDL
     }
 
     /**
@@ -110,7 +162,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
                 throw new UnsupportedOperationException(args.opType.name());
         }
 
-        serverArgs.put(args.opId, args);
+        operationArgs.put(args.opId, args);
     }
 
     /**
@@ -139,8 +191,8 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
         if (gridStmt instanceof GridCreateIndex) {
             GridCreateIndex createIdx = (GridCreateIndex) gridStmt;
 
-            CreateIndexArguments args = new CreateIndexArguments(opId, createIdx.cacheName(), createIdx.index(),
-                createIdx.ifNotExists());
+            CreateIndexArguments args = new CreateIndexArguments(ctx.localNodeId(), opId, createIdx.cacheName(),
+                createIdx.index(), createIdx.ifNotExists());
 
             execute(args);
         }
@@ -160,15 +212,49 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private void execute(DdlOperationArguments args) throws IgniteCheckedException {
-        IgniteUuid opId = IgniteUuid.randomUuid();
+        DdlOperation op = new DdlOperation(ctx, args);
 
-        DdlOperation op = new DdlOperation(opId, ctx, args);
-
-        operations.put(opId, op);
+        operations.put(args.opId, op);
 
         op.init();
 
         op.get();
+    }
+
+    private Map<UUID, byte[]> errorsToBytes(Map<UUID, IgniteCheckedException> errors){
+        if (F.isEmpty(errors))
+            return null;
+
+        Map<UUID, byte[]> res = new HashMap<>();
+
+        for (Map.Entry<UUID, IgniteCheckedException> e : errors.entrySet())
+            try {
+                res.put(e.getKey(), U.marshal(ctx, e.getValue()));
+            }
+            catch (IgniteCheckedException ignored) {
+                res.put(e.getKey(), null);
+            }
+
+        return res;
+    }
+
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private Map<UUID, IgniteCheckedException> bytesToErrors(Map<UUID, byte[]> errors) {
+        if (F.isEmpty(errors))
+            return null;
+
+        Map<UUID, IgniteCheckedException> res = new HashMap<>();
+
+        for (Map.Entry<UUID, byte[]> e : errors.entrySet())
+            try {
+                res.put(e.getKey(), (IgniteCheckedException) U.unmarshal(ctx, e.getValue(),
+                    ctx.config().getClassLoader()));
+            }
+            catch (ClassCastException | IgniteCheckedException ignored) {
+                res.put(e.getKey(), null);
+            }
+
+        return res;
     }
 
     /**

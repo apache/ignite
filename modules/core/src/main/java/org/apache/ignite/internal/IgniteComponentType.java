@@ -74,7 +74,8 @@ public enum IgniteComponentType {
     DDL(
         null,
         "org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor",
-        "ignite-indexing"
+        "ignite-indexing",
+        "org.apache.ignite.internal.processors.query.h2.ddl.GridDdlMessageFactory"
     ),
 
     /** Nodes starting using SSH. */

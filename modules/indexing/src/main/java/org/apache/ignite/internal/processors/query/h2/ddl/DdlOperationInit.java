@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -49,13 +50,31 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         assert nodesState != null;
 
-        if (!nodesState.isEmpty())
-            throw new UnsupportedOperationException("Send INIT error over the ring");
+        Map<UUID, IgniteCheckedException> errors = new HashMap<>();
 
-        throw new UnsupportedOperationException("Return ACK error");
+        for (Map.Entry<UUID, IgniteCheckedException> e : nodesState.entrySet())
+            if (e.getValue() != null)
+                errors.put(e.getKey(), e.getValue());
+
+        if (!errors.isEmpty()) {
+            DdlOperationInitError err = new DdlOperationInitError();
+
+            err.setOperationId(args.opId);
+            err.setErrors(errors);
+
+            return err;
+        }
+        else {
+            DdlOperationAck ackMsg = new DdlOperationAck();
+
+            ackMsg.setOperationId(args.opId);
+
+            return ackMsg;
+        }
     }
 
     /** {@inheritDoc} */

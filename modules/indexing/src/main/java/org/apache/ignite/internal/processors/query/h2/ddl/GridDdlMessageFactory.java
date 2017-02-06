@@ -17,31 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.io.Serializable;
-import java.util.UUID;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for DDL operation arguments.
+ * Factory for DDL messages.
  */
-abstract class DdlOperationArguments implements Serializable {
-    /** ID of node that initiated this operation. */
-    public final UUID sndNodeId;
-
-    /** Operation ID. */
-    public final IgniteUuid opId;
-
-    /** Cache name. */
-    public final String cacheName;
-
-    /** Operation type. */
-    public final DdlOperationType opType;
-
+public class GridDdlMessageFactory implements MessageFactory {
     /** */
-    DdlOperationArguments(UUID sndNodeId, IgniteUuid opId, String cacheName, DdlOperationType opType) {
-        this.sndNodeId = sndNodeId;
-        this.opId = opId;
-        this.cacheName = cacheName;
-        this.opType = opType;
+    final static byte OPERATION_RESULT = -4;
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Message create(byte type) {
+        switch (type) {
+            case OPERATION_RESULT:
+                return new DdlOperationResult();
+
+            default:
+                return null;
+        }
     }
 }

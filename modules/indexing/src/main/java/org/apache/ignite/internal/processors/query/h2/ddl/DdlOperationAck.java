@@ -17,31 +17,43 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.io.Serializable;
-import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for DDL operation arguments.
+ *
  */
-abstract class DdlOperationArguments implements Serializable {
-    /** ID of node that initiated this operation. */
-    public final UUID sndNodeId;
-
-    /** Operation ID. */
-    public final IgniteUuid opId;
-
-    /** Cache name. */
-    public final String cacheName;
-
-    /** Operation type. */
-    public final DdlOperationType opType;
+public class DdlOperationAck implements DiscoveryCustomMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** */
-    DdlOperationArguments(UUID sndNodeId, IgniteUuid opId, String cacheName, DdlOperationType opType) {
-        this.sndNodeId = sndNodeId;
+    private final IgniteUuid id = IgniteUuid.randomUuid();
+
+    /** */
+    private IgniteUuid opId;
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
+    }
+
+    public IgniteUuid getOperationId() {
+        return opId;
+    }
+
+    public void setOperationId(IgniteUuid opId) {
         this.opId = opId;
-        this.cacheName = cacheName;
-        this.opType = opType;
     }
 }
