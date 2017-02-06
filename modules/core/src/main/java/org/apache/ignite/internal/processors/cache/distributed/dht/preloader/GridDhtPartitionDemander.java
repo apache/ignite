@@ -546,9 +546,6 @@ public class GridDhtPartitionDemander {
 
                     GridDhtLocalPartition p = cctx.topology().localPartition(part, old.topologyVersion(), false);
 
-                    if (p.initialUpdateCounter() == 0 && !old.isClean(part))
-                        System.out.println("???");
-
                     partCntrs.put(part, p.initialUpdateCounter());
                 }
             }

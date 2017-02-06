@@ -314,6 +314,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         continue; // For.
                     }
 
+                    assert cctx.shared().database().persistenceEnabled();
+                    assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
+
                     GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
 
                     if (msg == null) {

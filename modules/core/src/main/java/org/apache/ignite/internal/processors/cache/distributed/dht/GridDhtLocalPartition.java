@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.ignite.DebugUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -170,13 +169,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         catch (IgniteCheckedException e) {
             // TODO ignite-db
             throw new IgniteException(e);
-        }
-
-        if (cctx.cacheId() == CU.cacheId("indexed")) {
-            DebugUtils.addToHistory(cctx.localNode(), "part", id, new T4<>(
-                cctx.discovery().topologyVersionEx(),
-                null,
-                MOVING, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)));
         }
     }
 
@@ -528,13 +520,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
         state.set(((long)stateToRestore.ordinal()) << 32);
-
-        if (cctx.cacheId() == CU.cacheId("indexed")) {
-            DebugUtils.addToHistory(cctx.localNode(), "part", id, new T4<>(
-                cctx.discovery().topologyVersionEx(),
-                null,
-                stateToRestore, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)));
-        }
     }
 
     /**
@@ -549,13 +534,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                 if (update)
                     try {
-                        if (cctx.cacheId() == CU.cacheId("indexed")) {
-                            DebugUtils.addToHistory(cctx.localNode(), "part", id, new T4<>(
-                                cctx.discovery().topologyVersionEx(),
-                                GridDhtPartitionState.fromOrdinal((int)(reservations >> 32)),
-                                toState, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)));
-                        }
-
                         cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(), id, toState, updateCounter()));
                     }
                     catch (IgniteCheckedException e) {

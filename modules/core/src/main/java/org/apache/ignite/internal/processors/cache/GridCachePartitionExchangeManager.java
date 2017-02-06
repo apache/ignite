@@ -1252,6 +1252,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (!cctx.kernalContext().clientNode() && updated)
                     refreshPartitions();
+
+                boolean hasMovingParts = false;
+
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    if (cacheCtx.topology().hasMovingPartitions()) {
+                        hasMovingParts = true;
+                        break;
+                    }
+                }
+
+                if (!hasMovingParts)
+                    cctx.database().releaseHistoryForPreloading();
             }
             else
                 exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node, msg);

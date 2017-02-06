@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
-import org.apache.ignite.DebugUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -87,6 +86,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
@@ -1105,10 +1105,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
             m.setExceptionsMap(changeGlobalStateExceptions);
 
-        DebugUtils.addToHistory(cctx.localNode(), "fullMap", null, new T4<>(
-            topologyVersion(), discoEvt, m, DebugUtils.stackTraceToString(Thread.currentThread().getStackTrace(), 10)
-        ));
-
         return m;
     }
 
@@ -1579,7 +1575,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (localReserved != null) {
                 Long localCntr = localReserved.get(p);
 
-                if (localCntr != null && localCntr <= minCntr) {
+                if (localCntr != null && localCntr <= minCntr &&
+                    top.partitionState(cctx.localNodeId(), p) == GridDhtPartitionState.OWNING) {
                     Map<T2<Integer, Integer>, Long> nodeMap = partHistSuppliers.get(cctx.localNodeId());
 
                     if (nodeMap == null) {
@@ -1597,7 +1594,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.cacheId()).get(p);
 
-                if (histCntr != null && histCntr <= minCntr) {
+                if (histCntr != null && histCntr <= minCntr &&
+                    top.partitionState(e0.getKey(), p) == GridDhtPartitionState.OWNING) {
                     Map<T2<Integer, Integer>, Long> nodeMap = partHistSuppliers.get(e0.getKey());
 
                     if (nodeMap == null) {
