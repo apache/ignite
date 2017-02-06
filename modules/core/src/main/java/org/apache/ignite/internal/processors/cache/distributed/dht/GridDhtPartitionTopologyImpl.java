@@ -505,10 +505,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         cctx.shared().database().checkpointReadLock();
 
         synchronized (cctx.shared().exchange().interruptLock()) {
-            if (Thread.currentThread().isInterrupted())
-                throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
-
             try {
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
+
                 U.writeLock(lock);
             }
             catch (IgniteInterruptedCheckedException e) {
