@@ -85,12 +85,12 @@ namespace ignite
 
             int32_t sign = 1;
             
-			if (mag[0] < 0)
-			{
-				mag[0] &= 0x7F;
+            if (mag[0] < 0)
+            {
+                mag[0] &= 0x7F;
 
-				sign = -1;
-			}
+                sign = -1;
+            }
 
             common::Decimal res(mag.data(), static_cast<int32_t>(mag.size()), scale, sign);
 
@@ -109,8 +109,8 @@ namespace ignite
 
             unscaled.MagnitudeToBytes(magnitude);
 
-			if (unscaled.GetSign() == -1)
-				magnitude[0] |= -0x80;
+            if (unscaled.GetSign() == -1)
+                magnitude[0] |= -0x80;
 
             writer.WriteInt32(magnitude.GetSize());
 
