@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
  * Base class for all communication messages.
  */
 public interface Message extends Serializable {
+    public static final int DIRECT_TYPE_SIZE = 2;
+
     /**
      * Writes this message to provided byte buffer.
      *

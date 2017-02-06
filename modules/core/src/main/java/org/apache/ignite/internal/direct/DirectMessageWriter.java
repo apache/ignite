@@ -71,8 +71,6 @@ public class DirectMessageWriter implements MessageWriter {
 
         stream.writeShort(type);
 
-        System.out.println("+++ WRITE " + Thread.currentThread().getName() + String.format(" %04X", type));
-
         return stream.lastFinished();
     }
 

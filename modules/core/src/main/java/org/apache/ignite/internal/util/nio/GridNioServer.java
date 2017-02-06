@@ -1468,20 +1468,19 @@ public class GridNioServer<T> {
             assert buf.hasRemaining();
 
             if (!skipWrite) {
-                StringBuilder sb = new StringBuilder();
-                sb.append('(').append(buf.remaining()).append(") ");
-                int pos = buf.position();
-                while (buf.hasRemaining())
-                    sb.append(String.format("%02X ", buf.get()));
-                buf.position(pos);
-                System.out.println("+++ processWrite0: " + Thread.currentThread().getName() + " " + sb);
-
-                short type = buf.order(ByteOrder.LITTLE_ENDIAN).getShort();
-
-                if (type < Byte.MIN_VALUE || type > Byte.MAX_VALUE)
-                    System.out.println("+++ ASS On WRITE");
-
-                buf.position(pos);
+//                StringBuilder sb = new StringBuilder();
+//                sb.append('(').append(buf.remaining()).append(") ");
+//                int pos = buf.position();
+//                while (buf.hasRemaining())
+//                    sb.append(String.format("%02X ", buf.get()));
+//                buf.position(pos);
+//                System.out.println("+++ processWrite0: " + Thread.currentThread().getName() + " " + sb);
+//
+//                short type = buf.order(ByteOrder.LITTLE_ENDIAN).getShort();
+//                buf.position(pos);
+//
+//                if (type < Byte.MIN_VALUE || type > Byte.MAX_VALUE)
+//                    System.out.println("+++ ASS On WRITE");
 
                 int cnt = sockCh.write(buf);
 
