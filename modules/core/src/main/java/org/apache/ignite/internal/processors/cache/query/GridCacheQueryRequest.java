@@ -262,7 +262,6 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.clause = clause;
         this.clsName = clsName;
         this.keyValFilter = keyValFilter;
-        this.part = part == null ? -1 : part;
         this.rdc = rdc;
         this.trans = trans;
         this.pageSize = pageSize;
@@ -273,8 +272,35 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
-        this.parts = parts;
+        this.parts = part == null ? parts : new int[part.intValue()];
         this.addDepInfo = addDepInfo;
+    }
+
+    /**
+     * Creates a copy.
+     * @param req Request.
+     */
+    public GridCacheQueryRequest(GridCacheQueryRequest req) {
+        this.cacheId = req.cacheId;
+        this.id = req.id;
+        this.cacheName = req.cacheName;
+        this.type = req.type;
+        this.fields = req.fields;
+        this.clause = req.clause;
+        this.clsName = req.clsName;
+        this.keyValFilter = req.keyValFilter;
+        this.rdc = req.rdc;
+        this.trans = req.trans;
+        this.pageSize = req.pageSize;
+        this.incBackups = req.incBackups;
+        this.args = req.args;
+        this.incMeta = req.incMeta;
+        this.keepPortable = req.keepPortable;
+        this.subjId = req.subjId;
+        this.taskHash = req.taskHash;
+        this.topVer = req.topVer;
+        this.parts = req.parts;
+        this.addDepInfo = req.addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -494,6 +520,14 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      */
     public int[] partitions() {
         return parts;
+    }
+
+    /**
+     * Sets partitions for query.
+     * @param parts Partitions.
+     */
+    public void partitions(int[] parts) {
+        this.parts = parts;
     }
 
     /** {@inheritDoc} */

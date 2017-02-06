@@ -90,6 +90,6 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
      * @throws IgniteCheckedException If failed.
      */
     public void testScanQuery() throws IgniteCheckedException {
-        jcache().query(new ScanQuery<>(null)).getAll();
+        jcache().query(new ScanQuery<>()).getAll();
     }
 }

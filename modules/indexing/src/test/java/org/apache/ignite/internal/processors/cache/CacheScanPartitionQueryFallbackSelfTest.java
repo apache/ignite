@@ -45,7 +45,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryPartSet;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,11 +135,11 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            GridCacheQueryPartSet pSet = randomNodePartitions(cache.context(), ignite.cluster().localNode(), 3);
+            Set<Integer> pSet = randomNodePartitions(cache.context(), ignite.cluster().localNode(), 3);
 
-            log().info("Partitions: " + pSet.partitions());
+            log().info("Partitions: " + pSet);
 
-            int[] parts = U.toIntArray(pSet.partitions());
+            int[] parts = U.toIntArray(pSet);
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
                 cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
@@ -167,11 +166,13 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            GridCacheQueryPartSet pSet = randomNodePartitions(cache.context(), F.rand(ignite.cluster().forRemotes().nodes()), 3);
+            ClusterNode node = F.rand(ignite.cluster().forRemotes().nodes());
 
-            expNodeIds = Collections.singleton(pSet.node().id());
+            Set<Integer> pSet = randomNodePartitions(cache.context(), node, 3);
 
-            int[] parts = U.toIntArray(pSet.partitions());
+            expNodeIds = Collections.singleton(node.id());
+
+            int[] parts = U.toIntArray(pSet);
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
                 cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
@@ -205,12 +206,12 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
             expNodeIds = new HashSet<>();
 
             for (ClusterNode node : nodes) {
-                pSet.addAll(randomNodePartitions(cache.context(), node, 1).partitions());
+                pSet.addAll(randomNodePartitions(cache.context(), node, 1));
 
                 expNodeIds.add(node.id());
             }
 
-            int[] parts = U.toIntArray(pSet);
+            int[] parts = U.toIntArray(pSet); // All partitions are on different nodes.
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
                 cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
@@ -486,17 +487,17 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      * @param cnt Count.
      * @return Partition set.
      */
-    private static GridCacheQueryPartSet randomNodePartitions(final GridCacheContext cctx, ClusterNode node, int cnt) {
+    private static Set<Integer> randomNodePartitions(final GridCacheContext cctx, ClusterNode node, int cnt) {
         GridCacheAffinityManager affMgr = cctx.affinity();
 
         Set<Integer> parts = affMgr.primaryPartitions(node.id(), affMgr.affinityTopologyVersion());
 
-        GridCacheQueryPartSet pSet = new GridCacheQueryPartSet(node);
+        Set<Integer> rnd = new HashSet<>(cnt);
 
-        while(pSet.size() != cnt)
-            pSet.add(F.rand(parts));
+        while(rnd.size() != cnt)
+            rnd.add(F.rand(parts));
 
-        return pSet;
+        return rnd;
     }
 
     /**

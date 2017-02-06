@@ -520,7 +520,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @return Query future.
      */
-    public abstract CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
+    public abstract CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Map<ClusterNode, Set<Integer>> nodes);
 
     /**
      * Executes distributed SCAN query.
@@ -531,7 +531,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException If failed.
      */
     public abstract GridCloseableIterator scanQueryDistributed(GridCacheQueryAdapter qry,
-        Collection<ClusterNode> nodes) throws IgniteCheckedException;
+        Map<ClusterNode, Set<Integer>> nodes) throws IgniteCheckedException;
 
     /**
      * Loads page.
@@ -558,7 +558,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @return Query future.
      */
-    public abstract CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
+    public abstract CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Map<ClusterNode, Set<Integer>> nodes);
 
     /**
      * Performs query.
