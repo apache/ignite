@@ -24,7 +24,6 @@ import java.sql.*;
 import java.sql.Date;
 import java.util.*;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,14 +33,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** SQL query. */
     private final String sql;
 
-    /**
-     * Batch arguments.
-     */
+    /** Batch arguments. */
     private List<List<Object>> batchArgs;
 
-    /**
-     * H2's parsed statement to retrieve metadata from.
-     */
+    /** H2's parsed statement to retrieve metadata from. */
     PreparedStatement nativeStatement;
 
     /**
@@ -461,15 +456,6 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
      * @param size new expected size.
      */
     private void ensureArgsSize(int size) throws SQLException {
-        if (conn.isIndexingEnabled()) {
-            int paramsCnt = getNativeStatement().getParameterMetaData().getParameterCount();
-
-            A.ensure(size >= 1 && size <= paramsCnt, "Invalid param index - must be between 1 and " + paramsCnt);
-
-            if (args == null)
-                args = new ArrayList<>(paramsCnt);
-        }
-
         if (args == null)
             args = new ArrayList<>(size);
 

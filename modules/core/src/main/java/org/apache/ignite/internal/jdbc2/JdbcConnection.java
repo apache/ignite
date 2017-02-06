@@ -160,11 +160,8 @@ public class JdbcConnection implements Connection {
         this.distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
-
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
-
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE, "0"));
-
         streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
@@ -780,15 +777,6 @@ public class JdbcConnection implements Connection {
     private void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Connection is closed.");
-    }
-
-    /**
-     * @return {@code true} if Indexing module is available and initialized.
-     */
-    boolean isIndexingEnabled() {
-        IgniteCacheProxy cache = ((IgniteCacheProxy) ignite().cache(cacheName()));
-
-        return cache.context().kernalContext().query().moduleEnabled();
     }
 
     /**
