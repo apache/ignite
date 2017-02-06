@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -107,15 +106,6 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
 
         try {
             ByteBuffer input = (ByteBuffer)msg;
-//
-//            StringBuilder sb = new StringBuilder();
-//            sb.append('(').append(input.remaining()).append(") ");
-//            int pos = input.position();
-//            while (input.hasRemaining())
-//                sb.append(String.format("%02X ", input.get()));
-//            input.position(pos);
-//
-//            System.out.println("+++ onMessageReceived: " + Thread.currentThread().getName() + " " + sb);
 
             while (input.hasRemaining()) {
                 Object res = parser.decode(ses, input);
