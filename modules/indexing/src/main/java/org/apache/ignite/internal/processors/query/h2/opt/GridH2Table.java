@@ -608,8 +608,6 @@ public class GridH2Table extends TableBase {
 
                     assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
 
-                    //row.fastIdx =
-
                     GridH2Row old2 = idx.put(row);
 
                     if (old2 != null) { // Row was replaced in index.
