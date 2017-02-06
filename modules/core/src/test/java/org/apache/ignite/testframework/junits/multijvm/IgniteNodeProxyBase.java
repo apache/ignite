@@ -30,7 +30,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 
 /**
- *
+ * Base class implementing a remote node.
  */
 public class IgniteNodeProxyBase {
     /** Property that specify alternative {@code JAVA_HOME}. */
@@ -159,20 +159,29 @@ public class IgniteNodeProxyBase {
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
         if (F.isEmpty(params.getJvmArguments())) {
-            // Calculate JVM parameters based on his process options:
-            Marshaller marsh = cfg.getMarshaller();
-
-            if (marsh != null)
-                filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+            // Inherit most of the parameters from this JVM parameters based on his process options:
+            boolean marshAdded = false;
 
             for (String arg : U.jvmArgs()) {
-                if (arg.startsWith("-Xmx") || arg.startsWith("-Xms")
-                    || arg.startsWith("-XX")
-                    || (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") || arg.startsWith("-XX"))
                     filteredJvmArgs.add(arg);
+
+                if (!marshAdded && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) {
+                    filteredJvmArgs.add(arg);
+
+                    marshAdded = true;
+                }
+            }
+
+            if (!marshAdded) {
+                Marshaller marsh = cfg.getMarshaller();
+
+                if (marsh != null)
+                    filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
             }
         }
         else
+            // Use only the explicitly specified arguments:
             filteredJvmArgs.addAll(params.getJvmArguments());
 
         return GridJavaProcess.exec(
@@ -245,6 +254,7 @@ public class IgniteNodeProxyBase {
     }
 
     /**
+     * Listener to get a notification when the node started.
      */
     private static class NodeStartedListener extends IgnitePredicateX<Event> {
         /** Id. */
@@ -275,7 +285,7 @@ public class IgniteNodeProxyBase {
     }
 
     /**
-     *
+     * A stop node closure.
      */
     protected static class StopGridTask implements IgniteRunnable {
         /** Grid name. */
@@ -297,14 +307,5 @@ public class IgniteNodeProxyBase {
         @Override public void run() {
             G.stop(gridName, cancel);
         }
-    }
-
-    /**
-     * Serves for diagnostic purposes.
-     *
-     * @return All the running proxies.
-     */
-    public static ConcurrentMap<String, IgniteNodeProxyBase> getGridProxies() {
-        return gridProxies;
     }
 }

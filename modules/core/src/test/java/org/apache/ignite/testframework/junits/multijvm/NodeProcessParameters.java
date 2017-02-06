@@ -17,7 +17,8 @@ public class NodeProcessParameters {
 
     /**
      * Creates parameters for external Ignite node.
-     * Adds special JVM arg line identifier to simplify process tracking.
+     * Adds special JVM arg line identifier: property "ignite.node" is not used in program code, it is used to
+     * simplify manual process tracking: e.g. grep 'ignite.node' in process list.
      *
      * @param nodeGridName The name of Ignite node in arbitrary form.
      * @return The node process parameters.
@@ -27,9 +28,9 @@ public class NodeProcessParameters {
     }
 
     /**
-     * Version of bode process parameters composition that inherits all the Hadoop-related
-     * system properties passed in with -D. This is important because these properties may be absent in the
-     * environment.
+     * Utility method creating node process parameters composition that inherits all the Hadoop-related
+     * system properties passed in with -D. These properties may be absent in the
+     * environment, so otherwise they will not be inherited in child process.
      *
      * @param nodeGridName The node name.
      * @return The paramaters.

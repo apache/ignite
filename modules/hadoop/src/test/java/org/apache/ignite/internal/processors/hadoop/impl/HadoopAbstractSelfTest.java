@@ -260,7 +260,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Gets special JVM parameters for specified remote node.
      *
-     * @param nodeIdx Th enode index.
+     * @param nodeIdx The node index.
      * @return The node parameters.
      */
     NodeProcessParameters getRemoteNodeParameters(int nodeIdx) {

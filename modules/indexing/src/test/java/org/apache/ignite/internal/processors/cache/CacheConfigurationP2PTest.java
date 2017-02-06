@@ -147,7 +147,9 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     null,
                     null,
                     jvmArgs,
-                    cp, null, null
+                    cp,
+                    null,
+                    null
                 );
 
                 assertTrue(clientReadyLatch.await(60, SECONDS));
