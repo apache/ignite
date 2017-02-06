@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.query.h2.database.FastIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.database.H2ExtrasTree;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
 
@@ -60,7 +61,9 @@ public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
 
         assert row0.link != 0;
 
-        List<FastIndexHelper> fastIdx = ((H2ExtrasTree)row0.tree).fastIdxs();
+        H2ExtrasTree tree = (H2ExtrasTree)H2TreeIndex.getCurrentTree();
+        assert tree != null;
+        List<FastIndexHelper> fastIdx = tree.fastIdxs();
 
         assert fastIdx != null;
 
@@ -83,7 +86,6 @@ public class H2Extras32InnerIO extends BPlusInnerIO<SearchRow> {
         assert link != 0;
 
         GridH2Row r0 = ((H2ExtrasTree)tree).getRowFactory().getRow(link);
-        r0.tree = tree;
 
         return r0;
     }

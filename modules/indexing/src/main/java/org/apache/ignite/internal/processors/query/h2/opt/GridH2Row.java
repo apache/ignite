@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -45,8 +44,6 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer, Cac
 
     /** */
     public int partId; // TODO remove
-
-    public BPlusTree tree;
 
     /** {@inheritDoc} */
     @Override public long pointer() {

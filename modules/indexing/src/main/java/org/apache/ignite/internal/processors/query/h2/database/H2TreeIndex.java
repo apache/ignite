@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -58,6 +59,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** */
     private final List<FastIndexHelper> fastIdxs;
+
+    /** Tree collection for use in IO's */
+    private static final ThreadLocal<BPlusTree> currentTrees = new ThreadLocal<>();
 
     /**
      * @param cctx Cache context.
@@ -196,6 +200,13 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /**
+     * @return Tree updated in current thread.
+     */
+    public static BPlusTree getCurrentTree() {
+        return currentTrees.get();
+    }
+
+    /**
      * @param a First value.
      * @param b Second Value.
      * @param sortType Sort type.
@@ -251,28 +262,22 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            row.tree = tree;
+            currentTrees.set(F.isEmpty(fastIdxs) ? null : tree);
             return tree.put(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-        finally {
-            row.tree = null;
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            row.tree = tree;
+            currentTrees.set(F.isEmpty(fastIdxs) ? null : tree);
             return tree.putx(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-        finally {
-            row.tree = null;
         }
     }
 
