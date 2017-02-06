@@ -123,7 +123,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override protected final int offset(int idx) {
+    @Override public final int offset(int idx) {
         return offset(idx, SHIFT_LINK);
     }
 

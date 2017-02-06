@@ -77,6 +77,12 @@ public abstract class PageIO {
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
     /** */
+    private static IOVersions<? extends BPlusInnerIO<?>> h2IntInnerIOs;
+
+    /** */
+    private static IOVersions<? extends BPlusLeafIO<?>> h2IntLeafIOs;
+
+    /** */
     public static final int TYPE_OFF = 0;
 
     /** */
@@ -146,6 +152,12 @@ public abstract class PageIO {
 
     /** */
     public static final short T_PAGE_UPDATE_TRACKING = 15;
+
+    /** */
+    public static final short T_H2_EX32_REF_LEAF = 16;
+
+    /** */
+    public static final short T_H2_EX32_REF_INNER = 17;
 
     /** */
     private final int ver;
@@ -283,10 +295,14 @@ public abstract class PageIO {
      */
     public static void registerH2(
         IOVersions<? extends BPlusInnerIO<?>> innerIOs,
-        IOVersions<? extends BPlusLeafIO<?>> leafIOs
+        IOVersions<? extends BPlusLeafIO<?>> leafIOs,
+        IOVersions<? extends BPlusInnerIO<?>> intInnerIOs,
+        IOVersions<? extends BPlusLeafIO<?>> intLeafIOs
     ) {
         h2InnerIOs = innerIOs;
         h2LeafIOs = leafIOs;
+        h2IntInnerIOs = intInnerIOs;
+        h2IntLeafIOs = intLeafIOs;
     }
 
     /**
@@ -414,6 +430,18 @@ public abstract class PageIO {
                     break;
 
                 return (Q)h2LeafIOs.forVersion(ver);
+
+            case T_H2_EX32_REF_INNER:
+                if (h2IntInnerIOs == null)
+                    break;
+
+                return (Q)h2IntInnerIOs.forVersion(ver);
+
+            case T_H2_EX32_REF_LEAF:
+                if (h2IntLeafIOs == null)
+                    break;
+
+                return (Q)h2IntLeafIOs.forVersion(ver);
 
             case T_DATA_REF_INNER:
                 return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);

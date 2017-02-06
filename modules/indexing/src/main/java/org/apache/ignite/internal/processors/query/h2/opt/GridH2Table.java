@@ -34,7 +34,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.h2.database.*;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -606,6 +607,8 @@ public class GridH2Table extends TableBase {
                     GridH2IndexBase idx = index(i);
 
                     assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
+
+                    //row.fastIdx =
 
                     GridH2Row old2 = idx.put(row);
 

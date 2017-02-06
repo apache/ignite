@@ -47,7 +47,7 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override protected final int offset(int idx) {
+    @Override public final int offset(int idx) {
         assert idx >= 0: idx;
 
         return ITEMS_OFF + idx * itemSize;

@@ -452,10 +452,12 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * Sets position to start of actual fragment data and limit to it's end.
+     *
      * @param pageAddr Page address.
      * @param itemId Item to position on.
      * @param pageSize Page size.
-     * @return Size and offset of actual fragment data, and link to the next fragment if data is fragmented.
+     * @return Link to the next fragment or {@code 0} if it is the last fragment or the data row is not fragmented.
      */
     public DataPagePayload readPayload(final long pageAddr, final int itemId, final int pageSize) {
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
