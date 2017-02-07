@@ -19,6 +19,4 @@ package org.apache.ignite.stream.zeromq.converter;
 
 public interface MessageConverter {
     public void convert(byte[] msg);
-    public Long getId();
-    public String getMessage();
 }

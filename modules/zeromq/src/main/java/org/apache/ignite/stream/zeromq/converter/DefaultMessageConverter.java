@@ -20,19 +20,14 @@ package org.apache.ignite.stream.zeromq.converter;
 import java.nio.charset.Charset;
 
 public class DefaultMessageConverter implements MessageConverter {
-    private Long id;
-    private String message;
+    /** */
+    private String value;
 
     public void convert(byte[] msg) {
-        id = System.currentTimeMillis();
-        message = new String(msg, Charset.forName("UTF-8"));
+        value = new String(msg, Charset.forName("UTF-8"));
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getMessage() {
-        return message;
+    public String getValue() {
+        return value;
     }
 }
