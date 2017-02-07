@@ -457,6 +457,37 @@ public abstract class AbstractVector implements Vector {
     }
 
     @Override
+    public double dot(Vector vec) {
+        if (vec.size() != sto.size())
+            throw new CardinalityException(sto.size(), vec.size());
+
+        double sum = 0.0;
+        int len = sto.size();
+
+        for (int i = 0; i < len; i++)
+            sum += sto.get(i) * vec.getX(i);
+
+        return sum;
+    }
+
+    /**
+     *
+     * @return
+     */
+    protected double dotSelf() {
+        double sum = 0.0;
+        int len = sto.size();
+
+        for (int i = 0; i < len; i++) {
+            double v = sto.get(i);
+
+            sum += v * v;
+        }
+
+        return sum;
+    }
+
+    @Override
     public Element getElement(int idx) {
         return mkElement(idx);
     }
