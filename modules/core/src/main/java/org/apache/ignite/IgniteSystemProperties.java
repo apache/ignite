@@ -277,6 +277,9 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
+
     /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
      * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
      * synchronization mode. If value is {@code 0} then limit is unbounded.
