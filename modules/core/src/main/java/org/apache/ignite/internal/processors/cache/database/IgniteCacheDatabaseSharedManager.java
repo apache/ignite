@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -189,9 +190,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     * @param stoppedCtxs A collection of tuples (cache context, destroy flag).
      */
-    public void beforeCachesStop() throws IgniteCheckedException {
+    public void onCachesStopped(Collection<IgniteBiTuple<GridCacheContext, Boolean>> stoppedCtxs) {
         // No-op.
     }
 

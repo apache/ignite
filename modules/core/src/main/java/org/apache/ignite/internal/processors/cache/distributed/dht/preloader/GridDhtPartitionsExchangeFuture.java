@@ -553,21 +553,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             updateTopologies(crdNode);
 
-            if (!F.isEmpty(reqs)) {
-                boolean hasStop = false;
-
-                for (DynamicCacheChangeRequest req : reqs) {
-                    if (req.stop()) {
-                        hasStop = true;
-
-                        break;
-                    }
-                }
-
-                if (hasStop)
-                    cctx.cache().context().database().beforeCachesStop();
-            }
-
             switch (exchange) {
                 case ALL: {
                     distributedExchange();

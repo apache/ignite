@@ -112,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -888,7 +889,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void checkConsistency() throws IgniteCheckedException {
         if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
-                if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
+                if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                     continue;
 
                 checkTransactionConfiguration(n);
@@ -1247,16 +1248,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled())
             log.info("Stopped cache: " + cache.name());
-
-        if (sharedCtx.pageStore() != null) {
-            try {
-                sharedCtx.pageStore().shutdownForCache(ctx, destroy);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
-                    "[cache=" + ctx.name() + "]", e);
-            }
-        }
 
         cleanup(ctx);
     }
@@ -1893,8 +1884,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param req Stop request.
+     * @return Stopped cache context.
      */
-    private void prepareCacheStop(DynamicCacheChangeRequest req) {
+    private GridCacheContext<?, ?> prepareCacheStop(DynamicCacheChangeRequest req) {
         assert req.stop() || req.close() : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
@@ -1910,7 +1902,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStop(cache, req.destroy());
 
             stopCache(cache, true, req.destroy());
+
+            return ctx;
         }
+
+        return null;
     }
 
     /**
@@ -1940,13 +1936,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (!F.isEmpty(reqs) && err == null) {
+            Collection<IgniteBiTuple<GridCacheContext, Boolean>> stopped = null;
+
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
+
+                GridCacheContext<?, ?> stopCtx = null;
+                boolean destroy = false;
 
                 if (req.stop()) {
                     stopGateway(req);
 
-                    prepareCacheStop(req);
+                    stopCtx = prepareCacheStop(req);
+                    destroy = req.destroy();
                 }
                 else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
                     IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
@@ -1964,11 +1966,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             proxy.context().gate().onStopped();
 
-                            prepareCacheStop(req);
+                            stopCtx = prepareCacheStop(req);
+                            destroy = req.destroy();
                         }
                     }
                 }
+
+                if (stopCtx != null) {
+                    if (stopped == null)
+                        stopped = new ArrayList<>();
+
+                    stopped.add(F.<GridCacheContext, Boolean>t(stopCtx, destroy));
+                }
             }
+
+            if (stopped != null)
+                sharedCtx.database().onCachesStopped(stopped);
         }
     }
 
