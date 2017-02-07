@@ -393,8 +393,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
             if (!outRecovery.pairedConnections())
                 inRecovery = outRecovery;
 
-            outRecovery.onConnected();
-
             return null;
         }
         else
