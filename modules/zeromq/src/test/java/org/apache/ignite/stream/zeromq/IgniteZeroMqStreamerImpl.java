@@ -18,31 +18,35 @@
 package org.apache.ignite.stream.zeromq;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.zeromq.converter.DefaultMessageConverter;
-import org.apache.ignite.stream.zeromq.converter.MessageConverter;
 
-public class IgniteZeroMqStreamerImpl extends IgniteZeroMqStreamer<Long, String> {
+public class IgniteZeroMqStreamerImpl extends IgniteZeroMqStreamer<Integer, String> {
+    /** */
+    private AtomicInteger count = new AtomicInteger();
     /**
      * @param zeroMqSettings ZeroMQ settings.
      */
     public IgniteZeroMqStreamerImpl(ZeroMqSettings zeroMqSettings) {
         super(zeroMqSettings);
 
+        count.set(0);
+
         setSingleTupleExtractor(new ZeroMqStreamSingleTupleExtractorImpl());
     }
 
-    class ZeroMqStreamSingleTupleExtractorImpl implements StreamSingleTupleExtractor<byte[], Long, String> {
+    class ZeroMqStreamSingleTupleExtractorImpl implements StreamSingleTupleExtractor<byte[], Integer, String> {
 
-        @Override public Map.Entry<Long, String> extract(byte[] msg) {
+        @Override public Map.Entry<Integer, String> extract(byte[] msg) {
             try {
-                MessageConverter message = new DefaultMessageConverter();
+                DefaultMessageConverter message = new DefaultMessageConverter();
                 message.convert(msg);
 
-                return new IgniteBiTuple<>(message.getId(), message.getMessage());
+                return new IgniteBiTuple<>(count.getAndIncrement(), message.getValue());
             }
             catch (IgniteException e) {
                 U.error(log, e);
