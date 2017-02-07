@@ -105,8 +105,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
-        if (vec.size() != size())
-            throw new CardinalityException(size(), vec.size());
+        checkCardinality(vec);
 
         int len = sto.size();
 
@@ -289,8 +288,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(sto.size(), vec.size());
+        checkCardinality(vec);
 
         T t = null;
         int len = sto.size();
@@ -369,8 +367,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public Vector assign(double[] vals) {
-        if (vals.length != sto.size())
-            throw new CardinalityException(sto.size(), vals.length);
+        checkCardinality(vals);
 
         if (sto.isArrayBased())
             System.arraycopy(vals, 0, sto.data(), 0, vals.length);
@@ -386,10 +383,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public Vector assign(Vector vec) {
-        assert vec != null;
-
-        if (vec.size() != sto.size())
-            throw new CardinalityException(sto.size(), vec.size());
+        checkCardinality(vec);
 
         for (Vector.Element x : vec.all())
             sto.set(x.index(), x.get());
@@ -479,8 +473,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public double dot(Vector vec) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(sto.size(), vec.size());
+        checkCardinality(vec);
 
         double sum = 0.0;
         int len = sto.size();
@@ -498,8 +491,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public double getDistanceSquared(Vector vec) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(size(), vec.size());
+        checkCardinality(vec);
 
         double thisLenSq = getLengthSquared();
         double thatLenSq = vec.getLengthSquared();
@@ -513,10 +505,19 @@ public abstract class AbstractVector implements Vector, Externalizable {
             return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED);
     }
 
-    @Override
-    public Vector minus(Vector vec) {
+    private void checkCardinality(Vector vec) {
         if (vec.size() != sto.size())
             throw new CardinalityException(size(), vec.size());
+    }
+
+    private void checkCardinality(double[] vec) {
+        if (vec.length != sto.size())
+            throw new CardinalityException(size(), vec.length);
+    }
+
+    @Override
+    public Vector minus(Vector vec) {
+        checkCardinality(vec);
 
         Vector copy = copy();
 
@@ -547,13 +548,56 @@ public abstract class AbstractVector implements Vector, Externalizable {
     }
 
     @Override
+    public Vector times(double x) {
+        if (x == 0.0)
+            return like(size());
+        else
+            return copy().map(Functions.mult(x));
+    }
+
+    @Override
+    public Vector times(Vector vec) {
+        checkCardinality(vec);
+
+        return copy().map(vec, Functions.MULT);
+    }
+
+    @Override
     public Vector plus(Vector vec) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(size(), vec.size());
+        checkCardinality(vec);
 
         Vector copy = copy();
 
         copy.map(vec, Functions.PLUS);
+
+        return copy;
+    }
+
+    @Override
+    public Vector logNormalize() {
+        return logNormalize(2.0, Math.sqrt(getLengthSquared()));
+    }
+
+    @Override
+    public Vector logNormalize(double power) {
+        return logNormalize(power, kNorm(power));
+    }
+
+    /**
+     *
+     * @param power
+     * @param normLen
+     * @return
+     */
+    private Vector logNormalize(double power, double normLen) {
+        assert Double.isInfinite(power) || power <= 1.0;
+
+        double denominator = normLen * Math.log(power);
+
+        Vector copy = copy();
+
+        for (Element element : copy.nonZeroes())
+            element.set(Math.log1p(element.get()) / denominator);
 
         return copy;
     }
