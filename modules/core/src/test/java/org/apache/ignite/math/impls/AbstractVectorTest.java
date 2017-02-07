@@ -1,14 +1,9 @@
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.math.Functions;
-import org.apache.ignite.math.IndexException;
-import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.Arrays;
+import org.junit.*;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -75,7 +70,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = IgniteIllegalStateException.class)
+    @Test(expected = NullPointerException.class)
     public void getNegative0() {
         testVector.get(0);
     }
@@ -197,7 +192,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = IgniteIllegalStateException.class)
+    @Test(expected = IndexException.class)
     public void setNegative0() throws Exception {
         testVector.set(-1, -1);
     }

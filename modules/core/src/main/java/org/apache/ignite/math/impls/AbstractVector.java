@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
@@ -69,15 +68,12 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @param idx index
      */
     private void checkIndex(int idx) {
-        if(sto == null)
-            throw new IgniteIllegalStateException("storage must be initialized");
-        if ( idx < 0 || idx >= sto.size())
+        if (idx < 0 || idx >= sto.size())
             throw new IndexException(idx);
     }
 
     /**
      * {@inheritDoc}
-     * @throws IgniteIllegalStateException Throw if storage is null
      */
     @Override public double get(int idx) {
         checkIndex(idx);
