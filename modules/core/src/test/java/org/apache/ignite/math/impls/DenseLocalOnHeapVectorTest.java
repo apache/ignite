@@ -60,12 +60,12 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void getElementTest() {
-        consumeSampleVectors(v -> {
-            for (Vector.Element e : v.all())
-                e.set(e.index());
+        consumeSampleVectors(v -> new ElementsChecker(v).assertCloseEnough(v));
+    }
 
-            assertCloseEnough(v);
-        });
+    /** */ @Test
+    public void copyTest() {
+        consumeSampleVectors(v -> new ElementsChecker(v).assertCloseEnough(v.copy()));
     }
 
     /** */ @Test
@@ -316,17 +316,31 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */
-    private void assertCloseEnough(DenseLocalOnHeapVector obtained) {
-        final int size = obtained.size();
+    private static class ElementsChecker {
+        /** */
+        ElementsChecker(Vector v) {
+            init(v);
+        }
 
-        for (int i = 0; i < size; i++) {
-            final Vector.Element e = obtained.getElement(i);
+        /** */
+        void assertCloseEnough(Vector obtained) {
+            final int size = obtained.size();
 
-            final Metric metric = new Metric(i, e.get());
+            for (int i = 0; i < size; i++) {
+                final Vector.Element e = obtained.getElement(i);
 
-            assertEquals("vector index", i, e.index());
+                final Metric metric = new Metric(i, e.get());
 
-            assertTrue("not close enough at index " + i + ", size " + size + ", " + metric, metric.closeEnough());
+                assertEquals("vector index", i, e.index());
+
+                assertTrue("not close enough at index " + i + ", size " + size + ", " + metric, metric.closeEnough());
+            }
+        }
+
+        /** */
+        private void init(Vector v) {
+            for (Vector.Element e : v.all())
+                e.set(e.index());
         }
     }
 

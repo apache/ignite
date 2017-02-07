@@ -95,7 +95,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param orig
      */
     private DenseLocalOnHeapVector(DenseLocalOnHeapVector orig) {
-        mkStorage(orig.size());
+        setStorage(mkStorage(orig.size()));
 
         assign(orig);
     }
