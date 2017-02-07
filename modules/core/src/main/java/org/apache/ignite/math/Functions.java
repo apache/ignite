@@ -86,6 +86,34 @@ public final class Functions {
     /** Function that returns <tt>Math.tan(a)</tt>. */
     public static final DoubleFunction<Double> TAN = Math::tan;
 
+    /** Function that returns <tt>Math.atan2(a,b)</tt>. */
+    public static final BiFunction<Double, Double, Double> ATAN2 = Math::atan2;
+
+    /** Function that returns <tt>a % b</tt>. */
+    public static final BiFunction<Double, Double, Double> MOD = (a, b) -> a % b;
+
+    /** Function that returns <tt>a * b</tt>. */
+    public static final BiFunction<Double, Double, Double> MULT = (a, b) -> a * b;
+
+    /** Function that returns <tt>a + b</tt>. */
+    public static final BiFunction<Double, Double, Double> PLUS = (a, b) ->  a + b;
+
+    /** Function that returns <tt>a + b</tt>. */
+    public static final BiFunction<Double, Double, Double> MINUS = (a, b) ->  a - b;
+
+    /** Function that returns <tt>Math.abs(a) + Math.abs(b)</tt>. */
+    public static final BiFunction<Double, Double, Double> PLUS_ABS = (a, b) -> Math.abs(a) + Math.abs(b);
+
+    /** Function that returns <tt>(a - b) * (a - b)</tt> */
+    public static final BiFunction<Double, Double, Double> MINUS_SQUARED = (a, b) -> (a - b) * (a - b);
+    
+    /**
+     * Function that returns <tt>a &lt; b ? -1 : a &gt; b ? 1 : 0</tt>.
+     */
+    public static final BiFunction<Double, Double, Double> COMPARE = (a, b) -> {
+        return a < b ? -1.0 : a > b ? 1.0 : 0.0;
+    };
+
     /**
      * 
      * @param b

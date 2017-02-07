@@ -31,6 +31,9 @@ public abstract class AbstractVector implements Vector {
     // Vector storage implementation.
     private VectorStorage sto;
 
+    // Length squared.
+    private double lenSq = 0.0;
+
     // Vector's GUID.
     private final IgniteUuid guid = IgniteUuid.randomUuid();
 
@@ -282,7 +285,21 @@ public abstract class AbstractVector implements Vector {
 
         return t;
     }
-    
+
+    @Override
+    public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun) {
+        if (vec.size() != sto.size())
+            throw new CardinalityException(sto.size(), vec.size());
+
+        T t = null;
+        int len = sto.size();
+
+        for (int i = 1; i < len; i++)
+            t = foldFun.apply(t, combFun.apply(sto.get(i), vec.getX(i)));
+
+        return t;
+    }
+
     @Override public double norm(double power) {
         return 0; // TODO
     }
@@ -468,6 +485,28 @@ public abstract class AbstractVector implements Vector {
             sum += sto.get(i) * vec.getX(i);
 
         return sum;
+    }
+
+    @Override
+    public double getLengthSquared() {
+        return dotSelf(); // TODO: need to cache for performance.
+    }
+
+    @Override
+    public double getDistanceSquared(Vector vec) {
+        if (vec.size() != sto.size())
+            throw new CardinalityException(size(), vec.size());
+
+        double thisLenSq = getLengthSquared();
+        double thatLenSq = vec.getLengthSquared();
+        double dot = dot(vec);
+        double distEst = thisLenSq + thatLenSq - 2 * dot;
+
+        if (distEst > 1.0e-3 * (thisLenSq + thatLenSq))
+            // The vectors are far enough from each other that the formula is accurate.
+            return Math.max(distEst, 0);
+        else
+            return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED);
     }
 
     /**

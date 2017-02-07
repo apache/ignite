@@ -108,22 +108,17 @@ public class DenseLocalOnHeapVector extends AbstractVector implements Externaliz
 
     /** {@inheritDoc */
     @Override public boolean isSequentialAccess() {
-        return true;
+        return false;
     }
 
     @Override
     public Vector copy() {
-        return null; // TODO
+        return new DenseLocalOnHeapVector(this);
     }
 
     /** {@inheritDoc */
     @Override public Vector divide(double x) {
         return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public double dot(Vector vec) {
-        return 0; // TODO
     }
 
     /** {@inheritDoc */
@@ -187,18 +182,8 @@ public class DenseLocalOnHeapVector extends AbstractVector implements Externaliz
     }
 
     /** {@inheritDoc */
-    @Override public double getLengthSquared() {
-        return 0; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public double getDistanceSquared(Vector vec) {
-        return 0; // TODO
-    }
-
-    /** {@inheritDoc */
     @Override public double getLookupCost() {
-        return 0; // TODO
+        return 0;
     }
 
     /** {@inheritDoc */
