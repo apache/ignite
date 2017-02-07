@@ -72,6 +72,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -3962,36 +3963,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            try {
-                for (GridCacheContext cacheCtx : sharedCtx.cacheContexts()) {
-                    if (!cacheCtx.isLocal() && cacheCtx.affinityNode()) {
-                        GridDhtPartitionTopology top = null;
+            ctx.closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    try {
+                        for (GridCacheContext cacheCtx : sharedCtx.cacheContexts()) {
+                            if (!cacheCtx.isLocal() && cacheCtx.affinityNode()) {
+                                GridDhtPartitionTopology top = null;
 
-                        try {
-                            top = cacheCtx.topology();
-                        }
-                        catch (IllegalStateException ignore) {
-                            // Cache stopped.
-                        }
+                                try {
+                                    top = cacheCtx.topology();
+                                }
+                                catch (IllegalStateException ignore) {
+                                    // Cache stopped.
+                                }
 
-                        if (top != null) {
-                            for (GridDhtLocalPartition part : top.currentLocalPartitions())
-                                part.cleanupRemoveQueue();
-                        }
+                                if (top != null) {
+                                    for (GridDhtLocalPartition part : top.currentLocalPartitions())
+                                        part.cleanupRemoveQueue();
+                                }
 
-                        if (ctx.isStopping())
-                            return;
+                                if (ctx.isStopping())
+                                    return;
+                            }
+                        }
                     }
+                    catch (Exception e) {
+                        U.error(log, "Failed to cleanup removed cache items: " + e, e);
+                    }
+
+                    if (ctx.isStopping())
+                        return;
+
+                    addRemovedItemsCleanupTask(timeout);
                 }
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to cleanup removed cache items: " + e, e);
-            }
-
-            if (ctx.isStopping())
-                return;
-
-            addRemovedItemsCleanupTask(timeout);
+            }, true);
         }
     }
 }
