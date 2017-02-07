@@ -18,7 +18,6 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Vector;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -203,7 +202,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    @Ignore("ignored test: implementation in progress") // todo fix test or implementation
     public void nonZeroesTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
@@ -383,7 +381,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    @Ignore("ignored test: implementation in progress") // todo fix test or implementation
     public void nonZeroElementsTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
@@ -396,7 +393,8 @@ public class DenseLocalOnHeapVectorTest {
                 shallowCp.set(shallowCopyParam);
             },
             v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
-                -> assertEquals("unexpected num zeroes at size " + vec.size(), (int)numZeroes, vec.nonZeroElements())));
+                -> assertEquals("unexpected num zeroes at size " + vec.size(),
+                (int)numZeroes, vec.size() - vec.nonZeroElements())));
     }
 
     /** */ @Test
@@ -459,16 +457,6 @@ public class DenseLocalOnHeapVectorTest {
 
     }
 
-    /** */ @Test
-    public void writeExternalTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void readExternalTest() { // TODO write test
-
-    }
-
     /** */
     private void alwaysTrueAttributeTest(Predicate<DenseLocalOnHeapVector> pred) {
         assertTrue("default size for null args",
@@ -519,11 +507,7 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private void consumeSampleVectorsWithZeroes(DenseLocalOnHeapVector sample,
         BiConsumer<DenseLocalOnHeapVector, Integer> consumer) {
-
-        int idx = 0;
-
-        for (Vector.Element e : sample.all())
-            e.set(1 + idx++); // IMPL NOTE fill with non-zeroes
+        fillWithNonZeroes(sample);
 
         consumer.accept(sample, 0);
 
@@ -537,12 +521,18 @@ public class DenseLocalOnHeapVectorTest {
 
         consumer.accept(sample, sampleSize);
 
+        fillWithNonZeroes(sample);
+
         for (int testIdx : new int[] {0, sampleSize / 2, sampleSize - 1}) {
-            sample.getElement(testIdx).set(0);
+            final Vector.Element e = sample.getElement(testIdx);
+
+            final double backup = e.get();
+
+            e.set(0);
 
             consumer.accept(sample, 1);
 
-            sample.getElement(testIdx).set(1 + testIdx);
+            e.set(backup);
         }
 
         if (sampleSize < 3)
@@ -553,6 +543,16 @@ public class DenseLocalOnHeapVectorTest {
         sample.getElement((2 * sampleSize) / 3).set(0);
 
         consumer.accept(sample, 2);
+    }
+
+    /** */
+    private void fillWithNonZeroes(DenseLocalOnHeapVector sample) {
+        int idx = 0;
+
+        for (Vector.Element e : sample.all())
+            e.set(1 + idx++);
+
+        assertEquals("not all filled with non-zeroes", idx, sample.size());
     }
 
     /** */
