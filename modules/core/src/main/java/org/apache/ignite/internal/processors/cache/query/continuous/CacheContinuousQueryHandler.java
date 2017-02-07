@@ -41,6 +41,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -316,8 +318,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        final CacheEntryEventFilter filter = getEventFilter();
+        CacheEntryEventFilter f;
+        try {
+            f = getEventFilter();
+        }
+        catch (IgniteException e) {
+            f = null;
+            if (X.hasCause(e, NoClassDefFoundError.class))
+                U.warn(log, "Failed to instantiate continuous query remote filter. Can be ignored.", e);
+        }
 
+        final CacheEntryEventFilter filter = f;
         if (filter != null) {
             if (filter instanceof JCacheQueryRemoteFilter) {
                 if (((JCacheQueryRemoteFilter)filter).impl != null)
@@ -527,8 +538,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @return Cache entry event filter.
+     * @throws IgniteException In case of error, in particular filter instantiation error
      */
-    public CacheEntryEventFilter getEventFilter() {
+    public CacheEntryEventFilter getEventFilter() throws IgniteException {
         return rmtFilter;
     }
 
