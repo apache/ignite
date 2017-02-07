@@ -36,7 +36,7 @@ import org.h2.result.SearchRow;
  */
 public class H2Extras32LeafIO extends BPlusLeafIO<SearchRow> {
 
-    public static final int PAYLOAD_SIZE = 32;
+    public static final int PAYLOAD_SIZE = 8;
 
     /** */
     public static final IOVersions<H2Extras32LeafIO> VERSIONS = new IOVersions<>(
@@ -83,7 +83,7 @@ public class H2Extras32LeafIO extends BPlusLeafIO<SearchRow> {
         int srcOff = srcIo.offset(srcIdx);
 
         byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, PAYLOAD_SIZE);
-        long link = PageUtils.getInt(srcPageAddr, srcOff + PAYLOAD_SIZE);
+        long link = PageUtils.getLong(srcPageAddr, srcOff + PAYLOAD_SIZE);
 
         assert link != 0;
 
