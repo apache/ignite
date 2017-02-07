@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Abstraction for DDL operation as a whole.
+ * Client side abstraction for DDL operation as a whole.
  */
-// TODO: Rename to DdlOperationFuture.
-public class DdlOperation extends GridFutureAdapter {
+public class DdlOperationFuture extends GridFutureAdapter {
     /** Unique ID of this operation. */
     private final IgniteUuid id;
 
@@ -37,7 +37,7 @@ public class DdlOperation extends GridFutureAdapter {
     private final DdlOperationArguments args;
 
     /** */
-    public DdlOperation(GridKernalContext ctx, DdlOperationArguments args) {
+    public DdlOperationFuture(GridKernalContext ctx, DdlOperationArguments args) {
         this.id = args.opId;
         this.ctx = ctx;
         this.args = args;

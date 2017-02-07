@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.ddl;
+package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Message sent from DDL operation coordinator to its initiator when it's finished.
+ * Message sent from <b>coordinator</b> to <b>client</b> when operation is ultimately finished.
  * Empty map of errors means operation has been successful.
  */
 public class DdlOperationResult implements Message {

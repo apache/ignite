@@ -17,28 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.CountDownLatch;
 
 /**
- * Factory for DDL messages.
+ * Operation run context on the <b>coordinator</b>.
  */
-public class GridDdlMessageFactory implements MessageFactory {
-    /** */
-    final static byte OPERATION_RESULT = -4;
+public class DdlOperationRunContext {
+    /** Latch to expect all nodes to finish their local jobs for this operation. */
+    public final CountDownLatch latch;
 
-    /** */
-    final static byte NODE_RESULT = -5;
+    /** Cancellation flag. */
+    public volatile boolean isCancelled = false;
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Message create(byte type) {
-        switch (type) {
-            case OPERATION_RESULT:
-                return new DdlOperationResult();
-
-            default:
-                return null;
-        }
+    /**
+     * @param nodesCnt Nodes count to initialize latch with.
+     */
+    public DdlOperationRunContext(int nodesCnt) {
+        this.latch = new CountDownLatch(nodesCnt);
     }
 }

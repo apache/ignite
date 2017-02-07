@@ -15,35 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.ddl;
+package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Message that initiates cancel of a DDL operation due to an irrecoverable error on the peer or on the coordinator,
+ * or due to the operation's cancellation by the user.
+ * May be sent either by the <b>client</b> or by <b>coordinator.</b>
  */
-public class DdlOperationInitError implements DiscoveryCustomMessage {
+public class DdlOperationCancel implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** This message id. */
+    /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** ID of whole DDL operation task at coordinator/initiator. */
+    /** */
     private IgniteUuid opId;
 
-    /** Map from node IDs to their errors. */
-    private Map<UUID, IgniteCheckedException> errors;
+    /** */
+    private IgniteCheckedException err;
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
     }
+
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
@@ -54,31 +55,25 @@ public class DdlOperationInitError implements DiscoveryCustomMessage {
         return false;
     }
 
-    /**
-     * @return ID of whole DDL operation task at coordinator/initiator.
-     */
     public IgniteUuid getOperationId() {
         return opId;
     }
 
-    /**
-     * @param opId ID of whole DDL operation task at coordinator/initiator.
-     */
     public void setOperationId(IgniteUuid opId) {
         this.opId = opId;
     }
 
     /**
-     * @return Map from node IDs to their errors.
+     * @return Error that has led to this cancellation, or {@code null} if it's user's cancel.
      */
-    public Map<UUID, IgniteCheckedException> getErrors() {
-        return errors;
+    public IgniteCheckedException getError() {
+        return err;
     }
 
     /**
-     * @param errors Map from node IDs to their errors.
+     * @param err Error that has led to this cancellation, or {@code null} if it's user's cancel.
      */
-    public void setErrors(Map<UUID, IgniteCheckedException> errors) {
-        this.errors = errors;
+    public void setError(IgniteCheckedException err) {
+        this.err = err;
     }
 }

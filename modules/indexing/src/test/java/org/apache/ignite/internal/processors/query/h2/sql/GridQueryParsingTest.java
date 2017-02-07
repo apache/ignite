@@ -466,33 +466,33 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      * Parse SQL and compare it to expected instance.
      */
-    private void assertCreateIndexEquals(GridCreateIndex exp, String sql) throws Exception {
+    private void assertCreateIndexEquals(GridSqlCreateIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
         GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
 
-        assertTrue(stmt instanceof GridCreateIndex);
+        assertTrue(stmt instanceof GridSqlCreateIndex);
 
-        assertCreateIndexEquals(exp, (GridCreateIndex) stmt);
+        assertCreateIndexEquals(exp, (GridSqlCreateIndex) stmt);
     }
 
     /**
      * Parse SQL and compare it to expected instance of DROP INDEX.
      */
-    private void assertDropIndexEquals(GridDropIndex exp, String sql) throws Exception {
+    private void assertDropIndexEquals(GridSqlDropIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
         GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
 
-        assertTrue(stmt instanceof GridDropIndex);
+        assertTrue(stmt instanceof GridSqlDropIndex);
 
-        assertDropIndexEquals(exp, (GridDropIndex) stmt);
+        assertDropIndexEquals(exp, (GridSqlDropIndex) stmt);
     }
 
     /**
-     * Test two instances of {@link GridDropIndex} for equality.
+     * Test two instances of {@link GridSqlDropIndex} for equality.
      */
-    private static void assertDropIndexEquals(GridDropIndex exp, GridDropIndex actual) {
+    private static void assertDropIndexEquals(GridSqlDropIndex exp, GridSqlDropIndex actual) {
         assertEqualsIgnoreCase(exp.name(), actual.name());
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEquals(exp.ifExists(), actual.ifExists());
@@ -501,8 +501,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static GridDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
-        GridDropIndex res = new GridDropIndex();
+    private static GridSqlDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
+        GridSqlDropIndex res = new GridSqlDropIndex();
 
         res.name(name);
         res.schemaName(schema);
@@ -512,9 +512,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test two instances of {@link GridCreateIndex} for equality.
+     * Test two instances of {@link GridSqlCreateIndex} for equality.
      */
-    private static void assertCreateIndexEquals(GridCreateIndex exp, GridCreateIndex actual) {
+    private static void assertCreateIndexEquals(GridSqlCreateIndex exp, GridSqlCreateIndex actual) {
         assertEquals(exp.ifNotExists(), actual.ifNotExists());
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
@@ -552,8 +552,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static GridCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
-        QueryIndexType type, Object... flds) {
+    private static GridSqlCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
+                                                       QueryIndexType type, Object... flds) {
         QueryIndex idx = new QueryIndex();
 
         idx.setName(name);
@@ -568,7 +568,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         idx.setFields(trueFlds);
         idx.setIndexType(type);
 
-        GridCreateIndex res = new GridCreateIndex();
+        GridSqlCreateIndex res = new GridSqlCreateIndex();
 
         res.schemaName(schemaName);
         res.tableName(tblName);

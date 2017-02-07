@@ -22,7 +22,7 @@ import org.h2.command.Parser;
 /**
  * DROP INDEX statement.
  */
-public class GridDropIndex extends GridSqlStatement {
+public class GridSqlDropIndex extends GridSqlStatement {
     /** Index name. */
     private String name;
 

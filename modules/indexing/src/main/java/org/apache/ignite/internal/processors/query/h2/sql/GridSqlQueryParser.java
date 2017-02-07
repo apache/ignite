@@ -652,8 +652,8 @@ public class GridSqlQueryParser {
      * @param dropIdx {@code DROP INDEX} statement.
      * @see <a href="http://h2database.com/html/grammar.html#drop_index">H2 {@code DROP INDEX} spec.</a>
      */
-    private GridDropIndex parseDropIndex(DropIndex dropIdx) {
-        GridDropIndex res = new GridDropIndex();
+    private GridSqlDropIndex parseDropIndex(DropIndex dropIdx) {
+        GridSqlDropIndex res = new GridSqlDropIndex();
 
         res.name(DROP_INDEX_NAME.get(dropIdx));
         res.schemaName(SCHEMA_COMMAND_SCHEMA.get(dropIdx).getName());
@@ -668,13 +668,13 @@ public class GridSqlQueryParser {
      * @param createIdx {@code CREATE INDEX} statement.
      * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 {@code CREATE INDEX} spec.</a>
      */
-    private GridCreateIndex parseCreateIndex(CreateIndex createIdx) {
+    private GridSqlCreateIndex parseCreateIndex(CreateIndex createIdx) {
         if (CREATE_INDEX_HASH.get(createIdx) || CREATE_INDEX_PRIMARY_KEY.get(createIdx) ||
             CREATE_INDEX_UNIQUE.get(createIdx))
             throw new IgniteSQLException("Only SPATIAL modifier is supported for CREATE INDEX",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        GridCreateIndex res = new GridCreateIndex();
+        GridSqlCreateIndex res = new GridSqlCreateIndex();
 
         Schema schema = SCHEMA_COMMAND_SCHEMA.get(createIdx);
 
