@@ -52,7 +52,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
     private Integer bufferCapacity = 100000;
 
     /** Process stream asynchronously */
-    private ExecutorService zeroMqExServ;
+    private ExecutorService zeroMqExSrv;
 
     private ZMQ.Context ctx;
     private ZMQ.Socket socket;
@@ -69,9 +69,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
      */
     public void start() {
         if (!isStart.compareAndSet(false, true))
-            throw new IgniteException("Attempted to start an already started ZeroMQ Streamer");
-
-        checkSettings();
+            throw new IgniteException("Attempted to start an already started ZeroMQ streamer");
 
         log = getIgnite().log();
 
@@ -79,30 +77,19 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
         socket = ctx.socket(zeroMqSettings.getType());
         socket.connect(zeroMqSettings.getAddr());
 
-        final BlockingQueue<byte[]> zeroMqMsgQueue = new LinkedBlockingQueue<>(bufferCapacity);
-
-        zeroMqExServ = Executors.newFixedThreadPool(threadsCount);
+        zeroMqExSrv = Executors.newFixedThreadPool(threadsCount);
 
         for (int i = 0; i < threadsCount; i++) {
             Callable<Boolean> task = new Callable<Boolean>() {
                 @Override
                 public Boolean call() {
                     while (true) {
-                        try {
-                            byte[] msg = zeroMqMsgQueue.take();
-
-                            addMessage(msg);
-                        }
-                        catch (InterruptedException e) {
-                            U.warn(log, "ZeroMQ message transformation was interrupted", e);
-
-                            return true;
-                        }
+                        addMessage(socket.recv());
                     }
                 }
             };
 
-            zeroMqExServ.submit(task);
+            zeroMqExSrv.submit(task);
         }
     }
 
@@ -110,18 +97,15 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
      * Stop ZeroMQ streamer.
      */
     public void stop() {
+        if (!isStart.get())
+            throw new IgniteException("Attempted to stop an already stopped ZeroMQ streamer");
+
+        zeroMqExSrv.shutdownNow();
+
         socket.close();
         ctx.close();
 
         isStart.set(false);
-    }
-
-    /**
-     *
-     */
-    private boolean checkSettings() {
-        // TODO in progress
-        return false;
     }
 
     /**

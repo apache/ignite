@@ -40,7 +40,7 @@ public class ZeroMqSettings {
         this.ioThreads = ioThreads;
         this.addr = addr;
 
-        if (AvailableTypeSocket.check(type))
+        if (ZmqTypeSocket.check(type))
             this.type = type;
         else
             throw new IgniteException("This socket type not implementation this version ZeroMQ streamer.");
@@ -67,13 +67,15 @@ public class ZeroMqSettings {
         return addr;
     }
 
-    private enum AvailableTypeSocket {
+    public enum ZmqTypeSocket {
         PAIR(ZMQ.PAIR),
+        // TODO
+        // SUB(ZMQ.SUB),
         PULL(ZMQ.PULL);
 
         private int type;
 
-        AvailableTypeSocket(int type) {
+        ZmqTypeSocket(int type) {
             this.type = type;
         }
 
@@ -82,7 +84,7 @@ public class ZeroMqSettings {
         }
 
         public static boolean check(int type) {
-            for (AvailableTypeSocket ts : AvailableTypeSocket.values()) {
+            for (ZmqTypeSocket ts : ZmqTypeSocket.values()) {
                 if (ts.getType() == type)
                     return true;
             }
