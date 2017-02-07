@@ -241,7 +241,9 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
     public void testGradualRandomPutAllRemoveAll() {
         IgniteEx ig = grid(0);
 
-        final int cnt = KEYS_COUNT;
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        final int cnt = 100_000;
 
         Random rnd = BPlusTree.rnd;
 
