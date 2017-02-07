@@ -12,7 +12,7 @@ import static org.junit.Assert.*;
  */
 public class VectorArrayStorageTest {
     /** */
-    private static final int STORAGE_SIZE = 100;
+    public static final int STORAGE_SIZE = 100;
 
     /** */
     private static final String WRONG_ATTRIBUTE_VALUE = "wrong attribute value";
@@ -24,10 +24,10 @@ public class VectorArrayStorageTest {
     private static final String WRONG_DATA_ELEMENT = "wrong data element";
 
     /** */
-    private static final double EXPECTED_DELTA = 0d;
+    public static final double NIL_DELTA = 0d;
 
     /** */
-    private static final String NULL_DATA_STORAGE = "null data storage";
+    public static final String NULL_DATA_STORAGE = "null data storage";
 
     /** */
     private static final String WRONG_DATA_SIZE = "wrong data size";
@@ -61,7 +61,7 @@ public class VectorArrayStorageTest {
 
             testStorage.set(i, random);
 
-            assertEquals(WRONG_DATA_ELEMENT, testStorage.get(i), random, EXPECTED_DELTA);
+            assertEquals(WRONG_DATA_ELEMENT, testStorage.get(i), random, NIL_DELTA);
         }
     }
 

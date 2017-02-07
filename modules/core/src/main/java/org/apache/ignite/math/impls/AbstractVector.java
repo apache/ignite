@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
@@ -63,15 +64,21 @@ public abstract class AbstractVector implements Vector, Externalizable {
     }
 
     /**
+     * check index bounds
      *
-     * @param idx
+     * @param idx index
      */
     private void checkIndex(int idx) {
-        if (idx < 0 || idx >= sto.size())
+        if(sto == null)
+            throw new IgniteIllegalStateException("storage must be initialized");
+        if ( idx < 0 || idx >= sto.size())
             throw new IndexException(idx);
     }
 
-    /** {@inheritDoc */
+    /**
+     * {@inheritDoc}
+     * @throws IgniteIllegalStateException Throw if storage is null
+     */
     @Override public double get(int idx) {
         checkIndex(idx);
 
@@ -93,7 +100,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         else {
             int len = sto.size();
 
-            for (int i = 1; i < len; i++)
+            for (int i = 0; i < len; i++)
                 sto.set(i, fun.apply(sto.get(i)));
         }
 
@@ -107,7 +114,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             sto.set(i, fun.apply(vec.get(i), sto.get(i)));
 
         return this;
@@ -117,7 +124,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             sto.set(i, fun.apply(sto.get(i), y));
 
         return this;
@@ -152,7 +159,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int minIdx = 0;
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             if (sto.get(i) < sto.get(minIdx))
                 minIdx = i;
 
@@ -164,7 +171,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int maxIdx = 0;
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             if (sto.get(i) > sto.get(maxIdx))
                 maxIdx = i;
 
@@ -214,10 +221,10 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public double sum() {
-        int sum = 0;
+        double sum = 0;
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             sum += sto.get(i);
 
         return sum;
@@ -278,7 +285,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         T t = null;
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             t = foldFun.apply(t, mapFun.apply(sto.get(i)));
 
         return t;
@@ -292,7 +299,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         T t = null;
         int len = sto.size();
 
-        for (int i = 1; i < len; i++)
+        for (int i = 0; i < len; i++)
             t = foldFun.apply(t, combFun.apply(sto.get(i), vec.getX(i)));
 
         return t;
