@@ -196,6 +196,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
         A.notNull(opId, "consumeId");
 

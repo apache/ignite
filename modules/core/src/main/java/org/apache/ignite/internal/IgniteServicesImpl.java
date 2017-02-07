@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link org.apache.ignite.IgniteServices} implementation.
  */
+@SuppressWarnings("unchecked")
 public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
