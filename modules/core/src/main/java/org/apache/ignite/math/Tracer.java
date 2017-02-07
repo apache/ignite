@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import java.awt.*;
 import java.io.*;
+import java.util.*;
 import java.util.stream.*;
 
 /**
@@ -215,9 +216,10 @@ public class Tracer {
     }
 
     /**
+     * Reads file content into the string.
      *
-     * @param fileName
-     * @return
+     * @param fileName Name of the file (on classpath) to read.
+     * @return Content of the file.
      * @throws IOException
      */
     private static String fileToString(String fileName) throws IOException {
@@ -249,9 +251,10 @@ public class Tracer {
     }
 
     /**
+     * Gets string presentation of this vector.
      *
-     * @param vec
-     * @param fmt
+     * @param vec Vector to string-ify.
+     * @param fmt {@link String#format(Locale, String, Object...)} format.
      * @return
      */
     static String mkString(Vector vec, String fmt) {
@@ -271,6 +274,22 @@ public class Tracer {
                 first = false;
             }
         }
+
+        return buf.toString();
+    }
+
+    /**
+     *
+     * @param mtx
+     * @param fmt
+     * @return
+     */
+    static String mkString(Matrix mtx, String fmt) {
+        boolean first = true;
+
+        StringBuffer buf = new StringBuffer();
+
+        // TODO
 
         return buf.toString();
     }

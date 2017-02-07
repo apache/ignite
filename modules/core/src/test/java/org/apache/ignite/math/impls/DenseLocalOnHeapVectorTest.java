@@ -61,22 +61,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void cloneTest() {
-        assertFalse("expect not Cloneable", Cloneable.class.isAssignableFrom(DenseLocalOnHeapVector.class));
-
-        for (DenseLocalOnHeapVector orig : new DenseLocalOnHeapVector[] {
-            new DenseLocalOnHeapVector(),
-            new DenseLocalOnHeapVector(null, true),
-            new DenseLocalOnHeapVector(new double[0], true),
-            new DenseLocalOnHeapVector(new double[0], false),
-            new DenseLocalOnHeapVector(new double[] {1}, true),
-            new DenseLocalOnHeapVector(new double[] {1}, false)
-        })
-
-        cloneTest(orig);
-    }
-
-    /** */ @Test
     public void allTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
@@ -412,17 +396,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */
-    private void cloneTest(DenseLocalOnHeapVector orig) {
-        final DenseLocalOnHeapVector clone = orig.clone();
-
-        assertNotSame(orig, clone);
-
-        assertSame(orig.getClass(), clone.getClass());
-
-        assertEquals(orig, clone);
-    }
-
-    /** */
     private void alwaysTrueAttributeTest(Predicate<DenseLocalOnHeapVector> pred) {
         assertTrue("default size for null args",
             pred.test(new DenseLocalOnHeapVector((Map<String, Object>)null)));
@@ -565,7 +538,6 @@ public class DenseLocalOnHeapVectorTest {
             return Math.abs(exp - obtained) < tolerance;
         }
 
-        /** @{inheritDoc} */
         @Override public String toString() {
             return "Metric{" + "expected=" + exp +
                 ", obtained=" + obtained +

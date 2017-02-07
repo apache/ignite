@@ -92,7 +92,7 @@ public interface Vector {
      *
      * @return New copy vector.
      */
-    Vector clone();
+    Vector copy();
 
     /**
      * Gets iterator over all elements in this vector.
@@ -187,14 +187,14 @@ public interface Vector {
      *
      * For this vector <code>A</code>, argument vector <code>B</code> and the
      * function <code>F</code> this method maps every element <code>x</code> as:
-     * <code>A(x) = fun(A(x), B(x))</code>
+     * <code>A(x) = F(A(x), B(x))</code>
      *
      * @param vec Argument vector.
      * @param fun Mapping function.
      * @return This function.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
-    Vector map(Vector vec, DoubleFunction<Double> fun);
+    Vector map(Vector vec, BiFunction<Double, Double, Double> fun);
 
     /**
      * Maps all elements of this vector by applying given function to each element with a constant
@@ -307,7 +307,7 @@ public interface Vector {
      *
      * @return Maximum element.
      */
-    double maxValue();
+    Element maxValue();
 
     /**
      * Creates new vector containing sum of each element in this vector and argument.
@@ -350,15 +350,19 @@ public interface Vector {
      *
      * @param idx Vector index.
      * @param val Increment value.
+     * @return This vector.
      */
-    void incrementX(int idx, double val);
+    Vector incrementX(int idx, double val);
 
     /**
-     * Gets number of non-default elements in this vector.
+     * Increments value at given index.
      *
-     * @return Number of non-default elements in this vector.
+     * @param idx Vector index.
+     * @param val Increment value.
+     * @throws IndexException Throw if index is out of bounds.
+     * @return This vector.
      */
-    int nonDefaultElements();
+    Vector increment(int idx, double val);
 
     /**
      * Gets number of non-zero elements in this vector.
@@ -367,8 +371,29 @@ public interface Vector {
      */
     int nonZeroElements();
 
+    /**
+     * Gets a new vector that contains product of each element and the argument.
+     * 
+     * @param x Multiply argument.
+     * @return New vector.
+     */
     Vector times(double x);
+
+    /**
+     * Gets a new vector that is an element-wie product of this vector and the argument.
+     *
+     * @param x Vector to multiply by.
+     * @return New vector.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
     Vector times(Vector x);
+
+    /**
+     * 
+     * @param offset
+     * @param length
+     * @return
+     */
     Vector viewPart(int offset, int length);
 
     /**
@@ -395,7 +420,7 @@ public interface Vector {
      * @param <T> Type of the folded value.
      * @return Folded value of this vector.
      */
-    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun);
+    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun);
 
     /**
      * Gets the sum of squares of all elements in this vector.
