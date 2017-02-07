@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTes
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
 import org.apache.ignite.cache.store.jdbc.JdbcTypesDefaultTransformerTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheEntryProcessorCopySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
@@ -320,6 +321,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
         suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
         suite.addTestSuite(CacheDeferredDeleteSanitySelfTest.class);
+        suite.addTestSuite(CacheDeferredDeleteQueueTest.class);
 
         suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
 
