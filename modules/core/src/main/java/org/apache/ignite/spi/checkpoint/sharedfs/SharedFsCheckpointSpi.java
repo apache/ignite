@@ -501,13 +501,11 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     }
 
     /** {@inheritDoc} */
-    @Override public SharedFsCheckpointSpi setCheckpointListener(CheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
 
         if (timeoutTask != null)
             timeoutTask.setCheckpointListener(lsnr);
-
-        return this;
     }
 
     /** {@inheritDoc} */

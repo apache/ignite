@@ -102,7 +102,6 @@ public interface CheckpointSpi extends IgniteSpi {
      * Sets the checkpoint listener.
      *
      * @param lsnr The listener to set or {@code null}.
-     * @return {@code this} for chaining.
      */
-    public CheckpointSpi setCheckpointListener(CheckpointListener lsnr);
+    public void setCheckpointListener(CheckpointListener lsnr);
 }

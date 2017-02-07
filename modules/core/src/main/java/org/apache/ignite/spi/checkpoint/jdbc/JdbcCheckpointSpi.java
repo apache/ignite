@@ -910,10 +910,8 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcCheckpointSpi setCheckpointListener(CheckpointListener lsnr) {
+    @Override public void setCheckpointListener(CheckpointListener lsnr) {
         this.lsnr = lsnr;
-
-        return this;
     }
 
     /** {@inheritDoc} */
