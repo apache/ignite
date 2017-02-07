@@ -188,8 +188,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         grid(0).events().localListen(new IgnitePredicate<Event>() {
-            @Override
-            public boolean apply(Event event) {
+            @Override public boolean apply(Event evt) {
                 latch.countDown();
 
                 return true;
@@ -239,14 +238,14 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         }, 5000);
 
         try {
-            fut1.get();
+            fut1.get(1000);
         }
         catch (IgniteCheckedException e) {
             // No-op.
         }
 
         try {
-            fut2.get();
+            fut2.get(1000);
         }
         catch (IgniteCheckedException e) {
             // No-op.
@@ -297,8 +296,9 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx)
-            throws IgniteCheckedException {
+        @Override protected IgniteInternalFuture<GridCommunicationClient> createTcpClient(ClusterNode node, int connIdx)
+                throws IgniteCheckedException
+        {
             if (pred.apply(getLocalNode(), node)) {
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
 
