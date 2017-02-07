@@ -110,6 +110,9 @@ public class BinaryClassDescriptor {
     private final boolean registered;
 
     /** */
+    private final int size;
+
+    /** */
     private final boolean useOptMarshaller;
 
     /** */
@@ -200,6 +203,25 @@ public class BinaryClassDescriptor {
                 "BinaryTypeConfiguration.setSerializer() method.");
         }
 
+        BinaryWriteReplacer writeReplacer0 = BinaryUtils.writeReplacer(cls);
+
+        Method writeReplaceMthd;
+
+        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
+            readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
+
+            writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
+        }
+        else {
+            readResolveMtd = null;
+            writeReplaceMthd = null;
+        }
+
+        if (writeReplaceMthd != null && writeReplacer0 == null)
+            writeReplacer0 = new BinaryMethodWriteReplacer(writeReplaceMthd);
+
+        writeReplacer = writeReplacer0;
+
         switch (mode) {
             case P_BYTE:
             case P_BOOLEAN:
@@ -250,6 +272,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = null;
+                size = -1;
 
                 break;
 
@@ -259,6 +282,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = cls.getInterfaces();
+                size = -1;
 
                 break;
 
@@ -268,6 +292,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = null;
+                size = -1;
 
                 break;
 
@@ -293,6 +318,9 @@ public class BinaryClassDescriptor {
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
 
+                int fSize = 0;
+                boolean primitivesOnly = true;
+
                 for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                     for (Field f : c.getDeclaredFields()) {
                         if (serializeField(f)) {
@@ -316,8 +344,42 @@ public class BinaryClassDescriptor {
 
                             fields0.put(name, fieldInfo);
 
+                            BinaryWriteMode mode = fieldInfo.mode();
+
+                            if (registered && primitivesOnly)
+                                switch (mode) {
+                                    case P_BYTE:
+                                    case P_BOOLEAN:
+                                        fSize += 1 + 1;
+
+                                        break;
+
+                                    case P_SHORT:
+                                    case P_CHAR:
+                                        fSize += 1 + 2;
+
+                                        break;
+
+                                    case P_INT:
+                                    case P_FLOAT:
+                                        fSize += 1 + 4;
+
+                                        break;
+
+                                    case P_LONG:
+                                    case P_DOUBLE:
+                                        fSize += 1 + 8;
+
+                                        break;
+
+                                    default:
+                                        primitivesOnly = false;
+
+                                        break;
+                                }
+
                             if (metaDataEnabled)
-                                stableFieldsMeta.put(name, fieldInfo.mode().typeId());
+                                stableFieldsMeta.put(name, mode.typeId());
                         }
                     }
                 }
@@ -333,31 +395,28 @@ public class BinaryClassDescriptor {
 
                 intfs = null;
 
+                if (!isWriteReplace() && registered && primitivesOnly) {
+
+                    int size = GridBinaryMarshaller.DFLT_HDR_LEN + fSize;
+
+                    if(size < 1 << 8)
+                        size += ctx.isCompactFooter() ? fields.length : fields.length * 5;
+                    else if(size < 1 << 16)
+                        size += ctx.isCompactFooter() ? fields.length * 2 : fields.length * 6;
+                    else
+                        size += ctx.isCompactFooter() ? fields.length * 4 : fields.length * 8;
+
+                    this.size =  size;
+                }
+                else
+                    this.size = -1;
+
                 break;
 
             default:
                 // Should never happen.
                 throw new BinaryObjectException("Invalid mode: " + mode);
         }
-
-        BinaryWriteReplacer writeReplacer0 = BinaryUtils.writeReplacer(cls);
-
-        Method writeReplaceMthd;
-
-        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
-
-            writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
-        }
-        else {
-            readResolveMtd = null;
-            writeReplaceMthd = null;
-        }
-
-        if (writeReplaceMthd != null && writeReplacer0 == null)
-            writeReplacer0 = new BinaryMethodWriteReplacer(writeReplaceMthd);
-
-        writeReplacer = writeReplacer0;
     }
 
     /**
@@ -479,6 +538,13 @@ public class BinaryClassDescriptor {
      */
     public boolean registered() {
         return registered;
+    }
+
+    /**
+     * @return Size of an array after marshalling if it's predictable, {@code -1} otherwise.
+     */
+    public int getSize() {
+        return size;
     }
 
     /**

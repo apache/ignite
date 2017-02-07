@@ -3175,6 +3175,50 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMarshallingObjectWithPrimitiveFields() throws Exception {
+        BinaryMarshaller m = binaryMarshaller();
+
+        assertEquals(primitivesObject(), marshalUnmarshal(primitivesObject(), m));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testObjectWithPrimitiveFieldsHasSize() throws Exception {
+        BinaryMarshaller m = binaryMarshaller();
+        BinaryContext ctx = binaryContext(m);
+        BinaryClassDescriptor descriptor = ctx.descriptorForClass(PrimitivesObject.class, false);
+        assertNotEquals(descriptor.getSize(), -1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testObjectWithPrimitiveFieldsSize() throws Exception {
+        BinaryMarshaller m = binaryMarshaller();
+        BinaryContext ctx = binaryContext(m);
+        BinaryClassDescriptor descriptor = ctx.descriptorForClass(PrimitivesObject.class, false);
+
+        int size =
+                24 + // header
+
+                2 + // byte field
+                3 + // short field
+                5 + // int field
+                9 + // long field
+                5 + // float field
+                9 + // double field
+                3 + // char field
+                2 + // boolean field
+
+                8 * (ctx.isCompactFooter() ? 1 : 5);
+
+        assertEquals(descriptor.getSize(), size);
+    }
+
+    /**
      * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
      * @param marsh Binary marshaller.
      * @return Instance of BinaryObjectOffheapImpl.
@@ -3596,6 +3640,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Object with primitive fields only.
+     */
+    private static PrimitivesObject primitivesObject(){
+        PrimitivesObject object = new PrimitivesObject();
+        object.b = 1;
+        object.s = 1;
+        object.i = 1;
+        object.l = 1;
+        object.f = 1.1f;
+        object.d = 1.1d;
+        object.c = 1;
+        object.bool = true;
+
+        return object;
+    }
+
+    /**
      * @return Simple object.
      */
     private static SimpleObject simpleObject() {
@@ -3998,6 +4059,53 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SimpleObject.class, this);
+        }
+    }
+
+    /** */
+    private static class PrimitivesObject {
+
+        /** */
+        private byte b;
+
+        /** */
+        private short s;
+
+        /** */
+        private int i;
+
+        /** */
+        private long l;
+
+        /** */
+        private float f;
+
+        /** */
+        private double d;
+
+        /** */
+        private char c;
+
+        /** */
+        private boolean bool;
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("FloatingPointEquality")
+        @Override public boolean equals(Object other) {
+            if (this == other)
+                return true;
+
+            if (other == null || getClass() != other.getClass())
+                return false;
+
+            PrimitivesObject obj = (PrimitivesObject)other;
+
+            return GridTestUtils.deepEquals(this, obj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PrimitivesObject.class, this);
         }
     }
 

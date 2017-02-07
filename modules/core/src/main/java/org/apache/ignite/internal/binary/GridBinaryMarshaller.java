@@ -235,10 +235,14 @@ public class GridBinaryMarshaller {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
-            writer.marshal(obj);
+        BinaryClassDescriptor desc = ctx.descriptorForClass(obj.getClass(), false);
 
-            return writer.array();
+        int size = desc.getSize();
+        boolean hasSize = size != -1;
+
+        try (BinaryWriterExImpl writer = hasSize ? new BinaryWriterExImpl(ctx, size) : new BinaryWriterExImpl(ctx)) {
+            writer.marshal(obj);
+            return writer.array(!hasSize);
         }
     }
 

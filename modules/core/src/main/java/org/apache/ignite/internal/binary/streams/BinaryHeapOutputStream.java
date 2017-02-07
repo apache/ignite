@@ -28,6 +28,9 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */
     private final BinaryMemoryAllocatorChunk chunk;
 
+    /** **/
+    private final boolean fixedSize;
+
     /** Data. */
     private byte[] data;
 
@@ -47,19 +50,41 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
      * @param chunk Chunk.
      */
     public BinaryHeapOutputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
+        this.fixedSize = false;
         this.chunk = chunk;
 
         data = chunk.allocate(cap);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param cap Initial capacity.
+     * @param fixedSize Determines whether a fixed size array will be used
+     */
+    public BinaryHeapOutputStream(int cap, boolean fixedSize) {
+        this.fixedSize = fixedSize;
+
+        if(fixedSize){
+            data = new byte[cap];
+            chunk = null;
+        }
+        else {
+            this.chunk = BinaryMemoryAllocator.INSTANCE.chunk();
+            data = chunk.allocate(cap);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
-        chunk.release(data, pos);
+        if(chunk != null) chunk.release(data, pos);
     }
 
     /** {@inheritDoc} */
     @Override public void ensureCapacity(int cnt) {
         if (cnt > data.length) {
+            assert !fixedSize : "The operation is not available with a fixed size BinaryHeapOutputStream";
+
             int newCap = capacity(data.length, cnt);
 
             data = chunk.reallocate(data, newCap);

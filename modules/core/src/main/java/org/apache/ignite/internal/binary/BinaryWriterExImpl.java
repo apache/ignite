@@ -91,6 +91,14 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param ctx Context.
+     * @param size Predefined size.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, int size) {
+        this(ctx, new BinaryHeapOutputStream(size, true), BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
      * @param tlsCtx TLS context.
      */
     public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
@@ -207,10 +215,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Array.
+     * @return Copy of array.
      */
     public byte[] array() {
-        return out.arrayCopy();
+        return array(true);
+    }
+
+    /**
+     * @param copy Determines whether the array should be copied.
+     * @return Array or its copy.
+     */
+    public byte[] array(boolean copy) {
+        return copy ? out.arrayCopy() : out.array();
     }
 
     /**

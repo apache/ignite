@@ -82,27 +82,27 @@ public class BinaryWriterSchemaHolder {
         int startIdx = idx - fieldCnt * 2;
         assert startIdx >= 0;
 
-        // Ensure there are at least 8 bytes for each field to allow for unsafe writes.
-        out.unsafeEnsure(fieldCnt << 3);
-
         int lastOffset = data[idx - 1];
 
         int res;
 
         if (compactFooter) {
             if (lastOffset < MAX_OFFSET_1) {
+                out.unsafeEnsure(fieldCnt);
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteByte((byte)data[curIdx]);
 
                 res = BinaryUtils.OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
+                out.unsafeEnsure(fieldCnt * 2);
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteShort((short) data[curIdx]);
 
                 res = BinaryUtils.OFFSET_2;
             }
             else {
+                out.unsafeEnsure(fieldCnt * 4);
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteInt(data[curIdx]);
 
@@ -111,6 +111,7 @@ public class BinaryWriterSchemaHolder {
         }
         else {
             if (lastOffset < MAX_OFFSET_1) {
+                out.unsafeEnsure(fieldCnt * 5);
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteByte((byte) data[curIdx++]);
@@ -119,6 +120,7 @@ public class BinaryWriterSchemaHolder {
                 res = BinaryUtils.OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
+                out.unsafeEnsure(fieldCnt * 6);
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteShort((short) data[curIdx++]);
@@ -127,6 +129,7 @@ public class BinaryWriterSchemaHolder {
                 res = BinaryUtils.OFFSET_2;
             }
             else {
+                out.unsafeEnsure(fieldCnt * 8);
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteInt(data[curIdx++]);
