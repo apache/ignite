@@ -528,6 +528,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
+        prepare(cfg, cfg.getTopologyValidator(), false);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -3561,6 +3562,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
         ret.add(ccfg.getInterceptor());
+        ret.add(ccfg.getTopologyValidator());
 
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
 
