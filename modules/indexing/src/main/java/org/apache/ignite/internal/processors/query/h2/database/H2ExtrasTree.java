@@ -22,20 +22,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2Extras32InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2Extras32LeafIO;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.h2.result.SearchRow;
 
 /**
- * Author: kdudkov.
  */
-public abstract class H2ExtrasTree extends BPlusTree<SearchRow, GridH2Row> {
-    /** */
-    private final H2RowFactory rowStore;
+public abstract class H2ExtrasTree extends H2Tree {
 
     /** */
     private final List<FastIndexHelper> fastIdxs;
@@ -63,31 +56,26 @@ public abstract class H2ExtrasTree extends BPlusTree<SearchRow, GridH2Row> {
         boolean initNew,
         List<FastIndexHelper> fastIdxs
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, H2Extras32InnerIO.VERSIONS, H2Extras32LeafIO.VERSIONS);
-
-        assert rowStore != null;
-
-        this.rowStore = rowStore;
+        super(
+            name,
+            reuseList,
+            cacheId,
+            pageMem,
+            wal,
+            globalRmvId,
+            rowStore,
+            metaPageId,
+            initNew,
+            H2Extras32InnerIO.VERSIONS,
+            H2Extras32LeafIO.VERSIONS);
 
         this.fastIdxs = fastIdxs;
-
-        initTree(initNew);
     }
 
     /**
-     * @return Row store.
+     * @return FastIndexHelper list.
      */
-    public H2RowFactory getRowFactory() {
-        return rowStore;
-    }
-
     public List<FastIndexHelper> fastIdxs() {
         return fastIdxs;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx)
-        throws IgniteCheckedException {
-        return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
     }
 }

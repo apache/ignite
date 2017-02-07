@@ -23,6 +23,9 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
@@ -46,6 +49,39 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
+    protected H2Tree(
+        String name,
+        ReuseList reuseList,
+        int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
+        H2RowFactory rowStore,
+        long metaPageId,
+        boolean initNew,
+        IOVersions<? extends BPlusInnerIO<SearchRow>> innerIos,
+        IOVersions<? extends BPlusLeafIO<SearchRow>> leafIos
+    ) throws IgniteCheckedException {
+        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+
+        assert rowStore != null;
+
+        this.rowStore = rowStore;
+
+        initTree(initNew);
+    }
+
+    /**
+     * @param name Tree name.
+     * @param reuseList Reuse list.
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
+     * @param rowStore Row data store.
+     * @param metaPageId Meta page ID.
+     * @param initNew Initialize new index.
+     * @throws IgniteCheckedException If failed.
+     */
     public H2Tree(
         String name,
         ReuseList reuseList,
@@ -57,14 +93,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
-
-        assert rowStore != null;
-
-        this.rowStore = rowStore;
-
-        initTree(initNew);
+        this(name, reuseList, cacheId, pageMem, wal, globalRmvId, rowStore, metaPageId, initNew, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
     }
+
 
     /**
      * @return Row store.

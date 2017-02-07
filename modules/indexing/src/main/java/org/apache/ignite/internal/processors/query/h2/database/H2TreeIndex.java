@@ -52,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class H2TreeIndex extends GridH2IndexBase {
     /** */
-    private final BPlusTree<SearchRow, GridH2Row> tree;
+    private final H2Tree tree;
 
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
