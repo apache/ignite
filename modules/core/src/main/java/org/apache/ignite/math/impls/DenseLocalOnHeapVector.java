@@ -110,8 +110,8 @@ public class DenseLocalOnHeapVector extends AbstractVector {
         return false;
     }
 
-    @Override
-    public Vector copy() {
+    /** {@inheritDoc */
+    @Override public Vector copy() {
         return new DenseLocalOnHeapVector(this);
     }
 

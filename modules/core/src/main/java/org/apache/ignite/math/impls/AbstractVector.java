@@ -29,10 +29,10 @@ import java.util.function.*;
  * TODO: add description.
  */
 public abstract class AbstractVector implements Vector, Externalizable {
-    // Vector storage implementation.
+    /** Vector storage implementation. */
     private VectorStorage sto;
 
-    // Vector's GUID.
+    /** Vector's GUID. */
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /**
@@ -57,8 +57,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         this.sto = sto;
     }
 
-    @Override
-    public int size() {
+    /** {@inheritDoc */
+    @Override public int size() {
         return sto == null ? 0 : sto.size();
     }
 
@@ -71,20 +71,20 @@ public abstract class AbstractVector implements Vector, Externalizable {
             throw new IndexException(idx);
     }
 
-    @Override
-    public double get(int idx) {
+    /** {@inheritDoc */
+    @Override public double get(int idx) {
         checkIndex(idx);
 
         return sto.get(idx);
     }
 
-    @Override
-    public double getX(int idx) {
+    /** {@inheritDoc */
+    @Override public double getX(int idx) {
         return sto.get(idx);
     }
 
-    @Override
-    public Vector map(DoubleFunction<Double> fun) {
+    /** {@inheritDoc */
+    @Override public Vector map(DoubleFunction<Double> fun) {
         if (sto.isArrayBased()) {
             double[] data = sto.data();
 
@@ -100,8 +100,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return this;
     }
 
-    @Override
-    public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
+    /** {@inheritDoc */
+    @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
         if (vec.size() != size())
             throw new CardinalityException(size(), vec.size());
 
@@ -113,8 +113,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return this;
     }
 
-    @Override
-    public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    /** {@inheritDoc */
+    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
         int len = sto.size();
 
         for (int i = 1; i < len; i++)
@@ -130,25 +130,25 @@ public abstract class AbstractVector implements Vector, Externalizable {
      */
     private Element mkElement(int idx) {
         return new Element() {
-            @Override
-            public double get() {
+            /** {@inheritDoc */
+            @Override public double get() {
                 return sto.get(idx);
             }
 
-            @Override
-            public int index() {
+            /** {@inheritDoc */
+            @Override public int index() {
                 return idx;
             }
 
-            @Override
-            public void set(double value) {
-                sto.set(idx, value);
+            /** {@inheritDoc */
+            @Override public void set(double val) {
+                sto.set(idx, val);
             }
         };
     }
 
-    @Override
-    public Element minValue() {
+    /** {@inheritDoc */
+    @Override public Element minValue() {
         int minIdx = 0;
         int len = sto.size();
 
@@ -159,8 +159,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return mkElement(minIdx);
     }
 
-    @Override
-    public Element maxValue() {
+    /** {@inheritDoc */
+    @Override public Element maxValue() {
         int maxIdx = 0;
         int len = sto.size();
 
@@ -171,8 +171,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return mkElement(maxIdx);
     }
 
-    @Override
-    public Vector set(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public Vector set(int idx, double val) {
         checkIndex(idx);
 
         sto.set(idx, val);
@@ -180,15 +180,15 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return this;
     }
 
-    @Override
-    public Vector setX(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public Vector setX(int idx, double val) {
         sto.set(idx, val);
 
         return this;
     }
 
-    @Override
-    public Vector increment(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public Vector increment(int idx, double val) {
         checkIndex(idx);
 
         sto.set(idx, sto.get(idx) + val);
@@ -196,8 +196,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return this;
     }
 
-    @Override
-    public Vector incrementX(int idx, double val) {
+    /** {@inheritDoc */
+    @Override public Vector incrementX(int idx, double val) {
         sto.set(idx, sto.get(idx) + val);
 
         return this;
@@ -212,8 +212,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return val == 0.0;
     }
 
-    @Override
-    public double sum() {
+    /** {@inheritDoc */
+    @Override public double sum() {
         int sum = 0;
         int len = sto.size();
 
@@ -223,18 +223,18 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return sum;
     }
 
-    @Override
-    public IgniteUuid guid() {
+    /** {@inheritDoc */
+    @Override public IgniteUuid guid() {
         return guid;
     }
 
-    @Override
-    public int hashCode() {
+    /** {@inheritDoc */
+    @Override public int hashCode() {
         return guid.hashCode();
     }
 
-    @Override
-    public boolean equals(Object o) {
+    /** {@inheritDoc */
+    @Override public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass()) && sto.equals(((AbstractVector)o).sto);
     }
 

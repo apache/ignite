@@ -24,12 +24,20 @@ import java.util.*;
  * TODO: add description.
  */
 class VectorArrayStorage implements VectorStorage {
+    /** */
     private double[] data;
 
     /** */
     @Override public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass())
             && Arrays.equals(data, ((VectorArrayStorage)o).data);
+    }
+
+    /**
+     * IMPL NOTE required by Externalizable
+     */
+    public VectorArrayStorage() {
+        this(null);
     }
 
     /**
@@ -48,28 +56,28 @@ class VectorArrayStorage implements VectorStorage {
         this.data = data;
     }
 
-    @Override
-    public int size() {
-        return data.length;
+    /** {@inheritDoc */
+    @Override public int size() {
+        return data == null ? 0 : data.length;
     }
 
-    @Override
-    public double get(int i) {
+    /** {@inheritDoc */
+    @Override public double get(int i) {
         return data[i];
     }
 
-    @Override
-    public void set(int i, double v) {
+    /** {@inheritDoc */
+    @Override public void set(int i, double v) {
         data[i] = v;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc */
+    @Override public boolean isArrayBased() {
         return true;
     }
 
-    @Override
-    public double[] data() {
+    /** {@inheritDoc */
+    @Override public double[] data() {
         return data;
     }
 
