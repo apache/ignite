@@ -89,10 +89,10 @@ public final class IgfsExample {
             read(fs, filePath);
 
             // Delete file.
-            delete(fs, filePath);
+//            delete(fs, filePath);
 
             // Print information for file.
-            printInfo(fs, filePath);
+//            printInfo(fs, filePath);
 
             // Create several files.
             for (int i = 0; i < 5; i++)
