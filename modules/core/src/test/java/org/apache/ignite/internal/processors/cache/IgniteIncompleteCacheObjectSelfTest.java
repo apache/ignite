@@ -122,6 +122,11 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
+        @Override public int putValue(long addr) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
             throws IgniteCheckedException {
             return false;

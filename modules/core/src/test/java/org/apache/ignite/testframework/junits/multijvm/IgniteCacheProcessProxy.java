@@ -509,11 +509,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
-    /** {@inheritDoc} */
-    @Override public void resetLostPartitions() {
-        throw new UnsupportedOperationException("Method should be supported.");
-    }
-
     /**
      *
      */

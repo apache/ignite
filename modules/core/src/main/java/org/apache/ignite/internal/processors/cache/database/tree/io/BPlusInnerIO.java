@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
@@ -45,71 +45,71 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxCount(ByteBuffer buf) {
+    @Override public int getMaxCount(long pageAddr, int pageSize) {
         // The structure of the page is the following:
         // |ITEMS_OFF|w|A|x|B|y|C|z|
         // where capital letters are data items, lowercase letters are 8 byte page references.
-        return (buf.capacity() - ITEMS_OFF - 8) / (itemSize + 8);
+        return (pageSize - ITEMS_OFF - 8) / (itemSize + 8);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param idx Index.
      * @return Page ID.
      */
-    public final long getLeft(ByteBuffer buf, int idx) {
-        return buf.getLong(offset(idx, SHIFT_LEFT));
+    public final long getLeft(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, (offset(idx, SHIFT_LEFT)));
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param idx Index.
      * @param pageId Page ID.
      */
-    public final void setLeft(ByteBuffer buf, int idx, long pageId) {
-        buf.putLong(offset(idx, SHIFT_LEFT), pageId);
+    public final void setLeft(long pageAddr, int idx, long pageId) {
+        PageUtils.putLong(pageAddr, offset(idx, SHIFT_LEFT), pageId);
 
-        assert pageId == getLeft(buf, idx);
+        assert pageId == getLeft(pageAddr, idx);
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param idx Index.
      * @return Page ID.
      */
-    public final long getRight(ByteBuffer buf, int idx) {
-        return buf.getLong(offset(idx, SHIFT_RIGHT));
+    public final long getRight(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx, SHIFT_RIGHT));
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param idx Index.
      * @param pageId Page ID.
      */
-    public final void setRight(ByteBuffer buf, int idx, long pageId) {
-        buf.putLong(offset(idx, SHIFT_RIGHT), pageId);
+    private void setRight(long pageAddr, int idx, long pageId) {
+        PageUtils.putLong(pageAddr, offset(idx, SHIFT_RIGHT), pageId);
 
-        assert pageId == getRight(buf, idx);
+        assert pageId == getRight(pageAddr, idx);
     }
 
     /** {@inheritDoc} */
-    @Override public final void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
+    @Override public final void copyItems(long srcPageAddr, long dstPageAddr, int srcIdx, int dstIdx, int cnt,
         boolean cpLeft) throws IgniteCheckedException {
-        assert srcIdx != dstIdx || src != dst;
+        assert srcIdx != dstIdx || srcPageAddr != dstPageAddr;
 
         cnt *= itemSize + 8; // From items to bytes.
 
         if (dstIdx > srcIdx) {
-            PageHandler.copyMemory(src, dst, offset(srcIdx), offset(dstIdx), cnt);
+            PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcIdx), offset(dstIdx), cnt);
 
             if (cpLeft)
-                dst.putLong(offset(dstIdx, SHIFT_LEFT), src.getLong(offset(srcIdx, SHIFT_LEFT)));
+                PageUtils.putLong(dstPageAddr, offset(dstIdx, SHIFT_LEFT), PageUtils.getLong(srcPageAddr, (offset(srcIdx, SHIFT_LEFT))));
         }
         else {
             if (cpLeft)
-                dst.putLong(offset(dstIdx, SHIFT_LEFT), src.getLong(offset(srcIdx, SHIFT_LEFT)));
+                PageUtils.putLong(dstPageAddr, offset(dstIdx, SHIFT_LEFT), PageUtils.getLong(srcPageAddr, (offset(srcIdx, SHIFT_LEFT))));
 
-            PageHandler.copyMemory(src, dst, offset(srcIdx), offset(dstIdx), cnt);
+            PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcIdx), offset(dstIdx), cnt);
         }
     }
 
@@ -131,39 +131,42 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
 
     /** {@inheritDoc} */
     @Override public void insert(
-        ByteBuffer buf,
+        long pageAddr,
         int idx,
         L row,
         byte[] rowBytes,
         long rightId
     ) throws IgniteCheckedException {
-        super.insert(buf, idx, row, rowBytes, rightId);
+        super.insert(pageAddr, idx, row, rowBytes, rightId);
 
         // Setup reference to the right page on split.
-        setRight(buf, idx, rightId);
+        setRight(pageAddr, idx, rightId);
     }
 
     /**
-     * @param newRootBuf New root buffer.
+     * @param newRootPageAddr New root page address.
      * @param newRootId New root ID.
      * @param leftChildId Left child ID.
      * @param row Moved up row.
+     * @param rowBytes Bytes.
      * @param rightChildId Right child ID.
+     * @param pageSize Page size.
      * @throws IgniteCheckedException If failed.
      */
     public void initNewRoot(
-        ByteBuffer newRootBuf,
+        long newRootPageAddr,
         long newRootId,
         long leftChildId,
         L row,
         byte[] rowBytes,
-        long rightChildId
+        long rightChildId,
+        int pageSize
     ) throws IgniteCheckedException {
-        initNewPage(newRootBuf, newRootId);
+        initNewPage(newRootPageAddr, newRootId, pageSize);
 
-        setCount(newRootBuf, 1);
-        setLeft(newRootBuf, 0, leftChildId);
-        store(newRootBuf, 0, row, rowBytes);
-        setRight(newRootBuf, 0, rightChildId);
+        setCount(newRootPageAddr, 1);
+        setLeft(newRootPageAddr, 0, leftChildId);
+        store(newRootPageAddr, 0, row, rowBytes);
+        setRight(newRootPageAddr, 0, rightChildId);
     }
 }

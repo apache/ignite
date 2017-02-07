@@ -152,6 +152,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
         throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");

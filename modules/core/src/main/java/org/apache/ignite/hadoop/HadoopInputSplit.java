@@ -15,18 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.hadoop;
 
-import org.apache.ignite.internal.GridKernalContext;
+import java.io.Externalizable;
 
 /**
- * Indicates whether particular file system accepts kernal context.
+ * Abstract fragment of an input data source.
  */
-public interface IgfsKernalContextAware {
+public abstract class HadoopInputSplit implements Externalizable {
+    /** */
+    protected String[] hosts;
+
     /**
-     * Set kernal context.
+     * Array of hosts where this input split resides.
      *
-     * @param ctx Kernal context.
+     * @return Hosts.
      */
-    public void setKernalContext(GridKernalContext ctx);
+    public String[] hosts() {
+        assert hosts != null;
+
+        return hosts;
+    }
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @param obj Another object.
+     * @return {@code true} If objects are equal.
+     */
+    @Override public abstract boolean equals(Object obj);
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @return Hash code of the object.
+     */
+    @Override public abstract int hashCode();
 }

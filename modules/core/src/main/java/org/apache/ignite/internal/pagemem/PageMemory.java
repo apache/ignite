@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  */
 public interface PageMemory extends LifecycleAware, PageIdAllocator {
+    /** */
+    public static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
+
     /**
      * Gets the page associated with the given page ID. Each page obtained with this method must be released by
      * calling {@link #releasePage(Page)}. This method will allocate page with given ID if it doesn't exist.
@@ -30,22 +35,13 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @return Page.
+     * @throws IgniteCheckedException If failed.
      */
     public Page page(int cacheId, long pageId) throws IgniteCheckedException;
 
     /**
-     * @see #page(int, long)
-     * Will not read page from file if it is not present in memory.
-     * TODO this method should be moved to PageMemoryEx altogether will all WAL records.
-     *
-     * @param cacheId Cache id.
-     * @param pageId Page id.
-     * @param restore Get page for memory restore
-     */
-    public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException;
-
-    /**
      * @param page Page to release.
+     * @throws IgniteCheckedException If failed.
      */
     public void releasePage(Page page) throws IgniteCheckedException;
 
@@ -58,4 +54,15 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return Page size with system overhead, in bytes.
      */
     public int systemPageSize();
+
+    /**
+     * @param pageAddr Page address.
+     * @return Page byte buffer.
+     */
+    public ByteBuffer pageBuffer(long pageAddr);
+
+    /**
+     * @return Total number of loaded pages in memory.
+     */
+    public long loadedPages();
 }

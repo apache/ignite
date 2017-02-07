@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -73,6 +74,29 @@ public class CacheVersionIO {
             buf.putInt(ver.nodeOrderAndDrIdRaw());
             buf.putLong(ver.globalTime());
             buf.putLong(ver.order());
+        }
+    }
+
+    /**
+     * @param addr Write address.
+     * @param ver Version to write.
+     * @param allowNull Is {@code null} version allowed.
+     */
+    public static void write(long addr, GridCacheVersion ver, boolean allowNull) {
+        if (ver == null) {
+            if (allowNull)
+                PageUtils.putByte(addr, 0, NULL_PROTO_VER);
+            else
+                throw new IllegalStateException("Cache version is null");
+        }
+        else {
+            byte protoVer = 1; // Version of serialization protocol.
+
+            PageUtils.putByte(addr, 0, protoVer);
+            PageUtils.putInt(addr, 1, ver.topologyVersion());
+            PageUtils.putInt(addr, 5, ver.nodeOrderAndDrIdRaw());
+            PageUtils.putLong(addr, 9, ver.globalTime());
+            PageUtils.putLong(addr, 17, ver.order());
         }
     }
 
@@ -136,6 +160,28 @@ public class CacheVersionIO {
         int nodeOrderDrId = buf.getInt();
         long globalTime = buf.getLong();
         long order = buf.getLong();
+
+        return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+    }
+
+    /**
+     * Reads GridCacheVersion instance from the given address.
+     *
+     * @param pageAddr Page address.
+     * @param allowNull Is {@code null} version allowed.
+     * @return Version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static GridCacheVersion read(long pageAddr, boolean allowNull) throws IgniteCheckedException {
+        byte protoVer = checkProtocolVersion(PageUtils.getByte(pageAddr, 0), allowNull);
+
+        if (protoVer == NULL_PROTO_VER)
+            return null;
+
+        int topVer = PageUtils.getInt(pageAddr, 1);
+        int nodeOrderDrId = PageUtils.getInt(pageAddr, 5);
+        long globalTime = PageUtils.getLong(pageAddr, 9);
+        long order = PageUtils.getLong(pageAddr, 17);
 
         return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
     }

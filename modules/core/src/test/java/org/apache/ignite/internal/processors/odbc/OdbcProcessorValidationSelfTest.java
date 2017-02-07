@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -36,7 +38,7 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Ignition.stopAll(true);
+        stopAllGrids();
     }
 
     /**
@@ -159,12 +161,17 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setOdbcConfiguration(odbcCfg);
 
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+
+        cfg.setDiscoverySpi(spi);
+
         if (success)
-            Ignition.start(cfg);
+            startGrid(cfg.getGridName(), cfg);
         else {
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    Ignition.start(cfg);
+                    startGrid(cfg.getGridName(), cfg);
 
                     return null;
                 }

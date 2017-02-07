@@ -7586,6 +7586,9 @@ public abstract class IgniteUtils {
             return fut.get();
         }
         catch (ExecutionException e) {
+            //todo only for investigation
+            e.printStackTrace();
+
             throw new IgniteCheckedException(e.getCause());
         }
         catch (InterruptedException e) {
@@ -7960,6 +7963,22 @@ public abstract class IgniteUtils {
         throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']');
     }
 
+    /**
+     * Check that field exist.
+     *
+     * @param obj Object.
+     * @param fieldName Field name.
+     * @return Boolean flag.
+     */
+    public static boolean hasField(Object obj, String fieldName){
+        try {
+            field(obj, fieldName);
+
+            return true;
+        }catch (IgniteException e){
+            return false;
+        }
+    }
     /**
      * Gets object field offset.
      *

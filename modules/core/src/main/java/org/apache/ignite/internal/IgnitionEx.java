@@ -1471,6 +1471,9 @@ public class IgnitionEx {
         /** IGFS executor service. */
         private ThreadPoolExecutor igfsExecSvc;
 
+        /** Data streamer executor service. */
+        private ThreadPoolExecutor dataStreamerExecSvc;
+
         /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
 
@@ -1700,6 +1703,17 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
+            // Note that we do not pre-start threads here as this pool may not be needed.
+            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
+                "data-streamer",
+                cfg.getGridName(),
+                cfg.getDataStreamerThreadPoolSize(),
+                cfg.getDataStreamerThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            dataStreamerExecSvc.allowCoreThreadTimeOut(true);
+
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
 
@@ -1804,6 +1818,7 @@ public class IgnitionEx {
                     p2pExecSvc,
                     mgmtExecSvc,
                     igfsExecSvc,
+                    dataStreamerExecSvc,
                     restExecSvc,
                     affExecSvc,
                     idxExecSvc,
@@ -2352,12 +2367,12 @@ public class IgnitionEx {
 
                     shutdownHook = null;
 
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown hook is removed.");
                 }
                 catch (IllegalStateException e) {
                     // Shutdown is in progress...
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
@@ -2367,7 +2382,7 @@ public class IgnitionEx {
             try {
                 grid0.stop(cancel);
 
-                if (log.isDebugEnabled())
+                if (log != null && log.isDebugEnabled())
                     log.debug("Grid instance stopped ok: " + name);
             }
             catch (Throwable e) {
@@ -2432,6 +2447,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), p2pExecSvc, log);
 
             p2pExecSvc = null;
+
+            U.shutdownNow(getClass(), dataStreamerExecSvc, log);
+
+            dataStreamerExecSvc = null;
 
             U.shutdownNow(getClass(), igfsExecSvc, log);
 

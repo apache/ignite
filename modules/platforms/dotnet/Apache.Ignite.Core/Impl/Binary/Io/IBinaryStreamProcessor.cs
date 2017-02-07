@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+namespace Apache.Ignite.Core.Impl.Binary.IO
+{
+    using System;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-
-/**
- * Extended version of secondary file system with missing methods.
- *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
- */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
-    /**
-     * Set times for the given path.
-     *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
-     */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    /// <summary>
+    /// Binary stream processor.
+    /// </summary>
+    [CLSCompliant(false)]
+    public unsafe interface IBinaryStreamProcessor<in TArg, out T>
+    {
+        /// <summary>
+        /// Invokes the processor.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        T Invoke(byte* data, TArg arg);
+    }
 }

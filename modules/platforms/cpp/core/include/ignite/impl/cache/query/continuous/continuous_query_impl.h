@@ -255,7 +255,7 @@ namespace ignite
                          * @param lsnr Event listener. Invoked on the node where
                          *     continuous query execution has been started.
                          */
-                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr) :
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr) :
                             ContinuousQueryImplBase(false),
                             lsnr(lsnr)
                         {
@@ -269,7 +269,7 @@ namespace ignite
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr, bool loc) :
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr, bool loc) :
                             ContinuousQueryImplBase(loc),
                             lsnr(lsnr)
                         {
@@ -283,7 +283,7 @@ namespace ignite
                          *     node where continuous query execution has been
                          *     started.
                          */
-                        void SetListener(Reference<ignite::cache::event::CacheEntryEventListener<K, V>>& val)
+                        void SetListener(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& val)
                         {
                             lsnr = val;
                         }
@@ -340,7 +340,7 @@ namespace ignite
 
                     private:
                         /** Cache entry event listener. */
-                        Reference<ignite::cache::event::CacheEntryEventListener<K, V>> lsnr;
+                        Reference<ignite::cache::event::CacheEntryEventListener<K, V> > lsnr;
                     };
                 }
             }

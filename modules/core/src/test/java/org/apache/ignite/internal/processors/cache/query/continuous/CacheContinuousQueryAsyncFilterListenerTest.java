@@ -445,7 +445,8 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                 int nodeIdx = i % NODES;
 
-                final IgniteCache cache = grid(nodeIdx).cache(ccfg.getName());
+                final String cacheName = ccfg.getName();
+                final IgniteCache cache = grid(nodeIdx).cache(cacheName);
 
                 final QueryTestKey key = NODES - 1 != nodeIdx ? affinityKey(cache) : new QueryTestKey(1);
 
@@ -473,7 +474,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                     new IgniteBiInClosure<Ignite, CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>>() {
                         @Override public void apply(Ignite ignite, CacheEntryEvent<? extends QueryTestKey,
                             ? extends QueryTestValue> e) {
-                            IgniteCache<Object, Object> cache0 = ignite.cache(cache.getName());
+                            IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
 
                             QueryTestValue val = e.getValue();
 
@@ -600,7 +601,8 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                 int nodeIdx = i % NODES;
 
-                final IgniteCache cache = grid(nodeIdx).cache(ccfg.getName());
+                final String cacheName = ccfg.getName();
+                final IgniteCache cache = grid(nodeIdx).cache(cacheName);
 
                 final QueryTestKey key = NODES - 1 != nodeIdx ? affinityKey(cache) : new QueryTestKey(1);
 
@@ -622,7 +624,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                     Thread.currentThread().getName().contains("callback-"));
                             }
 
-                            IgniteCache<Object, Object> cache0 = ignite.cache(cache.getName());
+                            IgniteCache<Object, Object> cache0 = ignite.cache(cacheName);
 
                             QueryTestValue val = e.getValue();
 

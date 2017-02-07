@@ -240,7 +240,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(0, new AffinityTopologyVersion(2, waitMinorVer));
         waitForRebalancing(1, new AffinityTopologyVersion(2, waitMinorVer));
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -250,7 +250,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 3);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -261,7 +261,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         waitForRebalancing(1, new AffinityTopologyVersion(4, waitMinorVer));
         waitForRebalancing(2, new AffinityTopologyVersion(4, waitMinorVer));
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -271,7 +271,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         waitForRebalancing(1, 5);
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -410,6 +410,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
 
         assertTrue(finished);
+
+        log.info("waitForRebalancing finished " + top);
     }
 
     /**
@@ -458,7 +460,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     List<GridDhtLocalPartition> locs = top.localPartitions();
 
                     for (GridDhtLocalPartition loc : locs) {
-                        assertTrue("Wrong partition state, should be OWNING [state=" + loc.state() + "]",
+                        assertTrue("Wrong local partition state part=" + loc.id() +
+                                ", should be OWNING [state=" + loc.state() + "], node="
+                                + g0.name() + " cache=" + c.getName(),
                             loc.state() == GridDhtPartitionState.OWNING);
 
                         Collection<ClusterNode> affNodes =
@@ -481,7 +485,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                         assertEquals(pMap.size(), locs.size());
 
                         for (Map.Entry entry : pMap.entrySet()) {
-                            assertTrue("Wrong partition state, should be OWNING [state=" + entry.getValue() + "]",
+                            assertTrue("Wrong remote partition state part=" + entry.getKey() +
+                                    ", should be OWNING [state=" + entry.getValue() + "], node="
+                                    + remote.name() + " cache=" + c.getName(),
                                 entry.getValue() == GridDhtPartitionState.OWNING);
                         }
 
@@ -491,6 +497,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+
+        log.info("checkPartitionMapExchangeFinished finished");
     }
 
     /**

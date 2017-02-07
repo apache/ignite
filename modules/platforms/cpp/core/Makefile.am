@@ -37,7 +37,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_la_LIBADD = \
     @top_srcdir@/jni/libignite-jni.la \

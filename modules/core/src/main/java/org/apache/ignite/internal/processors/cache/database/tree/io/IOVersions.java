@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
-import java.nio.ByteBuffer;
-
 /**
  * Registry for IO versions.
  */
@@ -28,6 +26,9 @@ public final class IOVersions<V extends PageIO> {
 
     /** */
     private final int type;
+
+    /** */
+    private final V latest;
 
     /**
      * @param vers Versions.
@@ -39,6 +40,8 @@ public final class IOVersions<V extends PageIO> {
 
         this.vers = vers;
         this.type = vers[0].getType();
+
+        latest = vers[vers.length - 1];
 
         assert checkVersions();
     }
@@ -68,7 +71,7 @@ public final class IOVersions<V extends PageIO> {
      * @return Latest IO version.
      */
     public V latest() {
-        return forVersion(vers.length);
+        return latest;
     }
 
     /**
@@ -80,16 +83,16 @@ public final class IOVersions<V extends PageIO> {
     }
 
     /**
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @return IO.
      */
-    public V forPage(ByteBuffer buf) {
-        int ver = PageIO.getVersion(buf);
+    public V forPage(long pageAddr) {
+        int ver = PageIO.getVersion(pageAddr);
 
         V res = forVersion(ver);
 
-        assert res.getType() == PageIO.getType(buf) : "resType=" + res.getType() +
-            ", pageType=" + PageIO.getType(buf);
+        assert res.getType() == PageIO.getType(pageAddr) : "resType=" + res.getType() +
+            ", pageType=" + PageIO.getType(pageAddr);
 
         return res;
     }

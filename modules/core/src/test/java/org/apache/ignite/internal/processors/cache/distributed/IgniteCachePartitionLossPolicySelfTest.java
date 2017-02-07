@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -37,12 +43,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
-
-import javax.cache.CacheException;
-import java.util.Collection;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -200,7 +200,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         for (Ignite ig : G.allGrids())
             verifyCacheOps(canWrite, safe, part, ig);
 
-        ignite(0).cache(CACHE_NAME).resetLostPartitions();
+        ignite(0).resetLostPartitions(Collections.singletonList(CACHE_NAME));
 
         awaitPartitionMapExchange(true, true, null);
 
