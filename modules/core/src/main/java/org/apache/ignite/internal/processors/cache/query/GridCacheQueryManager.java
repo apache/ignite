@@ -1525,11 +1525,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     // Other types are filtered in indexing manager.
                     if (!cctx.isReplicated() && qry.type() == SCAN && qry.partition() == null &&
                         cctx.config().getCacheMode() != LOCAL && !incBackups &&
-                        !cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+                        !cctx.affinity().primaryByKey(cctx.localNode(), key, topVer)) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring backup element [row=" + row +
                                 ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
-                                ", primary=" + cctx.affinity().primary(cctx.localNode(), key, topVer) + ']');
+                                ", primary=" + cctx.affinity().primaryByKey(cctx.localNode(), key, topVer) + ']');
 
                         continue;
                     }
@@ -1537,7 +1537,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     V val = row.getValue();
 
                     if (log.isDebugEnabled()) {
-                        ClusterNode primaryNode = CU.primaryNode(cctx, key);
+                        ClusterNode primaryNode = cctx.affinity().primaryByKey(key,
+                            cctx.affinity().affinityTopologyVersion());
 
                         log.debug(S.toString("Record",
                             "key", key, true,
@@ -2300,7 +2301,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primary(ctx.discovery().localNode(), k, NONE);
+                        return cache.context().affinity().primaryByKey(ctx.discovery().localNode(), k, NONE);
                     }
                 };
             }

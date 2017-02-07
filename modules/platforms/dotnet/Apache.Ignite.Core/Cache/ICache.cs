@@ -656,14 +656,14 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Removes all mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        /// This method is not transactional.
         /// </summary>
         void RemoveAll();
 
         /// <summary>
         /// Removes all mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        /// This method is not transactional.
         /// </summary>
         Task RemoveAllAsync();
 

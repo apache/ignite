@@ -709,8 +709,6 @@ namespace ignite
             {
                 int32_t lenWithoutSchema = stream->Position() - start;
 
-                int32_t nonRawLen = rawPos == -1 ? lenWithoutSchema : rawPos - start;
-
                 uint16_t flags = IGNITE_BINARY_FLAG_USER_TYPE;
 
                 if (rawPos > 0)
@@ -736,7 +734,7 @@ namespace ignite
                     int32_t length = stream->Position() - start;
 
                     flags |= IGNITE_BINARY_FLAG_HAS_SCHEMA;
-                    
+
                     if (schemaType == OFFSET_TYPE_ONE_BYTE)
                         flags |= IGNITE_BINARY_FLAG_OFFSET_ONE_BYTE;
                     else if (schemaType == OFFSET_TYPE_TWO_BYTES)

@@ -88,6 +88,24 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
       <Filter>Code\impl\interop</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_object.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_header.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_array_identity_resolver.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_identity_resolver.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">
@@ -140,6 +158,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp">
       <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_object_header.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_object_impl.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_array_identity_resolver.cpp">
+      <Filter>Code\binary</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

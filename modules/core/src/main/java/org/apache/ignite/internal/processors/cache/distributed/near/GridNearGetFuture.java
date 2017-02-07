@@ -191,7 +191,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (f.node().id().equals(nodeId)) {
                     found = true;
 
-                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onNodeLeft();
                 }
             }
 
@@ -387,7 +387,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException) e);
+                        fut.onNodeLeft();
                     else
                         fut.onResult(e);
                 }
@@ -413,7 +413,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     ) {
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
+        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));
@@ -724,7 +724,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     info.unmarshalValue(cctx, cctx.deploy().globalLoader());
 
                     // Entries available locally in DHT should not be loaded into near cache for reading.
-                    if (!cctx.affinity().localNode(info.key(), cctx.affinity().affinityTopologyVersion())) {
+                    if (!cctx.affinity().keyLocalNode(info.key(), cctx.affinity().affinityTopologyVersion())) {
                         GridNearCacheEntry entry = savedEntries.get(info.key());
 
                         if (entry == null)
@@ -903,9 +903,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         /**
-         * @param e Topology exception.
          */
-        synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+        synchronized void onNodeLeft() {
             if (remapped)
                 return;
 
