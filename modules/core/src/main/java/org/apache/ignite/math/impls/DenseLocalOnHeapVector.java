@@ -80,7 +80,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param shallowCp
      */
     public DenseLocalOnHeapVector(double[] arr, boolean shallowCp) {
-        mkStorage(arr, shallowCp);
+        setStorage(mkStorage(arr, shallowCp));
     }
 
     /**
