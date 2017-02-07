@@ -59,6 +59,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /** */
     protected static final String SET_NAME = "testSet";
 
+    
     /**
      * {@inheritDoc}
      */
