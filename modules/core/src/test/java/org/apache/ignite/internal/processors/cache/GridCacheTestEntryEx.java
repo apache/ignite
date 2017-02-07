@@ -280,7 +280,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return true;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
         return key;
     }
@@ -290,7 +290,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return new IgniteTxKey(key, 0);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public CacheObject rawGet() {
         return val;
     }
@@ -305,7 +305,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return val != null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public CacheObject rawPut(CacheObject val, long ttl) {
         CacheObject old = this.val;
 
@@ -315,14 +315,14 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return old;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public Cache.Entry wrap() {
         assert false;
 
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public Cache.Entry wrapLazyValue(boolean keepBinary) {
         assert false;
 
@@ -336,19 +336,19 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Nullable @Override public CacheObject peekVisibleValue() {
         assert false;
 
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion obsoleteVersion() {
         return obsoleteVer;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean obsolete() {
         return obsoleteVer != null;
     }
@@ -358,7 +358,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return obsoleteVer != null && !obsoleteVer.equals(exclude);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer)
         throws IgniteCheckedException {
         assert false;
@@ -366,7 +366,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert false;
@@ -374,7 +374,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) {
         assert false;
@@ -390,7 +390,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean isNew() {
         assert false; return false;
     }
@@ -400,7 +400,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         assert false; return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public CacheObject innerGet(
         @Nullable GridCacheVersion ver,
         @Nullable IgniteInternalTx tx,
@@ -417,12 +417,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return val;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public void clearReserveForLoad(GridCacheVersion ver) {
         assert false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public EntryGetResult innerGetAndReserveForLoad(
         boolean readSwap,
         boolean updateMetrics,
@@ -437,7 +437,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Nullable @Override public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
@@ -456,12 +456,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public CacheObject innerReload() {
         return val;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheUpdateTxResult innerSet(@Nullable IgniteInternalTx tx,
         UUID evtNodeId,
         UUID affNodeId,
@@ -544,7 +544,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheUpdateTxResult innerRemove(
         @Nullable IgniteInternalTx tx,
         UUID evtNodeId,
@@ -573,7 +573,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return new GridCacheUpdateTxResult(true, old);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean clear(GridCacheVersion ver, boolean readers) throws IgniteCheckedException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
@@ -584,7 +584,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
@@ -594,12 +594,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public void txUnlock(IgniteInternalTx tx) {
         assert false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean removeLock(GridCacheVersion ver) {
         GridCacheMvccCandidate doomed = mvcc.candidate(ver);
 
@@ -608,7 +608,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return doomed != null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean markObsolete(GridCacheVersion ver) {
         if (ver == null || ver.equals(obsoleteVer)) {
             obsoleteVer = ver;
@@ -645,19 +645,19 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean checkSerializableReadVersion(GridCacheVersion ver) {
         assert false;
 
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
@@ -673,19 +673,19 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped) {
         assert false;
 
         return false;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheVersionedEntryEx versionedEntry(final boolean keepBinary) throws IgniteCheckedException {
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public EntryGetResult versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
@@ -696,22 +696,22 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean hasLockCandidate(GridCacheVersion ver) {
         return mvcc.hasCandidate(ver);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedByAny(GridCacheVersion... exclude) {
         return !mvcc.isEmpty(exclude);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedByThread()  {
         return lockedByThread(Thread.currentThread().getId());
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedLocally(GridCacheVersion lockVer) {
         return mvcc.isLocallyOwned(lockVer);
     }
@@ -722,52 +722,52 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return lockedLocally(lockVer) || lockedByThread(threadId);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedByThread(long threadId, GridCacheVersion exclude) {
         return mvcc.isLocallyOwnedByThread(threadId, false, exclude);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedByThread(long threadId) {
         return mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedBy(GridCacheVersion ver) {
         return mvcc.isOwnedBy(ver);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedByThreadUnsafe(long threadId) {
         return mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedByUnsafe(GridCacheVersion ver) {
         return mvcc.isOwnedBy(ver);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean lockedLocallyUnsafe(GridCacheVersion lockVer) {
         return mvcc.isLocallyOwned(lockVer);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean hasLockCandidateUnsafe(GridCacheVersion ver) {
         return mvcc.hasCandidate(ver);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public Collection<GridCacheMvccCandidate> localCandidates(GridCacheVersion... exclude) {
         return mvcc.localCandidates(exclude);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
         return mvcc.localCandidates(reentries, exclude);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude) {
         return mvcc.remoteCandidates(exclude);
     }
@@ -777,7 +777,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return mvcc.localCandidate(threadId);
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate candidate(GridCacheVersion ver) {
         return mvcc.candidate(ver);
     }
@@ -795,19 +795,19 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return mvcc.anyOwner();
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate localOwner() {
         return mvcc.localOwner();
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public CacheObject valueBytes() {
         assert false;
 
         return null;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public CacheObject valueBytes(GridCacheVersion ver) {
         assert false;
 
@@ -819,7 +819,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return 0;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public long expireTime() {
         return 0;
     }
@@ -839,12 +839,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return ttl;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public long ttl() {
         return ttl;
     }
 
-    /** @inheritDoc */
+    /** {@inheritDoc} */
     @Override public void updateTtl(GridCacheVersion ver, long ttl) {
         throw new UnsupportedOperationException();
     }
