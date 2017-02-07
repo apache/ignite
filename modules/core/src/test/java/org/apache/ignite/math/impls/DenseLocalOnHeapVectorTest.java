@@ -376,11 +376,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void nonDefaultElementsTest() { // TODO write test
-
-    }
-
-    /** */ @Test
     public void nonZeroElementsTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
