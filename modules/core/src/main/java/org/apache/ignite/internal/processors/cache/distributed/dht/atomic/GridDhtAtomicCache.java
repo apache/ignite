@@ -122,7 +122,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 /**
  * Non-transactional partitioned cache.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "TooBroadScope"})
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
@@ -1806,6 +1806,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         IgniteCacheExpiryPolicy expiry = null;
 
+        ctx.shared().database().checkpointReadLock();
+
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -1978,6 +1980,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 throw (Error)e;
 
             return;
+        }
+        finally {
+            ctx.shared().database().checkpointReadUnlock();
         }
 
         if (remap) {
@@ -2924,8 +2929,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
-        ctx.shared().database().checkpointReadLock();
-
         if (req.size() == 1) {
             KeyCacheObject key = req.key(0);
 
@@ -3040,8 +3043,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (entry != null)
                 entry.onUnlock();
         }
-
-        ctx.shared().database().checkpointReadUnlock();
 
         if (skip != null && skip.size() == locked.size())
             // Optimization.
