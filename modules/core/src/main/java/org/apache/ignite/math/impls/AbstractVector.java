@@ -301,10 +301,6 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return t;
     }
 
-    @Override public double norm(double power) {
-        return 0; // TODO
-    }
-
     @Override
     public Iterable<Element> nonZeroes() {
         return new Iterable<Element>() {
@@ -515,6 +511,79 @@ public abstract class AbstractVector implements Vector, Externalizable {
             return Math.max(distEst, 0);
         else
             return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED);
+    }
+
+    @Override
+    public Vector minus(Vector vec) {
+        if (vec.size() != sto.size())
+            throw new CardinalityException(size(), vec.size());
+
+        Vector copy = copy();
+
+        copy.map(vec, Functions.MINUS);
+
+        return copy;
+    }
+
+    @Override
+    public Vector plus(double x) {
+        Vector copy = copy();
+
+        if (x != 0.0)
+            copy.map(Functions.plus(x));
+
+        return copy;
+    }
+
+    @Override
+    public Vector divide(double x) {
+        Vector copy = copy();
+
+        if (x != 1.0)
+            for (Element element : copy.nonZeroes())
+                element.set(element.get() / x);
+
+        return copy;
+    }
+
+    @Override
+    public Vector plus(Vector vec) {
+        if (vec.size() != sto.size())
+            throw new CardinalityException(size(), vec.size());
+
+        Vector copy = copy();
+
+        copy.map(vec, Functions.PLUS);
+
+        return copy;
+    }
+
+    @Override
+    public double kNorm(double power) {
+        assert power >= 0.0;
+
+        // Special cases.
+        if (Double.isInfinite(power))
+            return foldMap(Functions.MAX, Functions.ABS);
+        else if (power == 2.0)
+            return Math.sqrt(getLengthSquared());
+        else if (power == 1.0)
+            return foldMap(Functions.PLUS, Functions.ABS);
+        else if (power == 0.0)
+            return nonZeroElements();
+        else
+            // Default case.
+            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power)), 1.0 / power);
+    }
+
+    @Override
+    public Vector normalize() {
+        return divide(Math.sqrt(getLengthSquared()));
+    }
+
+    @Override
+    public Vector normalize(double power) {
+        return divide(kNorm(power));
     }
 
     /**

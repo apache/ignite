@@ -293,7 +293,7 @@ public interface Vector {
      * @param power The power to use.
      * @see #normalize(double)
      */
-    double norm(double power);
+    double kNorm(double power);
 
     /**
      * Gets minimal element in this vector.

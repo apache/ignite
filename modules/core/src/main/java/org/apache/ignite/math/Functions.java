@@ -95,6 +95,9 @@ public final class Functions {
     /** Function that returns <tt>a * b</tt>. */
     public static final BiFunction<Double, Double, Double> MULT = (a, b) -> a * b;
 
+    /** Function that returns <tt>Math.max(a,b)</tt>. */
+    public static final BiFunction<Double, Double, Double> MAX = Math::max;
+
     /** Function that returns <tt>a + b</tt>. */
     public static final BiFunction<Double, Double, Double> PLUS = (a, b) ->  a + b;
 
@@ -115,11 +118,21 @@ public final class Functions {
     };
 
     /**
+     * Function that returns <tt>a + b</tt>. <tt>a</tt> is a variable, <tt>b</tt> is fixed.
+     *
+     * @param b
+     * @return
+     */
+    public static DoubleFunction<Double> plus(final double b) {
+        return (a) -> a + b;
+    }
+
+    /**
      * 
      * @param b
      * @return
      */
-    public static DoubleFunction<Double> pow(double b) {
+    public static DoubleFunction<Double> pow(final double b) {
         return (a) -> {
             if (b == 2)
                 return a * a;
