@@ -749,7 +749,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Tests IEnumerable.Contains
+        /// Tests IEnumerable.Contains.
         /// </summary>
         [Test]
         public void TestContains()
@@ -783,27 +783,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckWhereFunc(orgCache, e => !new string[] { null, null }.Contains(e.Value.Name));
             CheckWhereFunc(orgCache, e => new string[] { null, null }.Contains(e.Value.Name));
 
+            //check passing a null object as collection
             int[] nullKeys = null;
             var nullKeysEntries = cache
                 .Where(e => nullKeys.Contains(e.Key))
                 .ToArray();
-
             Assert.AreEqual(0, nullKeysEntries.Length, "Evaluating 'null.Contains' should return zero results");
 
+            // Check subselect from other cache
             var subSelectCount = cache
                 .Count(entry => orgCache
                     .Where(orgEntry => orgEntry.Value.Name == "Org_1")
                     .Select(orgEntry => orgEntry.Key)
                     .Contains(entry.Value.OrganizationId));
-
-            var org1 = orgCache
+            var orgNumberOne = orgCache
                 .Where(orgEntry => orgEntry.Value.Name == "Org_1")
                 .Select(orgEntry => orgEntry.Key)
                 .First();
+            var subSelectCheckCount = cache.Count(entry => entry.Value.OrganizationId == orgNumberOne);
+            Assert.AreEqual(subSelectCheckCount, subSelectCount, "subselecting another CacheQueryable failed");
 
-            var subSelectCheckCount = cache.Count(entry => entry.Value.OrganizationId == org1);
-
-            Assert.AreEqual(subSelectCheckCount,subSelectCount, "subselecting another CacheQueryable failed");
+            var parameterExpressionNotSupported = Assert.Throws<NotSupportedException>(() => CompiledQuery2.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
+            Assert.AreEqual("ParameterExpression is not supported for 'Contains' clauses.", parameterExpressionNotSupported.Message);
         }
 
         /// <summary>

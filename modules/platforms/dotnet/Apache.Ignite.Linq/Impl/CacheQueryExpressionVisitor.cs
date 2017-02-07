@@ -472,13 +472,12 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
             var subQueryModel = expression.QueryModel;
 
-            // Check if IEnumerable.Contains
+            // Check if IEnumerable.Contains is used
             if (subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
             {
                 ResultBuilder.Append("(");
@@ -534,7 +533,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets values for IN expression
+        /// Gets values for IN expression.
         /// </summary>
         private IEnumerable<object> GetInValues(Expression fromExpression)
         {
@@ -557,8 +556,8 @@ namespace Apache.Ignite.Linq.Impl
                         .Select(ExpressionWalker.EvaluateExpression<object>);
                     break;
                 case ExpressionType.Parameter:
-                    //TODO: !!!!!
-                    //break;
+                    // This is happens for compiled queries
+                    throw new NotSupportedException("ParameterExpression is not supported for 'Contains' clauses.");
                 default:
                     var defaultValues = Expression.Lambda(fromExpression).Compile().DynamicInvoke();
                     if (defaultValues is IEnumerable)
@@ -580,7 +579,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Appends parameters using ", " as delimeter
+        /// Appends parameters using ", " as delimeter.
         /// </summary>
         private void AppendInParameters(IEnumerable enumerable)
         {
