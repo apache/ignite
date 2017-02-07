@@ -705,7 +705,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         if (qctx.distributedJoinMode() == DistributedJoinMode.LOCAL_ONLY
             && (partMap == null || partMap.containsKey(cctx.localNodeId())))
-            nodes = cctx.affinityNode() ? Collections.singletonList(cctx.localNode()) : Collections.emptyList();
+            nodes = cctx.affinityNode() ? Collections.singletonList(cctx.localNode()) : Collections.<ClusterNode>emptyList();
         else {
             if (partMap == null)
                 nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
