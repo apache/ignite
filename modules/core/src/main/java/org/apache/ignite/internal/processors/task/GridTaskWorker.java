@@ -68,6 +68,7 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
+import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1065,6 +1066,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                         return null;
                     }
+                    else if (X.hasCause(e, GridServiceNotFoundException.class) ||
+                        X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                        // Should be throttled, because GridServiceProxy continuously retry getting service.
+                        LT.error(log, e, "Failed to obtain remote job result policy for result from " +
+                            "ComputeTask.result(..) method (will fail the whole task): " + jobRes);
+                    }
                     else
                         U.error(log, "Failed to obtain remote job result policy for result from " +
                             "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
@@ -1286,7 +1293,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 nodeId + ", taskName=" + ses.getTaskName() +
                                 ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']', e);
                     }
-                    catch (IgniteClientDisconnectedCheckedException e0) {
+                    catch (IgniteClientDisconnectedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send cancel request to node, client disconnected [nodeId=" +
                                 nodeId + ", taskName=" + ses.getTaskName() + ']');

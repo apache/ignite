@@ -487,10 +487,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         catch (IgfsParentNotDirectoryException ignore) {
             // No-op.
         }
-        catch (IgfsException ignore) {
+        catch (IgfsException e) {
             // Currently Ok for Hadoop fs:
             if (!getClass().getSimpleName().startsWith("Hadoop"))
-                throw ignore;
+                throw e;
         }
 
         try {
@@ -501,10 +501,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         catch (IgfsParentNotDirectoryException ignore) {
             // No-op.
         }
-        catch (IgfsException ignore) {
+        catch (IgfsException e) {
             // Currently Ok for Hadoop fs:
             if (!getClass().getSimpleName().startsWith("Hadoop"))
-                throw ignore;
+                throw e;
         }
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -942,8 +942,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
+        } catch (IgniteException ignored) {
+            // No-op.
         }
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
@@ -953,7 +953,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
+        } catch (IgniteException ignored) {
             // okay
         }
         checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -964,7 +964,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
+        } catch (IgniteException ignored) {
             // okay
         }
         checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -976,7 +976,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
+        } catch (IgniteException ignored) {
             // okay
         }
 
@@ -1337,7 +1337,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
                         createCtr.incrementAndGet();
                     }
-                    catch (IgniteException e) {
+                    catch (IgniteException ignored) {
                         // No-op.
                     }
                     catch (IOException e) {
@@ -1439,7 +1439,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
@@ -1457,7 +1457,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -1471,7 +1471,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -1488,7 +1488,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
 
@@ -1519,7 +1519,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));

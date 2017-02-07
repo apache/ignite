@@ -8,10 +8,18 @@ Visit Yardstick Repository (https://github.com/gridgain/yardstick) for detailed 
 
 The documentation below describes configuration parameters in addition to standard Yardstick parameters.
 
-Installation
+Building from Ignite sources
 ============
 1. Create a local clone of Ignite repository
 2. Run
+
+mvn package
+
+command for Yardstick Ignite POM
+
+Building from standalone sources
+=====================
+Run
 
 mvn package
 

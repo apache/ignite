@@ -58,9 +58,9 @@ fi
 # Starts H2 server and console.
 case $osname in
     Darwin*)
-        "${JAVA}" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console ${ARGS}
+        "${JAVA}" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.4.191.jar" org.h2.tools.Console ${ARGS}
         ;;
    *)
-        "${JAVA}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console ${ARGS}
+        "${JAVA}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.4.191.jar" org.h2.tools.Console ${ARGS}
         ;;
 esac

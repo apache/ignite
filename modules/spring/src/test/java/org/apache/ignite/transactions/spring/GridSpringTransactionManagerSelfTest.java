@@ -128,7 +128,7 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
         try {
             service.putWithError(c, entryCnt);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 

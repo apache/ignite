@@ -632,7 +632,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp, 0);
+                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
                 if (log.isDebugEnabled())
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
@@ -1119,7 +1119,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Client socket writer interrupted.");
 

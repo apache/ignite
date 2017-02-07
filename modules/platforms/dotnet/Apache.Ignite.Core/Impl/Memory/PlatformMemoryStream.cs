@@ -732,6 +732,22 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
+        /// Returns a hash code for the specified byte range.
+        /// </summary>
+        public T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg)
+        {
+            return proc.Invoke(_data, arg);
+        }
+
+        /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        public void Flush()
+        {
+            SynchronizeOutput();
+        }
+
+        /// <summary>
         /// Ensure capacity for write and shift position.
         /// </summary>
         /// <param name="cnt">Bytes count.</param>

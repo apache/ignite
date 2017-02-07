@@ -472,13 +472,8 @@ public class IgniteTxHandler {
                 req.last());
 
             if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
-                try {
-                    if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
-                        tx.rollback();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to rollback transaction: " + tx, e);
-                }
+                if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
+                    tx.rollbackAsync();
             }
 
             final GridDhtTxLocal tx0 = tx;
@@ -532,7 +527,7 @@ public class IgniteTxHandler {
                 if (!aff1.equals(aff2))
                     return true;
             }
-            catch (IllegalStateException err) {
+            catch (IllegalStateException ignored) {
                 return true;
             }
         }
@@ -872,7 +867,7 @@ public class IgniteTxHandler {
 
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
-            IgniteInternalFuture<IgniteInternalTx> res = null;
+            IgniteInternalFuture<IgniteInternalTx> res;
 
             IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
@@ -884,7 +879,7 @@ public class IgniteTxHandler {
             if (e instanceof Error)
                 throw (Error)e;
 
-            return res == null ? new GridFinishedFuture<IgniteInternalTx>(e) : res;
+            return res;
         }
     }
 
@@ -1323,7 +1318,7 @@ public class IgniteTxHandler {
                             else
                                 assert !ctx.discovery().alive(nodeId) : nodeId;
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteCheckedException ignored) {
                             if (txFinishMsgLog.isDebugEnabled()) {
                                 txFinishMsgLog.debug("Failed to gain entry processor return value. [txId=" + nearTxId +
                                     ", dhtTxId=" + req.version() +
@@ -1503,7 +1498,7 @@ public class IgniteTxHandler {
 
                                     break;
                                 }
-                                catch (GridCacheEntryRemovedException e) {
+                                catch (GridCacheEntryRemovedException ignored) {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 

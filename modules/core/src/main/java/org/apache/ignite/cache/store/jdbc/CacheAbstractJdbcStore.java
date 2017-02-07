@@ -80,6 +80,7 @@ import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_BATCH_SIZE;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_WRITE_ATTEMPTS;
+import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TYPES;
 
 /**
  * Implementation of {@link CacheStore} backed by JDBC.
@@ -1393,7 +1394,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             fieldVal = fieldVal.toString();
 
                             break;
+                        default:
+                            // No-op.
                     }
+                }
+                else if (field.getJavaFieldType().isEnum() && fieldVal instanceof Enum) {
+                    Enum val = (Enum)fieldVal;
+
+                    fieldVal = NUMERIC_TYPES.contains(field.getDatabaseFieldType()) ? val.ordinal() : val.name();
                 }
 
                 stmt.setObject(idx, fieldVal);
@@ -2068,12 +2076,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                 int idx = 1;
 
-                for (Object key : keys)
+                for (Object key : keys) {
                     for (JdbcTypeField field : em.keyColumns()) {
                         Object fieldVal = extractParameter(em.cacheName, em.keyType(), em.keyKind(), field.getJavaFieldName(), key);
 
                         fillParameter(stmt, idx++, field, fieldVal);
                     }
+                }
 
                 ResultSet rs = stmt.executeQuery();
 

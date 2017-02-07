@@ -46,6 +46,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
+
 /**
  *
  */
@@ -126,6 +128,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             createCaches();
         else
             createBinaryCaches();
+
+        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
@@ -151,7 +155,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             s2p.setFields(flds);
 
@@ -172,7 +176,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             i2p.setFields(flds);
 
@@ -194,7 +198,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             flds.put("key", Integer.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k2p.setFields(flds);
 
@@ -216,7 +220,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             flds.put("Id", Integer.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
             flds.put("IntVal", Integer.class.getName());
 
             k22p.setFields(flds);
@@ -240,7 +244,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("key", Integer.class.getName());
             flds.put("strKey", String.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k32p.setFields(flds);
 
@@ -263,7 +267,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("key", Integer.class.getName());
             flds.put("strKey", String.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k42p.setFields(flds);
 
@@ -515,7 +519,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         protected int id;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(name = "firstName")
         protected String name;
 
         /** {@inheritDoc} */
