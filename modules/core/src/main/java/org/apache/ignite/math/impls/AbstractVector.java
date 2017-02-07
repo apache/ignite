@@ -21,21 +21,19 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
+import java.io.*;
 import java.util.*;
 import java.util.function.*;
 
 /**
  * TODO: add description.
  */
-public abstract class AbstractVector implements Vector {
+public abstract class AbstractVector implements Vector, Externalizable {
     // Vector storage implementation.
     private VectorStorage sto;
 
-    // Length squared.
-    private double lenSq = 0.0;
-
     // Vector's GUID.
-    private final IgniteUuid guid = IgniteUuid.randomUuid();
+    private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /**
      *
@@ -529,5 +527,17 @@ public abstract class AbstractVector implements Vector {
     @Override
     public Element getElement(int idx) {
         return mkElement(idx);
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(sto);
+        out.writeObject(guid);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        sto = (VectorStorage)in.readObject();
+        guid = (IgniteUuid)in.readObject();
     }
 }

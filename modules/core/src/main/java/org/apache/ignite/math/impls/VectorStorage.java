@@ -17,10 +17,12 @@
 
 package org.apache.ignite.math.impls;
 
+import java.io.*;
+
 /**
  * TODO: add description.
  */
-public interface VectorStorage {
+public interface VectorStorage extends Externalizable {
     /**
      *
      * @return

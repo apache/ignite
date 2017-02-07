@@ -17,12 +17,13 @@
 
 package org.apache.ignite.math.impls;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * TODO: add description.
  */
-public class VectorArrayStorage implements VectorStorage {
+class VectorArrayStorage implements VectorStorage {
     private double[] data;
 
     /** */
@@ -35,7 +36,7 @@ public class VectorArrayStorage implements VectorStorage {
      *
      * @param size
      */
-    public VectorArrayStorage(int size) {
+    VectorArrayStorage(int size) {
         data = new double[size];
     }
 
@@ -43,7 +44,7 @@ public class VectorArrayStorage implements VectorStorage {
      *
      * @param data
      */
-    public VectorArrayStorage(double[] data) {
+    VectorArrayStorage(double[] data) {
         this.data = data;
     }
 
@@ -70,5 +71,15 @@ public class VectorArrayStorage implements VectorStorage {
     @Override
     public double[] data() {
         return data;
+    }
+
+    /** {@inheritDoc */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(data);
+    }
+
+    /** {@inheritDoc */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        data = (double[])in.readObject();
     }
 }

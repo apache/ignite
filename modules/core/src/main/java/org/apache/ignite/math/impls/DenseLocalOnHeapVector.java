@@ -20,7 +20,6 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -31,7 +30,7 @@ import java.util.*;
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
  * to keep the entire data set.
  */
-public class DenseLocalOnHeapVector extends AbstractVector implements Externalizable {
+public class DenseLocalOnHeapVector extends AbstractVector {
     /** */
     private final int DFLT_SIZE = 100;
 
@@ -189,15 +188,5 @@ public class DenseLocalOnHeapVector extends AbstractVector implements Externaliz
     /** {@inheritDoc */
     @Override public boolean isAddConstantTime() {
         return true;
-    }
-
-    /** {@inheritDoc */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
     }
 }
