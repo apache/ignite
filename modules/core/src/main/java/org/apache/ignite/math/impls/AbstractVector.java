@@ -608,11 +608,11 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
         // Special cases.
         if (Double.isInfinite(power))
-            return foldMap(Functions.MAX, Functions.ABS);
+            return foldMap(Math::max, Math::abs);
         else if (power == 2.0)
             return Math.sqrt(getLengthSquared());
         else if (power == 1.0)
-            return foldMap(Functions.PLUS, Functions.ABS);
+            return foldMap(Functions.PLUS, Math::abs);
         else if (power == 0.0)
             return nonZeroElements();
         else

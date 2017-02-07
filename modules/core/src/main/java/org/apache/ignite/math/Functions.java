@@ -23,38 +23,11 @@ import java.util.function.*;
  * Compatibility with Apache Mahout.
  */
 public final class Functions {
-    /** Function that returns <tt>Math.abs(a)</tt>. */
-    public static final DoubleFunction<Double> ABS = Math::abs;
-
-    /** Function that returns <tt>Math.acos(a)</tt>. */
-    public static final DoubleFunction<Double> ACOS = Math::acos;
-
-    /** Function that returns <tt>Math.asin(a)</tt>. */
-    public static final DoubleFunction<Double> ASIN = Math::asin;
-
-    /** Function that returns <tt>Math.atan(a)</tt>. */
-    public static final DoubleFunction<Double> ATAN = Math::atan;
-
-    /** Function that returns <tt>Math.ceil(a)</tt>. */
-    public static final DoubleFunction<Double> CEIL = Math::ceil;
-
-    /** Function that returns <tt>Math.cos(a)</tt>. */
-    public static final DoubleFunction<Double> COS = Math::cos;
-
-    /** Function that returns <tt>Math.exp(a)</tt>. */
-    public static final DoubleFunction<Double> EXP = Math::exp;
-
-    /** Function that returns <tt>Math.floor(a)</tt>. */
-    public static final DoubleFunction<Double> FLOOR = Math::floor;
-
     /** Function that returns its argument. */
     public static final DoubleFunction<Double> IDENTITY = (a) -> a;
 
     /** Function that returns <tt>1.0 / a</tt>. */
     public static final DoubleFunction<Double> INV = (a) -> 1.0 / a;
-
-    /** Function that returns <tt>Math.log(a)</tt>. */
-    public static final DoubleFunction<Double> LOGARITHM = Math::log;
 
     /** Function that returns <tt>Math.log(a) / Math.log(2)</tt>. */
     public static final DoubleFunction<Double> LOG2 = (a) -> Math.log(a) * 1.4426950408889634;
@@ -62,17 +35,8 @@ public final class Functions {
     /** Function that returns <tt>-a</tt>. */
     public static final DoubleFunction<Double> NEGATE = (a) -> -a;
 
-    /** Function that returns <tt>Math.rint(a)</tt>. */
-    public static final DoubleFunction<Double> RINT = Math::rint;
-
     /** Function that returns {@code a < 0 ? -1 : a > 0 ? 1 : 0}. */
     public static final DoubleFunction<Double> SIGN = (a) -> a < 0.0 ? -1.0 : a > 0.0 ? 1.0 : 0.0;
-
-    /** Function that returns <tt>Math.sin(a)</tt>. */
-    public static final DoubleFunction<Double> SIN = Math::sin;
-
-    /** Function that returns <tt>Math.sqrt(a)</tt>. */
-    public static final DoubleFunction<Double> SQRT = Math::sqrt;
 
     /** Function that returns <tt>a * a</tt>. */
     public static final DoubleFunction<Double> SQUARE = (a) -> a * a;
@@ -83,20 +47,11 @@ public final class Functions {
     /** Function that returns <tt> a * (1-a) </tt> */
     public static final DoubleFunction<Double> SIGMOIDGRADIENT = (a) -> a * (1.0 - a);
 
-    /** Function that returns <tt>Math.tan(a)</tt>. */
-    public static final DoubleFunction<Double> TAN = Math::tan;
-
-    /** Function that returns <tt>Math.atan2(a,b)</tt>. */
-    public static final BiFunction<Double, Double, Double> ATAN2 = Math::atan2;
-
     /** Function that returns <tt>a % b</tt>. */
     public static final BiFunction<Double, Double, Double> MOD = (a, b) -> a % b;
 
     /** Function that returns <tt>a * b</tt>. */
     public static final BiFunction<Double, Double, Double> MULT = (a, b) -> a * b;
-
-    /** Function that returns <tt>Math.max(a,b)</tt>. */
-    public static final BiFunction<Double, Double, Double> MAX = Math::max;
 
     /** Function that returns <tt>a + b</tt>. */
     public static final BiFunction<Double, Double, Double> PLUS = (a, b) ->  a + b;

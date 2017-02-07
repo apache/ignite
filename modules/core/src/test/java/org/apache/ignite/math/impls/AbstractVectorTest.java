@@ -185,10 +185,10 @@ public class AbstractVectorTest {
         double[] data = initVector();
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            testVector.set(i, Functions.EXP.apply(data[i]));
+            testVector.set(i, Math.exp(data[i]));
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Functions.EXP.apply(data[i]), VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), VectorArrayStorageTest.NIL_DELTA);
     }
 
     /** */
@@ -219,10 +219,10 @@ public class AbstractVectorTest {
         double[] data = initVector();
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            testVector.setX(i, Functions.EXP.apply(data[i]));
+            testVector.setX(i, Math.exp(data[i]));
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Functions.EXP.apply(data[i]), VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), VectorArrayStorageTest.NIL_DELTA);
     }
 
     /** */
