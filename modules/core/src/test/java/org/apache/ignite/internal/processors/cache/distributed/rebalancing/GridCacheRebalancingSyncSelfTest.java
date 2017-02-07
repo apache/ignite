@@ -410,6 +410,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
 
         assertTrue(finished);
+
+        log.info("waitForRebalancing finished " + top);
     }
 
     /**
@@ -495,6 +497,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+
+        log.info("checkPartitionMapExchangeFinished finished");
     }
 
     /**

@@ -704,6 +704,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 }
             }
         }
+
+        log.info("awaitPartitionMapExchange finished");
     }
 
     /**
