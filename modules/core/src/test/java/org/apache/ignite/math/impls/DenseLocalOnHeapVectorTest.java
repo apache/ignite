@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Vector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -57,7 +58,7 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void isSequentialAccessTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isSequentialAccess);
+        alwaysTrueAttributeTest((denseLocalOnHeapVector) -> !denseLocalOnHeapVector.isSequentialAccess());
     }
 
     /** */ @Test
@@ -91,6 +92,7 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void allTestBound() {
+        // todo consider extracting test cases involving Iterable into separate test class
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
         final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
@@ -126,47 +128,107 @@ public class DenseLocalOnHeapVectorTest {
     public void nonZeroesTestBasic() {
         final int size = 5;
 
-        final double[] zeroesOdd = new double[size], zeroesEven = new double[size];
+        final double[] nonZeroesOddData = new double[size], nonZeroesEvenData = new double[size];
 
         for (int idx = 0; idx < size; idx++) {
             final boolean odd = (idx & 1) == 1;
 
-            zeroesOdd[idx] = odd ? 1 : 0;
+            nonZeroesOddData[idx] = odd ? 1 : 0;
 
-            zeroesEven[idx] = odd ? 0 : 1;
+            nonZeroesEvenData[idx] = odd ? 0 : 1;
         }
 
-        final DenseLocalOnHeapVector oddZeroesVec = new DenseLocalOnHeapVector(zeroesOdd),
-            evenZeroesVec = new DenseLocalOnHeapVector(zeroesEven);
+        assertTrue("arrays failed to initialize",
+            !isZero(nonZeroesEvenData[0])
+                && isZero(nonZeroesEvenData[1])
+                && isZero(nonZeroesOddData[0])
+                && !isZero(nonZeroesOddData[1]));
 
-        for (Vector.Element e : oddZeroesVec.nonZeroes()) {
+        final DenseLocalOnHeapVector nonZeroesEvenVec = new DenseLocalOnHeapVector(nonZeroesEvenData),
+            nonZeroesOddVec = new DenseLocalOnHeapVector(nonZeroesOddData);
+
+        assertTrue("vectors failed to initialize",
+            !isZero(nonZeroesEvenVec.getElement(0).get())
+                && isZero(nonZeroesEvenVec.getElement(1).get())
+                && isZero(nonZeroesOddVec.getElement(0).get())
+                && !isZero(nonZeroesOddVec.getElement(1).get()));
+
+        assertTrue("iterator(s) failed to start",
+            nonZeroesEvenVec.nonZeroes().iterator().next() != null
+                && nonZeroesOddVec.nonZeroes().iterator().next() != null);
+
+        int nonZeroesActual = 0;
+
+        for (Vector.Element e : nonZeroesEvenVec.nonZeroes()) {
             final int idx = e.index();
 
             final boolean odd = (idx & 1) == 1;
 
             final double val = e.get();
 
-            assertFalse("not an odd index " + idx + ", for value " + val, odd);
+            assertTrue("not an even index " + idx + ", for value " + val, !odd);
 
-            assertTrue("non zero value " + val + " at odd index " + idx, val == 0.0);
+            assertTrue("zero value " + val + " at even index " + idx, !isZero(val));
+
+            nonZeroesActual++;
         }
 
-        for (Vector.Element e : evenZeroesVec.nonZeroes()) {
+        final int nonZeroesOddExp = (size + 1) / 2;
+
+        assertEquals("unexpected num of iterated odd non-zeroes", nonZeroesOddExp, nonZeroesActual);
+
+        assertEquals("unexpected nonZeroElements of odd", nonZeroesOddExp, nonZeroesEvenVec.nonZeroElements());
+
+        nonZeroesActual = 0;
+
+        for (Vector.Element e : nonZeroesOddVec.nonZeroes()) {
             final int idx = e.index();
 
             final boolean odd = (idx & 1) == 1;
 
             final double val = e.get();
 
-            assertTrue("not an even index " + idx + ", for value " + val, odd);
+            assertTrue("not an odd index " + idx + ", for value " + val, odd);
 
-            assertTrue("non zero value " + val + " at even index " + idx, val == 0.0);
+            assertTrue("zero value " + val + " at even index " + idx, !isZero(val));
+
+            nonZeroesActual++;
         }
+
+        final int nonZeroesEvenExp = size / 2;
+
+        assertEquals("unexpected num of iterated even non-zeroes", nonZeroesEvenExp, nonZeroesActual);
+
+        assertEquals("unexpected nonZeroElements of even", nonZeroesEvenExp, nonZeroesOddVec.nonZeroElements());
     }
 
     /** */ @Test
-    public void nonZeroesTest() { // TODO write test
+    @Ignore("ignored test: implementation in progress") // todo fix test or implementation
+    public void nonZeroesTest() {
+        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
+        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
+
+        consumeSampleVectors(
+            (expSizeParam, shallowCopyParam) -> {
+                expSize.set(expSizeParam);
+
+                shallowCp.set(shallowCopyParam);
+            },
+            v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+                -> {
+                final int size = vec.size();
+
+                int numZeroesActual = size;
+
+                for (Vector.Element e : vec.nonZeroes()) {
+                    numZeroesActual--;
+
+                    assertTrue("unexpected zero at index " + e.index(), !isZero(e.get()));
+                }
+
+                assertEquals("unexpected num zeroes at size " + size, (int)numZeroes, numZeroesActual);
+            }));
     }
 
     /** */ @Test
@@ -182,7 +244,7 @@ public class DenseLocalOnHeapVectorTest {
                 shallowCp.set(shallowCopyParam);
             },
             v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
-                        -> iteratorTestBound(vec.nonZeroes().iterator(), expSize.get(), shallowCp.get())));
+                -> iteratorTestBound(vec.nonZeroes().iterator(), expSize.get(), shallowCp.get())));
     }
 
     /** */ @Test
@@ -321,8 +383,20 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void nonZeroElementsTest() { // TODO write test
+    @Ignore("ignored test: implementation in progress") // todo fix test or implementation
+    public void nonZeroElementsTest() {
+        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
+        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
+
+        consumeSampleVectors(
+            (expSizeParam, shallowCopyParam) -> {
+                expSize.set(expSizeParam);
+
+                shallowCp.set(shallowCopyParam);
+            },
+            v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+                -> assertEquals("unexpected num zeroes at size " + vec.size(), (int)numZeroes, vec.nonZeroElements())));
     }
 
     /** */ @Test
@@ -502,6 +576,11 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */
+    private boolean isZero(double val) {
+        return val == 0.0;
+    }
+
+    /** */
     private void assertCloseEnough(DenseLocalOnHeapVector obtained) {
         final int size = obtained.size();
 
@@ -538,7 +617,7 @@ public class DenseLocalOnHeapVectorTest {
             return Math.abs(exp - obtained) < tolerance;
         }
 
-        /** */
+        /** @{inheritDoc} */
         @Override public String toString() {
             return "Metric{" + "expected=" + exp +
                 ", obtained=" + obtained +
@@ -547,3 +626,4 @@ public class DenseLocalOnHeapVectorTest {
         }
     }
 }
+

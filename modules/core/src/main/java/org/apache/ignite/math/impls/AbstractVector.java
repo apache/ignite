@@ -330,8 +330,11 @@ public abstract class AbstractVector implements Vector, Externalizable {
                         if (over())
                             return;
 
-                        if (idxNext != -1 && idx != idxNext)
+                        if (idxNextInitialized() && idx != idxNext)
                             return;
+
+                        if (idxNextInitialized())
+                            idx = idxNext + 1;
 
                         while (idx < size() && isZero(get(idx)))
                             idx++;
@@ -341,6 +344,10 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
                     private boolean over() {
                         return idxNext >= size();
+                    }
+
+                    private boolean idxNextInitialized() {
+                        return idxNext != -1;
                     }
                 };
             }
