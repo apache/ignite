@@ -538,6 +538,7 @@ public class DenseLocalOnHeapVectorTest {
             return Math.abs(exp - obtained) < tolerance;
         }
 
+        /** */
         @Override public String toString() {
             return "Metric{" + "expected=" + exp +
                 ", obtained=" + obtained +

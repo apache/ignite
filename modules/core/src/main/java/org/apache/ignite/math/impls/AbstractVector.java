@@ -59,7 +59,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public int size() {
-        return sto.size();
+        return sto == null ? 0 : sto.size();
     }
 
     /**
@@ -190,7 +190,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override
     public Vector increment(int idx, double val) {
         checkIndex(idx);
-        
+
         sto.set(idx, sto.get(idx) + val);
 
         return this;
@@ -199,7 +199,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override
     public Vector incrementX(int idx, double val) {
         sto.set(idx, sto.get(idx) + val);
-        
+
         return this;
     }
 
