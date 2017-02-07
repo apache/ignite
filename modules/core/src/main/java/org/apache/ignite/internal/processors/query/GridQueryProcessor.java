@@ -922,7 +922,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         A.ensure(timeout <= Integer.MAX_VALUE, "timeout value too large.");
 
-        return (int)tmp;
+        return (int) tmp;
     }
 
     /**
@@ -2197,7 +2197,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /**
          * @return {@code True} if type registration in SPI was finished and type was not rejected.
          */
-        public boolean registered() {
+        boolean registered() {
             return registered;
         }
 

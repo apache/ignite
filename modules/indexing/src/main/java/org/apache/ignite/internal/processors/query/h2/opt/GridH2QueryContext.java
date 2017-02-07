@@ -79,7 +79,7 @@ public class GridH2QueryContext {
     private UUID[] partsNodes;
 
     /** */
-    private boolean distributedJoins;
+    private DistributedJoinMode distributedJoinMode;
 
     /** */
     private int pageSize;
@@ -148,20 +148,20 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param distributedJoins Distributed joins can be run in this query.
+     * @param distributedJoinMode Distributed join mode.
      * @return {@code this}.
      */
-    public GridH2QueryContext distributedJoins(boolean distributedJoins) {
-        this.distributedJoins = distributedJoins;
+    public GridH2QueryContext distributedJoinMode(DistributedJoinMode distributedJoinMode) {
+        this.distributedJoinMode = distributedJoinMode;
 
         return this;
     }
 
     /**
-     * @return {@code true} If distributed joins can be run in this query.
+     * @return Distributed join mode.
      */
-    public boolean distributedJoins() {
-        return distributedJoins;
+    public DistributedJoinMode distributedJoinMode() {
+        return distributedJoinMode;
     }
 
     /**
@@ -378,7 +378,7 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoins() && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type == MAP && x.distributedJoinMode() != DistributedJoinMode.OFF && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);

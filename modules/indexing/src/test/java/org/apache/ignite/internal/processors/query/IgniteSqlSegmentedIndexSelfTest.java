@@ -58,7 +58,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSqlQueryParallelismLevel(10);
+        cfg.setSqlQueryParallelismLevel(97);
 
         return cfg;
     }
@@ -83,6 +83,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Run tests on single-node grid
      * @throws Exception If failed.
      */
     public void testSingleNodeIndexSegmentation() throws Exception {
@@ -96,6 +97,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Run tests on multi-node grid
      * @throws Exception If failed.
      */
     public void testMultiNodeIndexSegmentation() throws Exception {
@@ -103,12 +105,13 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
         fillCache();
 
-//        checkDistributedQueryWithSegmentedIndex();
+        checkDistributedQueryWithSegmentedIndex();
 
         checkLocalQueryWithSegmentedIndex();
     }
 
     /**
+     * Check distributed joins.
      * @throws Exception If failed.
      */
     public void checkDistributedQueryWithSegmentedIndex() throws Exception {
@@ -131,6 +134,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test local query.
      * @throws Exception If failed.
      */
     public void checkLocalQueryWithSegmentedIndex() throws Exception {

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -172,15 +171,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @return Value.
      * @throws IgniteSpiException If failed.
      */
-    private Map<String, Object> value(Cache.Entry<Integer, Map<String, Object>> row) throws IgniteSpiException {
-        return row.getValue();
-    }
-
-    /**
-     * @param row Row
-     * @return Value.
-     * @throws IgniteSpiException If failed.
-     */
     private Map<String, Object> value(IgniteBiTuple<Integer, Map<String, Object>> row) throws IgniteSpiException {
         return row.get2();
     }
@@ -307,7 +297,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(1, spi.size(typeBA.space(), typeBA));
 
         // Query data.
-        Iterator<Cache.Entry<Integer, Map<String, Object>>> res =
+        Iterator<IgniteBiTuple<Integer, Map<String, Object>>> res =
             spi.queryLocalSql(typeAA.space(), "from a order by age", Collections.emptySet(), typeAA.name(), null, null);
 
         assertTrue(res.hasNext());

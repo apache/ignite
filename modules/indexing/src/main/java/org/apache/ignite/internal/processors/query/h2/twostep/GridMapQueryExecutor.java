@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -430,7 +431,7 @@ public class GridMapQueryExecutor {
             req.partitions(),
             null,
             req.pageSize(),
-            false,
+            DistributedJoinMode.OFF,
             req.timeout());
     }
 
@@ -449,7 +450,11 @@ public class GridMapQueryExecutor {
         if (mainCctx == null)
             throw new CacheException("Failed to find cache.");
 
-        if(mainCctx.config().isIndexSegmentationEnabled()) {
+        final DistributedJoinMode joinMode = DistributedJoinMode.distributedJoinMode(
+            req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
+            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
+
+        if (mainCctx.config().isIndexSegmentationEnabled()) {
             for (int i = 1; i < ctx.config().getSqlQueryParallelismLevel(); i++) {
                 final int segment = i;
 
@@ -466,7 +471,7 @@ public class GridMapQueryExecutor {
                                 parts,
                                 req.tables(),
                                 req.pageSize(),
-                                req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+                                joinMode,
                                 req.timeout());
 
                             return null;
@@ -486,7 +491,7 @@ public class GridMapQueryExecutor {
             parts,
             req.tables(),
             req.pageSize(),
-            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+            joinMode,
             req.timeout());
     }
 
@@ -501,7 +506,7 @@ public class GridMapQueryExecutor {
      * @param parts Explicit partitions for current node.
      * @param tbls Tables.
      * @param pageSize Page size.
-     * @param distributedJoins Can we expect distributed joins to be ran.
+     * @param distributedJoinMode1 Query distributed join mode.
      */
     private void onQueryRequest0(
         ClusterNode node,
@@ -514,7 +519,7 @@ public class GridMapQueryExecutor {
         int[] parts,
         Collection<String> tbls,
         int pageSize,
-        boolean distributedJoins,
+        DistributedJoinMode distributedJoinMode,
         int timeout
     ) {
         // Prepare to run queries.
@@ -552,7 +557,7 @@ public class GridMapQueryExecutor {
                 mainCctx.isReplicated() ? REPLICATED : MAP)
                 .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)
-                .distributedJoins(distributedJoins)
+                .distributedJoinMode(distributedJoinMode)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
                 .reservations(reserved);
@@ -576,7 +581,7 @@ public class GridMapQueryExecutor {
             Connection conn = h2.connectionForSpace(mainCctx.name());
 
             // Here we enforce join order to have the same behavior on all the nodes.
-            h2.setupConnection(conn, distributedJoins, true);
+            h2.setupConnection(conn, distributedJoinMode != DistributedJoinMode.OFF, true);
 
             GridH2QueryContext.set(qctx);
 
@@ -638,7 +643,7 @@ public class GridMapQueryExecutor {
             finally {
                 GridH2QueryContext.clearThreadLocal();
 
-                if (!distributedJoins)
+                if (distributedJoinMode == DistributedJoinMode.OFF)
                     qctx.clearContext(false);
 
                 if (!F.isEmpty(snapshotedTbls)) {
