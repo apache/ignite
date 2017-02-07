@@ -354,7 +354,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             cancelFutures(depFuts, err);
             cancelFutures(undepFuts, err);
-        }finally {
+        }
+        finally {
             busyLock.unblock();
         }
 
