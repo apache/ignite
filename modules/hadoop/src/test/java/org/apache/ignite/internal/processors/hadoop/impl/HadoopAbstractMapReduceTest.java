@@ -64,7 +64,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -138,6 +137,11 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         });
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        return false;
+    }
+
     /**
      * Gets owner of a secondary Fs path.
      * @param secFs The sec Fs.
@@ -158,22 +162,14 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      */
     private void checkOwner(final IgfsPath p) throws Exception {
         String ownerPrim = getOwner(igfs, p);
+
         assertEquals(USER, ownerPrim);
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    secondaryFs.info(p);
-
-                    return true;
-                }
-                catch (RuntimeException e) {
-                    return false;
-                }
-            }
-        }, 5000));
+        IgfsFile f = secondaryFs.info(p);
+        assert f != null;
 
         String ownerSec = getOwnerSecondary(secondaryFs, p);
+
         assertEquals(USER, ownerSec);
     }
 
@@ -358,8 +354,10 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         super.beforeTest();
     }
 
+    /** {@inheritDoc} */
     @Override protected final boolean isRemoteJvm(String gridName) {
-        if (gridName.contains("secondary"))
+        // Secondary Fs node can only be local:
+        if (isSecondaryFsNode(gridName))
             return false;
 
         return super.isRemoteJvm(gridName);
@@ -412,8 +410,14 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
 
         cfg.setGridName(gridName);
 
-        cfg.setDiscoverySpi(null);
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
+        // TODO: NB: important that this is a *new* there:
+        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
+
+        discoSpi.setIpFinder(finder);
+
+        cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 

@@ -77,7 +77,7 @@ public class IgniteNodeRunner {
     /**
      * @return Ignite instance started at main.
      */
-    public static IgniteEx startedInstance(){
+    public static IgniteEx startedInstance() {
         return (IgniteEx)ignite;
     }
 
@@ -129,8 +129,6 @@ public class IgniteNodeRunner {
             Marshaller marsh = IgniteTestResources.getMarshaller();
 
             cfg.setMarshaller(marsh);
-
-            X.println("############## Configured marshaller class: " + marsh.getClass().getName());
 
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
             disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);

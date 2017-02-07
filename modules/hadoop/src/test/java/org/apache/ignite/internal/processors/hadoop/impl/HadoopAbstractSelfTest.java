@@ -32,6 +32,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -51,7 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** REST port. */
     protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
@@ -123,6 +124,16 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         initCp = null;
     }
 
+    /**
+     * Answers if the named node is secondary file system node.
+     *
+     * @param gridName The grid (node) name.
+     * @return If the specified grid is for secondary file system.
+     */
+    protected final boolean isSecondaryFsNode(String gridName) {
+        return gridName != null && gridName.contains("secondary");
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -140,7 +151,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         // Secondary Fs has its own filesystem config :
-        if (igfsEnabled() && !gridName.contains("secondary")) {
+        if (igfsEnabled() && !isSecondaryFsNode(gridName)) {
             cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
 
             cfg.setFileSystemConfiguration(igfsConfiguration());
@@ -251,7 +262,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         if (cfg == null)
             cfg = optimize(getConfiguration(gridName));
 
-        System.out.println("############## Starting remote grid [" +gridName + "]");
+        X.println("  Starting remote grid [" +gridName + "]");
 
         int gridIdx = getTestGridIndex(gridName);
 
@@ -265,7 +276,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Gets special JVM parameters for specified remote node.
      *
-     * @param nodeIdx Th enode index.
+     * @param nodeIdx The node index.
      * @return The node parameters.
      */
     NodeProcessParameters getRemoteNodeParameters(int nodeIdx) {

@@ -30,7 +30,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 
 /**
- *
+ * Base class implementing a remote node.
  */
 public class IgniteNodeProxyBase {
     /** Property that specify alternative {@code JAVA_HOME}. */

@@ -23,7 +23,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
-import org.apache.ignite.internal.processors.hadoop.impl.HadoopJobTrackerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTeraSortTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolMultipleServersSelfTest;
@@ -58,6 +57,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSy
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopCommandLineTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopFileSystemsTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopGroupingTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopJobTrackerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceErrorResilienceTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceTest;
@@ -123,11 +123,10 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
-
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
-        // TODO: temporarily disabled
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemLoopbackPrimarySelfTest.class.getName())));
 
@@ -182,16 +181,14 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV1Test.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
 
-        // TODO: temporarily disabled
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedPlannerMapReduceTest.class.getName())));
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedPlannerMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
 
-        // TODO: temporarily disabled
 //        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
 //        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
 //        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
