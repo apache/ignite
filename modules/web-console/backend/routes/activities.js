@@ -20,38 +20,33 @@
 // Fire me up!
 
 module.exports = {
-    implements: 'routes/agents',
-    inject: ['require(lodash)', 'require(express)', 'services/agents', 'services/activities']
+    implements: 'routes/activities',
+    inject: ['require(express)', 'services/activities']
 };
 
 /**
- * @param _
  * @param express
- * @param {AgentsService} agentsService
  * @param {ActivitiesService} activitiesService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, agentsService, activitiesService) {
-    return new Promise((resolveFactory) => {
+module.exports.factory = function(express, activitiesService) {
+    return new Promise((factoryResolve) => {
         const router = new express.Router();
 
-        /* Get grid topology. */
-        router.get('/download/zip', (req, res) => {
-            activitiesService.merge(req.user._id, {
-                group: 'agent',
-                action: '/agent/download'
-            });
-
-            agentsService.getArchive(req.origin(), req.user.token)
-                .then(({fileName, buffer}) => {
-                    // Set the archive name.
-                    res.attachment(fileName);
-
-                    res.send(buffer);
-                })
+        // Get user activities.
+        router.get('/user/:userId', (req, res) => {
+            activitiesService.listByUser(req.params.userId, req.query)
+                .then(res.api.ok)
                 .catch(res.api.error);
         });
 
-        resolveFactory(router);
+        // Post user activities to page.
+        router.post('/page', (req, res) => {
+            activitiesService.merge(req.user._id, req.body)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        factoryResolve(router);
     });
 };

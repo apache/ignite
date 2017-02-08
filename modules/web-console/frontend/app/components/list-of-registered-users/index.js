@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import templateUrl from './list-of-registered-users.jade';
+import controller from './list-of-registered-users.controller';
 
-angular
-.module('ignite-console.states.admin', [
-    'ui.router'
-])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
-    // set up the states
-    $stateProvider
-    .state('settings.admin', {
-        url: '/admin',
-        templateUrl: '/settings/admin.html',
-        onEnter: AclRoute.checkAccess('admin_page'),
-        metaTags: {
-            title: 'Admin panel'
-        }
-    });
-}]);
+export default [() => {
+    return {
+        scope: true,
+        templateUrl,
+        controller,
+        controllerAs: '$ctrl'
+    };
+}];

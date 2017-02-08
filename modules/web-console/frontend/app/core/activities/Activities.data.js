@@ -15,21 +15,25 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export default class ActivitiesData {
+    static $inject = ['$http', '$state'];
 
-angular
-.module('ignite-console.states.admin', [
-    'ui.router'
-])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
-    // set up the states
-    $stateProvider
-    .state('settings.admin', {
-        url: '/admin',
-        templateUrl: '/settings/admin.html',
-        onEnter: AclRoute.checkAccess('admin_page'),
-        metaTags: {
-            title: 'Admin panel'
-        }
-    });
-}]);
+    constructor($http, $state) {
+        this.$http = $http;
+        this.$state = $state;
+    }
+
+    post(options = {}) {
+        let { group, action } = options;
+
+        action = action || this.$state.$current.url.source;
+        group = group || action.match(/^\/([^/]+)/)[1];
+
+        return this.$http.post('/api/v1/activities/page', { group, action });
+    }
+
+    listByUser(userId, params) {
+        return this.$http.get(`/api/v1/activities/user/${userId}`, { params })
+            .then(({ data }) => data);
+    }
+}
