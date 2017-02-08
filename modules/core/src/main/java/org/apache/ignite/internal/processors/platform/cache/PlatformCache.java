@@ -32,7 +32,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -551,7 +549,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                     });
                 }
 
-
                 case OP_PUT_ASYNC: {
                     readAndListenFuture(reader,
                         cache.putAsync(reader.readObjectDetached(), reader.readObjectDetached()));
@@ -815,7 +812,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
 
-        Object[] args = readArgs(reader);
+        Object[] args = readLoadCacheArgs(reader);
 
         if (loc)
             cache.localLoadCache(filter, args);
@@ -833,7 +830,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private IgniteFuture<Void> loadCacheAsync0(BinaryRawReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
 
-        Object[] args = readArgs(reader);
+        Object[] args = readLoadCacheArgs(reader);
 
         if (loc)
             return cache.localLoadCacheAsync(filter, args);
@@ -860,7 +857,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return Arguments array.
      */
-    @Nullable private Object[] readArgs(BinaryRawReaderEx reader) {
+    @Nullable private Object[] readLoadCacheArgs(BinaryRawReaderEx reader) {
         Object[] args = null;
 
         int argCnt = reader.readInt();
