@@ -68,7 +68,7 @@ public class OsConfigurationSuggestions {
                 suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%s)", SWAPPINESS, expected));
 
             if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
-                suggestions.add(String.format("Adjust NUMA zones reclamation setting (set vm.%s=%s)", ZONE_RECLAIM_MODE, expected));
+                suggestions.add(String.format("Disable NUMA memory reclaim (set vm.%s=%s)", ZONE_RECLAIM_MODE, expected));
 
             if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && !value.equals(expected = "1240000"))
                 suggestions.add(String.format("Avoid direct reclaim and page allocation failures (set vm.%s to %s or other value)", EXTRA_FREE_KBYTES, expected));
