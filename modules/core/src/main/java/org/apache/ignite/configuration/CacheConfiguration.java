@@ -2358,13 +2358,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    // Add parent property before its possible nested properties so that
-                    // resulting parent column comes before columns corresponding to those
-                    // nested properties in the resulting table - that way nested
-                    // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
-
                     processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
+
+                    type.addProperty(prop, key, true);
                 }
             }
 
@@ -2384,13 +2380,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    // Add parent property before its possible nested properties so that
-                    // resulting parent column comes before columns corresponding to those
-                    // nested properties in the resulting table - that way nested
-                    // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
-
                     processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
+
+                    type.addProperty(prop, key, true);
                 }
             }
         }

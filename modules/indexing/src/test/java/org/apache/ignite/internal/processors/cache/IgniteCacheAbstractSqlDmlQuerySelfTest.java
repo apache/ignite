@@ -65,7 +65,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     /**
      * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
      */
-    protected boolean isBinaryMarshaller() {
+    private boolean isBinaryMarshaller() {
         return marsh instanceof BinaryMarshaller;
     }
 

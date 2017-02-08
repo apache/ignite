@@ -578,11 +578,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public boolean key() {
                     return false;
                 }
-
-                /** */
-                @Override public GridQueryProperty parent() {
-                    return null;
-                }
             };
         }
 

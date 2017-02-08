@@ -22,7 +22,11 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Description and access method for query entity field.
  */
-public interface GridQueryProperty {
+public abstract class GridQueryProperty {
+    /** */
+    public GridQueryProperty() {
+    }
+
     /**
      * Gets this property value from the given object.
      *
@@ -31,7 +35,7 @@ public interface GridQueryProperty {
      * @return Property value.
      * @throws IgniteCheckedException If failed.
      */
-    public Object value(Object key, Object val) throws IgniteCheckedException;
+    public abstract Object value(Object key, Object val) throws IgniteCheckedException;
 
     /**
      * Sets this property value for the given object.
@@ -41,26 +45,21 @@ public interface GridQueryProperty {
      * @param propVal Property value.
      * @throws IgniteCheckedException If failed.
      */
-    public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException;
+    public abstract void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException;
 
     /**
      * @return Property name.
      */
-    public String name();
+    public abstract String name();
 
     /**
      * @return Class member type.
      */
-    public Class<?> type();
+    public abstract Class<?> type();
 
     /**
      * Property ownership flag.
      * @return {@code true} if this property belongs to key, {@code false} if it belongs to value.
      */
-    public boolean key();
-
-    /**
-     * @return Parent property or {@code null} if this property is not nested.
-     */
-    public GridQueryProperty parent();
+    public abstract boolean key();
 }

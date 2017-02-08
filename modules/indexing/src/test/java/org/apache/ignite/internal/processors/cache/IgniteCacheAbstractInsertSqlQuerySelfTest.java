@@ -46,8 +46,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
-
 /**
  *
  */
@@ -128,8 +126,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             createCaches();
         else
             createBinaryCaches();
-
-        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
