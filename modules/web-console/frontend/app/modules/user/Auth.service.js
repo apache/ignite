@@ -21,7 +21,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', 'IgniteErro
             forgotPassword(userInfo) {
                 $http.post('/api/v1/password/forgot', userInfo)
                     .then(() => $state.go('password.send'))
-                    .cacth(({data}) => ErrorPopover.show('forgot_email', Messages.errorMessage(null, data)));
+                    .catch(({data}) => ErrorPopover.show('forgot_email', Messages.errorMessage(null, data)));
             },
             auth(action, userInfo) {
                 $http.post('/api/v1/' + action, userInfo)

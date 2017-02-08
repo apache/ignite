@@ -23,6 +23,7 @@
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -33,23 +34,7 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmOpts.push_back("-Xdebug");
-    cfg.jvmOpts.push_back("-Xnoagent");
-    cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-    cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-    cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-    char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-    cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
+    ignite_test::InitConfig(cfg, "cache-test.xml");
 
     IgniteError err;
 

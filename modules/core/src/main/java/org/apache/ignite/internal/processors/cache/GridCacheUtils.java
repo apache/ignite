@@ -74,12 +74,10 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -950,26 +948,6 @@ public class GridCacheUtils {
 
         for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
             unwindEvicts(cacheCtx);
-    }
-
-    /**
-     * Gets primary node on which given key is cached.
-     *
-     * @param ctx Cache.
-     * @param key Key to find primary node for.
-     * @return Primary node for the key.
-     */
-    @SuppressWarnings( {"unchecked"})
-    @Nullable public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
-        assert ctx != null;
-        assert key != null;
-
-        CacheConfiguration cfg = ctx.cache().configuration();
-
-        if (cfg.getCacheMode() != PARTITIONED)
-            return ctx.localNode();
-
-        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**

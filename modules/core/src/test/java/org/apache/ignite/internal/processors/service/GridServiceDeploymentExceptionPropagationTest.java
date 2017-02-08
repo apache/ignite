@@ -45,7 +45,7 @@ public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbs
                 try {
                     client.services().deployClusterSingleton("my-service", new ServiceImpl());
                 }
-                catch (IgniteException e) {
+                catch (IgniteException ignored) {
                     assertTrue(log.toString().contains("ServiceImpl init exception"));
 
                     return; // Exception is what we expect.
