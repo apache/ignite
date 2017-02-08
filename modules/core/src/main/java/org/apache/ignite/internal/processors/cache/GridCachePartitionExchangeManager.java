@@ -1256,7 +1256,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean hasMovingParts = false;
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                    if (cacheCtx.started() && cacheCtx.topology().hasMovingPartitions()) {
+                    if (!cacheCtx.isLocal() && cacheCtx.started() && cacheCtx.topology().hasMovingPartitions()) {
                         hasMovingParts = true;
                         break;
                     }

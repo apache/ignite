@@ -282,12 +282,12 @@ class GridDhtPartitionSupplier {
                                 d.isClean(part) ? null : d.partitionCounter(part));
 
                             if (!iter.historical()) {
-                                assert d.isClean(part);
+                                assert !cctx.shared().database().persistenceEnabled() || d.isClean(part);
 
                                 s.clean(part);
                             }
                             else {
-                                assert !d.isClean(part);
+                                assert cctx.shared().database().persistenceEnabled() && !d.isClean(part);
                             }
                         }
                         else
