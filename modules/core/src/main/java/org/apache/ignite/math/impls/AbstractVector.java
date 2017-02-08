@@ -88,9 +88,9 @@ public abstract class AbstractVector implements Vector, Externalizable {
     }
 
     /**
-     * check index bounds
+     * Check index bounds.
      *
-     * @param idx index
+     * @param idx Index to check.
      */
     private void checkIndex(int idx) {
         if (idx < 0 || idx >= sto.size())

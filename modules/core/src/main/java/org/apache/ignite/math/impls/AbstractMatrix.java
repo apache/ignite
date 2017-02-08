@@ -61,22 +61,53 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     /**
      *
-     * @param x
-     * @param y
+     * @param row
+     * @param col
      * @param v
      */
-    protected void storageSet(int x, int y, double v) {
-        sto.set(x, y, v);
+    protected void storageSet(int row, int col, double v) {
+        sto.set(row, col, v);
     }
 
     /**
      *
-     * @param x
-     * @param y
+     * @param row
+     * @param col
      * @return
      */
-    protected double storageGet(int x, int y) {
-        return sto.get(x, y);
+    protected double storageGet(int row, int col) {
+        return sto.get(row, col);
+    }
+
+    /**
+     * Check row index bounds.
+     *
+     * @param row Row index.
+     */
+    private void checkRowIndex(int row) {
+        if (row < 0 || row >= sto.rowSize())
+            throw new RowIndexException(row);
+    }
+
+    /**
+     * Check column index bounds.
+     *
+     * @param col Column index.
+     */
+    private void checkColumnIndex(int col) {
+        if (col < 0 || col >= sto.columnSize())
+            throw new ColumnIndexException(col);
+    }
+
+    /**
+     * Check column and row index bounds.
+     *
+     * @param row Row index.
+     * @param col Column index.
+     */
+    private void checkIndex(int row, int col) {
+        checkRowIndex(row);
+        checkColumnIndex(col);
     }
 
     @Override
@@ -161,12 +192,14 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public double get(int row, int col) {
-        return 0; // TODO
+        checkIndex(row, col);
+
+        return storageGet(row, col);
     }
 
     @Override
     public double getX(int row, int col) {
-        return 0; // TODO
+        return storageGet(row, col);
     }
 
     @Override
@@ -191,7 +224,11 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix set(int row, int col, double val) {
-        return null; // TODO
+        checkIndex(row, col);
+
+        storageSet(row, col, val);
+
+        return this;
     }
 
     @Override
@@ -206,7 +243,9 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix setX(int row, int col, double val) {
-        return null; // TODO
+        storageSet(row, col, val);
+
+        return this;
     }
 
     @Override
