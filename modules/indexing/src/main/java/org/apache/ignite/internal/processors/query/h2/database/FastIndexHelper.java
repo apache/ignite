@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
+import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
@@ -31,7 +32,7 @@ import org.h2.value.ValueLong;
  */
 public class FastIndexHelper {
     /** */
-    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(Value.BYTE, Value.INT, Value.LONG);
+    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(Value.BOOLEAN, Value.BYTE, Value.SHORT, Value.INT, Value.LONG);
 
     /** */
     private final int type;
@@ -69,11 +70,15 @@ public class FastIndexHelper {
     /** */
     public int size() {
         switch (type) {
+            case Value.BOOLEAN:
             case Value.BYTE:
                 return 1;
 
             case Value.INT:
                 return 4;
+
+            case Value.SHORT:
+                return 2;
 
             case Value.LONG:
                 return 8;
@@ -86,8 +91,14 @@ public class FastIndexHelper {
     /** */
     public Value get(long pageAddr, int off) {
         switch (type) {
+            case Value.BOOLEAN:
+                return ValueBoolean.get(PageUtils.getByte(pageAddr, off) != 0);
+
             case Value.BYTE:
                 return ValueByte.get(PageUtils.getByte(pageAddr, off));
+
+            case Value.SHORT:
+                return ValueInt.get(PageUtils.getShort(pageAddr, off));
 
             case Value.INT:
                 return ValueInt.get(PageUtils.getInt(pageAddr, off));
@@ -103,8 +114,16 @@ public class FastIndexHelper {
     /** */
     public void put(long pageAddr, int off, Value val) {
         switch (type) {
+            case Value.BOOLEAN:
+                PageUtils.putByte(pageAddr, off, (byte)(val.getBoolean() ? 1 : 0));
+                break;
+
             case Value.BYTE:
                 PageUtils.putByte(pageAddr, off, val.getByte());
+                break;
+
+            case Value.SHORT:
+                PageUtils.putShort(pageAddr, off, val.getShort());
                 break;
 
             case Value.INT:

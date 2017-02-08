@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -77,10 +79,10 @@ public abstract class PageIO {
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
     /** */
-    private static IOVersions<? extends BPlusInnerIO<?>> h2ExtraInnerIOs;
+    private static Map<Short, IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new HashMap<>();
 
     /** */
-    private static IOVersions<? extends BPlusLeafIO<?>> h2ExtraLeafIOs;
+    private static Map<Short, IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new HashMap<>();
 
     /** */
     public static final int TYPE_OFF = 0;
@@ -154,10 +156,52 @@ public abstract class PageIO {
     public static final short T_PAGE_UPDATE_TRACKING = 15;
 
     /** */
-    public static final short T_H2_EX32_REF_LEAF = 16;
+    public static final short T_H2_EX4_REF_LEAF = 16;
 
     /** */
-    public static final short T_H2_EX32_REF_INNER = 17;
+    public static final short T_H2_EX4_REF_INNER = 17;
+
+    /** */
+    public static final short T_H2_EX8_REF_LEAF = 18;
+
+    /** */
+    public static final short T_H2_EX8_REF_INNER = 19;
+
+    /** */
+    public static final short T_H2_EX12_REF_LEAF = 20;
+
+    /** */
+    public static final short T_H2_EX12_REF_INNER = 21;
+
+    /** */
+    public static final short T_H2_EX16_REF_LEAF = 22;
+
+    /** */
+    public static final short T_H2_EX16_REF_INNER = 23;
+
+    /** */
+    public static final short T_H2_EX20_REF_LEAF = 24;
+
+    /** */
+    public static final short T_H2_EX20_REF_INNER = 25;
+
+    /** */
+    public static final short T_H2_EX24_REF_LEAF = 26;
+
+    /** */
+    public static final short T_H2_EX24_REF_INNER = 27;
+
+    /** */
+    public static final short T_H2_EX28_REF_LEAF = 28;
+
+    /** */
+    public static final short T_H2_EX28_REF_INNER = 29;
+
+    /** */
+    public static final short T_H2_EX32_REF_LEAF = 30;
+
+    /** */
+    public static final short T_H2_EX32_REF_INNER = 31;
 
     /** */
     private final int ver;
@@ -295,14 +339,30 @@ public abstract class PageIO {
      */
     public static void registerH2(
         IOVersions<? extends BPlusInnerIO<?>> innerIOs,
-        IOVersions<? extends BPlusLeafIO<?>> leafIOs,
-        IOVersions<? extends BPlusInnerIO<?>> intInnerIOs,
-        IOVersions<? extends BPlusLeafIO<?>> intLeafIOs
+        IOVersions<? extends BPlusLeafIO<?>> leafIOs
     ) {
         h2InnerIOs = innerIOs;
         h2LeafIOs = leafIOs;
-        h2ExtraInnerIOs = intInnerIOs;
-        h2ExtraLeafIOs = intLeafIOs;
+    }
+
+    /**
+     * Registers extra IO versions.
+     */
+    public static void registerH2ExtraInner(
+        short innerRef,
+        IOVersions<? extends BPlusInnerIO<?>> innerExtIOs
+    ) {
+        h2ExtraInnerIOs.put(innerRef, innerExtIOs);
+    }
+
+    /**
+     * Registers extra IO versions.
+     */
+    public static void registerH2ExtraLeaf(
+        short leafRef,
+        IOVersions<? extends BPlusLeafIO<?>> leafExtIOs
+    ) {
+        h2ExtraLeafIOs.put(leafRef, leafExtIOs);
     }
 
     /**
@@ -431,17 +491,31 @@ public abstract class PageIO {
 
                 return (Q)h2LeafIOs.forVersion(ver);
 
+            case T_H2_EX4_REF_INNER:
+            case T_H2_EX8_REF_INNER:
+            case T_H2_EX12_REF_INNER:
+            case T_H2_EX16_REF_INNER:
+            case T_H2_EX20_REF_INNER:
+            case T_H2_EX24_REF_INNER:
+            case T_H2_EX28_REF_INNER:
             case T_H2_EX32_REF_INNER:
-                if (h2ExtraInnerIOs == null)
+                if (h2ExtraInnerIOs.get(type) == null)
                     break;
 
-                return (Q)h2ExtraInnerIOs.forVersion(ver);
+                return (Q)h2ExtraInnerIOs.get(type).forVersion(ver);
 
+            case T_H2_EX4_REF_LEAF:
+            case T_H2_EX8_REF_LEAF:
+            case T_H2_EX12_REF_LEAF:
+            case T_H2_EX16_REF_LEAF:
+            case T_H2_EX20_REF_LEAF:
+            case T_H2_EX24_REF_LEAF:
+            case T_H2_EX28_REF_LEAF:
             case T_H2_EX32_REF_LEAF:
-                if (h2ExtraLeafIOs == null)
+                if (h2ExtraLeafIOs.get(type) == null)
                     break;
 
-                return (Q)h2ExtraLeafIOs.forVersion(ver);
+                return (Q)h2ExtraLeafIOs.get(type).forVersion(ver);
 
             case T_DATA_REF_INNER:
                 return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);

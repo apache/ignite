@@ -22,9 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2Extras32InnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2Extras32LeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 
 /**
  */
@@ -44,7 +45,7 @@ public abstract class H2ExtrasTree extends H2Tree {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public H2ExtrasTree(
+    H2ExtrasTree(
         String name,
         ReuseList reuseList,
         int cacheId,
@@ -54,7 +55,9 @@ public abstract class H2ExtrasTree extends H2Tree {
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew,
-        List<FastIndexHelper> fastIdxs
+        List<FastIndexHelper> fastIdxs,
+        IOVersions<? extends H2ExtrasInnerIO> innerIos,
+        IOVersions<? extends H2ExtrasLeafIO> leafIos
     ) throws IgniteCheckedException {
         super(
             name,
@@ -66,8 +69,8 @@ public abstract class H2ExtrasTree extends H2Tree {
             rowStore,
             metaPageId,
             initNew,
-            H2Extras32InnerIO.VERSIONS,
-            H2Extras32LeafIO.VERSIONS);
+            innerIos,
+            leafIos);
 
         this.fastIdxs = fastIdxs;
     }

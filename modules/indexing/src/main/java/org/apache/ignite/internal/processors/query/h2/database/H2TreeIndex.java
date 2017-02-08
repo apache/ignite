@@ -21,13 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2Extras32InnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasIOHelper;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -97,7 +98,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             fastIdxs = getAvailableFastColumns(cols);
 
-            if (pk || fastIdxs.isEmpty()) {
+            if (pk || fastIdxs == null || fastIdxs.isEmpty()) {
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                     tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
@@ -108,9 +109,15 @@ public class H2TreeIndex extends GridH2IndexBase {
                 };
             }
             else {
+                int size = 0;
+
+                for (int i = 0; i < fastIdxs.size(); i++)
+                    size += fastIdxs.get(i).size();
+
                 tree = new H2ExtrasTree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
-                    tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), fastIdxs) {
+                    tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), fastIdxs,
+                    H2ExtrasIOHelper.getInnerIOForSize(size), H2ExtrasIOHelper.getLeafIOForSize(size)) {
                     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
                         throws IgniteCheckedException {
                         int off = io.offset(idx);
@@ -175,12 +182,18 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param cols Columns array.
-     * @return
+     * @return List of {@link FastIndexHelper} objects.
      */
     private List<FastIndexHelper> getAvailableFastColumns(IndexColumn[] cols) {
+        int maxSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, 16);
+
+        if (maxSize == 0)
+            return null;
+
         List<FastIndexHelper> res = new ArrayList<>();
 
-        int maxPayloadSize = H2Extras32InnerIO.PAYLOAD_SIZE;
+        int maxPayloadSize = Math.min(maxSize, H2ExtrasIOHelper.MAX_SIZE);
+
         int payloadSize = 0;
 
         for (int i = 0; i < cols.length; i++) {

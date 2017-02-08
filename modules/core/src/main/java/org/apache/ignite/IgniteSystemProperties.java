@@ -540,6 +540,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
     /**
+     * System property to specify maximum payload size in bytes for {@code H2TreeIndex}.
+     * <p>
+     * Default value is {@code 16}.
+     */
+    public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
