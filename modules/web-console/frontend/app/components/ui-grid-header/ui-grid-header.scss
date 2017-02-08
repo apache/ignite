@@ -1,0 +1,84 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.ui-grid-header--subcategories {
+    .ui-grid-row:nth-child(even) .ui-grid-cell.cell-total {
+        background-color: rgba(102,175,233,.6);
+    }
+
+    .ui-grid-row:nth-child(odd) .ui-grid-cell.cell-total {
+        background-color: rgba(102,175,233,.3);
+    }
+
+    .ui-grid-header-cell-row {
+        height: 30px;
+    }
+
+    .ui-grid-header-cell [role="columnheader"] {
+        display: flex;
+        
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+
+        height: 100%;
+
+        & > div {
+            flex: 1 100%;
+            height: auto;
+        }
+
+        & > div[ui-grid-filter] {
+            flex: auto;
+        }
+    }
+
+    .ui-grid-header-span {
+        position: relative;
+        border-right: 0;
+
+        .ng-hide + .ui-grid-header-cell-row .ui-grid-header-cell {
+            height: 58px;
+        }
+
+        .ng-hide + .ui-grid-header-cell-row .ui-grid-cell-contents {
+            padding: 5px 5px;
+        }
+
+        .ui-grid-column-resizer.right {
+            top: -100px;
+        }
+        .ng-hide + .ui-grid-header-cell-row .ui-grid-column-resizer.right {
+            bottom: -100px;
+        }
+
+        &.ui-grid-header-cell .ui-grid-header-cell .ui-grid-column-resizer.right {
+            border-right-width: 0;
+        }
+        &.ui-grid-header-cell .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+            border-right-width: 1px;
+        }
+
+        & > div > .ui-grid-cell-contents {
+            border-bottom: 1px solid #d4d4d4;
+        }
+    }
+
+    input {
+        line-height: 21px;
+    }
+}
