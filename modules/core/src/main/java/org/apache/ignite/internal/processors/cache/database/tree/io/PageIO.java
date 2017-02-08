@@ -499,10 +499,11 @@ public abstract class PageIO {
             case T_H2_EX24_REF_INNER:
             case T_H2_EX28_REF_INNER:
             case T_H2_EX32_REF_INNER:
-                if (h2ExtraInnerIOs.get(type) == null)
+                IOVersions<? extends BPlusInnerIO<?>> innerVersions = h2ExtraInnerIOs.get(type);
+                if (innerVersions == null)
                     break;
 
-                return (Q)h2ExtraInnerIOs.get(type).forVersion(ver);
+                return (Q)innerVersions.forVersion(ver);
 
             case T_H2_EX4_REF_LEAF:
             case T_H2_EX8_REF_LEAF:
@@ -512,10 +513,11 @@ public abstract class PageIO {
             case T_H2_EX24_REF_LEAF:
             case T_H2_EX28_REF_LEAF:
             case T_H2_EX32_REF_LEAF:
-                if (h2ExtraLeafIOs.get(type) == null)
+                IOVersions<? extends BPlusLeafIO<?>> leafVersions = h2ExtraLeafIOs.get(type);
+                if (leafVersions == null)
                     break;
 
-                return (Q)h2ExtraLeafIOs.get(type).forVersion(ver);
+                return (Q)leafVersions.forVersion(ver);
 
             case T_DATA_REF_INNER:
                 return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);
