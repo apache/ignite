@@ -161,6 +161,8 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
 
         startAllNodesExcept(ALIVE_NODE_IDX); // Start server again.
 
+        Thread.sleep(500);
+
         stopGrid(ALIVE_NODE_IDX);
 
         Thread.sleep(500);

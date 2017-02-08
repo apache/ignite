@@ -19,12 +19,17 @@ package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.Ignite;
@@ -50,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -66,14 +72,8 @@ import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsU
  * Wrapper for IGFS server.
  */
 public class HadoopIgfsWrapper implements HadoopIgfs {
-    /** Ignite client reference counters. */
-    private static final int IDLE_STATE = -1;
-
-    /** Ignite client reference counters. */
-    private static final String DFLT_CLIENT_NODE_NAME = "hadoop-igfs-cli-node";
-
     /** Ignite client reference counters (node name, reference count). */
-    private static ConcurrentMap<String, Integer> refCnts = new ConcurrentHashMap8<>();
+    private static final Map<String, Integer> refCnts = Collections.synchronizedMap(new HashMap<String, Integer>());
 
     /** Delegate. */
     private final AtomicReference<Delegate> delegateRef = new AtomicReference<>();
@@ -417,64 +417,37 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     IgnitionEx.loadConfiguration(igniteCliCfgPath);
 
                 IgniteConfiguration cfg = cfgPair.get1();
+                cfg.setClientMode(true);
 
                 String nodeName = cfg.getGridName();
 
-                if (nodeName == null) {
-                    nodeName = DFLT_CLIENT_NODE_NAME;
-                    cfg.setGridName(nodeName);
-                }
-
-                boolean createNode = needNewClient(nodeName);
-
-                if (createNode) {
-                    cfg.setClientMode(true);
-
-                    Ignite ignite = null;
-
-                    try {
-                        ignite = Ignition.getOrStart(cfg);
-                    }
-                    catch (IgniteException e) {
-
-                        // Try to get ignite instance if it is already started
-                        try {
-                            ignite = Ignition.ignite(nodeName);
-                        }
-                        catch (Exception supressedEx) {
-                            e.addSuppressed(supressedEx);
-                        }
-
-                        if (ignite == null) {
-                            if (!refCnts.remove(nodeName, IDLE_STATE))
-                                log.warn("Hadoop IGFS client node must be IDLE: [name=" + nodeName + ']');
-
-                            throw e;
-                        }
-                    }
+                synchronized (refCnts) {
+                    Ignite ignite = Ignition.getOrStart(cfg);
 
                     if (ignite == null)
                         throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
 
-                    if (!refCnts.replace(nodeName, IDLE_STATE, 0))
-                        throw new IgniteException("Hadoop IGFS client node must be IDLE: [name=" + nodeName + ']');
-                }
+                    if (needNewClient(nodeName))
+                        addManagedIgniteInstance(nodeName);
 
-                HadoopIgfsEx hadoop = null;
+                    HadoopIgfsEx hadoop = null;
 
-                try {
-                    hadoop = HadoopIgfsInProcWithIgniteRefsCount.create(endpoint.igfs(), log, userName, !createNode);
+                    try {
+                        hadoop = HadoopIgfsInProcWithIgniteRefsCount.create(ignite, endpoint.igfs(), log, userName);
 
-                    if (hadoop != null)
-                        curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof HadoopIgfsCommunicationException)
                         if (hadoop != null)
-                            hadoop.close(true);
+                            curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+                    }
+                    catch (IOException | IgniteCheckedException e) {
+                        if (e instanceof HadoopIgfsCommunicationException)
+                            if (hadoop != null)
+                                hadoop.close(true);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to connect to in-process IGFS, fallback to IPC mode.", e);
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to connect to in-process IGFS, fallback to IPC mode.", e);
+
+                        errClient = e;
+                    }
                 }
             }
             catch (Exception e) {
@@ -642,23 +615,16 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * Otherwise returns {@code false}.
      */
     private static boolean needNewClient(String nodeName) {
-        while (true) {
-            Integer cnt = refCnts.get(nodeName);
-
-            if (cnt == null) {
-                cnt = refCnts.putIfAbsent(nodeName, IDLE_STATE);
-                if (cnt == null)
-                    return true;
-            }
-            else {
-                if (cnt > 0 && refCnts.replace(nodeName, cnt, cnt + 1))
-                    return false;
-            }
-
-            LockSupport.parkNanos(0L);
-        }
+        return !refCnts.containsKey(nodeName);
     }
 
+    /**
+     * Register ignite node at the reference counter map.
+     * @param nodeName Ignite node name.
+     */
+    private static void addManagedIgniteInstance(String nodeName) {
+        refCnts.put(nodeName, 0);
+    }
 
     /**
      *
@@ -688,49 +654,46 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
          */
         public static HadoopIgfsInProcWithIgniteRefsCount create(String igfsName, Log log, String userName)
             throws IgniteCheckedException {
-            return create(igfsName, log, userName, false);
+
+            for (Ignite ignite : Ignition.allGrids()) {
+                HadoopIgfsInProcWithIgniteRefsCount delegate = create(ignite, igfsName, log, userName);
+
+                if (delegate != null)
+                    return delegate;
+            }
+
+            return null;
         }
 
         /**
          * Creates instance of the HadoopIgfsInProcWithIgniteRefsCount by IGFS name.
          *
+         * @param ignite Ignite instance.
          * @param igfsName Target IGFS name.
          * @param log Log.
          * @param userName User name.
-         * @param refAlreadyRegistered Reference counter has been updated.
          * @throws IgniteCheckedException On error.
          * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not fount in the current VM.
          */
-        public static HadoopIgfsInProcWithIgniteRefsCount create(String igfsName, Log log, String userName,
-            boolean refAlreadyRegistered) throws IgniteCheckedException {
-            for (Ignite ignite : Ignition.allGrids()) {
+        public static HadoopIgfsInProcWithIgniteRefsCount create(Ignite ignite, String igfsName, Log log, String userName)
+            throws IgniteCheckedException {
+            assert ignite != null;
+
+            synchronized (refCnts) {
                 if (Ignition.state(ignite.name()) == STARTED) {
                     try {
                         for (IgniteFileSystem fs : ignite.fileSystems()) {
                             if (F.eq(fs.name(), igfsName)) {
+                                Integer cnt = refCnts.get(ignite.name());
 
-                                if (!refAlreadyRegistered && ignite.name() != null) {
-                                    Integer cnt = refCnts.get(ignite.name());
-
-                                    if (cnt != null) {
-                                        while (true) {
-                                            if (cnt == null)
-                                                return null;
-                                            else if (cnt >= 0 && refCnts.replace(ignite.name(), cnt, cnt + 1))
-                                                break;
-
-                                            LockSupport.parkNanos(0L);
-
-                                            cnt = refCnts.get(ignite.name());
-                                        }
-                                    }
-                                }
+                                if (cnt != null)
+                                    refCnts.put(ignite.name(), cnt + 1);
 
                                 return new HadoopIgfsInProcWithIgniteRefsCount((IgfsEx)fs, log, userName);
                             }
                         }
                     }
-                    catch (IgniteIllegalStateException ignore) {
+                    catch (IllegalStateException ignore) {
                         // May happen if the grid state has changed:
                     }
                 }
@@ -745,20 +708,19 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
             String gridName = igfs.context().kernalContext().grid().name();
 
-            Integer cnt = refCnts.get(gridName);
+            synchronized (refCnts) {
+                Integer cnt = refCnts.get(gridName);
 
-            if (cnt != null) {
-                // The node was created by this HadoopIgfsWrapper.
-                // The node must be stopped when there are not opened filesystems that are used one.
-                while (!refCnts.replace(gridName, cnt, cnt - 1))
-                    cnt = refCnts.get(gridName);
+                if (cnt != null) {
+                    // The node was created by this HadoopIgfsWrapper.
+                    // The node must be stopped when there are not opened filesystems that are used one.
+                    if (cnt > 1)
+                        refCnts.put(gridName, cnt - 1);
+                    else {
+                        refCnts.remove(gridName);
 
-                if (refCnts.replace(gridName, 0, IDLE_STATE)) {
-                    if (refCnts.remove(gridName, IDLE_STATE))
                         G.stop(gridName, false);
-                    else
-                        throw new IgniteException("Internal error: cannot remove ignite instance. Invalid state: " +
-                            "[count=" + refCnts.get(gridName) + ']');
+                    }
                 }
             }
         }
