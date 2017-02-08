@@ -152,7 +152,7 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
         public TcpDiscoveryNode get() {
             TcpDiscoveryNode node = getRaw();
 
-            node.setAttributes(Collections.singletonMap("CLUSTER_REGION_ID", random.nextInt(10)));
+            node.setAttributes(Collections.<String, Object>singletonMap("CLUSTER_REGION_ID", random.nextInt(10)));
             node.internalOrder(node.id().getLeastSignificantBits());
             return node;
         }
@@ -164,7 +164,7 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
         public TcpDiscoveryNode get(long region) {
             TcpDiscoveryNode node = getRaw();
 
-            node.setAttributes(Collections.singletonMap("CLUSTER_REGION_ID", region));
+            node.setAttributes(Collections.<String, Object>singletonMap("CLUSTER_REGION_ID", region));
             node.internalOrder(node.id().getLeastSignificantBits());
             return node;
         }
