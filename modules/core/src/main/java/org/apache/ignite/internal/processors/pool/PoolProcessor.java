@@ -128,6 +128,11 @@ public class PoolProcessor extends GridProcessorAdapter {
 
                 return ctx.getDataStreamerExecutorService();
 
+            case GridIoPolicy.QUERY_POOL:
+                assert ctx.getQueryExecutorService() != null : "Query pool is not configured.";
+
+                return ctx.getQueryExecutorService();
+
             default: {
                 if (plc < 0)
                     throw new IgniteCheckedException("Policy cannot be negative: " + plc);

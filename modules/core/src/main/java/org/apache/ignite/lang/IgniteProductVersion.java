@@ -159,7 +159,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Release date.
      */
     public Date releaseDate() {
-        return new Date(revTs);
+        return new Date(revTs * 1000);
     }
 
     /**
