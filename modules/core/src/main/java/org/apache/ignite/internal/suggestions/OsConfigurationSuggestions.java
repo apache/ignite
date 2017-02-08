@@ -50,23 +50,28 @@ public class OsConfigurationSuggestions {
         List<String> suggestions = new ArrayList<>();
 
         if (isRedHat()) {
-            String setParamMessage = "Set OS parameter: vm.";
-            String value, expected;
+            String value;
+            String expected = "500";
 
-            if ((value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals(expected = "500"))
-                suggestions.add(setParamMessage + DIRTY_WRITEBACK_CENTISECS + "=" + expected);
+            boolean dwcParamFlag = (value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals(expected);
+            boolean decParamFlag = (value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals(expected);
 
-            if ((value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals(expected = "500"))
-                suggestions.add(setParamMessage + DIRTY_EXPIRE_CENTISECS + "=" + expected);
+            if (dwcParamFlag || decParamFlag)
+                suggestions.add(String.format("Speed up flushing of dirty pages by OS (alter %s%s%s parameter%s by setting to %s)",
+                    (dwcParamFlag ? "vm." + DIRTY_WRITEBACK_CENTISECS : ""),
+                    (dwcParamFlag && decParamFlag ? " and " : ""),
+                    (decParamFlag ? "vm." + DIRTY_EXPIRE_CENTISECS : ""),
+                    (dwcParamFlag && decParamFlag ? "s" : ""),
+                    expected));
 
             if ((value = readVmParam(SWAPPINESS)) != null && !value.equals(expected = "10"))
-                suggestions.add(setParamMessage + SWAPPINESS + "=" + expected);
+                suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%s)", SWAPPINESS, expected));
 
             if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
-                suggestions.add(setParamMessage + ZONE_RECLAIM_MODE + "=" + expected);
+                suggestions.add(String.format("Adjust NUMA zones reclamation setting (set vm.%s=%s)", ZONE_RECLAIM_MODE, expected));
 
             if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && !value.equals(expected = "1240000"))
-                suggestions.add(setParamMessage + EXTRA_FREE_KBYTES + "=" + expected);
+                suggestions.add(String.format("Avoid direct reclaim and page allocation failures (set vm.%s to %s or other value)", EXTRA_FREE_KBYTES, expected));
         }
         return suggestions;
     }

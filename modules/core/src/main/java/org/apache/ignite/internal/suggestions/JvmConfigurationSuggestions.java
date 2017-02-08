@@ -53,7 +53,7 @@ public class JvmConfigurationSuggestions {
             suggestions.add("Enable server mode for JVM (add '" + SERVER + "' to JVM options)");
 
         if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC))
-            suggestions.add("Enable G1 Garbage Collector (add '" + USE_G1_GC + "' to JVM options");
+            suggestions.add("Enable G1 Garbage Collector (add '" + USE_G1_GC + "' to JVM options)");
 
         if (!anyStartWith(args, XMX) && !anyStartWith(args, MX))
             suggestions.add("Specify JVM heap max size (add '" + XMX + "<size>[g|G|m|M|k|K]' to JVM options)");
@@ -62,7 +62,7 @@ public class JvmConfigurationSuggestions {
             suggestions.add("Specify New I/O max total size (add '" + MAX_DIRECT_MEMORY_SIZE + "=<size>[g|G|m|M|k|K]' to JVM options)");
 
         if (!args.contains(USE_TLAB))
-            suggestions.add("Enable using thread-local allocation blocks (add '" + USE_TLAB + "' to JVM options)");
+            suggestions.add("Enable the thread-local allocation blocks (add '" + USE_TLAB + "' to JVM options)");
 
         if (!args.contains(DISABLE_EXPLICIT_GC))
             suggestions.add("Disable processing of calls to System.gc() (add '" + DISABLE_EXPLICIT_GC + "' to JVM options)");
