@@ -15,7 +15,7 @@
     limitations under the License.
 
 include /app/helpers/jade/mixins.jade
-include /app/directives/ui-grid-settings/ui-grid-settings.jade
+include /app/components/ui-grid-settings/ui-grid-settings.jade
 
 mixin btn-toolbar(btn, click, tip, focusId)
     i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip ignite-on-click-focus=focusId data-trigger='hover' data-placement='bottom')
@@ -195,7 +195,7 @@ mixin paragraph-scan
                 +table-result-body
             .footer.clearfix()
                 .pull-left
-                    | Showing results for scan of #[b{{ paragraph.queryArgs.cacheName | defaultName }}]
+                    | Showing results for scan of #[b {{ paragraph.queryArgs.cacheName | defaultName }}]
                     span(ng-if='paragraph.queryArgs.filter') &nbsp; with filter: #[b {{ paragraph.queryArgs.filter }}]
                     span(ng-if='paragraph.queryArgs.localNid') &nbsp; on node: #[b {{ paragraph.queryArgs.localNid | limitTo:8 }}]
 

@@ -861,7 +861,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 GridCacheAffinityManager aff = cctx.affinity();
 
                 if (initUpdCntrsPerNode != null) {
-                    for (ClusterNode node : aff.nodes(partId, initTopVer)) {
+                    for (ClusterNode node : aff.nodesByPartition(partId, initTopVer)) {
                         Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
 
                         if (map != null) {
@@ -1253,7 +1253,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                 try {
                                     cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
                                 }
-                                catch (ClusterTopologyCheckedException e) {
+                                catch (ClusterTopologyCheckedException ignored) {
                                     IgniteLogger log = ctx.log(getClass());
 
                                     if (log.isDebugEnabled())

@@ -119,7 +119,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to get file info because Grid is stopping: " + path);
         }
     }
@@ -137,7 +137,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to update file because Grid is stopping: " + path);
         }
     }
@@ -159,9 +159,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
-            throw new HadoopIgfsCommunicationException("Failed to set path times because Grid is stopping: " +
-                path);
+        catch (IllegalStateException ignored) {
+            throw new HadoopIgfsCommunicationException("Failed to set path times because Grid is stopping: " + path);
         }
     }
 
@@ -181,7 +180,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to rename path because Grid is stopping: " + src);
         }
     }
@@ -198,7 +197,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to delete path because Grid is stopping: " + path);
         }
     }
@@ -212,14 +211,13 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 }
             });
         }
-        catch (IllegalStateException e) {
-            throw new HadoopIgfsCommunicationException("Failed to get file system status because Grid is " +
-                "stopping.");
+        catch (IllegalStateException ignored) {
+            throw new HadoopIgfsCommunicationException("Failed to get file system status because Grid is stopping.");
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {
             throw e;
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             throw new AssertionError("Must never go there.");
         }
     }
@@ -236,7 +234,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to list paths because Grid is stopping: " + path);
         }
     }
@@ -253,7 +251,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to list files because Grid is stopping: " + path);
         }
     }
@@ -275,7 +273,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to create directory because Grid is stopping: " +
                 path);
         }
@@ -293,7 +291,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to get content summary because Grid is stopping: " +
                 path);
         }
@@ -312,7 +310,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to get affinity because Grid is stopping: " + path);
         }
     }
@@ -331,7 +329,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to open file because Grid is stopping: " + path);
         }
     }
@@ -351,7 +349,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to open file because Grid is stopping: " + path);
         }
     }
@@ -373,7 +371,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to create file because Grid is stopping: " + path);
         }
     }
@@ -393,7 +391,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             throw new HadoopIgfsCommunicationException("Failed to append file because Grid is stopping: " + path);
         }
     }

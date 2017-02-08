@@ -319,7 +319,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                 TimeUnit.MILLISECONDS.sleep(schedulerTimeout);
             }
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignored) {
             // Un-register with ResourceManager
             rmClient.unregisterApplicationMaster(FinalApplicationStatus.KILLED, "", "");
 

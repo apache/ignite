@@ -158,12 +158,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param nodeId Node ID.
      * @param threadId Thread ID.
      * @param ver Lock version.
-     * @param ec Not used.
      * @param tx Transaction flag.
      * @return Remote candidate.
      */
     GridCacheMvccCandidate addRemote(UUID nodeId, long threadId, GridCacheVersion ver,
-        boolean ec, boolean tx) {
+                                     boolean tx) {
         return mvcc.addRemote(this, nodeId, null, threadId, ver, tx, true, false);
     }
 

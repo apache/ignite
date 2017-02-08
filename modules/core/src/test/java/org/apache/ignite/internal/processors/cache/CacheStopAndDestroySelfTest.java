@@ -743,7 +743,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             // No-op;
         }
     }
@@ -773,7 +773,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             // No-op.
         }
     }

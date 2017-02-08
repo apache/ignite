@@ -73,7 +73,7 @@ public class GridClockServer {
                 try {
                     locHost = U.getLocalHost();
                 }
-                catch (IOException e) {
+                catch (IOException ignored) {
                     locHost = InetAddress.getLoopbackAddress();
 
                     U.warn(log, "Failed to get local host address, will use loopback address: " + locHost);

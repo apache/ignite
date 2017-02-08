@@ -143,7 +143,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
 
-                onComplete(discoThread);
+                onComplete();
 
                 return;
             }
@@ -163,7 +163,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
 
-            onComplete(discoThread);
+            onComplete();
         }
     }
 
@@ -265,7 +265,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         ERR_UPD.compareAndSet(this, null, err);
 
-        return onComplete(false);
+        return onComplete();
     }
 
     /**
@@ -279,10 +279,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * Completeness callback.
      *
-     * @param discoThread {@code True} if executed from discovery thread.
      * @return {@code True} if future was finished by this call.
      */
-    private boolean onComplete(boolean discoThread) {
+    private boolean onComplete() {
         Throwable err0 = err;
 
         if (err0 == null || tx.needCheckBackup())
@@ -605,7 +604,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
         else
             nodes = cacheCtx.isLocal() ?
-                cacheCtx.affinity().nodes(entry.key(), topVer) :
+                cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
                 cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
@@ -732,7 +731,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                 "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
 
-            onComplete(false);
+            onComplete();
         }
     }
 

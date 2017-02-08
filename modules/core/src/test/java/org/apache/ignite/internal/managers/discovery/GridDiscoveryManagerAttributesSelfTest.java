@@ -160,7 +160,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 if (fail)
                     fail("Node should not join");
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 if (!fail)
                     fail("Node should join");
             }
@@ -215,7 +215,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 if (fail)
                     fail("Node should not join");
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 if (!fail)
                     fail("Node should join");
             }

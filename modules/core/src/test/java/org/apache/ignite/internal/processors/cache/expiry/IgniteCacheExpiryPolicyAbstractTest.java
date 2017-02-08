@@ -1190,7 +1190,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
-                GridCacheEntryEx entry = null;
+                GridCacheEntryEx entry;
 
                 while (true) {
                     try {
