@@ -84,7 +84,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public int size() {
-        return sto == null ? 0 : sto.size();
+        return sto.size();
     }
 
     /**

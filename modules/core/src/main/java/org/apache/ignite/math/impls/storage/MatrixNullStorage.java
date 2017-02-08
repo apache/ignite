@@ -19,77 +19,51 @@ package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
-
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 
 /**
- * No-op vector storage.
+ * No-op matrix storage.
  */
-public final class VectorNullStorage implements VectorStorage {
+public class MatrixNullStorage implements MatrixStorage {
     /** Unsupported operation. */
-    private static final String UNSUPPORTED_OPERATION = "Unsupported vector operation.";
+    private static final String UNSUPPORTED_OPERATION = "Unsupported matrix operation.";
 
-    /** {@inheritDoc} */ @Override
-    public int size() {
+    @Override
+    public double get(int x, int y) {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    }
+
+    @Override
+    public void set(int x, int y, double v) {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    }
+
+    @Override
+    public int columnSize() {
         return 0;
     }
 
-    public VectorNullStorage() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override
-    public boolean isSequentialAccess() {
-        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    public int rowSize() {
+        return 0;
     }
 
-    /** {@inheritDoc} */
     @Override
-    public boolean isDense() {
-        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public double getLookupCost() {
-        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public boolean isAddConstantTime() {
-        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
-    }
-
-    /** {@inheritDoc} */ @Override
-    public double get(int i) {
-        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
-    }
-
-    /** {@inheritDoc} */ @Override
-    public void set(int i, double v) {
-        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
-    }
-
-    /** {@inheritDoc} */ @Override
     public boolean isArrayBased() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
-    public double[] data() {
+    @Override
+    public double[][] data() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         // No-op.
     }
 
-    /** {@inheritDoc} */ @Override
+    @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op.
     }

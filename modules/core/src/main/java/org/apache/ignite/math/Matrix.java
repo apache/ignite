@@ -182,22 +182,13 @@ public interface Matrix {
     double getX(int row, int col);
 
     /**
-     * Creates new empty matrix of the same underlying class and the same size as this matrix.
-     *
-     * NOTE: new matrix will have the same flavor as the this matrix but a different ID.
-     *
-     * @return New matrix of the same size using the same underlying class.
-     */
-    Matrix cloneEmpty();
-
-    /**
      * Clones this matrix.
      *
      * NOTE: new matrix will have the same flavor as the this matrix but a different ID.
      *
      * @return New matrix of the same underlying class, the same size and the same values.
      */
-    Matrix clone();
+    Matrix copy();
 
     /**
      * Creates new empty matrix of the same underlying class but of different size.
@@ -208,7 +199,7 @@ public interface Matrix {
      * @param cols Number of columns for new matrix.
      * @return New matrix of the same underlying class and size.
      */
-    Matrix cloneEmpty(int rows, int cols);
+    Matrix like(int rows, int cols);
 
     /**
      * Creates new matrix where each value is a difference between corresponding value of this matrix and
@@ -356,12 +347,6 @@ public interface Matrix {
      * @return New view.
      */
     Vector viewDiagonal();
-
-    /**
-     *
-     * @return Matrix flavor.
-     */
-    String flavor();
 
     /**
      * Gets optional cluster group this matrix is stored on. In case of local JVM storage it may
