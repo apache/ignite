@@ -22,17 +22,9 @@ import java.nio.charset.Charset;
 /**
  * Default converter for ZeroMQ message.
  */
-public class DefaultMessageConverter implements MessageConverter {
-    /** */
-    private String value;
-
+public class DefaultMessageConverter implements MessageConverter<String> {
     /** {@inheritDoc} */
-    public void convert(byte[] msg) {
-        value = new String(msg, Charset.forName("UTF-8"));
-    }
-
-    /** */
-    public String getValue() {
-        return value;
+    public String convert(byte[] msg) {
+        return new String(msg, Charset.forName("UTF-8"));
     }
 }

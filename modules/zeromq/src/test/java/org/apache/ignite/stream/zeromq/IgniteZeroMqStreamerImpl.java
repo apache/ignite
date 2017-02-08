@@ -51,9 +51,8 @@ public class IgniteZeroMqStreamerImpl extends IgniteZeroMqStreamer<Integer, Stri
         @Override public Map.Entry<Integer, String> extract(byte[] msg) {
             try {
                 DefaultMessageConverter message = new DefaultMessageConverter();
-                message.convert(msg);
 
-                return new IgniteBiTuple<>(count.getAndIncrement(), message.getValue());
+                return new IgniteBiTuple<>(count.getAndIncrement(), message.convert(msg));
             }
             catch (IgniteException e) {
                 U.error(log, e);
