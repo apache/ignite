@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.impls.storage;
 
-import org.apache.ignite.math.impls.*;
+import org.apache.ignite.math.*;
 import java.io.*;
 import java.util.*;
 
@@ -80,6 +80,30 @@ public class VectorArrayStorage implements VectorStorage {
     /** {@inheritDoc */
     @Override public double[] data() {
         return data;
+    }
+
+    /** {@inheritDoc */
+    @Override
+    public boolean isSequentialAccess() {
+        return true;
+    }
+
+    /** {@inheritDoc */
+    @Override
+    public boolean isDense() {
+        return true;
+    }
+
+    /** {@inheritDoc */
+    @Override
+    public double getLookupCost() {
+        return 0.0;
+    }
+
+    /** {@inheritDoc */
+    @Override
+    public boolean isAddConstantTime() {
+        return true;
     }
 
     /** {@inheritDoc */

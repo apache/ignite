@@ -17,8 +17,8 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
-import org.apache.ignite.math.impls.*;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -27,7 +27,7 @@ import java.io.ObjectOutput;
 /**
  * Null object for VectorStorage.
  */
-public final class NullVectorStorage implements VectorStorage {
+public final class VectorNullStorage implements VectorStorage {
     /** Unsupported operation. */
     private static final String UNSUPPORTED_OPERATION = "Unsupported operation.";
 
@@ -36,8 +36,32 @@ public final class NullVectorStorage implements VectorStorage {
         return 0;
     }
 
-    public NullVectorStorage() {
-        
+    public VectorNullStorage() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isSequentialAccess() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isDense() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getLookupCost() {
+        return 0.0;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    public boolean isAddConstantTime() {
+        return false;
     }
 
     /** {@inheritDoc} */ @Override

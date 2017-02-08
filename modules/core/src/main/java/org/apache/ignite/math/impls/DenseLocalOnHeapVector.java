@@ -102,16 +102,6 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     }
 
     /** {@inheritDoc */
-    @Override public boolean isDense() {
-        return true;
-    }
-
-    /** {@inheritDoc */
-    @Override public boolean isSequentialAccess() {
-        return false;
-    }
-
-    /** {@inheritDoc */
     @Override public Vector copy() {
         return new DenseLocalOnHeapVector(this);
     }
@@ -119,25 +109,5 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     /** {@inheritDoc */
     @Override public Vector like(int crd) {
         return new DenseLocalOnHeapVector(crd);
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector viewPart(int off, int len) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Matrix cross(Vector vec) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public double getLookupCost() {
-        return 0;
-    }
-
-    /** {@inheritDoc */
-    @Override public boolean isAddConstantTime() {
-        return true;
     }
 }

@@ -51,7 +51,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
      *
      */
     public AbstractVector() {
-        sto = new NullVectorStorage();
+        sto = new VectorNullStorage();
     }
 
     /**
@@ -59,7 +59,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @param sto
      */
     protected void setStorage(VectorStorage sto) {
-        this.sto = sto == null ? new NullVectorStorage() : sto;
+        this.sto = sto == null ? new VectorNullStorage() : sto;
     }
 
     /**
@@ -515,6 +515,41 @@ public abstract class AbstractVector implements Vector, Externalizable {
             lenSq = dotSelf();
 
         return lenSq;
+    }
+
+    @Override
+    public boolean isDense() {
+        return sto.isDense();
+    }
+
+    @Override
+    public boolean isSequentialAccess() {
+        return sto.isSequentialAccess();
+    }
+
+    @Override
+    public double getLookupCost() {
+        return sto.getLookupCost();
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return sto.isAddConstantTime();
+    }
+
+    @Override
+    public VectorStorage getStorage() {
+        return sto;
+    }
+
+    @Override
+    public Vector viewPart(int off, int len) {
+        return new VectorView(this, off, len);
+    }
+
+    @Override
+    public Matrix cross(Vector vec) {
+        return null; // TODO
     }
 
     @Override

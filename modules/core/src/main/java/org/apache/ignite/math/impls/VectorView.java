@@ -15,67 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls.storage;
+package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.storage.*;
 import java.io.*;
 
 /**
  * TODO: add description.
  */
-public class VectorOffHeapStorage implements VectorStorage {
-    @Override
-    public int size() {
-        return 0; // TODO
+public class VectorView extends AbstractVector {
+    // Parent.
+    private Vector parent;
+
+    // View offset.
+    private int off;
+
+    // View length.
+    private int len;
+
+    /**
+     *
+     * @param parent
+     * @param off
+     * @param len
+     */
+    public VectorView(Vector parent, int off, int len) {
+        super(new VectorDelegateStorage(parent.getStorage(), off, len));
+
+        this.parent = parent;
+        this.off = off;
+        this.len = len;
     }
 
     @Override
-    public double get(int i) {
-        return 0; // TODO
+    public Vector copy() {
+        return new VectorView(parent, off, len);
     }
 
     @Override
-    public void set(int i, double v) {
-        // TODO
-    }
-
-    @Override
-    public boolean isArrayBased() {
-        return false; // TODO
-    }
-
-    @Override
-    public double[] data() {
-        return new double[0]; // TODO
-    }
-
-    @Override
-    public boolean isSequentialAccess() {
-        return false; // TODO
-    }
-
-    @Override
-    public boolean isDense() {
-        return false; // TODO
-    }
-
-    @Override
-    public double getLookupCost() {
-        return 0; // TODO
-    }
-
-    @Override
-    public boolean isAddConstantTime() {
-        return false; // TODO
+    public Vector like(int crd) {
+        return parent.like(crd);
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeObject(parent);
+        out.writeInt(off);
+        out.writeInt(len);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        parent = (Vector)in.readObject();
+        off = in.readInt();
+        len = in.readInt();
     }
 }

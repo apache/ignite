@@ -390,11 +390,16 @@ public interface Vector {
 
     /**
      * 
-     * @param offset
-     * @param length
+     * @param off
+     * @param len
      * @return
      */
-    Vector viewPart(int offset, int length);
+    Vector viewPart(int off, int len);
+
+    /**
+     * Gets vector storage model.
+     */
+    VectorStorage getStorage();
 
     /**
      * Gets the sum of all elements in this vector.

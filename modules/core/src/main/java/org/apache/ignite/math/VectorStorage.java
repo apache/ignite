@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math;
 
 import java.io.*;
 
@@ -35,6 +35,30 @@ public interface VectorStorage extends Externalizable {
      * @return
      */
     public double get(int i);
+
+    /**
+     *
+     * @return
+     */
+    public boolean isSequentialAccess();
+
+    /**
+     *
+     * @return
+     */
+    public boolean isDense();
+
+    /**
+     *
+     * @return
+     */
+    public double getLookupCost();
+
+    /**
+     * 
+     * @return
+     */
+    public boolean isAddConstantTime();
 
     /**
      * 
