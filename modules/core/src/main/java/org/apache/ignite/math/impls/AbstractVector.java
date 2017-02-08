@@ -35,6 +35,9 @@ public abstract class AbstractVector implements Vector, Externalizable {
     /** Vector's GUID. */
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
+    /** Cached value for length squared. */
+    private double lenSq = 0.0;
+
     /**
      *
      * @param sto
@@ -58,6 +61,26 @@ public abstract class AbstractVector implements Vector, Externalizable {
         this.sto = sto == null ? new NullVectorStorage() : sto;
     }
 
+    /**
+     *
+     * @param i
+     * @param v
+     */
+    protected void storageSet(int i, double v) {
+        sto.set(i, v);
+
+        lenSq = 0.0;
+    }
+
+    /**
+     *
+     * @param i
+     * @return
+     */
+    protected double storageGet(int i) {
+        return sto.get(i);
+    }
+
     /** {@inheritDoc */
     @Override public int size() {
         return sto == null ? 0 : sto.size();
@@ -79,12 +102,12 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override public double get(int idx) {
         checkIndex(idx);
 
-        return sto.get(idx);
+        return storageGet(idx);
     }
 
     /** {@inheritDoc */
     @Override public double getX(int idx) {
-        return sto.get(idx);
+        return storageGet(idx);
     }
 
     /** {@inheritDoc */
@@ -98,7 +121,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
             int len = sto.size();
 
             for (int i = 0; i < len; i++)
-                sto.set(i, fun.apply(sto.get(i)));
+                storageSet(i, fun.apply(storageGet(i)));
         }
 
         return this;
@@ -111,7 +134,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            sto.set(i, fun.apply(vec.get(i), sto.get(i)));
+            storageSet(i, fun.apply(vec.get(i), storageGet(i)));
 
         return this;
     }
@@ -121,7 +144,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            sto.set(i, fun.apply(sto.get(i), y));
+            storageSet(i, fun.apply(storageGet(i), y));
 
         return this;
     }
@@ -135,7 +158,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         return new Element() {
             /** {@inheritDoc */
             @Override public double get() {
-                return sto.get(idx);
+                return storageGet(idx);
             }
 
             /** {@inheritDoc */
@@ -145,7 +168,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
             /** {@inheritDoc */
             @Override public void set(double val) {
-                sto.set(idx, val);
+                storageSet(idx, val);
             }
         };
     }
@@ -156,7 +179,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            if (sto.get(i) < sto.get(minIdx))
+            if (storageGet(i) < storageGet(minIdx))
                 minIdx = i;
 
         return mkElement(minIdx);
@@ -168,7 +191,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            if (sto.get(i) > sto.get(maxIdx))
+            if (storageGet(i) > storageGet(maxIdx))
                 maxIdx = i;
 
         return mkElement(maxIdx);
@@ -178,14 +201,14 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override public Vector set(int idx, double val) {
         checkIndex(idx);
 
-        sto.set(idx, val);
+        storageSet(idx, val);
 
         return this;
     }
 
     /** {@inheritDoc */
     @Override public Vector setX(int idx, double val) {
-        sto.set(idx, val);
+        storageSet(idx, val);
 
         return this;
     }
@@ -194,14 +217,14 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override public Vector increment(int idx, double val) {
         checkIndex(idx);
 
-        sto.set(idx, sto.get(idx) + val);
+        storageSet(idx, storageGet(idx) + val);
 
         return this;
     }
 
     /** {@inheritDoc */
     @Override public Vector incrementX(int idx, double val) {
-        sto.set(idx, sto.get(idx) + val);
+        storageSet(idx, storageGet(idx) + val);
 
         return this;
     }
@@ -221,7 +244,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            sum += sto.get(i);
+            sum += storageGet(i);
 
         return sum;
     }
@@ -282,7 +305,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            result = foldFun.apply(result, mapFun.apply(sto.get(i)));
+            result = foldFun.apply(result, mapFun.apply(storageGet(i)));
 
         return result;
     }
@@ -295,7 +318,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            result = foldFun.apply(result, combFun.apply(sto.get(i), vec.getX(i)));
+            result = foldFun.apply(result, combFun.apply(storageGet(i), vec.getX(i)));
 
         return result;
     }
@@ -360,7 +383,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
             int len = sto.size();
 
             for (int i = 0; i < len; i++)
-                sto.set(i, val);
+                storageSet(i, val);
         }
 
         return this;
@@ -376,7 +399,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
             int len = sto.size();
 
             for (int i = 0; i < len; i++)
-                sto.set(i, vals[i]);
+                storageSet(i, vals[i]);
         }
 
         return this;
@@ -387,7 +410,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         checkCardinality(vec);
 
         for (Vector.Element x : vec.all())
-            sto.set(x.index(), x.get());
+            storageSet(x.index(), x.get());
 
         return this;
     }
@@ -402,7 +425,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
             int len = sto.size();
 
             for (int i = 0; i < len; i++)
-                sto.set(i, fun.applyAsDouble(i));
+                storageSet(i, fun.applyAsDouble(i));
         }
 
         return this;
@@ -416,7 +439,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
                 int len = sto.size();
 
                 for (int i = 0; i < len; i++)
-                    action.accept(sto.get(i));
+                    action.accept(storageGet(i));
 
                 return true;
             }
@@ -446,7 +469,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
                 int len = sto.size();
 
                 for (int i = 0; i < len; i++) {
-                    double val = sto.get(i);
+                    double val = storageGet(i);
 
                     if (!isZero(val))
                         action.accept(val);
@@ -480,14 +503,17 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            sum += sto.get(i) * vec.getX(i);
+            sum += storageGet(i) * vec.getX(i);
 
         return sum;
     }
 
     @Override
     public double getLengthSquared() {
-        return dotSelf(); // TODO: need to cache for performance.
+        if (lenSq == 0.0)
+            lenSq = dotSelf();
+
+        return lenSq;
     }
 
     @Override
@@ -640,7 +666,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++) {
-            double v = sto.get(i);
+            double v = storageGet(i);
 
             sum += v * v;
         }

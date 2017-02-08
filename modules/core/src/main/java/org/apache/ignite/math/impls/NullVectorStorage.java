@@ -27,13 +27,16 @@ import java.io.ObjectOutput;
  * Null object for VectorStorage.
  */
 final class NullVectorStorage implements VectorStorage {
-
     /** Unsupported operation. */
     private static final String UNSUPPORTED_OPERATION = "Unsupported operation.";
 
     /** {@inheritDoc} */ @Override
     public int size() {
         return 0;
+    }
+
+    public NullVectorStorage() {
+        
     }
 
     /** {@inheritDoc} */ @Override
