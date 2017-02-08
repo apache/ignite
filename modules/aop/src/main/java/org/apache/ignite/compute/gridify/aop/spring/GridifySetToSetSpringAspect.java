@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.gridify.GridifyRangeArgument;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 
+import static javafx.scene.input.KeyCode.F;
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.internal.util.gridify.GridifyUtils.UNKNOWN_SIZE;
 

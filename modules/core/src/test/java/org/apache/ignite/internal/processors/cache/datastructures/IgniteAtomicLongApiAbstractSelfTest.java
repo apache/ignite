@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.Random;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
@@ -25,26 +26,36 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
+import junit.framework.TestCase;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Cache atomic long api test.
  */
+
 public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsAbstractTest {
-    /** Random number generator. */
+    /**
+     * Random number generator.
+     */
     private static final Random RND = new Random();
 
     /** */
     private static final String TRANSACTIONAL_CACHE_NAME = "tx_cache";
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int gridCount() {
         return 1;
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -92,8 +103,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
             atomic1.get();
 
             fail();
-        }
-        catch (IllegalStateException | IgniteException e) {
+        } catch (IllegalStateException | IgniteException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }
@@ -264,5 +274,38 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
             assert curAtomicVal == atomic.getAndSet(newVal);
             assert newVal == atomic.get();
         }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure that transaction on these
+     * system caches do not intersect with transactions started by user.*
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+
+        info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
+
+        Ignite ignite = grid(0);
+
+        IgniteCache<Object, Object> cache = ignite.cache(TRANSACTIONAL_CACHE_NAME);
+
+        IgniteAtomicLong atomic = ignite.atomicLong("atomic", 0, true);
+
+        long curAtomicVal = 0L;
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+
+            curAtomicVal = atomic.get();
+
+            cache.put(1, 1);
+
+            tx.rollback();
+
+            assertEquals(0, cache.size());
+
+        }
+
+        assert curAtomicVal + 1 == atomic.incrementAndGet();
+        assert curAtomicVal + 1 == atomic.get();
     }
 }
