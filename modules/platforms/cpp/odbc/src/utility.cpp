@@ -22,20 +22,6 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
-#ifdef ODBC_DEBUG
-
-FILE* log_file = NULL;
-
-void logInit(const char* path)
-{
-    if (!log_file)
-    {
-        log_file = fopen(path, "w");
-    }
-}
-
-#endif //ODBC_DEBUG
-
 namespace ignite
 {
     namespace utility
@@ -153,6 +139,21 @@ namespace ignite
             }
             else
                 res.clear();
+        }
+
+        std::string HexDump(const void* data, size_t count)
+        {
+            std::stringstream  dump;
+            size_t cnt = 0;
+            for(const uint8_t* p = (const uint8_t*)data, *e = (const uint8_t*)data + count; p != e; ++p)
+            {
+                if (cnt++ % 16 == 0)
+                {
+                    dump << std::endl;
+                }
+                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
+            }
+            return dump.str();
         }
     }
 }

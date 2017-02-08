@@ -280,6 +280,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     /**add reader*/false,
@@ -299,6 +300,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
                     cctx.deploymentEnabled());
@@ -323,7 +325,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
+        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));

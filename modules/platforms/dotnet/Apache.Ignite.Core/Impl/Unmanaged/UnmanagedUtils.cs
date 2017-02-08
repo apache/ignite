@@ -38,9 +38,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var platfrom = Environment.Is64BitProcess ? "x64" : "x86";
+            var platform = Environment.Is64BitProcess ? "x64" : "x86";
 
-            var resName = string.Format("{0}.{1}", platfrom, IgniteUtils.FileIgniteJniDll);
+            var resName = string.Format("{0}.{1}", platform, IgniteUtils.FileIgniteJniDll);
 
             var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
@@ -313,6 +313,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static IUnmanagedTarget ProcessorExtensions(IUnmanagedTarget target)
         {
             void* res = JNI.ProcessorExtensions(target.Context, target.Target);
+
+            return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget ProcessorExtension(IUnmanagedTarget target, int id)
+        {
+            void* res = JNI.ProcessorExtension(target.Context, target.Target, id);
 
             return target.ChangeTarget(res);
         }

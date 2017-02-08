@@ -48,6 +48,10 @@ export default class IgniteConfigurationGenerator {
         return new Bean('org.apache.ignite.cache.QueryEntity', 'qryEntity', domain, cacheDflts);
     }
 
+    static domainJdbcTypeBean(domain) {
+        return new Bean('org.apache.ignite.cache.store.jdbc.JdbcType', 'type', domain);
+    }
+
     static discoveryConfigurationBean(discovery) {
         return new Bean('org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi', 'discovery', discovery, clusterDflts.discovery);
     }
@@ -1383,7 +1387,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate domain model for store group.
-    static domainStore(domain, cfg = this.domainConfigurationBean(domain)) {
+    static domainStore(domain, cfg = this.domainJdbcTypeBean(domain)) {
         cfg.stringProperty('databaseSchema')
             .stringProperty('databaseTable');
 
@@ -1449,6 +1453,41 @@ export default class IgniteConfigurationGenerator {
 
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
             ccfg.intProperty('invalidate');
+
+        return ccfg;
+    }
+
+    // Generation of constructor for affinity function.
+    static cacheAffinityFunction(cls, func) {
+        const affBean = new Bean(cls, 'affinityFunction', func);
+
+        affBean.boolConstructorArgument('excludeNeighbors')
+            .intProperty('partitions')
+            .emptyBeanProperty('affinityBackupFilter');
+
+        return affBean;
+    }
+
+    // Generate cache memory group.
+    static cacheAffinity(cache, ccfg = this.cacheConfigurationBean(cache)) {
+        switch (_.get(cache, 'affinity.kind')) {
+            case 'Rendezvous':
+                ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction', cache.affinity.Rendezvous));
+
+                break;
+            case 'Fair':
+                ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.fair.FairAffinityFunction', cache.affinity.Fair));
+
+                break;
+            case 'Custom':
+                ccfg.emptyBeanProperty('affinity.Custom.className', 'affinity');
+
+                break;
+            default:
+                // No-op.
+        }
+
+        ccfg.emptyBeanProperty('affinityMapper');
 
         return ccfg;
     }
@@ -1527,8 +1566,7 @@ export default class IgniteConfigurationGenerator {
                         if (_.isNil(domain.databaseTable))
                             return acc;
 
-                        const typeBean = new Bean('org.apache.ignite.cache.store.jdbc.JdbcType', 'type',
-                            _.merge({}, domain, {cacheName: cache.name}))
+                        const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName: cache.name}))
                             .stringProperty('cacheName');
 
                         setType(typeBean, 'keyType');
@@ -1728,6 +1766,7 @@ export default class IgniteConfigurationGenerator {
 
     static cacheConfiguration(cache, ccfg = this.cacheConfigurationBean(cache)) {
         this.cacheGeneral(cache, ccfg);
+        this.cacheAffinity(cache, ccfg);
         this.cacheMemory(cache, ccfg);
         this.cacheQuery(cache, cache.domains, ccfg);
         this.cacheStore(cache, cache.domains, ccfg);

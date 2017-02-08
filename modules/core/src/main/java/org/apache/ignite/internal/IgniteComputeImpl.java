@@ -207,6 +207,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job) {
+
+
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
         A.ensure(!cacheNames.isEmpty(), "cachesNames mustn't be empty");

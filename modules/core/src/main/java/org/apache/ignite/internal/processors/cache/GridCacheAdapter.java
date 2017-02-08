@@ -501,7 +501,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         assert !CU.isUtilityCache(ctx.name());
         assert !CU.isAtomicsCache(ctx.name());
-        assert !CU.isMarshallerCache(ctx.name());
 
         CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc, false, null);
 
@@ -528,6 +527,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Locks future.
      */
@@ -539,6 +539,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
+        long createTtl,
         long accessTtl);
 
     /**
@@ -776,7 +777,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 boolean nearKey;
 
                 if (!(modes.near && modes.primary && modes.backup)) {
-                    boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
+                    boolean keyPrimary = ctx.affinity().primaryByPartition(ctx.localNode(), part, topVer);
 
                     if (keyPrimary) {
                         if (!modes.primary)
@@ -785,7 +786,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         nearKey = false;
                     }
                     else {
-                        boolean keyBackup = ctx.affinity().belongs(ctx.localNode(), part, topVer);
+                        boolean keyBackup = ctx.affinity().partitionBelongs(ctx.localNode(), part, topVer);
 
                         if (keyBackup) {
                             if (!modes.backup)
@@ -806,7 +807,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                 }
                 else {
-                    nearKey = !ctx.affinity().belongs(ctx.localNode(), part, topVer);
+                    nearKey = !ctx.affinity().partitionBelongs(ctx.localNode(), part, topVer);
 
                     if (nearKey) {
                         // Swap and offheap are disabled for near cache.
@@ -2597,7 +2598,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "putxAsync [key=" + key + ", val=" + val + ", filter=" + filter + ']';
+                return S.toString("putxAsync",
+                    "key", key, true,
+                    "val", val, true,
+                    "filter", filter, false);
             }
         });
     }
@@ -3758,8 +3762,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /** {@inheritDoc} */
             @Override public boolean apply(ClusterNode clusterNode) {
                 return clusterNode.version().compareTo(PartitionSizeLongTask.SINCE_VER) >= 0 &&
-                    ((modes.primary && aff.primary(clusterNode, part, topVer)) ||
-                        (modes.backup && aff.backup(clusterNode, part, topVer)));
+                    ((modes.primary && aff.primaryByPartition(clusterNode, part, topVer)) ||
+                        (modes.backup && aff.backupByPartition(clusterNode, part, topVer)));
             }
         }).nodes();
 
@@ -5751,28 +5755,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /**
-         * @param ttl Access TTL.
+         * @param createTtl Create TTL.
+         * @param accessTtl Access TTL.
          * @return Access expire policy.
          */
-        @Nullable public static CacheExpiryPolicy forAccess(final long ttl) {
-            if (ttl == CU.TTL_NOT_CHANGED)
+        @Nullable public static CacheExpiryPolicy fromRemote(final long createTtl, final long accessTtl) {
+            if (createTtl == CU.TTL_NOT_CHANGED && accessTtl == CU.TTL_NOT_CHANGED)
                 return null;
 
             return new CacheExpiryPolicy() {
+                @Override public long forCreate() {
+                    return createTtl;
+                }
+
                 @Override public long forAccess() {
-                    return ttl;
+                    return accessTtl;
+                }
+
+                /** {@inheritDoc} */
+                @Override public long forUpdate() {
+                    return CU.TTL_NOT_CHANGED;
                 }
             };
-        }
-
-        /** {@inheritDoc} */
-        @Override public long forCreate() {
-            return CU.TTL_NOT_CHANGED;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long forUpdate() {
-            return CU.TTL_NOT_CHANGED;
         }
 
         /** {@inheritDoc} */

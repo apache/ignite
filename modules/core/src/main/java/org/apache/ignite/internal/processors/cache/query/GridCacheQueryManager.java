@@ -1525,11 +1525,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     // Other types are filtered in indexing manager.
                     if (!cctx.isReplicated() && qry.type() == SCAN && qry.partition() == null &&
                         cctx.config().getCacheMode() != LOCAL && !incBackups &&
-                        !cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+                        !cctx.affinity().primaryByKey(cctx.localNode(), key, topVer)) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring backup element [row=" + row +
                                 ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
-                                ", primary=" + cctx.affinity().primary(cctx.localNode(), key, topVer) + ']');
+                                ", primary=" + cctx.affinity().primaryByKey(cctx.localNode(), key, topVer) + ']');
 
                         continue;
                     }
@@ -1537,18 +1537,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     V val = row.getValue();
 
                     if (log.isDebugEnabled()) {
-                        ClusterNode primaryNode = CU.primaryNode(cctx, key);
+                        ClusterNode primaryNode = cctx.affinity().primaryByKey(key,
+                            cctx.affinity().affinityTopologyVersion());
 
-                        log.debug("Record [key=" + key +
-                            ", val=" + val +
-                            ", incBackups=" + incBackups +
-                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
-                            ", node=" + U.id8(cctx.localNode().id()) + ']');
+                        log.debug(S.toString("Record",
+                            "key", key, true,
+                            "val", val, true,
+                            "incBackups", incBackups, false,
+                            "priNode", primaryNode != null ? U.id8(primaryNode.id()) : null, false,
+                            "node", U.id8(cctx.localNode().id()), false));
                     }
 
                     if (val == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Unsuitable record value: " + val);
+                            log.debug(S.toString("Unsuitable record value", "val", val, true));
 
                         continue;
                     }
@@ -2299,7 +2301,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primary(ctx.discovery().localNode(), k, NONE);
+                        return cache.context().affinity().primaryByKey(ctx.discovery().localNode(), k, NONE);
                     }
                 };
             }
@@ -2366,7 +2368,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 },
                 new P1<IgniteInternalCache<?, ?>>() {
                     @Override public boolean apply(IgniteInternalCache<?, ?> c) {
-                        return !CU.MARSH_CACHE_NAME.equals(c.name()) && !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
+                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
                             !CU.ATOMICS_CACHE_NAME.equals(c.name());
                     }
                 }

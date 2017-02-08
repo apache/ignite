@@ -706,7 +706,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         try {
                             assertTrue(recvLatch.await(2, SECONDS));
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             fail("Message wasn't received.");
                         }
 
@@ -751,7 +751,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         try {
                             assertEquals(42, (int)fut.get());
                         }
-                        catch (Exception e) {
+                        catch (Exception ignored) {
                             fail("Failed submit task.");
                         }
 

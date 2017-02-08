@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -102,11 +101,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         TransactionIsolation isolation,
         boolean isInvalidate,
+        long createTtl,
         long accessTtl
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, accessTtl);
+        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, createTtl, accessTtl);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +121,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             false,
             /*retval*/true,
             null,
+            -1L,
             -1L);
     }
 
@@ -132,6 +133,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param isRead Indicates whether value is read or written.
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Future for locks.
      */
@@ -142,6 +144,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
+        long createTtl,
         long accessTtl);
 
     /**

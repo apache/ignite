@@ -322,7 +322,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
+                    f.onNodeLeft();
 
                     return true;
                 }
@@ -1313,8 +1313,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 ", node=" + n.id() + ']');
                         }
                     }
-                    catch (ClusterTopologyCheckedException e) {
-                        fut.onNodeLeft(e);
+                    catch (ClusterTopologyCheckedException ignored) {
+                        fut.onNodeLeft();
                     }
                     catch (IgniteCheckedException e) {
                         if (!cctx.kernalContext().isStopping()) {
@@ -1396,8 +1396,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                     ", node=" + nearMapping.node().id() + ']');
                             }
                         }
-                        catch (ClusterTopologyCheckedException e) {
-                            fut.onNodeLeft(e);
+                        catch (ClusterTopologyCheckedException ignored) {
+                            fut.onNodeLeft();
                         }
                         catch (IgniteCheckedException e) {
                             if (!cctx.kernalContext().isStopping()) {
@@ -1629,9 +1629,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         }
 
         /**
-         * @param e Node failure.
          */
-        void onNodeLeft(ClusterTopologyCheckedException e) {
+        void onNodeLeft() {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT prepare fut, mini future node left [txId=" + tx.nearXidVersion() +
                     ", dhtTxId=" + tx.xidVersion() +

@@ -76,6 +76,31 @@ namespace ignite_test
                 {
                     // No-op.   
                 }
+
+                friend bool operator==(const BinaryFields& one, const BinaryFields& two)
+                {
+                    return one.val1 == two.val1 && one.val2 == two.val2 && 
+                        one.rawVal1 == two.rawVal1 &&one.rawVal2 == two.rawVal2;
+                }
+            };
+
+            class DummyIdResolver : public ignite::impl::binary::BinaryIdResolver
+            {
+            public:
+                virtual ~DummyIdResolver()
+                {
+                    // No-op.
+                }
+
+                virtual int32_t GetTypeId()
+                {
+                    return 0;
+                }
+
+                virtual int32_t GetFieldId(const int32_t, const char*)
+                {
+                    return 0;
+                }
             };
         }
     }

@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -282,7 +281,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 try {
                     cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
                 }
-                catch (ClusterTopologyCheckedException e) {
+                catch (ClusterTopologyCheckedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send one phase commit ack to backup node because it left grid: " + nodeId);
                 }

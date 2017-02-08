@@ -35,6 +35,7 @@
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/common/decimal.h"
 
 #include "test_type.h"
 
@@ -192,6 +193,21 @@ namespace ignite
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<ignite::common::Decimal>(const char* request, const ignite::common::Decimal& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request, const Date& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<SQL_TIME_STRUCT>(const char* request, const SQL_TIME_STRUCT& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE

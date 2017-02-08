@@ -1119,6 +1119,19 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
             return Pos;
         }
 
+        /// <summary>
+        /// Returns a hash code for the specified byte range.
+        /// </summary>
+        public abstract T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg);
+
+        /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        public void Flush()
+        {
+            // No-op.
+        }
+
         /** <inheritdoc /> */
         public void Dispose()
         {
