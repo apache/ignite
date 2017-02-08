@@ -44,6 +44,12 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         ignite(0).createCache(createAllTypesCacheConfig());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+        ignite(0).cache("L2AT").clear();
+    }
+
     /**
      *
      */
@@ -182,16 +188,18 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
             "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
 
-        cache.query(new SqlFieldsQuery("select \"primitiveIntsCol\" from \"AllTypes\"")).getAll();
-
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = CAST('50' as INT)," +
+        // Look ma, no hands: first we set value of inner object column (innerTypeCol), then update only one of its
+        // fields (innerLongCol), while leaving another inner property (innerStrCol) as specified by innerTypeCol.
+        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = ?, \"doubleCol\" = CAST('50' as INT)," +
             " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
             "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
             "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
             "DATEADD('DAY', 2, \"tsCol\")), \"primitiveIntsCol\" = ?, \"bytesCol\" = ?")
-            .setArgs(new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6}));
+            .setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6}));
 
         AllTypes res = (AllTypes) cache.get(2L);
+
+        assertNotNull(res);
 
         assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
         assertEquals(50.0, res.doubleCol);
@@ -202,7 +210,11 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         assertTrue(Arrays.equals(new Byte[] {4, 5, 6}, res.bytesCol));
         assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
         assertTrue(Arrays.equals(new int[] {2, 3}, res.primitiveIntsCol));
-        assertEquals(new AllTypes.InnerType(80L), res.innerTypeCol);
+
+        AllTypes.InnerType expInnerType = new AllTypes.InnerType(80L);
+        expInnerType.innerLongCol = 5L;
+
+        assertEquals(expInnerType, res.innerTypeCol);
         assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
         assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-12-03 00:02:00"), res.tsCol);
         assertEquals(2, res.intCol);
@@ -211,6 +223,45 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         // 49th week, right?
         assertEquals(49, res.shortCol);
+    }
+
+    /** */
+    public void testSingleInnerFieldUpdate() throws ParseException {
+        IgniteCache cache = ignite(0).cache("L2AT");
+
+        cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\") values(2, ?," +
+            "'2016-11-30 12:00:00', false)").setArgs(new AllTypes(2L)));
+
+        assertFalse(cache.query(new SqlFieldsQuery("select * from \"AllTypes\"")).getAll().isEmpty());
+
+        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = 5"));
+
+        AllTypes res = (AllTypes) cache.get(2L);
+
+        assertNotNull(res);
+
+        assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
+        assertEquals(3.01, res.doubleCol);
+        assertEquals(2L, (long) res.longCol);
+        assertFalse(res.booleanCol);
+
+        assertEquals("2", res.strCol);
+        assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
+        assertTrue(Arrays.deepEquals(new Byte[] {0, 1}, res.bytesCol));
+        assertTrue(Arrays.deepEquals(new Integer[] {0, 1}, res.intsCol));
+        assertTrue(Arrays.equals(new int[] {0, 1}, res.primitiveIntsCol));
+
+        AllTypes.InnerType expInnerType = new AllTypes.InnerType(2L);
+        expInnerType.innerLongCol = 5L;
+
+        assertEquals(expInnerType, res.innerTypeCol);
+        assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:SS").parse("2016-11-30 12:00:00"), res.dateCol);
+        assertNull(res.tsCol);
+        assertEquals(2, res.intCol);
+        assertEquals(AllTypes.EnumType.ENUMTRUE, res.enumCol);
+        assertNull(res.sqlDateCol);
+
+        assertEquals(-23000, res.shortCol);
     }
 
     /**
@@ -308,7 +359,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         InnerType innerTypeCol;
 
         /** */
-        static final class InnerType implements Serializable {
+        static class InnerType implements Serializable {
             /** */
             @QuerySqlField
             Long innerLongCol;
