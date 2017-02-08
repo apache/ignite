@@ -1016,7 +1016,7 @@ public class DmlStatementsProcessor {
                 key = updateHashCodeIfNeeded(cctx, (BinaryObject) key);
         }
 
-        return new IgniteBiTuple<>(key, (EntryProcessor) (plan.mode == UpdateMode.MERGE ? new MergeProcessor(newColVals, val) :
+        return new IgniteBiTuple<>(key, (plan.mode == UpdateMode.MERGE ? new MergeProcessor(newColVals, val) :
             new InsertProcessor(newColVals, val)));
     }
 

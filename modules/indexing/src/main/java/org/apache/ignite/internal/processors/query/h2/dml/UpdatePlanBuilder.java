@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
@@ -380,7 +381,7 @@ public final class UpdatePlanBuilder {
      * @param hasProps Whether column list affects individual properties of key or value.
      * @param key Whether supplier should be created for key or for value.
      * @return Closure returning key or value.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
@@ -432,8 +433,25 @@ public final class UpdatePlanBuilder {
             }
         }
         else {
-            if (colIdx != -1)
-                return new PlainValueSupplier(colIdx);
+            if (colIdx != -1) {
+                if (colIdx == 1) {
+                    // It's the case when the old value has to be taken as the basis for the new one on UPDATE,
+                    // so we have to clone it. And on UPDATE we don't expect any key supplier.
+                    assert !key;
+
+                    return new KeyValueSupplier() {
+                        /** {@inheritDoc} */
+                        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                            byte[] oldPropBytes = cctx.marshaller().marshal(arg.get(1));
+
+                            // colVal is another object now, we can mutate it
+                            return cctx.marshaller().unmarshal(oldPropBytes, U.resolveClassLoader(cctx.gridConfig()));
+                        }
+                    };
+                }
+                else // We either are not updating, or the new value is given explicitly, no cloning needed.
+                    return new PlainValueSupplier(colIdx);
+            }
 
             Constructor<?> ctor;
 
@@ -456,8 +474,12 @@ public final class UpdatePlanBuilder {
                             return ctor0.newInstance();
                         }
                         catch (Exception e) {
-                            throw new IgniteCheckedException("Failed to invoke default ctor for " +
-                                (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            if (S.INCLUDE_SENSITIVE)
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            else
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + '.', e);
                         }
                     }
                 };
@@ -471,8 +493,12 @@ public final class UpdatePlanBuilder {
                             return GridUnsafe.allocateInstance(cls);
                         }
                         catch (InstantiationException e) {
-                            throw new IgniteCheckedException("Failed to instantiate " +
-                                (key ? "key" : "value") + " via Unsafe [type=" + typeName + ']', e);
+                            if (S.INCLUDE_SENSITIVE)
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            else
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + '.', e);
                         }
                     }
                 };
@@ -548,12 +574,18 @@ public final class UpdatePlanBuilder {
         return false;
     }
 
-    /** Simple supplier that just takes specified element of a given row. */
+    /**
+     * Simple supplier that just takes specified element of a given row.
+     */
     private final static class PlainValueSupplier implements KeyValueSupplier {
         /** Index of column to use. */
         private final int colIdx;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param colIdx Column index.
+         */
         private PlainValueSupplier(int colIdx) {
             this.colIdx = colIdx;
         }
