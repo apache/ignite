@@ -52,6 +52,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -614,8 +615,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 locIter0 = scanQueryLocal(clo.apply(qry), false);
 
-                it.remove();
-
                 break;
             }
         }
@@ -624,7 +623,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, qry.<K, V>transform(), null);
 
-        final CacheQueryFuture fut = (CacheQueryFuture)queryDistributed(bean, nodes);
+        final Map<ClusterNode, Set<Integer>> remoteNodes = F.view(nodes, new IgnitePredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return !node.isLocal();
+            }});
+
+        final CacheQueryFuture fut = (CacheQueryFuture)queryDistributed(bean, remoteNodes);
 
         return new GridCloseableIteratorAdapter() {
             /** */
