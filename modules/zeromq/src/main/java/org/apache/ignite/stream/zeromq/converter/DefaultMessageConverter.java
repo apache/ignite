@@ -19,14 +19,19 @@ package org.apache.ignite.stream.zeromq.converter;
 
 import java.nio.charset.Charset;
 
+/**
+ * Default converter for ZeroMQ message.
+ */
 public class DefaultMessageConverter implements MessageConverter {
     /** */
     private String value;
 
+    /** {@inheritDoc} */
     public void convert(byte[] msg) {
         value = new String(msg, Charset.forName("UTF-8"));
     }
 
+    /** */
     public String getValue() {
         return value;
     }

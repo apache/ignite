@@ -17,15 +17,12 @@
 
 package org.apache.ignite.stream.zeromq;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 import org.zeromq.ZMQ;
 
@@ -45,16 +42,13 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
     /** Parametr {@code True} if streamer started. */
     private static AtomicBoolean isStart = new AtomicBoolean();
 
-    /**
-     * Size of buffer for streaming, as for some tracking terms traffic can be low and for others high, this is
-     * configurable
-     */
-    private Integer bufferCapacity = 100000;
-
     /** Process stream asynchronously */
     private ExecutorService zeroMqExSrv;
 
+    /**  */
     private ZMQ.Context ctx;
+
+    /**  */
     private ZMQ.Socket socket;
 
     /**
@@ -106,15 +100,6 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
         ctx.close();
 
         isStart.set(false);
-    }
-
-    /**
-     * Sets Buffer capacity.
-     *
-     * @param bufferCapacity Buffer capacity.
-     */
-    public void setBufferCapacity(Integer bufferCapacity) {
-        this.bufferCapacity = bufferCapacity;
     }
 
     /**

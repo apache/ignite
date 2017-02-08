@@ -19,8 +19,10 @@ package org.apache.ignite.stream.zeromq;
 
 import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.NotNull;
-import org.zeromq.ZMQ;
 
+/**
+ * ZeroMQ settings holder.
+ */
 public class ZeroMqSettings {
     /** */
     private int ioThreads;
@@ -40,7 +42,7 @@ public class ZeroMqSettings {
         this.ioThreads = ioThreads;
         this.addr = addr;
 
-        if (ZmqTypeSocket.check(type))
+        if (ZeroMqTypeSocket.check(type))
             this.type = type;
         else
             throw new IgniteException("This socket type not implementation this version ZeroMQ streamer.");
@@ -65,30 +67,5 @@ public class ZeroMqSettings {
      */
     @NotNull public String getAddr() {
         return addr;
-    }
-
-    public enum ZmqTypeSocket {
-        PAIR(ZMQ.PAIR),
-        // TODO
-        // SUB(ZMQ.SUB),
-        PULL(ZMQ.PULL);
-
-        private int type;
-
-        ZmqTypeSocket(int type) {
-            this.type = type;
-        }
-
-        public int getType() {
-            return type;
-        }
-
-        public static boolean check(int type) {
-            for (ZmqTypeSocket ts : ZmqTypeSocket.values()) {
-                if (ts.getType() == type)
-                    return true;
-            }
-            return false;
-        }
     }
 }

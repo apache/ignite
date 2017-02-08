@@ -17,6 +17,13 @@
 
 package org.apache.ignite.stream.zeromq.converter;
 
+/**
+ *
+ */
 public interface MessageConverter {
+
+    /**
+     * Convert raw ZeroMQ message.
+     */
     public void convert(byte[] msg);
 }

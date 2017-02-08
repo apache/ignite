@@ -29,9 +29,15 @@ import org.zeromq.ZMQ;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
+/**
+ *
+ */
 public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 100;
+
+    /**  */
+    private final String ADDR = "tcp://localhost:5671";
 
     /**  */
     public IgniteZeroMqStreamerTest() {
@@ -91,7 +97,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         CountDownLatch latch = listener.getLatch();
 
-        // Enough tweets was handled in 10 seconds. Limited by test's timeout.
         latch.await();
 
         unsubscribeToPutEvents(listener);
@@ -125,7 +130,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      * @return ZeroMQ Streamer.
      */
     private IgniteZeroMqStreamerImpl newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer) {
-        ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR.getType(), "tcp://localhost:5671");
+        ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR.getType(), ADDR);
 
         IgniteZeroMqStreamerImpl streamer = new IgniteZeroMqStreamerImpl(zeroMqSettings);
 
@@ -139,16 +144,15 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Start ZeroMQ client for testing.
      */
     private void startZeroMqClient() throws InterruptedException {
         try(ZMQ.Context context = ZMQ.context(1);
             ZMQ.Socket socket = context.socket(ZMQ.PAIR)) {
-            socket.bind("tcp://localhost:5671");
+            socket.bind(ADDR);
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
                 socket.send(String.valueOf(i).getBytes());
             }
-            Thread.sleep(2000);
             socket.close();
         }
     }

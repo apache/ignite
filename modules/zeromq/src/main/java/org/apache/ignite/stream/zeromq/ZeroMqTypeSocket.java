@@ -19,7 +19,7 @@ public enum ZeroMqTypeSocket {
     }
 
     public static boolean check(int type) {
-        for (ZeroMqSettings.ZmqTypeSocket ts : ZeroMqSettings.ZmqTypeSocket.values()) {
+        for (ZeroMqTypeSocket ts : ZeroMqTypeSocket.values()) {
             if (ts.getType() == type)
                 return true;
         }

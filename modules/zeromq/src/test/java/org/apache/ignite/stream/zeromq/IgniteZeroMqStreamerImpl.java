@@ -25,9 +25,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.zeromq.converter.DefaultMessageConverter;
 
+/**
+ * Implementation ZeroMQ streamer
+ */
 public class IgniteZeroMqStreamerImpl extends IgniteZeroMqStreamer<Integer, String> {
-    /** */
+    /** Counter. */
     private AtomicInteger count = new AtomicInteger();
+
     /**
      * @param zeroMqSettings ZeroMQ settings.
      */
@@ -39,6 +43,9 @@ public class IgniteZeroMqStreamerImpl extends IgniteZeroMqStreamer<Integer, Stri
         setSingleTupleExtractor(new ZeroMqStreamSingleTupleExtractorImpl());
     }
 
+    /**
+     * Implementation single tuple extractor for ZeroMQ streamer.
+     */
     class ZeroMqStreamSingleTupleExtractorImpl implements StreamSingleTupleExtractor<byte[], Integer, String> {
 
         @Override public Map.Entry<Integer, String> extract(byte[] msg) {
