@@ -2003,7 +2003,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            if (stopped != null)
+            if (stopped != null && !sharedCtx.kernalContext().clientNode())
                 sharedCtx.database().onCachesStopped(stopped);
         }
     }
