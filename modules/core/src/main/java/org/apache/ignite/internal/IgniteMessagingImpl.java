@@ -25,15 +25,18 @@ import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -200,6 +203,28 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<UUID> remoteListenAsync(@Nullable Object topic,
+        IgniteBiPredicate<UUID, ?> p) throws IgniteException {
+        A.notNull(p, "p");
+
+        guard();
+
+        try {
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
+
+            return new IgniteFutureImpl<>(ctx.continuous().startRoutine(hnd,
+                false,
+                1,
+                0,
+                false,
+                prj.predicate()));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "opId");
 
@@ -210,6 +235,20 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
+        A.notNull(opId, "opId");
+
+        guard();
+
+        try {
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId));
         }
         finally {
             unguard();

@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -187,7 +186,6 @@ public interface IgniteInternalTx extends AutoCloseable {
      *
      * @throws IgniteCheckedException If commit failed.
      */
-    @IgniteAsyncSupported
     public void commit() throws IgniteCheckedException;
 
     /**
@@ -202,7 +200,6 @@ public interface IgniteInternalTx extends AutoCloseable {
      *
      * @throws IgniteCheckedException If rollback failed.
      */
-    @IgniteAsyncSupported
     public void rollback() throws IgniteCheckedException;
 
     /**
