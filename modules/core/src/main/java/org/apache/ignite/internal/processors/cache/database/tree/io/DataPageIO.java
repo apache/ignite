@@ -457,7 +457,7 @@ public class DataPageIO extends PageIO {
      * @param pageAddr Page address.
      * @param itemId Item to position on.
      * @param pageSize Page size.
-     * @return Link to the next fragment or {@code 0} if it is the last fragment or the data row is not fragmented.
+     * @return {@link DataPagePayload} object.
      */
     public DataPagePayload readPayload(final long pageAddr, final int itemId, final int pageSize) {
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);

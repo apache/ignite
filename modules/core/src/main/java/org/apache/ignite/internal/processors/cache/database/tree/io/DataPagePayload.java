@@ -56,7 +56,7 @@ public class DataPagePayload {
     }
 
     /**
-     * @return Next link.
+     * @return Link to the next fragment or {@code 0} if it is the last fragment or the data row is not fragmented.
      */
     public long nextLink() {
         return nextLink;
