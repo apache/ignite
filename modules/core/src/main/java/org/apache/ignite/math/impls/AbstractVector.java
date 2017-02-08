@@ -24,8 +24,6 @@ import org.apache.ignite.math.Vector;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * TODO: add description.
@@ -279,8 +277,8 @@ public abstract class AbstractVector implements Vector, Externalizable {
     }
 
     @Override
-    public double foldMap(BiFunction<Double, Double, Double> foldFun, DoubleFunction<Double> mapFun) {
-        double result = 0;
+    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
+        T result = zeroVal;
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
@@ -290,10 +288,10 @@ public abstract class AbstractVector implements Vector, Externalizable {
     }
 
     @Override
-    public double foldMap(Vector vec, BiFunction<Double, Double, Double> foldFun, BiFunction<Double, Double, Double> combFun) {
+    public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
         checkCardinality(vec);
 
-        double result = 0;
+        T result = zeroVal;
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
@@ -505,7 +503,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
             // The vectors are far enough from each other that the formula is accurate.
             return Math.max(distEst, 0);
         else
-            return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED);
+            return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED, 0d);
     }
 
     private void checkCardinality(Vector vec) {
@@ -611,16 +609,16 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
         // Special cases.
         if (Double.isInfinite(power))
-            return foldMap(Math::max, Math::abs);
+            return foldMap(Math::max, Math::abs, 0d);
         else if (power == 2.0)
             return Math.sqrt(getLengthSquared());
         else if (power == 1.0)
-            return foldMap(Functions.PLUS, Math::abs);
+            return foldMap(Functions.PLUS, Math::abs, 0d);
         else if (power == 0.0)
             return nonZeroElements();
         else
             // Default case.
-            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power)), 1.0 / power);
+            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power), 0d), 1.0 / power);
     }
 
     @Override

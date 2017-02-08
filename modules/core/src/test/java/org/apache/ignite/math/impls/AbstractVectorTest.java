@@ -394,7 +394,7 @@ public class AbstractVectorTest {
 
         AbstractVector testVector1 = getAbstractVector(storage1);
 
-        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, Functions.PLUS, Functions.PLUS), Arrays.stream(data0).sum() + Arrays.stream(data1).sum(), EXPECTED_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, Functions.PLUS, Functions.PLUS, 0d), Arrays.stream(data0).sum() + Arrays.stream(data1).sum(), EXPECTED_DELTA);
 
     }
 
@@ -402,7 +402,7 @@ public class AbstractVectorTest {
     public void foldMap() throws Exception {
         double[] data = initVector();
 
-        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Math::sin), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Math::sin, 0d), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
     }
 
     /** */ @Test
