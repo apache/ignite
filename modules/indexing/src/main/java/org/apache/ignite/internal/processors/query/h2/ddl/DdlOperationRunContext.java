@@ -17,22 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Operation run context on the <b>coordinator</b>.
  */
 public class DdlOperationRunContext {
-    /** Latch to expect all nodes to finish their local jobs for this operation. */
-    public final CountDownLatch latch;
-
-    /** Cancellation flag. */
-    public volatile boolean isCancelled = false;
+    /** Latch replacement to expect all nodes to finish their local jobs for this operation. */
+    public final AtomicInteger nodesCnt;
 
     /**
      * @param nodesCnt Nodes count to initialize latch with.
      */
     public DdlOperationRunContext(int nodesCnt) {
-        this.latch = new CountDownLatch(nodesCnt);
+        this.nodesCnt = new AtomicInteger(nodesCnt);
     }
 }

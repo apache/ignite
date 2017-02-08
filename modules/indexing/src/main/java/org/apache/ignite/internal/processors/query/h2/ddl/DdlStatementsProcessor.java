@@ -126,7 +126,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
                 if (msg instanceof DdlOperationNodeResult) {
                     DdlOperationNodeResult res = (DdlOperationNodeResult) msg;
 
-                    onNodeResult(res.getOperationId(), nodeId, bytesToException(res.getError()));
+                    onNodeResult(res.getOperationId(), bytesToException(res.getError()));
                 }
             }
         });
@@ -141,6 +141,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
     private void onCancel(DdlOperationCancel msg) {
         DdlOperationArguments args = operationArgs.remove(msg.getOperationId());
 
+        // Node does not know anything about this operation, nothing to do.
         if (args == null)
             return;
 
@@ -154,30 +155,16 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
 
         DdlOperationRunContext runCtx = operationRuns.remove(msg.getOperationId());
 
-        if (runCtx != null) {
-            runCtx.isCancelled = true;
-
-            // Let's free the waiting thread if there is one
-            while (runCtx.latch.getCount() > 0)
-                runCtx.latch.countDown();
-        }
-
-        if (ctx.localNodeId().equals(args.sndNodeId)) {
-            DdlOperationFuture fut = operations.remove(msg.getOperationId());
-
-            if (fut != null) {
+        if (runCtx != null) { // We're on the coordinator, let's notify the client about cancellation and its reason
+            if (ctx.localNodeId().equals(args.sndNodeId)) {
                 IgniteCheckedException ex = msg.getError();
 
                 if (ex == null)
                     ex = new IgniteCheckedException("DDL operation has been cancelled (presumably by the user).");
 
-                fut.onDone(ex);
+                throw new UnsupportedOperationException("Notify client about cancellation");
             }
-            else
-                log.error("DDL operation not found on its client node [opId=" + msg.getOperationId() +']');
         }
-
-
     }
 
     /**
@@ -225,12 +212,12 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
 
     /**
      * Handle local DDL operation result from <b>a peer node</b> on <b>the coordinator</b>.
+     *
      * @param opId DDL operation ID.
-     * @param uuid Peer id.
      * @param err Exception that occurred on the <b>peer</b>, or null if the local operation has been successful.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void onNodeResult(IgniteUuid opId, UUID uuid, IgniteCheckedException err) {
+    private void onNodeResult(IgniteUuid opId, IgniteCheckedException err) {
         DdlOperationArguments args = operationArgs.get(opId);
 
         DdlOperationRunContext runCtx = operationRuns.get(opId);
@@ -242,38 +229,21 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
             return;
         }
 
-        runCtx.latch.countDown();
+        // Return if we expect more messages like this
+        if (runCtx.nodesCnt.decrementAndGet() > 0)
+            return;
 
-        // We've got our own message, let's wait here
-        if (ctx.localNodeId().equals(uuid)) {
-            /*try {
-                runCtx.latch.await();
-            }
-            catch (InterruptedException e) {
-                // We're interrupted, let's cancel
-                if (!runCtx.isCancelled)
-                    cancel(opId, new IgniteCheckedException(e));
+        DdlOperationResult res = new DdlOperationResult();
 
-                return;
-            }*/
+        res.setOperationId(opId);
 
-            // We've been cancelled while waiting, nothing to do here anymore
-            // as peers have been notified already by the same cancellation message
-            if (runCtx.isCancelled)
-                return;
-
-            DdlOperationResult res = new DdlOperationResult();
-
-            res.setOperationId(opId);
-
-            //Ok, we're done, let's send result to the client
-            try {
-                ctx.io().send(ctx.grid().cluster().node(args.sndNodeId), GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
-            }
-            catch (Throwable e) {
-                log.error("Failed to notify client about DLL operation completion [opId=" + opId +
-                    ", sndNodeId=" + args.sndNodeId + ']', e);
-            }
+        //Ok, we're done, let's send result to the client
+        try {
+            ctx.io().send(ctx.grid().cluster().node(args.sndNodeId), GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
+        }
+        catch (Throwable e) {
+            log.error("Failed to notify client about DLL operation completion [opId=" + opId +
+                ", sndNodeId=" + args.sndNodeId + ']', e);
         }
     }
 

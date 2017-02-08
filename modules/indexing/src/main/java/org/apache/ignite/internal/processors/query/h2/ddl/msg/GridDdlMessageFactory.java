@@ -26,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDdlMessageFactory implements MessageFactory {
     /** Message sent from <b>coordinator</b> to <b>client</b> when operation is ultimately finished. */
-    final static byte OPERATION_RESULT = -4;
+    final static byte OPERATION_RESULT = -45;
 
     /** Message sent from <b>peer node</b> to <b>coordinator</b> when local portion of work is done. */
-    final static byte NODE_RESULT = -5;
+    final static byte NODE_RESULT = -46;
 
     /** {@inheritDoc} */
     @Nullable @Override public Message create(byte type) {
