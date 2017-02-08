@@ -3915,7 +3915,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
 
                 // First 4 bytes are for length.
-                UUID id = U.bytesToUuid(b, 1);
+                UUID id = U.bytesToUuid(b, Message.DIRECT_TYPE_SIZE);
 
                 if (!rmtNodeId.equals(id))
                     throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
@@ -4059,7 +4059,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             if (buf.remaining() < MESSAGE_SIZE)
                 return false;
 
-            byte[] nodeIdBytes = new byte[16];
+            byte[] nodeIdBytes = new byte[NodeIdMessage.MESSAGE_SIZE];
 
             buf.get(nodeIdBytes);
 

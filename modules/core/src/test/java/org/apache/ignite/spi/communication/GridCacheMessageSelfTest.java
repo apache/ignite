@@ -202,7 +202,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte)202;
+        public static final short DIRECT_TYPE = 202;
 
         /** */
         @GridDirectCollection(TestMessage1.class)
@@ -293,7 +293,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     */
     static class TestMessage1 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 203;
+        public static final short DIRECT_TYPE = 203;
 
         /** Body. */
         private String body;
@@ -409,7 +409,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     static class TestMessage2 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 205;
+        public static final short DIRECT_TYPE = 205;
 
         /** Node id. */
         private UUID nodeId;

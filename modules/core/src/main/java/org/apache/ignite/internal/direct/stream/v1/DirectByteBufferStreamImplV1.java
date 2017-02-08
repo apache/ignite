@@ -808,7 +808,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining()) {
+            if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
 
                 return null;

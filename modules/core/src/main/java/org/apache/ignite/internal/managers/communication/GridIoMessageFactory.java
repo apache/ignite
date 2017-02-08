@@ -156,7 +156,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Byte, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
+    private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;
@@ -868,11 +868,10 @@ public class GridIoMessageFactory implements MessageFactory {
 
     /**
      * Registers factory for custom message. Used for test purposes.
-     *
-     * @param type Message type.
+     *  @param type Message type.
      * @param c Message producer.
      */
-    public static void registerCustom(byte type, IgniteOutClosure<Message> c) {
+    public static void registerCustom(short type, IgniteOutClosure<Message> c) {
         assert c != null;
 
         CUSTOM.put(type, c);

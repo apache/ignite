@@ -74,7 +74,7 @@ public class GridDirectParser implements GridNioParser {
         Message msg = ses.removeMeta(MSG_META_KEY);
 
         try {
-            if (msg == null && buf.hasRemaining()) {
+            if (msg == null && buf.remaining() >= Message.DIRECT_TYPE_SIZE) {
                 buf.order(GridUnsafe.BIG_ENDIAN ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
 
                 short type = buf.getShort();

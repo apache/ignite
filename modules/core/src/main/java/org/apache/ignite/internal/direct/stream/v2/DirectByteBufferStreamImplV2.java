@@ -1133,7 +1133,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining()) {
+            if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
 
                 return null;
@@ -1356,6 +1356,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Offset.
      * @param len Length.
      * @param typeSize Primitive type size in bytes. Needs for byte reverse.
+     * @param shiftCnt Shift for length.
      * @return Whether array was fully written.
      */
     private boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {

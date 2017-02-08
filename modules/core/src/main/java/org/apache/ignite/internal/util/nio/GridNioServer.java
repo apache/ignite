@@ -1468,6 +1468,16 @@ public class GridNioServer<T> {
             assert buf.hasRemaining();
 
             if (!skipWrite) {
+//                {
+//                    StringBuilder sb = new StringBuilder();
+//                    sb.append('(').append(buf.remaining()).append(") ");
+//                    int pos = buf.position();
+//                    while (buf.hasRemaining())
+//                        sb.append(String.format("%02X ", buf.get()));
+//                    buf.position(pos);
+//                    System.out.println("+++ processWrite0: " + Thread.currentThread().getName() + " " + sb);
+//                }
+
                 int cnt = sockCh.write(buf);
 
                 if (log.isTraceEnabled())

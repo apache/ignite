@@ -106,6 +106,16 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
 
         try {
             ByteBuffer input = (ByteBuffer)msg;
+//            {
+//                StringBuilder sb = new StringBuilder();
+//                sb.append('(').append(input.remaining()).append(") ");
+//                int pos = input.position();
+//                while (input.hasRemaining())
+//                    sb.append(String.format("%02X ", input.get()));
+//                input.position(pos);
+//
+//                System.out.println("+++ onMessageReceived: " + Thread.currentThread().getName() + " " + sb);
+//            }
 
             while (input.hasRemaining()) {
                 Object res = parser.decode(ses, input);
