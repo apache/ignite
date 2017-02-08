@@ -109,11 +109,11 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
                     log().info(sb.toString());
                     Field f = fields[unexpectedCnt];
                     Throwable t = ex;
-                    assertTrue("type must be equal \"org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value\"",
-                        t.getMessage().contains("type: org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value"));
+                    assertTrue(t.getMessage(), t.getMessage().
+                        contains("object [typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value"));
                     t = t.getCause();
-                    assertTrue("field must be equal \"" + f.getName() + "\"",
-                        t.getMessage().contains("field: " + f.getName()));
+                    assertTrue(t.getMessage(), t.getMessage().
+                        contains("field [name=" + f.getName()));
                     ++unexpectedCnt;
                 } else
                     log().info("Ignored exception: " + sb);
