@@ -102,28 +102,28 @@ public class GridIoMessage implements Message {
     /**
      * @return Policy.
      */
-    byte policy() {
+    public byte policy() {
         return plc;
     }
 
     /**
      * @return Topic.
      */
-    Object topic() {
+    public Object topic() {
         return topic;
     }
 
     /**
      * @param topic Topic.
      */
-    void topic(Object topic) {
+    public void topic(Object topic) {
         this.topic = topic;
     }
 
     /**
      * @return Topic bytes.
      */
-    byte[] topicBytes() {
+    public byte[] topicBytes() {
         return topicBytes;
     }
 
@@ -137,7 +137,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Topic ordinal.
      */
-    int topicOrdinal() {
+    public int topicOrdinal() {
         return topicOrd;
     }
 
@@ -165,7 +165,7 @@ public class GridIoMessage implements Message {
     /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
-    boolean isOrdered() {
+    public boolean isOrdered() {
         return ordered;
     }
 

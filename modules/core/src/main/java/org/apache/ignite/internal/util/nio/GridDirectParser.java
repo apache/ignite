@@ -22,11 +22,15 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
+import sun.nio.ch.DirectBuffer;
+
+import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 
 /**
  * Parser for direct messages.
@@ -64,17 +68,71 @@ public class GridDirectParser implements GridNioParser {
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
+
+        Message msg = ses.removeMeta(MSG_META_KEY);
+
+        if(msg instanceof GridIoMessageBuffer)
+            return decodeMsgBuf(ses, buf, (GridIoMessageBuffer) msg);
+        else if(msg != null) {
+            return decodeMessage(ses, buf, msg);
+        }
+
+        byte type = buf.get();
+
+        if(type != -45)
+            return decodeMessage(ses, buf, msgFactory.create(type));
+
+        GridIoMessageBuffer msgBuf = createMessageBuffer(buf);
+
+        if(msgBuf != null)
+            return decodeMsgBuf(ses, buf, msgBuf);
+
+        return null;
+    }
+
+    /**
+     * @param buf Buffer that contains input data.
+     * @return Newly created {@link GridIoMessageBuffer} instance or null if the message header was not fully loaded
+     */
+    private GridIoMessageBuffer createMessageBuffer(ByteBuffer buf){
+        if(buf.remaining() < 10) {
+            buf.position(buf.position() - 1);
+            return null;
+        }
+
+        byte[] bufArr = buf.isDirect() ? null : buf.array();
+        long bufOff = buf.isDirect() ? ((DirectBuffer)buf).address() : BYTE_ARR_OFF;
+
+
+        int pos = buf.position();
+
+        byte plc = GridUnsafe.getByte(bufArr, bufOff + pos);
+        int partition = GridUnsafe.getInt(bufArr, bufOff + pos + 1);
+        boolean ordered = GridUnsafe.getBoolean(bufArr, bufOff + pos + 5);
+        int topicOrdinal = GridUnsafe.getInt(bufArr, bufOff + pos + 6);
+
+        buf.position(pos + 10);
+
+        return new GridIoMessageBuffer(plc, partition, ordered, topicOrdinal);
+    }
+
+    /**
+     * @param ses Session on which bytes are read.
+     * @param buf Buffer that contains input data.
+     * @param msg Message to populate.
+     * @return Decoded message or {@code null} if the message was not fully loaded.
+     * @throws IOException If exception occurred while reading data.
+     * @throws IgniteCheckedException If any user-specific error occurred.
+     */
+    @Nullable private Object decodeMessage(GridNioSession ses, ByteBuffer buf, Message msg)
+        throws IOException, IgniteCheckedException {
+
         MessageReader reader = ses.meta(READER_META_KEY);
 
         if (reader == null)
             ses.addMeta(READER_META_KEY, reader = readerFactory.reader(ses, msgFactory));
 
-        Message msg = ses.removeMeta(MSG_META_KEY);
-
         try {
-            if (msg == null && buf.hasRemaining())
-                msg = msgFactory.create(buf.get());
-
             boolean finished = false;
 
             if (buf.hasRemaining()) {
@@ -105,6 +163,51 @@ public class GridDirectParser implements GridNioParser {
 
             throw e;
         }
+    }
+
+    /**
+     * @param ses Session on which bytes are read.
+     * @param buf Buffer that contains input data.
+     * @param msg Message to populate.
+     * @return Decoded message or {@code null} if the message was not fully loaded.
+     * @throws IOException If exception occurred while reading data.
+     * @throws IgniteCheckedException If any user-specific error occurred.
+     */
+    @Nullable private Object decodeMsgBuf(GridNioSession ses, ByteBuffer buf, GridIoMessageBuffer msg)
+        throws IOException, IgniteCheckedException {
+
+        if(buf.remaining() < 5) {
+            ses.addMeta(MSG_META_KEY, msg);
+
+            return null;
+        }
+
+
+        byte[] bufArr = buf.isDirect() ? null : buf.array();
+        long bufOff = buf.isDirect() ? ((DirectBuffer)buf).address() : BYTE_ARR_OFF;
+
+        int pos = buf.position();
+
+        int size = GridUnsafe.getInt(bufArr, bufOff + pos);
+
+        if (size + 5 > buf.remaining()) {
+            ses.addMeta(MSG_META_KEY, msg);
+
+            return null;
+        }
+
+        boolean last = GridUnsafe.getBoolean(bufArr, bufOff + pos + 4);
+
+        buf.position(pos + 5);
+
+        msg.add(buf, size);
+
+        if(last)
+            return msg;
+
+        ses.addMeta(MSG_META_KEY, msg);
+
+        return null;
     }
 
     /** {@inheritDoc} */

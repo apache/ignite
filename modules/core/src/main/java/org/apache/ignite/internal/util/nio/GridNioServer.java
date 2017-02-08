@@ -54,7 +54,9 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -111,6 +113,7 @@ public class GridNioServer<T> {
     /** SSL write buf limit. */
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
 
+    private static final int HEADER_WRITTEN_FLAG = GridNioSessionMetaKey.nextUniqueKey();
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -1432,7 +1435,10 @@ public class GridNioServer<T> {
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
-                finished = msg.writeTo(buf, writer);
+                if(msg instanceof GridIoMessage)
+                    finished = writeChunk(ses, buf, (GridIoMessage) msg, writer);
+                else
+                    finished = msg.writeTo(buf, writer);
 
                 if (finished && writer != null)
                     writer.reset();
@@ -1457,7 +1463,10 @@ public class GridNioServer<T> {
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
-                finished = msg.writeTo(buf, writer);
+                if(msg instanceof GridIoMessage)
+                    finished = writeChunk(ses, buf, (GridIoMessage) msg, writer);
+                else
+                    finished = msg.writeTo(buf, writer);
 
                 if (finished && writer != null)
                     writer.reset();
@@ -1496,6 +1505,63 @@ public class GridNioServer<T> {
             }
             else
                 buf.clear();
+        }
+
+        /**
+         * Adds a special header at the start of the message, divides it to chunks in case there is no space for
+         * whole message remaining. Each next chunk starts with shorter header which consists of chunk size and
+         * last chunk flag only.
+         *
+         * @param ses NIO session.
+         * @param buf Channel write buffer.
+         * @param msg Message.
+         * @param writer Message writer
+         * @return {@code true} in case the message was fully written, {@code false} otherwise.
+         */
+        private boolean writeChunk(GridSelectorNioSessionImpl ses, ByteBuffer buf, GridIoMessage msg, MessageWriter writer) {
+            boolean hWritten = Boolean.TRUE.equals(ses.meta(HEADER_WRITTEN_FLAG));
+
+            int hSize = hWritten ? 5 : 16;
+
+            if (buf.remaining() <= hSize)
+                return false;
+
+            int pos = buf.position();
+            buf.position(pos + hSize);
+
+            boolean finished = msg.writeTo(buf, writer);
+
+            int size = buf.position() - pos - hSize;
+
+            if(size > 0) {
+                byte[] heapArr = buf.isDirect() ? null : buf.array();
+                long baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : GridUnsafe.BYTE_ARR_OFF;
+
+                if(!hWritten) {
+                    GridUnsafe.putByte(heapArr, baseOff + pos, (byte) -45);
+                    GridUnsafe.putByte(heapArr, baseOff + pos + 1, msg.policy());
+                    GridUnsafe.putInt(heapArr, baseOff + pos + 2, msg.partition());
+                    GridUnsafe.putBoolean(heapArr, baseOff + pos + 6, msg.isOrdered());
+                    GridUnsafe.putInt(heapArr, baseOff + pos + 7, msg.topicOrdinal());
+
+                    GridUnsafe.putInt(heapArr, baseOff + pos + 11, size);
+                    GridUnsafe.putBoolean(heapArr, baseOff + pos + 15, finished);
+
+                    ses.addMeta(HEADER_WRITTEN_FLAG, Boolean.TRUE);
+                }
+                else {
+                    GridUnsafe.putInt(heapArr, baseOff + pos, size);
+                    GridUnsafe.putBoolean(heapArr, baseOff + pos + 4, finished);
+                }
+
+            }
+            else
+                buf.position(pos);
+
+            if(finished)
+                ses.removeMeta(HEADER_WRITTEN_FLAG);
+
+            return finished;
         }
 
         /** {@inheritDoc} */

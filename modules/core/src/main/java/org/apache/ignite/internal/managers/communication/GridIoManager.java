@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.nio.GridIoMessageBuffer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -245,7 +246,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
                 try {
-                    onMessage0(nodeId, (GridIoMessage)msg, msgC);
+                    onMessage0(nodeId, (GridIoMessageBuffer)msg, msgC);
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
@@ -619,7 +620,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msgC Closure to call when message processing finished.
      */
     @SuppressWarnings("fallthrough")
-    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
+    private void onMessage0(UUID nodeId, GridIoMessageBuffer msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
 
@@ -634,12 +635,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
 
-            if (msg.topic() == null) {
-                int topicOrd = msg.topicOrdinal();
-
-                msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
-            }
+            msg.prepare(
+                    messageFactory(),
+                    formatter().reader(nodeId, messageFactory()),
+                    marsh,
+                    U.resolveClassLoader(ctx.config()));
 
             if (!started) {
                 lock.readLock().lock();
@@ -688,7 +688,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case IGFS_POOL:
                 {
                     if (msg.isOrdered())
-                        processOrderedMessage(nodeId, msg, plc, msgC);
+                        processOrderedMessage(nodeId, msg.message(), plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
 
@@ -703,7 +703,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             "[policy=" + plc + ']');
 
                     if (msg.isOrdered())
-                        processOrderedMessage(nodeId, msg, plc, msgC);
+                        processOrderedMessage(nodeId, msg.message(), plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
             }
@@ -723,7 +723,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     private void processP2PMessage(
         final UUID nodeId,
-        final GridIoMessage msg,
+        final GridIoMessageBuffer msg,
         final IgniteRunnable msgC
     ) {
         Runnable c = new Runnable() {
@@ -731,12 +731,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true);
 
-                    GridMessageListener lsnr = listenerGet0(msg.topic());
+                    GridMessageListener lsnr = listenerGet0(msg.message().topic());
 
                     if (lsnr == null)
                         return;
 
-                    Object obj = msg.message();
+                    Object obj = msg.message().message();
 
                     assert obj != null;
 
@@ -771,7 +771,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     private void processRegularMessage(
         final UUID nodeId,
-        final GridIoMessage msg,
+        final GridIoMessageBuffer msg,
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
@@ -780,7 +780,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true);
 
-                    processRegularMessage0(msg, nodeId);
+                    processRegularMessage0(msg.message(), nodeId);
                 }
                 finally {
                     threadProcessingMessage(false);
@@ -795,7 +795,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
-            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
+            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message().message();
 
             if (msg0.processFromNioThread()) {
                 c.run();
@@ -2551,7 +2551,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final UUID nodeId;
 
         /** */
-        private final GridIoMessage msg;
+        private final GridIoMessageBuffer msg;
 
         /** */
         private final IgniteRunnable msgC;
@@ -2561,7 +2561,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param msg Message.
          * @param msgC Callback.
          */
-        private DelayedMessage(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
+        private DelayedMessage(UUID nodeId, GridIoMessageBuffer msg, IgniteRunnable msgC) {
             this.nodeId = nodeId;
             this.msg = msg;
             this.msgC = msgC;
@@ -2577,7 +2577,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * @return Message.
          */
-        public GridIoMessage message() {
+        public GridIoMessageBuffer message() {
             return msg;
         }
 
