@@ -113,7 +113,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /** */
     public void testReconnectClient() throws Exception {
         try {
-            Ignite igniteSrv = startGrid(0);
+            startGrid(0);
 
             Ignite client = startGrid(1);
 
@@ -159,7 +159,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             Thread.sleep(2_000);
 
-            igniteSrv = startGrid(0);
+            startGrid(0);
 
             Thread.sleep(2_000);
 

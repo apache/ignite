@@ -52,9 +52,9 @@ namespace ignite
 
         IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
         {
-            IgniteImpl::SP_TransactionsImpl res;
+            SP_TransactionsImpl res;
 
-            ignite::jni::java::JniErrorInfo jniErr;
+            JniErrorInfo jniErr;
 
             jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
 

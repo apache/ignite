@@ -130,7 +130,7 @@ public class IgniteTestSuite extends TestSuite {
         try {
             getTestConstructor(theClass);
         }
-        catch (NoSuchMethodException ex) {
+        catch (NoSuchMethodException ignored) {
             addTest(warning("Class " + theClass.getName() +
                 " has no public constructor TestCase(String name) or TestCase()"));
 

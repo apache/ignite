@@ -137,7 +137,7 @@ public class GridRouterCommandLineStartup {
             try {
                 t = U.addLog4jNoOpLogger();
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 isLog4jUsed = false;
             }
         }

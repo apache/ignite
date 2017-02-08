@@ -29,7 +29,7 @@ angular
         templateUrl: '/settings/admin.html',
         onEnter: AclRoute.checkAccess('admin_page'),
         metaTags: {
-            title: 'List of registered users'
+            title: 'Admin panel'
         }
     });
 }]);

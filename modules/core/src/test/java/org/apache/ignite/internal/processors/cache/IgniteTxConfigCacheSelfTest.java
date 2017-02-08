@@ -168,7 +168,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
             fail("Timeout exception must be thrown");
         }
-        catch (CacheException e) {
+        catch (CacheException ignored) {
             // No-op.
         }
         finally {

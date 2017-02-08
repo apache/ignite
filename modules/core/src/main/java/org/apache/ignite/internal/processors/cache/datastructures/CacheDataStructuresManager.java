@@ -455,7 +455,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
         for (SetItemKey key : set) {
-            if (!loc && !aff.primary(cctx.localNode(), key, topVer))
+            if (!loc && !aff.primaryByKey(cctx.localNode(), key, topVer))
                 continue;
 
             keys.add(key);

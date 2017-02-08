@@ -15,24 +15,20 @@
  * limitations under the License.
  */
 
-.ui-grid-settings {
-    ul.select.dropdown-menu > li > a {
-        padding-top: 0;
-        padding-bottom: 0;
-    }
+namespace Apache.Ignite.Core.Tests.Cache.Store
+{
+    using NUnit.Framework;
 
-    ul.select.dropdown-menu > li > a > i {
-        position: relative;
-        line-height: 26px;
-        width: 14px;
-        margin-left: 0;
-        color: inherit;
-    }
-
-    ul.select.dropdown-menu > li > a > span {
-        line-height: 26px;
-        padding-left: 5px;
-        padding-right: 8px;
-        cursor: pointer;
+    /// <summary>
+    /// Cache store test with named node.
+    /// </summary>
+    [TestFixture]
+    public class NamedNodeCacheStoreTest : CacheStoreTest
+    {
+        /** <inheritDoc /> */
+        protected override string GridName
+        {
+            get { return "name"; }
+        }
     }
 }
