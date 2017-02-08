@@ -25,6 +25,8 @@ import org.apache.ignite.math.Vector;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * TODO: add description.
@@ -48,6 +50,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
      *
      */
     public AbstractVector() {
+        sto = new NullVectorStorage();
     }
 
     /**
@@ -55,7 +58,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @param sto
      */
     protected void setStorage(VectorStorage sto) {
-        this.sto = sto;
+        this.sto = sto == null ? new NullVectorStorage() : sto;
     }
 
     /** {@inheritDoc */
@@ -69,8 +72,6 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @param idx index
      */
     private void checkIndex(int idx) {
-        if(sto == null)
-            throw new IgniteIllegalStateException("storage must be initialized");
         if ( idx < 0 || idx >= sto.size())
             throw new IndexException(idx);
     }
@@ -242,7 +243,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public boolean equals(Object o) {
-        return this == o || !(o == null || getClass() != o.getClass()) && sto.equals(((AbstractVector)o).sto);
+        return this == o || o != null && ((getClass() == o.getClass())) && ((sto.equals(((AbstractVector)o).sto)));
     }
 
     @Override
@@ -281,28 +282,28 @@ public abstract class AbstractVector implements Vector, Externalizable {
     }
 
     @Override
-    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun) {
-        T t = null;
+    public double foldMap(BiFunction<Double, Double, Double> foldFun, DoubleFunction<Double> mapFun) {
+        double result = 0;
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            t = foldFun.apply(t, mapFun.apply(sto.get(i)));
+            result = foldFun.apply(result, mapFun.apply(sto.get(i)));
 
-        return t;
+        return result;
     }
 
     @Override
-    public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun) {
+    public double foldMap(Vector vec, BiFunction<Double, Double, Double> foldFun, BiFunction<Double, Double, Double> combFun) {
         if (vec.size() != sto.size())
             throw new CardinalityException(sto.size(), vec.size());
 
-        T t = null;
+        double result = 0;
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            t = foldFun.apply(t, combFun.apply(sto.get(i), vec.getX(i)));
+            result = foldFun.apply(result, combFun.apply(sto.get(i), vec.getX(i)));
 
-        return t;
+        return result;
     }
 
     @Override public double norm(double power) {

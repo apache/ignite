@@ -9,26 +9,43 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
 
 /**
- * Unit test for {@link AbstractVector}
+ * Unit test for {@link AbstractVector}.
  */
 public class AbstractVectorTest {
     /** */
-    private static final String VALUE_NOT_EQUALS = "value not equals";
+    private static final String VALUE_NOT_EQUALS = "Values not equals.";
 
     /** */
     private static final double SECOND_ARG = 1d;
 
     /**
-     * we assume that we will check calculation precision in other tests
+     * We assume that we will check calculation precision in other tests.
      */
     private static final double EXPECTED_DELTA = 0.1d;
 
     /** */
-    private static final String UNEXPECTED_VALUE = "unexpected value";
+    private static final String UNEXPECTED_VALUE = "Unexpected value.";
+
+    /** */
+    private static final String NULL_GUID = "Null GUID.";
+
+    /** */
+    private static final String UNEXPECTED_GUID_VALUE = "Unexpected GUID value.";
+
+    /** */
+    private static final String EMPTY_GUID = "Empty GUID.";
+
+    /** */
+    private static final String VALUES_SHOULD_BE_NOT_EQUALS = "Values should be not equals.";
+    public static final String NULL_VALUE = "Null value.";
+    public static final String NOT_NULL_VALUE = "Not null value.";
+    public static final double TEST_VALUE = 1d;
+    public static final String UNSUPPORTED_OPERATION_EXCEPTION_EXPECTED = "UnsupportedOperationException expected.";
 
     /** */
     private AbstractVector testVector;
@@ -75,7 +92,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = IgniteIllegalStateException.class)
+    @Test(expected = IndexException.class)
     public void getNegative0() {
         testVector.get(0);
     }
@@ -108,7 +125,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
+    @Test(expected = UnsupportedOperationException.class)
     public void getXNegative0() throws Exception {
         testVector.getX(0);
     }
@@ -197,7 +214,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = IgniteIllegalStateException.class)
+    @Test(expected = IndexException.class)
     public void setNegative0() throws Exception {
         testVector.set(-1, -1);
     }
@@ -247,7 +264,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
+    @Test(expected = UnsupportedOperationException.class)
     public void setXNegative2() throws Exception {
         testVector.setX(-1, -1);
     }
@@ -293,52 +310,128 @@ public class AbstractVectorTest {
 
     /** */ @Test
     public void guid() throws Exception {
+        assertNotNull(NULL_GUID,testVector.guid());
 
+        assertEquals(UNEXPECTED_GUID_VALUE,testVector.guid(), testVector.guid());
+
+        assertFalse(EMPTY_GUID,testVector.guid().toString().isEmpty());
+
+        testVector = getAbstractVector(createStorage());
+
+        assertNotNull(NULL_GUID,testVector.guid());
+
+        assertEquals(UNEXPECTED_GUID_VALUE,testVector.guid(), testVector.guid());
+
+        assertFalse(EMPTY_GUID,testVector.guid().toString().isEmpty());
     }
 
     /** */ @Test
     public void equals() throws Exception {
+        VectorStorage storage = createStorage();
 
+        AbstractVector testVector1 = getAbstractVector();
+
+        testVector1.setStorage(storage);
+
+        assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector));
+
+        assertTrue(VALUE_NOT_EQUALS, testVector1.equals(testVector1));
+
+        assertFalse(VALUES_SHOULD_BE_NOT_EQUALS, testVector.equals(testVector1));
+
+        assertFalse(VALUES_SHOULD_BE_NOT_EQUALS, testVector1.equals(testVector));
+
+        testVector1.setStorage(null);
+
+        assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector1));
     }
 
     /** */ @Test
     public void all() throws Exception {
-
+        assertNotNull(NULL_VALUE, testVector.all());
+        assertNotNull(NULL_VALUE, getAbstractVector(createStorage()).all());
     }
 
     /** */ @Test
     public void nonZeroElements() throws Exception {
+        VectorStorage storage = createStorage();
 
+        assertEquals(VALUE_NOT_EQUALS, testVector.nonZeroElements(), 0);
+
+        testVector.setStorage(storage);
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.nonZeroElements(),Arrays.stream(storage.data()).filter(x -> x!=0d).count());
+
+        addNilValues();
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.nonZeroElements(),Arrays.stream(storage.data()).filter(x -> x!=0d).count());
     }
 
     /** */ @Test
     public void clusterGroup() throws Exception {
 
+        assertNull(NOT_NULL_VALUE, testVector.clusterGroup());
+
+    }
+
+    /** */ @Test
+    public void foldMapWithSecondVector() throws Exception {
+        double[] data0 = initVector();
+
+        VectorStorage storage1 = createStorage();
+
+        double[] data1 = storage1.data().clone();
+
+        AbstractVector testVector1 = getAbstractVector(storage1);
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, Functions.PLUS, Functions.PLUS), Arrays.stream(data0).sum() + Arrays.stream(data1).sum(), EXPECTED_DELTA);
+
     }
 
     /** */ @Test
     public void foldMap() throws Exception {
+        double[] data = initVector();
 
-    }
-
-    /** */ @Test
-    public void foldMap1() throws Exception {
-
+        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Functions.SIN), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
     }
 
     /** */ @Test
     public void norm() throws Exception {
-
+        // TODO
     }
 
     /** */ @Test
     public void nonZeroes() throws Exception {
+        assertNotNull(NULL_VALUE, testVector.nonZeroes());
+
+        VectorStorage storage = createStorage();
+
+        double[] data = storage.data();
+
+        testVector.setStorage(storage);
+
+        assertNotNull(NULL_VALUE, testVector.nonZeroes());
+
+        assertEquals(VALUE_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(),Arrays.stream(data).filter(x -> x!=0d).count());
+
+        addNilValues();
+
+        assertEquals(VALUE_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(),Arrays.stream(data).filter(x -> x!=0d).count());
 
     }
 
-    /** */ @Test
+    /** */ @Test (expected = UnsupportedOperationException.class)
     public void assign() throws Exception {
+        testVector.assign(TEST_VALUE);
+    }
 
+    /** */ @Test
+    public void assignPositive(){
+        initVector();
+
+        testVector.assign(TEST_VALUE);
+
+        testVector.all().forEach(x -> assertTrue(UNEXPECTED_VALUE, x.get() == TEST_VALUE));
     }
 
     /** */ @Test
@@ -392,10 +485,10 @@ public class AbstractVectorTest {
     }
 
     /**
-     * create {@link AbstractVector} with storage for tests
+     * Create {@link AbstractVector} with storage for tests.
      *
      * @param storage {@link VectorStorage}
-     * @return AbstractVector
+     * @return AbstractVector.
      */
     private AbstractVector getAbstractVector(VectorStorage storage) {
         return new AbstractVector(storage) { // TODO: find out how-to fix this warning
@@ -492,9 +585,9 @@ public class AbstractVectorTest {
     }
 
     /**
-     * create empty {@link AbstractVector} for tests
+     * Create empty {@link AbstractVector} for tests.
      *
-     * @return AbstractVector
+     * @return AbstractVector.
      */
     private AbstractVector getAbstractVector() {
         return new AbstractVector() { // TODO: find out how-to fix this warning
@@ -592,7 +685,7 @@ public class AbstractVectorTest {
     }
 
     /**
-     * create {@link VectorStorage} for tests
+     * Create {@link VectorStorage} for tests.
      *
      * @return VectorStorage
      */
@@ -601,9 +694,9 @@ public class AbstractVectorTest {
     }
 
     /**
-     * create filled {@link VectorStorage} for tests
+     * Create filled {@link VectorStorage} for tests.
      *
-     * @return VectorStorage
+     * @return VectorStorage.
      */
     private VectorStorage createStorage() {
         VectorArrayStorage storage = new VectorArrayStorage(VectorArrayStorageTest.STORAGE_SIZE);
@@ -615,9 +708,9 @@ public class AbstractVectorTest {
     }
 
     /**
-     * init vector and return initialized values
+     * Init vector and return initialized values.
      *
-     * @return initial values
+     * @return Initial values.
      */
     private double[] initVector() {
         VectorStorage storage = createStorage();
@@ -625,5 +718,13 @@ public class AbstractVectorTest {
 
         testVector.setStorage(storage);
         return data;
+    }
+
+    /**
+     * Add some zeroes to vector elements.
+     */
+    private void addNilValues() {
+        testVector.set(10, 0);
+        testVector.set(50, 0);
     }
 }

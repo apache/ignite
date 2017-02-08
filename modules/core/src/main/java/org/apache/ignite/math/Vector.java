@@ -417,10 +417,9 @@ public interface Vector {
      * @param foldFun Folding function that takes two parameters: accumulator and the current value.
      * @param mapFun Mapping function that is called on each vector element before its passed to the accumulator
      *      (as its second parameter).
-     * @param <T> Type of the folded value.
      * @return Folded value of this vector.
      */
-    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun);
+    double foldMap(BiFunction<Double, Double, Double> foldFun, DoubleFunction<Double> mapFun);
 
     /**
      * Combines & maps two vector and folds them into a single value.
@@ -428,11 +427,10 @@ public interface Vector {
      * @param vec Another vector to combine with.
      * @param foldFun Folding function.
      * @param combFun Combine function.
-     * @param <T> Type of the folded value.
      * @return Folded value of these vectors.
      * @throws CardinalityException Thrown when cardinalities mismatch.
      */
-    <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun);
+    double foldMap(Vector vec, BiFunction<Double, Double, Double> foldFun, BiFunction<Double, Double, Double> combFun);
 
     /**
      * Gets the sum of squares of all elements in this vector.

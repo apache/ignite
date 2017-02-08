@@ -8,32 +8,32 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 
 /**
- * Unit test for {@link VectorArrayStorage}
+ * Unit test for {@link VectorArrayStorage}.
  */
 public class VectorArrayStorageTest {
     /** */
-    public static final int STORAGE_SIZE = 100;
+    static final int STORAGE_SIZE = 100;
 
     /** */
-    private static final String WRONG_ATTRIBUTE_VALUE = "wrong attribute value";
+    private static final String WRONG_ATTRIBUTE_VALUE = "Wrong attribute value.";
 
     /** */
-    private static final String NULL_DATA_ELEMENT = "null data element";
+    private static final String NULL_DATA_ELEMENT = "Null data element.";
 
     /** */
-    private static final String WRONG_DATA_ELEMENT = "wrong data element";
+    private static final String WRONG_DATA_ELEMENT = "Wrong data element.";
 
     /** */
-    public static final double NIL_DELTA = 0d;
+    static final double NIL_DELTA = 0d;
 
     /** */
-    public static final String NULL_DATA_STORAGE = "null data storage";
+    static final String NULL_DATA_STORAGE = "Null data storage.";
 
     /** */
-    private static final String WRONG_DATA_SIZE = "wrong data size";
+    private static final String WRONG_DATA_SIZE = "Wrong data size.";
 
     /** */
-    private static final String UNEXPECTED_DATA_VALUE = "unexpected data value";
+    private static final String UNEXPECTED_DATA_VALUE = "Unexpected data value.";
 
     /** */
     private VectorArrayStorage testStorage;
@@ -86,9 +86,9 @@ public class VectorArrayStorageTest {
     }
 
     /**
-     * fill storage by random doubles
+     * Fill storage by random doubles.
      *
-     * @param size storage size
+     * @param size Storage size.
      */
     private void fillStorage(int size) {
         for (int i = 0; i < size; i++)
