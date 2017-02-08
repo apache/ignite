@@ -396,6 +396,13 @@ public class AbstractVectorTest {
 
         assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, Functions.PLUS, Functions.PLUS, 0d), Arrays.stream(data0).sum() + Arrays.stream(data1).sum(), EXPECTED_DELTA);
 
+        String testVal = "";
+
+        for (int i = 0; i < data0.length; i++)
+            testVal += data0[i]+data1[i];
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal);
+
     }
 
     /** */ @Test
