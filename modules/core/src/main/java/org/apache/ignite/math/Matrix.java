@@ -111,7 +111,7 @@ public interface Matrix {
      * @param fun Aggregating function.
      * @return Vector of row aggregates.
      */
-    Vector aggregateRows(Function<Vector, Double> fun);
+    Vector foldRows(Function<Vector, Double> fun);
 
     /**
      * Collects the results of applying a given function to all columns in this matrix.
@@ -119,7 +119,7 @@ public interface Matrix {
      * @param fun Aggregating function.
      * @return Vector of column aggregates.
      */
-    Vector aggregateColumns(Function<Vector, Double> fun);
+    Vector foldColumns(Function<Vector, Double> fun);
 
     /**
      * Folds this matrix into a single value.
@@ -129,8 +129,9 @@ public interface Matrix {
      *      (as its second parameter).
      * @return Folded value of this matrix.
      * @param <T> Type of the folded value.
+     * @param zeroVal Zero value for fold function.
      */
-    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun);
+    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun, T zeroVal);
 
     /**
      * Gets number of columns in this matrix.

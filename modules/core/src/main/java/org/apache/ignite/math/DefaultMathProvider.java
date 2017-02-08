@@ -44,8 +44,7 @@ public class DefaultMathProvider implements MathProvider {
                         String.format("Matrix flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
                     );
 
-                // TODO: ignoring arguments for now.
-                return Optional.of(new DenseLocalOnHeapMatrix());
+                return Optional.of(new DenseLocalOnHeapMatrix(args));
 
             default:
                 return Optional.empty();
@@ -63,8 +62,7 @@ public class DefaultMathProvider implements MathProvider {
                         String.format("Vector flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
                     );
 
-                // TODO: ignoring arguments for now.
-                return Optional.of(new DenseLocalOnHeapVector());
+                return Optional.of(new DenseLocalOnHeapVector(args));
 
             default:
                 return Optional.empty();

@@ -125,17 +125,17 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
     }
 
     @Override
-    public Vector aggregateRows(Function<Vector, Double> fun) {
+    public Vector foldRows(Function<Vector, Double> fun) {
         return null; // TODO
     }
 
     @Override
-    public Vector aggregateColumns(Function<Vector, Double> fun) {
+    public Vector foldColumns(Function<Vector, Double> fun) {
         return null; // TODO
     }
 
     @Override
-    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun) {
+    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun, T zeroVal) {
         return null; // TODO
     }
 
