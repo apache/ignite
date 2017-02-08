@@ -110,6 +110,9 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.ReadKey();
         }
 
+        /// <summary>
+        /// Displays accounts.
+        /// </summary>
         private static void DisplayAccounts(ICache<int, Account> cache)
         {
             Console.WriteLine(">>> Transfer finished.");
@@ -139,7 +142,5 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>>     " + cache.Get(2));
             Console.WriteLine();
         }
-
-
     }
 }
