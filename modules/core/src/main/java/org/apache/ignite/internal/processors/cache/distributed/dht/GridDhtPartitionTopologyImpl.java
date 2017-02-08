@@ -1867,6 +1867,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             updateLocal(part.id(), part.state(), seq);
 
+            if (cctx.affinity().partitionLocalNode(part.id(), topologyVersion()))
+                createPartition(part.id());
+
             consistencyCheck();
         }
         finally {
