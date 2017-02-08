@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,14 +24,6 @@ import org.jetbrains.annotations.Nullable;
  * Async target.
  */
 public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
-
     /**
      * Gets a custom future writer.
      *

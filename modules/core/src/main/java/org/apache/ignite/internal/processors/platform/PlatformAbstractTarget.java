@@ -73,11 +73,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
-    }
-
-    /** {@inheritDoc} */
     @Override @Nullable public PlatformFutureUtils.Writer futureWriter(int opId){
         return null;
     }
@@ -192,18 +187,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut)
         throws IgniteCheckedException {
         return readAndListenFuture(reader, fut, null);
-    }
-
-    /**
-     * Reads future information and listens.
-     *
-     * @param reader Reader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    protected long readAndListenFuture(BinaryRawReader reader) throws IgniteCheckedException {
-        readAndListenFuture(reader, currentFuture(), null);
-
-        return TRUE;
     }
 
     /**

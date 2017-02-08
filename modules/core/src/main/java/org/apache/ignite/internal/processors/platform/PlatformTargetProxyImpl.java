@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 
 /**
  * Platform target that is invoked via JNI and propagates calls to underlying {@link PlatformTarget}.
@@ -173,31 +171,17 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, target);
+        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), target);
+        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget unwrap() {
         return target;
-    }
-
-    /**
-     * @return Future writer.
-     */
-    private PlatformFutureUtils.Writer futureWriter(int opId) {
-        return ((PlatformAsyncTarget)target).futureWriter(opId);
-    }
-
-    /**
-     * @return Current future.
-     */
-    private IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((PlatformAsyncTarget)target).currentFuture();
     }
 
     /**
