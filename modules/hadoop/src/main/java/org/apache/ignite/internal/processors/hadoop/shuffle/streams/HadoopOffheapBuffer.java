@@ -106,6 +106,24 @@ public class HadoopOffheapBuffer {
     }
 
     /**
+     * @param size Size move on.
+     * @return Old position pointer or {@code 0} if move goes beyond the begin of the buffer.
+     */
+    public long moveBackward(long size) {
+        assert size > 0 : size;
+
+        long oldPos = posPtr;
+        long newPos = oldPos - size;
+
+        if (newPos < bufPtr)
+            return 0;
+
+        posPtr = newPos;
+
+        return oldPos;
+    }
+
+    /**
      * @param ptr Pointer.
      * @return {@code true} If the given pointer is inside of this buffer.
      */

@@ -35,6 +35,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
@@ -203,7 +205,7 @@ class OptimizedMarshallerUtils {
             boolean registered;
 
             try {
-                registered = ctx.registerClass(typeId, cls);
+                registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName());
             }
             catch (IgniteCheckedException e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
@@ -246,7 +248,7 @@ class OptimizedMarshallerUtils {
      * Gets descriptor for provided ID.
      *
      * @param clsMap Class descriptors by class map.
-     * @param id ID.
+     * @param typeId ID.
      * @param ldr Class loader.
      * @param ctx Context.
      * @param mapper ID mapper.
@@ -256,17 +258,17 @@ class OptimizedMarshallerUtils {
      */
     static OptimizedClassDescriptor classDescriptor(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        int id,
+        int typeId,
         ClassLoader ldr,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
         Class cls;
 
         try {
-            cls = ctx.getClass(id, ldr);
+            cls = ctx.getClass(typeId, ldr);
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("Failed to resolve class for ID: " + id, e);
+            throw new IOException("Failed to resolve class for ID: " + typeId, e);
         }
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
