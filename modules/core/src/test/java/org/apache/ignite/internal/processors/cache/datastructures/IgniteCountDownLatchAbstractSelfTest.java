@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.G;
@@ -45,11 +46,14 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Cache count down latch self test.
@@ -75,6 +79,45 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      */
     public void testLatch() throws Exception {
         checkLatch();
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            IgniteCountDownLatch latch = ignite.countDownLatch("latch1", 10, false, true);
+
+            assertNotNull(latch);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                assertEquals(8, latch.countDown(2));
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals(7, latch.countDown(1));
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
     }
 
     /**
