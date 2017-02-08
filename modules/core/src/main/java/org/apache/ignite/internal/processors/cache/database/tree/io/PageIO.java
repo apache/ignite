@@ -500,6 +500,7 @@ public abstract class PageIO {
             case T_H2_EX28_REF_INNER:
             case T_H2_EX32_REF_INNER:
                 IOVersions<? extends BPlusInnerIO<?>> innerVersions = h2ExtraInnerIOs.get(type);
+
                 if (innerVersions == null)
                     break;
 
@@ -514,6 +515,7 @@ public abstract class PageIO {
             case T_H2_EX28_REF_LEAF:
             case T_H2_EX32_REF_LEAF:
                 IOVersions<? extends BPlusLeafIO<?>> leafVersions = h2ExtraLeafIOs.get(type);
+
                 if (leafVersions == null)
                     break;
 

@@ -35,7 +35,6 @@ import org.h2.result.SearchRow;
  * Leaf page for H2 row references.
  */
 public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
-
     /** */
     public static final IOVersions<H2ExtrasLeafIO> VERSIONS_4 = new IOVersions<>(
         new H2ExtrasLeafIO(T_H2_EX4_REF_LEAF, 1, 4)
@@ -80,10 +79,13 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     private final int payloadSize;
 
     /**
+     * @param type Page type.
      * @param ver Page format version.
+     * @param payloadSize Item payload size.
      */
-    private H2ExtrasLeafIO(short ref, int ver, int payloadSize) {
-        super(ref, ver, 8 + payloadSize);
+    private H2ExtrasLeafIO(short type, int ver, int payloadSize) {
+        super(type, ver, 8 + payloadSize);
+
         this.payloadSize = payloadSize;
     }
 
@@ -94,7 +96,9 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
         assert row0.link != 0;
 
         H2Tree tree = H2TreeIndex.getCurrentTree();
+
         assert tree != null;
+
         List<FastIndexHelper> fastIdx = tree.fastIdxs();
 
         assert fastIdx != null;
@@ -117,7 +121,9 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
         assert row0.link != 0;
 
         H2Tree tree = H2TreeIndex.getCurrentTree();
+
         assert tree != null;
+
         List<FastIndexHelper> fastIdx = tree.fastIdxs();
 
         assert fastIdx != null;

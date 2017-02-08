@@ -41,7 +41,6 @@ import static org.apache.ignite.internal.processors.cache.database.tree.io.PageI
  *
  */
 public abstract class H2ExtrasIOHelper {
-
     /**
      * Maximum payload size.
      */
@@ -49,7 +48,7 @@ public abstract class H2ExtrasIOHelper {
 
     /** */
     public static IOVersions<? extends H2ExtrasInnerIO> getInnerIOForSize(int size) {
-        assert size > 0;
+        assert size > 0 : size;
 
         if (size <= 4)
             return H2ExtrasInnerIO.VERSIONS_4;

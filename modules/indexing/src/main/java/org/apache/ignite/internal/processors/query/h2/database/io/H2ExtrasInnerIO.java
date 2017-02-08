@@ -35,7 +35,6 @@ import org.h2.result.SearchRow;
  * Inner page for H2 row references.
  */
 public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
-
     /** */
     public static final IOVersions<H2ExtrasInnerIO> VERSIONS_4 = new IOVersions<>(
         new H2ExtrasInnerIO(T_H2_EX4_REF_INNER, 1, 4)
@@ -80,10 +79,13 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
     private final int payloadSize;
 
     /**
+     * @param type Page type.
      * @param ver Page format version.
+     * @param payloadSize Item payload size.
      */
-    private H2ExtrasInnerIO(short ref, int ver, int payloadSize) {
-        super(ref, ver, true, 8 + payloadSize);
+    private H2ExtrasInnerIO(short type, int ver, int payloadSize) {
+        super(type, ver, true, 8 + payloadSize);
+
         this.payloadSize = payloadSize;
     }
 
@@ -91,10 +93,12 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
     @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
-        assert row0.link != 0;
+        assert row0.link != 0 : row0;
 
         H2Tree tree = H2TreeIndex.getCurrentTree();
+
         assert tree != null;
+
         List<FastIndexHelper> fastIdx = tree.fastIdxs();
 
         assert fastIdx != null;
@@ -114,10 +118,12 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
-        assert row0.link != 0;
+        assert row0.link != 0 : row0;
 
-        H2Tree tree = (H2Tree)H2TreeIndex.getCurrentTree();
+        H2Tree tree = H2TreeIndex.getCurrentTree();
+
         assert tree != null;
+
         List<FastIndexHelper> fastIdx = tree.fastIdxs();
 
         assert fastIdx != null;

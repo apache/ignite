@@ -33,12 +33,18 @@ import org.h2.value.ValueLong;
  */
 public class FastIndexHelper {
     /** */
-    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(Value.BOOLEAN, Value.BYTE, Value.SHORT, Value.INT, Value.LONG);
+    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(Value.BOOLEAN,
+        Value.BYTE,
+        Value.SHORT,
+        Value.INT,
+        Value.LONG);
 
     /** */
     private final int type;
+
     /** */
     private final int colIdx;
+
     /** */
     private final int sortType;
 
@@ -53,22 +59,30 @@ public class FastIndexHelper {
         this.sortType = sortType;
     }
 
-    /** */
+    /**
+     * @return Index type.
+     */
     public int type() {
         return type;
     }
 
-    /** */
+    /**
+     * @return Column index.
+     */
     public int columnIdx() {
         return colIdx;
     }
 
-    /** */
+    /**
+     * @return Sort type.
+     */
     public int sortType() {
         return sortType;
     }
 
-    /** */
+    /**
+     * @return Value size.
+     */
     public int size() {
         switch (type) {
             case Value.BOOLEAN:
@@ -89,7 +103,11 @@ public class FastIndexHelper {
         }
     }
 
-    /** */
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @return Value.
+     */
     public Value get(long pageAddr, int off) {
         switch (type) {
             case Value.BOOLEAN:
@@ -112,7 +130,11 @@ public class FastIndexHelper {
         }
     }
 
-    /** */
+    /**
+     * @param buf Page buffer.
+     * @param off Offset.
+     * @return Value.
+     */
     public Value get(ByteBuffer buf, int off) {
         switch (type) {
             case Value.BOOLEAN:
@@ -135,7 +157,11 @@ public class FastIndexHelper {
         }
     }
 
-    /** */
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param val Value.
+     */
     public void put(long pageAddr, int off, Value val) {
         switch (type) {
             case Value.BOOLEAN:
@@ -163,7 +189,11 @@ public class FastIndexHelper {
         }
     }
 
-    /** */
+    /**
+     * @param buf Page buffer.
+     * @param off Offset.
+     * @param val Value.
+     */
     public void put(ByteBuffer buf, int off, Value val) {
         switch (type) {
             case Value.BOOLEAN:

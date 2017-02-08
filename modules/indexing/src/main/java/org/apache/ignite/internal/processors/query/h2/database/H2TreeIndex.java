@@ -127,13 +127,13 @@ public class H2TreeIndex extends GridH2IndexBase {
                             Value v1 = fastIdx.get(pageAddr, off + fieldOff);
                             fieldOff += fastIdx.size();
                             if (v1 == null) {
-                                // can't compare further
+                                // Can't compare further.
                                 return 0;
                             }
 
                             Value v2 = row.getValue(fastIdx.columnIdx());
                             if (v2 == null) {
-                                // can't compare further
+                                // Can't compare further.
                                 return 0;
                             }
 
@@ -149,13 +149,13 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                             Value v1 = rowData.getValue(idx0);
                             if (v1 == null) {
-                                // can't compare further
+                                // Can't compare further.
                                 return 0;
                             }
 
                             Value v2 = row.getValue(idx0);
                             if (v2 == null) {
-                                // can't compare further
+                                // Can't compare further.
                                 return 0;
                             }
 
@@ -173,6 +173,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             // We need indexes on the client node, but index will not contain any data.
             tree = null;
         }
+
         initDistributedJoinMessaging(tbl);
     }
 
@@ -194,11 +195,14 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         for (int i = 0; i < cols.length; i++) {
             IndexColumn col = cols[i];
+
             if (!FastIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
                 break;
+
             FastIndexHelper idx = new FastIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
 
             payloadSize += idx.size();
+
             if (payloadSize > maxPayloadSize)
                 break;
 
@@ -226,6 +230,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             return 0;
 
         int comp = table.compareTypeSafe(a, b);
+
         if ((sortType & SortOrder.DESCENDING) != 0)
             comp = -comp;
 
@@ -272,6 +277,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public GridH2Row put(GridH2Row row) {
         try {
             currentTree.set(F.isEmpty(tree.fastIdxs()) ? null : tree);
+
             return tree.put(row);
         }
         catch (IgniteCheckedException e) {
@@ -287,6 +293,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public boolean putx(GridH2Row row) {
         try {
             currentTree.set(F.isEmpty(tree.fastIdxs()) ? null : tree);
+
             return tree.putx(row);
         }
         catch (IgniteCheckedException e) {
