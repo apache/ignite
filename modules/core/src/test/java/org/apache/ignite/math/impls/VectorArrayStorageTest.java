@@ -1,5 +1,6 @@
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.impls.storage.*;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math.impls.storage;
 
+import org.apache.ignite.math.impls.*;
 import java.io.*;
 
 /**

@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math.impls.storage;
 
+import org.apache.ignite.math.impls.*;
 import java.io.*;
 import java.util.*;
 
 /**
  * TODO: add description.
  */
-class VectorArrayStorage implements VectorStorage {
+public class VectorArrayStorage implements VectorStorage {
     /** */
     private double[] data;
 
@@ -44,7 +45,7 @@ class VectorArrayStorage implements VectorStorage {
      *
      * @param size
      */
-    VectorArrayStorage(int size) {
+    public VectorArrayStorage(int size) {
         data = new double[size];
     }
 
@@ -52,7 +53,7 @@ class VectorArrayStorage implements VectorStorage {
      *
      * @param data
      */
-    VectorArrayStorage(double[] data) {
+    public VectorArrayStorage(double[] data) {
         this.data = data;
     }
 

@@ -21,6 +21,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.*;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;

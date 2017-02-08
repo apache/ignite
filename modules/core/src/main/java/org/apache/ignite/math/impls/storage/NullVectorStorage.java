@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.impls.*;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,7 +27,7 @@ import java.io.ObjectOutput;
 /**
  * Null object for VectorStorage.
  */
-final class NullVectorStorage implements VectorStorage {
+public final class NullVectorStorage implements VectorStorage {
     /** Unsupported operation. */
     private static final String UNSUPPORTED_OPERATION = "Unsupported operation.";
 

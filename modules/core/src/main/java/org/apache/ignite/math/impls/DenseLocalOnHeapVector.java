@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.*;
 import java.util.*;
 
 /**
