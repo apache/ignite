@@ -63,8 +63,13 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
      * @param cacheNames Cache names.
      * @param msg message to log
      */
-    public StartFullSnapshotDiscoveryMessage(long globalSnapshotId, Collection<String> cacheNames, UUID initiatorId,
-        boolean fullSnapshot, String msg) {
+    public StartFullSnapshotDiscoveryMessage(
+        long globalSnapshotId,
+        Collection<String> cacheNames,
+        UUID initiatorId,
+        boolean fullSnapshot,
+        String msg
+    ) {
         this.globalSnapshotId = globalSnapshotId;
         this.cacheNames = cacheNames;
         this.initiatorId = initiatorId;
