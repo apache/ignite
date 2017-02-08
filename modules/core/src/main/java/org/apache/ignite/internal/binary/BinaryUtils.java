@@ -1438,7 +1438,15 @@ public class BinaryUtils {
         throws BinaryObjectException {
         int typeId = in.readInt();
 
-        return doReadClass(in, ctx, ldr, typeId, deserialize);
+        if (!deserialize) {
+            // Skip class name at the stream.
+            if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                doReadClassName(in);
+
+            return null;
+        }
+
+        return doReadClass(in, ctx, ldr, typeId);
     }
 
     /**
@@ -1492,38 +1500,21 @@ public class BinaryUtils {
      * @param in Binary input stream.
      * @param ctx Binary context.
      * @param ldr Class loader.
+     * @param typeId Type id.
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
-     * @param typeId Type id.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
         throws BinaryObjectException {
-        return doReadClass(in, ctx, ldr, typeId, true);
-    }
-
-    /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
-     * @param typeId Type id.
-     * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
-     * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
-     * @throws BinaryObjectException If failed.
-     */
-    private static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId,
-        boolean deserialize) throws BinaryObjectException {
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return deserialize ? Object.class : null;
-
         Class cls;
+
+        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
+            return Object.class;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-
-            if (!deserialize)
-                return null;
 
             try {
                 cls = U.forName(clsName, ldr);
@@ -1536,7 +1527,7 @@ public class BinaryUtils {
             ctx.descriptorForClass(cls, true);
         }
 
-        return deserialize ? cls : null;
+        return cls;
     }
 
     /**
