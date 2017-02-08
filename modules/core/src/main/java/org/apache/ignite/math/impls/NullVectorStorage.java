@@ -17,6 +17,8 @@
 
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.UnsupportedOperationException;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -25,7 +27,6 @@ import java.io.ObjectOutput;
  * Null object for VectorStorage.
  */
 final class NullVectorStorage implements VectorStorage {
-
 
     /** Unsupported operation. */
     private static final String UNSUPPORTED_OPERATION = "Unsupported operation.";

@@ -1,9 +1,9 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.junit.*;
-import java.util.*;
 
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
@@ -39,10 +39,15 @@ public class AbstractVectorTest {
 
     /** */
     private static final String VALUES_SHOULD_BE_NOT_EQUALS = "Values should be not equals.";
-    public static final String NULL_VALUE = "Null value.";
-    public static final String NOT_NULL_VALUE = "Not null value.";
-    public static final double TEST_VALUE = 1d;
-    public static final String UNSUPPORTED_OPERATION_EXCEPTION_EXPECTED = "UnsupportedOperationException expected.";
+
+    /** */
+    private static final String NULL_VALUE = "Null value.";
+
+    /** */
+    private static final String NOT_NULL_VALUE = "Not null value.";
+
+    /** */
+    private static final double TEST_VALUE = 1d;
 
     /** */
     private AbstractVector testVector;
@@ -330,9 +335,17 @@ public class AbstractVectorTest {
 
         testVector1.setStorage(storage);
 
+        AbstractVector testVector2 = getAbstractVector();
+
         assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector));
 
+        assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector2));
+
         assertTrue(VALUE_NOT_EQUALS, testVector1.equals(testVector1));
+
+        testVector2.setStorage(storage);
+
+        assertTrue(VALUE_NOT_EQUALS, testVector1.equals(testVector2));
 
         assertFalse(VALUES_SHOULD_BE_NOT_EQUALS, testVector.equals(testVector1));
 
@@ -389,12 +402,7 @@ public class AbstractVectorTest {
     public void foldMap() throws Exception {
         double[] data = initVector();
 
-        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Functions.SIN), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
-    }
-
-    /** */ @Test
-    public void norm() throws Exception {
-        // TODO
+        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Math::sin), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
     }
 
     /** */ @Test
