@@ -80,7 +80,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
     }
@@ -99,7 +99,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
 
@@ -111,7 +111,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
     }
@@ -130,7 +130,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
     }
@@ -148,7 +148,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
                 }
             }).setLocal(true)).getAll();
         }
-        catch (IgniteException e) {
+        catch (IgniteException ignored) {
             assertTrue("Scan query should work with disable query indexing.", false);
         }
     }
@@ -166,7 +166,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
     }
@@ -185,7 +185,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
     }
@@ -204,7 +204,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         catch (CacheException e) {
             X.println("Caught expected exception: " + e);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             assert false;
         }
     }
@@ -222,7 +222,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
                 }
             })).getAll();
         }
-        catch (IgniteException e) {
+        catch (IgniteException ignored) {
             assertTrue("Scan query should work with disabled query indexing.", false);
         }
     }

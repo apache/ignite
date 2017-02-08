@@ -382,7 +382,7 @@ public final class DmlAstUtils {
         try {
             dfltVal = dfltExpr != null ? dfltExpr.getValue(null) : null;
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             throw new IgniteSQLException("Failed to evaluate default value for a column " + col.columnName());
         }
 

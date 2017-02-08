@@ -1203,7 +1203,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         boolean explicit = false;
 
         for (KeyCacheObject key : keys) {
-            if (!cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+            if (!cctx.affinity().primaryByKey(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
                 for (KeyCacheObject k : keys)
                     cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(k), lockVer);
@@ -1287,7 +1287,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
-        ClusterNode primary = cctx.affinity().primary(key, topVer);
+        ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
