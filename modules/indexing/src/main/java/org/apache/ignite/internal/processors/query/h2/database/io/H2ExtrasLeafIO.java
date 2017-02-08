@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.query.h2.database.FastIndexHelper;
-import org.apache.ignite.internal.processors.query.h2.database.H2ExtrasTree;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -90,7 +89,25 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
     /** {@inheritDoc} */
     @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
-        throw new UnsupportedOperationException();
+        GridH2Row row0 = (GridH2Row)row;
+
+        assert row0.link != 0;
+
+        H2Tree tree = H2TreeIndex.getCurrentTree();
+        assert tree != null;
+        List<FastIndexHelper> fastIdx = tree.fastIdxs();
+
+        assert fastIdx != null;
+
+        int fieldOff = 0;
+
+        for (int i = 0; i < fastIdx.size(); i++) {
+            FastIndexHelper idx = fastIdx.get(i);
+            idx.put(buf, off + fieldOff, row.getValue(idx.columnIdx()));
+            fieldOff += idx.size();
+        }
+
+        buf.putLong(off + payloadSize, row0.link);
     }
 
     /** {@inheritDoc} */
@@ -99,7 +116,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert row0.link != 0;
 
-        H2ExtrasTree tree = (H2ExtrasTree)H2TreeIndex.getCurrentTree();
+        H2Tree tree = H2TreeIndex.getCurrentTree();
         assert tree != null;
         List<FastIndexHelper> fastIdx = tree.fastIdxs();
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -38,6 +39,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** */
     private final H2RowFactory rowStore;
 
+    /** */
+    private final List<FastIndexHelper> fastIdxs;
+
     /**
      * @param name Tree name.
      * @param reuseList Reuse list.
@@ -49,7 +53,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2Tree(
+    public H2Tree(
         String name,
         ReuseList reuseList,
         int cacheId,
@@ -59,6 +63,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew,
+        List<FastIndexHelper> fastIdxs,
         IOVersions<? extends BPlusInnerIO<SearchRow>> innerIos,
         IOVersions<? extends BPlusLeafIO<SearchRow>> leafIos
     ) throws IgniteCheckedException {
@@ -67,6 +72,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         assert rowStore != null;
 
         this.rowStore = rowStore;
+        this.fastIdxs = fastIdxs;
 
         initTree(initNew);
     }
@@ -93,7 +99,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        this(name, reuseList, cacheId, pageMem, wal, globalRmvId, rowStore, metaPageId, initNew, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        this(name, reuseList, cacheId, pageMem, wal, globalRmvId, rowStore, metaPageId, initNew, null, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
     }
 
 
@@ -108,6 +114,13 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx)
         throws IgniteCheckedException {
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+    }
+
+    /**
+     * @return FastIndexHelper list.
+     */
+    public List<FastIndexHelper> fastIdxs() {
+        return fastIdxs;
     }
 }
 

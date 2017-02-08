@@ -58,11 +58,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
-    /** */
-    private final List<FastIndexHelper> fastIdxs;
-
     /** Tree collection for use in IO's */
-    private static final ThreadLocal<BPlusTree> currentTrees = new ThreadLocal<>();
+    private static final ThreadLocal<H2Tree> currentTree = new ThreadLocal<>();
 
     /**
      * @param cctx Cache context.
@@ -96,7 +93,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             RootPage page = cctx.offheap().rootPageForIndex(name);
 
-            fastIdxs = getAvailableFastColumns(cols);
+            final List<FastIndexHelper> fastIdxs = getAvailableFastColumns(cols);
 
             if (pk || fastIdxs == null || fastIdxs.isEmpty()) {
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
@@ -114,7 +111,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                 for (int i = 0; i < fastIdxs.size(); i++)
                     size += fastIdxs.get(i).size();
 
-                tree = new H2ExtrasTree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
+                tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                     tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), fastIdxs,
                     H2ExtrasIOHelper.getInnerIOForSize(size), H2ExtrasIOHelper.getLeafIOForSize(size)) {
@@ -175,7 +172,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         else {
             // We need indexes on the client node, but index will not contain any data.
             tree = null;
-            fastIdxs = null;
         }
         initDistributedJoinMessaging(tbl);
     }
@@ -215,8 +211,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     /**
      * @return Tree updated in current thread.
      */
-    public static BPlusTree getCurrentTree() {
-        return currentTrees.get();
+    public static H2Tree getCurrentTree() {
+        return currentTree.get();
     }
 
     /**
@@ -239,7 +235,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /**
      * @return Tree.
      */
-    public BPlusTree<SearchRow, GridH2Row> tree() {
+    public H2Tree tree() {
         return tree;
     }
 
@@ -275,22 +271,30 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            currentTrees.set(F.isEmpty(fastIdxs) ? null : tree);
+            currentTree.set(F.isEmpty(tree.fastIdxs()) ? null : tree);
             return tree.put(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
+        }
+        finally {
+            if (!F.isEmpty(tree.fastIdxs()))
+                currentTree.set(null);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            currentTrees.set(F.isEmpty(fastIdxs) ? null : tree);
+            currentTree.set(F.isEmpty(tree.fastIdxs()) ? null : tree);
             return tree.putx(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
+        }
+        finally {
+            if (!F.isEmpty(tree.fastIdxs()))
+                currentTree.set(null);
         }
     }
 

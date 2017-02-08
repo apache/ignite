@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -112,6 +113,29 @@ public class FastIndexHelper {
     }
 
     /** */
+    public Value get(ByteBuffer buf, int off) {
+        switch (type) {
+            case Value.BOOLEAN:
+                return ValueBoolean.get(buf.get(off) != 0);
+
+            case Value.BYTE:
+                return ValueByte.get(buf.get(off));
+
+            case Value.SHORT:
+                return ValueInt.get(buf.getShort(off));
+
+            case Value.INT:
+                return ValueInt.get(buf.getInt(off));
+
+            case Value.LONG:
+                return ValueLong.get(buf.getLong(off));
+
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
+    }
+
+    /** */
     public void put(long pageAddr, int off, Value val) {
         switch (type) {
             case Value.BOOLEAN:
@@ -132,6 +156,34 @@ public class FastIndexHelper {
 
             case Value.LONG:
                 PageUtils.putLong(pageAddr, off, val.getLong());
+                break;
+
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
+    }
+
+    /** */
+    public void put(ByteBuffer buf, int off, Value val) {
+        switch (type) {
+            case Value.BOOLEAN:
+                buf.put(off, (byte)(val.getBoolean() ? 1 : 0));
+                break;
+
+            case Value.BYTE:
+                buf.put(off, val.getByte());
+                break;
+
+            case Value.SHORT:
+                buf.putShort(off, val.getShort());
+                break;
+
+            case Value.INT:
+                buf.putInt(off, val.getInt());
+                break;
+
+            case Value.LONG:
+                buf.putLong(off, val.getLong());
                 break;
 
             default:

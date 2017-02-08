@@ -49,6 +49,8 @@ public abstract class H2ExtrasIOHelper {
 
     /** */
     public static IOVersions<? extends H2ExtrasInnerIO> getInnerIOForSize(int size) {
+        assert size > 0;
+
         if (size <= 4)
             return H2ExtrasInnerIO.VERSIONS_4;
         else if (size <= 8)
@@ -71,6 +73,8 @@ public abstract class H2ExtrasIOHelper {
 
     /** */
     public static IOVersions<? extends H2ExtrasLeafIO> getLeafIOForSize(int size) {
+        assert size > 0;
+
         if (size <= 4)
             return H2ExtrasLeafIO.VERSIONS_4;
         else if (size <= 8)
