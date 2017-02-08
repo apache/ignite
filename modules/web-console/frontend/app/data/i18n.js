@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-angular
-.module('ignite-console.states.admin', [
-    'ui.router'
-])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
-    // set up the states
-    $stateProvider
-    .state('settings.admin', {
-        url: '/admin',
-        templateUrl: '/settings/admin.html',
-        onEnter: AclRoute.checkAccess('admin_page'),
-        metaTags: {
-            title: 'Admin panel'
-        }
-    });
-}]);
+export default {
+    '/agent/start': 'Agent start',
+    '/agent/download': 'Agent download',
+    '/configuration/clusters': 'Configure clusters',
+    '/configuration/caches': 'Configure caches',
+    '/configuration/domains': 'Configure domain model',
+    '/configuration/igfs': 'Configure IGFS',
+    '/configuration/summary': 'Configurations summary',
+    '/demo/resume': 'Demo resume',
+    '/demo/reset': 'Demo reset',
+    '/queries/execute': 'Query execute',
+    '/queries/explain': 'Query explain',
+    '/queries/scan': 'Scan',
+    '/queries/add/query': 'Add query',
+    '/queries/add/scan': 'Add scan',
+    '/queries/demo': 'SQL demo',
+    '/queries/notebook/': 'Query notebook',
+    '/settings/profile': 'User profile',
+    '/settings/admin': 'Admin panel',
+    '/logout': 'Logout'
+};

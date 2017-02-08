@@ -17,19 +17,9 @@
 
 import angular from 'angular';
 
-angular
-.module('ignite-console.states.admin', [
-    'ui.router'
-])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
-    // set up the states
-    $stateProvider
-    .state('settings.admin', {
-        url: '/admin',
-        templateUrl: '/settings/admin.html',
-        onEnter: AclRoute.checkAccess('admin_page'),
-        metaTags: {
-            title: 'Admin panel'
-        }
-    });
-}]);
+import IgniteAdminData from './admin/Admin.data';
+import IgniteActivitiesData from './activities/Activities.data';
+
+angular.module('ignite-console.core', [])
+    .service('IgniteAdminData', IgniteAdminData)
+    .service('IgniteActivitiesData', IgniteActivitiesData);

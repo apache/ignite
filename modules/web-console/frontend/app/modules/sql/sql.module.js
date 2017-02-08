@@ -30,7 +30,7 @@ angular.module('ignite-console.sql', [
             // set up the states
             $stateProvider
                 .state('base.sql', {
-                    url: '/sql',
+                    url: '/queries',
                     abstract: true,
                     template: '<ui-view></ui-view>'
                 })
