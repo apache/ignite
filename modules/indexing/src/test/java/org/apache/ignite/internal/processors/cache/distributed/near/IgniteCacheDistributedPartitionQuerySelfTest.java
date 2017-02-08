@@ -446,10 +446,29 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             assertEquals("Incorrect partition", parts[0], affinity.partition(row.get(0)));
     }
 
-    /** Tests query within region. */
-//    public void testDistributedJoinQuery() {
-//        doTestDistributedJoinQuery(grid(0));
-//    }
+    /** Tests distributed query over subset of partitions. */
+    public void testDistributedJoinQuery() {
+        IgniteCache<ClientKey, Client> cl = grid("client").cache("cl");
+
+        int regionId = 1;
+        List<Integer> range = REGION_TO_PART_MAP.get(regionId);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, pa._VAL from " +
+                "\"cl\".Client cl, \"pa\".Integer pa where cl.passport=pa._KEY");
+
+        qry.setPartitions(createRange(range.get(0), range.get(1)));
+        qry.setDistributedJoins(true);
+
+        try {
+            cl.query(qry).getAll();
+            fail();
+        } catch(Exception e) {
+            String error = e.getMessage().toLowerCase();
+            assertTrue(error.contains("partitions"));
+            assertTrue(error.contains("distributed join"));
+            assertTrue(error.contains("not supported"));
+        }
+    }
 
     /**
      * @param orig Originator.
@@ -567,38 +586,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             // Query must produce only results from single region.
             for (List<?> row : rows)
                 assertEquals("Region id", regionId, ((Integer)row.get(4)).intValue());
-        }
-    }
-
-    /**
-     * @param orig Originator.
-     */
-    private void doTestDistributedJoinQuery(Ignite orig) {
-        IgniteCache<ClientKey, Client> cl = orig.cache("cl");
-
-        for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
-            log().info("Running test queries for region " + regionId);
-
-            List<Integer> range = REGION_TO_PART_MAP.get(regionId);
-
-            SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, pa._VAL from " +
-                "\"cl\".Client cl, \"pa\".Integer pa where cl.passport=pa._KEY");
-
-            qry.setPartitions(createRange(range.get(0), range.get(1)));
-            qry.setDistributedJoins(true);
-
-            List<List<?>> rows = cl.query(qry).getAll();
-
-            int expRegionCnt = regionId == 5 ? 0 : PARTS_PER_REGION[regionId - 1] * CLIENTS_PER_PARTITION;
-
-            assertEquals("Clients with deposits", expRegionCnt * DEPOSITS_PER_CLIENT, rows.size());
-
-            // Query must produce only results from single region.
-            for (List<?> row : rows) {
-                assertEquals("Valid passport for a client", regionId, ((Integer)row.get(4)).intValue());
-
-                assertEquals("Valid region for a client", regionId, ((ClientKey)row.get(0)).regionId);
-            }
         }
     }
 
