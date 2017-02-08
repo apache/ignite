@@ -163,9 +163,12 @@ public class QueryIndex implements Serializable {
      * Sets index name.
      *
      * @param name Index name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public QueryIndex setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -181,9 +184,12 @@ public class QueryIndex implements Serializable {
      * Sets fields included in the index.
      *
      * @param fields Collection of index fields.
+     * @return {@code this} for chaining.
      */
-    public void setFields(LinkedHashMap<String, Boolean> fields) {
+    public QueryIndex setFields(LinkedHashMap<String, Boolean> fields) {
         this.fields = fields;
+
+        return this;
     }
 
     /**
@@ -199,12 +205,15 @@ public class QueryIndex implements Serializable {
      *
      * @param fields Collection of fields.
      * @param asc Ascending flag.
+     * @return {@code this} for chaining.
      */
-    public void setFieldNames(Collection<String> fields, boolean asc) {
+    public QueryIndex setFieldNames(Collection<String> fields, boolean asc) {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
             this.fields.put(field, asc);
+
+        return this;
     }
 
     /**
@@ -220,8 +229,11 @@ public class QueryIndex implements Serializable {
      * Sets index type.
      *
      * @param type Index type.
+     * @return {@code this} for chaining.
      */
-    public void setIndexType(QueryIndexType type) {
+    public QueryIndex setIndexType(QueryIndexType type) {
         this.type = type;
+
+        return this;
     }
 }
