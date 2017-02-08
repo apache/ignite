@@ -116,58 +116,8 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     }
 
     /** {@inheritDoc */
-    @Override public Vector divide(double x) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
     @Override public Vector like(int crd) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector minus(Vector vec) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector normalize() {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector normalize(double power) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector logNormalize() {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector logNormalize(double power) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector plus(double x) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector plus(Vector vec) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector times(double x) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Vector times(Vector x) {
-        return null; // TODO
+        return new DenseLocalOnHeapVector(crd);
     }
 
     /** {@inheritDoc */

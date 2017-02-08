@@ -293,7 +293,7 @@ public interface Vector {
      * @param power The power to use.
      * @see #normalize(double)
      */
-    double norm(double power);
+    double kNorm(double power);
 
     /**
      * Gets minimal element in this vector.
@@ -382,11 +382,11 @@ public interface Vector {
     /**
      * Gets a new vector that is an element-wie product of this vector and the argument.
      *
-     * @param x Vector to multiply by.
+     * @param vec Vector to multiply by.
      * @return New vector.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
-    Vector times(Vector x);
+    Vector times(Vector vec);
 
     /**
      * 

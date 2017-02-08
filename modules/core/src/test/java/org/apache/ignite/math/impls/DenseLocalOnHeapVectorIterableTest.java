@@ -49,13 +49,13 @@ public class DenseLocalOnHeapVectorIterableTest {
                 for (Vector.Element e : v.all()) {
                     int actualIdx = e.index();
 
-                    assertEquals("unexpected index for " + desc,
+                    assertEquals("Unexpected index for " + desc,
                         expIdx, actualIdx);
 
                     expIdx++;
                 }
 
-                assertEquals("unexpected amount of elements for " + desc,
+                assertEquals("Unexpected amount of elements for " + desc,
                     expIdx, v.size());
             }
         );
@@ -90,7 +90,7 @@ public class DenseLocalOnHeapVectorIterableTest {
             expECaught = true;
         }
 
-        assertTrue("expected exception missed for size " + expSize + ", shallow copy " + shallowCp,
+        assertTrue("Expected exception missed for size " + expSize + ", shallow copy " + shallowCp,
             expECaught);
     }
 
@@ -108,7 +108,7 @@ public class DenseLocalOnHeapVectorIterableTest {
             nonZeroesEvenData[idx] = odd ? 0 : 1;
         }
 
-        assertTrue("arrays failed to initialize",
+        assertTrue("Arrays failed to initialize.",
             !isZero(nonZeroesEvenData[0])
                 && isZero(nonZeroesEvenData[1])
                 && isZero(nonZeroesOddData[0])
@@ -117,13 +117,13 @@ public class DenseLocalOnHeapVectorIterableTest {
         final DenseLocalOnHeapVector nonZeroesEvenVec = new DenseLocalOnHeapVector(nonZeroesEvenData),
             nonZeroesOddVec = new DenseLocalOnHeapVector(nonZeroesOddData);
 
-        assertTrue("vectors failed to initialize",
+        assertTrue("Vectors failed to initialize.",
             !isZero(nonZeroesEvenVec.getElement(0).get())
                 && isZero(nonZeroesEvenVec.getElement(1).get())
                 && isZero(nonZeroesOddVec.getElement(0).get())
                 && !isZero(nonZeroesOddVec.getElement(1).get()));
 
-        assertTrue("iterator(s) failed to start",
+        assertTrue("Iterator(s) failed to start.",
             nonZeroesEvenVec.nonZeroes().iterator().next() != null
                 && nonZeroesOddVec.nonZeroes().iterator().next() != null);
 
@@ -136,18 +136,18 @@ public class DenseLocalOnHeapVectorIterableTest {
 
             final double val = e.get();
 
-            assertTrue("not an even index " + idx + ", for value " + val, !odd);
+            assertTrue("Not an even index " + idx + ", for value " + val, !odd);
 
-            assertTrue("zero value " + val + " at even index " + idx, !isZero(val));
+            assertTrue("Zero value " + val + " at even index " + idx, !isZero(val));
 
             nonZeroesActual++;
         }
 
         final int nonZeroesOddExp = (size + 1) / 2;
 
-        assertEquals("unexpected num of iterated odd non-zeroes", nonZeroesOddExp, nonZeroesActual);
+        assertEquals("Unexpected num of iterated odd non-zeroes.", nonZeroesOddExp, nonZeroesActual);
 
-        assertEquals("unexpected nonZeroElements of odd", nonZeroesOddExp, nonZeroesEvenVec.nonZeroElements());
+        assertEquals("Unexpected nonZeroElements of odd.", nonZeroesOddExp, nonZeroesEvenVec.nonZeroElements());
 
         nonZeroesActual = 0;
 
@@ -158,18 +158,18 @@ public class DenseLocalOnHeapVectorIterableTest {
 
             final double val = e.get();
 
-            assertTrue("not an odd index " + idx + ", for value " + val, odd);
+            assertTrue("Not an odd index " + idx + ", for value " + val, odd);
 
-            assertTrue("zero value " + val + " at even index " + idx, !isZero(val));
+            assertTrue("Zero value " + val + " at even index " + idx, !isZero(val));
 
             nonZeroesActual++;
         }
 
         final int nonZeroesEvenExp = size / 2;
 
-        assertEquals("unexpected num of iterated even non-zeroes", nonZeroesEvenExp, nonZeroesActual);
+        assertEquals("Unexpected num of iterated even non-zeroes", nonZeroesEvenExp, nonZeroesActual);
 
-        assertEquals("unexpected nonZeroElements of even", nonZeroesEvenExp, nonZeroesOddVec.nonZeroElements());
+        assertEquals("Unexpected nonZeroElements of even", nonZeroesEvenExp, nonZeroesOddVec.nonZeroElements());
     }
 
     /** */ @Test
@@ -184,10 +184,10 @@ public class DenseLocalOnHeapVectorIterableTest {
                 for (Vector.Element e : vec.nonZeroes()) {
                     numZeroesActual--;
 
-                    assertTrue("unexpected zero at index " + e.index(), !isZero(e.get()));
+                    assertTrue("Unexpected zero at index " + e.index(), !isZero(e.get()));
                 }
 
-                assertEquals("unexpected num zeroes at size " + size, (int)numZeroes, numZeroesActual);
+                assertEquals("Unexpected num zeroes at size " + size, (int)numZeroes, numZeroesActual);
             }));
     }
 
@@ -211,7 +211,7 @@ public class DenseLocalOnHeapVectorIterableTest {
     public void nonZeroElementsTest() {
         consumeSampleVectors(
             v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
-                -> assertEquals("unexpected num zeroes at size " + vec.size(),
+                -> assertEquals("Unexpected num zeroes at size " + vec.size(),
                 (int)numZeroes, vec.size() - vec.nonZeroElements())));
     }
 
@@ -263,7 +263,7 @@ public class DenseLocalOnHeapVectorIterableTest {
         for (Vector.Element e : sample.all())
             e.set(1 + idx++);
 
-        assertEquals("not all filled with non-zeroes", idx, sample.size());
+        assertEquals("Not all filled with non-zeroes", idx, sample.size());
     }
 
     /** */

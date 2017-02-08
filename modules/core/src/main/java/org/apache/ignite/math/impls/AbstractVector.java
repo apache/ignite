@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
@@ -72,13 +71,12 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @param idx index
      */
     private void checkIndex(int idx) {
-        if ( idx < 0 || idx >= sto.size())
+        if (idx < 0 || idx >= sto.size())
             throw new IndexException(idx);
     }
 
     /**
      * {@inheritDoc}
-     * @throws IgniteIllegalStateException Throw if storage is null
      */
     @Override public double get(int idx) {
         checkIndex(idx);
@@ -110,8 +108,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     /** {@inheritDoc */
     @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
-        if (vec.size() != size())
-            throw new CardinalityException(size(), vec.size());
+        checkCardinality(vec);
 
         int len = sto.size();
 
@@ -294,8 +291,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public double foldMap(Vector vec, BiFunction<Double, Double, Double> foldFun, BiFunction<Double, Double, Double> combFun) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(sto.size(), vec.size());
+        checkCardinality(vec);
 
         double result = 0;
         int len = sto.size();
@@ -304,10 +300,6 @@ public abstract class AbstractVector implements Vector, Externalizable {
             result = foldFun.apply(result, combFun.apply(sto.get(i), vec.getX(i)));
 
         return result;
-    }
-
-    @Override public double norm(double power) {
-        return 0; // TODO
     }
 
     @Override
@@ -378,8 +370,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public Vector assign(double[] vals) {
-        if (vals.length != sto.size())
-            throw new CardinalityException(sto.size(), vals.length);
+        checkCardinality(vals);
 
         if (sto.isArrayBased())
             System.arraycopy(vals, 0, sto.data(), 0, vals.length);
@@ -395,10 +386,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public Vector assign(Vector vec) {
-        assert vec != null;
-
-        if (vec.size() != sto.size())
-            throw new CardinalityException(sto.size(), vec.size());
+        checkCardinality(vec);
 
         for (Vector.Element x : vec.all())
             sto.set(x.index(), x.get());
@@ -488,8 +476,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public double dot(Vector vec) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(sto.size(), vec.size());
+        checkCardinality(vec);
 
         double sum = 0.0;
         int len = sto.size();
@@ -507,8 +494,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
 
     @Override
     public double getDistanceSquared(Vector vec) {
-        if (vec.size() != sto.size())
-            throw new CardinalityException(size(), vec.size());
+        checkCardinality(vec);
 
         double thisLenSq = getLengthSquared();
         double thatLenSq = vec.getLengthSquared();
@@ -520,6 +506,131 @@ public abstract class AbstractVector implements Vector, Externalizable {
             return Math.max(distEst, 0);
         else
             return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED);
+    }
+
+    private void checkCardinality(Vector vec) {
+        if (vec.size() != sto.size())
+            throw new CardinalityException(size(), vec.size());
+    }
+
+    private void checkCardinality(double[] vec) {
+        if (vec.length != sto.size())
+            throw new CardinalityException(size(), vec.length);
+    }
+
+    @Override
+    public Vector minus(Vector vec) {
+        checkCardinality(vec);
+
+        Vector copy = copy();
+
+        copy.map(vec, Functions.MINUS);
+
+        return copy;
+    }
+
+    @Override
+    public Vector plus(double x) {
+        Vector copy = copy();
+
+        if (x != 0.0)
+            copy.map(Functions.plus(x));
+
+        return copy;
+    }
+
+    @Override
+    public Vector divide(double x) {
+        Vector copy = copy();
+
+        if (x != 1.0)
+            for (Element element : copy.nonZeroes())
+                element.set(element.get() / x);
+
+        return copy;
+    }
+
+    @Override
+    public Vector times(double x) {
+        if (x == 0.0)
+            return like(size());
+        else
+            return copy().map(Functions.mult(x));
+    }
+
+    @Override
+    public Vector times(Vector vec) {
+        checkCardinality(vec);
+
+        return copy().map(vec, Functions.MULT);
+    }
+
+    @Override
+    public Vector plus(Vector vec) {
+        checkCardinality(vec);
+
+        Vector copy = copy();
+
+        copy.map(vec, Functions.PLUS);
+
+        return copy;
+    }
+
+    @Override
+    public Vector logNormalize() {
+        return logNormalize(2.0, Math.sqrt(getLengthSquared()));
+    }
+
+    @Override
+    public Vector logNormalize(double power) {
+        return logNormalize(power, kNorm(power));
+    }
+
+    /**
+     *
+     * @param power
+     * @param normLen
+     * @return
+     */
+    private Vector logNormalize(double power, double normLen) {
+        assert Double.isInfinite(power) || power <= 1.0;
+
+        double denominator = normLen * Math.log(power);
+
+        Vector copy = copy();
+
+        for (Element element : copy.nonZeroes())
+            element.set(Math.log1p(element.get()) / denominator);
+
+        return copy;
+    }
+
+    @Override
+    public double kNorm(double power) {
+        assert power >= 0.0;
+
+        // Special cases.
+        if (Double.isInfinite(power))
+            return foldMap(Math::max, Math::abs);
+        else if (power == 2.0)
+            return Math.sqrt(getLengthSquared());
+        else if (power == 1.0)
+            return foldMap(Functions.PLUS, Math::abs);
+        else if (power == 0.0)
+            return nonZeroElements();
+        else
+            // Default case.
+            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power)), 1.0 / power);
+    }
+
+    @Override
+    public Vector normalize() {
+        return divide(Math.sqrt(getLengthSquared()));
+    }
+
+    @Override
+    public Vector normalize(double power) {
+        return divide(kNorm(power));
     }
 
     /**
