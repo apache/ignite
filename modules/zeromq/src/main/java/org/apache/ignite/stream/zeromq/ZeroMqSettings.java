@@ -33,14 +33,18 @@ public class ZeroMqSettings {
     /** */
     private String addr;
 
+    /** */
+    private byte[] topic;
+
     /**
      * @param ioThreads Threads on context.
      * @param type Socket type.
      * @param addr Address to connect zmq.
      */
-    public ZeroMqSettings(int ioThreads, int type, @NotNull String addr) {
+    public ZeroMqSettings(int ioThreads, int type, @NotNull String addr, byte[] topic) {
         this.ioThreads = ioThreads;
         this.addr = addr;
+        this.topic = topic;
 
         if (ZeroMqTypeSocket.check(type))
             this.type = type;
@@ -67,5 +71,12 @@ public class ZeroMqSettings {
      */
     @NotNull public String getAddr() {
         return addr;
+    }
+
+    /**
+     * @return Subscribe topics.
+     */
+    public byte[] getTopic() {
+        return topic;
     }
 }

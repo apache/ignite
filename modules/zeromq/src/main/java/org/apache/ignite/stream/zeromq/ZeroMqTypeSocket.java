@@ -4,8 +4,7 @@ import org.zeromq.ZMQ;
 
 public enum ZeroMqTypeSocket {
     PAIR(ZMQ.PAIR),
-    // TODO
-    // SUB(ZMQ.SUB),
+    SUB(ZMQ.SUB),
     PULL(ZMQ.PULL);
 
     private int type;

@@ -46,7 +46,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10_000;
+        return 200_000;
     }
 
     /** {@inheritDoc} */
@@ -62,22 +62,61 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
-    public void testZeroMq() throws Exception {
+    public void testZeroMqPairSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer);
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR.getType(), ADDR, null);
+
+            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
             // TODO more than 1 thread crash, socket sharing between threads
             streamer.setThreadsCount(1);
 
-            executeStreamer(streamer);
+            executeStreamer(streamer, ZMQ.PAIR, null);
+        }
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    public void testZeroMqSubSocket() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
+            byte[] topic = "test".getBytes();
+
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB.getType(), ADDR, topic);
+
+            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
+
+            // TODO more than 1 thread crash, socket sharing between threads
+            streamer.setThreadsCount(1);
+
+            executeStreamer(streamer, ZMQ.PUB, topic);
+        }
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    public void testZeroMqPullSocket() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PULL.getType(), ADDR, null);
+
+            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
+
+            // TODO more than 1 thread crash, socket sharing between threads
+            streamer.setThreadsCount(1);
+
+            executeStreamer(streamer, ZMQ.PUSH, null);
         }
     }
 
     /**
      * @param streamer ZeroMQ streamer.
+     * @param clientSocket .
+     * @param topic .
      * @throws InterruptedException Test exception.
      */
-    private void executeStreamer(IgniteZeroMqStreamer streamer) throws InterruptedException {
+    private void executeStreamer(IgniteZeroMqStreamer streamer, int clientSocket,
+        byte[] topic) throws InterruptedException {
         // Checking streaming.
 
         CacheListener listener = subscribeToPutEvents();
@@ -93,11 +132,11 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        startZeroMqClient();
+        startZeroMqClient(clientSocket, topic);
 
         CountDownLatch latch = listener.getLatch();
 
-        latch.await();
+//        latch.await();
 
         unsubscribeToPutEvents(listener);
 
@@ -119,19 +158,22 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         String cachedValue = cache.get(testId);
 
+        System.out.println(cache.size());
+
         // Tweet successfully put to cache.
         assertTrue(cachedValue != null && cachedValue.equals(String.valueOf(testId)));
 
         assertTrue(cache.size() == CACHE_ENTRY_COUNT);
+
+        cache.clear();
     }
 
     /**
      * @param dataStreamer Ignite Data Streamer.
-     * @return ZeroMQ Streamer.
+     * @returnd ZeroMQ Streamer.
      */
-    private IgniteZeroMqStreamerImpl newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer) {
-        ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR.getType(), ADDR);
-
+    private IgniteZeroMqStreamerImpl newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer,
+        ZeroMqSettings zeroMqSettings) {
         IgniteZeroMqStreamerImpl streamer = new IgniteZeroMqStreamerImpl(zeroMqSettings);
 
         streamer.setIgnite(grid());
@@ -145,14 +187,25 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
     /**
      * Start ZeroMQ client for testing.
+     *
+     * @param clientSocket
+     * @param topic
      */
-    private void startZeroMqClient() throws InterruptedException {
-        try(ZMQ.Context context = ZMQ.context(1);
-            ZMQ.Socket socket = context.socket(ZMQ.PAIR)) {
+    private void startZeroMqClient(int clientSocket, byte[] topic) throws InterruptedException {
+        try (ZMQ.Context context = ZMQ.context(1);
+             ZMQ.Socket socket = context.socket(clientSocket)) {
+
             socket.bind(ADDR);
+
+            if (ZMQ.PUB == clientSocket)
+                Thread.sleep(100);
+
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
+                if (ZMQ.PUB == clientSocket)
+                    socket.sendMore(topic);
                 socket.send(String.valueOf(i).getBytes());
             }
+
             socket.close();
         }
     }

@@ -71,6 +71,9 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
         socket = ctx.socket(zeroMqSettings.getType());
         socket.connect(zeroMqSettings.getAddr());
 
+        if (ZeroMqTypeSocket.SUB.getType() == zeroMqSettings.getType())
+            socket.subscribe(zeroMqSettings.getTopic());
+
         zeroMqExSrv = Executors.newFixedThreadPool(threadsCount);
 
         for (int i = 0; i < threadsCount; i++) {
@@ -78,6 +81,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
                 @Override
                 public Boolean call() {
                     while (true) {
+                        if (ZeroMqTypeSocket.SUB.getType() == zeroMqSettings.getType())
+                            socket.recv();
                         addMessage(socket.recv());
                     }
                 }
