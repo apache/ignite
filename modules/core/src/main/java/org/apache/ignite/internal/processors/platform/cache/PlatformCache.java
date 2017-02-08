@@ -383,7 +383,9 @@ public class PlatformCache extends PlatformAbstractTarget {
         assert exts != null;
 
         rawCache = cache;
+
         IgniteCache binCache = cache.withKeepBinary();
+
         this.cache = (IgniteCacheProxy)binCache;
         this.keepBinary = keepBinary;
         this.exts = exts;
@@ -552,7 +554,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_PUT_ASYNC: {
                     readAndListenFuture(reader,
-                            cache.putAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.putAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
                 }
@@ -638,7 +640,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_REMOVE_BOOL_ASYNC:
                     readAndListenFuture(reader,
-                            cache.removeAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.removeAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
 
@@ -652,13 +654,13 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_GET_AND_PUT_ASYNC:
                     readAndListenFuture(reader,
-                            cache.getAndPutAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.getAndPutAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
 
                 case OP_GET_AND_PUT_IF_ABSENT_ASYNC:
                     readAndListenFuture(reader,
-                            cache.getAndPutIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.getAndPutIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
 
@@ -669,20 +671,20 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_GET_AND_REPLACE_ASYNC:
                     readAndListenFuture(reader,
-                            cache.getAndReplaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.getAndReplaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
 
                 case OP_REPLACE_2_ASYNC:
                     readAndListenFuture(reader,
-                            cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
 
                 case OP_REPLACE_3_ASYNC:
                     readAndListenFuture(reader,
-                            cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached(),
-                                    reader.readObjectDetached()));
+                        cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached(),
+                            reader.readObjectDetached()));
 
                     return TRUE;
 
@@ -708,7 +710,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_PUT_IF_ABSENT_ASYNC:
                     readAndListenFuture(reader,
-                            cache.putIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
+                        cache.putIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
                     return TRUE;
 
@@ -850,6 +852,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         if (pred != null)
             filter = platformCtx.createCacheEntryFilter(pred, 0);
+
         return filter;
     }
 
@@ -868,6 +871,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             for (int i = 0; i < argCnt; i++)
                 args[i] = reader.readObjectDetached();
         }
+
         return args;
     }
 

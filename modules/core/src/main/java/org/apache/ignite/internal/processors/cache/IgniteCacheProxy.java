@@ -408,8 +408,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 return (IgniteFuture<Void>)createFuture(ctx.cache().isLocal() ?
-                    ctx.cache().localLoadCacheAsync(p, args)
-                    : ctx.cache().globalLoadCacheAsync(p, args));
+                    ctx.cache().localLoadCacheAsync(p, args) : ctx.cache().globalLoadCacheAsync(p, args));
             }
             finally {
                 onLeave(gate, prev);
