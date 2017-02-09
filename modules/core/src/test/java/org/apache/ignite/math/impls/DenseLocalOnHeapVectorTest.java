@@ -78,8 +78,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void minusTest() { // TODO write test
-
+    public void minusTest() {
+        operationVectorTest((operand1, operand2) -> operand1 - operand2, Vector::minus);
     }
 
     /** */ @Test
@@ -108,8 +108,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void plusVectorTest() { // TODO write test
-
+    public void plusVectorTest() {
+        operationVectorTest((operand1, operand2) -> operand1 + operand2, Vector::plus);
     }
 
     /** */ @Test
@@ -118,8 +118,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void timesVectorTest() { // TODO write test
-
+    public void timesVectorTest() {
+        operationVectorTest((operand1, operand2) -> operand1 * operand2, Vector::times);
     }
 
     /** */ @Test
@@ -160,6 +160,27 @@ public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void guidTest() { // TODO write test
 
+    }
+
+    /** */
+    private void operationVectorTest(BiFunction<Double, Double, Double> operation,
+        BiFunction<Vector, Vector, Vector> vecOperation) {
+        consumeSampleVectors(v -> {
+            // TODO find out if more elaborate testing scenario is needed or it's okay as is.
+
+            final int size = v.size();
+
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref);
+
+            final Vector operand = v.copy();
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = operation.apply(ref[idx], ref[idx]);
+
+            checker.assertCloseEnough(vecOperation.apply(v, operand), ref);
+        });
     }
 
     /** */
