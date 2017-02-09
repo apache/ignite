@@ -23,9 +23,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.*;
 
 import static org.junit.Assert.*;
 
@@ -70,24 +68,13 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void divideTest() {
-        for (double divisor : new double[] {0, 0.1, 1, 2, 10})
-            consumeSampleVectors(v -> {
-                final int size = v.size();
-
-                final double[] ref = new double[size];
-
-                final ElementsChecker checker = new ElementsChecker(v, ref);
-
-                for (int idx = 0; idx < size; idx++)
-                    ref[idx] /= divisor;
-
-                checker.assertCloseEnough(v.divide(divisor), ref);
-            });
+        operationTest((val, operand) -> val / operand, Vector::divide);
     }
 
     /** */ @Test
-    public void likeTest() { // TODO write test
-
+    public void likeTest() {
+        for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
+            consumeSampleVectors(v -> assertEquals("Expect size equal to cardinality.", card, v.like(card).size()));
     }
 
     /** */ @Test
@@ -126,8 +113,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void plus1Test() { // TODO write test
-
+    public void plus1Test() {
+        operationTest((val, operand) -> val + operand, Vector::plus);
     }
 
     /** */ @Test
@@ -136,8 +123,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void times1Test() { // TODO write test
-
+    public void times1Test() {
+        operationTest((val, operand) -> val * operand, Vector::times);
     }
 
     /** */ @Test
@@ -173,6 +160,24 @@ public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void guidTest() { // TODO write test
 
+    }
+
+    /** */
+    private void operationTest(BiFunction<Double, Double, Double> operation,
+        BiFunction<Vector, Double, Vector> vecOperation) {
+        for (double value : new double[] {0, 0.1, 1, 2, 10})
+            consumeSampleVectors(v -> {
+                final int size = v.size();
+
+                final double[] ref = new double[size];
+
+                final ElementsChecker checker = new ElementsChecker(v, ref);
+
+                for (int idx = 0; idx < size; idx++)
+                    ref[idx] = operation.apply(ref[idx], value);
+
+                checker.assertCloseEnough(vecOperation.apply(v, value), ref);
+            });
     }
 
     /** */
