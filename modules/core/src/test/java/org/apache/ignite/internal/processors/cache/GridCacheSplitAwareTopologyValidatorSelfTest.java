@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,112 +40,209 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.jsr166.ConcurrentHashMap8;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Multithreaded reduce query tests with lots of data.
+ * Tests complex scenario with topology validator.
  */
-public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCacheAbstractSelfTest {
+public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_NODE_ATTR = "dc";
 
     /** */
-    private static final String SPLIT_RESOLVED_NODE_ATTR = "split.resolved";
+    private static final String RESOLVED_MARKER_NODE_ATTR = "split.resolved";
 
     /** */
     private static final int GRID_CNT = 4;
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
-    }
+    /** */
+    private static final int RESOLVER_GRID_IDX = GRID_CNT;
 
-    private String dataCenter;
+    /** */
+    private static final int EMPTY_GRID_IDX = GRID_CNT + 1;
 
-    private TopologyValidator validator;
+    /** */
+    private SplitAwareTopologyValidator validator = new SplitAwareTopologyValidator();
 
-    private int cnt;
+    /** */
+    private static CountDownLatch initLatch = new CountDownLatch(GRID_CNT);
+
+    /** */
+    private static CountDownLatch splitCntLatch = new CountDownLatch(GRID_CNT + 1);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setConsistentId(getTestGridIndex(gridName));
+        int idx = getTestGridIndex(gridName);
 
-        cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, getTestGridIndex(gridName)%2));
+        cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, idx % 2));
+
+        if (idx != EMPTY_GRID_IDX) {
+            CacheConfiguration ccfg = new CacheConfiguration();
+
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setBackups(0);
+
+            if (idx == RESOLVER_GRID_IDX) {
+                cfg.setClientMode(true);
+
+                cfg.setUserAttributes(F.asMap(RESOLVED_MARKER_NODE_ATTR, "true"));
+            }
+            else
+                ccfg.setTopologyValidator(validator);
+
+            cfg.setCacheConfiguration(ccfg);
+        }
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
-        cfg.setCacheMode(PARTITIONED);
-        cfg.setBackups(1);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setTopologyValidator(new SplitAwareTopologyValidator(getTestGridName(0)));
+        startGridsMultiThreaded(GRID_CNT);
+    }
 
-        if (getTestGridIndex(gridName) == 0)
-            validator = cfg.getTopologyValidator();
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
-        return cfg;
+        stopAllGrids();
     }
 
     /**
      * Tests topology split scenario.
      * @throws Exception
      */
-    public void testSplitSimulation() throws Exception {
-        putOp();
+    public void testTopologyValidator() throws Exception {
+        assertTrue(initLatch.await(10, TimeUnit.SECONDS));
+
+        // Tests what each node is able to do puts.
+        tryPut(0, 1, 2, 3);
+
+        grid(0).cache(null).clear();
+
+        stopGrid(1);
+
+        stopGrid(3);
+
+        awaitPartitionMapExchange();
+
+        try {
+            tryPut(0, 2);
+
+            fail();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        resolveSplit();
+
+        tryPut(0, 2);
+
+        grid(0).cache(null).clear();
+
+        startGrid(EMPTY_GRID_IDX);
+
+        awaitPartitionMapExchange();
+
+        tryPut(EMPTY_GRID_IDX);
+
+        stopGrid(EMPTY_GRID_IDX);
+
+        awaitPartitionMapExchange();
+
+        try {
+            tryPut(0, 2);
+
+            fail();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        resolveSplit();
+
+        tryPut(0, 2);
+
+        assertTrue(splitCntLatch.await(10, TimeUnit.SECONDS));
     }
 
-    /** */
-    private void putOp() {
-        jcache().put(String.valueOf(cnt), cnt);
+    /**
+     * Resolves split by client node join.
+     */
+    private void resolveSplit() throws Exception {
+        startGrid(RESOLVER_GRID_IDX);
 
-        cnt++;
+        stopGrid(RESOLVER_GRID_IDX);
+    }
 
-        assertEquals("Size", cnt, jcache().size());
+    /**
+     * @param grids Grids to test.
+     */
+    private void tryPut(int... grids) {
+        for (int i = 0; i < grids.length; i++) {
+            int grid = grids[i];
+
+            for (int k = 0; k < 100; k++) {
+                boolean primary = grid(grid).affinity(null).isPrimary(grid(grid).localNode(), k);
+
+                if (primary) {
+                    log().info("Put " + k + " to node " + grid(grid).localNode().id().toString());
+
+                    IgniteCache<Object, Object> jcache = jcache(grid);
+
+                    jcache.put(k, k);
+
+                    assertEquals(1, jcache(grid).localSize());
+
+                    break;
+                }
+            }
+        }
     }
 
     /**
      * Prevents grid from performing operations if only nodes from single data center are left in topology.
      */
-    private static class SplitAwareTopologyValidator implements TopologyValidator, LifecycleAware {
+    private static class SplitAwareTopologyValidator implements TopologyValidator, LifecycleAware, Externalizable {
         @IgniteInstanceResource
         private Ignite ignite;
 
         @LoggerResource
-        private IgniteLogger logger;
-
-        private String name;
+        private IgniteLogger log;
 
         /** */
-        private ConcurrentMap<Object, Long> markerVersions = new ConcurrentHashMap8<>();
+        private transient boolean resolved = false;
 
         /** */
-        private long lastTopVer;
-
-        /** */
-        public SplitAwareTopologyValidator(String name) {
-            this.name = name;
+        public SplitAwareTopologyValidator() {
         }
 
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
-            lastTopVer = ignite.cluster().topologyVersion();
+            if (hasSplit(nodes)) {
+                if (!resolved) {
+                    log.info("Grid segmentation is detected, switching to inoperative state.");
 
-            if (ignite.name().equals(name))
-                logger.info("Nodes: " + nodes.size() + " topVer: " + lastTopVer);
+                    splitCntLatch.countDown();
+                }
 
-            boolean hasSplit = true;
+                return resolved;
+            }
+            else
+                resolved = false;
 
-            ClusterNode recovered = null;
+            return true;
+        }
 
+        /** */
+        private boolean hasSplit(Collection<ClusterNode> nodes) {
             ClusterNode prev = null;
 
             for (ClusterNode node : nodes) {
@@ -147,46 +251,54 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCacheAbstr
 
                 if (prev != null &&
                     !prev.attribute(DC_NODE_ATTR).equals(node.attribute(DC_NODE_ATTR)))
-                    hasSplit = false;
+                    return false;
 
                 prev = node;
-
-                if (node.attribute(SPLIT_RESOLVED_NODE_ATTR) != null)
-                    recovered = node;
-            }
-
-            if (hasSplit && recovered != null) {
-                logger.error("Segmentation validation detected a marker node, " +
-                    "but topology still doesn't contain nodes from other DC. Grid operations are disabled!");
-
-                return false;
-            }
-
-            if (recovered != null) {
-                Long recVer = markerVersions.get(recovered);
-
-                if (recVer == null)
-                    recVer = lastTopVer;
-
-                markerVersions.put(recovered.consistentId(), lastTopVer);
-
-                if (lastTopVer <= recVer)
-                    return false;
             }
 
             return true;
         }
 
         @Override public void start() throws IgniteException {
+            if (ignite.cluster().localNode().isClient())
+                return;
+
+            initLatch.countDown();
+
             ignite.events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event event) {
-                    return false;
+                @Override public boolean apply(Event evt) {
+                    ClusterNode node = ((DiscoveryEvent)evt).eventNode();
+
+                    if (isMarkerNode(node))
+                        resolved = true;
+
+                    return true;
                 }
-            }, EventType.EVT_NODE_JOINED, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
+            }, EventType.EVT_NODE_JOINED);
+        }
+
+        /**
+         * @param node Node.
+         */
+        private boolean isMarkerNode(ClusterNode node) {
+            return node.isClient() && node.attribute(RESOLVED_MARKER_NODE_ATTR) != null;
         }
 
         @Override public void stop() throws IgniteException {
+        }
 
+        /** */
+        private enum State {
+            /** Marker node joins a topology. */
+            NODE_JOINED,
+            /** Marker node leaves a topology, triggering segment activation. */
+            NODE_REMOVED;
+        }
+
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+        }
+
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         }
     }
 }
