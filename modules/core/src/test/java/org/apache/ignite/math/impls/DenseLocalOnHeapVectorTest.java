@@ -55,7 +55,7 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void isSequentialAccessTest() {
-        alwaysTrueAttributeTest((denseLocalOnHeapVector) -> !denseLocalOnHeapVector.isSequentialAccess());
+        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isSequentialAccess);
     }
 
     /** */ @Test
