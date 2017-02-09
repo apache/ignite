@@ -211,7 +211,10 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
     /**
      * Prevents grid from performing operations if only nodes from single data center are left in topology.
      */
-    private static class SplitAwareTopologyValidator implements TopologyValidator, LifecycleAware, Externalizable {
+    private static class SplitAwareTopologyValidator implements TopologyValidator, LifecycleAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -221,12 +224,15 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         /** */
         private transient boolean resolved = false;
 
-        /** */
-        public SplitAwareTopologyValidator() {
-        }
-
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
+            if (!F.view(nodes, new IgnitePredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
+                    return node.attribute(DC_NODE_ATTR) == null;
+                }
+            }).isEmpty())
+                return false;
+
             if (hasSplit(nodes)) {
                 if (!resolved) {
                     log.info("Grid segmentation is detected, switching to inoperative state.");
@@ -286,11 +292,6 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         }
 
         @Override public void stop() throws IgniteException {
-        }
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-        }
-
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         }
     }
 }
