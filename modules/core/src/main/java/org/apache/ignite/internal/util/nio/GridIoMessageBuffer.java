@@ -17,15 +17,9 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import sun.nio.ch.DirectBuffer;
@@ -55,33 +49,7 @@ public class GridIoMessageBuffer implements Message {
     /** Topic ordinal number. */
     private final int topicOrdinal;
 
-    /**
-     * Head of a linked list with
-     * message chunks' bytes.
-     */
-    private Item head;
-
-    /**
-     * The linked list's tail to
-     * allow fast items adding.
-     */
-    private Item tail;
-
-    /** */
-    private MessageFactory factory;
-
-    /** */
-    private MessageReader reader;
-
-    /** */
-    private Marshaller marshaller;
-
-    /** */
-    private ClassLoader classLoader;
-
-
-    /** */
-    private GridIoMessage message;
+    private byte[] data;
 
     /**
      * @param plc Pool policy.
@@ -104,24 +72,21 @@ public class GridIoMessageBuffer implements Message {
      * @param len Chunk length.
      */
     void add(ByteBuffer buf, int len) {
+        int offset = 0;
 
-        Item item;
-
-        if (head == null) {
-            item = new Item(new byte[len]);
-            head = item;
-            tail = head;
-        }
-        else {
-            item = new Item(new byte[len]);
-            tail.next = item;
-            tail = tail.next;
+        if (data == null) {
+            data = new byte[len];
+        } else {
+            byte[] tmp = new byte[data.length + len];
+            System.arraycopy(data, 0, tmp, 0, data.length);
+            offset = data.length;
+            data = tmp;
         }
 
         byte[] bufArr = buf.isDirect() ? null : buf.array();
         long bufOff = buf.isDirect() ? ((DirectBuffer) buf).address() : BYTE_ARR_OFF;
 
-        GridUnsafe.copyMemory(bufArr, bufOff + buf.position(), item.data, BYTE_ARR_OFF, len);
+        GridUnsafe.copyMemory(bufArr, bufOff + buf.position(), data, BYTE_ARR_OFF + offset, len);
 
         buf.position(buf.position() + len);
     }
@@ -154,68 +119,8 @@ public class GridIoMessageBuffer implements Message {
         return topicOrdinal;
     }
 
-    /**
-     * Prepares the buffer for wrapped message unmarshalling.
-     * @param factory Message factory.
-     * @param reader Message reader.
-     * @param marshaller Marshaller.
-     * @param classLoader Used classloader.
-     */
-    public void prepare(
-            MessageFactory factory,
-            MessageReader reader,
-            Marshaller marshaller,
-            ClassLoader classLoader){
-        this.factory = factory;
-        this.reader = reader;
-        this.marshaller = marshaller;
-        this.classLoader = classLoader;
-    }
-
-    /**
-     * @return Unmarshalled wrapped message.
-     */
-    public GridIoMessage message(){
-        if(message == null){
-            reader.reset();
-
-            GridIoMessage msg = null;
-
-            Item item = head;
-            boolean finished = false;
-
-            while (!finished){
-                if(item == null)
-                    throw new IgniteException("Cannot unmarshall message.");
-
-                ByteBuffer buf = ByteBuffer.wrap(item.data);
-
-                item = item.next;
-
-                if(msg == null){
-                    msg = (GridIoMessage) factory.create(buf.get());
-                }
-
-                assert msg != null;
-
-                finished = msg.readFrom(buf, reader);
-            }
-
-            try {
-                if (msg.topic() == null) {
-                    int topicOrd = msg.topicOrdinal();
-
-                    msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                            U.unmarshal(marshaller, msg.topicBytes(), classLoader));
-                }
-            } catch (IgniteCheckedException e) {
-                throw new IgniteException("Cannot unmarshall message topic", e);
-            }
-
-            message = msg;
-        }
-
-        return message;
+    public byte[] data() {
+        return data;
     }
 
     /** {@inheritDoc} */
@@ -246,23 +151,5 @@ public class GridIoMessageBuffer implements Message {
     @Override
     public void onAckReceived() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Simple linked list item to
-     * hold message chunks.
-     */
-    private static class Item {
-        /** */
-        private final byte[] data;
-        /** */
-        private Item next;
-
-        /**
-         * @param data Message chunk.
-         */
-        private Item(byte[] data) {
-            this.data = data;
-        }
     }
 }

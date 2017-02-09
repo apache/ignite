@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -635,12 +636,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
 
-            msg.prepare(
-                    messageFactory(),
-                    formatter().reader(nodeId, messageFactory()),
-                    marsh,
-                    U.resolveClassLoader(ctx.config()));
-
             if (!started) {
                 lock.readLock().lock();
 
@@ -688,7 +683,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case IGFS_POOL:
                 {
                     if (msg.isOrdered())
-                        processOrderedMessage(nodeId, msg.message(), plc, msgC);
+                        processOrderedMessage(nodeId, unmarshall(nodeId, msg.data()), plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
 
@@ -703,7 +698,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             "[policy=" + plc + ']');
 
                     if (msg.isOrdered())
-                        processOrderedMessage(nodeId, msg.message(), plc, msgC);
+                        processOrderedMessage(nodeId, unmarshall(nodeId, msg.data()), plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
             }
@@ -713,6 +708,38 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         finally {
             busyLock.readUnlock();
+        }
+    }
+
+    private GridIoMessage unmarshall(UUID nodeId, byte[] msgBytes) {
+        GridIoMessage msg;
+
+        try {
+            ByteBuffer buf = ByteBuffer.wrap(msgBytes);
+
+            MessageFactory factory = messageFactory();
+            MessageReader reader = formatter().reader(nodeId, factory);
+
+            msg = (GridIoMessage) factory.create(buf.get());
+
+            assert msg != null;
+
+            boolean finished = msg.readFrom(buf, reader);
+
+            if(!finished)
+                throw new IgniteException("Cannot unmarshall message.");
+
+            if (msg.topic() == null) {
+                int topicOrd = msg.topicOrdinal();
+
+                msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
+                        U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
+            }
+
+            return msg;
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException("Cannot unmarshall message topic", e);
         }
     }
 
@@ -731,12 +758,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true);
 
-                    GridMessageListener lsnr = listenerGet0(msg.message().topic());
+                    GridIoMessage ioMsg = unmarshall(nodeId, msg.data());
+
+                    GridMessageListener lsnr = listenerGet0(ioMsg.topic());
 
                     if (lsnr == null)
                         return;
 
-                    Object obj = msg.message().message();
+                    Object obj = ioMsg.message();
 
                     assert obj != null;
 
@@ -780,7 +809,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true);
 
-                    processRegularMessage0(msg.message(), nodeId);
+                    GridIoMessage ioMsg = unmarshall(nodeId, msg.data());
+
+                    processRegularMessage0(ioMsg, nodeId);
                 }
                 finally {
                     threadProcessingMessage(false);
@@ -795,7 +826,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
-            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message().message();
+            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)unmarshall(nodeId, msg.data()).message();
 
             if (msg0.processFromNioThread()) {
                 c.run();
