@@ -254,9 +254,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (keyCls == null)
                         keyCls = Object.class;
 
-                    String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
+                    String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
                     desc.name(simpleValType);
+                    desc.tableName(qryEntity.getTableName());
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -473,7 +474,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
+    private void addTypeByName(CacheConfiguration<?, ?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
@@ -2242,6 +2243,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private String name;
 
+        /** */
+        private String tblName;
+
         /** Value field names and types with preserved order. */
         @GridToStringInclude
         private final Map<String, Class<?>> fields = new LinkedHashMap<>();
@@ -2307,6 +2311,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         void name(String name) {
             this.name = name;
+        }
+
+        /**
+         * Gets table name for type.
+         * @return Table name.
+         */
+        public String tableName() {
+            return tblName;
+        }
+
+        /**
+         * Sets table name for type.
+         *
+         * @param tblName Table name.
+         */
+        public void tableName(String tblName) {
+            this.tblName = tblName;
         }
 
         /** {@inheritDoc} */
