@@ -93,6 +93,7 @@ public class GridPerformanceSuggestions {
 
             perfs.clear();
         }
+
         U.quietAndInfo(log, "Refer to this page for more performance suggestions: " + SUGGESTIONS_LINK);
         U.quietAndInfo(log, "");
     }
