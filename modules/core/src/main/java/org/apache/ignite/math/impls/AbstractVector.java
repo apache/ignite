@@ -394,8 +394,11 @@ public abstract class AbstractVector implements Vector, Externalizable {
     public Vector assign(double[] vals) {
         checkCardinality(vals);
 
-        if (sto.isArrayBased())
+        if (sto.isArrayBased()) {
             System.arraycopy(vals, 0, sto.data(), 0, vals.length);
+
+            lenSq = 0.0;
+        }
         else {
             int len = sto.size();
 

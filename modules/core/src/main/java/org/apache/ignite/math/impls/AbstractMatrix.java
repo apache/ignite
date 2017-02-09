@@ -112,32 +112,83 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeObject(sto);
+        out.writeObject(guid);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        sto = (MatrixStorage)in.readObject();
+        guid = (IgniteUuid)in.readObject();
     }
 
     @Override
     public Matrix assign(double val) {
-        return null; // TODO
+        if (sto.isArrayBased())
+            for (double[] column : sto.data())
+                Arrays.fill(column, val);
+        else {
+            int rows = sto.rowSize();
+            int cols = sto.columnSize();
+
+            for (int x = 0; x < rows; x++)
+                for (int y = 0; y < cols; y++)
+                    storageSet(x, y, val);
+        }
+
+        return this;
+    }
+
+    private void checkCardinality(Matrix mtx) {
+        checkCardinality(mtx.rowSize(), mtx.columnSize());
+    }
+
+    private void checkCardinality(int rows, int cols) {
+        if (rows != sto.rowSize())
+            throw new CardinalityException(rowSize(), rows);
+
+        if (cols != sto.columnSize())
+            throw new CardinalityException(columnSize(), cols);
     }
 
     @Override
     public Matrix assign(double[][] vals) {
-        return null; // TODO
+        checkCardinality(vals.length, vals[0].length);
+
+        int rows = sto.rowSize();
+        int cols = sto.columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                storageSet(x, y, vals[x][y]);
+
+        return this;
     }
 
     @Override
     public Matrix assign(Matrix mtx) {
-        return null; // TODO
+        checkCardinality(mtx);
+
+        int rows = sto.rowSize();
+        int cols = sto.columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                storageSet(x, y, mtx.getX(x, y));
+
+        return this;
     }
 
     @Override
     public Matrix map(DoubleFunction<Double> fun) {
-        return null; // TODO
+        int rows = sto.rowSize();
+        int cols = sto.columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                storageSet(x, y, fun.apply(storageGet(x, y)));
+
+        return this;
     }
 
     @Override
@@ -147,12 +198,32 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix assignColumn(int col, Vector vec) {
-        return null; // TODO
+        checkColumnIndex(col);
+
+        int rows = sto.rowSize();
+
+        for (int x = 0; x < rows; x++)
+            storageSet(x, col, vec.getX(x));
+
+        return this;
     }
 
     @Override
     public Matrix assignRow(int row, Vector vec) {
-        return null; // TODO
+        checkRowIndex(row);
+
+        int cols = sto.columnSize();
+
+        if (cols != vec.size())
+            throw new CardinalityException(cols, vec.size());
+
+        if (sto.isArrayBased() && vec.getStorage().isArrayBased())
+            System.arraycopy(vec.getStorage().data(), 0, sto.data()[row], 0, cols);
+        else
+            for (int y = 0; y < cols; y++)
+                storageSet(row, y, vec.getX(y));
+
+        return this;
     }
 
     @Override
