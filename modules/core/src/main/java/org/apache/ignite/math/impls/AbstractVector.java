@@ -607,7 +607,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         Vector copy = copy();
 
         if (x != 1.0)
-            for (Element element : copy.nonZeroes())
+            for (Element element : copy.all())
                 element.set(element.get() / x);
 
         return copy;

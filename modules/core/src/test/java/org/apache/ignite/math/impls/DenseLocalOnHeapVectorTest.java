@@ -69,8 +69,20 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void divideTest() { // TODO write test
+    public void divideTest() {
+        for (double divisor : new double[] {0, 0.1, 1, 2, 10})
+            consumeSampleVectors(v -> {
+                final int size = v.size();
 
+                final double[] ref = new double[size];
+
+                final ElementsChecker checker = new ElementsChecker(v, ref);
+
+                for (int idx = 0; idx < size; idx++)
+                    ref[idx] /= divisor;
+
+                checker.assertCloseEnough(v.divide(divisor), ref);
+            });
     }
 
     /** */ @Test
@@ -233,18 +245,23 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private static class ElementsChecker {
         /** */
-        ElementsChecker(Vector v) {
-            init(v);
+        ElementsChecker(Vector v, double[] ref) {
+            init(v, ref);
         }
 
         /** */
-        void assertCloseEnough(Vector obtained) {
+        ElementsChecker(Vector v) {
+            this(v, null);
+        }
+
+        /** */
+        void assertCloseEnough(Vector obtained, double[] exp) {
             final int size = obtained.size();
 
             for (int i = 0; i < size; i++) {
                 final Vector.Element e = obtained.getElement(i);
 
-                final Metric metric = new Metric(i, e.get());
+                final Metric metric = new Metric(exp == null ? i : exp[i], e.get());
 
                 assertEquals("Vector index.", i, e.index());
 
@@ -253,9 +270,20 @@ public class DenseLocalOnHeapVectorTest {
         }
 
         /** */
-        private void init(Vector v) {
-            for (Vector.Element e : v.all())
+        void assertCloseEnough(Vector obtained) {
+            assertCloseEnough(obtained, null);
+        }
+
+        /** */
+        private void init(Vector v, double[] ref) {
+            for (Vector.Element e : v.all()) {
+                int idx = e.index();
+
                 e.set(e.index());
+
+                if (ref != null)
+                    ref[idx] = idx;
+            }
         }
     }
 
@@ -278,7 +306,7 @@ public class DenseLocalOnHeapVectorTest {
 
         /** */
         boolean closeEnough() {
-            return Math.abs(exp - obtained) < tolerance;
+            return new Double(exp).equals(obtained);
         }
 
         /** @{inheritDoc} */
