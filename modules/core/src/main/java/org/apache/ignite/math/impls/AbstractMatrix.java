@@ -312,7 +312,11 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix plus(double x) {
-        return null; // TODO
+        Matrix copy = copy();
+
+        copy.map(Functions.plus(x));
+
+        return copy;
     }
 
     @Override
@@ -322,7 +326,7 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public IgniteUuid guid() {
-        return null; // TODO
+        return guid;
     }
 
     @Override
@@ -353,7 +357,11 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix times(double x) {
-        return null; // TODO
+        Matrix copy = copy();
+
+        copy.map(Functions.mult(x));
+
+        return copy;
     }
 
     @Override
