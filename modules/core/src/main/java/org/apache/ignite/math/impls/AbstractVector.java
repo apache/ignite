@@ -156,6 +156,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @return
      */
     private Element mkElement(int idx) {
+        checkIndex(idx);
         return new Element() {
             /** {@inheritDoc */
             @Override public double get() {
