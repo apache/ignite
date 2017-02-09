@@ -2170,7 +2170,7 @@ public abstract class IgniteUtils {
                     byte[] hwAddr = itf.getHardwareAddress();
 
                     // Loopback produces empty MAC.
-                    if (hwAddr != null && hwAddr.length > 0) {
+                    if (!itf.isVirtual() && hwAddr != null && hwAddr.length > 0) {
                         String mac = byteArray2HexString(hwAddr);
 
                         if (!macs.contains(mac))

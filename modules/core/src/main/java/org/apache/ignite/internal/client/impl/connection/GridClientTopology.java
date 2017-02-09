@@ -407,11 +407,10 @@ public class GridClientTopology {
      *      otherwise will return new node without attributes and metrics.
      */
     private GridClientNodeImpl prepareNode(final GridClientNodeImpl node) {
-        final boolean noAttrsAndMetrics =
-            (metricsCache && attrCache) || (node.attributes().isEmpty() && node.metrics() == null);
+        final boolean noAttrsAndMetrics = node.attributes().isEmpty() && node.metrics() == null;
 
         // Try to bypass object copying.
-        if (noAttrsAndMetrics && routerAddrs.isEmpty() && node.connectable())
+        if (routerAddrs.isEmpty() && ((metricsCache && attrCache) || noAttrsAndMetrics) && node.connectable())
             return node;
 
         // Return a new node instance based on the original one.
