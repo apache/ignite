@@ -83,8 +83,26 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void normalizeTest() { // TODO write test
+    public void normalizeTest() {
+        consumeSampleVectors(v -> {
+            final int size = v.size();
 
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref);
+
+            double len = 0;
+
+            for (double val : ref)
+                len += val * val;
+
+            len = Math.sqrt(len);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] /= len;
+
+            checker.assertCloseEnough(v.normalize(), ref);
+        });
     }
 
     /** */ @Test
