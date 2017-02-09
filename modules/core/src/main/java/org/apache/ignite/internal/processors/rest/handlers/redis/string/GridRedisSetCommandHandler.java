@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -81,6 +82,9 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
+        if (msg.messageSize() < 3)
+            throw new GridRedisGenericException("Wrong number of arguments");
+
         // check if an atomic long with the key exists (related to incr/decr).
         IgniteAtomicLong l = ctx.grid().atomicLong(msg.key(), 0, false);
 
@@ -100,9 +104,6 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
 
         restReq.command(CACHE_PUT);
 
-        if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong number of arguments");
-
         restReq.value(msg.aux(VAL_POS));
 
         if (msg.messageSize() >= 4) {
@@ -116,21 +117,65 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             else if (isXx(params))
                 restReq.command(CACHE_REPLACE);
 
-            // TODO: IGNITE-4226: Need properly handle expiration parameter.
+            setExpire(restReq, params);
         }
 
         return restReq;
     }
 
     /**
+     * Attempts to set expiration when EX or PX parameters are specified.
+     *
+     * @param restReq {@link GridRestCacheRequest}.
+     * @param params Command parameters.
+     * @throws GridRedisGenericException When parameters are not valid.
+     */
+    private void setExpire(GridRestCacheRequest restReq, List<String> params) throws GridRedisGenericException {
+        Iterator<String> it = params.iterator();
+
+        while (it.hasNext()) {
+            String opt = it.next();
+            if ("px".equalsIgnoreCase(opt)) {
+                if (it.hasNext()) {
+                    try {
+                        restReq.ttl(Long.valueOf(it.next()));
+                    }
+                    catch (NumberFormatException e) {
+                        throw new GridRedisGenericException("Value is not an integer or out of range");
+                    }
+                    break;
+                }
+                else
+                    throw new GridRedisGenericException("Syntax error");
+            }
+            else if ("ex".equalsIgnoreCase(opt)) {
+                if (it.hasNext()) {
+                    try {
+                        restReq.ttl(Long.valueOf(it.next()) * 1000L);
+                    }
+                    catch (NumberFormatException e) {
+                        throw new GridRedisGenericException("Value is not an integer or out of range");
+                    }
+                    break;
+                }
+                else
+                    throw new GridRedisGenericException("Syntax error");
+            }
+        }
+    }
+
+    /**
      * @param params Command parameters.
      * @return True if NX option is available, otherwise false.
      */
-    private boolean isNx(List<String> params) {
-        if (params.size() >= 3)
-            return "nx".equalsIgnoreCase(params.get(0)) || "nx".equalsIgnoreCase(params.get(2));
 
-        return "nx".equalsIgnoreCase(params.get(0));
+    private boolean isNx(List<String> params) {
+        for (String p : params) {
+            if ("nx".equalsIgnoreCase(p))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -138,10 +183,12 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
      * @return True if XX option is available, otherwise false.
      */
     private boolean isXx(List<String> params) {
-        if (params.size() >= 3)
-            return "xx".equalsIgnoreCase(params.get(0)) || "xx".equalsIgnoreCase(params.get(2));
+        for (String p : params) {
+            if ("xx".equalsIgnoreCase(p))
+                return true;
+        }
 
-        return "xx".equalsIgnoreCase(params.get(0));
+        return false;
     }
 
     /** {@inheritDoc} */
