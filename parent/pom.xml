@@ -203,11 +203,6 @@
             <url>http://h2database.com/m2-repo</url>
             <layout>default</layout>
         </repository>
-
-        <repository>
-            <id>temp_staging_for_yardstick</id>
-            <url>https://oss.sonatype.org/content/repositories/orgyardstickframework-1015/</url>
-        </repository>
     </repositories>
 
     <dependencyManagement>
