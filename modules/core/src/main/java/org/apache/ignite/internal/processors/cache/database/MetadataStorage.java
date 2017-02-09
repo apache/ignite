@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -247,37 +246,6 @@ public class MetadataStorage implements MetaStore {
     /**
      * Store row to buffer.
      *
-     * @param buf Buffer.
-     * @param off Offset in buf.
-     * @param row Row to store.
-     */
-    private static void storeRow(
-        final ByteBuffer buf,
-        final int off,
-        final IndexItem row
-    ) {
-        int origPos = buf.position();
-
-        try {
-            buf.position(off);
-
-            // Index name length.
-            buf.put((byte)row.idxName.length);
-
-            // Index name.
-            buf.put(row.idxName);
-
-            // Page ID.
-            buf.putLong(row.pageId);
-        }
-        finally {
-            buf.position(origPos);
-        }
-    }
-
-    /**
-     * Store row to buffer.
-     *
      * @param pageAddr Page address.
      * @param off Offset in buf.
      * @param row Row to store.
@@ -379,11 +347,6 @@ public class MetadataStorage implements MetaStore {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, IndexItem row) throws IgniteCheckedException {
-            storeRow(buf, off, row);
-        }
-
-        /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexItem row) throws IgniteCheckedException {
             storeRow(pageAddr, off, row);
         }
@@ -422,11 +385,6 @@ public class MetadataStorage implements MetaStore {
         private MetaStoreLeafIO(final int ver) {
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId
             super(T_METASTORE_LEAF, ver, MAX_IDX_NAME_LEN + 1 + 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, IndexItem row) throws IgniteCheckedException {
-            storeRow(buf, off, row);
         }
 
         /** {@inheritDoc} */

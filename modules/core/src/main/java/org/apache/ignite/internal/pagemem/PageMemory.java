@@ -18,16 +18,12 @@
 package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  */
 public interface PageMemory extends LifecycleAware, PageIdAllocator {
-    /** */
-    public static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
-
     /**
      * Gets the page associated with the given page ID. Each page obtained with this method must be released by
      * calling {@link #releasePage(Page)}. This method will allocate page with given ID if it doesn't exist.

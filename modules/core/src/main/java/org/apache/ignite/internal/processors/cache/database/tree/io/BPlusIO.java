@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -197,17 +196,6 @@ public abstract class BPlusIO<L> extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public abstract void storeByOffset(long pageAddr, int off, L row) throws IgniteCheckedException;
-
-
-    /**
-     * Store the needed info about the row in the page. Leaf and inner pages can store different info.
-     *
-     * @param buf Buffer.
-     * @param off Offset in bytes.
-     * @param row Lookup or full row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public abstract void storeByOffset(ByteBuffer buf, int off, L row) throws IgniteCheckedException;
 
     /**
      * Store row info from the given source.
