@@ -99,6 +99,11 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public GridContinuousBatch createBatch();
 
     /**
+     * Invoke when disconnect.
+     */
+    public void onDisconnect();
+
+    /**
      * Called when ack for a batch is received from client.
      *
      * @param routineId Routine ID.

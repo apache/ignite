@@ -912,6 +912,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 unregisterRemote(e.getKey());
         }
 
+        for (LocalRoutineInfo routine : locInfos.values())
+            routine.hnd.onDisconnect();
+
         rmtInfos.clear();
 
         clientInfos.clear();
