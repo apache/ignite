@@ -66,7 +66,12 @@ namespace ignite
 
                 if (it != callbacks.end())
                 {
-                    it->second(reader, writer);
+                    Callback* callback = it->second;
+
+                    // We have found callback and does not need lock here anymore.
+                    guard.Reset();
+
+                    callback(reader, writer);
 
                     return true;
                 }
@@ -88,6 +93,8 @@ namespace ignite
                 common::concurrent::CsLockGuard guard(lock);
 
                 bool inserted = callbacks.insert(std::make_pair(id, proc)).second;
+
+                guard.Reset();
 
                 if (!inserted)
                 {
