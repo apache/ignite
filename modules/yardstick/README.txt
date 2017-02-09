@@ -4,7 +4,7 @@ Apache Ignite benchmarks are written on top of Yardstick Framework (https://gith
 you to measure performance of various Apache Ignite components and modules.
 
 The documentation below describes how to execute and configure already assembled benchmarks. If you need to add new
-benchmarks or build existing one then refer to instruction from `DEVNOTES.txt`.
+benchmarks or build existing one then refer to instruction from `DEVNOTES.txt` in source directory.
 
 Visit Yardstick Repository (https://github.com/gridgain/yardstick) for detailed information in regards resulting graphs
 generation and how the frameworks works.
@@ -25,9 +25,6 @@ all the available benchmarks will be executed on a local machine using `config/b
 
 To get more information about available benchmarks and configuration parameters refer to “Provided Benchmarks” and
 “Properties And Command Line Arguments” sections below.
-
-
-NOTE: You need to configure ssh key-based authentication to localhost for running benchmarks on your local machine.
 
 
 Running Ignite Benchmarks Remotely
@@ -56,8 +53,6 @@ Then use the following command:
 
 ./bin/benchmark-run-all.sh config/benchmark-atomic-put.properties
 
-NOTE: You need to configure ssh key-based authentication between your remote servers for running
-benchmarks.
 
 It is recommended to create some copies of original config files, edit these copies and then use as a
 parameter for `./bin/benchmark-run-all.sh` script.
