@@ -67,10 +67,6 @@ public class GridIoMessageBuffer implements Message {
      */
     private Item tail;
 
-    /** Whole message size in bytes. */
-    private int size = 0;
-
-
     /** */
     private MessageFactory factory;
 
@@ -128,8 +124,6 @@ public class GridIoMessageBuffer implements Message {
         GridUnsafe.copyMemory(bufArr, bufOff + buf.position(), item.data, BYTE_ARR_OFF, len);
 
         buf.position(buf.position() + len);
-
-        size += len;
     }
 
     /**
@@ -183,25 +177,29 @@ public class GridIoMessageBuffer implements Message {
      */
     public GridIoMessage message(){
         if(message == null){
+            reader.reset();
 
-            byte[] data = new byte[size];
-            int offset = 0;
+            GridIoMessage msg = null;
 
             Item item = head;
-            do {
-                System.arraycopy(item.data, 0, data, offset, item.data.length);
-                offset += item.data.length;
-            } while ((item = item.next) != null);
+            boolean finished = false;
 
-            ByteBuffer buf = ByteBuffer.wrap(data, 0, size);
+            while (!finished){
+                if(item == null)
+                    throw new IgniteException("Cannot unmarshall message.");
 
-            GridIoMessage msg = (GridIoMessage) factory.create(buf.get());
+                ByteBuffer buf = ByteBuffer.wrap(item.data);
 
-            assert msg != null;
+                item = item.next;
 
-            boolean finished = msg.readFrom(buf, reader);
+                if(msg == null){
+                    msg = (GridIoMessage) factory.create(buf.get());
+                }
 
-            assert finished;
+                assert msg != null;
+
+                finished = msg.readFrom(buf, reader);
+            }
 
             try {
                 if (msg.topic() == null) {
