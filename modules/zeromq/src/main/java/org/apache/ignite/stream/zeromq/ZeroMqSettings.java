@@ -28,7 +28,7 @@ public class ZeroMqSettings {
     private int ioThreads;
 
     /** */
-    private int type;
+    private int socketType;
 
     /** */
     private String addr;
@@ -38,16 +38,16 @@ public class ZeroMqSettings {
 
     /**
      * @param ioThreads Threads on context.
-     * @param type Socket type.
+     * @param socketType Socket type.
      * @param addr Address to connect zmq.
      */
-    public ZeroMqSettings(int ioThreads, int type, @NotNull String addr, byte[] topic) {
+    public ZeroMqSettings(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
         this.ioThreads = ioThreads;
         this.addr = addr;
         this.topic = topic;
 
-        if (ZeroMqTypeSocket.check(type))
-            this.type = type;
+        if (ZeroMqTypeSocket.check(socketType))
+            this.socketType = socketType.getType();
         else
             throw new IgniteException("This socket type not implementation this version ZeroMQ streamer.");
     }
@@ -63,7 +63,7 @@ public class ZeroMqSettings {
      * @return Socket type.
      */
     public int getType() {
-        return type;
+        return socketType;
     }
 
     /**

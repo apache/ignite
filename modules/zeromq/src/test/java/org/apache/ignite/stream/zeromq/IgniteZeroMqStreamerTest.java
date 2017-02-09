@@ -64,7 +64,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqPairSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR.getType(), ADDR, null);
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR, ADDR, null);
 
             IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
@@ -82,7 +82,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             byte[] topic = "test".getBytes();
 
-            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB.getType(), ADDR, topic);
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB, ADDR, topic);
 
             IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
@@ -98,7 +98,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqPullSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PULL.getType(), ADDR, null);
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PULL, ADDR, null);
 
             IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 

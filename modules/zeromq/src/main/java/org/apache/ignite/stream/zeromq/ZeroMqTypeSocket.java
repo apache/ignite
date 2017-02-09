@@ -17,9 +17,9 @@ public enum ZeroMqTypeSocket {
         return type;
     }
 
-    public static boolean check(int type) {
+    public static boolean check(ZeroMqTypeSocket type) {
         for (ZeroMqTypeSocket ts : ZeroMqTypeSocket.values()) {
-            if (ts.getType() == type)
+            if (ts.getType() == type.getType())
                 return true;
         }
         return false;
