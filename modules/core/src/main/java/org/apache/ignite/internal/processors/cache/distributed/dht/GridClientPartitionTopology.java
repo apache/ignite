@@ -353,6 +353,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
+        boolean create, boolean showRenting) throws GridDhtInvalidPartitionException {
+        return localPartition(p, topVer, create);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
         return localPartition(1, AffinityTopologyVersion.NONE, create);
     }

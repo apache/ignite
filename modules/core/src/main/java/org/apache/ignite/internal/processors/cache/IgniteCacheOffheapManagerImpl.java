@@ -236,7 +236,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         if (cctx.isLocal())
             return locCacheDataStore;
         else {
-            GridDhtLocalPartition part = cctx.topology().localPartition(p, AffinityTopologyVersion.NONE, false);
+            GridDhtLocalPartition part = cctx.topology().localPartition(p, AffinityTopologyVersion.NONE, false, true);
 
             return part != null ? part.dataStore() : null;
         }

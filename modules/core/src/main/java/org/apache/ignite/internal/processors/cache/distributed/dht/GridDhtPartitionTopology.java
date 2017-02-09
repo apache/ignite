@@ -128,6 +128,18 @@ public interface GridDhtPartitionTopology {
         throws GridDhtInvalidPartitionException;
 
     /**
+     * @param topVer Topology version at the time of creation.
+     * @param p Partition ID.
+     * @param create If {@code true}, then partition will be created if it's not there.
+     * @return Local partition.
+     * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
+     *      does not belong to this node.
+     */
+    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create,
+        boolean showRenting)
+        throws GridDhtInvalidPartitionException;
+
+    /**
      * @param parts Partitions to release (should be reserved before).
      */
     public void releasePartitions(int... parts);

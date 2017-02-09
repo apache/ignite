@@ -292,7 +292,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             // If partition belongs to local node.
             if (cctx.affinity().partitionLocalNode(p, topVer)) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
 
                 assert part != null;
                 assert part.id() == p;
@@ -839,7 +839,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                                 try {
                                     part.tryEvict();
 
-                                    if (part.state() != EVICTED)
+                                    if (part.state() == RENTING)
                                         partsToEvict.push(part);
                                 }
                                 catch (Throwable ex) {

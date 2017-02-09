@@ -195,6 +195,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @throws IgniteCheckedException If failed.
      */
     private boolean waitForRent() throws IgniteCheckedException {
+        if (1 == 1)
+            return false;
+
         final long longOpDumpTimeout =
             IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
 
@@ -421,7 +424,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             // If preloader is disabled, then we simply clear out
             // the partitions this node is not responsible for.
             for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+                GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true, false);
 
                 boolean belongs = localNode(p, aff);
 
@@ -619,7 +622,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             long updateSeq = this.updateSeq.incrementAndGet();
 
             for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+                GridDhtLocalPartition locPart = localPartition0(p, topVer, false, false, false);
 
                 if (cctx.affinity().partitionLocalNode(p, topVer)) {
                     // This partition will be created during next topology event,
@@ -700,7 +703,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create)
         throws GridDhtInvalidPartitionException {
-        return localPartition(p, topVer, create, true);
+        return localPartition0(p, topVer, create, false,true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
+        boolean create, boolean showRenting) throws GridDhtInvalidPartitionException {
+        return localPartition0(p, topVer, create, showRenting, true);
     }
 
     /**
@@ -737,9 +746,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @return Local partition.
      */
     @SuppressWarnings("TooBroadScope")
-    private GridDhtLocalPartition localPartition(int p,
+    private GridDhtLocalPartition localPartition0(int p,
         AffinityTopologyVersion topVer,
         boolean create,
+        boolean showRenting,
         boolean updateSeq) {
         GridDhtLocalPartition loc;
 
@@ -747,7 +757,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         GridDhtPartitionState state = loc != null ? loc.state() : null;
 
-        if (loc != null && state != EVICTED && (state != RENTING || !cctx.allowFastEviction()))
+        if (loc != null && state != EVICTED && (state != RENTING || showRenting))
             return loc;
 
         if (!create)
@@ -772,7 +782,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
-            else if (loc != null && state == RENTING && cctx.allowFastEviction())
+            else if (loc != null && state == RENTING && !showRenting)
                 throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted.");
 
             if (loc == null) {
