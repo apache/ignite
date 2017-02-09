@@ -16,6 +16,7 @@
  */
 
 #include <sstream>
+#include <vector>
 
 #include "ignite/common/dynamic_load_os.h"
 
@@ -25,11 +26,14 @@ namespace
     {
         int wslen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
 
-        wchar_t *converted = reinterpret_cast<wchar_t*>(alloca(wslen * sizeof(wchar_t)));
+        if (!wslen)
+            return std::wstring();
 
-        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), converted, wslen);
+        std::vector<WCHAR> converted(wslen);
 
-        std::wstring res(converted, wslen);
+        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), &converted[0], wslen);
+
+        std::wstring res(converted.begin(), converted.end());
 
         return res;
     }
