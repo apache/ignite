@@ -790,6 +790,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
             Assert.AreEqual(0, nullKeysEntries.Length, "Evaluating 'null.Contains' should return zero results");
 
+
+            Func<int[]> getKeysFunc = () => null;
+            var funcNullKeyEntries = cache
+                .Where(e => getKeysFunc().Contains(e.Key))
+                .ToArray();
+            Assert.AreEqual(0, funcNullKeyEntries.Length, "Evaluating 'null.Contains' should return zero results");
+
+
             // Check subselect from other cache
             var subSelectCount = cache
                 .Count(entry => orgCache
@@ -804,7 +812,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(subSelectCheckCount, subSelectCount, "subselecting another CacheQueryable failed");
 
             var parameterExpressionNotSupported = Assert.Throws<NotSupportedException>(() => CompiledQuery2.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
-            Assert.AreEqual("ParameterExpression is not supported for 'Contains' clauses.", parameterExpressionNotSupported.Message);
+            Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", parameterExpressionNotSupported.Message);
         }
 
         /// <summary>

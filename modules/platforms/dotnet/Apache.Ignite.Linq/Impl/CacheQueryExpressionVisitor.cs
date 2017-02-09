@@ -472,56 +472,17 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
             var subQueryModel = expression.QueryModel;
 
+            var contains = subQueryModel.ResultOperators.First() as ContainsResultOperator;
             // Check if IEnumerable.Contains is used
-            if (subQueryModel.ResultOperators.Count == 1 && subQueryModel.ResultOperators.First() is ContainsResultOperator)
+            if (subQueryModel.ResultOperators.Count == 1 && contains != null)
             {
-                ResultBuilder.Append("(");
-
-                var contains = (ContainsResultOperator) subQueryModel.ResultOperators.First();
-                var fromExpression = subQueryModel.MainFromClause.FromExpression;
-
-                var queryable = ExpressionWalker.GetCacheQueryable(fromExpression, false);
-
-                if (queryable != null)
-                {
-                    Visit(contains.Item);
-
-                    ResultBuilder.Append(" IN (");
-                    _modelVisitor.VisitQueryModel(subQueryModel);
-                    ResultBuilder.Append(")");
-                }
-                else
-                {
-                    var inValues = GetInValues(fromExpression)
-                        .ToArray();
-
-                    var hasNulls = inValues.Any(o => o == null);
-
-                    if (hasNulls)
-                    {
-                        ResultBuilder.Append("(");
-                    }
-
-                    Visit(contains.Item);
-
-                    ResultBuilder.Append(" IN (");
-                    AppendInParameters(inValues.Where(o => o != null));
-                    ResultBuilder.Append(")");
-
-                    if (hasNulls)
-                    {
-                        ResultBuilder.Append(") OR ");
-                        Visit(contains.Item);
-                        ResultBuilder.Append(" IS NULL");
-                    }
-                }
-
-                ResultBuilder.Append(")");
+                VisitContains(subQueryModel, contains);
             }
             else
             {
@@ -533,9 +494,57 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Visits IEnumerable.Contains
+        /// </summary>
+        private void VisitContains(QueryModel subQueryModel, ContainsResultOperator contains)
+        {
+            ResultBuilder.Append("(");
+
+            var fromExpression = subQueryModel.MainFromClause.FromExpression;
+
+            var queryable = ExpressionWalker.GetCacheQueryable(fromExpression, false);
+
+            if (queryable != null)
+            {
+                Visit(contains.Item);
+
+                ResultBuilder.Append(" IN (");
+                _modelVisitor.VisitQueryModel(subQueryModel);
+                ResultBuilder.Append(")");
+            }
+            else
+            {
+                var inValues = GetInValues(fromExpression)
+                    .ToArray();
+
+                var hasNulls = inValues.Any(o => o == null);
+
+                if (hasNulls)
+                {
+                    ResultBuilder.Append("(");
+                }
+
+                Visit(contains.Item);
+
+                ResultBuilder.Append(" IN (");
+                AppendInParameters(inValues);
+                ResultBuilder.Append(")");
+
+                if (hasNulls)
+                {
+                    ResultBuilder.Append(") OR ");
+                    Visit(contains.Item);
+                    ResultBuilder.Append(" IS NULL");
+                }
+            }
+
+            ResultBuilder.Append(")");
+        }
+
+        /// <summary>
         /// Gets values for IN expression.
         /// </summary>
-        private IEnumerable<object> GetInValues(Expression fromExpression)
+        private static IEnumerable<object> GetInValues(Expression fromExpression)
         {
             IEnumerable result;
             switch (fromExpression.NodeType)
@@ -556,18 +565,10 @@ namespace Apache.Ignite.Linq.Impl
                         .Select(ExpressionWalker.EvaluateExpression<object>);
                     break;
                 case ExpressionType.Parameter:
-                    // This is happens for compiled queries
-                    throw new NotSupportedException("ParameterExpression is not supported for 'Contains' clauses.");
+                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
+                    throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
                 default:
-                    var defaultValues = Expression.Lambda(fromExpression).Compile().DynamicInvoke();
-                    if (defaultValues is IEnumerable)
-                    {
-                        result = defaultValues as IEnumerable;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException("From expression is not supported: " + fromExpression);
-                    }
+                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
                     break;
             }
 
@@ -579,23 +580,20 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Appends parameters using ", " as delimeter.
+        /// Appends not null parameters using ", " as delimeter.
         /// </summary>
-        private void AppendInParameters(IEnumerable enumerable)
+        private void AppendInParameters(IEnumerable<object> enumerable)
         {
-            if (enumerable != null)
+            var first = true;
+            foreach (var val in enumerable.Where(o => o != null))
             {
-                var first = true;
-                foreach (var val in enumerable)
+                if (!first)
                 {
-                    if (!first)
-                    {
-                        ResultBuilder.Append(", ");
-                    }
-                    first = false;
-
-                    AppendParameter(val);
+                    ResultBuilder.Append(", ");
                 }
+                first = false;
+
+                AppendParameter(val);
             }
         }
 
