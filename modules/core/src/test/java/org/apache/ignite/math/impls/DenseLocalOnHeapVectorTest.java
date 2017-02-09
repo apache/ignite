@@ -88,7 +88,7 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void normalize1Test() { // TODO write test
+    public void normalizePowerTest() { // TODO write test
 
     }
 
@@ -98,32 +98,32 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void logNormalize1Test() { // TODO write test
+    public void logNormalizePowerTest() { // TODO write test
 
     }
 
     /** */ @Test
-    public void normTest() { // TODO write test
+    public void kNormTest() { // TODO write test
 
     }
 
     /** */ @Test
-    public void plusTest() { // TODO write test
+    public void plusVectorTest() { // TODO write test
 
     }
 
     /** */ @Test
-    public void plus1Test() {
+    public void plusDoubleTest() {
         operationTest((val, operand) -> val + operand, Vector::plus);
     }
 
     /** */ @Test
-    public void timesTest() { // TODO write test
+    public void timesVectorTest() { // TODO write test
 
     }
 
     /** */ @Test
-    public void times1Test() {
+    public void timesDoubleTest() {
         operationTest((val, operand) -> val * operand, Vector::times);
     }
 
