@@ -1352,7 +1352,8 @@ namespace ignite
              *
              * Return value, processor and argument classes should all be
              * default-constructable, copy-constructable and assignable. Also,
-             * BinaryType template should be specialized for custom every class.
+             * BinaryType class template should be specialized for every custom
+             * class.
              *
              * Processor class should be registered as a cache entry processor using
              * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
@@ -1404,7 +1405,8 @@ namespace ignite
              *
              * Return value, processor and argument classes should all be
              * default-constructable, copy-constructable and assignable. Also,
-             * BinaryType template should be specialized for custom every class.
+             * BinaryType class template should be specialized for every custom
+             * class.
              *
              * Processor class should be registered as a cache entry processor using
              * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare

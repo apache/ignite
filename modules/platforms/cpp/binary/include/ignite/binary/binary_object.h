@@ -47,7 +47,7 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param mem Implementation.
+             * @param impl Implementation.
              */
             BinaryObject(const impl::binary::BinaryObjectImpl& impl) :
                 impl(impl)

@@ -136,7 +136,7 @@ namespace ignite
          * First search is performed using the passed path argument (is not NULL).
          * Then JRE_HOME is evaluated. Last, JAVA_HOME is evaluated.
          *
-         * @param Explicitly defined path (optional).
+         * @param path Explicitly defined path (optional).
          * @return Path to the file. Empty string if the library was not found.
          */
         IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string& path);

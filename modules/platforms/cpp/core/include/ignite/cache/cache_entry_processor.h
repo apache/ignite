@@ -76,7 +76,7 @@ namespace ignite
              * Process input streaming data to produce output streaming data.
              *
              * Deserializes cache entry and processor using provided reader, invokes
-             * cache enrty processor, gets reasult and serizlizes it using provided
+             * cache entry processor, gets result and serializes it using provided
              * writer.
              *
              * @param reader Reader.

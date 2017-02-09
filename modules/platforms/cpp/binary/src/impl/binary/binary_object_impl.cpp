@@ -98,7 +98,7 @@ namespace ignite
 
             int32_t BinaryObjectImpl::GetHashCode() const
             {
-				BinaryObjectHeader header(mem->Data() + start);
+                BinaryObjectHeader header(mem->Data() + start);
 
                 return header.GetHashCode();
             }

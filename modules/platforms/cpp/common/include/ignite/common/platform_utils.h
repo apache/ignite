@@ -56,7 +56,7 @@ namespace ignite
          * @return True on success.
          */
         IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
-		
+
         /**
          * Read system environment variable taking thread-safety in count.
          *

@@ -302,7 +302,7 @@ namespace ignite
          *
          * @param usrCp User's classpath.
          * @param home Ignite home directory.
-         * @param test Whether test classpath must be used.
+         * @param forceTest Whether test classpath must be used.
          * @return Classpath.
          */
         std::string CreateIgniteClasspath(const std::string& usrCp, const std::string* home, bool forceTest)
