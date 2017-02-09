@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -76,7 +77,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     private final MarshallerContextImpl marshallerCtx;
 
     /** */
-    private final ExecutorService sysExecSrvc;
+    private final GridClosureProcessor closProc;
 
     /** */
     private final List<MappingUpdatedListener> mappingUpdatedLsnrs = new CopyOnWriteArrayList<>();
@@ -96,7 +97,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         marshallerCtx = ctx.marshallerContext();
 
-        sysExecSrvc = ctx.getSystemExecutorService();
+        closProc = ctx.closure();
     }
 
     /** {@inheritDoc} */
@@ -136,7 +137,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /**
      * Adds a listener to be notified when mapping changes.
      *
-     * @param mappingUpdatedListener listener of mapping updated events.
+     * @param mappingUpdatedListener listener for mapping updated events.
      */
     public void addMappingUpdatedListener(MappingUpdatedListener mappingUpdatedListener) {
         mappingUpdatedLsnrs.add(mappingUpdatedListener);
@@ -296,7 +297,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             final MarshallerMappingItem item = msg.getMappingItem();
             marshallerCtx.onMappingAccepted(item);
 
-            sysExecSrvc.submit(new Runnable() {
+            closProc.runLocalSafe(new Runnable() {
                 @Override public void run() {
                     for (MappingUpdatedListener lsnr : mappingUpdatedLsnrs)
                         lsnr.mappingUpdated(item.platformId(), item.typeId(), item.className());

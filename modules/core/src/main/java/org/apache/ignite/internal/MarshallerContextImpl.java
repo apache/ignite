@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -78,13 +79,13 @@ public class MarshallerContextImpl implements MarshallerContext {
     private MarshallerMappingFileStore fileStore;
 
     /** */
-    private ExecutorService execSrvc;
+    private GridClosureProcessor closProc;
 
     /** */
     private MarshallerMappingTransport transport;
 
     /** */
-    private boolean isClientNode;
+    private boolean clientNode;
 
     /**
      * Initializes context.
@@ -321,7 +322,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         cache.replace(item.typeId(), new MappedName(item.className(), true));
 
-        execSrvc.submit(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), item.className()));
+        closProc.runLocalSafe(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), item.className()));
     }
 
     /** {@inheritDoc} */
@@ -353,7 +354,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             if (clsName != null)
                 cache.putIfAbsent(typeId, new MappedName(clsName, true));
             else
-                if (isClientNode) {
+                if (clientNode) {
                     mappedName = cache.get(typeId);
 
                     if (mappedName == null) {
@@ -424,7 +425,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             mappedName = new MappedName(resolvedClsName, true);
             cache.putIfAbsent(typeId, mappedName);
 
-            execSrvc.submit(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), resolvedClsName));
+            closProc.runLocalSafe(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), resolvedClsName));
         }
     }
 
@@ -504,8 +505,8 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         fileStore = new MarshallerMappingFileStore(workDir, ctx.log(MarshallerMappingFileStore.class));
         this.transport = transport;
-        execSrvc = ctx.getSystemExecutorService();
-        isClientNode = ctx.clientNode();
+        closProc = ctx.closure();
+        clientNode = ctx.clientNode();
     }
 
     /**

@@ -24,8 +24,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -57,6 +59,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         };
 
         ctx.setSystemExecutorService(Executors.newFixedThreadPool(12));
+
+        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new GridClosureProcessor(ctx));
     }
 
     /**
