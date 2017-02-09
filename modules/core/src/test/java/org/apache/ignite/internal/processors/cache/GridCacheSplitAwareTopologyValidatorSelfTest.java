@@ -287,15 +287,6 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
 
         @Override public void stop() throws IgniteException {
         }
-
-        /** */
-        private enum State {
-            /** Marker node joins a topology. */
-            NODE_JOINED,
-            /** Marker node leaves a topology, triggering segment activation. */
-            NODE_REMOVED;
-        }
-
         @Override public void writeExternal(ObjectOutput out) throws IOException {
         }
 
