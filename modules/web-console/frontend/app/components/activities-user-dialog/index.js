@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-.ui-grid-settings {
-    ul.select.dropdown-menu > li > a {
-        padding-top: 0;
-        padding-bottom: 0;
-    }
+ import controller from './activities-user-dialog.controller';
+ import templateUrl from './activities-user-dialog.jade';
 
-    ul.select.dropdown-menu > li > a > i {
-        position: relative;
-        line-height: 26px;
-        width: 14px;
-        margin-left: 0;
-        color: inherit;
-    }
+ export default ['$modal', ($modal) => ({ show = true, user, params }) => {
+     const ActivitiesUserDialog = $modal({
+         templateUrl,
+         show,
+         resolve: {
+             user: () => user,
+             params: () => params
+         },
+         placement: 'center',
+         controller,
+         controllerAs: 'ctrl'
+     });
 
-    ul.select.dropdown-menu > li > a > span {
-        line-height: 26px;
-        padding-left: 5px;
-        padding-right: 8px;
-        cursor: pointer;
-    }
-}
+     return ActivitiesUserDialog.$promise
+         .then(() => ActivitiesUserDialog);
+ }];

@@ -2302,12 +2302,13 @@ html,body,.splash-screen {
         cursor: default;
 
         i {
+            margin-top: 2px;
             margin-right: 10px;
         }
 
         label {
             cursor: default;
-            line-height: 24px;
+            line-height: 28px;
         }
 
         sub {
@@ -2325,5 +2326,41 @@ html,body,.splash-screen {
 
     .ui-grid-filter-select {
         width: calc(100% - 10px);
+    }
+
+    .ui-grid-cell-contents > i {
+        line-height: $line-height-base;
+    }
+
+    .ui-grid-row:nth-child(odd):hover .ui-grid-cell {
+        background: $ignite-row-hover;
+    }
+    
+    .ui-grid-row:nth-child(even):hover .ui-grid-cell {
+        background: $ignite-row-hover;
+    }
+}
+
+.datepicker.dropdown-menu {
+    width: 250px;
+    height: 270px;
+
+    button {
+        outline: none;
+        border: 0;
+    }
+
+    tbody {
+        height: 180px;
+    }
+
+    tbody button {
+        padding: 6px;
+    }
+
+    &.datepicker-mode-1, &.datepicker-mode-2 {
+        tbody button {
+            height: 65px;
+        }
     }
 }
