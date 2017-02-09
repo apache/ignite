@@ -17,9 +17,21 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.logging.Log;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInputStream;
@@ -33,20 +45,23 @@ import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
+import static org.apache.ignite.IgniteState.STARTED;
 
 /**
  * Communication with grid in the same process.
  */
 public class HadoopIgfsInProc implements HadoopIgfsEx {
+    /** Ignite client reference counters (node name, reference count). */
+    private static final Map<String, Integer> refCnts = new HashMap<>();
+
+    /** Reference count monitor. */
+    private static final Lock refCntsLock = new ReentrantLock();
+
     /** Target IGFS. */
     protected final IgfsEx igfs;
 
@@ -69,16 +84,87 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
      * @param igfs Target IGFS.
      * @param log Log.
      * @param userName User name.
-     * @throws IgniteCheckedException On error.
      */
-    public HadoopIgfsInProc(IgfsEx igfs, Log log, String userName) throws IgniteCheckedException {
-        this.user = IgfsUtils.fixUserName(userName);
-
+    private HadoopIgfsInProc(IgfsEx igfs, Log log, String userName) {
         this.igfs = igfs;
 
         this.log = log;
 
         bufSize = igfs.configuration().getBlockSize() * 2;
+
+        user = IgfsUtils.fixUserName(userName);
+    }
+
+
+    /**
+     * Creates instance of the HadoopIgfsInProcWithIgniteRefsCount by IGFS name.
+     *
+     * @param igfsName Target IGFS name.
+     * @param log Log.
+     * @param userName User name.
+     * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not fount in the current VM.
+     */
+    public static HadoopIgfsInProc create(String igfsName, Log log, String userName) {
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            HadoopIgfsInProc delegate = create(ignite, igfsName, log, userName);
+
+            if (delegate != null)
+                return delegate;
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates instance of the HadoopIgfsInProcWithIgniteRefsCount by IGFS name.
+     *
+     * @param ignite Ignite instance.
+     * @param igfsName Target IGFS name.
+     * @param log Log.
+     * @param userName User name.
+     * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not found
+     *      in the specified ignite instance.
+     */
+    public static HadoopIgfsInProc create(Ignite ignite, String igfsName, Log log, String userName) {
+        assert ignite != null;
+
+        lockRefCount();
+
+        try {
+            if (Ignition.state(ignite.name()) == STARTED) {
+                try {
+                    for (IgniteFileSystem fs : ignite.fileSystems()) {
+                        if (F.eq(fs.name(), igfsName)) {
+                            Integer cnt = refCnts.get(ignite.name());
+
+                            if (cnt != null)
+                                refCnts.put(ignite.name(), cnt + 1);
+
+                            return new HadoopIgfsInProc((IgfsEx)fs, log, userName);
+                        }
+                    }
+                }
+                catch (IllegalStateException ignore) {
+                    // May happen if the grid state has changed:
+                }
+            }
+        }
+        finally {
+            unlockRefCount();
+        }
+
+        return null;
+    }
+
+    /**
+     * Register ignite node at the reference counter map.
+     * @param nodeName Ignite node name.
+     */
+    public static void addManagedIgniteInstance(String nodeName) {
+        assert !refCnts.containsKey(nodeName) : "The ignite instance already exists in the ref count map";
+
+        refCnts.put(nodeName, 0);
     }
 
     /** {@inheritDoc} */
@@ -93,8 +179,10 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
          });
     }
 
-    /** {@inheritDoc} */
-    @Override public void close(boolean force) {
+    /**
+     * Call onClose for all listeners.
+     */
+    private void notifyListenersOnClose() {
         // Perform cleanup.
         for (HadoopIgfsStreamEventListener lsnr : lsnrs.values()) {
             try {
@@ -104,6 +192,34 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Failed to notify stream event listener", e);
             }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close(boolean force) {
+        notifyListenersOnClose();
+
+        String gridName = igfs.context().kernalContext().grid().name();
+
+        lockRefCount();
+
+        try {
+            Integer cnt = refCnts.get(gridName);
+
+            if (cnt != null) {
+                // The node was created by this HadoopIgfsWrapper.
+                // The node must be stopped when there are not opened filesystems that are used one.
+                if (cnt > 1)
+                    refCnts.put(gridName, cnt - 1);
+                else {
+                    refCnts.remove(gridName);
+
+                    G.stop(gridName, false);
+                }
+            }
+        }
+        finally {
+            unlockRefCount();
         }
     }
 
@@ -511,5 +627,15 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     /** {@inheritDoc} */
     @Override public String user() {
         return user;
+    }
+
+    /** Lock reference count. */
+    public static void lockRefCount() {
+        refCntsLock.lock();
+    }
+
+    /** Unlock reference count. */
+    public static void unlockRefCount() {
+        refCntsLock.unlock();
     }
 }
