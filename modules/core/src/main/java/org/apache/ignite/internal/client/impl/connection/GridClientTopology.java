@@ -407,10 +407,11 @@ public class GridClientTopology {
      *      otherwise will return new node without attributes and metrics.
      */
     private GridClientNodeImpl prepareNode(final GridClientNodeImpl node) {
-        final boolean noAttrsAndMetrics = node.attributes().isEmpty() && node.metrics() == null;
+        final boolean noAttrsAndMetrics =
+            (metricsCache && attrCache) || (node.attributes().isEmpty() && node.metrics() == null);
 
         // Try to bypass object copying.
-        if (routerAddrs.isEmpty() && ((metricsCache && attrCache) || noAttrsAndMetrics) && node.connectable())
+        if (noAttrsAndMetrics && routerAddrs.isEmpty() && node.connectable())
             return node;
 
         // Return a new node instance based on the original one.
@@ -419,8 +420,10 @@ public class GridClientTopology {
         for (InetSocketAddress addr : node.availableAddresses(prot, true)) {
             boolean router = routerAddrs.isEmpty() || routerAddrs.contains(addr);
 
-            boolean reachable = noAttrsAndMetrics || !addr.getAddress().isLoopbackAddress() ||
-                F.containsAny(macsCache, node.<String>attribute(ATTR_MACS).split(", "));
+            String nodeMacs = node.attribute(ATTR_MACS);
+
+            boolean reachable = nodeMacs == null || !addr.getAddress().isLoopbackAddress() ||
+                F.containsAny(macsCache, nodeMacs.split(", "));
 
             if (router && reachable) {
                 nodeBuilder.connectable(true);
