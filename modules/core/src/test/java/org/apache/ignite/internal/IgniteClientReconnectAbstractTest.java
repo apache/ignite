@@ -399,6 +399,28 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
             super.writeToSocket(sock, out, msg, timeout);
         }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(final Socket sock, final TcpDiscoveryAbstractMessage msg,
+            final byte[] data,
+            final long timeout) throws IOException {
+            if (msg instanceof TcpDiscoveryJoinRequestMessage) {
+                CountDownLatch writeLatch0 = writeLatch;
+
+                if (writeLatch0 != null) {
+                    log.info("Block join request send: " + msg);
+
+                    try {
+                        U.await(writeLatch0);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IgniteException(e.getMessage(), e);
+                    }
+                }
+            }
+
+            super.writeToSocket(sock, msg, data, timeout);
+        }
     }
 
     /**

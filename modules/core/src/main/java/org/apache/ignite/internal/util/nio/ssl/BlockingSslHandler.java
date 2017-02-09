@@ -139,6 +139,8 @@ public class BlockingSslHandler {
 
         boolean loop = true;
 
+        SSLEngineResult unwrapRes = null;
+
         while (loop) {
             switch (handshakeStatus) {
                 case NOT_HANDSHAKING:
@@ -157,11 +159,11 @@ public class BlockingSslHandler {
                 }
 
                 case NEED_UNWRAP: {
-                    Status status = unwrapHandshake();
+                    unwrapRes = unwrapHandshake(unwrapRes);
 
                     handshakeStatus = sslEngine.getHandshakeStatus();
 
-                    if (status == BUFFER_UNDERFLOW && sslEngine.isInboundDone())
+                    if (unwrapRes.getStatus() == BUFFER_UNDERFLOW && sslEngine.isInboundDone())
                         // Either there is no enough data in buffer or session was closed.
                         loop = false;
 
@@ -248,7 +250,7 @@ public class BlockingSslHandler {
             SSLEngineResult res = sslEngine.wrap(src, outNetBuf);
 
             if (log.isDebugEnabled())
-                log.debug("Encrypted data [status=" + res.getStatus() + ", handshakeStaus=" +
+                log.debug("Encrypted data [status=" + res.getStatus() + ", handshakeStatus=" +
                     res.getHandshakeStatus() + ']');
 
             if (res.getStatus() == OK) {
@@ -372,10 +374,12 @@ public class BlockingSslHandler {
      * @throws SSLException If SSL exception occurred while unwrapping.
      * @throws GridNioException If failed to pass event to the next filter.
      */
-    private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
-        // Flip input buffer so we can read the collected data.
-        readFromNet();
+    private SSLEngineResult unwrapHandshake(SSLEngineResult prevRes) throws SSLException, IgniteCheckedException {
+        // Avoid blocking on reading if there unprocessed data left in input buffer.
+        if (inNetBuf.position() == 0 || prevRes.getStatus() != OK)
+            readFromNet();
 
+        // Flip input buffer so we can read the collected data.
         inNetBuf.flip();
 
         SSLEngineResult res = unwrap0();
@@ -405,7 +409,7 @@ public class BlockingSslHandler {
             // prepare to be written again
             inNetBuf.compact();
 
-        return res.getStatus();
+        return res;
     }
 
     /**
@@ -496,12 +500,12 @@ public class BlockingSslHandler {
                 throw new IgniteCheckedException("Failed to read remote node response (connection closed).");
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to write byte to socket.", e);
+            throw new IgniteCheckedException("Failed to read byte from socket.", e);
         }
     }
 
     /**
-     * Copies data from out net buffer and passes it to the underlying chain.
+     * Copies data from out net buffer and passes it to the underlying channel.
      *
      * @throws GridNioException If send failed.
      */
@@ -531,5 +535,14 @@ public class BlockingSslHandler {
         res.put(original);
 
         return res;
+    }
+
+    /**
+     * Get SSLEngine instance.
+     *
+     * @return SSLEngine instance.
+     */
+    public SSLEngine sslEngine() {
+        return sslEngine;
     }
 }

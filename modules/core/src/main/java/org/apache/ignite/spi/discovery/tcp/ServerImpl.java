@@ -26,16 +26,27 @@ import java.io.Serializable;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketOption;
 import java.net.SocketTimeoutException;
+import java.net.StandardSocketOptions;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.AlreadyBoundException;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.Channel;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -55,6 +66,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -64,6 +76,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
@@ -74,10 +87,23 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.nio.GridBufferedParser;
+import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
+import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -172,8 +198,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final IgniteProductVersion CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE =
         IgniteProductVersion.fromString("1.5.0");
 
+    /** ClientNioMessageWorker in GridNioSession. */
+    private static final int NIO_WORKER_META = GridNioSessionMetaKey.nextUniqueKey();
+
     /** */
     private IgniteThreadPoolExecutor utilityPool;
+
+    /** */
+    private IgniteThreadPoolExecutor nioClientProcessingPool;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -193,7 +225,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private RingMessageWorker msgWorker;
 
     /** Client message workers. */
-    protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap8<>();
+    protected ConcurrentMap<UUID, ClientMessageProcessor> clientMsgWorkers = new ConcurrentHashMap8<>();
 
     /** IP finder cleaner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -239,6 +271,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
+
+    /** Nio server that serves client connections. */
+    private GridNioServer<byte[]> clientNioSrv;
 
     /**
      * @param adapter Adapter.
@@ -321,6 +356,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         tcpSrvr = new TcpServer();
 
+        clientNioSrv = createClientNioServer(gridName);
+        clientNioSrv.start();
+
+        nioClientProcessingPool = new IgniteThreadPoolExecutor(
+            "disco-client-nio-msg-processor",
+            gridName,
+            spi.getClientNioThreads(),
+            spi.getClientNioThreads() * 2,
+            60_000L,
+            new LinkedBlockingQueue<Runnable>());
+
         spi.initLocalNode(tcpSrvr.port, true);
 
         locNode = spi.locNode;
@@ -358,6 +404,79 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         spi.printStartInfo();
+    }
+
+    /**
+     * @return New NIO server.
+     */
+    private GridNioServer<byte[]> createClientNioServer(String gridName) {
+        final GridNioServer<byte[]> srv;
+
+        final ArrayList<GridNioFilter> filters = new ArrayList<>();
+
+        filters.add(new GridNioCodecFilter(new GridBufferedParser(
+            spi.isClientDirectBuffer(), spi.getClientByteOrder()) {
+            @Override public ByteBuffer encode(final GridNioSession ses,
+                final Object msg) throws IOException, IgniteCheckedException {
+                // Respond to client without message length.
+                byte[] msg0 = (byte[])msg;
+
+                // TODO: allocate ByteBuffer once for all clients or get rid of ByteBuffer creation.
+                ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length) : ByteBuffer.wrap(msg0);
+
+                if (directBuf) {
+                    res.put(msg0);
+
+                    res.flip();
+                }
+
+                return res;
+            }
+        }, log, false));
+
+        filters.add(new GridConnectionBytesVerifyFilter(log));
+
+        if (spi.isSslEnabled()) {
+            if (spi.sslCtx != null) {
+                GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    spi.sslCtx,
+                    spi.isClientDirectBuffer(),
+                    spi.getClientByteOrder(),
+                    log
+                );
+
+                filters.add(sslFilter);
+            }
+        }
+
+        try {
+            final long writeTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+                spi.getSocketTimeout();
+
+            srv = GridNioServer.<byte[]>builder().address(U.getLocalHost())
+                .port(-1)
+                .listener(new ClientNioMessageListener(writeTimeout))
+                .filters(filters.toArray(new GridNioFilter[filters.size()]))
+                .logger(log)
+                .selectorCount(spi.getClientNioThreads())
+                .sendQueueLimit(spi.getClientSendMessageQueueLimit())
+                .byteOrder(spi.getClientByteOrder())
+                .tcpNoDelay(spi.getTcpNodelay())
+                .directBuffer(spi.isClientDirectBuffer())
+                .directMode(false)
+                .socketReceiveBufferSize(0)
+                .socketSendBufferSize(0)
+                .idleTimeout(Long.MAX_VALUE)
+                .gridName(gridName)
+                .daemon(false)
+                .writeTimeout(writeTimeout)
+                .build();
+        }
+        catch (Exception e) {
+            throw new IgniteSpiException("Unable create NIO server.", e);
+        }
+
+        return srv;
     }
 
     /** {@inheritDoc} */
@@ -442,14 +561,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
 
-        for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
-            U.interrupt(clientWorker);
-            U.join(clientWorker, log);
-        }
+        for (ClientMessageProcessor clientWorker : clientMsgWorkers.values())
+            stopClientProcessor(clientWorker);
+
+        clientNioSrv.stop();
 
         clientMsgWorkers.clear();
 
         IgniteUtils.shutdownNow(ServerImpl.class, utilityPool, log);
+        IgniteUtils.shutdownNow(ServerImpl.class, nioClientProcessingPool, log);
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -503,6 +623,31 @@ class ServerImpl extends TcpDiscoveryImpl {
             failedNodes.clear();
 
             spiState = DISCONNECTED;
+        }
+    }
+
+    /**
+     * @param proc Client message processor.
+     */
+    private void stopClientProcessor(final ClientMessageProcessor proc) {
+        if (proc == null)
+            return;
+
+        try {
+            if (proc instanceof ClientMessageWorker) {
+                final ClientMessageWorker wrk = (ClientMessageWorker)proc;
+
+                U.interrupt(wrk);
+                U.join(wrk);
+            }
+            else if (proc instanceof ClientNioMessageWorker) {
+                final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)proc;
+
+                nioWrk.stop();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to stop client processor: " + proc, e);
         }
     }
 
@@ -608,7 +753,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (clientNodeId == null)
                 return F.t(getLocalNodeId(), false);
 
-            ClientMessageWorker clientWorker = clientMsgWorkers.get(clientNodeId);
+            ClientMessageProcessor clientWorker = clientMsgWorkers.get(clientNodeId);
 
             if (clientWorker == null)
                 return F.t(getLocalNodeId(), false);
@@ -1572,11 +1717,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
 
-        for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
-            U.interrupt(msgWorker);
+        for (ClientMessageProcessor msgWorker : clientMsgWorkers.values())
+            stopClientProcessor(msgWorker);
 
-            U.join(msgWorker, log);
-        }
+        clientNioSrv.stop();
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -2616,7 +2760,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (redirectToClients(msg)) {
                 byte[] msgBytes = null;
 
-                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
+                for (ClientMessageProcessor clientMsgWorker : clientMsgWorkers.values()) {
                     if (msgBytes == null) {
                         try {
                             msgBytes = U.marshal(spi.marshaller(), msg);
@@ -2636,12 +2780,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryNode node = nodeAddedMsg.node();
 
-                        if (clientMsgWorker.clientNodeId.equals(node.id())) {
+                        if (clientMsgWorker.clientNodeId().equals(node.id())) {
                             try {
                                 msg0 = U.unmarshal(spi.marshaller(), msgBytes,
                                     U.resolveClassLoader(spi.ignite().configuration()));
 
-                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null, null, null);
+                                prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId(), null, null, null);
 
                                 msgBytes0 = null;
                             }
@@ -3311,7 +3455,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 "[clientNode=" + existingNode + ", msg=" + reconMsg + ']');
 
                         if (getLocalNodeId().equals(node.clientRouterNodeId())) {
-                            ClientMessageWorker wrk = clientMsgWorkers.get(node.id());
+                            ClientMessageProcessor wrk = clientMsgWorkers.get(node.id());
 
                             if (wrk != null)
                                 wrk.addMessage(reconMsg);
@@ -3805,7 +3949,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteSpiException("Router node is a client node: " + node);
 
                 if (routerNode.id().equals(getLocalNodeId())) {
-                    ClientMessageWorker worker = clientMsgWorkers.get(node.id());
+                    ClientMessageProcessor worker = clientMsgWorkers.get(node.id());
 
                     if (worker == null)
                         throw new IgniteSpiException("Client node already disconnected: " + node);
@@ -3897,7 +4041,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
 
                     if (isLocNodeRouter) {
-                        ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+                        ClientMessageProcessor wrk = clientMsgWorkers.get(nodeId);
 
                         if (wrk != null)
                             wrk.addMessage(msg);
@@ -3920,7 +4064,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
 
                 if (isLocNodeRouter) {
-                    ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+                    ClientMessageProcessor wrk = clientMsgWorkers.get(nodeId);
 
                     if (wrk != null)
                         wrk.addMessage(msg);
@@ -4498,7 +4642,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (msg.client()) {
-                    ClientMessageWorker wrk = clientMsgWorkers.remove(leavingNodeId);
+                    ClientMessageProcessor wrk = clientMsgWorkers.remove(leavingNodeId);
 
                     if (wrk != null)
                         wrk.addMessage(msg);
@@ -4694,10 +4838,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     failedNodesMsgSent.remove(node.id());
 
-                    ClientMessageWorker worker = clientMsgWorkers.remove(node.id());
+                    final ClientMessageProcessor worker = clientMsgWorkers.remove(node.id());
 
-                    if (worker != null)
-                        worker.interrupt();
+                    if (worker != null) {
+                        if (worker instanceof ClientMessageWorker) {
+                            final ClientMessageWorker wrk = (ClientMessageWorker)worker;
+
+                            wrk.interrupt();
+                        }
+                        else if (worker instanceof ClientNioMessageWorker)
+                            ((ClientNioMessageWorker)worker).nonblockingStop();
+                    }
                 }
 
                 if (msg.warning() != null && !msg.creatorNodeId().equals(getLocalNodeId())) {
@@ -4944,7 +5095,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msg.setMetrics(locNodeId, spi.metricsProvider.metrics());
                     msg.setCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
 
-                    for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
+                    for (Map.Entry<UUID, ClientMessageProcessor> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
                         ClusterMetrics metrics = e.getValue().metrics();
 
@@ -5076,7 +5227,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
 
-                    final ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
+                    final ClientMessageProcessor worker = clientMsgWorkers.get(msg.creatorNodeId());
 
                     if (worker == null) {
                         if (log.isDebugEnabled())
@@ -5087,7 +5238,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             res = pingNode(msg.nodeToPing());
-                        } catch (IgniteSpiException e) {
+                        }
+                        catch (IgniteSpiException e) {
                             log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
 
                             res = false;
@@ -5426,7 +5578,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private class TcpServer extends IgniteSpiThread {
         /** Socket TCP server listens to. */
-        private ServerSocket srvrSock;
+        private ServerSocketChannel srvCh;
 
         /** Port to listen. */
         private int port;
@@ -5444,11 +5596,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
             for (port = spi.locPort; port <= lastPort; port++) {
+                openServerSocketChannel();
+
                 try {
-                    if (spi.isSslEnabled())
-                        srvrSock = spi.sslSrvSockFactory.createServerSocket(port, 0, spi.locHost);
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvCh.bind(new InetSocketAddress(spi.locHost, port));
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -5459,7 +5610,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
-                catch (IOException e) {
+                catch (AlreadyBoundException | IOException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to bind to local port (will try next port within range) " +
                             "[port=" + port + ", localHost=" + spi.locHost + ']');
@@ -5467,26 +5618,85 @@ class ServerImpl extends TcpDiscoveryImpl {
                     onException("Failed to bind to local port. " +
                         "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                 }
+
+                // If free port wasn't found.
+                U.closeQuiet(srvCh);
             }
 
-            // If free port wasn't found.
             throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
                 "are in use) [firstPort=" + spi.locPort + ", lastPort=" + lastPort +
                 ", addr=" + spi.locHost + ']');
+        }
+
+        /**
+         * Open and preset {@link ServerSocketChannel}.
+         */
+        private void openServerSocketChannel() {
+            try {
+                srvCh = ServerSocketChannel.open();
+
+                srvCh.configureBlocking(true);
+
+                srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            }
+            catch (IOException e) {
+                U.closeQuiet(srvCh);
+
+                throw new IgniteSpiException("Failed to open socket channel", e);
+            }
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
                 while (!isInterrupted()) {
-                    Socket sock = srvrSock.accept();
+                    // Create SSL engine prematurely because it could take much time.
+                    SSLEngine sslEngine = null;
+
+                    if (spi.isSslEnabled()) {
+                        sslEngine = spi.sslCtx.createSSLEngine(srvCh.socket().getInetAddress().getHostName(),
+                            srvCh.socket().getLocalPort());
+
+                        sslEngine.setUseClientMode(false);
+
+                        sslEngine.setNeedClientAuth(true);
+                        sslEngine.setWantClientAuth(true);
+                    }
+
+                    final SocketChannel ch = srvCh.accept();
+
+                    ch.configureBlocking(true);
+
+                    Socket sock = ch.socket();
+
+                    if (spi.isSslEnabled()) {
+                        final BlockingSslHandler sslHnd;
+
+                        try {
+                            sslHnd = new BlockingSslHandler(sslEngine, ch, true, ByteOrder.nativeOrder(), log);
+
+                            if (!sslHnd.handshake())
+                                throw new IgniteSpiException("Failed to perform SSL handshake.");
+                        }
+                        catch (SSLException | IgniteCheckedException e) {
+                            log.warning("Failed to perform SSL handshake. [socket=" + sock + "]", e);
+
+                            U.closeQuiet(sock);
+                            U.closeQuiet(ch);
+
+                            continue;
+                        }
+
+                        // Wrap raw connection into SSL.
+                        sock = new NioSslSocket(sock, sslHnd);
+                    }
 
                     long tstamp = U.currentTimeMillis();
 
                     if (log.isDebugEnabled())
                         log.debug("Accepted incoming connection from addr: " + sock.getInetAddress());
 
-                    SocketReader reader = new SocketReader(sock);
+                    final SocketReader reader = new SocketReader(sock);
 
                     synchronized (mux) {
                         readers.add(reader);
@@ -5511,7 +5721,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             finally {
-                U.closeQuiet(srvrSock);
+                U.closeQuiet(srvCh);
             }
         }
 
@@ -5519,7 +5729,594 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public void interrupt() {
             super.interrupt();
 
-            U.close(srvrSock, log);
+            U.close(srvCh, log);
+        }
+    }
+
+    /**
+     * Encapsulates ping logic for client processors.
+     */
+    private class ClientMessagePinger {
+        /** */
+        final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
+
+        /** */
+        private final ClientMessageProcessor proc;
+
+        /**
+         * @param proc Processor.
+         */
+        private ClientMessagePinger(final ClientMessageProcessor proc) {
+            this.proc = proc;
+        }
+
+        /**
+         * @param timeoutHelper Time out helper.
+         * @return {@code True} if ping sent.
+         * @throws InterruptedException If fail.
+         */
+        public boolean ping(final IgniteSpiOperationTimeoutHelper timeoutHelper) throws InterruptedException {
+            if (spi.isNodeStopping0())
+                return false;
+
+            GridFutureAdapter<Boolean> fut;
+
+            while (true) {
+                fut = pingFut.get();
+
+                if (fut != null)
+                    break;
+
+                fut = new GridFutureAdapter<>();
+
+                if (pingFut.compareAndSet(null, fut)) {
+                    TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), proc.clientNodeId());
+
+                    pingReq.verify(getLocalNodeId());
+
+                    proc.addMessage(pingReq);
+
+                    break;
+                }
+            }
+
+            try {
+                return fut.get(timeoutHelper.nextTimeoutChunk(spi.getAckTimeout()),
+                    TimeUnit.MILLISECONDS);
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+                throw new InterruptedException();
+            }
+            catch (IgniteFutureTimeoutCheckedException ignored) {
+                if (pingFut.compareAndSet(fut, null))
+                    fut.onDone(false);
+
+                return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
+            }
+        }
+
+        /**
+         * @param res Ping result.
+         */
+        void pingResult(final boolean res) {
+            final GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
+
+            if (fut != null)
+                fut.onDone(res);
+        }
+    }
+
+    /**
+     * NIO worker state.
+     */
+    private enum WorkerState {
+        /** Initial worker state. */
+        NOT_STARTED,
+
+        /** Started but all messages are added to queue. */
+        STARTED,
+
+        /** Started and all messages are sent to client node. */
+        JOINED,
+
+        /** Worker was stopped. */
+        STOPPED
+    }
+
+    /**
+     * Non blocking client message processor.
+     */
+    private class ClientNioMessageWorker implements ClientMessageProcessor {
+        /** ID of the node served by this processor. */
+        private final UUID clientNodeId;
+
+        /** Socket connected to the client. */
+        private final Socket sock;
+
+        /** Current session. */
+        private volatile GridNioSession ses;
+
+        /** */
+        private volatile ClusterMetrics metrics;
+
+        /** */
+        private volatile ClientMessagePinger pinger;
+
+        /** Client message queue. */
+        private volatile Deque<T2<TcpDiscoveryAbstractMessage, byte[]>> msgQueue;
+
+        /** */
+        private final Object mux = new Object();
+
+        /** Worker state. */
+        private volatile WorkerState state = WorkerState.NOT_STARTED;
+
+        /**
+         * @param clientNodeId Client node ID.
+         * @param sock Socket.
+         */
+        ClientNioMessageWorker(final UUID clientNodeId, final Socket sock) {
+            this.clientNodeId = clientNodeId;
+            this.sock = sock;
+
+            msgQueue = new ArrayDeque<>();
+        }
+
+        /**
+         * Open session and start listen for client messages.
+         *
+         * @throws IgniteCheckedException If fail.
+         */
+        @SuppressWarnings("unchecked")
+        public synchronized void start() throws IgniteCheckedException, SSLException {
+            if (state != WorkerState.NOT_STARTED)
+                return;
+
+            final Map<Integer, Object> meta = new HashMap<>();
+
+            meta.put(NIO_WORKER_META, this);
+
+            final SocketChannel ch = sock.getChannel();
+
+            if (spi.isSslEnabled()) {
+                assert sock instanceof NioSslSocket;
+
+                // Put the engine to the meta map to allow nio server to use it:
+                GridSslMeta sslMeta = new GridSslMeta();
+
+                sslMeta.sslEngine(((NioSslSocket)sock).sslEngine);
+
+                meta.put(GridNioSessionMetaKey.SSL_META.ordinal(), sslMeta);
+            }
+
+            ses = clientNioSrv.createSession(ch, meta).get();
+
+            state(WorkerState.STARTED);
+        }
+
+        /**
+         * Close connection to the client.
+         *
+         * @throws IgniteCheckedException If fail.
+         */
+        public void stop() throws IgniteCheckedException {
+            nonblockingStop().get();
+        }
+
+        /**
+         * Close connection to the client and exit immediately - do not wait
+         * when operation completes.
+         *
+         * @return Operation future.
+         */
+        synchronized IgniteInternalFuture nonblockingStop() {
+            if (state == WorkerState.NOT_STARTED)
+                state(WorkerState.STOPPED);
+
+            if (state == WorkerState.STOPPED)
+                return new GridFinishedFuture<>();
+
+            final IgniteInternalFuture<Object> res = ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
+                @Override public Object apply(final IgniteInternalFuture<Boolean> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Failed to close client session: " + e);
+                    }
+                    finally {
+                        U.closeQuiet(sock);
+                    }
+
+                    return null;
+                }
+            });
+
+            clientMsgWorkers.remove(clientNodeId, this);
+
+            state(WorkerState.STOPPED);
+
+            return res;
+        }
+
+        /**
+         * Change state to JOINED and send all pending messages.
+         */
+        void markJoinedAndSendPendingMessages() {
+            if (state == WorkerState.STARTED) {
+                synchronized (mux) {
+                    T2<TcpDiscoveryAbstractMessage, byte[]> msg;
+
+                    do {
+                        msg = msgQueue.poll();
+
+                        if (msg != null)
+                            sendMessage(msg.get1(), msg.get2());
+                    }
+                    while (msg != null);
+
+                    msgQueue = null;
+
+                    state(WorkerState.JOINED);
+                }
+            }
+        }
+
+        /**
+         * Add receipt to message queue.
+         *
+         * @param receipt Receipt.
+         */
+        void addReceipt(final int receipt) {
+            try {
+                spi.sendMessage(ses, null, new byte[]{(byte) receipt});
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed marshal message, closing connection. [receipt=" + receipt + ", ses=" + ses + ']', e);
+
+                nonblockingStop();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMessage(final TcpDiscoveryAbstractMessage msg) {
+            addMessage(msg, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMessage(final TcpDiscoveryAbstractMessage msg, @Nullable final byte[] msgBytes) {
+            // add message to queue if client is not joined yet
+            final WorkerState state0 = this.state;
+
+            if (state0 == WorkerState.STOPPED)
+                return;
+
+            if (msgQueue != null) {
+                synchronized (mux) {
+                    if (msgQueue != null) {
+                        msgQueue.add(new T2<>(msg, msgBytes));
+
+                        return;
+                    }
+                }
+            }
+
+            sendMessage(msg, msgBytes);
+        }
+
+        /**
+         * Send message despite of worker state.
+         *
+         * @param msg Message to send.
+         * @param msgBytes Message bytes to send.
+         */
+        public void sendMessage(final TcpDiscoveryAbstractMessage msg, @Nullable final byte[] msgBytes) {
+            try {
+                spi.sendMessage(ses, msg, msgBytes);
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed marshal message, closing connection. [msg=" + msg + ", ses=" + ses + ']', e);
+
+                nonblockingStop();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean ping(final IgniteSpiOperationTimeoutHelper timeoutHelper) throws InterruptedException {
+            return pinger().ping(timeoutHelper);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void pingResult(final boolean res) {
+            pinger().pingResult(res);
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID clientNodeId() {
+            return clientNodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClusterMetrics metrics() {
+            return metrics;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void metrics(final ClusterMetrics metrics) {
+            this.metrics = metrics;
+        }
+
+        /**
+         * @return Pinger.
+         */
+        private ClientMessagePinger pinger() {
+            if (pinger == null) {
+                synchronized (this) {
+                    if (pinger == null)
+                        pinger = new ClientMessagePinger(this);
+                }
+            }
+
+            return pinger;
+        }
+
+        /**
+         * @return Current worker state.
+         */
+        public WorkerState state() {
+            return state;
+        }
+
+        /**
+         * Set state.
+         *
+         * @param state State.
+         */
+        private void state(WorkerState state) {
+            synchronized (mux) {
+                this.state = state;
+
+                mux.notifyAll();
+            }
+        }
+
+        /**
+         * Wait for state change.
+         *
+         * @param millis Milliseconds.
+         * @param state State wait for.
+         * @return {@code True} if state as expected.
+         * @throws InterruptedException If interrupted.
+         */
+        boolean waitForState(long millis, WorkerState state) throws InterruptedException {
+            if (this.state == state)
+                return true;
+
+            synchronized (mux) {
+                mux.wait(millis);
+            }
+
+            return this.state == state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClientNioMessageWorker.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private class ClientNioMessageListener extends GridNioServerListenerAdapter<byte[]> {
+        /** */
+        private final ClientNioMessageProcessor msgProc = new ClientNioMessageProcessor(log);
+
+        /** */
+        private final long writeTimeout;
+
+        /**
+         * @param writeTimeout Write timeout for logging.
+         */
+        ClientNioMessageListener(final long writeTimeout) {
+            this.writeTimeout = writeTimeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSessionWriteTimeout(final GridNioSession ses) {
+            final ClientNioMessageWorker proc = ses.meta(NIO_WORKER_META);
+
+            assert proc != null;
+
+            if (log.isDebugEnabled()) {
+                log.debug("Stopping message worker on write timeout [remoteAddr=" + ses.remoteAddress() +
+                    ", remote node ID=" + proc.clientNodeId + ", writeTimeout=" + writeTimeout + ']');
+            }
+
+            proc.nonblockingStop();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onConnected(final GridNioSession ses) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDisconnected(final GridNioSession ses, @Nullable final Exception e) {
+            final ClientNioMessageWorker proc = ses.meta(NIO_WORKER_META);
+
+            assert proc != null;
+
+            if (log.isDebugEnabled()) {
+                log.debug("Stopping message worker on disconnect [remoteAddr=" + ses.remoteAddress() +
+                    ", remote node ID=" + proc.clientNodeId + ']');
+            }
+
+            proc.nonblockingStop();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMessage(final GridNioSession ses, final byte[] msg) {
+            final ClientNioMessageWorker wrkr = ses.meta(NIO_WORKER_META);
+
+            assert wrkr != null;
+
+            // Release nio thread.
+            nioClientProcessingPool.submit(new Runnable() {
+                @Override public void run() {
+                    try {
+                        msgProc.processMessage(wrkr, msg);
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Failure processing message, closing connection. [ses=" + ses + ']', e);
+
+                        wrkr.nonblockingStop();
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Processes incoming nio client messages.
+     */
+    private class ClientNioMessageProcessor {
+        /** */
+        private final IgniteLogger log;
+
+        /**
+         * @param log Logger.
+         */
+        private ClientNioMessageProcessor(IgniteLogger log) {
+            this.log = log;
+        }
+
+        /**
+         * Process client message.
+         *
+         * @param clientMsgWrk Client nio message worker.
+         * @param msg0 Incoming message.
+         */
+        void processMessage(ClientNioMessageWorker clientMsgWrk, byte[] msg0) throws IgniteCheckedException {
+            final TcpDiscoveryAbstractMessage msg = spi.marshaller().unmarshal(msg0,
+                U.resolveClassLoader(spi.ignite().configuration()));
+
+            final UUID nodeId = getConfiguredNodeId();
+
+            assert clientMsgWrk != null;
+
+            msg.senderNodeId(nodeId);
+
+            if (log.isDebugEnabled())
+                log.debug("Message has been received: " + msg);
+
+            spi.stats.onMessageReceived(msg);
+
+            if (debugMode && recordable(msg))
+                debugLog(msg, "Message has been received: " + msg);
+
+            if (msg instanceof TcpDiscoveryJoinRequestMessage) {
+                final TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
+
+                if (!req.responded()) {
+                    final TcpDiscoverySpiState state = spiStateCopy();
+
+                    if (state == CONNECTED) {
+                        clientMsgWrk.addReceipt(RES_OK);
+
+                        req.responded(true);
+
+                        msgWorker.addMessage(req);
+
+                        clientMsgWrk.markJoinedAndSendPendingMessages();
+
+                        return;
+                    }
+                    else {
+                        spi.stats.onMessageProcessingStarted(req);
+
+                        final Integer res;
+
+                        final SocketAddress rmtAddr = clientMsgWrk.sock.getRemoteSocketAddress();
+
+                        if (state == CONNECTING) {
+                            if (noResAddrs.contains(rmtAddr) ||
+                                getLocalNodeId().compareTo(req.creatorNodeId()) < 0)
+                                // Remote node node has not responded to join request or loses UUID race.
+                                res = RES_WAIT;
+                            else
+                                // Remote node responded to join request and wins UUID race.
+                                res = RES_CONTINUE_JOIN;
+                        }
+                        else
+                            // Local node is stopping. Remote node should try next one.
+                            res = RES_CONTINUE_JOIN;
+
+                        clientMsgWrk.addReceipt(res);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Responded to join request message [msg=" + req + ", res=" + res + ']');
+
+                        fromAddrs.addAll(req.node().socketAddresses());
+
+                        spi.stats.onMessageProcessingFinished(req);
+
+                        clientMsgWrk.nonblockingStop();
+
+                        return;
+                    }
+                }
+            }
+            else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
+                final TcpDiscoverySpiState state = spiStateCopy();
+
+                if (state == CONNECTED) {
+                    clientMsgWrk.addReceipt(RES_OK);
+
+                    msgWorker.addMessage(msg);
+
+                    clientMsgWrk.markJoinedAndSendPendingMessages();
+                }
+                else {
+                    clientMsgWrk.addReceipt(RES_CONTINUE_JOIN);
+
+                    clientMsgWrk.nonblockingStop();
+                }
+
+                return;
+            }
+            else if (msg instanceof TcpDiscoveryPingResponse) {
+                assert msg.client() : msg;
+
+                final ClientMessageProcessor clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                if (clientWorker != null)
+                    clientWorker.pingResult(true);
+
+                return;
+            }
+
+            TcpDiscoveryClientHeartbeatMessage heartbeatMsg = null;
+
+            if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
+                heartbeatMsg = (TcpDiscoveryClientHeartbeatMessage)msg;
+            else
+                msgWorker.addMessage(msg);
+
+            final UUID locNodeId = getConfiguredNodeId();
+
+            // Send receipt back.
+            final TcpDiscoveryClientAckResponse ack = new TcpDiscoveryClientAckResponse(locNodeId, msg.id());
+
+            ack.verify(locNodeId);
+
+            clientMsgWrk.addMessage(ack, null);
+
+            if (heartbeatMsg != null)
+                clientMsgWrk.metrics(heartbeatMsg.metrics());
         }
     }
 
@@ -5532,6 +6329,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private volatile UUID nodeId;
+
+        /** Flag indicating that client is processed by NIO server. */
+        private volatile boolean nioClient;
 
         /**
          * Constructor.
@@ -5552,7 +6352,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             UUID locNodeId = getConfiguredNodeId();
 
-            ClientMessageWorker clientMsgWrk = null;
+            ClientMessageProcessor clientMsgWrk = null;
 
             try {
                 InputStream in;
@@ -5560,7 +6360,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 try {
                     // Set socket options.
                     sock.setKeepAlive(true);
-                    sock.setTcpNoDelay(true);
+                    sock.setTcpNoDelay(spi.getTcpNodelay());
 
                     int timeout = sock.getSoTimeout();
 
@@ -5627,7 +6427,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 new IgniteSpiOperationTimeoutHelper(spi);
 
                             if (req.clientNodeId() != null) {
-                                ClientMessageWorker clientWorker = clientMsgWorkers.get(req.clientNodeId());
+                                ClientMessageProcessor clientWorker = clientMsgWorkers.get(req.clientNodeId());
 
                                 if (clientWorker != null)
                                     res.clientExists(clientWorker.ping(timeoutHelper));
@@ -5651,11 +6451,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
-                    if (req.client())
+                    boolean asyncMode = false;
+
+                    if (req.client()) {
                         res.clientAck(true);
 
-                    spi.writeToSocket(sock, res, spi.failureDetectionTimeoutEnabled() ?
-                        spi.failureDetectionTimeout() : spi.getSocketTimeout());
+                        // If client proposes async mode accept it.
+                        if (req.asyncMode()) {
+                            res.asyncMode(true);
+
+                            asyncMode = true;
+                        }
+                    }
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -5669,45 +6476,89 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (req.client()) {
-                        ClientMessageWorker clientMsgWrk0 = new ClientMessageWorker(sock, nodeId);
+                        ClientMessageProcessor clientProc = asyncMode
+                            ? new ClientNioMessageWorker(nodeId, sock)
+                            : new ClientMessageWorker(sock, nodeId);
 
                         while (true) {
-                            ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
+                            ClientMessageProcessor old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
 
                             if (old == null)
                                 break;
 
-                            if (old.isInterrupted()) {
-                                clientMsgWorkers.remove(nodeId, old);
+                            if (old instanceof ClientMessageWorker) {
+                                ClientMessageWorker oldWrk = (ClientMessageWorker)old;
 
-                                continue;
+                                if (oldWrk.isInterrupted()) {
+                                    clientMsgWorkers.remove(nodeId, old);
+
+                                    continue;
+                                }
+
+                                oldWrk.join(500);
+
+                                old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
+
+                                if (old == null)
+                                    break;
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Already have client message worker, closing connection " +
+                                        "[locNodeId=" + locNodeId +
+                                        ", rmtNodeId=" + nodeId +
+                                        ", workerSock=" + oldWrk.sock +
+                                        ", sock=" + sock + ']');
+
+                                return;
                             }
+                            else if (old instanceof ClientNioMessageWorker) {
+                                final ClientNioMessageWorker nioOldWrk = (ClientNioMessageWorker)old;
 
-                            old.join(500);
+                                if (nioOldWrk.state() == WorkerState.STOPPED)
+                                    clientMsgWorkers.remove(nodeId, nioOldWrk);
+                                else {
+                                    if (nioOldWrk.waitForState(500, WorkerState.STOPPED)) {
+                                        old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
 
-                            old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
+                                        if (old == null)
+                                            break;
+                                    }
 
-                            if (old == null)
-                                break;
+                                    if (log.isDebugEnabled())
+                                        log.debug("Already have client message worker, closing connection " +
+                                            "[locNodeId=" + locNodeId +
+                                            ", rmtNodeId=" + nodeId +
+                                            ", workerSock=" + nioOldWrk.sock +
+                                            ", sock=" + sock + ']');
 
-                            if (log.isDebugEnabled())
-                                log.debug("Already have client message worker, closing connection " +
-                                    "[locNodeId=" + locNodeId +
-                                    ", rmtNodeId=" + nodeId +
-                                    ", workerSock=" + old.sock +
-                                    ", sock=" + sock + ']');
-
-                            return;
+                                    return;
+                                }
+                            }
                         }
 
                         if (log.isDebugEnabled())
                             log.debug("Created client message worker [locNodeId=" + locNodeId +
                                 ", rmtNodeId=" + nodeId + ", sock=" + sock + ']');
 
-                        assert clientMsgWrk0 == clientMsgWorkers.get(nodeId);
+                        assert clientProc == clientMsgWorkers.get(nodeId);
 
-                        clientMsgWrk = clientMsgWrk0;
+                        clientMsgWrk = clientProc;
                     }
+
+                    if (clientMsgWrk instanceof ClientNioMessageWorker) {
+                        final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)clientMsgWrk;
+
+                        nioWrk.start();
+
+                        nioWrk.sendMessage(res, null);
+
+                        nioClient = true;
+
+                        return;
+                    }
+
+                    spi.writeToSocket(sock, res, spi.failureDetectionTimeoutEnabled() ?
+                        spi.failureDetectionTimeout() : spi.getSocketTimeout());
 
                     if (log.isDebugEnabled())
                         log.debug("Initialized connection with remote node [nodeId=" + nodeId +
@@ -5773,6 +6624,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 long sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                     spi.getSocketTimeout();
 
+                final ClientMessageWorker clientMsgWrk0 = clientMsgWrk == null ? null
+                    : (ClientMessageWorker)clientMsgWrk;
+
                 while (!isInterrupted()) {
                     try {
                         TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
@@ -5799,9 +6653,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
-                                boolean ok = processJoinRequestMessage(req, clientMsgWrk);
+                                boolean ok = processJoinRequestMessage(req, clientMsgWrk0);
 
-                                if (clientMsgWrk != null && ok)
+                                if (clientMsgWrk0 != null && ok)
                                     continue;
                                 else
                                     // Direct join request - no need to handle this socket anymore.
@@ -5809,14 +6663,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                         }
                         else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
-                            if (clientMsgWrk != null) {
+                            if (clientMsgWrk0 != null) {
                                 TcpDiscoverySpiState state = spiStateCopy();
 
                                 if (state == CONNECTED) {
                                     spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                                    if (clientMsgWrk.getState() == State.NEW)
-                                        clientMsgWrk.start();
+                                    if (clientMsgWrk0.getState() == State.NEW)
+                                        clientMsgWrk0.start();
 
                                     msgWorker.addMessage(msg);
 
@@ -5948,7 +6802,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryPingResponse) {
                             assert msg.client() : msg;
 
-                            ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
+                            ClientMessageProcessor clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
 
                             if (clientWorker != null)
                                 clientWorker.pingResult(true);
@@ -6028,17 +6882,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             finally {
-                if (clientMsgWrk != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
-                            ", rmtNodeId=" + nodeId + ']');
+                if (!nioClient) {
+                    if (clientMsgWrk != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
+                                ", rmtNodeId=" + nodeId + ']');
 
-                    clientMsgWorkers.remove(nodeId, clientMsgWrk);
+                        clientMsgWorkers.remove(nodeId, clientMsgWrk);
 
-                    U.interrupt(clientMsgWrk);
+                        U.interrupt((ClientMessageWorker)clientMsgWrk);
+                    }
+
+                    U.closeQuiet(sock);
                 }
-
-                U.closeQuiet(sock);
             }
         }
 
@@ -6050,7 +6906,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
             assert msg.client();
 
-            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+            ClientMessageProcessor wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
             if (wrk != null)
                 wrk.metrics(msg.metrics());
@@ -6066,7 +6922,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         @SuppressWarnings({"IfMayBeConditional"})
         private boolean processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg,
-            @Nullable ClientMessageWorker clientMsgWrk) throws IOException {
+            @Nullable ClientMessageWorker clientMsgWrk) throws IOException, IgniteCheckedException {
             assert msg != null;
             assert !msg.responded();
 
@@ -6137,7 +6993,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override protected void cleanup() {
             super.cleanup();
 
-            U.closeQuiet(sock);
+            if (!nioClient)
+                U.closeQuiet(sock);
 
             synchronized (mux) {
                 readers.remove(this);
@@ -6184,8 +7041,53 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Provides communication with client node.
      */
-    private class ClientMessageWorker extends MessageWorkerAdapter<T2<TcpDiscoveryAbstractMessage, byte[]>> {
+    private interface ClientMessageProcessor {
+        /**
+         * @param msg Message.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg);
+
+        /**
+         * @param msg Message.
+         * @param msgBytes Marshalled message.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes);
+
+        /**
+         * @param timeoutHelper Timeout helper.
+         * @return Success flag.
+         * @throws InterruptedException
+         */
+        boolean ping(IgniteSpiOperationTimeoutHelper timeoutHelper) throws InterruptedException;
+
+        /**
+         * @param res Ping result.
+         */
+        void pingResult(boolean res);
+
+        /**
+         * @return Client ID.
+         */
+        UUID clientNodeId();
+
+        /**
+         * @return Cluster metrics.
+         */
+        ClusterMetrics metrics();
+
+        /**
+         * @param metrics Cluster metrics.
+         */
+        void metrics(ClusterMetrics metrics);
+    }
+
+    /**
+     *
+     */
+    private class ClientMessageWorker extends MessageWorkerAdapter<T2<TcpDiscoveryAbstractMessage, byte[]>>
+        implements ClientMessageProcessor {
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -6196,10 +7098,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         private volatile ClusterMetrics metrics;
 
         /** */
-        private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
+        private IgniteProductVersion clientVer;
 
         /** */
-        private IgniteProductVersion clientVer;
+        private volatile ClientMessagePinger pinger;
 
         /**
          * @param sock Socket.
@@ -6222,21 +7124,21 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return Current client metrics.
          */
-        ClusterMetrics metrics() {
+        @Override public ClusterMetrics metrics() {
             return metrics;
         }
 
         /**
          * @param metrics New current client metrics.
          */
-        void metrics(ClusterMetrics metrics) {
+        @Override public void metrics(ClusterMetrics metrics) {
             this.metrics = metrics;
         }
 
         /**
          * @param msg Message.
          */
-        void addMessage(TcpDiscoveryAbstractMessage msg) {
+        @Override public void addMessage(TcpDiscoveryAbstractMessage msg) {
             addMessage(msg, null);
         }
 
@@ -6244,7 +7146,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          * @param msgBytes Optional message bytes.
          */
-        void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
+        @Override public void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
             T2 t = new T2<>(msg, msgBytes);
 
             if (msg.highPriority())
@@ -6256,6 +7158,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (log.isDebugEnabled())
                 log.debug("Message has been added to client queue: " + msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID clientNodeId() {
+            return clientNodeId;
         }
 
         /** {@inheritDoc} */
@@ -6346,11 +7253,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param res Ping result.
          */
-        public void pingResult(boolean res) {
-            GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
-
-            if (fut != null)
-                fut.onDone(res);
+        @Override public void pingResult(boolean res) {
+            pinger().pingResult(res);
         }
 
         /**
@@ -6358,47 +7262,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Ping result.
          * @throws InterruptedException If interrupted.
          */
-        public boolean ping(IgniteSpiOperationTimeoutHelper timeoutHelper) throws InterruptedException {
-            if (spi.isNodeStopping0())
-                return false;
-
-            GridFutureAdapter<Boolean> fut;
-
-            while (true) {
-                fut = pingFut.get();
-
-                if (fut != null)
-                    break;
-
-                fut = new GridFutureAdapter<>();
-
-                if (pingFut.compareAndSet(null, fut)) {
-                    TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), clientNodeId);
-
-                    pingReq.verify(getLocalNodeId());
-
-                    addMessage(pingReq);
-
-                    break;
-                }
-            }
-
-            try {
-                return fut.get(timeoutHelper.nextTimeoutChunk(spi.getAckTimeout()),
-                    TimeUnit.MILLISECONDS);
-            }
-            catch (IgniteInterruptedCheckedException ignored) {
-                throw new InterruptedException();
-            }
-            catch (IgniteFutureTimeoutCheckedException ignored) {
-                if (pingFut.compareAndSet(fut, null))
-                    fut.onDone(false);
-
-                return false;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
-            }
+        @Override public boolean ping(IgniteSpiOperationTimeoutHelper timeoutHelper) throws InterruptedException {
+            return pinger().ping(timeoutHelper);
         }
 
         /** {@inheritDoc} */
@@ -6408,6 +7273,25 @@ class ServerImpl extends TcpDiscoveryImpl {
             pingResult(false);
 
             U.closeQuiet(sock);
+        }
+
+        /**
+         * @return Pinger.
+         */
+        private ClientMessagePinger pinger() {
+            if (pinger == null) {
+                synchronized (this) {
+                    if (pinger == null)
+                        pinger = new ClientMessagePinger(this);
+                }
+            }
+
+            return pinger;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClientMessageWorker.class, this);
         }
     }
 
@@ -6428,7 +7312,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param name Thread name.
          * @param pollingTimeout Messages polling timeout.
          */
-        protected MessageWorkerAdapter(String name, long pollingTimeout) {
+        MessageWorkerAdapter(String name, long pollingTimeout) {
             super(spi.ignite().name(), name, log);
 
             this.pollingTimeout = pollingTimeout;
@@ -6487,6 +7371,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      *
      */
     private static class GridPingFutureAdapter<R> extends GridFutureAdapter<R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Socket. */
         private volatile Socket sock;
 
@@ -6507,5 +7394,557 @@ class ServerImpl extends TcpDiscoveryImpl {
         public void sock(Socket sock) {
             this.sock = sock;
         }
+    }
+
+    /**
+     * Socket decorator that overrides {@link Socket#getInputStream()}
+     * and {@link Socket#getOutputStream()} that return custom implementations which
+     * use passed {@link SSLEngine}.
+     */
+    static class NioSslSocket extends Socket {
+        /** Genuine socket. */
+        private final Socket delegate;
+
+        /** */
+        private final SocketChannel ch;
+
+        /** */
+        private final SSLEngine sslEngine;
+
+        /** */
+        private final BlockingSslHandler hnd;
+
+        /** */
+        private volatile SslInputStream sslIn;
+
+        /** */
+        private volatile SslOutputStream sslOut;
+
+        /**
+         * @param delegate Delegate.
+         * @param hnd SSL blocking handler.
+         */
+        private NioSslSocket(final Socket delegate, final BlockingSslHandler hnd) {
+            this.delegate = delegate;
+            this.sslEngine = hnd.sslEngine();
+            this.hnd = hnd;
+
+            this.ch = delegate.getChannel();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void connect(final SocketAddress endpoint) throws IOException {
+            delegate.connect(endpoint);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void connect(final SocketAddress endpoint, final int timeout) throws IOException {
+            delegate.connect(endpoint, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void bind(final SocketAddress bindpoint) throws IOException {
+            delegate.bind(bindpoint);
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetAddress getInetAddress() {
+            return delegate.getInetAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetAddress getLocalAddress() {
+            return delegate.getLocalAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getPort() {
+            return delegate.getPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPort() {
+            return delegate.getLocalPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SocketAddress getRemoteSocketAddress() {
+            return delegate.getRemoteSocketAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SocketAddress getLocalSocketAddress() {
+            return delegate.getLocalSocketAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SocketChannel getChannel() {
+            return ch;
+        }
+
+        /** {@inheritDoc} */
+        @Override public InputStream getInputStream() throws IOException {
+            if (sslIn == null) {
+                synchronized (this) {
+                    if (sslIn == null)
+                        sslIn = new SslInputStream(delegate.getInputStream(), hnd);
+                }
+            }
+
+            return sslIn;
+        }
+
+        /** {@inheritDoc} */
+        @Override public OutputStream getOutputStream() throws IOException {
+            if (sslOut == null) {
+                synchronized (this) {
+                    if (sslOut == null)
+                        sslOut = new SslOutputStream(delegate.getOutputStream(), ch, hnd);
+                }
+            }
+
+            return sslOut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setTcpNoDelay(final boolean on) throws SocketException {
+            delegate.setTcpNoDelay(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getTcpNoDelay() throws SocketException {
+            return delegate.getTcpNoDelay();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setSoLinger(final boolean on, final int linger) throws SocketException {
+            delegate.setSoLinger(on, linger);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSoLinger() throws SocketException {
+            return delegate.getSoLinger();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendUrgentData(final int data) throws IOException {
+            delegate.sendUrgentData(data);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setOOBInline(final boolean on) throws SocketException {
+            delegate.setOOBInline(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getOOBInline() throws SocketException {
+            return delegate.getOOBInline();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setSoTimeout(final int timeout) throws SocketException {
+            delegate.setSoTimeout(timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSoTimeout() throws SocketException {
+            return delegate.getSoTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setSendBufferSize(final int size) throws SocketException {
+            delegate.setSendBufferSize(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSendBufferSize() throws SocketException {
+            return delegate.getSendBufferSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setReceiveBufferSize(final int size) throws SocketException {
+            delegate.setReceiveBufferSize(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReceiveBufferSize() throws SocketException {
+            return delegate.getReceiveBufferSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setKeepAlive(final boolean on) throws SocketException {
+            delegate.setKeepAlive(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getKeepAlive() throws SocketException {
+            return delegate.getKeepAlive();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setTrafficClass(final int tc) throws SocketException {
+            delegate.setTrafficClass(tc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTrafficClass() throws SocketException {
+            return delegate.getTrafficClass();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setReuseAddress(final boolean on) throws SocketException {
+            delegate.setReuseAddress(on);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean getReuseAddress() throws SocketException {
+            return delegate.getReuseAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            U.closeQuiet(sslIn);
+            U.closeQuiet(sslOut);
+            U.closeQuiet(ch);
+            delegate.close();
+            sslEngine.closeInbound();
+            sslEngine.closeOutbound();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdownInput() throws IOException {
+            delegate.shutdownInput();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdownOutput() throws IOException {
+            delegate.shutdownOutput();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(NioSslSocket.class, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isConnected() {
+            return delegate.isConnected();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isBound() {
+            return delegate.isBound();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClosed() {
+            return delegate.isClosed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInputShutdown() {
+            return delegate.isInputShutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isOutputShutdown() {
+            return delegate.isOutputShutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setPerformancePreferences(final int connTime, final int latency,
+            final int bandwidth) {
+            delegate.setPerformancePreferences(connTime, latency, bandwidth);
+        }
+    }
+
+    /**
+     * Stream decorator that does data decryption read from genuine input
+     * stream.
+     */
+    private static class SslInputStream extends InputStream {
+        /** Genuine input stream. */
+        private final InputStream in;
+
+        /** */
+        private final ReadableByteChannel ch;
+
+        /** */
+        private final BlockingSslHandler sslHnd;
+
+        /** Raw data buffer. */
+        private ByteBuffer buf;
+
+        /** Decoded data buffer. */
+        private ByteBuffer decodedBuf;
+
+        /**
+         * @param in Original stream.
+         * @param sslHnd SSL handler.
+         */
+        SslInputStream(final InputStream in, final BlockingSslHandler sslHnd) {
+            this.in = in;
+            this.ch = Channels.newChannel(in); // workaround, because SocketChannel ignores timeout
+            this.sslHnd = sslHnd;
+
+            buf = ByteBuffer.allocate(32 * 1024);
+            decodedBuf = ByteBuffer.allocate(32 * 1024);
+
+            decodedBuf.flip();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int read() throws IOException {
+            ByteBuffer appBuf = sslHnd.applicationBuffer();
+
+            try {
+                if (appBuf.hasRemaining()) {
+                    if (!decodedBuf.hasRemaining() && decodedBuf.limit() < decodedBuf.capacity())
+                        decodedBuf.limit(decodedBuf.capacity());
+
+                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
+
+                    decodedBuf.put(appBuf);
+
+                    decodedBuf.flip();
+                }
+
+                if (decodedBuf.hasRemaining())
+                    return decodedBuf.get() & 0xFF;
+                else {
+                    while (true) {
+                        buf.clear();
+
+                        decodedBuf.clear();
+
+                        final int r = ch.read(buf);
+
+                        if (r < 0)
+                            return r;
+
+                        if (r > 0) {
+                            buf.flip();
+
+                            appBuf = sslHnd.decode(buf);
+
+                            decodedBuf.put(appBuf);
+
+                            decodedBuf.flip();
+
+                            if (decodedBuf.hasRemaining())
+                                return decodedBuf.get() & 0xFF;
+                        }
+                    }
+
+                }
+            } catch (IgniteCheckedException e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int read(final byte[] b) throws IOException {
+            return read(b, 0, b.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int read(final byte[] b, final int off, final int len) throws IOException {
+            ByteBuffer appBuf = sslHnd.applicationBuffer();
+
+            try {
+                int left = decodedBuf.remaining();
+
+                if (appBuf.hasRemaining()) {
+                    if (!decodedBuf.hasRemaining())
+                        decodedBuf.clear();
+
+                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
+
+                    decodedBuf.put(appBuf);
+
+                    decodedBuf.flip();
+
+                    appBuf.clear();
+
+                    left = decodedBuf.remaining();
+                }
+
+                int read = Math.min(left, len);
+
+                decodedBuf.get(b, off, read);
+
+                // Return with previously read data, because next read may block thread.
+                if (read > 0)
+                    return read;
+
+                while (read == 0) {
+                    buf.clear();
+
+                    final int r = ch.read(buf);
+
+                    if (r <= 0)
+                        return r;
+
+                    buf.flip();
+
+                    // Avoid uncontrolled buffer expansion in BlockingSSLHandler.
+                    appBuf.clear();
+                    decodedBuf.clear();
+
+                    // Will flip appBuf.
+                    appBuf = sslHnd.decode(buf);
+
+                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
+
+                    decodedBuf.put(appBuf);
+
+                    appBuf.clear();
+
+                    decodedBuf.flip();
+
+                    read = Math.min(decodedBuf.remaining(), len);
+
+                    decodedBuf.get(b, off, read);
+                }
+
+                return read;
+
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public long skip(final long n) throws IOException {
+            return in.skip(n);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int available() throws IOException {
+            return decodedBuf.remaining();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            in.close();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void mark(final int readlimit) {
+            in.mark(readlimit);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void reset() throws IOException {
+            in.reset();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean markSupported() {
+            return in.markSupported();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SslInputStream.class, this);
+        }
+    }
+
+    /**
+     * Stream decorator that does data encryption and writes to genuine socket
+     * channel.
+     */
+    private static class SslOutputStream extends OutputStream {
+        /** Genuine output stream. */
+        private final OutputStream out;
+
+        /** */
+        private final SocketChannel ch;
+
+        /** */
+        private final BlockingSslHandler sslHnd;
+
+        /** Output data buffer. */
+        private ByteBuffer buf;
+
+        /**
+         * @param out Delegate.
+         * @param ch Socket channel.
+         * @param sslHnd SSL handler.
+         */
+        SslOutputStream(final OutputStream out, final SocketChannel ch,
+            final BlockingSslHandler sslHnd) {
+            this.out = out;
+            this.ch = ch;
+            this.sslHnd = sslHnd;
+
+            buf = ByteBuffer.allocate(1024);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void write(final int b) throws IOException {
+            buf.put((byte) b);
+
+            buf.flip();
+
+            final ByteBuffer encrypted = sslHnd.encrypt(buf);
+
+            ch.write(encrypted);
+
+            buf.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(final byte[] b) throws IOException {
+            write(b, 0, b.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
+            buf = expandBuffer(buf, len);
+
+            buf.put(b, off, len);
+
+            buf.flip();
+
+            final ByteBuffer encrypted = sslHnd.encrypt(buf);
+
+            ch.write(encrypted);
+
+            buf.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void flush() throws IOException {
+            out.flush();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            out.close();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SslOutputStream.class, this);
+        }
+    }
+
+    /**
+     * Allocate new buffer with larger capacity if need.
+     *
+     * @param buf Buffer.
+     * @param len Length to fit.
+     * @return New buffer or existing one if no need to expand it.
+     */
+    private static ByteBuffer expandBuffer(final ByteBuffer buf, final int len) {
+        if (buf.capacity() < len)
+            return ByteBuffer.allocate(len);
+
+        return buf;
     }
 }

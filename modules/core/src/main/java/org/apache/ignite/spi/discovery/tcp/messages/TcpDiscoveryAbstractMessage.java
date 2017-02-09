@@ -48,6 +48,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** */
     protected static final int CLIENT_ACK_FLAG_POS = 4;
 
+    /** */
+    protected static final int ASYNC_MODE_POS = 5;
+
     /** Sender of the message (transient). */
     private transient UUID sndNodeId;
 
@@ -278,6 +281,24 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     @Nullable public Collection<UUID> failedNodes() {
         return failedNodes;
+    }
+
+    /**
+     * Set async mode flag.
+     *
+     * @param async Async mode flag.
+     */
+    public void asyncMode(boolean async) {
+        setFlag(ASYNC_MODE_POS, async);
+    }
+
+    /**
+     * Gets async mode flag.
+     *
+     * @return Async mode flag.
+     */
+    public boolean asyncMode() {
+        return getFlag(ASYNC_MODE_POS);
     }
 
     /** {@inheritDoc} */
