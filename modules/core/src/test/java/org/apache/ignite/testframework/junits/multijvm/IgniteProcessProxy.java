@@ -153,7 +153,9 @@ public class IgniteProcessProxy implements IgniteEx {
             null,
             System.getProperty(TEST_MULTIJVM_JAVA_HOME),
             filteredJvmArgs, // JVM Args.
-            System.getProperty("surefire.test.class.path")
+            System.getProperty("surefire.test.class.path"),
+            null,
+            null
         );
 
         assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
@@ -694,7 +696,7 @@ public class IgniteProcessProxy implements IgniteEx {
     /**
      *
      */
-    private static class NodeTask implements IgniteCallable<ClusterNode> {
+    public static class NodeTask implements IgniteCallable<ClusterNode> {
         /** Ignite. */
         @IgniteInstanceResource
         private Ignite ignite;

@@ -383,7 +383,8 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
                 }
             },
             null,
-            System.getProperty("surefire.test.class.path")
+            System.getProperty("surefire.test.class.path"),
+            null
         );
 
         res.proc(proc);
@@ -422,7 +423,8 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
                 }
             },
             null,
-            System.getProperty("surefire.test.class.path")
+            System.getProperty("surefire.test.class.path"),
+            null
         );
 
         srvReady.await();

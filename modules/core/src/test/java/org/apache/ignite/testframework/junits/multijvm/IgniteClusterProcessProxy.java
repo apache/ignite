@@ -359,7 +359,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     /**
      *
      */
-    private abstract static class ClusterTaskAdapter<R> implements IgniteCallable<R> {
+    public abstract static class ClusterTaskAdapter<R> implements IgniteCallable<R> {
         /** Ignite. */
         @IgniteInstanceResource
         protected Ignite ignite;
