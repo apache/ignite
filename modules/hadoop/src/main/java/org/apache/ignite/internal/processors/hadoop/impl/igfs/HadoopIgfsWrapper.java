@@ -17,26 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
@@ -55,9 +40,16 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint.LOCALHOST;
@@ -411,12 +403,12 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         String igniteCliCfgPath = parameter(conf, PARAM_IGFS_ENDPOINT_IGNITE_CFG_PATH, authority, null);
 
         if (curDelegate == null && !F.isEmpty(igniteCliCfgPath)) {
-
             try {
                 IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgPair =
                     IgnitionEx.loadConfiguration(igniteCliCfgPath);
 
                 IgniteConfiguration cfg = cfgPair.get1();
+
                 cfg.setClientMode(true);
 
                 String nodeName = cfg.getGridName();
@@ -506,9 +498,9 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         }
 
         // 6. Try remote TCP connection.
-        boolean skipRemTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority, false);
+        boolean skipRmtTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority, false);
 
-        if (curDelegate == null && !skipRemTcp && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+        if (curDelegate == null && !skipRmtTcp && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
             HadoopIgfsEx hadoop = null;
 
             try {
@@ -673,12 +665,13 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
          * @param log Log.
          * @param userName User name.
          * @throws IgniteCheckedException On error.
-         * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not fount in the current VM.
+         * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not found in the current VM.
          */
         public static HadoopIgfsInProcWithIgniteRefsCount create(Ignite ignite, String igfsName, Log log, String userName)
             throws IgniteCheckedException {
             assert ignite != null;
 
+            // TODO: Separate new Object().
             synchronized (refCnts) {
                 if (Ignition.state(ignite.name()) == STARTED) {
                     try {
