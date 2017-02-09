@@ -617,6 +617,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 // Finish here only if not held by this thread.
                 if (!HOLD.get())
                     finishJob(res, ex, sndRes);
+                else
+                    // Make sure flag is not set for current thread.
+                    // This may happen in case of nested internal task call with continuation.
+                    HOLD.set(false);
 
                 ctx.job().currentTaskSession(null);
 
