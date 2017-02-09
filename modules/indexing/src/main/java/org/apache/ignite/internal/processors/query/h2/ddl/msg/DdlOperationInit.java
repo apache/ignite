@@ -61,14 +61,20 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
             if (e.getValue() != null)
                 errors.put(e.getKey(), e.getValue());
 
-        // TODO: Can we send IO message to initiator asynchronously?
         if (!errors.isEmpty()) {
-            DdlOperationInitError err = new DdlOperationInitError();
+            IgniteCheckedException resEx = new IgniteCheckedException("DDL operation INIT has failed [opId=" +
+                args.opId + ']');
 
-            err.setOperationId(args.opId);
-            err.setErrors(errors);
+            for (IgniteCheckedException e : errors.values())
+                resEx.addSuppressed(e);
 
-            return err;
+            DdlOperationCancel cancel = new DdlOperationCancel();
+
+            cancel.setOperationId(args.opId);
+            cancel.setError(resEx);
+
+            // Coordinator will notify the client about cancellation upon receiving this message
+            return cancel;
         }
         else {
             DdlOperationAck ackMsg = new DdlOperationAck();

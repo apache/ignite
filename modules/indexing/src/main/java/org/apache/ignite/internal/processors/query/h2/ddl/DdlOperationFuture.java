@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Client side abstraction for DDL operation as a whole.
+ * Client side abstraction for DDL operation as a whole. Used <b>on the client</b>.
  */
 public class DdlOperationFuture extends GridFutureAdapter {
     /** Unique ID of this operation. */

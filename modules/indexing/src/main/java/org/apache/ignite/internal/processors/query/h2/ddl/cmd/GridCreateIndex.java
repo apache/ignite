@@ -39,11 +39,6 @@ public class GridCreateIndex implements GridDdlCommand {
     }
 
     /** {@inheritDoc} */
-    @Override public void initError(DdlOperationArguments args) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void execute(DdlOperationArguments args) {
         // No-op.
     }

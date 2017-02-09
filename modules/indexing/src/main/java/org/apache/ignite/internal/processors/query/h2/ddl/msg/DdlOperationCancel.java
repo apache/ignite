@@ -31,13 +31,13 @@ public class DdlOperationCancel implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Message id. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Operation id. */
     private IgniteUuid opId;
 
-    /** */
+    /** Error that has led to this cancellation, or {@code null} if it's user's cancel. */
     private IgniteCheckedException err;
 
     /** {@inheritDoc} */
@@ -55,10 +55,16 @@ public class DdlOperationCancel implements DiscoveryCustomMessage {
         return false;
     }
 
+    /**
+     * @return operation id.
+     */
     public IgniteUuid getOperationId() {
         return opId;
     }
 
+    /**
+     * @param opId operation id.
+     */
     public void setOperationId(IgniteUuid opId) {
         this.opId = opId;
     }

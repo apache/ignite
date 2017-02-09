@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.ddl.cmd;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlOperationArguments;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationCancel;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInitError;
 
 /**
  * Interface for a DDL command handler - the handler for DDL protocol events containing actual logic.\
@@ -35,14 +35,6 @@ public interface GridDdlCommand<A extends DdlOperationArguments> {
     public void init(A args) throws IgniteCheckedException;
 
     /**
-     * Handle {@link DdlOperationInitError} message <b>synchronously</b> - do local cleanup
-     * of whatever {@link #init) has done.
-     * @param args Operation arguments.
-     * @throws IgniteCheckedException if failed.
-     */
-    public void initError(A args) throws IgniteCheckedException;
-
-    /**
      * Do actual DDL work on a local node.
      * @param args Operation arguments.
      * @throws IgniteCheckedException if failed.
@@ -52,6 +44,8 @@ public interface GridDdlCommand<A extends DdlOperationArguments> {
     /**
      * Revert effects of executing local part of DDL job on this node.
      * May be called in the case of an error on one of the peer nodes, or user cancel.
+     * Is called from {@link DdlOperationCancel} message handler and thus is processed <b>synchronously</b>.
+     *
      * @param args Operation arguments.
      * @throws IgniteCheckedException if failed.
      */

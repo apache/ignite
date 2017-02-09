@@ -18,12 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -36,8 +32,7 @@ public class DdlOperationResult implements Message {
     private IgniteUuid opId;
 
     /** Map from node ID to its error, if any. */
-    @GridDirectMap(keyType = UUID.class, valueType = byte[].class)
-    private Map<UUID, byte[]> errors;
+    private byte[] err;
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
@@ -52,8 +47,7 @@ public class DdlOperationResult implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("errors", errors, MessageCollectionItemType.UUID,
-                    MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeByteArray("err", err))
                     return false;
 
                 writer.incrementState();
@@ -77,8 +71,7 @@ public class DdlOperationResult implements Message {
 
         switch (reader.state()) {
             case 0:
-                errors = reader.readMap("errors", MessageCollectionItemType.UUID, MessageCollectionItemType.BYTE_ARR,
-                    false);
+                err = reader.readByteArray("err");
 
                 if (!reader.isLastRead())
                     return false;
@@ -127,16 +120,16 @@ public class DdlOperationResult implements Message {
     }
 
     /**
-     * @return Map from node ID to its error, if any.
+     * @return Error, if any.
      */
-    public Map<UUID, byte[]> getErrors() {
-        return errors;
+    public byte[] getError() {
+        return err;
     }
 
     /**
-     * @param errors Map from node ID to its error, if any.
+     * @param err Error, if any.
      */
-    public void setErrors(Map<UUID, byte[]> errors) {
-        this.errors = errors;
+    public void setError(byte[] err) {
+        this.err = err;
     }
 }

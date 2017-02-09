@@ -28,10 +28,10 @@ public class DdlOperationAck implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Message id. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Operation id. */
     private IgniteUuid opId;
 
     /** {@inheritDoc} */
@@ -49,10 +49,16 @@ public class DdlOperationAck implements DiscoveryCustomMessage {
         return false;
     }
 
+    /**
+     * @return operation id.
+     */
     public IgniteUuid getOperationId() {
         return opId;
     }
 
+    /**
+     * @param opId operation id.
+     */
     public void setOperationId(IgniteUuid opId) {
         this.opId = opId;
     }
