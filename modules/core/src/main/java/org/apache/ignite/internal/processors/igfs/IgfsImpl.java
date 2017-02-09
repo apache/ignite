@@ -402,7 +402,7 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * @return Mode resolver.
      */
-    IgfsModeResolver modeResolver() {
+    public IgfsModeResolver modeResolver() {
         return modeRslvr;
     }
 

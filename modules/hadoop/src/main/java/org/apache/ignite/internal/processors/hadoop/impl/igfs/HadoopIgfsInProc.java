@@ -30,6 +30,8 @@ import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
+import org.apache.ignite.internal.processors.igfs.IgfsImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -504,5 +506,19 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     /** {@inheritDoc} */
     @Override public String user() {
         return user;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgfsModeResolver modeResolver() throws IgniteCheckedException {
+        try {
+            return IgfsUserContext.doAs(user, new IgniteOutClosure<IgfsModeResolver>() {
+                @Override public IgfsModeResolver apply() {
+                    return ((IgfsImpl)igfs).modeResolver();
+                }
+            });
+        }
+        catch (IllegalStateException ignored) {
+            throw new HadoopIgfsCommunicationException("Failed to get mode resolver");
+        }
     }
 }

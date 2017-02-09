@@ -45,7 +45,6 @@ import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
@@ -54,6 +53,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutputSt
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsStreamDelegate;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsWrapper;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -779,6 +779,21 @@ public class IgniteHadoopFileSystem extends FileSystem {
     @SuppressWarnings("deprecation")
     @Override public long getDefaultBlockSize() {
         return igfsGrpBlockSize;
+    }
+
+    /**
+     * @return Mode resolver.
+     * @throws IOException On error.
+     */
+    public IgfsModeResolver getModeResolver() throws IOException {
+        enterBusy();
+
+        try {
+            return rmtClient.modeResolver();
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**

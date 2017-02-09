@@ -31,6 +31,7 @@ import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -274,6 +275,19 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 return hadoop.append(path, create, props);
             }
         }, path);
+    }
+
+    /**
+     * @return Mode resolver.
+     * @throws IOException On error.
+     */
+    public IgfsModeResolver modeResolver() throws IOException{
+        return withReconnectHandling(new FileSystemClosure<IgfsModeResolver>() {
+            @Override public IgfsModeResolver apply(HadoopIgfsEx hadoop,
+                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
+                return hadoop.modeResolver();
+            }
+        });
     }
 
     /**
