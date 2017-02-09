@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -70,7 +71,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
     private static CountDownLatch initLatch = new CountDownLatch(GRID_CNT);
 
     /** */
-    private static CountDownLatch splitCntLatch = new CountDownLatch(GRID_CNT + 1);
+    private static AtomicInteger splitCntr = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -170,7 +171,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
 
         tryPut(0, 2);
 
-        assertTrue(splitCntLatch.await(10, TimeUnit.SECONDS));
+        assertEquals(GRID_CNT + 1, splitCntr.get());
     }
 
     /**
@@ -230,7 +231,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
                 if (!resolved) {
                     log.info("Grid segmentation is detected, switching to inoperative state.");
 
-                    splitCntLatch.countDown();
+                    splitCntr.getAndIncrement();
                 }
 
                 return resolved;
