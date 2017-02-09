@@ -1,8 +1,10 @@
 package org.apache.ignite.math.impls;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.math.CardinalityException;
 import org.apache.ignite.math.Functions;
 import org.apache.ignite.math.IndexException;
@@ -22,6 +24,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Unit test for {@link AbstractVector}.
@@ -64,6 +67,7 @@ public class AbstractVectorTest {
 
     /** */
     private static final double TEST_VALUE = 1d;
+    public static final String NO_NEXT_ELEMENT = "No next element.";
 
     /** */
     private AbstractVector testVector;
@@ -378,11 +382,21 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test
+    @Test(expected = NoSuchElementException.class)
     public void all() {
         assertNotNull(NULL_VALUE, testVector.all());
 
         assertNotNull(NULL_VALUE, getAbstractVector(createStorage()).all());
+
+        getAbstractVector().all().iterator().next();
+    }
+
+    /** */
+    @Test
+    public void hashCodeTest() {
+        IgniteUuid guid = testVector.guid();
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.hashCode(), guid.hashCode());
     }
 
     /** */
@@ -459,7 +473,12 @@ public class AbstractVectorTest {
         addNilValues(data);
 
         assertEquals(VALUE_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
+    }
 
+    /** */
+    @Test(expected = NoSuchElementException.class)
+    public void nonZeroesEmpty() {
+        testVector.nonZeroes().iterator().next();
     }
 
     /** */
@@ -567,6 +586,9 @@ public class AbstractVectorTest {
         Spliterator<Double> secondHalf = spliterator.trySplit();
 
         assertNull(NOT_NULL_VALUE, secondHalf);
+
+        spliterator.tryAdvance(x -> {
+        });
     }
 
     /** */
@@ -615,12 +637,26 @@ public class AbstractVectorTest {
         secondHalf = spliterator.trySplit();
 
         assertNull(NOT_NULL_VALUE, secondHalf);
+
+        if (!spliterator.tryAdvance(x -> {
+        }))
+            fail(NO_NEXT_ELEMENT);
     }
 
     /** */
     @Test
-    public void dot() { // TODO write test
+    public void dot() {
+        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), 0d, VectorArrayStorageTest.NIL_DELTA);
 
+        double[] data = initVector();
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), VectorArrayStorageTest.NIL_DELTA);
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void dotNegative() {
+        testVector.dot(getAbstractVector(createEmptyStorage()));
     }
 
     /** */
@@ -637,8 +673,12 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void dotSelf() { // TODO write test
+    public void dotSelf() {
+        assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), 0d, VectorArrayStorageTest.NIL_DELTA);
 
+        double[] data = initVector();
+
+        assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), VectorArrayStorageTest.NIL_DELTA);
     }
 
     /** */
