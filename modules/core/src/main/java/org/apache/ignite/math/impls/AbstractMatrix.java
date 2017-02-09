@@ -193,7 +193,16 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix map(Matrix mtx, BiFunction<Double, Double, Double> fun) {
-        return null; // TODO
+        checkCardinality(mtx);
+
+        int rows = sto.rowSize();
+        int cols = sto.columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                storageSet(x, y, fun.apply(storageGet(x, y), mtx.getX(x, y)));
+
+        return this;
     }
 
     @Override
@@ -228,17 +237,40 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Vector foldRows(Function<Vector, Double> fun) {
-        return null; // TODO
+        int rows = rowSize();
+
+        Vector vec = likeVector(rows);
+
+        for (int i = 0; i < rows; i++)
+            vec.setX(i, fun.apply(viewRow(i)));
+
+        return vec;
     }
 
     @Override
     public Vector foldColumns(Function<Vector, Double> fun) {
-        return null; // TODO
+        int cols = columnSize();
+
+        Vector vec = likeVector(cols);
+
+        for (int i = 0; i < cols; i++)
+            vec.setX(i, fun.apply(viewColumn(i)));
+
+        return vec;
     }
 
     @Override
-    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun, T zeroVal) {
-        return null; // TODO
+    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
+        T res = zeroVal;
+
+        int rows = rowSize();
+        int cols = columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                res = foldFun.apply(res, mapFun.apply(storageGet(x, y)));
+
+        return res;
     }
 
     @Override

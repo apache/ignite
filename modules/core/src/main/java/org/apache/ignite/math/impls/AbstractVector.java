@@ -315,13 +315,13 @@ public abstract class AbstractVector implements Vector, Externalizable {
     public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
         checkCardinality(vec);
 
-        T result = zeroVal;
+        T res = zeroVal;
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            result = foldFun.apply(result, combFun.apply(storageGet(i), vec.getX(i)));
+            res = foldFun.apply(res, combFun.apply(storageGet(i), vec.getX(i)));
 
-        return result;
+        return res;
     }
 
     @Override

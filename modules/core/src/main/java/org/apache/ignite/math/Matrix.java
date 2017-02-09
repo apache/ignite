@@ -131,7 +131,7 @@ public interface Matrix {
      * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold function.
      */
-    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction mapFun, T zeroVal);
+    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal);
 
     /**
      * Gets number of columns in this matrix.
@@ -201,6 +201,14 @@ public interface Matrix {
      * @return New matrix of the same underlying class and size.
      */
     Matrix like(int rows, int cols);
+
+    /**
+     * Creates new empty vector of compatible properties (similar or the same flavor) to this matrix.
+     *
+     * @param crd Cardinality of the vector.
+     * @return Newly created empty vector "compatible" to this matrix.
+     */
+    Vector likeVector(int crd);
 
     /**
      * Creates new matrix where each value is a difference between corresponding value of this matrix and
