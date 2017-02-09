@@ -50,7 +50,7 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
                 return;
             }
 
-            boolean evicted = e.evictInternal(cctx.versions().next(), null);
+            boolean evicted = cctx.userCache() && e.evictInternal(cctx.versions().next(), null);
 
             if (evicted)
                 cctx.cache().removeEntry(e);

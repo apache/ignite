@@ -3529,6 +3529,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException {
+        synchronized (this) {
+            checkObsolete();
+
+            cctx.offheap().updateIndexes(key, localPartition());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized CacheObject valueBytes() throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -3566,11 +3575,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().update(key,
+        cctx.offheap().update(
+            key,
             val,
             ver,
             expireTime,
-            partition(),
             localPartition(),
             oldRow);
     }

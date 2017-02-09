@@ -332,13 +332,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        int partId,
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(key, partId, val, ver, expireTime, oldRow);
+        dataStore(part).update(key, val, ver, expireTime, oldRow);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIndexes(KeyCacheObject key, GridDhtLocalPartition part) throws IgniteCheckedException {
+        dataStore(part).updateIndexes(key);
     }
 
     /** {@inheritDoc} */
@@ -912,19 +916,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void update(KeyCacheObject key,
-            int p,
+        @Override public void update(
+            KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException {
             assert oldRow == null || oldRow.link() != 0L : oldRow;
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                DataRow dataRow = new DataRow(key, val, ver, p, expireTime);
+                DataRow dataRow = new DataRow(key, val, ver, partId, expireTime);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -966,9 +971,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     assert qryMgr.enabled();
 
                     if (old != null)
-                        qryMgr.store(key, p, old.value(), old.version(), val, ver, expireTime, dataRow.link());
+                        qryMgr.store(key, partId, old.value(), old.version(), val, ver, expireTime, dataRow.link());
                     else
-                        qryMgr.store(key, p, null, null, val, ver, expireTime, dataRow.link());
+                        qryMgr.store(key, partId, null, null, val, ver, expireTime, dataRow.link());
                 }
 
                 if (old != null) {
@@ -988,6 +993,27 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             }
             finally {
                 busyLock.leaveBusy();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateIndexes(KeyCacheObject key) throws IgniteCheckedException {
+            if (indexingEnabled) {
+                CacheDataRow row = dataTree.findOne(new SearchRow(key));
+
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                if (row != null) {
+                    qryMgr.store(
+                        key,
+                        partId,
+                        null,
+                        null,
+                        row.value(),
+                        row.version(),
+                        row.expireTime(),
+                        row.link());
+                }
             }
         }
 
