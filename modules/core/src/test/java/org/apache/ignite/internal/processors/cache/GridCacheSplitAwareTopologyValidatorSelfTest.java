@@ -36,9 +36,14 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -69,9 +74,6 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
 
     /** */
     private static CountDownLatch initLatch = new CountDownLatch(GRID_CNT);
-
-    /** */
-    private static AtomicInteger splitCntr = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -170,8 +172,6 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         resolveSplit();
 
         tryPut(0, 2);
-
-        assertEquals(GRID_CNT + 1, splitCntr.get());
     }
 
     /**
@@ -222,7 +222,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         private IgniteLogger log;
 
         /** */
-        private transient boolean resolved = false;
+        private transient volatile long markerVersionId;
 
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
@@ -233,17 +233,22 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
             }).isEmpty())
                 return false;
 
-            if (hasSplit(nodes)) {
-                if (!resolved) {
-                    log.info("Grid segmentation is detected, switching to inoperative state.");
+            IgniteKernal kernal = (IgniteKernal)ignite;
 
-                    splitCntr.getAndIncrement();
-                }
+            GridCacheSharedContext sharedCtx = U.field(kernal.context().cache(), "sharedCtx");
+
+            AffinityTopologyVersion topVer = sharedCtx.exchange().topologyVersion();
+
+            if (hasSplit(nodes)) {
+                boolean resolved = markerVersionId != 0 && topVer.topologyVersion() >= markerVersionId;
+
+                if (!resolved)
+                    log.info("Grid segmentation is detected, switching to inoperative state.");
 
                 return resolved;
             }
             else
-                resolved = false;
+                markerVersionId = 0;
 
             return true;
         }
@@ -274,10 +279,12 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
 
             ignite.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    ClusterNode node = ((DiscoveryEvent)evt).eventNode();
+                    DiscoveryEvent evt1 = (DiscoveryEvent)evt;
+
+                    ClusterNode node = evt1.eventNode();
 
                     if (isMarkerNode(node))
-                        resolved = true;
+                        markerVersionId = evt1.topologyVersion();
 
                     return true;
                 }
