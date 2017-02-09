@@ -45,6 +45,9 @@ public class AbstractVectorTest {
     private static final String NULL_VALUE = "Null value.";
 
     /** */
+    private static final String NULL_VALUES = "Null values.";
+
+    /** */
     private static final String NOT_NULL_VALUE = "Not null value.";
 
     /** */
@@ -55,13 +58,13 @@ public class AbstractVectorTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         testVector = getAbstractVector();
     }
 
     /** */
     @Test
-    public void setStorage() throws Exception {
+    public void setStorage() {
         assertTrue(testVector.size() == 0);
 
         testVector.setStorage(createStorage());
@@ -71,7 +74,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void size() throws Exception {
+    public void size() {
         assertTrue(testVector.size() == 0);
 
         testVector.setStorage(createStorage());
@@ -86,11 +89,11 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void getPositive() throws Exception {
+    public void getPositive() {
         testVector.setStorage(createStorage());
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertNotNull("null values", testVector.get(i));
+            assertNotNull(NULL_VALUES, testVector.get(i));
 
     }
 
@@ -99,7 +102,7 @@ public class AbstractVectorTest {
     public void getNegative0() {
         testVector.get(0);
     }
-    
+
     /** */
     @Test(expected = IndexException.class)
     public void getNegative1() {
@@ -118,7 +121,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void getX() throws Exception {
+    public void getX() {
         VectorStorage storage = createStorage();
 
         testVector.setStorage(storage);
@@ -129,13 +132,13 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = UnsupportedOperationException.class)
-    public void getXNegative0() throws Exception {
+    public void getXNegative0() {
         testVector.getX(0);
     }
 
     /** */
     @Test(expected = ArrayIndexOutOfBoundsException.class)
-    public void getXNegative1() throws Exception {
+    public void getXNegative1() {
         testVector.setStorage(createStorage());
 
         testVector.getX(-1);
@@ -143,7 +146,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = ArrayIndexOutOfBoundsException.class)
-    public void getXNegative2() throws Exception {
+    public void getXNegative2() {
         testVector.setStorage(createStorage());
 
         testVector.getX(VectorArrayStorageTest.STORAGE_SIZE + 1);
@@ -151,7 +154,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void mapTwoVectors() throws Exception {
+    public void mapTwoVectors() {
         VectorStorage storage = createStorage();
         double[] data = storage.data().clone();
 
@@ -166,7 +169,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void mapDoubleFunc() throws Exception {
+    public void mapDoubleFunc() {
         double[] data = initVector();
         Vector map = testVector.map(Functions.INV);
 
@@ -176,7 +179,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void mapCurrying() throws Exception {
+    public void mapCurrying() {
         double[] data = initVector();
         Vector map = testVector.map(Functions.PLUS, SECOND_ARG);
 
@@ -186,7 +189,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void minValue() throws Exception {
+    public void minValue() {
         double[] data = initVector();
 
         Vector.Element minVal = testVector.minValue();
@@ -196,7 +199,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void maxValue() throws Exception {
+    public void maxValue() {
         double[] data = initVector();
 
         Vector.Element maxVal = testVector.maxValue();
@@ -206,7 +209,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void set() throws Exception {
+    public void set() {
         double[] data = initVector();
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
@@ -218,13 +221,13 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = IndexException.class)
-    public void setNegative0() throws Exception {
+    public void setNegative0() {
         testVector.set(-1, -1);
     }
 
     /** */
     @Test(expected = IndexException.class)
-    public void setNegative1() throws Exception {
+    public void setNegative1() {
         initVector();
 
         testVector.set(-1, -1);
@@ -232,7 +235,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = IndexException.class)
-    public void setNegative2() throws Exception {
+    public void setNegative2() {
         initVector();
 
         testVector.set(VectorArrayStorageTest.STORAGE_SIZE + 1, -1);
@@ -240,7 +243,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void setX() throws Exception {
+    public void setX() {
         double[] data = initVector();
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
@@ -252,7 +255,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = IndexOutOfBoundsException.class)
-    public void setXNegative0() throws Exception {
+    public void setXNegative0() {
         initVector();
 
         testVector.setX(-1, -1);
@@ -260,7 +263,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = IndexOutOfBoundsException.class)
-    public void setXNegative1() throws Exception {
+    public void setXNegative1() {
         initVector();
 
         testVector.setX(VectorArrayStorageTest.STORAGE_SIZE + 1, -1);
@@ -268,13 +271,13 @@ public class AbstractVectorTest {
 
     /** */
     @Test(expected = UnsupportedOperationException.class)
-    public void setXNegative2() throws Exception {
+    public void setXNegative2() {
         testVector.setX(-1, -1);
     }
 
     /** */
     @Test
-    public void increment() throws Exception {
+    public void increment() {
         double[] data = initVector();
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
@@ -286,7 +289,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void incrementX() throws Exception {
+    public void incrementX() {
         double[] data = initVector();
 
         for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
@@ -298,21 +301,21 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void isZero() throws Exception {
+    public void isZero() {
         assertTrue(UNEXPECTED_VALUE, testVector.isZero(0d));
         assertFalse(UNEXPECTED_VALUE, testVector.isZero(1d));
     }
 
     /** */
     @Test
-    public void sum() throws Exception {
+    public void sum() {
         double[] data = initVector();
 
         assertEquals(VALUE_NOT_EQUALS, testVector.sum(), Arrays.stream(data).sum(), EXPECTED_DELTA);
     }
 
     /** */ @Test
-    public void guid() throws Exception {
+    public void guid() {
         assertNotNull(NULL_GUID,testVector.guid());
 
         assertEquals(UNEXPECTED_GUID_VALUE,testVector.guid(), testVector.guid());
@@ -329,7 +332,7 @@ public class AbstractVectorTest {
     }
 
     /** */ @Test
-    public void equals() throws Exception {
+    public void equalsTest() {
         VectorStorage storage = createStorage();
 
         AbstractVector testVector1 = getAbstractVector();
@@ -358,13 +361,13 @@ public class AbstractVectorTest {
     }
 
     /** */ @Test
-    public void all() throws Exception {
+    public void all() {
         assertNotNull(NULL_VALUE, testVector.all());
         assertNotNull(NULL_VALUE, getAbstractVector(createStorage()).all());
     }
 
     /** */ @Test
-    public void nonZeroElements() throws Exception {
+    public void nonZeroElements() {
         VectorStorage storage = createStorage();
 
         assertEquals(VALUE_NOT_EQUALS, testVector.nonZeroElements(), 0);
@@ -379,14 +382,14 @@ public class AbstractVectorTest {
     }
 
     /** */ @Test
-    public void clusterGroup() throws Exception {
+    public void clusterGroup() {
 
         assertNull(NOT_NULL_VALUE, testVector.clusterGroup());
 
     }
 
     /** */ @Test
-    public void foldMapWithSecondVector() throws Exception {
+    public void foldMapWithSecondVector() {
         double[] data0 = initVector();
 
         VectorStorage storage1 = createStorage();
@@ -407,14 +410,14 @@ public class AbstractVectorTest {
     }
 
     /** */ @Test
-    public void foldMap() throws Exception {
+    public void foldMap() {
         double[] data = initVector();
 
         assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Math::sin, 0d), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
     }
 
     /** */ @Test
-    public void nonZeroes() throws Exception {
+    public void nonZeroes() {
         assertNotNull(NULL_VALUE, testVector.nonZeroes());
 
         VectorStorage storage = createStorage();
@@ -434,7 +437,7 @@ public class AbstractVectorTest {
     }
 
     /** */ @Test (expected = UnsupportedOperationException.class)
-    public void assign() throws Exception {
+    public void assign() {
         testVector.assign(TEST_VALUE);
     }
 
@@ -448,52 +451,52 @@ public class AbstractVectorTest {
     }
 
     /** */ @Test
-    public void assign1() throws Exception {
+    public void assign1() { // TODO write test
 
     }
 
     /** */ @Test
-    public void assign2() throws Exception {
+    public void assign2() { // TODO write test
 
     }
 
     /** */ @Test
-    public void assign3() throws Exception {
+    public void assign3() { // TODO write test
 
     }
 
     /** */ @Test
-    public void allSpliterator() throws Exception {
+    public void allSpliterator() { // TODO write test
 
     }
 
     /** */ @Test
-    public void nonZeroSpliterator() throws Exception {
+    public void nonZeroSpliterator() { // TODO write test
 
     }
 
     /** */ @Test
-    public void dot() throws Exception {
+    public void dot() { // TODO write test
 
     }
 
     /** */ @Test
-    public void getLengthSquared() throws Exception {
+    public void getLengthSquared() { // TODO write test
 
     }
 
     /** */ @Test
-    public void getDistanceSquared() throws Exception {
+    public void getDistanceSquared() { // TODO write test
 
     }
 
     /** */ @Test
-    public void dotSelf() throws Exception {
+    public void dotSelf() { // TODO write test
 
     }
 
     /** */ @Test
-    public void getElement() throws Exception {
+    public void getElement() { // TODO write test
 
     }
 

@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 
 import static org.junit.Assert.*;
 
-/** */
+/** See also: {@link AbstractVectorTest}. */
 public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void sizeTest() {
@@ -69,52 +69,7 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void assignTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void assign1Test() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void assign2Test() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void mapTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void map1Test() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void map2Test() { // TODO write test
-
-    }
-
-    /** */ @Test
     public void divideTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void dotTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void getTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void getXTest() { // TODO write test
 
     }
 
@@ -154,37 +109,12 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void minValueTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void maxValueTest() { // TODO write test
-
-    }
-
-    /** */ @Test
     public void plusTest() { // TODO write test
 
     }
 
     /** */ @Test
     public void plus1Test() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void setTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void setXTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void incrementXTest() { // TODO write test
 
     }
 
@@ -210,21 +140,6 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void crossTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void foldMapTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void getLengthSquaredTest() { // TODO write test
-
-    }
-
-    /** */ @Test
-    public void getDistanceSquaredTest() { // TODO write test
 
     }
 
