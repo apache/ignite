@@ -240,7 +240,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
             AffinityTopologyVersion topVer = sharedCtx.exchange().topologyVersion();
 
             if (hasSplit(nodes)) {
-                boolean resolved = markerVersionId != 0 && topVer.topologyVersion() >= markerVersionId;
+                boolean resolved = markerVersionId != 0 && topVer.topologyVersion() > markerVersionId;
 
                 if (!resolved)
                     log.info("Grid segmentation is detected, switching to inoperative state.");
