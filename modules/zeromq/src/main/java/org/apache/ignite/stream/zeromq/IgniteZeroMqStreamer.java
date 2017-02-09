@@ -20,7 +20,6 @@ package org.apache.ignite.stream.zeromq;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.stream.StreamAdapter;
@@ -40,7 +39,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
     private int threadsCount = 1;
 
     /** Parametr {@code True} if streamer started. */
-    private static AtomicBoolean isStart = new AtomicBoolean();
+    private boolean isStart = false;
 
     /** Process stream asynchronously */
     private ExecutorService zeroMqExSrv;
@@ -62,8 +61,10 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
      * Start ZeroMQ streamer.
      */
     public void start() {
-        if (!isStart.compareAndSet(false, true))
+        if (isStart)
             throw new IgniteException("Attempted to start an already started ZeroMQ streamer");
+
+        isStart = true;
 
         log = getIgnite().log();
 
@@ -96,7 +97,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
      * Stop ZeroMQ streamer.
      */
     public void stop() {
-        if (!isStart.get())
+        if (!isStart)
             throw new IgniteException("Attempted to stop an already stopped ZeroMQ streamer");
 
         zeroMqExSrv.shutdownNow();
@@ -104,7 +105,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
         socket.close();
         ctx.close();
 
-        isStart.set(false);
+        isStart = false;
     }
 
     /**
