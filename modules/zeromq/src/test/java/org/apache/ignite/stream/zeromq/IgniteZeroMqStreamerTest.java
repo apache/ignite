@@ -66,7 +66,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR, ADDR, null);
 
-            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
+            IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
             // TODO more than 1 thread crash, socket sharing between threads
             streamer.setThreadsCount(1);
@@ -84,7 +84,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB, ADDR, topic);
 
-            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
+            IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
             // TODO more than 1 thread crash, socket sharing between threads
             streamer.setThreadsCount(1);
@@ -100,7 +100,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PULL, ADDR, null);
 
-            IgniteZeroMqStreamerImpl streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
+            IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
             // TODO more than 1 thread crash, socket sharing between threads
             streamer.setThreadsCount(1);
@@ -136,7 +136,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         CountDownLatch latch = listener.getLatch();
 
-//        latch.await();
+        latch.await();
 
         unsubscribeToPutEvents(listener);
 
@@ -172,9 +172,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      * @param dataStreamer Ignite Data Streamer.
      * @returnd ZeroMQ Streamer.
      */
-    private IgniteZeroMqStreamerImpl newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer,
+    private IgniteZeroMqStreamer newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer,
         ZeroMqSettings zeroMqSettings) {
-        IgniteZeroMqStreamerImpl streamer = new IgniteZeroMqStreamerImpl(zeroMqSettings);
+        IgniteZeroMqStreamer streamer = new IgniteZeroMqStreamer(zeroMqSettings);
 
         streamer.setIgnite(grid());
         streamer.setStreamer(dataStreamer);
