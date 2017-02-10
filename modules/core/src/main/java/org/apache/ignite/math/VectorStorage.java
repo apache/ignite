@@ -77,15 +77,18 @@ public interface VectorStorage extends Externalizable {
 
     /**
      * Gets underlying array if {@link #isArrayBased()} returns {@code true}.
+     * Returns {@code null} if in other cases.
      *
      * @see #isArrayBased()
      */
-    public double[] data();
+    public default double[] data() {
+        return null;
+    }
 
     /**
-     * Destroy off heap vector storage, in on heap case do nothing.
+     * Destroys off heap vector storage. It's a no-op in onheap case.
      */
     public default void destroy() {
-
+        // No-op.
     }
 }
