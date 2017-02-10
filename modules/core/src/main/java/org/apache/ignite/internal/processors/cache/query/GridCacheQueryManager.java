@@ -1047,96 +1047,115 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
                     "Partition can not be reserved.");
 
-            final Iterator<GridCacheMapEntry> iter = locPart.allEntries().iterator(); //TODO: entries() or allEntries or entrySet() ?
+            if (!cctx.isSwapOrOffheapEnabled()) {
+                final Iterator<GridCacheMapEntry> iter = locPart.allEntries().iterator(); //TODO: entries() or allEntries or entrySet() ?
 
-            final boolean keepBinary = qry.keepBinary();
+                final boolean keepBinary = qry.keepBinary();
 
-            return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
+                return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
 
-                IgniteCacheExpiryPolicy expiryPlc = cctx.cache().expiryPolicy(plc);
+                    IgniteCacheExpiryPolicy expiryPlc = cctx.cache().expiryPolicy(plc);
 
-                /** */
-                private IgniteBiTuple<K, V> next;
-                {
-                    advance();
-                }
+                    /** */
+                    private IgniteBiTuple<K, V> next;
 
-                @Override public boolean hasNextX() throws IgniteCheckedException {
-                    return next != null;
-                }
-
-                @Override public IgniteBiTuple<K, V> nextX() throws IgniteCheckedException {
-                    if (next == null)
-                        throw new NoSuchElementException();
-
-                    IgniteBiTuple<K, V> next0 = next;
-
-                    advance();
-
-                    return next0;
-                }
-
-                @Override public void removeX() throws IgniteCheckedException {
-                    // No-op.
-                }
-
-                private void advance() {
-                    IgniteBiTuple<K, V> next0 = null;
-
-                    while (iter.hasNext()) {
-                        GridCacheMapEntry next = iter.next();
-
-                        if(next.deleted())
-                            continue;
-
-                        if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
-                            dht.sendTtlUpdateRequest(expiryPlc);
-
-                            expiryPlc = cctx.cache().expiryPolicy(plc);
-                        }
-
-                        KeyCacheObject key = next.key();
-                        CacheObject val = null;
-
-                        try {
-                            val = next.obsolete()?cctx.cache().entryEx(key).peek(true,
-                                true, true, expiryPlc):next.rawGet();
-                        }
-                        catch (GridCacheEntryRemovedException |IgniteCheckedException e) {
-                            continue;
-                        }
-
-                        if (val != null) {
-                            boolean keepBinary0 = !locNode || keepBinary;
-
-                            next0 = F.t(
-                                (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
-                                (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
-
-                            boolean passPred = true;
-
-                            if (keyValFilter != null) {
-                                Object key0 = next0.getKey();
-                                Object val0 = next0.getValue();
-
-                                if (keepBinary0 && !keepBinary) {
-                                    key0 = (K)cctx.unwrapBinaryIfNeeded(key0, keepBinary);
-                                    val0 = (V)cctx.unwrapBinaryIfNeeded(val0, keepBinary);
-                                }
-
-                                passPred = keyValFilter.apply((K)key0, (V)val0);
-                            }
-
-                            if (passPred)
-                                break;
-                            else
-                                next0 = null;
-                        }
-
-                        break;
+                    {
+                        advance();
                     }
 
-                    next = next0;
+                    @Override public boolean hasNextX() throws IgniteCheckedException {
+                        return next != null;
+                    }
+
+                    @Override public IgniteBiTuple<K, V> nextX() throws IgniteCheckedException {
+                        if (next == null)
+                            throw new NoSuchElementException();
+
+                        IgniteBiTuple<K, V> next0 = next;
+
+                        advance();
+
+                        return next0;
+                    }
+
+                    @Override public void removeX() throws IgniteCheckedException {
+                        // No-op.
+                    }
+
+                    private void advance() {
+                        IgniteBiTuple<K, V> next0 = null;
+
+                        while (iter.hasNext()) {
+                            GridCacheMapEntry next = iter.next();
+
+                            if (next.deleted())
+                                continue;
+
+                            if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
+                                dht.sendTtlUpdateRequest(expiryPlc);
+
+                                expiryPlc = cctx.cache().expiryPolicy(plc);
+                            }
+
+                            KeyCacheObject key = next.key();
+                            CacheObject val = null;
+
+                            try {
+                                val = next.obsoleteOrDeleted() ? cctx.cache().entryEx(key).peek(true,
+                                    true, true, expiryPlc) : next.rawGet();
+                            }
+                            catch (GridCacheEntryRemovedException | IgniteCheckedException e) {
+                                continue;
+                            }
+
+                            if (val != null) {
+                                boolean keepBinary0 = !locNode || keepBinary;
+
+                                next0 = F.t(
+                                    (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
+                                    (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
+
+                                boolean passPred = true;
+
+                                if (keyValFilter != null) {
+                                    Object key0 = next0.getKey();
+                                    Object val0 = next0.getValue();
+
+                                    if (keepBinary0 && !keepBinary) {
+                                        key0 = (K)cctx.unwrapBinaryIfNeeded(key0, keepBinary);
+                                        val0 = (V)cctx.unwrapBinaryIfNeeded(val0, keepBinary);
+                                    }
+
+                                    passPred = keyValFilter.apply((K)key0, (V)val0);
+                                }
+
+                                if (passPred)
+                                    break;
+                                else
+                                    next0 = null;
+                            }
+                        }
+
+                        next = next0;
+                    }
+                };
+            }
+
+            final GridDhtLocalPartition locPart0 = locPart;
+
+            keyIter = new Iterator<K>() {
+                private Iterator<KeyCacheObject> iter0 = locPart0.keySet().iterator();
+
+                @Override public boolean hasNext() {
+                    return iter0.hasNext();
+                }
+
+                @Override public K next() {
+                    return (K)iter0.next();
+                }
+
+                @Override public void remove() {
+                    iter0.remove();
                 }
             };
         }
@@ -2196,8 +2215,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets cache queries detailed metrics.
-     * Detail metrics could be enabled by setting non-zero value via {@link CacheConfiguration#setQueryDetailMetricsSize(int)}
+     * Gets cache queries detailed metrics. Detail metrics could be enabled by setting non-zero value via {@link
+     * CacheConfiguration#setQueryDetailMetricsSize(int)}
      *
      * @return Cache queries metrics aggregated by query type and query text.
      */
