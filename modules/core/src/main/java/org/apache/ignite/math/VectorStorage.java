@@ -81,4 +81,11 @@ public interface VectorStorage extends Externalizable {
      * @see #isArrayBased()
      */
     public double[] data();
+
+    /**
+     * Destroy off heap vector storage, in on heap case do nothing.
+     */
+    public default void destroy() {
+
+    }
 }

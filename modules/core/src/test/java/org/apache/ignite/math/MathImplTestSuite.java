@@ -22,6 +22,7 @@ import org.apache.ignite.math.impls.DenseLocalOnHeapVectorConstructorTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorIterableTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorTest;
 import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
+import org.apache.ignite.math.impls.storage.VectorOffheapStorageTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -34,7 +35,8 @@ import org.junit.runners.Suite;
     DenseLocalOnHeapVectorConstructorTest.class,
     DenseLocalOnHeapVectorIterableTest.class,
     DenseLocalOnHeapVectorTest.class,
-    VectorArrayStorageTest.class
+    VectorArrayStorageTest.class,
+    VectorOffheapStorageTest.class
 })
 public class MathImplTestSuite {
 }
