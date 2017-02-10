@@ -30,63 +30,19 @@ import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.impls.storage.VectorArrayStorage;
-import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
 import org.apache.ignite.math.impls.storage.VectorNullStorage;
 import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterator.SIZED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.apache.ignite.math.impls.MathTestConstants.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit test for {@link AbstractVector}.
  */
 public class AbstractVectorTest {
-    /** */
-    private static final String VALUE_NOT_EQUALS = "Values not equals.";
-
-    /** */
-    private static final double SECOND_ARG = 1d;
-
-    /**
-     * We assume that we will check calculation precision in other tests.
-     */
-    private static final double EXPECTED_DELTA = 0.1d;
-
-    /** */
-    private static final String UNEXPECTED_VALUE = "Unexpected value.";
-
-    /** */
-    private static final String NULL_GUID = "Null GUID.";
-
-    /** */
-    private static final String UNEXPECTED_GUID_VALUE = "Unexpected GUID value.";
-
-    /** */
-    private static final String EMPTY_GUID = "Empty GUID.";
-
-    /** */
-    private static final String VALUES_SHOULD_BE_NOT_EQUALS = "Values should be not equals.";
-
-    /** */
-    private static final String NULL_VALUE = "Null value.";
-
-    /** */
-    private static final String NULL_VALUES = "Null values.";
-
-    /** */
-    private static final String NOT_NULL_VALUE = "Not null value.";
-
-    /** */
-    private static final double TEST_VALUE = 1d;
-    public static final String NO_NEXT_ELEMENT = "No next element.";
 
     /** */
     private AbstractVector testVector;
@@ -104,7 +60,7 @@ public class AbstractVectorTest {
 
         testVector.setStorage(createStorage());
 
-        assertTrue(testVector.size() == VectorArrayStorageTest.STORAGE_SIZE);
+        assertTrue(testVector.size() == STORAGE_SIZE);
     }
 
     /** */
@@ -113,13 +69,13 @@ public class AbstractVectorTest {
         assertTrue(testVector.size() == 0);
 
         testVector.setStorage(createStorage());
-        assertTrue(testVector.size() == VectorArrayStorageTest.STORAGE_SIZE);
+        assertTrue(testVector.size() == STORAGE_SIZE);
 
-        testVector.setStorage(new VectorArrayStorage(VectorArrayStorageTest.STORAGE_SIZE + VectorArrayStorageTest.STORAGE_SIZE));
-        assertTrue(testVector.size() == VectorArrayStorageTest.STORAGE_SIZE + VectorArrayStorageTest.STORAGE_SIZE);
+        testVector.setStorage(new VectorArrayStorage(STORAGE_SIZE + STORAGE_SIZE));
+        assertTrue(testVector.size() == STORAGE_SIZE + STORAGE_SIZE);
 
         testVector = getAbstractVector(createStorage());
-        assertTrue(testVector.size() == VectorArrayStorageTest.STORAGE_SIZE);
+        assertTrue(testVector.size() == STORAGE_SIZE);
     }
 
     /** */
@@ -127,7 +83,7 @@ public class AbstractVectorTest {
     public void getPositive() {
         testVector.setStorage(createStorage());
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
+        for (int i = 0; i < STORAGE_SIZE; i++)
             assertNotNull(NULL_VALUES, testVector.get(i));
 
     }
@@ -161,8 +117,8 @@ public class AbstractVectorTest {
 
         testVector.setStorage(storage);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), storage.get(i), VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), storage.get(i), NIL_DELTA);
     }
 
     /** */
@@ -184,7 +140,7 @@ public class AbstractVectorTest {
     public void getXNegative2() {
         testVector.setStorage(createStorage());
 
-        testVector.getX(VectorArrayStorageTest.STORAGE_SIZE + 1);
+        testVector.getX(STORAGE_SIZE + 1);
     }
 
     /** */
@@ -200,8 +156,8 @@ public class AbstractVectorTest {
 
         Vector map = testVector.map(testVector1, Functions.PLUS);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, map.get(i), data[i] + data[i], VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, map.get(i), data[i] + data[i], NIL_DELTA);
     }
 
     /** */
@@ -210,8 +166,8 @@ public class AbstractVectorTest {
         double[] data = initVector();
         Vector map = testVector.map(Functions.INV);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, map.get(i), Functions.INV.apply(data[i]), VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, map.get(i), Functions.INV.apply(data[i]), NIL_DELTA);
     }
 
     /** */
@@ -220,8 +176,8 @@ public class AbstractVectorTest {
         double[] data = initVector();
         Vector map = testVector.map(Functions.PLUS, SECOND_ARG);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, map.get(i), Functions.PLUS.apply(data[i], SECOND_ARG), VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, map.get(i), Functions.PLUS.apply(data[i], SECOND_ARG), NIL_DELTA);
     }
 
     /** */
@@ -231,7 +187,7 @@ public class AbstractVectorTest {
 
         Vector.Element minVal = testVector.minValue();
 
-        assertEquals(VALUE_NOT_EQUALS, minVal.get(), Arrays.stream(data).min().getAsDouble(), VectorArrayStorageTest.NIL_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, minVal.get(), Arrays.stream(data).min().getAsDouble(), NIL_DELTA);
     }
 
     /** */
@@ -241,7 +197,7 @@ public class AbstractVectorTest {
 
         Vector.Element maxVal = testVector.maxValue();
 
-        assertEquals(VALUE_NOT_EQUALS, maxVal.get(), Arrays.stream(data).max().getAsDouble(), VectorArrayStorageTest.NIL_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, maxVal.get(), Arrays.stream(data).max().getAsDouble(), NIL_DELTA);
     }
 
     /** */
@@ -249,11 +205,11 @@ public class AbstractVectorTest {
     public void set() {
         double[] data = initVector();
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
+        for (int i = 0; i < STORAGE_SIZE; i++)
             testVector.set(i, Math.exp(data[i]));
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), NIL_DELTA);
     }
 
     /** */
@@ -275,7 +231,7 @@ public class AbstractVectorTest {
     public void setNegative2() {
         initVector();
 
-        testVector.set(VectorArrayStorageTest.STORAGE_SIZE + 1, -1);
+        testVector.set(STORAGE_SIZE + 1, -1);
     }
 
     /** */
@@ -283,11 +239,11 @@ public class AbstractVectorTest {
     public void setX() {
         double[] data = initVector();
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
+        for (int i = 0; i < STORAGE_SIZE; i++)
             testVector.setX(i, Math.exp(data[i]));
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), NIL_DELTA);
     }
 
     /** */
@@ -303,7 +259,7 @@ public class AbstractVectorTest {
     public void setXNegative1() {
         initVector();
 
-        testVector.setX(VectorArrayStorageTest.STORAGE_SIZE + 1, -1);
+        testVector.setX(STORAGE_SIZE + 1, -1);
     }
 
     /** */
@@ -317,11 +273,11 @@ public class AbstractVectorTest {
     public void increment() {
         double[] data = initVector();
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
+        for (int i = 0; i < STORAGE_SIZE; i++)
             testVector.increment(i, 1d);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i] + 1, VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i] + 1, NIL_DELTA);
     }
 
     /** */
@@ -329,11 +285,11 @@ public class AbstractVectorTest {
     public void incrementX() {
         double[] data = initVector();
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
+        for (int i = 0; i < STORAGE_SIZE; i++)
             testVector.incrementX(i, 1d);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i] + 1, VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i] + 1, NIL_DELTA);
     }
 
     /** */
@@ -537,8 +493,8 @@ public class AbstractVectorTest {
 
         testVector.assign(doubles);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), doubles[i], VectorArrayStorageTest.NIL_DELTA);
+        for (int i = 0; i < STORAGE_SIZE; i++)
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), doubles[i], NIL_DELTA);
 
     }
 
@@ -547,13 +503,13 @@ public class AbstractVectorTest {
     public void assignByFunc() {
 
         for (Vector.Element x : testVector.all())
-            assertNotEquals(VALUES_SHOULD_BE_NOT_EQUALS, x.index(), x.get(), VectorArrayStorageTest.NIL_DELTA);
+            assertNotEquals(VALUES_SHOULD_BE_NOT_EQUALS, x.index(), x.get(), NIL_DELTA);
 
         testVector.setStorage(createEmptyStorage());
         testVector.assign(x -> x);
 
         for (Vector.Element x : testVector.all())
-            assertEquals(VALUE_NOT_EQUALS, x.index(), x.get(), VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, x.index(), x.get(), NIL_DELTA);
     }
 
     /** */
@@ -665,11 +621,11 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void dot() {
-        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), 0d, VectorArrayStorageTest.NIL_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), 0d, NIL_DELTA);
 
         double[] data = initVector();
 
-        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), VectorArrayStorageTest.NIL_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), NIL_DELTA);
     }
 
     /** */
@@ -693,11 +649,11 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void dotSelf() {
-        assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), 0d, VectorArrayStorageTest.NIL_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), 0d, NIL_DELTA);
 
         double[] data = initVector();
 
-        assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), VectorArrayStorageTest.NIL_DELTA);
+        assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), NIL_DELTA);
     }
 
     /** */
@@ -718,7 +674,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++) {
             data0[i] += data1[i];
 
-            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], NIL_DELTA);
         }
     }
 
@@ -732,7 +688,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++) {
             data0[i] += TEST_VALUE;
 
-            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], NIL_DELTA);
         }
     }
 
@@ -754,7 +710,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++) {
             data0[i] -= data1[i];
 
-            assertEquals(VALUE_NOT_EQUALS, minus.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, minus.get(i), data0[i], NIL_DELTA);
         }
     }
 
@@ -776,7 +732,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++) {
             data0[i] *= data1[i];
 
-            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
         }
     }
 
@@ -792,7 +748,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++) {
             data0[i] *= testValue;
 
-            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
         }
     }
 
@@ -818,7 +774,7 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++) {
             data0[i] /= testValue;
 
-            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
         }
     }
 
@@ -830,11 +786,11 @@ public class AbstractVectorTest {
         for (int i = 0; i < data.length; i++) {
             assertNotNull(NULL_VALUE, testVector.getElement(i));
 
-            assertEquals(UNEXPECTED_VALUE, testVector.getElement(i).get(), data[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(UNEXPECTED_VALUE, testVector.getElement(i).get(), data[i], NIL_DELTA);
 
             testVector.getElement(i).set(++data[i]);
 
-            assertEquals(UNEXPECTED_VALUE, testVector.getElement(i).get(), data[i], VectorArrayStorageTest.NIL_DELTA);
+            assertEquals(UNEXPECTED_VALUE, testVector.getElement(i).get(), data[i], NIL_DELTA);
         }
     }
 
@@ -984,7 +940,7 @@ public class AbstractVectorTest {
      * @return VectorStorage
      */
     private VectorStorage createEmptyStorage() {
-        return new VectorArrayStorage(VectorArrayStorageTest.STORAGE_SIZE);
+        return new VectorArrayStorage(STORAGE_SIZE);
     }
 
     /**
@@ -993,9 +949,9 @@ public class AbstractVectorTest {
      * @return VectorStorage.
      */
     private VectorStorage createStorage() {
-        VectorArrayStorage storage = new VectorArrayStorage(VectorArrayStorageTest.STORAGE_SIZE);
+        VectorArrayStorage storage = new VectorArrayStorage(STORAGE_SIZE);
 
-        for (int i = 0; i < VectorArrayStorageTest.STORAGE_SIZE; i++)
+        for (int i = 0; i < STORAGE_SIZE; i++)
             storage.set(i, Math.random());
 
         return storage;
