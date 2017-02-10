@@ -36,7 +36,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  */
 public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
-    private static final int CACHE_ENTRY_COUNT = 100;
+    private static final int CACHE_ENTRY_COUNT = 10_000;
 
     /**  */
     private final String ADDR = "tcp://localhost:5671";
@@ -51,7 +51,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10_000;
+        return 20_000;
     }
 
     /** {@inheritDoc} */
@@ -73,9 +73,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
             IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
-            // TODO more than 1 thread crash, socket sharing between threads
-            streamer.setThreadsCount(1);
-
             executeStreamer(streamer, ZMQ.PAIR, null);
         }
     }
@@ -90,9 +87,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
             IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
-            // TODO more than 1 thread crash, socket sharing between threads
-            streamer.setThreadsCount(1);
-
             executeStreamer(streamer, ZMQ.PUB, TOPIC);
         }
     }
@@ -105,9 +99,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PULL, ADDR, null);
 
             IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
-
-            // TODO more than 1 thread crash, socket sharing between threads
-            streamer.setThreadsCount(1);
 
             executeStreamer(streamer, ZMQ.PUSH, null);
         }
@@ -199,7 +190,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
             socket.bind(ADDR);
 
-            if (ZMQ.PUB == clientSocket)
+            if (ZMQ.PUB == clientSocket || ZMQ.PAIR == clientSocket)
                 Thread.sleep(500);
 
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {

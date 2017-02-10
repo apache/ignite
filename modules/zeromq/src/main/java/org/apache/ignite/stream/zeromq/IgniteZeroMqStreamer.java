@@ -77,7 +77,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
      *
      * @param threadsCount Threads count.
      */
-    public void setThreadsCount(int threadsCount) {
+    private void setThreadsCount(int threadsCount) {
         this.threadsCount = threadsCount;
     }
 
@@ -106,6 +106,9 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
                 @Override
                 public Boolean call() {
                     while (true) {
+
+                        System.out.println(Thread.currentThread());
+
                         if (ZeroMqTypeSocket.SUB.getType() == zeroMqSettings.getType())
                             socket.recv();
                         addMessage(socket.recv());
