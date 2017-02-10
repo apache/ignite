@@ -318,6 +318,14 @@ public interface Matrix {
     Vector times(Vector vec);
 
     /**
+     * Gets maximum absolute row sum norm of this matrix.
+     * See http://mathworld.wolfram.com/MaximumAbsoluteRowSumNorm.html
+     *
+     * @return Maximum absolute row sum norm of this matrix.
+     */
+    double maxAbsRowSumNorm();
+
+    /**
      * Gets sum of all elements in the matrix.
      *
      * @return Sum of all elements in this matrix.

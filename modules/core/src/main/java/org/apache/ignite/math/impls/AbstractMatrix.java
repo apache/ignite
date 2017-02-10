@@ -452,6 +452,26 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
     }
 
     @Override
+    public double maxAbsRowSumNorm() {
+        double max = 0.0;
+
+        int rows = rowSize();
+        int cols = columnSize();
+
+        for (int x = 0; x < rows; x++) {
+            int sum = 0;
+
+            for (int y = 0; y < cols; y++)
+                sum += (int)Math.abs(getX(x, y));
+
+            if (sum > max)
+                max = sum;
+        }
+        
+        return max;
+    }
+
+    @Override
     public Vector times(Vector vec) {
         int cols = columnSize();
 
