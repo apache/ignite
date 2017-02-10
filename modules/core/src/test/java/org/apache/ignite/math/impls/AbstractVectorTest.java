@@ -701,6 +701,70 @@ public class AbstractVectorTest {
 
     /** */
     @Test
+    public void plus(){
+        double[] data0 = initVector();
+
+        VectorStorage storage = createStorage();
+
+        double[] data1 = storage.data().clone();
+
+        AbstractVector testVector1 = getAbstractVector();
+
+        testVector1.setStorage(storage);
+
+        Vector plus = testVector.plus(testVector1);
+
+        for (int i = 0; i < data0.length; i++) {
+            data0[i] += data1[i];
+
+            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+        }
+    }
+
+    /** */
+    @Test
+    public void plusDouble(){
+        double[] data0 = initVector();
+
+        Vector plus = testVector.plus(TEST_VALUE);
+
+        for (int i = 0; i < data0.length; i++) {
+            data0[i] += TEST_VALUE;
+
+            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+        }
+    }
+
+    /** */
+    @Test
+    public void minus(){
+        double[] data0 = initVector();
+
+        VectorStorage storage1 = createStorage();
+
+        double[] data1 = storage1.data().clone();
+
+        AbstractVector testVector1 = getAbstractVector();
+
+        testVector1.setStorage(storage1);
+
+        Vector minus = testVector.minus(testVector1);
+
+        for (int i = 0; i < data0.length; i++) {
+            data0[i] -= data1[i];
+
+            assertEquals(VALUE_NOT_EQUALS, minus.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+        }
+    }
+
+    /** */
+    @Test
+    public void times(){
+
+    }
+
+    /** */
+    @Test
     public void getElement() {
         double[] data = initVector();
 
@@ -735,21 +799,11 @@ public class AbstractVectorTest {
 
             /** */
             @Override public Vector copy() {
-                return null;
-            }
-
-            /** */
-            @Override public Vector divide(double x) {
-                return null;
+                return getAbstractVector(this.getStorage());
             }
 
             /** */
             @Override public Vector like(int crd) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector minus(Vector vec) {
                 return null;
             }
 
@@ -770,26 +824,6 @@ public class AbstractVectorTest {
 
             /** */
             @Override public Vector logNormalize(double power) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector plus(double x) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector plus(Vector vec) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector times(double x) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector times(Vector x) {
                 return null;
             }
 
@@ -835,21 +869,11 @@ public class AbstractVectorTest {
 
             /** */
             @Override public Vector copy() {
-                return null;
-            }
-
-            /** */
-            @Override public Vector divide(double x) {
-                return null;
+                return getAbstractVector(this.getStorage());
             }
 
             /** */
             @Override public Vector like(int crd) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector minus(Vector vec) {
                 return null;
             }
 
@@ -870,26 +894,6 @@ public class AbstractVectorTest {
 
             /** */
             @Override public Vector logNormalize(double power) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector plus(double x) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector plus(Vector vec) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector times(double x) {
-                return null;
-            }
-
-            /** */
-            @Override public Vector times(Vector x) {
                 return null;
             }
 

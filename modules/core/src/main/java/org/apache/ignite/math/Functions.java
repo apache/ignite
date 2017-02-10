@@ -56,7 +56,7 @@ public final class Functions {
     /** Function that returns <tt>a + b</tt>. */
     public static final BiFunction<Double, Double, Double> PLUS = (a, b) ->  a + b;
 
-    /** Function that returns <tt>a + b</tt>. */
+    /** Function that returns <tt>a - b</tt>. */
     public static final BiFunction<Double, Double, Double> MINUS = (a, b) ->  a - b;
 
     /** Function that returns <tt>Math.abs(a) + Math.abs(b)</tt>. */

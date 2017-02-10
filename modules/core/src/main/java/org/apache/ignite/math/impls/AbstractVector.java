@@ -135,7 +135,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
         int len = sto.size();
 
         for (int i = 0; i < len; i++)
-            storageSet(i, fun.apply(vec.get(i), storageGet(i)));
+            storageSet(i, fun.apply(storageGet(i), vec.get(i)));
 
         return this;
     }
