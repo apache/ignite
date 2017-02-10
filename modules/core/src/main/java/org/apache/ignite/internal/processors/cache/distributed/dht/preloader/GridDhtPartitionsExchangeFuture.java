@@ -1492,7 +1492,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
                     continue;
 
-                Long cntr = e0.getValue().get1();
+                Long cntr = state == GridDhtPartitionState.MOVING ? e0.getValue().get1() : e0.getValue().get2();
 
                 if (cntr == null)
                     cntr = 0L;
