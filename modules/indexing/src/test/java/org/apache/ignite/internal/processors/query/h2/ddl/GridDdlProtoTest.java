@@ -52,6 +52,8 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        DdlProc.testName = null;
+
         ignite(0).cache("S2P").clear();
 
         ignite(0).cache("S2P").put("FirstKey", new Person(1, "John", "White"));
@@ -62,8 +64,6 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
 
     /** "Normal" operation. */
     public void testSuccess() {
-        DdlProc.testName = "CreateIndex";
-
         ignite(3).cache("S2P").query(new SqlFieldsQuery("create index idx on Person(id desc)"));
     }
 

@@ -65,6 +65,8 @@ public class DdlStatementsProcessor {
     /** Indexing engine. */
     private IgniteH2Indexing idx;
 
+    private volatile boolean isStopped;
+
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, DdlOperationFuture> operations = new ConcurrentHashMap8<>();
 
@@ -74,7 +76,12 @@ public class DdlStatementsProcessor {
     /** Running operations <b>coordinated by</b> this node. */
     private Map<IgniteUuid, DdlOperationRunContext> operationRuns = new ConcurrentHashMap8<>();
 
-    /** {@inheritDoc} */
+    /**
+     * Initialize message handlers and this' fields needed for further operation.
+     *
+     * @param ctx Kernal context.
+     * @param idx Indexing.
+     */
     public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
         this.idx = idx;
@@ -369,7 +376,15 @@ public class DdlStatementsProcessor {
      * Do cleanup.
      */
     public void stop() {
-        // No-op.
+        isStopped = true;
+
+        for (DdlOperationFuture f : operations.values())
+            try {
+                f.cancel();
+            }
+            catch (IgniteCheckedException e) {
+                idx.getLogger().warning("Failed to cancel DDL future [opId=" + f.getId() + ']', e);
+            }
     }
 
     /**
@@ -380,6 +395,9 @@ public class DdlStatementsProcessor {
      */
     public QueryCursor<List<?>> runDdlStatement(GridCacheContext<?, ?> cctx, PreparedStatement stmt)
         throws IgniteCheckedException {
+        if (isStopped)
+            throw new IgniteCheckedException(new IllegalStateException("DDL processor has been stopped"));
+
         assert stmt instanceof JdbcPreparedStatement;
 
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(GridSqlQueryParser
@@ -411,12 +429,16 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private void execute(DdlOperationArguments args) throws IgniteCheckedException {
-        DdlOperationFuture op = new DdlOperationFuture(ctx, args);
+        DdlOperationFuture op = new DdlOperationFuture(args.opId, this);
 
         operations.put(args.opId, op);
 
         try {
-            op.init();
+            DdlOperationInit initMsg = new DdlOperationInit();
+
+            initMsg.setArguments(args);
+
+            ctx.discovery().sendCustomEvent(initMsg);
 
             op.get();
         }

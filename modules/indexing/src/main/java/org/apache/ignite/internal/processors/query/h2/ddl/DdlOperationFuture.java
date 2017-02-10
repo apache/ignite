@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -30,27 +28,30 @@ public class DdlOperationFuture extends GridFutureAdapter {
     /** Unique ID of this operation. */
     private final IgniteUuid id;
 
-    /** Kernal context. */
-    private final GridKernalContext ctx;
-
-    /** Operation arguments. */
-    private final DdlOperationArguments args;
+    /** Processor. */
+    private final DdlStatementsProcessor proc;
 
     /** */
-    public DdlOperationFuture(GridKernalContext ctx, DdlOperationArguments args) {
-        this.id = args.opId;
-        this.ctx = ctx;
-        this.args = args;
+    public DdlOperationFuture(IgniteUuid id, DdlStatementsProcessor proc) {
+        this.id = id;
+        this.proc = proc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cancel() throws IgniteCheckedException {
+        if (onCancelled()) {
+            proc.cancel(id, null);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
-     * Send <b>INIT</b> over the ring. Client may call {@code get} after that.
+     * @return Id of this operation.
      */
-    public void init() throws IgniteCheckedException {
-        DdlOperationInit initMsg = new DdlOperationInit();
-
-        initMsg.setArguments(args);
-
-        ctx.discovery().sendCustomEvent(initMsg);
+    public IgniteUuid getId() {
+        return id;
     }
 }
