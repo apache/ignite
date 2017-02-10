@@ -422,7 +422,17 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix setColumn(int col, double[] data) {
-        return null; // TODO
+        checkColumnIndex(col);
+
+        int rows = rowSize();
+
+        if (rows != data.length)
+            throw new CardinalityException(rows, data.length);
+
+        for (int x = 0; x < rows; x++)
+            setX(x, col, data[x]);
+
+        return this;
     }
 
     @Override
