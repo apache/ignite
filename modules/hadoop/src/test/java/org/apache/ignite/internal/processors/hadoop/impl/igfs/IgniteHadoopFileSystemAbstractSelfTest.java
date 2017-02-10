@@ -47,6 +47,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2072,6 +2073,15 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         finally {
             U.closeQuiet(s); // Safety.
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testModeResolver() throws Exception {
+        IgfsModeResolver mr = ((IgniteHadoopFileSystem)fs).getModeResolver();
+
+        assertEquals(mode, mr.resolveMode(IgfsPath.ROOT));
     }
 
     /**
