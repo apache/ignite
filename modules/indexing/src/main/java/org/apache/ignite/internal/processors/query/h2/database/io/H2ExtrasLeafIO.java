@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -52,11 +51,6 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     @Override public int getMaxCount(long pageAddr, int pageSize) {
         checkItemSize(pageAddr);
         return super.getMaxCount(pageAddr, pageSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
