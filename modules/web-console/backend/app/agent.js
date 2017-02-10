@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'agent-manager',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo']
+    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo', 'services/activities']
 };
 
 /**
@@ -35,9 +35,10 @@ module.exports = {
  * @param socketio
  * @param settings
  * @param mongo
+ * @param {ActivitiesService} activitiesService
  * @returns {AgentManager}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo) {
+module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo, activitiesService) {
     /**
      *
      */
@@ -823,6 +824,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 const sockets = this._browsers[accountId];
 
                 _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+
+                activitiesService.merge(accountId, {
+                    group: 'agent',
+                    action: '/agent/start'
+                });
             });
         }
 

@@ -80,12 +80,9 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
 
-            // TransactionScope feature disabled: IGNITE-3430.
-            _txManager = null;
-
-            //_txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
-            //    ? new CacheTransactionManager(grid.GetTransactions())
-            //    : null;
+            _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
+                ? new CacheTransactionManager(grid.GetTransactions())
+                : null;
         }
 
         /** <inheritDoc /> */

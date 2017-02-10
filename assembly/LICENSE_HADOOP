@@ -214,9 +214,8 @@ licenses.
 ==============================================================================
 For SnapTree:
 ==============================================================================
-This product bundles SnapTree, which is available under a
-"3-clause BSD" license.  For details, see
-https://github.com/nbronson/snaptree/blob/master/LICENSE.
+This product bundles SnapTree, which is available under the following:
+"3-clause BSD" license. For details, see https://github.com/nbronson/snaptree/blob/master/LICENSE.
 
 ==============================================================================
 For JSR 166 classes in "org.jsr166" package
@@ -228,31 +227,31 @@ http://creativecommons.org/publicdomain/zero/1.0/
 ==============================================================================
 For JSR107 API and SPI (https://github.com/jsr107/jsr107spec) javax.cache:cache-api:jar:1.0.0
 ==============================================================================
-This product bundles JSR107 API and SPI which is available under a:
-JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. For details, see https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt.
+This product bundles JSR107 API and SPI which is available under the following:
+JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt
 
 ==============================================================================
 For JSch (http://www.jcraft.com/jsch/) com.jcraft:jsch:jar:0.1.50
 ==============================================================================
-This product bundles JSch which is available under a:
+This product bundles JSch which is available under the following:
 Revised BSD. For details, see http://www.jcraft.com/jsch/LICENSE.txt.
 
 ==============================================================================
 For JLine (http://nexus.sonatype.org/oss-repository-hosting.html/jline) jline:jline:jar:2.12.1
 ==============================================================================
-This product bundles JLine which is available under a:
+This product bundles JLine which is available under the following:
 The BSD License. For details, see http://www.opensource.org/licenses/bsd-license.php.
 
 ==============================================================================
 For Scala Library (http://www.scala-lang.org/) org.scala-lang:scala-library:jar:2.11.2
 ==============================================================================
-This product bundles Scala Library which is available under a:
+This product bundles Scala Library which is available under the following:
 BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
 
 ==============================================================================
 For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:4.2
 ==============================================================================
-This product bundles ASM All which is available under a:
+This product bundles ASM All which is available under the following:
 BSD. For details, see http://asm.objectweb.org/license.html.
 
 
