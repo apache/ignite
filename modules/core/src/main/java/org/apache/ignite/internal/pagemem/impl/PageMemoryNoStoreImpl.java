@@ -37,8 +37,8 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import sun.misc.JavaNioAccess;
-import sun.misc.SharedSecrets;
+
+import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
  * Page header structure is described by the following diagram.
@@ -98,9 +98,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** Page size. */
     private int sysPageSize;
-
-    /** Direct byte buffer factory. */
-    private JavaNioAccess nioAccess;
 
     /** */
     private final IgniteLogger log;
@@ -167,8 +164,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             ((LifecycleAware)directMemoryProvider).start();
 
         DirectMemory memory = directMemoryProvider.memory();
-
-        nioAccess = SharedSecrets.getJavaNioAccess();
 
         segments = new Segment[memory.regions().size()];
 
@@ -404,19 +399,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      */
     boolean isPageReadLocked(long absPtr) {
         return rwLock.isReadLocked(absPtr + LOCK_OFFSET);
-    }
-
-    /**
-     * @param ptr Pointer to wrap.
-     * @param len Memory location length.
-     * @return Wrapped buffer.
-     */
-    ByteBuffer wrapPointer(long ptr, int len) {
-        ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
-
-        buf.order(NATIVE_BYTE_ORDER);
-
-        return buf;
     }
 
     /**

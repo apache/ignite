@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -42,15 +41,6 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
      */
     protected H2LeafIO(int ver) {
         super(T_H2_REF_LEAF, ver, 8);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
-        GridH2Row row0 = (GridH2Row)row;
-
-        assert row0.link != 0;
-
-        buf.putLong(off, row0.link);
     }
 
     /** {@inheritDoc} */
