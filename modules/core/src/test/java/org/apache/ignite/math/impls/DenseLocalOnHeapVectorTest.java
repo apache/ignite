@@ -18,7 +18,6 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Vector;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -89,7 +88,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    @Ignore("Test case ignored: need to fix either test or implementation or both") // todo fix this
     public void normalizePowerTest() {
         for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
             normalizeTest(pow, (val, norm) -> val / norm, (v) -> v.normalize(pow));
@@ -107,8 +105,24 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void kNormTest() { // TODO write test
+    public void kNormTest() {
+        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
+            consumeSampleVectors(v -> {
+                final int size = v.size();
 
+                final double[] ref = new double[size];
+
+                new ElementsChecker(v, ref); // IMPL NOTE this initialises vector and reference array
+
+                final double exp = new Norm(ref, pow).calculate();
+
+                final double obtained = v.kNorm(pow);
+
+                final Metric metric = new Metric(exp, obtained);
+
+                assertTrue("Not close enough at power " + pow + ", size " + size + ", " + metric,
+                    metric.closeEnough());
+            });
     }
 
     /** */ @Test
@@ -176,12 +190,7 @@ public class DenseLocalOnHeapVectorTest {
 
             final ElementsChecker checker = new ElementsChecker(v, ref);
 
-            double norm = 0;
-
-            for (double val : ref)
-                norm += Math.pow(val, pow);
-
-            norm = Math.pow(norm, 1 / pow);
+            final double norm = new Norm(ref, pow).calculate();
 
             for (int idx = 0; idx < size; idx++)
                 ref[idx] = operation.apply(ref[idx], norm);
@@ -189,8 +198,6 @@ public class DenseLocalOnHeapVectorTest {
             checker.assertCloseEnough(vecOperation.apply(v), ref);
         });
     }
-
-
 
     /** */
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
@@ -296,6 +303,65 @@ public class DenseLocalOnHeapVectorTest {
 
                     consumer.accept(new DenseLocalOnHeapVector(new double[expSize], shallowCopy));
                 }
+    }
+
+    /** */
+    private static class Norm {
+        /** */
+        private final double[] arr;
+
+        /** */
+        private final Double pow;
+
+
+        /** */
+        Norm(double[] arr, double pow) {
+            this.arr = arr;
+            this.pow = pow;
+        }
+
+        /** */
+        double calculate() {
+            if (pow.equals(0.0))
+                return countNonZeroes(); // IMPL NOTE this is beautiful if you think of it
+
+            if (pow.equals(Double.POSITIVE_INFINITY))
+                return maxAbs();
+
+            double norm = 0;
+
+            for (double val : arr)
+                norm += Math.pow(val, pow);
+
+            return Math.pow(norm, 1 / pow);
+        }
+
+        /** */
+        private int countNonZeroes() {
+            int cnt = 0;
+
+            final Double zero = 0.0;
+
+            for (double val : arr)
+                if (!zero.equals(val))
+                    cnt++;
+
+            return cnt;
+        }
+
+        /** */
+        private double maxAbs() {
+            double res = 0;
+
+            for (double val : arr) {
+                final double abs = Math.abs(val);
+
+                if (abs > res)
+                    res = abs;
+            }
+
+            return res;
+        }
     }
 
     /** */
