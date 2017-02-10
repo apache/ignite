@@ -17,14 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -36,11 +31,10 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheNameResource;
@@ -52,8 +46,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests complex scenario with topology validator.
+ * Grid is split between to data centers, defined by attribute {@link #DC_NODE_ATTR}.
+ * If only nodes from single DC are left in topology, grid is moved into inoperative state until special
+ * activator node'll enter a topology, enabling grid operations.
  */
-public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbstractTest {
+public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_NODE_ATTR = "dc";
 
@@ -64,13 +61,13 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
     private static final int GRID_CNT = 4;
 
     /** */
+    private static final int CACHES_CNT = 10;
+
+    /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
 
     /** */
-    private static final int EMPTY_GRID_IDX = GRID_CNT + 1;
-
-    /** */
-    private SplitAwareTopologyValidator validator = new SplitAwareTopologyValidator();
+    private static final int CONFIGLESS_GRID_IDX = GRID_CNT + 1;
 
     /** */
     private static CountDownLatch initLatch = new CountDownLatch(GRID_CNT);
@@ -83,24 +80,38 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
 
         cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, idx % 2));
 
-        if (idx != EMPTY_GRID_IDX) {
-            CacheConfiguration ccfg = new CacheConfiguration();
-
-            ccfg.setCacheMode(PARTITIONED);
-            ccfg.setBackups(0);
-
+        if (idx != CONFIGLESS_GRID_IDX) {
             if (idx == RESOLVER_GRID_IDX) {
                 cfg.setClientMode(true);
 
                 cfg.setUserAttributes(F.asMap(RESOLVED_MARKER_NODE_ATTR, "true"));
             }
-            else
-                ccfg.setTopologyValidator(validator);
+            else {
+                CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
 
-            cfg.setCacheConfiguration(ccfg);
+                for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
+                    CacheConfiguration ccfg = new CacheConfiguration();
+
+                    ccfg.setName(testCacheName(cnt));
+                    ccfg.setCacheMode(PARTITIONED);
+                    ccfg.setBackups(0);
+                    ccfg.setTopologyValidator(new SplitAwareTopologyValidator());
+
+                    ccfgs[cnt] = ccfg;
+                }
+
+                cfg.setCacheConfiguration(ccfgs);
+            }
         }
 
         return cfg;
+    }
+
+    /**
+     * @param idx Index.
+     */
+    private String testCacheName(int idx) {
+        return "test" + idx;
     }
 
     /** {@inheritDoc} */
@@ -127,7 +138,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         // Tests what each node is able to do puts.
         tryPut(0, 1, 2, 3);
 
-        grid(0).cache(null).clear();
+        clearAll();
 
         stopGrid(1);
 
@@ -148,15 +159,15 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
 
         tryPut(0, 2);
 
-        grid(0).cache(null).clear();
+        clearAll();
 
-        startGrid(EMPTY_GRID_IDX);
+        startGrid(CONFIGLESS_GRID_IDX);
 
         awaitPartitionMapExchange();
 
-        tryPut(EMPTY_GRID_IDX);
+        tryPut(CONFIGLESS_GRID_IDX);
 
-        stopGrid(EMPTY_GRID_IDX);
+        stopGrid(CONFIGLESS_GRID_IDX);
 
         awaitPartitionMapExchange();
 
@@ -174,6 +185,12 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         tryPut(0, 2);
     }
 
+    /** */
+    private void clearAll() {
+        for (int i = 0; i < CACHES_CNT; i++)
+            grid(0).cache(testCacheName(i)).clear();
+    }
+
     /**
      * Resolves split by client node join.
      */
@@ -188,21 +205,23 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
      */
     private void tryPut(int... grids) {
         for (int i = 0; i < grids.length; i++) {
-            int grid = grids[i];
+            IgniteEx g = grid(grids[i]);
 
-            for (int k = 0; k < 100; k++) {
-                boolean primary = grid(grid).affinity(null).isPrimary(grid(grid).localNode(), k);
+            for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
+                String cacheName = testCacheName(cnt);
 
-                if (primary) {
-                    log().info("Put " + k + " to node " + grid(grid).localNode().id().toString());
+                for (int k = 0; k < 100; k++) {
+                    if (g.affinity(cacheName).isPrimary(g.localNode(), k)) {
+                        log().info("Put " + k + " to node " + g.localNode().id().toString());
 
-                    IgniteCache<Object, Object> jcache = jcache(grid);
+                        IgniteCache<Object, Object> cache = g.cache(cacheName);
 
-                    jcache.put(k, k);
+                        cache.put(k, k);
 
-                    assertEquals(1, jcache(grid).localSize());
+                        assertEquals(1, cache.localSize());
 
-                    break;
+                        break;
+                    }
                 }
             }
         }
@@ -215,6 +234,9 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         /** */
         private static final long serialVersionUID = 0L;
 
+        @CacheNameResource
+        private String cacheName;
+
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -222,7 +244,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
         private IgniteLogger log;
 
         /** */
-        private transient volatile long markerVersionId;
+        private transient volatile long markerTopVerId;
 
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
@@ -233,14 +255,18 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
             }).isEmpty())
                 return false;
 
-            IgniteKernal kernal = (IgniteKernal)ignite;
+            IgniteKernal kernal = (IgniteKernal)ignite.cache(cacheName).unwrap(Ignite.class);
 
-            GridCacheSharedContext sharedCtx = U.field(kernal.context().cache(), "sharedCtx");
+            GridCacheAdapter<Object, Object> cache = kernal.context().cache().internalCache(cacheName);
 
-            AffinityTopologyVersion topVer = sharedCtx.exchange().topologyVersion();
+            GridDhtCacheAdapter<Object, Object> dht = cache.context().dht();
+
+            long cacheTopVer = dht.topology().topologyVersionFuture().topologyVersion().topologyVersion();
+
+            log.info("Validation future: " + cacheTopVer);
 
             if (hasSplit(nodes)) {
-                boolean resolved = markerVersionId != 0 && topVer.topologyVersion() > markerVersionId;
+                boolean resolved = markerTopVerId != 0 && cacheTopVer >= markerTopVerId;
 
                 if (!resolved)
                     log.info("Grid segmentation is detected, switching to inoperative state.");
@@ -248,7 +274,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
                 return resolved;
             }
             else
-                markerVersionId = 0;
+                markerTopVerId = 0;
 
             return true;
         }
@@ -284,7 +310,7 @@ public class GridCacheSplitAwareTopologyValidatorSelfTest extends GridCommonAbst
                     ClusterNode node = evt1.eventNode();
 
                     if (isMarkerNode(node))
-                        markerVersionId = evt1.topologyVersion();
+                        markerTopVerId = evt1.topologyVersion();
 
                     return true;
                 }

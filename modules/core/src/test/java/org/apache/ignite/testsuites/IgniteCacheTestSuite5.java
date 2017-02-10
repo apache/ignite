@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapCleanupTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSplitAwareTopologyValidatorSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
@@ -65,9 +64,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
-
-        // Topology validator.
-        suite.addTestSuite(GridCacheSplitAwareTopologyValidatorSelfTest.class);
 
         return suite;
     }
