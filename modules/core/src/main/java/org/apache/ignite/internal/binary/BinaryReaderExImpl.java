@@ -1142,8 +1142,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public Time[] readTimeArray() throws BinaryObjectException {
-        Flag flag = checkFlag(TIME_ARR);
-        return flag == Flag.NORMAL ? BinaryUtils.doReadTimeArray(in) : (flag == Flag.HANDLE ? readHandleField() : null);
+        switch (checkFlag(TIME_ARR)) {
+            case NORMAL:
+                return BinaryUtils.doReadTimeArray(in);
+            case HANDLE:
+                return readHandleField();
+            default:
+                return null;
+        }
     }
 
     /** {@inheritDoc} */

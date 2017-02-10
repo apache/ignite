@@ -628,7 +628,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(Timestamp.class, po1.field("ts").getClass());
         assertEquals(time, po1.field("time"));
         assertEquals(Time.class, po1.field("time").getClass());
-        assertArrayEquals(timeArr, po1.field("timeArr"));
+        assertArrayEquals(timeArr, (Object[])po1.field("timeArr"));
         assertEquals(Time[].class, po1.field("timeArr").getClass());
 
         obj1 = po1.deserialize();
