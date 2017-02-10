@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Abstract interop target.
  */
-public abstract class PlatformAbstractTarget implements PlatformTarget, PlatformAsyncTarget {
+public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: TRUE.*/
     protected static final int TRUE = 1;
 
@@ -70,11 +70,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     /** {@inheritDoc} */
     @Override public Exception convertException(Exception e) {
         return e;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public PlatformFutureUtils.Writer futureWriter(int opId){
-        return null;
     }
 
     /** {@inheritDoc} */

@@ -1169,20 +1169,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
-        if (opId == OP_GET_ALL)
-            return WRITER_GET_ALL;
-
-        if (opId == OP_INVOKE)
-            return WRITER_INVOKE;
-
-        if (opId == OP_INVOKE_ALL)
-            return WRITER_INVOKE_ALL;
-
-        return null;
-    }
-
     /**
      * Get lock by id.
      *

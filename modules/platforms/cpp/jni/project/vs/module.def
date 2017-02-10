@@ -20,8 +20,6 @@ IgniteTargetInStreamOutLong @18
 IgniteTargetOutStream @19 
 IgniteTargetInStreamOutStream @20 
 IgniteTargetInObjectStreamOutObjectStream @21
-IgniteTargetListenFuture @22 
-IgniteTargetListenFutureForOperation @23 
 IgniteTargetInLongOutLong @24
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 

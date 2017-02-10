@@ -170,16 +170,6 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenFuture(final long futId, int typ) throws Exception {
-        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
-    }
-
-    /** {@inheritDoc} */
     @Override public PlatformTarget unwrap() {
         return target;
     }

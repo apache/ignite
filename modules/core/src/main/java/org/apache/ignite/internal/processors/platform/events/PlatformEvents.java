@@ -338,19 +338,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
         return super.processInLongOutLong(type, val);
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
-        switch (opId) {
-            case OP_WAIT_FOR_LOCAL:
-                return eventResWriter;
-
-            case OP_REMOTE_QUERY:
-                return eventColResWriter;
-        }
-
-        return null;
-    }
-
     /**
      *  Reads event types array.
      *
