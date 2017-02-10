@@ -61,7 +61,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     private static final int GRID_CNT = 4;
 
     /** */
-    private static final int CACHES_CNT = 10;
+    private static final int CACHES_CNT = 1;
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
@@ -228,7 +228,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     }
 
     /**
-     * Prevents grid from performing operations if only nodes from single data center are left in topology.
+     * Prevents cache from performing any operation if only nodes from single data center are left in topology.
      */
     private static class SplitAwareTopologyValidator implements TopologyValidator, LifecycleAware {
         /** */
@@ -263,10 +263,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
             long cacheTopVer = dht.topology().topologyVersionFuture().topologyVersion().topologyVersion();
 
-            log.info("Validation future: " + cacheTopVer);
-
             if (hasSplit(nodes)) {
-                boolean resolved = markerTopVerId != 0 && cacheTopVer >= markerTopVerId;
+                boolean resolved = markerTopVerId != 0 && cacheTopVer == markerTopVerId;
 
                 if (!resolved)
                     log.info("Grid segmentation is detected, switching to inoperative state.");
@@ -305,16 +303,16 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
             ignite.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    DiscoveryEvent evt1 = (DiscoveryEvent)evt;
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                    ClusterNode node = evt1.eventNode();
+                    ClusterNode node = discoEvt.eventNode();
 
                     if (isMarkerNode(node))
-                        markerTopVerId = evt1.topologyVersion();
+                        markerTopVerId = discoEvt.topologyVersion();
 
                     return true;
                 }
-            }, EventType.EVT_NODE_JOINED);
+            }, EventType.EVT_NODE_LEFT);
         }
 
         /**
