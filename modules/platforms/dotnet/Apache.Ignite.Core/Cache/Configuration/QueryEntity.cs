@@ -283,7 +283,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 ScanAttributes(valType, fields, indexes, null, new HashSet<Type>(), false);
 
             if (fields.Any())
-                Fields = fields;
+                Fields = fields.OrderBy(x => x.Name).ToList();
 
             if (indexes.Any())
                 Indexes = GetGroupIndexes(indexes).ToArray();
