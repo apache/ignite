@@ -1,4 +1,4 @@
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.impls.storage.*;
 import org.junit.Before;
@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
  */
 public class VectorArrayStorageTest {
     /** */
-    static final int STORAGE_SIZE = 100;
+    public static final int STORAGE_SIZE = 100;
 
     /** */
     private static final String WRONG_ATTRIBUTE_VALUE = "Wrong attribute value.";
@@ -25,7 +25,7 @@ public class VectorArrayStorageTest {
     private static final String WRONG_DATA_ELEMENT = "Wrong data element.";
 
     /** */
-    static final double NIL_DELTA = 0d;
+    public static final double NIL_DELTA = 0d;
 
     /** */
     static final String NULL_DATA_STORAGE = "Null data storage.";
