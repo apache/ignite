@@ -840,8 +840,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
             // [-3..119] [124..127] [-36..-44]- this
             // [120..123] - DR
-            // [-4..-22, -30..-35] - SQL
-            // [-45..-46] - DDL
+            // [-4..-22, -30..-35, -45..-46] - SQL
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

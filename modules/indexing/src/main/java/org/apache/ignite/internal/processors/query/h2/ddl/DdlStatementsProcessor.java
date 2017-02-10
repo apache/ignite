@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -35,9 +34,9 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridDdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationAck;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationCancel;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.resources.LoggerResource;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
@@ -57,15 +55,15 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
- *
+ * DDL statements processor.<p>
+ * Contains higher level logic to handle operations as a whole and communicate with the client.
  */
-public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
-    /** Logger. */
-    @LoggerResource
-    private IgniteLogger log;
-
+public class DdlStatementsProcessor {
     /** Kernal context. */
-    private GridKernalContext ctx;
+    GridKernalContext ctx;
+
+    /** Indexing engine. */
+    private IgniteH2Indexing idx;
 
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, DdlOperationFuture> operations = new ConcurrentHashMap8<>();
@@ -77,8 +75,9 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
     private Map<IgniteUuid, DdlOperationRunContext> operationRuns = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override public void start(final GridKernalContext ctx) {
+    public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
+        this.idx = idx;
 
         ctx.discovery().setCustomEventListener(DdlOperationInit.class, new CustomEventListener<DdlOperationInit>() {
             /** {@inheritDoc} */
@@ -127,7 +126,6 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
      *
      * @param msg Message.
      */
-    @SuppressWarnings("unchecked")
     private void onCancel(DdlOperationCancel msg) {
         DdlOperationArguments args = operationArgs.remove(msg.getOperationId());
 
@@ -135,12 +133,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
         if (args == null)
             return;
 
-        try {
-            args.opType.command().cancel(args);
-        }
-        catch (Throwable e) {
-            log.warning("Failed to process DDL CANCEL locally [opId=" + msg.getOperationId() +']', e);
-        }
+        doCancel(args);
 
         DdlOperationRunContext runCtx = operationRuns.remove(msg.getOperationId());
 
@@ -151,6 +144,19 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
                 ex = new IgniteCheckedException("DDL operation has been cancelled (presumably by the user).");
 
             sendResult(args, ex);
+        }
+    }
+
+    /**
+     * @param args Operation arguments.
+     */
+    @SuppressWarnings("unchecked")
+    void doCancel(DdlOperationArguments args) {
+        try {
+            args.opType.command().cancel(args);
+        }
+        catch (Throwable e) {
+            idx.getLogger().warning("Failed to process DDL CANCEL locally [opId=" + args.opId +']', e);
         }
     }
 
@@ -173,13 +179,10 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
         }
         else {
             try {
-                args.opType.command().execute(args);
-            }
-            catch (IgniteCheckedException e) {
-                ex = e;
+                doAck(args);
             }
             catch (Throwable e) {
-                ex = new IgniteCheckedException(e);
+                ex = wrapThrowableIfNeeded(e);
             }
         }
 
@@ -192,9 +195,20 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
             ctx.io().send(snd, GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
         }
         catch (Throwable e) {
-            log.error("Failed to notify coordinator about local DLL operation completion [opId=" + msg.getOperationId() +
+            idx.getLogger().error("Failed to notify coordinator about local DLL operation completion [opId=" + msg.getOperationId() +
                 ", sndNodeId=" + snd.id() + ']', e);
         }
+    }
+
+    /**
+     * Perform local portion of DDL operation.
+     *
+     * @param args Operation arguments.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    void doAck(DdlOperationArguments args) throws IgniteCheckedException {
+        args.opType.command().execute(args);
     }
 
     /**
@@ -241,7 +255,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
             ctx.discovery().sendCustomEvent(cancel);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to send CANCEL message over the ring [opId=" + opId + ']', e);
+            idx.getLogger().error("Failed to send CANCEL message over the ring [opId=" + opId + ']', e);
         }
     }
 
@@ -263,7 +277,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
             ctx.io().send(args.sndNodeId, GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to notify client node about DDL operation failure " +
+            idx.getLogger().error("Failed to notify client node about DDL operation failure " +
                 "[opId=" + args.opId + ", sndNodeId=" + args.sndNodeId + ']', e);
         }
     }
@@ -279,7 +293,7 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
         DdlOperationFuture fut = operations.get(opId);
 
         if (fut == null) {
-            log.warning("DDL operation not found at its client [opId=" + opId + ", nodeId=" + ctx.localNodeId() + ']');
+            idx.getLogger().warning("DDL operation not found at its client [opId=" + opId + ", nodeId=" + ctx.localNodeId() + ']');
 
             return;
         }
@@ -318,22 +332,53 @@ public class DdlStatementsProcessor implements GridDdlStatementsProcessor {
             return;
 
         try {
-            args.opType.command().init(args);
-
             operationArgs.put(args.opId, args);
+
+            doInit(args);
         }
         catch (Throwable e) {
-            msg.getNodesState().put(ctx.localNodeId(), new IgniteCheckedException(e));
+            msg.getNodesState().put(ctx.localNodeId(), wrapThrowableIfNeeded(e));
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop() {
+    /**
+     * Perform actual INIT actions.
+     *
+     * @param args Operation arguments.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    void doInit(DdlOperationArguments args) throws IgniteCheckedException {
+        args.opType.command().init(args);
+    }
+
+    /**
+     * Optionally wrap a {@link Throwable} into an {@link IgniteCheckedException}.
+     *
+     * @param e Throwable to wrap.
+     * @return {@code e} if it's an {@link IgniteCheckedException} or an {@link IgniteCheckedException} wrapping it.
+     */
+    private static IgniteCheckedException wrapThrowableIfNeeded(Throwable e) {
+        if (e instanceof IgniteCheckedException)
+            return (IgniteCheckedException) e;
+        else
+            return new IgniteCheckedException(e);
+    }
+
+    /**
+     * Do cleanup.
+     */
+    public void stop() {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> runDdlStatement(GridCacheContext<?, ?> cctx, PreparedStatement stmt)
+    /**
+     * Execute DDL statement.
+     *
+     * @param cctx Cache context.
+     * @param stmt H2 statement to parse and execute.
+     */
+    public QueryCursor<List<?>> runDdlStatement(GridCacheContext<?, ?> cctx, PreparedStatement stmt)
         throws IgniteCheckedException {
         assert stmt instanceof JdbcPreparedStatement;
 

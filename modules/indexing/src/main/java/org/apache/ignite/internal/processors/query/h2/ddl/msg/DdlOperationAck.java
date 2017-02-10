@@ -22,7 +22,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * {@code ACK} message - triggers actual execution of local portion of DDL operation.
  */
 public class DdlOperationAck implements DiscoveryCustomMessage {
     /** */

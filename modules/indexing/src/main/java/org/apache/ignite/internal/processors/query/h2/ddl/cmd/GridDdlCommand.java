@@ -19,32 +19,35 @@ package org.apache.ignite.internal.processors.query.h2.ddl.cmd;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlOperationArguments;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationAck;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationCancel;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
 
 /**
- * Interface for a DDL command handler - the handler for DDL protocol events containing actual logic.\
+ * Interface for a DDL command handler - the handler for DDL protocol events containing actual logic.
  * Implementations should be stateless and rely only on arguments passed to methods.
  */
 public interface GridDdlCommand<A extends DdlOperationArguments> {
     /**
-     * Handle {@link DdlOperationInit} message <b>synchronously</b> - do <i>fast</i> local checks and preparations.
+     * Handle {@link DdlOperationInit} message - do <i>fast</i> local checks and preparations.
+     *
      * @param args Operation arguments.
      * @throws IgniteCheckedException if failed.
      */
     public void init(A args) throws IgniteCheckedException;
 
     /**
-     * Do actual DDL work on a local node.
+     * Do actual DDL work on a local node. Is called from {@link DdlOperationAck} handler.
+     *
      * @param args Operation arguments.
      * @throws IgniteCheckedException if failed.
      */
     public void execute(A args) throws IgniteCheckedException;
 
     /**
-     * Revert effects of executing local part of DDL job on this node.
+     * Revert effects of executing init or local part of DDL job on this node.
      * May be called in the case of an error on one of the peer nodes, or user cancel.
-     * Is called from {@link DdlOperationCancel} message handler and thus is processed <b>synchronously</b>.
+     * Is called from {@link DdlOperationCancel} message handler.
      *
      * @param args Operation arguments.
      * @throws IgniteCheckedException if failed.

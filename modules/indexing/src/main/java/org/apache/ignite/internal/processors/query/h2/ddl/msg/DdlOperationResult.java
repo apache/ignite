@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -92,7 +93,7 @@ public class DdlOperationResult implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return GridDdlMessageFactory.OPERATION_RESULT;
+        return GridH2IndexingMessageFactory.OPERATION_RESULT;
     }
 
     /** {@inheritDoc} */

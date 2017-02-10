@@ -23,9 +23,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message that initiates cancel of a DDL operation due to an irrecoverable error on the peer or on the coordinator,
+ * Message that initiates cancel of a DDL operation due to an irrecoverable error on a peer or on the coordinator,
  * or due to the operation's cancellation by the user.
- * May be sent either by the <b>client</b> or by <b>coordinator.</b>
  */
 public class DdlOperationCancel implements DiscoveryCustomMessage {
     /** */

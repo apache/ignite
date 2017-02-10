@@ -257,6 +257,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /** For tests. */
+    public static Class<? extends DdlStatementsProcessor> ddlProcCls;
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -334,7 +337,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private volatile GridKernalContext ctx;
 
     /** */
-    private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor(this);
+    private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor();
+
+    /** */
+    private DdlStatementsProcessor ddlProc;
 
     /** */
     private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
@@ -381,7 +387,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Logger.
      */
-    IgniteLogger getLogger() {
+    public IgniteLogger getLogger() {
         return log;
     }
 
@@ -1266,6 +1272,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
+
+                if (DdlStatementsProcessor.isDdlStatement(prepared)) {
+                    try {
+                        return ddlProc.runDdlStatement(cctx, stmt);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
+                    }
+                }
             }
 
             try {
@@ -1814,6 +1829,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cleanupStatementCache();
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
+
+            dmlProc.start(this);
+
+            try {
+                ddlProc = ddlProcCls == null ? new DdlStatementsProcessor() : ddlProcCls.newInstance();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to initialize DDL statements processor", e);
+            }
+
+            ddlProc.start(ctx, this);
         }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139

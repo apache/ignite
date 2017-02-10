@@ -30,8 +30,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
 
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessage;
+import static org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory.fillArray;
+import static org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory.toMessage;
 
 /**
  * H2 Array.

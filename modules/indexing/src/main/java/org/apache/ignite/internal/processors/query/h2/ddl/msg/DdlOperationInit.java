@@ -62,11 +62,17 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
                 errors.put(e.getKey(), e.getValue());
 
         if (!errors.isEmpty()) {
-            IgniteCheckedException resEx = new IgniteCheckedException("DDL operation INIT has failed [opId=" +
-                args.opId + ']');
+            IgniteCheckedException resEx;
 
-            for (IgniteCheckedException e : errors.values())
-                resEx.addSuppressed(e);
+            if (errors.size() > 1) {
+                resEx = new IgniteCheckedException("DDL operation INIT has failed [opId=" +
+                    args.opId + ']');
+
+                for (IgniteCheckedException e : errors.values())
+                    resEx.addSuppressed(e);
+            }
+            else
+                resEx = errors.values().iterator().next(); // If there's a single exception - return just it
 
             DdlOperationCancel cancel = new DdlOperationCancel();
 

@@ -44,7 +44,7 @@ public class DdlOperationFuture extends GridFutureAdapter {
     }
 
     /**
-     *
+     * Send <b>INIT</b> over the ring. Client may call {@code get} after that.
      */
     public void init() throws IgniteCheckedException {
         DdlOperationInit initMsg = new DdlOperationInit();

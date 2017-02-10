@@ -18,20 +18,29 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.io.Serializable;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
-public class GridCreateIndexTest extends GridCommonAbstractTest {
+public class GridDdlProtoTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
+        IgniteH2Indexing.ddlProcCls = DdlProc.class;
+
         startGridsMultiThreaded(3, true);
 
         ignite(0).createCache(cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class));
@@ -51,9 +60,47 @@ public class GridCreateIndexTest extends GridCommonAbstractTest {
         ignite(0).cache("S2P").put("f0u4thk3y", new Person(4, "Jane", "Silver"));
     }
 
-    /** */
-    public void testCreateIndex() {
+    /** "Normal" operation. */
+    public void testSuccess() {
+        DdlProc.testName = "CreateIndex";
+
         ignite(3).cache("S2P").query(new SqlFieldsQuery("create index idx on Person(id desc)"));
+    }
+
+    /** Test behavior in case of INIT failure (cancel via {@link DdlOperationInit#ackMessage}). */
+    public void testInitFailure() {
+        DdlProc.testName = "InitFailure";
+
+        assertCreateIndexThrowsWithMessage("Hello from DdlProc Init");
+    }
+
+    /** Test behavior in case of ACK failure (cancel via {@link DdlStatementsProcessor#onAck}). */
+    public void testAckFailure() {
+        DdlProc.testName = "AckFailure";
+
+        assertCreateIndexThrowsWithMessage("Hello from DdlProc Ack");
+    }
+
+    /**
+     * Test error handling.
+     *
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertCreateIndexThrowsWithMessage(String msg) {
+        final Throwable e = GridTestUtils.assertThrows(null, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                ignite(3).cache("S2P").query(new SqlFieldsQuery("create index idx on Person(id desc)"));
+                return null;
+            }
+        }, IgniteSQLException.class, "Failed to execute DDL statement");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                throw (Exception) e.getCause();
+            }
+        }, IgniteCheckedException.class, msg);
     }
 
     /**
@@ -111,6 +158,41 @@ public class GridCreateIndexTest extends GridCommonAbstractTest {
             res = 31 * res + name.hashCode();
             res = 31 * res + secondName.hashCode();
             return res;
+        }
+    }
+
+    /**
+     * Custom implementation to test behavior on failure during various stages.
+     */
+    public final static class DdlProc extends DdlStatementsProcessor {
+        /** Name of current test. */
+        private static volatile String testName;
+
+        /** {@inheritDoc} */
+        @Override void doInit(DdlOperationArguments args) {
+            // Let's throw an exception on a single node in the ring
+            if ("InitFailure".equals(testName) && ctx.gridName().endsWith("2"))
+                throw new RuntimeException("Hello from DdlProc Init");
+            else
+                try {
+                    super.doInit(args);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+        }
+
+        /** {@inheritDoc} */
+        @Override void doAck(DdlOperationArguments args) {
+            if ("AckFailure".equals(testName))
+                throw new RuntimeException("Hello from DdlProc Ack");
+            else
+                try {
+                    super.doInit(args);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
         }
     }
 }

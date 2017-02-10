@@ -67,15 +67,7 @@ public enum IgniteComponentType {
         null,
         "org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing",
         "ignite-indexing",
-        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory"
-    ),
-
-    /** DDL statements processing. */
-    DDL(
-        null,
-        "org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor",
-        "ignite-indexing",
-        "org.apache.ignite.internal.processors.query.h2.ddl.msg.GridDdlMessageFactory"
+        "org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory"
     ),
 
     /** Nodes starting using SSH. */
