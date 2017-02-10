@@ -285,12 +285,53 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public double determinant() {
-        return 0; // TODO
+        int rows = rowSize();
+        int cols = columnSize();
+
+        if (rows != cols)
+            throw new CardinalityException(rows, cols);
+
+        if (rows == 2)
+            return getX(0, 0) * getX(1, 1) - getX(0, 1) * getX(1, 0);
+        else {
+            int sign = 1;
+            double ret = 0.0;
+
+            for (int i = 0; i < cols; i++) {
+                Matrix minor = like(rows - 1, cols - 1);
+
+                for (int j = 1; j < rows; j++) {
+                    boolean flag = false;
+
+                    for (int k = 0; k < cols; k++) {
+                        if (k == i) {
+                            flag = true;
+                            continue;
+                        }
+
+                        minor.set(j - 1, flag ? k - 1 : k, getX(j, k));
+                    }
+                }
+
+                ret += getX(0, i) * sign * minor.determinant();
+                sign *= -1;
+
+            }
+
+            return ret;
+        }
     }
 
     @Override
-    public Matrix divide(double x) {
-        return null; // TODO
+    public Matrix divide(double d) {
+        int rows = rowSize();
+        int cols = columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                setX(x, y, getX(x, y) / d);
+
+        return this;
     }
 
     @Override
@@ -307,7 +348,18 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix minus(Matrix mtx) {
-        return null; // TODO
+        int rows = rowSize();
+        int cols = columnSize();
+
+        checkCardinality(rows, cols);
+
+        Matrix res = like(rows, cols);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                res.setX(x, y, getX(x, y) - mtx.getX(x, y));
+
+        return res;
     }
 
     @Override
@@ -321,7 +373,19 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix plus(Matrix mtx) {
-        return null; // TODO
+        int rows = rowSize();
+        int cols = columnSize();
+
+        checkCardinality(rows, cols);
+
+        Matrix res = like(rows, cols);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                res.setX(x, y, getX(x, y) + mtx.getX(x, y));
+
+        return res;
+
     }
 
     @Override
@@ -340,7 +404,20 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix setRow(int row, double[] data) {
-        return null; // TODO
+        checkRowIndex(row);
+
+        int cols = columnSize();
+
+        if (cols != data.length)
+            throw new CardinalityException(cols, data.length);
+
+        if (sto.isArrayBased())
+            System.arraycopy(data, 0, sto.data()[row], 0, cols);
+        else
+            for (int y = 0; y < cols; y++)
+                setX(row, y, data[y]);
+
+        return this;
     }
 
     @Override
@@ -362,6 +439,23 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
         copy.map(Functions.mult(x));
 
         return copy;
+    }
+
+    @Override
+    public Vector times(Vector vec) {
+        int cols = columnSize();
+
+        if (cols != vec.size())
+            throw new CardinalityException(cols, vec.size());
+
+        int rows = rowSize();
+
+        Vector res = likeVector(rows);
+
+        for (int x = 0; x < rows; x++)
+            res.setX(x, vec.dot(viewRow(x)));
+
+        return res;
     }
 
     @Override
@@ -393,12 +487,30 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public double sum() {
-        return 0; // TODO
+        int rows = rowSize();
+        int cols = columnSize();
+
+        double sum = 0.0;
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                sum += getX(x, y);
+
+        return sum;
     }
 
     @Override
     public Matrix transpose() {
-        return null; // TODO
+        int rows = rowSize();
+        int cols = columnSize();
+
+        Matrix mtx = like(cols, rows);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                mtx.setX(y, x, getX(x, y));
+
+        return mtx;
     }
 
     @Override
@@ -423,6 +535,6 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Optional<ClusterGroup> clusterGroup() {
-        return null; // TODO
+        return null;
     }
 }

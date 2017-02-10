@@ -151,6 +151,7 @@ public interface Matrix {
      * Returns matrix determinator using Laplace theorem.
      *
      * @return A determinator for this matrix.
+     * @throws CardinalityException Thrown if matrix is not square.
      */
     double determinant();
 
@@ -306,6 +307,15 @@ public interface Matrix {
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Matrix times(Matrix mtx);
+
+    /**
+     * Creates new matrix that is the product of multiplying this matrix and the argument vector.
+     *
+     * @param vec Argument vector.
+     * @return New matrix.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     */
+    Vector times(Vector vec);
 
     /**
      * Gets sum of all elements in the matrix.
