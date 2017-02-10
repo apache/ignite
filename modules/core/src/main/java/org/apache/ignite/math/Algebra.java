@@ -484,7 +484,7 @@ public class Algebra extends Constants {
 
     /**
      * Evaluates the given polynomial of degree <tt>N</tt> at <tt>x</tt>, assuming coefficient of N is 1.0. Otherwise same
-     * as {@see #polevl}.
+     * as {@see #evalPoly}.
      * <pre>
      *                     2          N
      * y  =  C  + C x + C x  +...+ C x
@@ -498,7 +498,7 @@ public class Algebra extends Constants {
      * coef[0] = C  , ..., coef[N-1] = C  .
      *            N-1                   0
      *
-     * Calling arguments are otherwise the same as {@see #polevl}.
+     * Calling arguments are otherwise the same as {@see #evalPoly}.
      * </pre>
      * In the interest of speed, there are no checks for out of bounds arithmetic.
      *
@@ -506,7 +506,7 @@ public class Algebra extends Constants {
      * @param coef Coefficients of the polynomial.
      * @param n Degree of the polynomial.
      */
-    public static double p1evl(double x, double[] coef, int n) {
+    public static double evalPoly1(double x, double[] coef, int n) {
         double res = x + coef[0];
 
         for (int i = 1; i < n; i++)
@@ -533,12 +533,33 @@ public class Algebra extends Constants {
      * @param coef Coefficients of the polynomial.
      * @param n Degree of the polynomial.
      */
-    public static double polevl(double x, double[] coef, int n) {
+    public static double evalPoly(double x, double[] coef, int n) {
         double res = coef[0];
 
         for (int i = 1; i <= n; i++)
             res = res * x + coef[i];
 
         return res;
+    }
+
+    /**
+     * Gets <code>sqrt(a^2 + b^2)</code> without under/overflow.
+     *
+     * @param a
+     * @param b
+     */
+    public static double hypot(double a, double b) {
+        double r;
+
+        if (Math.abs(a) > Math.abs(b)) {
+            r = b / a;
+            r = Math.abs(a) * Math.sqrt(1 + r * r);
+        } else if (b != 0) {
+            r = a / b;
+            r = Math.abs(b) * Math.sqrt(1 + r * r);
+        } else
+            r = 0.0;
+
+        return r;
     }
 }
