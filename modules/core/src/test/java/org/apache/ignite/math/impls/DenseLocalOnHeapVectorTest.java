@@ -20,8 +20,7 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 
@@ -107,22 +106,7 @@ public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void kNormTest() {
         for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
-            consumeSampleVectors(v -> {
-                final int size = v.size();
-
-                final double[] ref = new double[size];
-
-                new ElementsChecker(v, ref); // IMPL NOTE this initialises vector and reference array
-
-                final double exp = new Norm(ref, pow).calculate();
-
-                final double obtained = v.kNorm(pow);
-
-                final Metric metric = new Metric(exp, obtained);
-
-                assertTrue("Not close enough at power " + pow + ", size " + size + ", " + metric,
-                    metric.closeEnough());
-            });
+            toDoubleTest(ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));
     }
 
     /** */ @Test
@@ -146,13 +130,32 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void viewPartTest() { // TODO write test
+    public void viewPartTest() {
+        consumeSampleVectors(v -> {
+            final int size = v.size();
 
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref);
+
+            for (int off = 0; off < size; off++)
+                for (int len = 0; len < size - off; len++)
+                    checker.assertCloseEnough(v.viewPart(off, len), Arrays.copyOfRange(ref, off, off + len));
+        });
     }
 
     /** */ @Test
-    public void sumTest() { // TODO write test
+    public void sumTest() {
+        toDoubleTest(
+            ref -> {
+                double sum = 0;
 
+                for (double val : ref)
+                    sum += val;
+
+                return sum;
+            },
+            Vector::sum);
     }
 
     /** */ @Test
@@ -161,8 +164,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void getLookupCostTest() { // TODO write test
-
+    public void getLookupCostTest() {
+        alwaysTrueAttributeTest(v -> v.getLookupCost() == 0);
     }
 
     /** */ @Test
@@ -178,6 +181,26 @@ public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void guidTest() { // TODO write test
 
+    }
+
+    /** */
+    private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
+        consumeSampleVectors(v -> {
+            final int size = v.size();
+
+            final double[] ref = new double[size];
+
+            new ElementsChecker(v, ref); // IMPL NOTE this initialises vector and reference array
+
+            final double exp = calcRef.apply(ref);
+
+            final double obtained = calcVec.apply(v);
+
+            final Metric metric = new Metric(exp, obtained);
+
+            assertTrue("Not close enough at size " + size + ", " + metric,
+                metric.closeEnough());
+        });
     }
 
     /** */
