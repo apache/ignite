@@ -366,7 +366,29 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
 
     @Override
     public Matrix times(Matrix mtx) {
-        return null; // TODO
+        int cols = columnSize();
+
+        if (cols != mtx.rowSize())
+            throw new CardinalityException(cols, mtx.rowSize());
+
+        int rows = rowSize();
+
+        int mtxCols = mtx.columnSize();
+
+        Matrix res = like(rows, mtxCols);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < mtxCols; y++) {
+                double sum = 0.0;
+
+                for (int k = 0; k < cols; k++) {
+                    sum += getX(x, k) * mtx.getX(k, y);
+                }
+
+                res.setX(x, y, sum);
+            }
+
+        return res;
     }
 
     @Override
