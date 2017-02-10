@@ -31,6 +31,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.impls.storage.VectorArrayStorage;
 import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
+import org.apache.ignite.math.impls.storage.VectorNullStorage;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -760,7 +761,65 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void times(){
+        double[] data0 = initVector();
 
+        VectorStorage storage1 = createStorage();
+
+        double[] data1 = storage1.data().clone();
+
+        AbstractVector testVector1 = getAbstractVector();
+
+        testVector1.setStorage(storage1);
+
+        Vector times = testVector.times(testVector1);
+
+        for (int i = 0; i < data0.length; i++) {
+            data0[i] *= data1[i];
+
+            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+        }
+    }
+
+    /** */
+    @Test
+    public void timesDouble(){
+        double[] data0 = initVector();
+
+        double testValue = 2.5;
+
+        Vector times = testVector.times(testValue);
+
+        for (int i = 0; i < data0.length; i++) {
+            data0[i] *= testValue;
+
+            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+        }
+    }
+
+    /** */
+    @Test
+    public void getStorage(){
+        assertTrue(UNEXPECTED_VALUE, testVector.getStorage().getClass() == VectorNullStorage.class);
+        assertNotNull(NULL_VALUE, getAbstractVector(createEmptyStorage()));
+        assertNotNull(NULL_VALUE, getAbstractVector(createStorage()));
+        testVector.setStorage(createStorage());
+        assertNotNull(NULL_VALUE, testVector.getStorage());
+    }
+
+    /** */
+    @Test
+    public void divide(){
+        double[] data0 = initVector();
+
+        double testValue = 2.5;
+
+        Vector times = testVector.divide(testValue);
+
+        for (int i = 0; i < data0.length; i++) {
+            data0[i] /= testValue;
+
+            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], VectorArrayStorageTest.NIL_DELTA);
+        }
     }
 
     /** */
