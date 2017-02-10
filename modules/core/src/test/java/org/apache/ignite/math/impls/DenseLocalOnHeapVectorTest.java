@@ -18,11 +18,9 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Vector;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 
@@ -89,7 +87,6 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    @Ignore("Test case ignored: need to fix either test or implementation or both") // todo fix this
     public void normalizePowerTest() {
         for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
             normalizeTest(pow, (val, norm) -> val / norm, (v) -> v.normalize(pow));
@@ -107,8 +104,9 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void kNormTest() { // TODO write test
-
+    public void kNormTest() {
+        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
+            toDoubleTest(ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));
     }
 
     /** */ @Test
@@ -132,13 +130,32 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void viewPartTest() { // TODO write test
+    public void viewPartTest() {
+        consumeSampleVectors(v -> {
+            final int size = v.size();
 
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref);
+
+            for (int off = 0; off < size; off++)
+                for (int len = 0; len < size - off; len++)
+                    checker.assertCloseEnough(v.viewPart(off, len), Arrays.copyOfRange(ref, off, off + len));
+        });
     }
 
     /** */ @Test
-    public void sumTest() { // TODO write test
+    public void sumTest() {
+        toDoubleTest(
+            ref -> {
+                double sum = 0;
 
+                for (double val : ref)
+                    sum += val;
+
+                return sum;
+            },
+            Vector::sum);
     }
 
     /** */ @Test
@@ -147,8 +164,8 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void getLookupCostTest() { // TODO write test
-
+    public void getLookupCostTest() {
+        alwaysTrueAttributeTest(v -> v.getLookupCost() == 0);
     }
 
     /** */ @Test
@@ -167,6 +184,26 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */
+    private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
+        consumeSampleVectors(v -> {
+            final int size = v.size();
+
+            final double[] ref = new double[size];
+
+            new ElementsChecker(v, ref); // IMPL NOTE this initialises vector and reference array
+
+            final double exp = calcRef.apply(ref);
+
+            final double obtained = calcVec.apply(v);
+
+            final Metric metric = new Metric(exp, obtained);
+
+            assertTrue("Not close enough at size " + size + ", " + metric,
+                metric.closeEnough());
+        });
+    }
+
+    /** */
     private void normalizeTest(double pow, BiFunction<Double, Double, Double> operation,
         Function<Vector, Vector> vecOperation) {
         consumeSampleVectors(v -> {
@@ -176,12 +213,7 @@ public class DenseLocalOnHeapVectorTest {
 
             final ElementsChecker checker = new ElementsChecker(v, ref);
 
-            double norm = 0;
-
-            for (double val : ref)
-                norm += Math.pow(val, pow);
-
-            norm = Math.pow(norm, 1 / pow);
+            final double norm = new Norm(ref, pow).calculate();
 
             for (int idx = 0; idx < size; idx++)
                 ref[idx] = operation.apply(ref[idx], norm);
@@ -189,8 +221,6 @@ public class DenseLocalOnHeapVectorTest {
             checker.assertCloseEnough(vecOperation.apply(v), ref);
         });
     }
-
-
 
     /** */
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
@@ -296,6 +326,65 @@ public class DenseLocalOnHeapVectorTest {
 
                     consumer.accept(new DenseLocalOnHeapVector(new double[expSize], shallowCopy));
                 }
+    }
+
+    /** */
+    private static class Norm {
+        /** */
+        private final double[] arr;
+
+        /** */
+        private final Double pow;
+
+
+        /** */
+        Norm(double[] arr, double pow) {
+            this.arr = arr;
+            this.pow = pow;
+        }
+
+        /** */
+        double calculate() {
+            if (pow.equals(0.0))
+                return countNonZeroes(); // IMPL NOTE this is beautiful if you think of it
+
+            if (pow.equals(Double.POSITIVE_INFINITY))
+                return maxAbs();
+
+            double norm = 0;
+
+            for (double val : arr)
+                norm += Math.pow(val, pow);
+
+            return Math.pow(norm, 1 / pow);
+        }
+
+        /** */
+        private int countNonZeroes() {
+            int cnt = 0;
+
+            final Double zero = 0.0;
+
+            for (double val : arr)
+                if (!zero.equals(val))
+                    cnt++;
+
+            return cnt;
+        }
+
+        /** */
+        private double maxAbs() {
+            double res = 0;
+
+            for (double val : arr) {
+                final double abs = Math.abs(val);
+
+                if (abs > res)
+                    res = abs;
+            }
+
+            return res;
+        }
     }
 
     /** */

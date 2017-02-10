@@ -17,65 +17,111 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
  * TODO: add description.
  */
-public class VectorOffHeapStorage implements VectorStorage {
+public class VectorOffheapStorage implements VectorStorage {
+
+    private int len;
+    /** */
+    private long ptr;
+
+    public VectorOffheapStorage(){
+
+    }
+
+    public VectorOffheapStorage(int size){
+        len = size;
+
+        ptr = GridUnsafe.allocateMemory(pointerOffset(size));
+    }
+
+    /** {@inheritDoc */
     @Override
     public int size() {
-        return 0; // TODO
+        return len;
     }
 
+    /** {@inheritDoc */
     @Override
     public double get(int i) {
-        return 0; // TODO
+        return GridUnsafe.getDouble(pointerOffset(i));
     }
 
+    /** {@inheritDoc */
     @Override
     public void set(int i, double v) {
-        // TODO
+        GridUnsafe.putDouble(pointerOffset(i), v);
     }
 
+    /** {@inheritDoc */
     @Override
     public boolean isArrayBased() {
-        return false; // TODO
+        return false;
     }
 
+    /** {@inheritDoc */
     @Override
     public double[] data() {
-        return new double[0]; // TODO
+        return null;
     }
 
+    /** {@inheritDoc */
     @Override
     public boolean isSequentialAccess() {
-        return false; // TODO
+        return true;
     }
 
+    /** {@inheritDoc */
     @Override
     public boolean isDense() {
-        return false; // TODO
+        return true;
     }
 
+    /** {@inheritDoc */
     @Override
     public double getLookupCost() {
         return 0; // TODO
     }
 
+    /** {@inheritDoc */
     @Override
     public boolean isAddConstantTime() {
-        return false; // TODO
+        return true;
     }
 
+    /** {@inheritDoc */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeLong(ptr);
+
+        out.writeInt(len);
     }
 
+    /** {@inheritDoc */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        ptr = in.readLong();
+
+        len = in.readInt();
+    }
+
+    /** {@inheritDoc */
+    @Override
+    public void destroy() {
+        GridUnsafe.freeMemory(ptr);
+    }
+
+    /**
+     * Pointer offset for specific index
+     *
+     * @param i Offset index.
+     */
+    private long pointerOffset(int i) {
+        return ptr + i * Double.BYTES;
     }
 }
