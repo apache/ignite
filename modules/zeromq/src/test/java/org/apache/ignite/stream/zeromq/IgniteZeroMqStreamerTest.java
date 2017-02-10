@@ -23,7 +23,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.zeromq.ZMQ;
 
@@ -40,13 +42,16 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     private final String ADDR = "tcp://localhost:5671";
 
     /**  */
+    private final byte[] TOPIC = "0mq".getBytes();
+
+    /**  */
     public IgniteZeroMqStreamerTest() {
         super(true);
     }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 200_000;
+        return 10_000;
     }
 
     /** {@inheritDoc} */
@@ -55,7 +60,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    public void afterTest() throws Exception {
+    @Override public void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -80,16 +85,15 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqSubSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            byte[] topic = "test".getBytes();
 
-            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB, ADDR, topic);
+            ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB, ADDR, TOPIC);
 
             IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
 
             // TODO more than 1 thread crash, socket sharing between threads
             streamer.setThreadsCount(1);
 
-            executeStreamer(streamer, ZMQ.PUB, topic);
+            executeStreamer(streamer, ZMQ.PUB, TOPIC);
         }
     }
 
@@ -152,15 +156,13 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         }
 
         // Checking cache content after streaming finished.
-        int testId = CACHE_ENTRY_COUNT - 1;
-
         IgniteCache<Integer, String> cache = grid().cache(null);
+
+        int testId = CACHE_ENTRY_COUNT - 1;
 
         String cachedValue = cache.get(testId);
 
-        System.out.println(cache.size());
-
-        // Tweet successfully put to cache.
+        // ZeroMQ message successfully put to cache.
         assertTrue(cachedValue != null && cachedValue.equals(String.valueOf(testId)));
 
         assertTrue(cache.size() == CACHE_ENTRY_COUNT);
@@ -198,15 +200,13 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             socket.bind(ADDR);
 
             if (ZMQ.PUB == clientSocket)
-                Thread.sleep(100);
+                Thread.sleep(500);
 
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
                 if (ZMQ.PUB == clientSocket)
                     socket.sendMore(topic);
                 socket.send(String.valueOf(i).getBytes());
             }
-
-            socket.close();
         }
     }
 

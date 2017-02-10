@@ -32,7 +32,7 @@ import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.zeromq.ZMQ;
 
 /**
- *
+ * This streamer uses https://github.com/zeromq/jeromq/.
  */
 public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
     /** Logger. */
@@ -124,10 +124,10 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
         if (!isStart)
             throw new IgniteException("Attempted to stop an already stopped ZeroMQ streamer");
 
-        zeroMqExSrv.shutdownNow();
-
         socket.close();
         ctx.close();
+
+        zeroMqExSrv.shutdownNow();
 
         isStart = false;
     }
