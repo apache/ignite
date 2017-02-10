@@ -1415,11 +1415,36 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Value.
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @return Class object specified at the input stream.
+     * @throws BinaryObjectException If failed.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
+        return doReadClass(in, ctx, ldr, true);
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
+     * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
+     * @throws BinaryObjectException If failed.
+     */
+    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
+        throws BinaryObjectException {
         int typeId = in.readInt();
+
+        if (!deserialize) {
+            // Skip class name at the stream.
+            if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                doReadClassName(in);
+
+            return null;
+        }
 
         return doReadClass(in, ctx, ldr, typeId);
     }
@@ -1472,8 +1497,12 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
      * @param typeId Type id.
-     * @return Value.
+     * @return Class object specified at the input stream.
+     * @throws BinaryObjectException If failed.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
         throws BinaryObjectException {
@@ -1831,6 +1860,10 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
@@ -1839,7 +1872,7 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        Class compType = doReadClass(in, ctx, ldr);
+        Class compType = doReadClass(in, ctx, ldr, deserialize);
 
         int len = in.readInt();
 

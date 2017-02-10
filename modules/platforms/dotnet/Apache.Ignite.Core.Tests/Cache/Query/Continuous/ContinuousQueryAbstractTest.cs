@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
@@ -1094,9 +1095,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Filter which cannot be serialized.
         /// </summary>
-        public class LocalFilter : AbstractFilter<BinarizableEntry>
+        public class LocalFilter : AbstractFilter<BinarizableEntry>, IBinarizable
         {
-            // No-op.
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
+            }
         }
 
         /// <summary>

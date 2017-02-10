@@ -20,12 +20,13 @@ namespace Apache.Ignite.Core.Common
     using System;
     using System.Globalization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Ignite guid with additional local ID.
     /// </summary>
     [Serializable]
-    public struct IgniteGuid : IEquatable<IgniteGuid>
+    public struct IgniteGuid : IEquatable<IgniteGuid>, IBinaryWriteAware
     {
         /** Global id. */
         private readonly Guid _globalId;
@@ -42,6 +43,16 @@ namespace Apache.Ignite.Core.Common
         {
             _globalId = globalId;
             _localId = localId;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteGuid"/> struct.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        public IgniteGuid(IBinaryRawReader reader)
+        {
+            _globalId = reader.ReadGuid().GetValueOrDefault();
+            _localId = reader.ReadLong();
         }
 
         /// <summary>
@@ -127,6 +138,15 @@ namespace Apache.Ignite.Core.Common
         public static bool operator !=(IgniteGuid a, IgniteGuid b)
         {
             return !(a == b);
+        }
+
+        /** <inheritdoc /> */
+        void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
+        {
+            var raw = writer.GetRawWriter();
+
+            raw.WriteGuid(GlobalId);
+            raw.WriteLong(LocalId);
         }
     }
 }

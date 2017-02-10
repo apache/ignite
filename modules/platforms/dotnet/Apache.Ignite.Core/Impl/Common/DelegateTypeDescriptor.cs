@@ -19,7 +19,8 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Globalization;
-
+    using System.Reflection;
+    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Compute;

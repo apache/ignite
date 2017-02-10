@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core
 
             // 3. Send configuration details to Java
             cfg.Validate(log);
-            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));  // Use system marshaller.
         }
 
         /// <summary>
