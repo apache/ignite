@@ -157,7 +157,7 @@ public abstract class AbstractVector implements Vector, Externalizable {
      */
     private Element mkElement(int idx) {
         checkIndex(idx);
-        
+
         return new Element() {
             /** {@inheritDoc */
             @Override public double get() {
@@ -658,13 +658,13 @@ public abstract class AbstractVector implements Vector, Externalizable {
      * @return
      */
     private Vector logNormalize(double power, double normLen) {
-        assert Double.isInfinite(power) || power <= 1.0;
+        assert !(Double.isInfinite(power) || power <= 1.0);
 
         double denominator = normLen * Math.log(power);
 
         Vector copy = copy();
 
-        for (Element element : copy.nonZeroes())
+        for (Element element : copy.all())
             element.set(Math.log1p(element.get()) / denominator);
 
         return copy;

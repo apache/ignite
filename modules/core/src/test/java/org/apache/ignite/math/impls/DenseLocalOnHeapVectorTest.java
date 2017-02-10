@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Vector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -84,40 +85,25 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void normalizeTest() {
-        consumeSampleVectors(v -> {
-            final int size = v.size();
-
-            final double[] ref = new double[size];
-
-            final ElementsChecker checker = new ElementsChecker(v, ref);
-
-            double len = 0;
-
-            for (double val : ref)
-                len += val * val;
-
-            len = Math.sqrt(len);
-
-            for (int idx = 0; idx < size; idx++)
-                ref[idx] /= len;
-
-            checker.assertCloseEnough(v.normalize(), ref);
-        });
+        normalizeTest(2, (val, len) -> val / len, Vector::normalize);
     }
 
     /** */ @Test
-    public void normalizePowerTest() { // TODO write test
-
+    @Ignore("Test case ignored: need to fix either test or implementation or both") // todo fix this
+    public void normalizePowerTest() {
+        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
+            normalizeTest(pow, (val, norm) -> val / norm, (v) -> v.normalize(pow));
     }
 
     /** */ @Test
-    public void logNormalizeTest() { // TODO write test
-
+    public void logNormalizeTest() {
+        normalizeTest(2, (val, len) -> Math.log1p(val) / (len * Math.log(2)), Vector::logNormalize);
     }
 
     /** */ @Test
-    public void logNormalizePowerTest() { // TODO write test
-
+    public void logNormalizePowerTest() {
+        for (double pow : new double[] {1.1, 2, 2.5})
+            normalizeTest(pow, (val, norm) -> Math.log1p(val) / (norm * Math.log(pow)), (v) -> v.logNormalize(pow));
     }
 
     /** */ @Test
@@ -179,6 +165,32 @@ public class DenseLocalOnHeapVectorTest {
     public void guidTest() { // TODO write test
 
     }
+
+    /** */
+    private void normalizeTest(double pow, BiFunction<Double, Double, Double> operation,
+        Function<Vector, Vector> vecOperation) {
+        consumeSampleVectors(v -> {
+            final int size = v.size();
+
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref);
+
+            double norm = 0;
+
+            for (double val : ref)
+                norm += Math.pow(val, pow);
+
+            norm = Math.pow(norm, 1 / pow);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = operation.apply(ref[idx], norm);
+
+            checker.assertCloseEnough(vecOperation.apply(v), ref);
+        });
+    }
+
+
 
     /** */
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
@@ -332,10 +344,7 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */
-    private static class Metric {
-        /** */
-        private static final double tolerance = 0.1;
-
+    private static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
         /** */
         private final double exp;
 
@@ -357,7 +366,6 @@ public class DenseLocalOnHeapVectorTest {
         @Override public String toString() {
             return "Metric{" + "expected=" + exp +
                 ", obtained=" + obtained +
-                ", tolerance=" + tolerance +
                 '}';
         }
     }
