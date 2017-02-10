@@ -69,14 +69,14 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
 
     /** Test behavior in case of INIT failure (cancel via {@link DdlOperationInit#ackMessage}). */
     public void testInitFailure() {
-        DdlProc.testName = "InitFailure";
+        DdlProc.testName = GridTestUtils.getGridTestName();
 
         assertCreateIndexThrowsWithMessage("Hello from DdlProc Init");
     }
 
     /** Test behavior in case of ACK failure (cancel via {@link DdlStatementsProcessor#onAck}). */
     public void testAckFailure() {
-        DdlProc.testName = "AckFailure";
+        DdlProc.testName = GridTestUtils.getGridTestName();
 
         assertCreateIndexThrowsWithMessage("Hello from DdlProc Ack");
     }
