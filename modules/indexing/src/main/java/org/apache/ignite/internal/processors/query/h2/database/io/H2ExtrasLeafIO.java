@@ -36,82 +36,27 @@ import org.h2.result.SearchRow;
  */
 public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_4 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX4_REF_LEAF, 1, 4)
+    public static final IOVersions<H2ExtrasLeafIO> VERSIONS = new IOVersions<>(
+        new H2ExtrasLeafIO(T_H2_EX_REF_LEAF, 1)
     );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_8 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX8_REF_LEAF, 1, 8)
-    );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_12 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX12_REF_LEAF, 1, 12)
-    );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_16 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX16_REF_LEAF, 1, 16)
-    );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_20 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX20_REF_LEAF, 1, 20)
-    );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_24 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX24_REF_LEAF, 1, 24)
-    );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_28 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX28_REF_LEAF, 1, 28)
-    );
-
-    /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS_32 = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX32_REF_LEAF, 1, 32)
-    );
-
-    /** */
-    private final int payloadSize;
 
     /**
      * @param type Page type.
      * @param ver Page format version.
-     * @param payloadSize Item payload size.
      */
-    private H2ExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 8 + payloadSize);
+    private H2ExtrasLeafIO(short type, int ver) {
+        super(type, ver, 8);
+    }
 
-        this.payloadSize = payloadSize;
+    /** {@inheritDoc} */
+    @Override public int getMaxCount(long pageAddr, int pageSize) {
+        checkItemSize(pageAddr);
+        return super.getMaxCount(pageAddr, pageSize);
     }
 
     /** {@inheritDoc} */
     @Override public void storeByOffset(ByteBuffer buf, int off, SearchRow row) {
-        GridH2Row row0 = (GridH2Row)row;
-
-        assert row0.link != 0;
-
-        H2Tree tree = H2TreeIndex.getCurrentTree();
-
-        assert tree != null;
-
-        List<FastIndexHelper> fastIdx = tree.fastIdxs();
-
-        assert fastIdx != null;
-
-        int fieldOff = 0;
-
-        for (int i = 0; i < fastIdx.size(); i++) {
-            FastIndexHelper idx = fastIdx.get(i);
-            idx.put(buf, off + fieldOff, row.getValue(idx.columnIdx()));
-            fieldOff += idx.size();
-        }
-
-        buf.putLong(off + payloadSize, row0.link);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -120,13 +65,17 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert row0.link != 0;
 
-        H2Tree tree = H2TreeIndex.getCurrentTree();
+        H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
 
-        assert tree != null;
+        assert pageCtx != null;
 
-        List<FastIndexHelper> fastIdx = tree.fastIdxs();
+        List<FastIndexHelper> fastIdx = pageCtx.fastIdxs();
 
         assert fastIdx != null;
+
+        int itemSize = checkItemSize(pageAddr);
+
+        assert itemSize == pageCtx.itemSize();
 
         int fieldOff = 0;
 
@@ -136,22 +85,19 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
             fieldOff += idx.size();
         }
 
-        PageUtils.putLong(pageAddr, off + payloadSize, row0.link);
+        PageUtils.putLong(pageAddr, off + itemSize - 8, row0.link);
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
-        int srcOff = srcIo.offset(srcIdx);
 
-        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, payloadSize);
-        long link = PageUtils.getLong(srcPageAddr, srcOff + payloadSize);
+        assert srcIo.itemSize(srcPageAddr) == itemSize(dstPageAddr);
 
-        assert link != 0;
+        int srcOff = srcIo.offset(srcPageAddr, srcIdx);
+        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, itemSize(srcPageAddr));
 
-        int dstOff = offset(dstIdx);
-
+        int dstOff = offset(dstPageAddr, dstIdx);
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
-        PageUtils.putLong(dstPageAddr, dstOff + payloadSize, link);
     }
 
     /** {@inheritDoc} */
@@ -168,6 +114,33 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
      * @return Link to row.
      */
     private long getLink(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
+        return PageUtils.getLong(pageAddr, offset(pageAddr, idx) + itemSize(pageAddr) - 8);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int metaHeaderSize() {
+        return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeMetaHeader(long pageAddr, Object obj) {
+        int size = obj == null ? 0 : (Integer)obj;
+        PageUtils.putInt(pageAddr, META_HEADER_OFFSET, size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int itemSize(long pageAddr) {
+        return PageUtils.getInt(pageAddr, META_HEADER_OFFSET);
+    }
+
+    /** */
+    private int checkItemSize(long pageAddr) {
+        int itemSize = itemSize(pageAddr);
+
+        if (itemSize != 0)
+            return itemSize;
+        H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
+        writeMetaHeader(pageAddr, pageCtx.itemSize());
+        return pageCtx.itemSize();
     }
 }

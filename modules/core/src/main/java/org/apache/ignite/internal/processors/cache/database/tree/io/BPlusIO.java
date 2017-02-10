@@ -36,7 +36,7 @@ public abstract class BPlusIO<L> extends PageIO {
     private static final int REMOVE_ID_OFF = FORWARD_OFF + 8;
 
     /** */
-    protected static final int ITEMS_OFF = REMOVE_ID_OFF + 8;
+    protected static final int META_HEADER_OFFSET = REMOVE_ID_OFF + 8;
 
     /** */
     private final boolean canGetRow;
@@ -45,14 +45,13 @@ public abstract class BPlusIO<L> extends PageIO {
     private final boolean leaf;
 
     /** All the items must be of fixed size. */
-    protected final int itemSize;
+    private final int itemSize;
 
     /**
      * @param type Page type.
      * @param ver Page format version.
      * @param leaf If this is a leaf IO.
      * @param canGetRow If we can get full row from this page.
-     * @param itemSize Single item size on page.
      */
     protected BPlusIO(int type, int ver, boolean leaf, boolean canGetRow, int itemSize) {
         super(type, ver);
@@ -68,8 +67,23 @@ public abstract class BPlusIO<L> extends PageIO {
     /**
      * @return Item size in bytes.
      */
-    public final int getItemSize() {
+    protected int metaHeaderSize() {
+        return 0;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Item size in bytes.
+     */
+    public int itemSize(long pageAddr) {
         return itemSize;
+    }
+
+    /**
+     * @return Offset to items block.
+     */
+    protected final int itemsOffset() {
+        return META_HEADER_OFFSET + metaHeaderSize();
     }
 
     /** {@inheritDoc} */
@@ -79,6 +93,17 @@ public abstract class BPlusIO<L> extends PageIO {
         setCount(pageAddr, 0);
         setForward(pageAddr, 0);
         setRemoveId(pageAddr, 0);
+
+        if (metaHeaderSize() > 0)
+            writeMetaHeader(pageAddr, null);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param obj Object with meta content or {@code null} if we just init new page.
+     */
+    public void writeMetaHeader(long pageAddr, Object obj) {
+        // No-op.
     }
 
     /**
@@ -174,7 +199,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public final void store(long pageAddr, int idx, L row, byte[] rowBytes) throws IgniteCheckedException {
-        int off = offset(idx);
+        int off = offset(pageAddr, idx);
 
         if (rowBytes == null)
             storeByOffset(pageAddr, off, row);
@@ -183,10 +208,11 @@ public abstract class BPlusIO<L> extends PageIO {
     }
 
     /**
+     * @param pageAddr Page address.
      * @param idx Index of element.
      * @return Offset from byte buffer begin in bytes.
      */
-    public abstract int offset(int idx);
+    public abstract int offset(long pageAddr, int idx);
 
     /**
      * Store the needed info about the row in the page. Leaf and inner pages can store different info.

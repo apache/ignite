@@ -98,7 +98,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasIOHelper;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
@@ -216,8 +217,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     static {
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
 
-        H2ExtrasIOHelper.registerInnerIO();
-        H2ExtrasIOHelper.registerLeafIO();
+        PageIO.registerH2ExtraInner(H2ExtrasInnerIO.VERSIONS);
+        PageIO.registerH2ExtraLeaf(H2ExtrasLeafIO.VERSIONS);
     }
 
     /** Default DB options. */

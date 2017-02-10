@@ -66,7 +66,7 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
         assert srcIo == this;
 
-        PageUtils.putLong(dstPageAddr, offset(dstIdx), getLink(srcPageAddr, srcIdx));
+        PageUtils.putLong(dstPageAddr, offset(dstPageAddr, dstIdx), getLink(srcPageAddr, srcIdx));
     }
 
     /** {@inheritDoc} */
@@ -79,6 +79,6 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
 
     /** {@inheritDoc} */
     @Override public long getLink(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx));
+        return PageUtils.getLong(pageAddr, offset(pageAddr, idx));
     }
 }

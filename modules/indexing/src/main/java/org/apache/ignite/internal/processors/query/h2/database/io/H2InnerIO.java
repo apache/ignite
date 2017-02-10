@@ -74,11 +74,11 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
         long link = ((H2RowLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
 
-        PageUtils.putLong(dstPageAddr, offset(dstIdx), link);
+        PageUtils.putLong(dstPageAddr, offset(dstPageAddr, dstIdx), link);
     }
 
     /** {@inheritDoc} */
     @Override public long getLink(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx));
+        return PageUtils.getLong(pageAddr, offset(pageAddr, idx));
     }
 }

@@ -285,7 +285,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return PageUtils.getLong(pageAddr, offset(idx));
+            return PageUtils.getLong(pageAddr, offset(pageAddr, idx));
         }
     }
 
@@ -321,13 +321,13 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         @Override public void store(long dst, int dstIdx, BPlusIO<Long> srcIo, long src, int srcIdx) {
             assert srcIo == this;
 
-            PageUtils.putLong(dst, offset(dstIdx), PageUtils.getLong(src, offset(srcIdx)));
+            PageUtils.putLong(dst, offset(dst, dstIdx), PageUtils.getLong(src, offset(src, srcIdx)));
         }
 
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return PageUtils.getLong(pageAddr, offset(idx));
+            return PageUtils.getLong(pageAddr, offset(pageAddr, idx));
         }
     }
 }
