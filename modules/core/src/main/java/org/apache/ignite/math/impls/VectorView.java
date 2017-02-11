@@ -59,6 +59,11 @@ public class VectorView extends AbstractVector {
     }
 
     @Override
+    public Matrix likeMatrix(int rows, int cols) {
+        return null; // TODO
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
         out.writeInt(off);

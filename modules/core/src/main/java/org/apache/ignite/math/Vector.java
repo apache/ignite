@@ -249,6 +249,30 @@ public interface Vector extends MetaAttributes, Externalizable {
     Vector like(int crd);
 
     /**
+     * Creates new matrix of compatible flavor with given size.
+     *
+     * @param rows Number of rows.
+     * @param cols Number of columns.
+     * @return New matrix.
+     */
+    Matrix likeMatrix(int rows, int cols);
+
+    /**
+     * Converts this vector into [N x 1] matrix where N is this vector cardinality.
+     *
+     * @return Newly created matrix.
+     */
+    Matrix toMatrix();
+
+    /**
+     * Converts this vector into [N+1 x 1] matrix where N is this vector cardinality.
+     * (0,0) element of this matrix will be {@code zeroVal} parameter.
+     *
+     * @return Newly created matrix.
+     */
+    Matrix toMatrixPlusOne(double zeroVal);
+
+    /**
      * Creates new vector containing element by element difference between this vector and the argument one.
      *
      * @param vec Argument vector.

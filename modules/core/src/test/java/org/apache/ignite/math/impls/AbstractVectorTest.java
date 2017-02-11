@@ -17,25 +17,16 @@
 
 package org.apache.ignite.math.impls;
 
-import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.Spliterator;
-import java.util.stream.StreamSupport;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.math.CardinalityException;
-import org.apache.ignite.math.Functions;
-import org.apache.ignite.math.IndexException;
-import org.apache.ignite.math.Matrix;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.VectorStorage;
-import org.apache.ignite.math.impls.storage.VectorArrayStorage;
-import org.apache.ignite.math.impls.storage.VectorNullStorage;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.ignite.math.impls.storage.*;
+import org.junit.*;
+import java.util.*;
+import java.util.stream.*;
 
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterator.SIZED;
+import static java.util.Spliterator.*;
 import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
 
@@ -812,6 +803,11 @@ public class AbstractVectorTest {
                 return false;
             }
 
+            @Override
+            public Matrix likeMatrix(int rows, int cols) {
+                return null;
+            }
+
             /** */
             @Override public Vector copy() {
                 return getAbstractVector(this.getStorage());
@@ -871,10 +867,14 @@ public class AbstractVectorTest {
      */
     private AbstractVector getAbstractVector() {
         return new AbstractVector() { // TODO: find out how-to fix this warning
-
             /** */
             @Override public boolean isDense() {
                 return false;
+            }
+
+            @Override
+            public Matrix likeMatrix(int rows, int cols) {
+                return null;
             }
 
             /** */

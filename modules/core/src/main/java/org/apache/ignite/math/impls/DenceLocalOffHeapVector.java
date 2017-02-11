@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.*;
 
 /**
  * TODO: add description.
@@ -28,6 +28,11 @@ public class DenceLocalOffHeapVector extends AbstractVector {
     }
 
     @Override public Vector like(int crd) {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
     }
 }

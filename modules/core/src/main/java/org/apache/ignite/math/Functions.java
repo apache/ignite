@@ -26,16 +26,13 @@ public final class Functions {
     /** Function that returns its argument. */
     public static final DoubleFunction<Double> IDENTITY = (a) -> a;
 
-    /** Function that returns <tt>1.0 / a</tt>. */
-    public static final DoubleFunction<Double> INV = (a) -> 1.0 / a;
-
     /** Function that returns <tt>Math.log(a) / Math.log(2)</tt>. */
     public static final DoubleFunction<Double> LOG2 = (a) -> Math.log(a) * 1.4426950408889634;
 
     /** Function that returns <tt>-a</tt>. */
     public static final DoubleFunction<Double> NEGATE = (a) -> -a;
 
-    /** Function that returns {@code a < 0 ? -1 : a > 0 ? 1 : 0}. */
+    /** Function that returns <tt> a < 0 ? -1 : a > 0 ? 1 : 0 </tt>. */
     public static final DoubleFunction<Double> SIGN = (a) -> a < 0.0 ? -1.0 : a > 0.0 ? 1.0 : 0.0;
 
     /** Function that returns <tt>a * a</tt>. */
@@ -43,6 +40,9 @@ public final class Functions {
 
     /** Function that returns <tt> 1 / (1 + exp(-a) </tt> */
     public static final DoubleFunction<Double> SIGMOID = (a) -> 1.0 / (1.0 + Math.exp(-a));
+
+    /** Function that returns <tt> 1 / a </tt> */
+    public static final DoubleFunction<Double> INV = (a) -> 1.0 / a;
 
     /** Function that returns <tt> a * (1-a) </tt> */
     public static final DoubleFunction<Double> SIGMOIDGRADIENT = (a) -> a * (1.0 - a);
@@ -53,11 +53,23 @@ public final class Functions {
     /** Function that returns <tt>a * b</tt>. */
     public static final BiFunction<Double, Double, Double> MULT = (a, b) -> a * b;
 
+    /** Function that returns <tt>Math.log(a) / Math.log(b)</tt>. */
+    public static final BiFunction<Double, Double, Double> LG = (a, b) -> Math.log(a) / Math.log(b);
+
     /** Function that returns <tt>a + b</tt>. */
     public static final BiFunction<Double, Double, Double> PLUS = (a, b) ->  a + b;
 
     /** Function that returns <tt>a - b</tt>. */
     public static final BiFunction<Double, Double, Double> MINUS = (a, b) ->  a - b;
+
+    /** Function that returns <tt>abs(a - b)</tt>. */
+    public static final BiFunction<Double, Double, Double> MINUS_ABS = (a, b) ->  Math.abs(a - b);
+
+    /** Function that returns <tt>max(abs(a), abs(b))</tt>. */
+    public static final BiFunction<Double, Double, Double> MAX_ABS = (a, b) ->  Math.max(Math.abs(a), Math.abs(b));
+
+    /** Function that returns <tt>min(abs(a), abs(b))</tt>. */
+    public static final BiFunction<Double, Double, Double> MIN_ABS = (a, b) ->  Math.min(Math.abs(a), Math.abs(b));
 
     /** Function that returns <tt>Math.abs(a) + Math.abs(b)</tt>. */
     public static final BiFunction<Double, Double, Double> PLUS_ABS = (a, b) -> Math.abs(a) + Math.abs(b);

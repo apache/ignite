@@ -66,6 +66,21 @@ public class DelegatingVector implements Vector {
     }
 
     @Override
+    public Matrix likeMatrix(int rows, int cols) {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix toMatrix() {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix toMatrixPlusOne(double zeroVal) {
+        return null; // TODO
+    }
+
+    @Override
     public int size() {
         return dlg.size();
     }
