@@ -39,6 +39,24 @@ import java.util.function.*;
  */
 public interface Matrix extends MetaAttributes, Externalizable {
     /**
+     * Swaps two rows in this matrix.
+     *
+     * @param row1 Row #1.
+     * @param row2 Row #2.
+     * @return This matrix.
+     */
+    Matrix swapRows(int row1, int row2);
+
+    /**
+     * Swaps two columns in this matrix.
+     *
+     * @param col1 Column #1.
+     * @param col2 Column #2.
+     * @return This matrix.
+     */
+    Matrix swapColumns(int col1, int col2);
+
+    /**
      * Assigns given value to all elements of this matrix.
      *
      * @param val Value to assign to all elements.

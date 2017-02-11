@@ -82,6 +82,16 @@ public abstract class AbstractMatrix implements Matrix {
         return sto.get(row, col);
     }
 
+    @Override
+    public Matrix swapRows(int row1, int row2) {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix swapColumns(int col1, int col2) {
+        return null; // TODO
+    }
+
     /**
      * Check row index bounds.
      *
