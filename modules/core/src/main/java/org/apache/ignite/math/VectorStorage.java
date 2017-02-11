@@ -86,7 +86,7 @@ public interface VectorStorage extends Externalizable {
     }
 
     /**
-     * Destroys off heap vector storage. It's a no-op in onheap case.
+     * Destroys storage if managed outside of JVM. It's a no-op in all other cases.
      */
     public default void destroy() {
         // No-op.
