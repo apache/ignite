@@ -29,11 +29,14 @@ import java.util.function.*;
 /**
  * TODO: add description.
  */
-public abstract class AbstractMatrix implements Matrix, Externalizable {
-    /** Matrix storage implementation. */
+public abstract class AbstractMatrix implements Matrix {
+    // Matrix storage implementation.
     private MatrixStorage sto;
 
-    /** Matrix's GUID. */
+    // Meta attribute storage.
+    private Map<String, Object> meta = new HashMap<>();
+
+    // Matrix's GUID.
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /**
@@ -113,12 +116,20 @@ public abstract class AbstractMatrix implements Matrix, Externalizable {
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
+        out.writeObject(meta);
         out.writeObject(guid);
     }
 
     @Override
+    public Map<String, Object> getMetaStorage() {
+        return meta;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
+        meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
     }
 

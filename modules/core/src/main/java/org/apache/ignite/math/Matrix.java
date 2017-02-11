@@ -19,6 +19,7 @@ package org.apache.ignite.math;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import java.io.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -36,7 +37,7 @@ import java.util.function.*;
  *
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
-public interface Matrix {
+public interface Matrix extends MetaAttributes, Externalizable {
     /**
      * Assigns given value to all elements of this matrix.
      *

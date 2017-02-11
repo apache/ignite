@@ -19,6 +19,7 @@ package org.apache.ignite.math;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import java.io.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -30,8 +31,11 @@ public class DelegatingVector implements Vector {
     // Delegating vector.
     private Vector dlg;
 
+    // Meta attribute storage.
+    private Map<String, Object> meta = new HashMap<>();
+
     // GUID.
-    private final IgniteUuid guid = IgniteUuid.randomUuid();
+    private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /**
      *
@@ -39,6 +43,26 @@ public class DelegatingVector implements Vector {
      */
     public DelegatingVector(Vector dlg) {
         this.dlg = dlg;
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(dlg);
+        out.writeObject(meta);
+        out.writeObject(guid);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        dlg = (Vector)in.readObject();
+        meta = (Map<String, Object>)in.readObject();
+        guid = (IgniteUuid)in.readObject();
+    }
+
+    @Override
+    public Map<String, Object> getMetaStorage() {
+        return meta;
     }
 
     @Override

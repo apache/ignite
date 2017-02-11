@@ -29,14 +29,17 @@ import java.util.function.*;
 /**
  * TODO: add description.
  */
-public abstract class AbstractVector implements Vector, Externalizable {
-    /** Vector storage implementation. */
+public abstract class AbstractVector implements Vector {
+    // Vector storage implementation.
     private VectorStorage sto;
 
-    /** Vector's GUID. */
+    // Meta attribute storage.
+    private Map<String, Object> meta = new HashMap<>();
+
+    // Vector's GUID.
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
-    /** Cached value for length squared. */
+    // Cached value for length squared.
     private double lenSq = 0.0;
 
     /**
@@ -376,6 +379,11 @@ public abstract class AbstractVector implements Vector, Externalizable {
                 };
             }
         };
+    }
+
+    @Override
+    public Map<String, Object> getMetaStorage() {
+        return meta;
     }
 
     @Override
@@ -723,12 +731,15 @@ public abstract class AbstractVector implements Vector, Externalizable {
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
+        out.writeObject(meta);
         out.writeObject(guid);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (VectorStorage)in.readObject();
+        meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
     }
 }
