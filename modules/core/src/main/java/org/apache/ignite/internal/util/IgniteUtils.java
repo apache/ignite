@@ -507,6 +507,9 @@ public abstract class IgniteUtils {
     /** */
     private static final boolean assertionsEnabled;
 
+    /** Virtual mac address for Microsoft tunnel adapter. */
+    private static final byte[] VIRTUAL_MAC = longToBytes(0xE0);
+
     /*
      *
      */
@@ -2170,7 +2173,7 @@ public abstract class IgniteUtils {
                     byte[] hwAddr = itf.getHardwareAddress();
 
                     // Loopback produces empty MAC.
-                    if (!itf.isVirtual() && hwAddr != null && hwAddr.length > 0) {
+                    if (hwAddr != null && hwAddr.length > 0 && !Arrays.equals(hwAddr, VIRTUAL_MAC)) {
                         String mac = byteArray2HexString(hwAddr);
 
                         if (!macs.contains(mac))
