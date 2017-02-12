@@ -26,6 +26,7 @@ import org.apache.ignite.java8.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.java8.examples.EventsExamplesSelfTest;
 import org.apache.ignite.java8.examples.IndexingBridgeMethodTest;
 import org.apache.ignite.java8.examples.MessagingExamplesSelfTest;
+import org.apache.ignite.java8.examples.spark.SharedRDDExampleTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -75,6 +76,7 @@ public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
 //        suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
 //        suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
 //        suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(SharedRDDExampleTest.class));
 
         return suite;
     }
