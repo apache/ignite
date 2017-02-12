@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
@@ -83,6 +84,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpDiscoveryRestartTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));
+
+        suite.addTest(new TestSuite(TcpDiscoveryNodeAttributesUpdateOnReconnectTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));

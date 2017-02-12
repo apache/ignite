@@ -628,7 +628,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = locNode;
 
                     if (locNode.order() > 0)
-                        node = locNode.clientReconnectNode();
+                        node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
 
                     msg = new TcpDiscoveryJoinRequestMessage(node, spi.collectExchangeData(getLocalNodeId()));
                 }
