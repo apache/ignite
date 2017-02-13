@@ -17,38 +17,34 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
 /**
  * Checks whether on client reconnect node attributes from kernal context are sent.
  */
 public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoverySpi clntSpi;
-
-    /** */
-    private CountDownLatch joinLatch = new CountDownLatch(2);
-
-    /** */
     private volatile String rejoinAttr;
+
+    /** */
+    @LoggerResource
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -60,16 +56,16 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
             attrs.put("test", "1");
 
             cfg.setUserAttributes(attrs);
-
             cfg.setClientMode(true);
-
-            clntSpi = new TestDiscoverySpi();
-
-            TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-            clntSpi.setIpFinder(spi.getIpFinder());
-
-            cfg.setDiscoverySpi(clntSpi);
         }
+
+        IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi spi = new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi();
+
+        TcpDiscoveryIpFinder finder = ((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder();
+
+        spi.setIpFinder(finder);
+
+        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
@@ -83,7 +79,7 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testReconnect() throws Exception {
-        IgniteEx srv = (IgniteEx)startGrid("server");
+        Ignite srv = startGrid("server");
 
         IgniteEvents evts = srv.events();
 
@@ -94,62 +90,14 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
 
                 rejoinAttr = node.attribute("test");
 
-                joinLatch.countDown();
-
                 return true;
             }
         }, EventType.EVT_NODE_JOINED);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        Ignite client = startGrid("client");
 
-        client.context().addNodeAttribute("test", "2");
-
-        System.out.println(">>> Brake connection...");
-        clntSpi.brakeConnection();
-
-        assert joinLatch.await(30, TimeUnit.SECONDS);
+        reconnectClientNode(log, client, srv, null);
 
         assertEquals("2", rejoinAttr);
-    }
-
-    /**
-     * Drops reconnect message to force client initiate new join process.
-     */
-    private class TestDiscoverySpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
-            if (msg instanceof TcpDiscoveryClientReconnectMessage)
-                return;
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryClientReconnectMessage)
-                return;
-
-            super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryClientReconnectMessage)
-                return;
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            if (msg instanceof TcpDiscoveryClientReconnectMessage)
-                return;
-
-            super.writeToSocket(msg, sock, res, timeout);
-        }
     }
 }
