@@ -96,7 +96,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
         assert srcPageAddr == dstItemSize || dstItemSize == 0;
 
         if (dstItemSize == 0)
-            writeMetaHeader(dstPageAddr, srcItemSize);
+            writeMetaHeader(dstPageAddr, (short)srcItemSize);
 
         int srcOff = srcIo.offset(srcPageAddr, srcIdx);
         byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, srcItemSize);
@@ -121,20 +121,20 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
     /** {@inheritDoc} */
     @Override public void writeMetaHeader(long pageAddr, Object obj) {
-        short size = obj == null ? 0 : (Short)obj;
+        short size = obj == null ? 0 : (short)obj;
         PageUtils.putShort(pageAddr, META_HEADER_OFFSET, size);
     }
 
     /** {@inheritDoc} */
     @Override public int itemSize(long pageAddr) {
-        int itemSize = PageUtils.getInt(pageAddr, META_HEADER_OFFSET);
+        short itemSize = PageUtils.getShort(pageAddr, META_HEADER_OFFSET);
 
         if (itemSize != 0)
             return itemSize;
         H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
         assert currentIndex != null;
 
-        writeMetaHeader(pageAddr, currentIndex.itemSize());
+        writeMetaHeader(pageAddr, (short)currentIndex.itemSize());
         return currentIndex.itemSize();
     }
 }
