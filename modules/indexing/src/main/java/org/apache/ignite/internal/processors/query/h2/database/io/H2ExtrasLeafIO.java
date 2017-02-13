@@ -112,13 +112,13 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
     /** {@inheritDoc} */
     @Override protected int metaHeaderSize() {
-        return 4;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override public void writeMetaHeader(long pageAddr, Object obj) {
-        int size = obj == null ? 0 : (Integer)obj;
-        PageUtils.putInt(pageAddr, META_HEADER_OFFSET, size);
+        short size = obj == null ? 0 : (Short)obj;
+        PageUtils.putShort(pageAddr, META_HEADER_OFFSET, size);
     }
 
 

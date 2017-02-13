@@ -60,6 +60,7 @@ public class IgniteReplaceIndexedValue1Benchmark extends IgniteCacheAbstractBenc
 
         for (Thread t : setupThreads)
             t.join();
+        BenchmarkUtils.println("setup done");
     }
 
     /** {@inheritDoc} */
