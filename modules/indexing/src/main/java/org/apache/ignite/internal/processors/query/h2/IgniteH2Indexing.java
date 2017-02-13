@@ -174,8 +174,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
@@ -761,7 +763,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         tbl.onDrop();
 
-        tbl.schema.tbls.remove(tbl.name());
+        tbl.schema.tbls.remove(tbl.typeName());
     }
 
     /** {@inheritDoc} */
@@ -1070,7 +1072,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
-        final String qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
+        final String qry, String alias, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
         final IndexingQueryFilter filter) throws IgniteCheckedException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
@@ -1078,7 +1080,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to find SQL table for type: " + type.name(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        String sql = generateQuery(qry, tbl);
+        String sql = generateQuery(qry, alias, tbl);
 
         Connection conn = connectionForThread(tbl.schemaName());
 
@@ -1129,7 +1131,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql;
 
         try {
-            sql = generateQuery(qry.getSql(), tblDesc);
+            sql = generateQuery(qry.getSql(), qry.getAlias(), tblDesc);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1232,7 +1234,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             try {
                                 ctx.cache().createMissingCaches();
                             }
-                            catch (IgniteCheckedException e1) {
+                            catch (IgniteCheckedException ignored) {
                                 throw new CacheException("Failed to create missing caches.", e);
                             }
 
@@ -1345,11 +1347,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Prepares statement for query.
      *
      * @param qry Query string.
+     * @param tableAlias table alias.
      * @param tbl Table to use.
      * @return Prepared statement.
      * @throws IgniteCheckedException In case of error.
      */
-    private String generateQuery(String qry, TableDescriptor tbl) throws IgniteCheckedException {
+    private String generateQuery(String qry, String tableAlias, TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
         final String qry0 = qry;
@@ -1386,9 +1389,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (!upper.startsWith("FROM"))
-            from = " FROM " + t +
+            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
+
+        if(tableAlias != null)
+            t = tableAlias;
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 
@@ -1754,10 +1760,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
+                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
+
                 WebServer webSrv = new WebServer();
-                Server web = new Server(webSrv, "-webPort", "0");
+                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
                 web.start();
                 String url = webSrv.addSession(c);
+
+                U.quietAndInfo(log, "H2 debug console URL: " + url);
 
                 try {
                     Server.openBrowser(url);
@@ -2058,7 +2068,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return aff.primary(locNode, k, topVer0);
+                        return aff.primaryByKey(locNode, k, topVer0);
                     }
                 };
             }
@@ -2442,7 +2452,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.type = type;
             this.schema = schema;
 
-            fullTblName = schema.schemaName + "." + escapeName(type.name(), schema.escapeAll());
+            String tblName = escapeName(type.tableName() != null ? type.tableName() : type.name(), schema.escapeAll());
+
+            fullTblName = schema.schemaName + "." + tblName;
         }
 
         /**
@@ -2453,16 +2465,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
-         * @return Database table name.
+         * @return Database full table name.
          */
         String fullTableName() {
             return fullTblName;
         }
 
         /**
-         * @return Database table name.
+         * @return type name.
          */
-        String name() {
+        String typeName() {
             return type.name();
         }
 
@@ -2784,8 +2796,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param tbl Table descriptor.
          */
         public void add(TableDescriptor tbl) {
-            if (tbls.putIfAbsent(tbl.name(), tbl) != null)
-                throw new IllegalStateException("Table already registered: " + tbl.name());
+            if (tbls.putIfAbsent(tbl.typeName(), tbl) != null)
+                throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
         }
 
         /**

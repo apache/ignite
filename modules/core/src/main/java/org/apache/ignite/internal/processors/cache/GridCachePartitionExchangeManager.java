@@ -1841,7 +1841,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException e) {
+                catch (IgniteClientDisconnectedCheckedException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {

@@ -99,6 +99,7 @@ import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -118,6 +119,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Binary context.
@@ -288,6 +291,7 @@ public class BinaryContext {
         registerPredefinedType(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
         registerPredefinedType(Date.class, GridBinaryMarshaller.DATE);
         registerPredefinedType(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
+        registerPredefinedType(Time.class, GridBinaryMarshaller.TIME);
         registerPredefinedType(UUID.class, GridBinaryMarshaller.UUID);
 
         registerPredefinedType(byte[].class, GridBinaryMarshaller.BYTE_ARR);
@@ -303,6 +307,7 @@ public class BinaryContext {
         registerPredefinedType(UUID[].class, GridBinaryMarshaller.UUID_ARR);
         registerPredefinedType(Date[].class, GridBinaryMarshaller.DATE_ARR);
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
+        registerPredefinedType(Time[].class, GridBinaryMarshaller.TIME_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
 
         // Special collections.
@@ -765,7 +770,7 @@ public class BinaryContext {
         final int typeId = mapper.typeId(clsName);
 
         try {
-            registered = marshCtx.registerClass(typeId, cls);
+            registered = marshCtx.registerClassName(JAVA_ID, typeId, cls.getName());
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to register class.", e);
@@ -808,7 +813,7 @@ public class BinaryContext {
         boolean registered;
 
         try {
-            registered = marshCtx.registerClass(desc.typeId(), desc.describedClass());
+            registered = marshCtx.registerClassName(JAVA_ID, desc.typeId(), desc.describedClass().getName());
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to register class.", e);
@@ -845,7 +850,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Serializer for class or {@code null} if none exists.
      */
-    private @Nullable BinarySerializer serializerForClass(Class cls) {
+    @Nullable private BinarySerializer serializerForClass(Class cls) {
         BinarySerializer serializer = defaultSerializer();
 
         if (serializer == null && canUseReflectiveSerializer(cls))

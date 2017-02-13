@@ -75,7 +75,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
          * @return {@code False}.
          */
         @SuppressWarnings("CovariantEquals")
-        public boolean equals(String obj) {
+        @Override public boolean equals(Object obj) {
             return false;
         }
     }

@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
@@ -222,6 +223,7 @@ public class BinaryClassDescriptor {
             case UUID:
             case DATE:
             case TIMESTAMP:
+            case TIME:
             case BYTE_ARR:
             case SHORT_ARR:
             case INT_ARR:
@@ -235,6 +237,7 @@ public class BinaryClassDescriptor {
             case UUID_ARR:
             case DATE_ARR:
             case TIMESTAMP_ARR:
+            case TIME_ARR:
             case OBJECT_ARR:
             case COL:
             case MAP:
@@ -611,6 +614,11 @@ public class BinaryClassDescriptor {
 
                 break;
 
+            case TIME:
+                writer.doWriteTime((Time)obj);
+
+                break;
+
             case BYTE_ARR:
                 writer.doWriteByteArray((byte[])obj);
 
@@ -673,6 +681,11 @@ public class BinaryClassDescriptor {
 
             case TIMESTAMP_ARR:
                 writer.doWriteTimestampArray((Timestamp[]) obj);
+
+                break;
+
+            case TIME_ARR:
+                writer.doWriteTimeArray((Time[]) obj);
 
                 break;
 

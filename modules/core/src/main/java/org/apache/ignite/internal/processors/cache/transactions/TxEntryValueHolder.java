@@ -24,7 +24,6 @@ import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -133,11 +132,10 @@ public class TxEntryValueHolder implements Message {
     }
 
     /**
-     * @param sharedCtx Shared cache context.
      * @param ctx Cache context.
      * @throws org.apache.ignite.IgniteCheckedException If marshaling failed.
      */
-    public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx)
+    public void marshal(GridCacheContext<?, ?> ctx)
         throws IgniteCheckedException {
         if (hasWriteVal && val != null)
             val.prepareMarshal(ctx.cacheObjectContext());
