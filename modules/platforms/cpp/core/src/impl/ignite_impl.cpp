@@ -33,6 +33,10 @@ namespace ignite
             txImpl = InternalGetTransactions(err);
 
             IgniteError::ThrowIfNeeded(err);
+
+            prjImpl = InternalGetProjection(err);
+
+            IgniteError::ThrowIfNeeded(err);
         }
 
         IgniteImpl::~IgniteImpl()
@@ -45,9 +49,19 @@ namespace ignite
             return env.Get()->InstanceName();
         }
 
+        const IgniteConfiguration& IgniteImpl::GetConfiguration() const
+        {
+            return env.Get()->GetConfiguration();
+        }
+
         JniContext* IgniteImpl::GetContext()
         {
             return env.Get()->Context();
+        }
+
+        IgniteBinding IgniteImpl::GetBinding()
+        {
+            return env.Get()->GetBinding();
         }
 
         IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
@@ -61,7 +75,23 @@ namespace ignite
             if (txJavaRef)
                 res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
             else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+            return res;
+        }
+
+        IgniteImpl::SP_ClusterGroupImpl IgniteImpl::InternalGetProjection(IgniteError& err)
+        {
+            SP_ClusterGroupImpl res;
+
+            JniErrorInfo jniErr;
+
+            jobject txJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
+
+            if (txJavaRef)
+                res = SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
+            else
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             return res;
         }

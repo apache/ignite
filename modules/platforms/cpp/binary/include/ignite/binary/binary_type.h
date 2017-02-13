@@ -172,7 +172,7 @@ namespace ignite
              *
              * @return Type name.
              */
-            std::string GetTypeName() 
+            std::string GetTypeName()
             {
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetTypeName function is not defined for binary type.");
             }
@@ -244,9 +244,9 @@ namespace ignite
             /**
              * Constructor.
              */
-            BinaryType()
+            BinaryType() : typ()
             {
-                typ = BinaryType<T>();
+                // No-op.
             }
 
             int32_t GetTypeId()
@@ -285,7 +285,7 @@ namespace ignite
 
             T* GetNull()
             {
-                return NULL;
+                return 0;
             }
         };
     }
