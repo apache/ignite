@@ -628,7 +628,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc */
     @Override public Vector times(double x) {
         if (x == 0.0)
-            return like(size());
+            return like(size()).assign(0);
         else
             return copy().map(Functions.mult(x));
     }
