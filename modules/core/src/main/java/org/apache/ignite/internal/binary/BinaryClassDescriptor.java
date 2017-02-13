@@ -50,6 +50,9 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.*;
+import static org.apache.ignite.internal.binary.BinaryWriterSchemaHolder.*;
+
 /**
  * Binary class descriptor.
  */
@@ -350,25 +353,25 @@ public class BinaryClassDescriptor {
                                 switch (mode) {
                                     case P_BYTE:
                                     case P_BOOLEAN:
-                                        fSize += 1 + 1;
+                                        fSize += P_1_BYTE_SIZE;
 
                                         break;
 
                                     case P_SHORT:
                                     case P_CHAR:
-                                        fSize += 1 + 2;
+                                        fSize += P_2_BYTE_SIZE;
 
                                         break;
 
                                     case P_INT:
                                     case P_FLOAT:
-                                        fSize += 1 + 4;
+                                        fSize += P_4_BYTE_SIZE;
 
                                         break;
 
                                     case P_LONG:
                                     case P_DOUBLE:
-                                        fSize += 1 + 8;
+                                        fSize += P_8_BYTE_SIZE;
 
                                         break;
 
@@ -399,12 +402,12 @@ public class BinaryClassDescriptor {
 
                     int size = GridBinaryMarshaller.DFLT_HDR_LEN + fSize;
 
-                    if(size < 1 << 8)
-                        size += ctx.isCompactFooter() ? fields.length : fields.length * 5;
-                    else if(size < 1 << 16)
-                        size += ctx.isCompactFooter() ? fields.length * 2 : fields.length * 6;
+                    if(size < MAX_OFFSET_1)
+                        size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_1 : fields.length * FOOTER_PER_FIELD_SIZE_4;
+                    else if(size < MAX_OFFSET_2)
+                        size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_2 : fields.length * FOOTER_PER_FIELD_SIZE_5;
                     else
-                        size += ctx.isCompactFooter() ? fields.length * 4 : fields.length * 8;
+                        size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_3 : fields.length * FOOTER_PER_FIELD_SIZE_6;
 
                     this.size =  size;
                 }

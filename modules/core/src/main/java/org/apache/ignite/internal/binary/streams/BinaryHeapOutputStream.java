@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -83,7 +84,8 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** {@inheritDoc} */
     @Override public void ensureCapacity(int cnt) {
         if (cnt > data.length) {
-            assert !fixedSize : "The operation is not available with a fixed size BinaryHeapOutputStream";
+            if (fixedSize)
+                throw new IgniteException("The operation is not available with a fixed size BinaryHeapOutputStream");
 
             int newCap = capacity(data.length, cnt);
 

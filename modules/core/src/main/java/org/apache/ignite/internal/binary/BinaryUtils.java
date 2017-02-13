@@ -112,6 +112,18 @@ public class BinaryUtils {
     /** Flag: no hash code has been set. */
     public static final short FLAG_EMPTY_HASH_CODE = 0x0040;
 
+    /** Size of 1 {@code byte} field within an array with serialized object. */
+    public static final int P_1_BYTE_SIZE = 2;
+
+    /** Size of 2 {@code byte} field within an array with serialized object. */
+    public static final int P_2_BYTE_SIZE = 3;
+
+    /** Size of 4 {@code byte} field within an array with serialized object. */
+    public static final int P_4_BYTE_SIZE = 5;
+
+    /** Size of 8 {@code byte} field within an array with serialized object. */
+    public static final int P_8_BYTE_SIZE = 9;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
