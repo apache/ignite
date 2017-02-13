@@ -52,7 +52,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /** Partition. */
     @GridDirectCollection(int.class)
-    private Collection<Integer> cleanParts;
+    private Collection<Integer> historicalParts;
 
     /** Partition. */
     @GridDirectMap(keyType = int.class, valueType = long.class)
@@ -102,8 +102,8 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         this.parts = new HashSet<>(parts);
         this.partsCntrs = partsCntrs;
 
-        if (cp.cleanParts != null)
-            this.cleanParts = new HashSet<>(cp.cleanParts);
+        if (cp.historicalParts != null)
+            this.historicalParts = new HashSet<>(cp.historicalParts);
     }
 
     /**
@@ -116,17 +116,17 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /**
      * @param p Partition.
      */
-    void addPartition(int p, boolean clean) {
+    void addPartition(int p, boolean historical) {
         if (parts == null)
             parts = new HashSet<>();
 
         parts.add(p);
 
-        if (clean) {
-            if (cleanParts == null)
-                cleanParts = new HashSet<>();
+        if (historical) {
+            if (historicalParts == null)
+                historicalParts = new HashSet<>();
 
-            cleanParts.add(p);
+            historicalParts.add(p);
         }
     }
 
@@ -137,11 +137,11 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         return parts;
     }
 
-    boolean isClean(int p) {
-        if (cleanParts == null)
+    boolean isHistorical(int p) {
+        if (historicalParts == null)
             return false;
 
-        return cleanParts.contains(p);
+        return historicalParts.contains(p);
     }
 
     /**
@@ -295,7 +295,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection("cleanParts", cleanParts, MessageCollectionItemType.INT))
+                if (!writer.writeCollection("historicalParts", historicalParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -373,7 +373,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 10:
-                cleanParts = reader.readCollection("cleanParts", MessageCollectionItemType.INT);
+                historicalParts = reader.readCollection("historicalParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
