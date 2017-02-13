@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.math.*;
 import java.io.*;
@@ -40,61 +41,61 @@ public class VectorOffheapStorage implements VectorStorage {
         ptr = GridUnsafe.allocateMemory(pointerOffset(size));
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public int size() {
         return len;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public double get(int i) {
         return GridUnsafe.getDouble(pointerOffset(i));
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public void set(int i, double v) {
         GridUnsafe.putDouble(pointerOffset(i), v);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isArrayBased() {
         return false;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public double[] data() {
         return null;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isSequentialAccess() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isDense() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public double getLookupCost() {
         return 0;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isAddConstantTime() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(ptr);
@@ -102,7 +103,7 @@ public class VectorOffheapStorage implements VectorStorage {
         out.writeInt(len);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ptr = in.readLong();
@@ -110,15 +111,21 @@ public class VectorOffheapStorage implements VectorStorage {
         len = in.readInt();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public void destroy() {
         GridUnsafe.freeMemory(ptr);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean equals(Object obj) {
-        return obj != null && getClass().equals(obj.getClass()) && (ptr == ((VectorOffheapStorage)obj).ptr && len == ((VectorOffheapStorage)obj).len);
+        return obj != null && getClass().equals(obj.getClass()) && (len == ((VectorOffheapStorage)obj).len) && (len == 0 || isMemoryEquals((VectorOffheapStorage)obj));
+    }
+
+    /** */
+    private boolean isMemoryEquals(VectorOffheapStorage otherStorage){
+        return !IntStream.range(0, len).parallel().anyMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
     }
 
     /**

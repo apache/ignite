@@ -104,9 +104,9 @@ public class VectorOffheapStorageTest {
     /** */
     @Test
     public void equalsTest(){
-        assertEquals(VALUE_NOT_EQUALS, offheapVector, offheapVector);
+        assertTrue(VALUE_NOT_EQUALS, offheapVector.equals(offheapVector));
 
-        assertNotEquals(VALUES_SHOULD_BE_NOT_EQUALS, offheapVector, new VectorArrayStorage(STORAGE_SIZE));
+        assertFalse(VALUES_SHOULD_BE_NOT_EQUALS, offheapVector.equals(new VectorArrayStorage(STORAGE_SIZE)));
     }
 
     /** */

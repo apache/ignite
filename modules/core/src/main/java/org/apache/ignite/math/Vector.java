@@ -510,4 +510,11 @@ public interface Vector extends MetaAttributes, Externalizable {
      * @return Vector GUID.
      */
     IgniteUuid guid();
+
+    /**
+     * Destroys vector if managed outside of JVM. It's a no-op in all other cases.
+     */
+    default void destroy(){
+        // No-op.
+    }
 }

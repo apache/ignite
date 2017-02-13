@@ -57,61 +57,61 @@ public class VectorArrayStorage implements VectorStorage {
         this.data = data;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public int size() {
         return data == null ? 0 : data.length;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return data[i];
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         data[i] = v;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc}} */
     @Override public boolean isArrayBased() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double[] data() {
         return data;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isSequentialAccess() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isDense() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public double getLookupCost() {
         return 0.0;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean isAddConstantTime() {
         return true;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(data);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         data = (double[])in.readObject();
     }

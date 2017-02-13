@@ -17,22 +17,53 @@
 
 package org.apache.ignite.math.impls;
 
+import java.util.stream.IntStream;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.storage.VectorOffheapStorage;
 
 /**
  * TODO: add description.
  */
-public class DenceLocalOffHeapVector extends AbstractVector {
+public class DenseLocalOffHeapVector extends AbstractVector {
+
+    /** */
+    private void makeOffheapStorage(int size){
+        setStorage(new VectorOffheapStorage(size));
+    }
+
+    /** */
+    public DenseLocalOffHeapVector(int size){
+        makeOffheapStorage(size);
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector copy() {
-        return null; // TODO
+
+        DenseLocalOffHeapVector copy = new DenseLocalOffHeapVector(size());
+
+        IntStream.range(0, size()).parallel().forEach(idx -> copy.set(idx, get(idx)));
+
+        return copy;
     }
 
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        return null; // TODO
+        return new DenseLocalOffHeapVector(crd);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        getStorage().destroy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return o != null && getClass().equals(o.getClass()) && (getStorage().equals(((Vector)o).getStorage()));
     }
 }
