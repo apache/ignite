@@ -242,12 +242,4 @@ public interface GridQueryIndexing {
      * Cancels all executing queries.
      */
     public void cancelAllQueries();
-
-    /**
-     * Determine statement type (query, or DML op, or DDL op).
-     *
-     * @param stmt Statement.
-     * @return Type.
-     */
-    public GridStatementType statementType(PreparedStatement stmt);
 }

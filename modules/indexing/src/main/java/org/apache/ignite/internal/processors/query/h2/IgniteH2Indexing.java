@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridStatementType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
@@ -1530,23 +1529,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         sb.a(name.substring(sb.length(), name.length()));
 
         return sb.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStatementType statementType(PreparedStatement stmt) {
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
-
-        if (p.isQuery())
-            return GridStatementType.QUERY;
-
-        if (DmlStatementsProcessor.isDmlStatement(p))
-            return GridStatementType.DML;
-
-        if (DdlStatementsProcessor.isDdlStatement(p))
-            return GridStatementType.DDL;
-
-        throw new IgniteSQLException("Unknown statement type [type=" + p.getClass().getName() + ']',
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

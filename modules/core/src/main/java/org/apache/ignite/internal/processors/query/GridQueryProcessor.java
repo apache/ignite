@@ -775,16 +775,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Indexing.
-     * @throws IgniteException If indexing is disabled.
-     */
-    public GridQueryIndexing getIndexing() throws IgniteException {
-        checkxEnabled();
-
-        return idx;
-    }
-
-    /**
      * @param space Space.
      * @param clause Clause.
      * @param params Parameters collection.
