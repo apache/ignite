@@ -4483,6 +4483,136 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Prepares multithreaded async transactional reads.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleOptimisticRead() throws Exception {
+        final Ignite ignite = ignite(0);
+        final Integer key = 1;
+        final Integer value = 1;
+        final int THREADS_COUNT = 50;
+
+        final String cacheName =
+                ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
+
+        try {
+            final IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
+
+            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                cache.put(key, value);
+
+                tx.commit();
+            }
+
+            assertTrue(cache.get(key).equals(value));
+
+            for (int i = 0; i < THREADS_COUNT; i++) {
+
+                GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+
+                        IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                        try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+
+                            assertTrue(cache.get(key).equals(value));
+
+                            tx.commit();
+
+                        }
+                        return null;
+                    }
+                }, THREADS_COUNT, "multiple-reads-thread").get();
+            }
+        } finally {
+                destroyCache(cacheName);
+            }
+        }
+
+    /**
+     * Prepares transactional read in parallel with changing the same data transactional write.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTxReadInParallerTxWrite() throws Exception {
+        final Ignite ignite = ignite(0);
+        final Integer key = 1;
+        final Integer value = 1;
+
+        final CountDownLatch lockRLatch = new CountDownLatch(1);
+        final AtomicBoolean lockW = new AtomicBoolean();
+
+        final Exception[] err = {null};
+
+        final String cacheName =
+                ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
+
+        final IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
+
+        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+            cache.put(key, value);
+
+            tx.commit();
+        }
+
+        try {
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+
+                    IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                    try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+
+                        assertTrue(cache.get(key).equals(value));
+
+                        lockW.compareAndSet(false, true);
+
+                        lockRLatch.await();
+
+                        try {
+                            tx.commit();
+                        } catch (TransactionOptimisticException e) {
+                            log.info("Expected exception: " + e);
+                            err[0] = e;
+                        }
+                    }
+                    return null;
+                }
+            }, 1, "multiple-reads-thread");
+
+            GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+
+                    IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                    // cache.get - first
+                    while (!lockW.get())
+                        Thread.sleep(100);
+
+                    try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        cache.put(key, value);
+
+                        tx.commit();
+                    }
+                    lockRLatch.countDown();
+
+                    return null;
+                }
+            }, 1, "multiple-reads-thread").get();
+
+            fut.get();
+
+            if (err[0] == null)
+                throw new IgniteException("No one expected exception found", err[0]);
+        }
+        finally {
+            destroyCache(cacheName);
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testConcurrentUpdateNoDeadlock() throws Exception {
