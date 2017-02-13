@@ -587,7 +587,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
                 EvictSynchronized = true,
-                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Clock,
+                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                 AtomicityMode = CacheAtomicityMode.Transactional,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
