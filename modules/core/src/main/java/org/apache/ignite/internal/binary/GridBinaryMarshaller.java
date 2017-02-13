@@ -237,12 +237,13 @@ public class GridBinaryMarshaller {
 
         BinaryClassDescriptor desc = ctx.descriptorForClass(obj.getClass(), false);
 
-        int size = desc.getSize();
-        boolean hasSize = size != -1;
+        boolean isFixedSize = desc.isFixedSize();
 
-        try (BinaryWriterExImpl writer = hasSize ? new BinaryWriterExImpl(ctx, size) : new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterExImpl writer = isFixedSize ?
+            new BinaryWriterExImpl(ctx, desc.fixedSize()) : new BinaryWriterExImpl(ctx)) {
             writer.marshal(obj);
-            return writer.array(!hasSize);
+
+            return writer.array(!isFixedSize);
         }
     }
 

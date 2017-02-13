@@ -113,7 +113,7 @@ public class BinaryClassDescriptor {
     private final boolean registered;
 
     /** */
-    private final int size;
+    private final int fixedSize;
 
     /** */
     private final boolean useOptMarshaller;
@@ -275,7 +275,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = null;
-                size = -1;
+                fixedSize = -1;
 
                 break;
 
@@ -285,7 +285,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = cls.getInterfaces();
-                size = -1;
+                fixedSize = -1;
 
                 break;
 
@@ -295,7 +295,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = null;
-                size = -1;
+                fixedSize = -1;
 
                 break;
 
@@ -409,10 +409,10 @@ public class BinaryClassDescriptor {
                     else
                         size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_3 : fields.length * FOOTER_PER_FIELD_SIZE_6;
 
-                    this.size =  size;
+                    this.fixedSize =  size;
                 }
                 else
-                    this.size = -1;
+                    this.fixedSize = -1;
 
                 break;
 
@@ -544,10 +544,17 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return Size of an array after marshalling if it's predictable, {@code -1} otherwise.
+     * @return {@code True} if object has fixed size.
      */
-    public int getSize() {
-        return size;
+    public boolean isFixedSize() {
+        return fixedSize >= 0;
+    }
+
+    /**
+     * @return Fixed object size.
+     */
+    public int fixedSize() {
+        return fixedSize;
     }
 
     /**

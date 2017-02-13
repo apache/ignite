@@ -3190,7 +3190,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryMarshaller m = binaryMarshaller();
         BinaryContext ctx = binaryContext(m);
         BinaryClassDescriptor descriptor = ctx.descriptorForClass(PrimitivesObject.class, false);
-        assertNotEquals(descriptor.getSize(), -1);
+        assertNotEquals(descriptor.fixedSize(), -1);
     }
 
     /**
@@ -3215,7 +3215,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
                 8 * (ctx.isCompactFooter() ? 1 : 5);
 
-        assertEquals(descriptor.getSize(), size);
+        assertEquals(descriptor.fixedSize(), size);
     }
 
     /**
