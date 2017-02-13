@@ -110,10 +110,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Wait for metrics update and check metrics.
                 Thread.Sleep(((TcpDiscoverySpi) ignite.GetConfiguration().DiscoverySpi).HeartbeatFrequency);
 
-                var metrics = cache.GetMetrics();
+                var metrics = cache.GetLocalMetrics();
 
                 Assert.AreEqual(4, metrics.OffHeapEntriesCount);  // Entry takes more space than the value
-                Assert.AreEqual(3, metrics.OverflowSize / entrySize);  // 10 - 3 - 4 = 3
+                Assert.AreEqual(3, metrics.SwapEntriesCount);  // 10 - 3 - 4 = 3
+                Assert.AreEqual(3, metrics.OverflowSize / entrySize);
+                Assert.AreEqual(metrics.SwapSize, metrics.OverflowSize);
             }
         }
     }

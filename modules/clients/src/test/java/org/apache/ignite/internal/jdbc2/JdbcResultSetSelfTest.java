@@ -495,8 +495,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert "http://abc.com/".equals(rs.getURL("urlVal").toString());
-                assert "http://abc.com/".equals(rs.getURL(15).toString());
+                assertTrue("http://abc.com/".equals(rs.getURL("urlVal").toString()));
+                assertTrue("http://abc.com/".equals(rs.getURL(15).toString()));
             }
 
             cnt++;
@@ -596,6 +596,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         stmt.setFetchSize(0);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNewQueryTaskFetchSize() throws Exception {
+        stmt.setFetchSize(1);
+
+        boolean res = stmt.execute("select * from TestObject where id > 0");
+
+        assertTrue(res);
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+
+        stmt.setFetchSize(0);
+    }
 
     /**
      * @throws Exception If failed.

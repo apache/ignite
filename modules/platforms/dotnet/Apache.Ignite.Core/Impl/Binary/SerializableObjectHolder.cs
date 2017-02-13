@@ -67,13 +67,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="SerializableObjectHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public SerializableObjectHolder(IBinaryReader reader)
+        public SerializableObjectHolder(BinaryReader reader)
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (BinaryReader) reader.GetRawReader();
-
-            using (var streamAdapter = new BinaryStreamAdapter(reader0.Stream))
+            using (var streamAdapter = new BinaryStreamAdapter(reader.Stream))
             {
                 _item = new BinaryFormatter().Deserialize(streamAdapter, null);
             }

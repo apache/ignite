@@ -394,13 +394,11 @@ SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
                                     SQLUSMALLINT scope,
                                     SQLUSMALLINT nullable)
 {
-    return ignite::SQLSpecialColumns(stmt, idType, catalogName,
-        catalogNameLen, schemaName, schemaNameLen, tableName,
-        tableNameLen, scope, nullable);
+    return ignite::SQLSpecialColumns(stmt, idType, catalogName, catalogNameLen, schemaName,
+        schemaNameLen, tableName, tableNameLen, scope, nullable);
 }
 
-SQLRETURN SQL_API SQLParamData(SQLHSTMT    stmt,
-                               SQLPOINTER* value)
+SQLRETURN SQL_API SQLParamData(SQLHSTMT stmt, SQLPOINTER* value)
 {
     return ignite::SQLParamData(stmt, value);
 }
@@ -410,6 +408,17 @@ SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
                              SQLLEN       strLengthOrIndicator)
 {
     return ignite::SQLPutData(stmt, data, strLengthOrIndicator);
+}
+
+SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
+                                   SQLUSMALLINT paramNum,
+                                   SQLSMALLINT* dataType,
+                                   SQLULEN*     paramSize,
+                                   SQLSMALLINT* decimalDigits,
+                                   SQLSMALLINT* nullable)
+{
+    return ignite::SQLDescribeParam(stmt, paramNum, dataType,
+     paramSize, decimalDigits, nullable);
 }
 
 SQLRETURN SQL_API SQLError(SQLHENV      env,
@@ -662,19 +671,6 @@ SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT      stmt,
     LOG_MSG("SQLColumnPrivileges called\n");
     return SQL_SUCCESS;
 }
-
-/*
-SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
-                                   SQLUSMALLINT paramNum,
-                                   SQLSMALLINT* dataType,
-                                   SQLULEN*     paramSize,
-                                   SQLSMALLINT* decimalDigits,
-                                   SQLSMALLINT* nullable)
-{
-    LOG_MSG("SQLDescribeParam called\n");
-    return SQL_SUCCESS;
-}
-*/
 
 SQLRETURN SQL_API SQLParamOptions(SQLHSTMT  stmt,
                                   SQLULEN   paramSetSize,

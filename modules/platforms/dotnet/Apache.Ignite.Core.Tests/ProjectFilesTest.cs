@@ -118,15 +118,15 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests that there are no Cyrillic C instead of English C (which are on the same keyboard key).
+        /// Tests that there are no non-ASCII chars.
         /// </summary>
         [Test]
-        public void TestCyrillicChars()
+        public void TestAsciiChars()
         {
             var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories)
-                  .Where(x => x.Name != "BinaryStringTest.cs" && x.Name != "BinarySelfTest.cs");
+                .Where(x => x.Name != "BinaryStringTest.cs" && x.Name != "BinarySelfTest.cs");
 
-            CheckFiles(srcFiles, x => x.Contains('\u0441') || x.Contains('\u0421'), "Files with Cyrillic 'C': ");
+            CheckFiles(srcFiles, x => x.Any(ch => ch > 255), "Files with non-ASCII chars: ");
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests
             var invalidFiles = files.Where(x => isInvalid(File.ReadAllText(x.FullName))).ToArray();
 
             Assert.AreEqual(0, invalidFiles.Length,
-                errorText + string.Join(", ", invalidFiles.Select(x => x.FullName)));
+                errorText + string.Join("\n ", invalidFiles.Select(x => x.FullName)));
         }
 
         /// <summary>

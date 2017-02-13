@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,10 +88,11 @@ public class JdbcResultSet implements ResultSet {
     /** Fetch size. */
     private int fetchSize;
 
+    /** Which query task to use under the hood - {@link JdbcQueryTaskV2} if {@code true}, {@link JdbcQueryTask} otherwise. */
+    private final boolean useNewQryTask;
+
     /**
-     * Creates new result set with predefined fields.
-     * Result set created with this constructor will
-     * never execute remote tasks.
+     * Creates new result set.
      *
      * @param uuid Query UUID.
      * @param stmt Statement.
@@ -101,6 +103,39 @@ public class JdbcResultSet implements ResultSet {
      */
     JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
         List<String> types, Collection<List<?>> fields, boolean finished) {
+        this(uuid, stmt, tbls, cols, types, fields, finished, false);
+    }
+
+    /**
+     * Creates new result set that will be based on {@link JdbcQueryTaskV2}. This method is intended for use inside
+     *     {@link JdbcStatement} only.
+     *
+     * @param uuid Query UUID.
+     * @param stmt Statement.
+     * @param tbls Table names.
+     * @param cols Column names.
+     * @param types Types.
+     * @param fields Fields.
+     */
+    static JdbcResultSet resultSetForQueryTaskV2(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls,
+            List<String> cols, List<String> types, Collection<List<?>> fields, boolean finished) {
+        return new JdbcResultSet(uuid, stmt, tbls, cols, types, fields, finished, true);
+    }
+
+    /**
+     * Creates new result set.
+     *
+     * @param uuid Query UUID.
+     * @param stmt Statement.
+     * @param tbls Table names.
+     * @param cols Column names.
+     * @param types Types.
+     * @param fields Fields.
+     * @param useNewQryTask Which query task to use under the hood - {@link JdbcQueryTaskV2} if {@code true},
+     *     {@link JdbcQueryTask} otherwise.
+     */
+    private JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
+        List<String> types, Collection<List<?>> fields, boolean finished, boolean useNewQryTask) {
         assert stmt != null;
         assert tbls != null;
         assert cols != null;
@@ -115,6 +150,8 @@ public class JdbcResultSet implements ResultSet {
         this.finished = finished;
 
         this.it = fields.iterator();
+
+        this.useNewQryTask = useNewQryTask;
     }
 
     /** {@inheritDoc} */
@@ -146,6 +183,29 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
+            if (useNewQryTask) {
+                // Connections from new clients send queries with new tasks, so we have to continue in the same manner
+                JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
+                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+                try {
+                    JdbcQueryTaskV2.QueryResult res =
+                        loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+                    finished = res.isFinished();
+
+                    it = res.getRows().iterator();
+
+                    return next();
+                }
+                catch (IgniteSQLException e) {
+                    throw e.toJdbcException();
+                }
+                catch (Exception e) {
+                    throw new SQLException("Failed to query Ignite.", e);
+                }
+            }
+
             JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
                 fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
@@ -158,6 +218,9 @@ public class JdbcResultSet implements ResultSet {
                 it = res.getRows().iterator();
 
                 return next();
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
             }
             catch (Exception e) {
                 throw new SQLException("Failed to query Ignite.", e);
@@ -182,8 +245,9 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null) {
             JdbcQueryTask.remove(uuid);
+        }
 
         closed = true;
     }
@@ -1484,11 +1548,16 @@ public class JdbcResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            T val = cls == String.class ? (T)String.valueOf(curr.get(colIdx - 1)) : (T)curr.get(colIdx - 1);
+            Object val = curr.get(colIdx - 1);
 
             wasNull = val == null;
 
-            return val;
+            if (val == null)
+                return null;
+            else if (cls == String.class)
+                return (T)String.valueOf(val);
+            else
+                return (T)val;
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);

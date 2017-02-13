@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -66,6 +67,7 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
+        suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
 

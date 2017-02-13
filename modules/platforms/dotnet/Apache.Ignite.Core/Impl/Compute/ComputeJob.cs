@@ -52,11 +52,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Initializes a new instance of the <see cref="ComputeJobWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeJobWrapper(IBinaryReader reader)
+        public ComputeJobWrapper(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _job = reader0.ReadObject<object>();
+            _job = reader.ReadObject<object>();
 
             DelegateTypeDescriptor.GetComputeJob(_job.GetType(), out _execute, out _cancel);
         }

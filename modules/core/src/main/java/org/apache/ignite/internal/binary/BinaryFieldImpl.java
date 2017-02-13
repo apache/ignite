@@ -50,7 +50,6 @@ public class BinaryFieldImpl implements BinaryField {
     public BinaryFieldImpl(int typeId, BinarySchemaRegistry schemas, String fieldName, int fieldId) {
         assert typeId != 0;
         assert schemas != null;
-        assert fieldName != null;
         assert fieldId != 0;
 
         this.typeId = typeId;
@@ -62,6 +61,13 @@ public class BinaryFieldImpl implements BinaryField {
     /** {@inheritDoc} */
     @Override public String name() {
         return fieldName;
+    }
+
+    /**
+     * @return Field ID.
+     */
+    public int fieldId() {
+        return fieldId;
     }
 
     /** {@inheritDoc} */
@@ -87,7 +93,7 @@ public class BinaryFieldImpl implements BinaryField {
      * @param obj Object.
      * @return Field offset.
      */
-    private int fieldOrder(BinaryObjectExImpl obj) {
+    public int fieldOrder(BinaryObjectExImpl obj) {
         if (typeId != obj.typeId()) {
             throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
                 " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=" + typeId +

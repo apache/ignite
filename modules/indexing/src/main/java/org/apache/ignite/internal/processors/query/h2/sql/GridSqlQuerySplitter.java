@@ -165,7 +165,11 @@ public class GridSqlQuerySplitter {
 
         final Prepared prepared = prepared(stmt);
 
-        GridSqlQuery qry = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
+
+        assert gridStmt instanceof GridSqlQuery;
+
+        GridSqlQuery qry = (GridSqlQuery) gridStmt;
 
         qry = collectAllTables(qry, schemas, tbls);
 

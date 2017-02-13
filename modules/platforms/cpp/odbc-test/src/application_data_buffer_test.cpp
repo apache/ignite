@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
 {
     char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
-    SqlLen reslen = 0;
+    SqlLen reslen = sizeof(buffer) - 1;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
 

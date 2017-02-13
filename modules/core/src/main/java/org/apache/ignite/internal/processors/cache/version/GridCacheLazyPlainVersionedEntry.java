@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.version;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Lazy plain versioned entry.
@@ -104,4 +105,9 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
         return val;
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheLazyPlainVersionedEntry.class, this,
+            "super", super.toString(), "key", key(), "val", value());
+    }
 }

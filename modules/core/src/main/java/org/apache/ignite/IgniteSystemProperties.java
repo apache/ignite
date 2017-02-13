@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -491,6 +492,9 @@ public final class IgniteSystemProperties {
     @Deprecated
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
+    /** */
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
+
     /**
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
@@ -505,7 +509,15 @@ public final class IgniteSystemProperties {
      * <p>
      * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
      */
-    public static final String IGNITE_UNALIGNED_MEMORY_ACCESS = "IGNITE_UNALIGNED_MEMORY_ACCESS";
+    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
+
+    /**
+     * When unsafe memory copy if performed below this threshold, Ignite will do it on per-byte basis instead of
+     * calling to Unsafe.copyMemory().
+     * <p>
+     * Defaults to 0, meaning that threshold is disabled.
+     */
+    public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
 
     /**
      * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
@@ -514,6 +526,15 @@ public final class IgniteSystemProperties {
      * @deprecated Should be removed in Apache Ignite 2.0.
      */
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
+    /** Returns true for system properties only avoiding sending sensitive information. */
+    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
+        @Override public boolean apply(final Map.Entry<String, String> entry) {
+            final String key = entry.getKey();
+
+            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
+        }
+    };
 
     /**
      * Enforces singleton.
@@ -687,5 +708,27 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
+    }
+
+    /**
+     * Does the same as {@link #snapshot()} but filters out
+     * possible sensitive user data.
+     *
+     * @return Snapshot of system properties.
+     */
+    @SuppressWarnings("unchecked")
+    public static Properties safeSnapshot() {
+        final Properties props = snapshot();
+
+        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            final Map.Entry entry = iter.next();
+
+            if (!PROPS_FILTER.apply(entry))
+                iter.remove();
+        }
+
+        return props;
     }
 }

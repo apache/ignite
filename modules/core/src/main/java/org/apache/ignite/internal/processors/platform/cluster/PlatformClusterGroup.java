@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.platform.cluster;
 
 import java.util.Collection;
 import java.util.UUID;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -28,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +99,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_FOR_SERVERS = 23;
+
+    /** */
+    private static final int OP_CACHE_METRICS = 24;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -191,6 +197,16 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 long topVer = reader.readLong();
 
                 platformCtx.writeNodes(writer, topology(topVer));
+
+                break;
+            }
+
+            case OP_CACHE_METRICS: {
+                String cacheName = reader.readString();
+
+                IgniteCache cache = platformCtx.kernalContext().grid().cache(cacheName);
+
+                PlatformCache.writeCacheMetrics(writer, cache.metrics(prj));
 
                 break;
             }

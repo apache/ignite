@@ -213,8 +213,10 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     * Gracefully shut down the Grid.
+     *
      * @param gridName Grid name.
-     * @param cancel Cacnel flag.
+     * @param cancel If {@code true} then all jobs currently will be cancelled.
      */
     public static void stop(String gridName, boolean cancel) {
         IgniteProcessProxy proxy = gridProxies.get(gridName);
@@ -224,6 +226,26 @@ public class IgniteProcessProxy implements IgniteEx {
 
             gridProxies.remove(gridName, proxy);
         }
+    }
+
+    /**
+     * Forcefully shut down the Grid.
+     *
+     * @param gridName Grid name.
+     */
+    public static void kill(String gridName) {
+        IgniteProcessProxy proxy = gridProxies.get(gridName);
+
+        A.notNull(gridName, "gridName");
+
+        try {
+            proxy.getProcess().kill();
+        }
+        catch (Exception e) {
+            U.error(proxy.log, "Exception while killing " + gridName, e);
+        }
+
+        gridProxies.remove(gridName, proxy);
     }
 
     /**

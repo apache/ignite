@@ -45,8 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (string), "java.lang.String"},
             {typeof (decimal), "java.math.BigDecimal"},
             {typeof (Guid), "java.util.UUID"},
-            {typeof (DateTime), "java.sql.Timestamp"},
-            {typeof (DateTime?), "java.sql.Timestamp"},
+            {typeof (DateTime), "java.sql.Timestamp"}
         };
 
         /** */
@@ -62,6 +61,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly Dictionary<string, Type> JavaToNet =
             NetToJava.GroupBy(x => x.Value).ToDictionary(g => g.Key, g => g.First().Key);
 
+        /** */
+        private static readonly Dictionary<string, string> JavaPrimitiveToType = new Dictionary<string, string>
+        {
+            {"boolean", "java.lang.Boolean"},
+            {"byte", "java.lang.Byte"},
+            {"short", "java.lang.Short"},
+            {"char", "java.lang.Character"},
+            {"int", "java.lang.Integer"},
+            {"long", "java.lang.Long"},
+            {"float", "java.lang.Float"},
+            {"double", "java.lang.Double"},
+        };
+
         /// <summary>
         /// Gets the corresponding Java type name.
         /// </summary>
@@ -69,6 +81,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (type == null)
                 return null;
+
+            // Unwrap nullable.
+            type = Nullable.GetUnderlyingType(type) ?? type;
 
             string res;
 
@@ -83,14 +98,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == null)
                 return;
 
-            Type directType;
-            if (!IndirectMappingTypes.TryGetValue(type, out directType))
+            var directType = GetDirectlyMappedType(type);
+
+            if (directType == type)
                 return;
 
             log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
                      "This may cause issues in SQL queries. " +
                      "You can use '{3}' instead to achieve direct mapping.",
                 logInfo, type, NetToJava[type], directType);
+        }
+
+        /// <summary>
+        /// Gets the compatible type that maps directly to Java.
+        /// </summary>
+        public static Type GetDirectlyMappedType(Type type)
+        {
+            // Unwrap nullable.
+            var unwrapType = Nullable.GetUnderlyingType(type) ?? type;
+
+            Type directType;
+
+            return IndirectMappingTypes.TryGetValue(unwrapType, out directType) ? directType : type;
         }
 
         /// <summary>
@@ -103,9 +132,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (string.IsNullOrEmpty(javaTypeName))
                 return null;
 
+            string fullJavaTypeName;
+
+            JavaPrimitiveToType.TryGetValue(javaTypeName, out fullJavaTypeName);
+
             Type res;
 
-            return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;
+            return JavaToNet.TryGetValue(fullJavaTypeName ?? javaTypeName, out res) ? res : null;
         }
     }
 }

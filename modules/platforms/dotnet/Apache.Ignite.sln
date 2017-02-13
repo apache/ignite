@@ -42,6 +42,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.AspNet.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Log4Net", "Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj", "{6F82D669-382E-4435-8092-68C4440146D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework", "Apache.Ignite.EntityFramework\Apache.Ignite.EntityFramework.csproj", "{C558518A-C1A0-4224-AAA9-A8688474B4DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework.Tests", "Apache.Ignite.EntityFramework.Tests\Apache.Ignite.EntityFramework.Tests.csproj", "{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -216,6 +220,30 @@ Global
 		{6F82D669-382E-4435-8092-68C4440146D8}.Release|x64.Build.0 = Release|Any CPU
 		{6F82D669-382E-4435-8092-68C4440146D8}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F82D669-382E-4435-8092-68C4440146D8}.Release|x86.Build.0 = Release|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|x64.Build.0 = Debug|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Debug|x86.Build.0 = Debug|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|x64.ActiveCfg = Release|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|x64.Build.0 = Release|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|x86.ActiveCfg = Release|Any CPU
+		{C558518A-C1A0-4224-AAA9-A8688474B4DC}.Release|x86.Build.0 = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|x64.Build.0 = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Debug|x86.Build.0 = Debug|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|x64.ActiveCfg = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|x64.Build.0 = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|x86.ActiveCfg = Release|Any CPU
+		{CDA5700E-78F3-4A9E-A9B0-704CBE94651C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
