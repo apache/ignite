@@ -106,7 +106,6 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -203,15 +202,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         updateReplyClos = new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                if (ctx.config().getAtomicWriteOrderMode() == CLOCK) {
-                    assert req.writeSynchronizationMode() != FULL_ASYNC : req;
-
-                    // Always send reply in CLOCK ordering mode.
-                    sendNearUpdateReply(res.nodeId(), res);
-
-                    return;
-                }
-
                 // Request should be for primary keys only in PRIMARY ordering mode.
                 assert req.hasPrimary() : req;
 
@@ -1308,7 +1298,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     public boolean isFastMap(CacheEntryPredicate[] filters, GridCacheOperation op) {
         return F.isEmpty(filters) && op != TRANSFORM && ctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
-            ctx.config().getAtomicWriteOrderMode() == CLOCK &&
             !(ctx.writeThrough() && ctx.config().getInterceptor() != null);
     }
 
@@ -2398,7 +2387,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     true,
                     true,
                     primary,
-                    ctx.config().getAtomicWriteOrderMode() == CLOCK, // Check version in CLOCK mode on primary node.
+                    false,
                     topVer,
                     req.filter(),
                     replicate ? primary ? DR_PRIMARY : DR_BACKUP : DR_NONE,
@@ -2678,7 +2667,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*event*/true,
                         /*metrics*/true,
                         primary,
-                        ctx.config().getAtomicWriteOrderMode() == CLOCK, // Check version in CLOCK mode on primary node.
+                        false,
                         topVer,
                         null,
                         replicate ? primary ? DR_PRIMARY : DR_BACKUP : DR_NONE,
@@ -2825,11 +2814,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return Collections.singletonList(entry);
                 }
                 catch (GridDhtInvalidPartitionException e) {
-                    // Ignore invalid partition exception in CLOCK ordering mode.
-                    if (ctx.config().getAtomicWriteOrderMode() == CLOCK)
-                        return Collections.singletonList(null);
-                    else
-                        throw e;
+                    throw e;
                 }
             }
         }
@@ -2844,11 +2829,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         locked.add(entry);
                     }
                     catch (GridDhtInvalidPartitionException e) {
-                        // Ignore invalid partition exception in CLOCK ordering mode.
-                        if (ctx.config().getAtomicWriteOrderMode() == CLOCK)
-                            locked.add(null);
-                        else
-                            throw e;
+                        throw e;
                     }
                 }
 
