@@ -27,20 +27,19 @@ import java.util.function.*;
 import static org.junit.Assert.*;
 
 /** See also: {@link AbstractVectorTest}. */
-public class DenseLocalOnHeapVectorTest {
+public class VectorImplementationsTest {
+    /** */ @Test
+    public void vectorImplementationsFixturesTest() {
+        new VectorImplementationsFixtures().selfTest();
+    }
+
     /** */ @Test
     public void sizeTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
-        final AtomicReference<String> desc = new AtomicReference<>("");
-
         consumeSampleVectors(
-            (expSizeParam, descParam) -> {
-                expSize.set(expSizeParam);
-
-                desc.set(descParam);
-            },
-            (v) -> assertEquals("Expected size for " + desc.get(),
+            expSize::set,
+            (v, desc) -> assertEquals("Expected size for " + desc,
                 (int) expSize.get(), v.size())
         );
     }
@@ -57,12 +56,12 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void getElementTest() {
-        consumeSampleVectors(v -> new ElementsChecker(v).assertCloseEnough(v));
+        consumeSampleVectors((v, desc) -> new ElementsChecker(v, desc).assertCloseEnough(v));
     }
 
     /** */ @Test
     public void copyTest() {
-        consumeSampleVectors(v -> new ElementsChecker(v).assertCloseEnough(v.copy()));
+        consumeSampleVectors((v, desc) -> new ElementsChecker(v, desc).assertCloseEnough(v.copy()));
     }
 
     /** */ @Test
@@ -73,7 +72,7 @@ public class DenseLocalOnHeapVectorTest {
     /** */ @Test
     public void likeTest() {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            consumeSampleVectors(v -> assertEquals("Expect size equal to cardinality.", card, v.like(card).size()));
+            consumeSampleVectors((v, desc) -> assertEquals("Expect size equal to cardinality.", card, v.like(card).size()));
     }
 
     /** */ @Test
@@ -131,12 +130,12 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */ @Test
     public void viewPartTest() {
-        consumeSampleVectors(v -> {
+        consumeSampleVectors((v, desc) -> {
             final int size = v.size();
 
             final double[] ref = new double[size];
 
-            final ElementsChecker checker = new ElementsChecker(v, ref);
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
 
             for (int off = 0; off < size; off++)
                 for (int len = 0; len < size - off; len++)
@@ -159,7 +158,7 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void crossTest() { // TODO write test
+    public void crossTest() { // TODO write tests for this and other Vector methods involving Matrix
 
     }
 
@@ -185,12 +184,12 @@ public class DenseLocalOnHeapVectorTest {
 
     /** */
     private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
-        consumeSampleVectors(v -> {
+        consumeSampleVectors((v, desc) -> {
             final int size = v.size();
 
             final double[] ref = new double[size];
 
-            new ElementsChecker(v, ref); // IMPL NOTE this initialises vector and reference array
+            new ElementsChecker(v, ref, desc); // IMPL NOTE this initialises vector and reference array
 
             final double exp = calcRef.apply(ref);
 
@@ -206,12 +205,12 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private void normalizeTest(double pow, BiFunction<Double, Double, Double> operation,
         Function<Vector, Vector> vecOperation) {
-        consumeSampleVectors(v -> {
+        consumeSampleVectors((v, desc) -> {
             final int size = v.size();
 
             final double[] ref = new double[size];
 
-            final ElementsChecker checker = new ElementsChecker(v, ref);
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
 
             final double norm = new Norm(ref, pow).calculate();
 
@@ -225,14 +224,14 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
         BiFunction<Vector, Vector, Vector> vecOperation) {
-        consumeSampleVectors(v -> {
+        consumeSampleVectors((v, desc) -> {
             // TODO find out if more elaborate testing scenario is needed or it's okay as is.
 
             final int size = v.size();
 
             final double[] ref = new double[size];
 
-            final ElementsChecker checker = new ElementsChecker(v, ref);
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
 
             final Vector operand = v.copy();
 
@@ -246,18 +245,18 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private void operationTest(BiFunction<Double, Double, Double> operation,
         BiFunction<Vector, Double, Vector> vecOperation) {
-        for (double value : new double[] {0, 0.1, 1, 2, 10})
-            consumeSampleVectors(v -> {
+        for (double val : new double[] {0, 0.1, 1, 2, 10})
+            consumeSampleVectors((v, desc) -> {
                 final int size = v.size();
 
                 final double[] ref = new double[size];
 
-                final ElementsChecker checker = new ElementsChecker(v, ref);
+                final ElementsChecker checker = new ElementsChecker(v, ref, "val " + val + ", " + desc);
 
                 for (int idx = 0; idx < size; idx++)
-                    ref[idx] = operation.apply(ref[idx], value);
+                    ref[idx] = operation.apply(ref[idx], val);
 
-                checker.assertCloseEnough(vecOperation.apply(v, value), ref);
+                checker.assertCloseEnough(vecOperation.apply(v, val), ref);
             });
     }
 
@@ -309,23 +308,22 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */
-    private void consumeSampleVectors(Consumer<DenseLocalOnHeapVector> consumer) {
+    private void consumeSampleVectors(BiConsumer<Vector, String> consumer) {
         consumeSampleVectors(null, consumer);
     }
 
     /** */
-    private void consumeSampleVectors(BiConsumer<Integer, String> paramsConsumer,
-        Consumer<DenseLocalOnHeapVector> consumer) {
-        for (int size : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            for (int delta : new int[] {-1, 0, 1})
-                for (boolean shallowCopy : new boolean[] {false, true}) {
-                    final int expSize = size + delta;
+    private void consumeSampleVectors(Consumer<Integer> paramsConsumer, BiConsumer<Vector, String> consumer) {
+        for (Supplier<Iterable<Vector>> fixtureSupplier : VectorImplementationsFixtures.suppliers) {
+            final Iterable<Vector> fixture = fixtureSupplier.get();
 
-                    if (paramsConsumer != null)
-                        paramsConsumer.accept(expSize, "size " + expSize + ", shallow copy " + shallowCopy);
+            for (Vector v : fixture) {
+                if (paramsConsumer != null)
+                    paramsConsumer.accept(v.size());
 
-                    consumer.accept(new DenseLocalOnHeapVector(new double[expSize], shallowCopy));
-                }
+                consumer.accept(v, fixture.toString());
+            }
+        }
     }
 
     /** */
@@ -390,13 +388,17 @@ public class DenseLocalOnHeapVectorTest {
     /** */
     private static class ElementsChecker {
         /** */
-        ElementsChecker(Vector v, double[] ref) {
+        private final String fixtureDesc;
+
+        /** */
+        ElementsChecker(Vector v, double[] ref, String fixtureDesc) {
+            this.fixtureDesc = fixtureDesc;
             init(v, ref);
         }
 
         /** */
-        ElementsChecker(Vector v) {
-            this(v, null);
+        ElementsChecker(Vector v, String fixtureDesc) {
+            this(v, null, fixtureDesc);
         }
 
         /** */
@@ -410,7 +412,8 @@ public class DenseLocalOnHeapVectorTest {
 
                 assertEquals("Vector index.", i, e.index());
 
-                assertTrue("Not close enough at index " + i + ", size " + size + ", " + metric, metric.closeEnough());
+                assertTrue("Not close enough at index " + i + ", size " + size + ", " + metric
+                    + ", " + fixtureDesc, metric.closeEnough());
             }
         }
 
@@ -459,4 +462,3 @@ public class DenseLocalOnHeapVectorTest {
         }
     }
 }
-

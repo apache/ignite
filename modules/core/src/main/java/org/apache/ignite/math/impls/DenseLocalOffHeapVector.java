@@ -25,7 +25,6 @@ import org.apache.ignite.math.impls.storage.VectorOffheapStorage;
  * TODO: add description.
  */
 public class DenseLocalOffHeapVector extends AbstractVector {
-
     /** */
     private void makeOffheapStorage(int size){
         setStorage(new VectorOffheapStorage(size));
@@ -38,12 +37,19 @@ public class DenseLocalOffHeapVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector copy() {
+        DenseLocalOffHeapVector cp = new DenseLocalOffHeapVector(size());
 
-        DenseLocalOffHeapVector copy = new DenseLocalOffHeapVector(size());
+        IntStream.range(0, size()).parallel().forEach(idx -> cp.set(idx, get(idx)));
 
-        IntStream.range(0, size()).parallel().forEach(idx -> copy.set(idx, get(idx)));
+        return cp;
+    }
 
-        return copy;
+    /** {@inheritDoc */
+    @Override public Vector times(double x) {
+        if (x == 0.0)
+            return like(size()).assign(0);
+        else
+            return super.times(x);
     }
 
     /** {@inheritDoc} */
@@ -52,8 +58,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
     }
 

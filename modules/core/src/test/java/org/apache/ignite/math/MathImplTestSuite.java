@@ -18,10 +18,10 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.math.impls.AbstractVectorTest;
-import org.apache.ignite.math.impls.DenseLocalOffHeapVector;
 import org.apache.ignite.math.impls.DenseLocalOffHeapVectorTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorConstructorTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorIterableTest;
+import org.apache.ignite.math.impls.VectorImplementationsTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorTest;
 import org.apache.ignite.math.impls.VectorViewTest;
 import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
@@ -37,7 +37,7 @@ import org.junit.runners.Suite;
     AbstractVectorTest.class,
     DenseLocalOnHeapVectorConstructorTest.class,
     DenseLocalOnHeapVectorIterableTest.class,
-    DenseLocalOnHeapVectorTest.class,
+    VectorImplementationsTest.class,
     DenseLocalOffHeapVectorTest.class,
     VectorArrayStorageTest.class,
     VectorOffheapStorageTest.class,
