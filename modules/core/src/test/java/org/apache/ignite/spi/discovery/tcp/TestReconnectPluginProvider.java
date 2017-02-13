@@ -98,10 +98,8 @@ public class TestReconnectPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        if (enabled) {
-            if (GridSecurityProcessor.class.equals(cls))
-                return new TestReconnectProcessor(igniteCtx);
-        }
+        if (enabled && GridSecurityProcessor.class.equals(cls))
+            return new TestReconnectProcessor(igniteCtx);
 
         return null;
     }
