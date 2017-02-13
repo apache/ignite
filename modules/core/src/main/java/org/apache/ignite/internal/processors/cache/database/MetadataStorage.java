@@ -323,6 +323,7 @@ public class MetadataStorage implements MetaStore {
      */
     private interface IndexIO {
         /**
+         * @param pageAddr Page address.
          * @param idx Index.
          * @return Offset in buffer according to {@code idx}.
          */

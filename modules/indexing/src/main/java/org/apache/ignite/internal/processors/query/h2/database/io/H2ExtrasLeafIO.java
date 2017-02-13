@@ -53,17 +53,17 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert row0.link != 0;
 
-        H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
+        H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
 
-        assert pageCtx != null;
+        assert currentIndex != null;
 
-        List<FastIndexHelper> fastIdx = pageCtx.fastIdxs();
+        List<FastIndexHelper> fastIdx = currentIndex.fastIdxs();
 
         assert fastIdx != null;
 
         int itemSize = itemSize(pageAddr);
 
-        assert itemSize == pageCtx.payloadSize() + 8;
+        assert itemSize == currentIndex.itemSize();
 
         int fieldOff = 0;
 
@@ -128,10 +128,10 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         if (itemSize != 0)
             return itemSize;
-        H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
-        assert pageCtx != null;
+        H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
+        assert currentIndex != null;
 
-        writeMetaHeader(pageAddr, pageCtx.payloadSize() + 8);
-        return pageCtx.payloadSize() + 8;
+        writeMetaHeader(pageAddr, currentIndex.itemSize());
+        return currentIndex.itemSize();
     }
 }

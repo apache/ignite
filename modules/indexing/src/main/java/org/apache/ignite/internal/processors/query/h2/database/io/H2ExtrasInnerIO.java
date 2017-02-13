@@ -55,13 +55,13 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
         int itemSize = itemSize(pageAddr);
 
-        H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
+        H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
 
-        assert pageCtx != null;
+        assert currentIndex != null;
 
-        assert itemSize == pageCtx.payloadSize();
+        assert itemSize == currentIndex.itemSize();
 
-        List<FastIndexHelper> fastIdx = pageCtx.fastIdxs();
+        List<FastIndexHelper> fastIdx = currentIndex.fastIdxs();
 
         assert fastIdx != null;
 
@@ -131,10 +131,10 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
         if (itemSize != 0)
             return itemSize;
-        H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
-        assert pageCtx != null;
+        H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
+        assert currentIndex != null;
 
-        writeMetaHeader(pageAddr, pageCtx.payloadSize() + 8);
-        return pageCtx.payloadSize() + 8;
+        writeMetaHeader(pageAddr, currentIndex.itemSize());
+        return currentIndex.itemSize();
     }
 }

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
@@ -54,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class H2TreeIndex extends GridH2IndexBase {
     /** PageContext for use in IO's */
-    private static final ThreadLocal<H2TreeIndexPageContext> currentPageContext = new ThreadLocal<>();
+    private static final ThreadLocal<H2TreeIndex> currentIndex = new ThreadLocal<>();
 
     /** */
     private static final int MAX_ITEM_SIZE = 1024;
@@ -62,8 +61,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** */
     private final H2Tree tree;
 
-    /** Page context. */
-    private final H2TreeIndexPageContext pageCtx;
+    private final List<FastIndexHelper> fastIdxs;
+    private final int itemSize;
 
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
@@ -77,7 +76,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @throws IgniteCheckedException If failed.
      */
     public H2TreeIndex(
-        GridCacheContext<?,?> cctx,
+        GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
         String name,
         boolean pk,
@@ -100,10 +99,10 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             RootPage page = cctx.offheap().rootPageForIndex(name);
 
-            final H2TreeIndexPageContext ctx0 = getPageCtx(cols);
+            fastIdxs = getAvailableFastColumns(cols);
 
-            if (pk || ctx0.empty()) {
-                pageCtx = null;
+            if (pk || fastIdxs == null || F.isEmpty(fastIdxs)) {
+                itemSize = 0;
 
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
@@ -115,7 +114,13 @@ public class H2TreeIndex extends GridH2IndexBase {
                 };
             }
             else {
-                pageCtx = ctx0;
+                // link length (long)
+                int size = 8;
+
+                for (int i = 0; i < fastIdxs.size(); i++)
+                    size += fastIdxs.get(i).size();
+
+                itemSize = size;
 
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
@@ -124,25 +129,21 @@ public class H2TreeIndex extends GridH2IndexBase {
                     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
                         throws IgniteCheckedException {
 
-                        int off = io.offset(pageAddr, idx, pageCtx.payloadSize() + 8);
+                        int off = io.offset(pageAddr, idx);
 
                         int fieldOff = 0;
 
-                        for (int i = 0; i < pageCtx.fastIdxs().size(); i++) {
-                            FastIndexHelper fastIdx = pageCtx.fastIdxs().get(i);
-
-                            Value v1 = fastIdx.get(pageAddr, off + fieldOff);
-                            fieldOff += fastIdx.size();
-                            if (v1 == null) {
-                                // Can't compare further.
-                                return 0;
-                            }
+                        for (int i = 0; i < fastIdxs.size(); i++) {
+                            FastIndexHelper fastIdx = fastIdxs.get(i);
 
                             Value v2 = row.getValue(fastIdx.columnIdx());
                             if (v2 == null) {
                                 // Can't compare further.
                                 return 0;
                             }
+
+                            Value v1 = fastIdx.get(pageAddr, off + fieldOff);
+                            fieldOff += fastIdx.size();
 
                             int c = compareValues(v1, v2, fastIdx.sortType());
                             if (c != 0)
@@ -151,17 +152,17 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         SearchRow rowData = getRow(io, pageAddr, idx);
 
-                        for (int i = pageCtx.fastIdxs().size(), len = indexColumns.length; i < len; i++) {
+                        for (int i = fastIdxs.size(), len = indexColumns.length; i < len; i++) {
                             int idx0 = columnIds[i];
 
-                            Value v1 = rowData.getValue(idx0);
-                            if (v1 == null) {
+                            Value v2 = row.getValue(idx0);
+                            if (v2 == null) {
                                 // Can't compare further.
                                 return 0;
                             }
 
-                            Value v2 = row.getValue(idx0);
-                            if (v2 == null) {
+                            Value v1 = rowData.getValue(idx0);
+                            if (v1 == null) {
                                 // Can't compare further.
                                 return 0;
                             }
@@ -179,7 +180,8 @@ public class H2TreeIndex extends GridH2IndexBase {
         else {
             // We need indexes on the client node, but index will not contain any data.
             tree = null;
-            pageCtx = null;
+            fastIdxs = null;
+            itemSize = 0;
         }
 
         initDistributedJoinMessaging(tbl);
@@ -189,11 +191,12 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @param cols Columns array.
      * @return List of {@link FastIndexHelper} objects.
      */
-    private H2TreeIndexPageContext getPageCtx(IndexColumn[] cols) {
-        int maxSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, MAX_ITEM_SIZE);
+    private List<FastIndexHelper> getAvailableFastColumns(IndexColumn[] cols) {
+        // todo: cache-based parameter
+        int maxSize = MAX_ITEM_SIZE;
 
         if (maxSize == 0)
-            return new H2TreeIndexPageContext(null, 0);
+            return null;
 
         List<FastIndexHelper> res = new ArrayList<>();
 
@@ -216,14 +219,14 @@ public class H2TreeIndex extends GridH2IndexBase {
             res.add(idx);
         }
 
-        return new H2TreeIndexPageContext(res, payloadSize);
+        return res;
     }
 
     /**
      * @return Tree updated in current thread.
      */
-    public static H2TreeIndexPageContext getCurrentPageContext() {
-        return currentPageContext.get();
+    public static H2TreeIndex getCurrentIndex() {
+        return currentIndex.get();
     }
 
     /**
@@ -251,11 +254,25 @@ public class H2TreeIndex extends GridH2IndexBase {
         return tree;
     }
 
+    /**
+     * @return FastIndexHelper list.
+     */
+    public List<FastIndexHelper> fastIdxs() {
+        return fastIdxs;
+    }
+
+    /**
+     * @return Item size.
+     */
+    public int itemSize() {
+        return itemSize;
+    }
+
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
             IndexingQueryFilter f = threadLocalFilter();
-            IgniteBiPredicate<Object,Object> p = null;
+            IgniteBiPredicate<Object, Object> p = null;
 
             if (f != null) {
                 String spaceName = getTable().spaceName();
@@ -283,7 +300,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            currentPageContext.set(pageCtx);
+            currentIndex.set(this);
 
             return tree.put(row);
         }
@@ -291,14 +308,14 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw DbException.convert(e);
         }
         finally {
-            currentPageContext.remove();
+            currentIndex.remove();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            currentPageContext.set(pageCtx);
+            currentIndex.set(this);
 
             return tree.putx(row);
         }
@@ -306,35 +323,35 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw DbException.convert(e);
         }
         finally {
-            currentPageContext.remove();
+            currentIndex.remove();
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
-            currentPageContext.set(pageCtx);
+            currentIndex.set(this);
             return tree.remove(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
-            currentPageContext.remove();
+            currentIndex.remove();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removex(SearchRow row) {
         try {
-            currentPageContext.set(pageCtx);
+            currentIndex.set(this);
             tree.removex(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
-            currentPageContext.remove();
+            currentIndex.remove();
         }
     }
 

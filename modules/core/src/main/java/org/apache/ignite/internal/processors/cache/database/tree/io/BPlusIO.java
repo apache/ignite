@@ -214,13 +214,6 @@ public abstract class BPlusIO<L> extends PageIO {
     public abstract int offset(long pageAddr, int idx);
 
     /**
-     * @param pageAddr Page address.
-     * @param idx Index of element.
-     * @return Offset from byte buffer begin in bytes.
-     */
-    public abstract int offset(long pageAddr, int idx, int itemSize);
-
-    /**
      * Store the needed info about the row in the page. Leaf and inner pages can store different info.
      *
      * @param pageAddr Page address.

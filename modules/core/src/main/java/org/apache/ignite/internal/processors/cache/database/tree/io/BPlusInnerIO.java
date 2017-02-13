@@ -63,7 +63,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @return Page ID.
      */
     public final long getLeft(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, (shiftOffset(pageAddr, idx, leftShift())));
+        return PageUtils.getLong(pageAddr, (offset0(pageAddr, idx, leftShift())));
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param pageId Page ID.
      */
     public final void setLeft(long pageAddr, int idx, long pageId) {
-        PageUtils.putLong(pageAddr, shiftOffset(pageAddr, idx, leftShift()), pageId);
+        PageUtils.putLong(pageAddr, offset0(pageAddr, idx, leftShift()), pageId);
 
         assert pageId == getLeft(pageAddr, idx);
     }
@@ -83,7 +83,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @return Page ID.
      */
     public final long getRight(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, shiftOffset(pageAddr, idx, rightShift(pageAddr)));
+        return PageUtils.getLong(pageAddr, offset0(pageAddr, idx, rightShift(pageAddr)));
     }
 
     /**
@@ -92,7 +92,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param pageId Page ID.
      */
     private void setRight(long pageAddr, int idx, long pageId) {
-        PageUtils.putLong(pageAddr, shiftOffset(pageAddr, idx, rightShift(pageAddr)), pageId);
+        PageUtils.putLong(pageAddr, offset0(pageAddr, idx, rightShift(pageAddr)), pageId);
 
         assert pageId == getRight(pageAddr, idx);
     }
@@ -108,13 +108,13 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
             PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcPageAddr, srcIdx), offset(srcPageAddr, dstIdx), cnt);
 
             if (cpLeft)
-                PageUtils.putLong(dstPageAddr, shiftOffset(srcPageAddr, dstIdx, leftShift()),
-                    PageUtils.getLong(srcPageAddr, (shiftOffset(srcPageAddr, srcIdx, leftShift()))));
+                PageUtils.putLong(dstPageAddr, offset0(srcPageAddr, dstIdx, leftShift()),
+                    PageUtils.getLong(srcPageAddr, (offset0(srcPageAddr, srcIdx, leftShift()))));
         }
         else {
             if (cpLeft)
-                PageUtils.putLong(dstPageAddr, shiftOffset(srcPageAddr, dstIdx, leftShift()),
-                    PageUtils.getLong(srcPageAddr, (shiftOffset(srcPageAddr, srcIdx, leftShift()))));
+                PageUtils.putLong(dstPageAddr, offset0(srcPageAddr, dstIdx, leftShift()),
+                    PageUtils.getLong(srcPageAddr, (offset0(srcPageAddr, srcIdx, leftShift()))));
 
             PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcPageAddr, srcIdx), offset(srcPageAddr, dstIdx), cnt);
         }
@@ -125,27 +125,13 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param shift It can be either link itself or left or right page ID.
      * @return Offset from byte buffer begin in bytes.
      */
-    private int shiftOffset(long pageAddr, int idx, int shift) {
-        return shiftOffset0(idx, shift, itemSize(pageAddr));
-    }
-
-    /**
-     * @param idx Index of element.
-     * @param shift It can be either link itself or left or right page ID.
-     * @return Offset from byte buffer begin in bytes.
-     */
-    private int shiftOffset0(int idx, int shift, int itemSize) {
-        return shift + (8 + itemSize) * idx;
+    private int offset0(long pageAddr, int idx, int shift) {
+        return shift + (8 + itemSize(pageAddr)) * idx;
     }
 
     /** {@inheritDoc} */
     @Override public final int offset(long pageAddr, int idx) {
-        return shiftOffset(pageAddr, idx, linkShift());
-    }
-
-    /** {@inheritDoc} */
-    @Override public int offset(long pageAddr, int idx, int itemSize) {
-        return shiftOffset0(idx, linkShift(), itemSize);
+        return offset0(pageAddr, idx, linkShift());
     }
 
     // Methods for B+Tree logic.
