@@ -442,7 +442,8 @@ public class JdbcStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batching is supported for PreparedStatements only.");
+        throw new SQLFeatureNotSupportedException("Batching is supported for PreparedStatements only - please use " +
+            "parameter-less overload JdbcPreparedStatement.addBatch() to add new set of arguments.");
     }
 
     /** {@inheritDoc} */

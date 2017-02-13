@@ -55,7 +55,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared " +
+            "statement - please use parameter-less overload addBatch() to add new set of arguments.");
     }
 
     /** {@inheritDoc} */

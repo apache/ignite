@@ -256,12 +256,12 @@ public class DmlStatementsProcessor {
 
         if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().namex()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
-                " in connection options", IgniteQueryErrorCode.CROSS_CACHE_STREAMING);
+                " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (plan.mode == UpdateMode.INSERT || plan.mode == UpdateMode.MERGE) {
             if (plan.rowsNum == 0)
                 throw new IgniteSQLException("INSERT and MERGE from subquery are not supported in streaming mode",
-                    IgniteQueryErrorCode.INVALID_STREAMING_STMT);
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             assert plan.isLocSubqry;
 
@@ -336,7 +336,7 @@ public class DmlStatementsProcessor {
         else {
             if (plan.fastUpdateArgs == null || plan.fastUpdateArgs.val != FastUpdateArguments.NULL_ARGUMENT)
                 throw new IgniteSQLException("Only key bounded UPDATE and DELETE are supported in streaming mode",
-                    IgniteQueryErrorCode.INVALID_STREAMING_STMT);
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (!isBatch) {
                 Object key = plan.fastUpdateArgs.key.apply(args);

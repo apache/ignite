@@ -161,8 +161,10 @@ public class JdbcConnection implements Connection {
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
-        streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE, "0"));
-        streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
+        streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
+            String.valueOf(IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE)));
+        streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS,
+            String.valueOf(IgniteDataStreamer.DFLT_MAX_PARALLEL_OPS)));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -521,10 +523,6 @@ public class JdbcConnection implements Connection {
 
             IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
                 nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps);
-
-            // Null streamer means that given statement can't be streamed and should be processed in ordinary way.
-            if (streamer == null)
-                return new JdbcPreparedStatement(this, sql);
 
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }

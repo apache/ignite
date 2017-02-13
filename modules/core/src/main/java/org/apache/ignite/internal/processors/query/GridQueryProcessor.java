@@ -825,7 +825,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Iterator.
      */
-    public long streamUpdateQuery(@Nullable final String spaceName,
+    public long[] streamUpdateQuery(@Nullable final String spaceName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
         assert streamer != null;
 
@@ -835,8 +835,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             GridCacheContext cctx = ctx.cache().cache(spaceName).context();
 
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
-                @Override public Long applyx() throws IgniteCheckedException {
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<long[]>() {
+                @Override public long[] applyx() throws IgniteCheckedException {
                     return idx.streamUpdateQuery(spaceName, qry, args, streamer);
                 }
             }, true);

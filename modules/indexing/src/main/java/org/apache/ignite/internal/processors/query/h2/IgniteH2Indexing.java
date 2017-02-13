@@ -456,7 +456,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (prep instanceof Delete)
             mode = UpdateMode.DELETE;
         else
-            return null;
+            throw new IgniteSQLException("Only DML operations are supported in streaming mode",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
         streamer.autoFlushFrequency(autoFlushFreq);
