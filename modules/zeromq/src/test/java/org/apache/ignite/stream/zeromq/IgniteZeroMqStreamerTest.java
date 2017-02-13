@@ -37,7 +37,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  */
 public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
-    private static final int CACHE_ENTRY_COUNT = 10_000;
+    private static final int CACHE_ENTRY_COUNT = 1000;
 
     /**  */
     private final String ADDR = "tcp://localhost:5671";
@@ -52,7 +52,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 20_000;
+        return 10_000;
     }
 
     /** {@inheritDoc} */
