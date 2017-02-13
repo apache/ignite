@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Gets the Ignite.
         /// </summary>
-        public IIgnite Ignite
+        public Ignite Ignite
         {
             get { return _ignite; }
         }

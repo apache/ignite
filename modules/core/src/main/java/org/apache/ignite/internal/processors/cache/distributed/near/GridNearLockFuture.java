@@ -148,6 +148,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     @GridToStringExclude
     private List<GridDistributedCacheEntry> entries;
 
+    /** TTL for create operation. */
+    private long createTtl;
+
     /** TTL for read operation. */
     private long accessTtl;
 
@@ -168,6 +171,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
      * @param skipStore skipStore
@@ -180,6 +184,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         boolean read,
         boolean retval,
         long timeout,
+        long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -195,6 +200,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
@@ -1056,6 +1062,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 inTx() && tx.syncMode() == FULL_SYNC,
                                                 inTx() ? tx.subjectId() : null,
                                                 inTx() ? tx.taskNameHash() : 0,
+                                                read ? createTtl : -1L,
                                                 read ? accessTtl : -1L,
                                                 skipStore,
                                                 keepBinary,
@@ -1366,7 +1373,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
-        ClusterNode primary = cctx.affinity().primary(key, topVer);
+        ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +

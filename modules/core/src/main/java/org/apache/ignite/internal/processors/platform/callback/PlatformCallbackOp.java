@@ -209,4 +209,16 @@ class PlatformCallbackOp {
 
     /** */
     public static final int PluginProcessorIgniteStop = 63;
+
+    /** */
+    public static final int CachePluginCreate = 64;
+
+    /** */
+    public static final int CachePluginDestroy = 65;
+
+    /** */
+    public static final int CachePluginIgniteStart = 66;
+
+    /** */
+    public static final int CachePluginIgniteStop = 67;
 }

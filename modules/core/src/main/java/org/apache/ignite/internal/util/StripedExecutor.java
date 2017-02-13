@@ -433,7 +433,7 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     stopping = true;
 
                     Thread.currentThread().interrupt();

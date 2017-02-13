@@ -27,6 +27,7 @@ nobase_include_HEADERS = \
 	ignite/common/dynamic_size_array.h \
 	ignite/common/fixed_size_array.h \
 	ignite/common/utils.h \
+	ignite/common/platform_utils.h \
 	ignite/date.h \
 	ignite/guid.h \
 	ignite/ignite_error.h \

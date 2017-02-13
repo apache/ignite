@@ -1591,23 +1591,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Checks if at least one of the given keys belongs to one of the given partitions.
-     *
-     * @param keys Collection of keys to check.
-     * @param movingParts Collection of partitions to check against.
-     * @return {@code True} if there exist a key in collection {@code keys} that belongs
-     *      to one of partitions in {@code movingParts}
-     */
-    public boolean hasKey(Iterable<? extends K> keys, Collection<Integer> movingParts) {
-        for (K key : keys) {
-            if (movingParts.contains(affinity().partition(key)))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Check whether conflict resolution is required.
      *
      * @return {@code True} in case DR is required.
@@ -1900,9 +1883,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy);
 
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy);
 
             assert key0 != null : key;
             assert val0 != null : val;

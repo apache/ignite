@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.serializer.Deserializer;
@@ -40,6 +41,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.io.BytesWritablePartiallyRawComparator;
 import org.apache.ignite.hadoop.io.PartiallyRawComparator;
 import org.apache.ignite.hadoop.io.TextPartiallyRawComparator;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
@@ -48,7 +50,6 @@ import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapperAwareTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapper;
@@ -155,6 +156,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
 
         COMBINE_KEY_GROUPING_SUPPORTED = ok;
 
+        PARTIAL_COMPARATORS.put(ByteWritable.class.getName(), BytesWritablePartiallyRawComparator.class.getName());
         PARTIAL_COMPARATORS.put(Text.class.getName(), TextPartiallyRawComparator.class.getName());
     }
 
@@ -595,11 +597,16 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         if (clsName == null) {
             Class keyCls = conf.getMapOutputKeyClass();
 
-            if (keyCls != null) {
+            while (keyCls != null) {
                 clsName = PARTIAL_COMPARATORS.get(keyCls.getName());
 
-                if (clsName != null)
+                if (clsName != null) {
                     conf.set(HadoopJobProperty.JOB_PARTIALLY_RAW_COMPARATOR.propertyName(), clsName);
+
+                    break;
+                }
+
+                keyCls = keyCls.getSuperclass();
             }
         }
     }

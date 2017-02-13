@@ -1009,9 +1009,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }
@@ -1081,9 +1081,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.backupByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }
