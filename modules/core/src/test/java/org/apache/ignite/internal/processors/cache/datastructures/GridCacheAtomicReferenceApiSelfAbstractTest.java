@@ -18,8 +18,15 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Basic tests for atomic reference.
@@ -126,5 +133,56 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
 
         assertTrue(success);
         assertEquals("newVal", atomic.get());
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            String atomicName = UUID.randomUUID().toString();
+
+            String initValue = "qazwsx";
+
+            IgniteAtomicReference<String> atomicReference = ignite.atomicReference(atomicName, initValue, true);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                assertEquals(initValue, atomicReference.get());
+
+                assertTrue(atomicReference.compareAndSet(initValue, "aaa"));
+
+                assertEquals("aaa", atomicReference.get());
+
+                tx.rollback();
+
+                assertEquals(0, cache.size());
+            }
+
+            assertTrue(atomicReference.compareAndSet("aaa", null));
+
+            assertNull(atomicReference.get());
+
+            atomicReference.close();
+
+            assertTrue(atomicReference.removed());
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
     }
 }

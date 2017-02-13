@@ -208,12 +208,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("val", cache.Get(1));
 
             Assert.AreEqual(1, cache.GetSize());
+        }
 
-            // Test errors
+        [Test]
+        public void TestExceptions()
+        {
+            var cache = GetCache();
+
+            cache.Put(1, "val");
+
             CacheTestStore.ThrowError = true;
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
 
-            cache.LocalEvict(new[] { 1 });
+            cache.LocalEvict(new[] {1});
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
+
+            CacheTestStore.ThrowError = false;
+
+            cache.Remove(1);
+        }
+
+        [Test]
+        [Ignore("IGNITE-4657")]
+        public void TestExceptionsNoRemove()
+        {
+            var cache = GetCache();
+
+            cache.Put(1, "val");
+
+            CacheTestStore.ThrowError = true;
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
+
+            cache.LocalEvict(new[] {1});
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
         }
 

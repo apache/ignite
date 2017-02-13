@@ -65,6 +65,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
 
+    /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
+    public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
+
     /**
      * If this system property is set to {@code false} - no checks for new versions will
      * be performed by Ignite. By default, Ignite periodically checks for the new
@@ -278,6 +281,9 @@ public final class IgniteSystemProperties {
 
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
+
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".

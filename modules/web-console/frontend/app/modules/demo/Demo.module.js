@@ -23,22 +23,26 @@ angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
 ])
-.config(['$stateProvider', ($stateProvider) => {
+.config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
     $stateProvider
         .state('demo', {
             abstract: true,
+            url: '/demo',
             template: '<ui-view></ui-view>'
         })
         .state('demo.resume', {
-            url: '/demo',
+            url: '/resume',
+            onEnter: AclRoute.checkAccess('demo'),
             controller: ['$state', ($state) => {
                 $state.go('base.configuration.clusters');
             }],
             metaTags: {
+                title: 'Demo resume'
             }
         })
         .state('demo.reset', {
-            url: '/demo/reset',
+            url: '/reset',
+            onEnter: AclRoute.checkAccess('demo'),
             controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
                 $http.post('/api/v1/demo/reset')
                     .then(() => $state.go('base.configuration.clusters'))
@@ -48,7 +52,9 @@ angular
                         Messages.showError(res);
                     });
             }],
-            metaTags: {}
+            metaTags: {
+                title: 'Demo reset'
+            }
         });
 }])
 .provider('Demo', ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider', function($state, $http, socketFactory) {
