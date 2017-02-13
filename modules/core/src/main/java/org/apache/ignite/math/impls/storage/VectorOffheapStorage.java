@@ -85,7 +85,7 @@ public class VectorOffheapStorage implements VectorStorage {
     /** {@inheritDoc */
     @Override
     public double getLookupCost() {
-        return 0; // TODO
+        return 0;
     }
 
     /** {@inheritDoc */
@@ -114,6 +114,11 @@ public class VectorOffheapStorage implements VectorStorage {
     @Override
     public void destroy() {
         GridUnsafe.freeMemory(ptr);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj != null && getClass().equals(obj.getClass()) && (ptr == ((VectorOffheapStorage)obj).ptr && len == ((VectorOffheapStorage)obj).len);
     }
 
     /**

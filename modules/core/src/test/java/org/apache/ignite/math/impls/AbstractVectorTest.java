@@ -34,7 +34,6 @@ import static org.junit.Assert.*;
  * Unit test for {@link AbstractVector}.
  */
 public class AbstractVectorTest {
-
     /** */
     private AbstractVector testVector;
 
@@ -328,11 +327,11 @@ public class AbstractVectorTest {
 
         AbstractVector testVector2 = getAbstractVector();
 
-        assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector));
+        assertEquals(VALUE_NOT_EQUALS, testVector, testVector);
 
-        assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector2));
+        assertEquals(VALUE_NOT_EQUALS, testVector, testVector2);
 
-        assertTrue(VALUE_NOT_EQUALS, testVector1.equals(testVector1));
+        assertEquals(VALUE_NOT_EQUALS, testVector1, testVector1);
 
         testVector2.setStorage(storage);
 
@@ -732,12 +731,12 @@ public class AbstractVectorTest {
     public void timesDouble(){
         double[] data0 = initVector();
 
-        double testValue = 2.5;
+        double testVal = 2.5;
 
-        Vector times = testVector.times(testValue);
+        Vector times = testVector.times(testVal);
 
         for (int i = 0; i < data0.length; i++) {
-            data0[i] *= testValue;
+            data0[i] *= testVal;
 
             assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
         }
@@ -758,12 +757,12 @@ public class AbstractVectorTest {
     public void divide(){
         double[] data0 = initVector();
 
-        double testValue = 2.5;
+        double testVal = 2.5;
 
-        Vector times = testVector.divide(testValue);
+        Vector times = testVector.divide(testVal);
 
         for (int i = 0; i < data0.length; i++) {
-            data0[i] /= testValue;
+            data0[i] /= testVal;
 
             assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
         }
@@ -792,7 +791,7 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage) { // TODO: find out how-to fix this warning
+        return new AbstractVector(storage) { // TODO: find out how to fix warning about missing constructor
             /** */
             @Override public boolean isDense() {
                 return false;
@@ -803,8 +802,8 @@ public class AbstractVectorTest {
                 return false;
             }
 
-            @Override
-            public Matrix likeMatrix(int rows, int cols) {
+            /** */
+            @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
             }
 
@@ -866,14 +865,14 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector() {
-        return new AbstractVector() { // TODO: find out how-to fix this warning
+        return new AbstractVector() { // TODO: find out how to fix warning about missing constructor
             /** */
             @Override public boolean isDense() {
                 return false;
             }
 
-            @Override
-            public Matrix likeMatrix(int rows, int cols) {
+            /** */
+            @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
             }
 
@@ -981,11 +980,11 @@ public class AbstractVectorTest {
     /**
      * Add some zeroes to vector elements. Also set zeroes to the same elements in reference array data
      *
-     * @param testReference
+     * @param testRef
      */
-    private void addNilValues(double[] testReference) {
+    private void addNilValues(double[] testRef) {
         addNilValues();
-        testReference[10] = 0;
-        testReference[50] = 0;
+        testRef[10] = 0;
+        testRef[50] = 0;
     }
 }

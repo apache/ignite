@@ -174,13 +174,13 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void clusterGroupTest() { // TODO write test
-
+    public void clusterGroupTest() {
+        alwaysTrueAttributeTest(v -> v.clusterGroup() == null);
     }
 
     /** */ @Test
-    public void guidTest() { // TODO write test
-
+    public void guidTest() {
+        alwaysTrueAttributeTest(v -> v.guid() != null);
     }
 
     /** */
