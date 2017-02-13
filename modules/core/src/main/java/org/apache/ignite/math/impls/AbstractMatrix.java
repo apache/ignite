@@ -84,12 +84,36 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public Matrix swapRows(int row1, int row2) {
-        return null; // TODO
+        checkRowIndex(row1);
+        checkRowIndex(row2);
+
+        int cols = columnSize();
+
+        for (int y = 0; y < cols; y++) {
+            double v = getX(row1, y);
+            
+            setX(row1, y, getX(row2, y));
+            setX(row2, y, v);
+        }
+
+        return this;
     }
 
     @Override
     public Matrix swapColumns(int col1, int col2) {
-        return null; // TODO
+        checkColumnIndex(col1);
+        checkColumnIndex(col2);
+
+        int rows = rowSize();
+
+        for (int x = 0; x < rows; x++) {
+            double v = getX(x, col1);
+
+            setX(x, col1, getX(x, col2));
+            setX(x, col2, v);
+        }
+
+        return this;
     }
 
     @Override
@@ -571,7 +595,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public Matrix viewPart(int[] offset, int[] size) {
-        return null; // TODO
+        return new MatrixView(this, offset[0], offset[1], size[0], size[1]);
     }
 
     @Override
